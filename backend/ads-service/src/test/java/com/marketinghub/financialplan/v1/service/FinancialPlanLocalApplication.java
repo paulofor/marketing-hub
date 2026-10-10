@@ -52,6 +52,7 @@ import org.springframework.web.bind.annotation.*;
   FinancialPlanService.class,
   FinancialContributionTargetService.class,
   FinancialPlanController.class,
+  FinancialPlanNativePlanningFixture.class,
   FinancialPlanLocalApplication.FixtureController.class
 })
 public class FinancialPlanLocalApplication {
@@ -149,6 +150,7 @@ public class FinancialPlanLocalApplication {
   private Product product(long id) {
     var p = new Product();
     p.setId(id);
+    p.setSlug("fixture-product-" + id);
     p.setInternalName("Produto sintético " + id);
     p.setName("Produto local " + id);
     p.setValidationDefinitionVersion("fixture-product-v1");

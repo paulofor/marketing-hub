@@ -555,11 +555,13 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     if (financialPlans != null) {
       try {
         var financial =
-            financialPlans.get(
-                "PRODUCT",
-                product.getId(),
-                com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
-                null);
+            financialPlans
+                .latestForPlan(
+                    "PRODUCT",
+                    product.getId(),
+                    com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
+                    plan.getId())
+                .orElse(null);
         if (financial != null
             && "PRODUCT".equals(financial.scope())
             && Objects.equals(product.getId(), financial.scopeId())
@@ -573,6 +575,8 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
                 financial.assumptions().productVersion())) {
           context.set("currentFinancialPlan", objectMapper.valueToTree(financial));
           context.put("financialEvidenceScope", "PROJECTION_NOT_COMMERCIAL_APPROVAL");
+        } else if (financial == null) {
+          context.put("financialEvidenceAvailability", "UNAVAILABLE");
         }
       } catch (org.springframework.web.server.ResponseStatusException ex) {
         log.warn(

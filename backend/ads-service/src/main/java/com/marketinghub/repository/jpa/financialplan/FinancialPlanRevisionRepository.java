@@ -15,6 +15,11 @@ public interface FinancialPlanRevisionRepository
   List<FinancialPlanRevision> findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
       String kind, Long scopeId, Environment environment);
 
+  /** Seleciona no banco somente a revisão mais recente do mesmo proprietário, ambiente e plano. */
+  Optional<FinancialPlanRevision>
+      findFirstByScopeKindAndScopeIdAndEnvironmentAndCommercialPlanIdOrderByRevisionNumberDesc(
+          String kind, Long scopeId, Environment environment, Long commercialPlanId);
+
   /** Reserva uma revisão para impedir múltiplas avaliações pagas concorrentes. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT p FROM FinancialPlanRevision p WHERE p.id=:id")

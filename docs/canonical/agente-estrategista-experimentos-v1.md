@@ -330,6 +330,12 @@ versão, não vencida. `financialEvidenceScope=PROJECTION_NOT_COMMERCIAL_APPROVA
 preserva a distinção entre projeção privada e liberação de mercado. Fonte ausente
 ou inacessível continua ausente; não implica custo zero nem autorização.
 
+A revisão atual é selecionada no banco por proprietário, ambiente e plano comercial,
+com ordenação e limite de uma revisão. `FinancialPlanService.get` exige ID explícito
+e conserva a leitura histórica; não usar ID vazio para pedir a revisão vigente.
+A regressão do contexto deve incluir o claim HTTP e o serviço financeiro reais,
+pois simular a leitura financeira isolada não verifica esse contrato.
+
 `integratedPersonalizationProof` conserva o resumo canônico da geração do mesmo
 produto/plano/experimento, incluindo necessidade de revisão independente. Resultado
 gerado não equivale a homologação, demanda ou entrega comercial aceita. A montagem

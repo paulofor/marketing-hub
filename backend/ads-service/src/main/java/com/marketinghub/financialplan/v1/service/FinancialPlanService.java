@@ -91,6 +91,18 @@ public class FinancialPlanService {
     return view(required(scope, scopeId, environment, id, false));
   }
 
+  /** Lê a revisão atual do plano exato sem alterar o contrato de consulta por ID explícito. */
+  @Transactional(readOnly = true)
+  public Optional<PlanView> latestForPlan(
+      String scope, Long scopeId, Environment environment, Long commercialPlanId) {
+    requireOwner(scope, scopeId, false);
+    if (commercialPlanId == null) return Optional.empty();
+    return revisions
+        .findFirstByScopeKindAndScopeIdAndEnvironmentAndCommercialPlanIdOrderByRevisionNumberDesc(
+            scope, scopeId, environment, commercialPlanId)
+        .map(this::view);
+  }
+
   /** Propõe somente suporte e personalização, preservando contexto comercial e lacunas. */
   @Transactional(readOnly = true)
   public PlanPreparation preparation(Long productId, Environment environment) {

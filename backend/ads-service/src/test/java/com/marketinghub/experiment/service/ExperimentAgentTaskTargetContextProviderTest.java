@@ -82,16 +82,18 @@ class ExperimentAgentTaskTargetContextProviderTest {
     }
     when(fixture
             .finances()
-            .get(
+            .latestForPlan(
                 "PRODUCT",
                 95111L,
                 com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
-                null))
+                95131L))
         .thenReturn(
-            fixture
-                .json()
-                .treeToValue(
-                    financial, com.marketinghub.financialplan.v1.service.getplan.PlanView.class));
+            Optional.of(
+                fixture
+                    .json()
+                    .treeToValue(
+                        financial,
+                        com.marketinghub.financialplan.v1.service.getplan.PlanView.class)));
     var target =
         fixture.provider().resolve("experiment:95121", "pde-commercial-plan-offer").orElseThrow();
     assertThat(target.pdeContext().has("currentFinancialPlan")).isFalse();
@@ -103,11 +105,11 @@ class ExperimentAgentTaskTargetContextProviderTest {
     var fixture = planningEvidenceFixture(95111L, 95121L, 95131L);
     when(fixture
             .finances()
-            .get(
+            .latestForPlan(
                 "PRODUCT",
                 95111L,
                 com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
-                null))
+                95131L))
         .thenThrow(
             new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.NOT_FOUND, "Sem revisão local"));
@@ -166,12 +168,12 @@ class ExperimentAgentTaskTargetContextProviderTest {
       """
                 .formatted(productId, planId),
             com.marketinghub.financialplan.v1.service.getplan.PlanView.class);
-    when(finances.get(
+    when(finances.latestForPlan(
             "PRODUCT",
             productId,
             com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
-            null))
-        .thenReturn(financial);
+            planId))
+        .thenReturn(Optional.of(financial));
     var proof =
         (com.fasterxml.jackson.databind.node.ObjectNode)
             json.readTree(

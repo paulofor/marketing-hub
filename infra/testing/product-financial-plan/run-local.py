@@ -90,6 +90,7 @@ for round in range(1,args.rounds+1):
         api=subprocess.Popen(java,cwd=ROOT,stdout=api_log,stderr=subprocess.STDOUT)
         ready(api,'http://127.0.0.1:18095/fixture/health')
         run(['node','infra/testing/product-financial-plan/api-matrix.mjs'],folder/'api-matrix.log')
+        run(['node','infra/testing/product-financial-plan/native-planning-matrix.mjs'],folder/'native-planning-matrix.log')
         if not args.persistence_only:
             ui_log=(folder/'ui.log').open('w')
             ui=subprocess.Popen(['node','infra/testing/product-financial-plan/frontend-server.mjs'],cwd=ROOT,stdout=ui_log,stderr=subprocess.STDOUT)

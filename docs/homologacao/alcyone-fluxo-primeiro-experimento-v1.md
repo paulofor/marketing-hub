@@ -20,11 +20,11 @@ para que as novas decisões não dependam de copiar pareceres entre telas.
 
 ## Alternativas
 
-| Caminho | Benefício | Risco/esforço | Escolha |
-| --- | --- | --- | --- |
-| Pausar comunicação e retomar manualmente | Destrava o caso | Mantém repasse e recorrência | Não como solução compartilhada |
-| Liberar qualquer processo em espera | Remove a fila | Atravessa pausas, gastos e identidades | Rejeitado |
-| Reconhecer a dependência inicial exata e entregar fontes atuais | Reutiliza coordenador e contratos | Validação de identidade, estado e trabalho em curso | Adotado |
+| Caminho                                                         | Benefício                         | Risco/esforço                                       | Escolha                        |
+| --------------------------------------------------------------- | --------------------------------- | --------------------------------------------------- | ------------------------------ |
+| Pausar comunicação e retomar manualmente                        | Destrava o caso                   | Mantém repasse e recorrência                        | Não como solução compartilhada |
+| Liberar qualquer processo em espera                             | Remove a fila                     | Atravessa pausas, gastos e identidades              | Rejeitado                      |
+| Reconhecer a dependência inicial exata e entregar fontes atuais | Reutiliza coordenador e contratos | Validação de identidade, estado e trabalho em curso | Adotado                        |
 
 A exceção limita-se à comunicação WAITING_INPUT, sem falha, aguardando o
 planejamento do mesmo produto/cadeia/experimento inicial PLANNED, sem ciclo ou
@@ -36,17 +36,17 @@ ou copiar aprovação para solucionar uma fila.
 
 ## Matriz definida antes da validação
 
-| Área | Aceite |
-| --- | --- |
-| Caso original e outro produto | Planejamento recebe vez; comunicação e custos ficam preservados |
-| Antes válido | Continuação de preparação comercial do ciclo mantém comportamento |
-| Proteções | Outra identidade, ciclo, sucessor, experimento em operação, pausa, falha e tarefa em curso conservam reserva |
-| Persistência e HTTP | Consulta expõe fila sem escrever, aprovar, pausar ou duplicar tarefas |
-| Passagem ponta a ponta | MySQL e coordenador reais; agentes simulados concluem dependência e permitem reavaliar comunicação |
-| Contexto | Revisão LIVE atual do produto/plano/versão e prova do mesmo experimento; TEST, stale e origem divergente excluídos |
-| Custo e autoridade | Ausência permanece desconhecida; projeção e geração não são aprovação comercial |
-| Dispositivos | Chromium desktop, iPhone e Pixel no harness existente |
-| Publicação | Testes locais e diff primeiro; PR/revisão/merge e workflows/saúde depois |
+| Área                          | Aceite                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Caso original e outro produto | Planejamento recebe vez; comunicação e custos ficam preservados                                                    |
+| Antes válido                  | Continuação de preparação comercial do ciclo mantém comportamento                                                  |
+| Proteções                     | Outra identidade, ciclo, sucessor, experimento em operação, pausa, falha e tarefa em curso conservam reserva       |
+| Persistência e HTTP           | Consulta expõe fila sem escrever, aprovar, pausar ou duplicar tarefas                                              |
+| Passagem ponta a ponta        | MySQL e coordenador reais; agentes simulados concluem dependência e permitem reavaliar comunicação                 |
+| Contexto                      | Revisão LIVE atual do produto/plano/versão e prova do mesmo experimento; TEST, stale e origem divergente excluídos |
+| Custo e autoridade            | Ausência permanece desconhecida; projeção e geração não são aprovação comercial                                    |
+| Dispositivos                  | Chromium desktop, iPhone e Pixel no harness existente                                                              |
+| Publicação                    | Testes locais e diff primeiro; PR/revisão/merge e workflows/saúde depois                                           |
 
 Fixtures têm identidades sintéticas 92049–92053/95111–95231. Provedores e agentes
 são simulados, sem credenciais, consumo real ou dados comerciais de teste.
@@ -85,3 +85,51 @@ A retomada publicada será acrescentada nas evidências do PR. A preparação re
 0,1290348) e Atena #20 (revisão ainda pendente, USD 0,2734852). Total conhecido desta
 preparação: USD 1,214161, incluindo USD 0,811641 anteriores. Esses valores são
 estimativas, não faturamento reconciliado. Mídia e vídeo pago seguem sem autorização.
+
+## Correção da consulta financeira no claim — 10/10/2026
+
+O segundo PR está integrado em ce4e6e4e3bce64e058adfbf78f4e5e46fcadc582.
+Os workflows passaram, e a execução #67 passou da fila para Atena #706.
+A conferência posterior mostrou HTTP 500 no endpoint `pending`, antes da inferência.
+O stack trace termina em `FinancialPlanService.required`/`findById`: a integração
+acrescentada pelo PR chamava `get(..., null)`, embora esse contrato leia uma revisão
+exata. Os testes anteriores simulavam esse método e não verificavam sua exigência
+real. A reserva transacional foi desfeita; #706 permaneceu PENDING, sem resultado
+ou novo custo informado. Não criar outra tarefa nem reexecutar o planejamento.
+
+| Alternativa                                                             | Benefício                                   | Risco/esforço                                                | Decisão     |
+| ----------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------ | ----------- |
+| Listar todo o histórico e filtrar em memória                            | Reutiliza consulta pública                  | Mais leitura; seleção menos explícita                        | Não adotada |
+| Fazer `get` aceitar ID vazio como revisão atual                         | Corrige a chamada                           | Muda contrato de revisão exata e pode substituir referências | Rejeitada   |
+| Selecionar a última revisão do mesmo proprietário/ambiente/plano no SQL | Mantém identidade e leitura exata existente | Query restrita e teste da fronteira real                     | Adotada     |
+
+A regressão adicional usa o endpoint nativo completo e o serviço financeiro/JPA
+reais no MySQL 5.7 do harness existente. Somente a fila, o catálogo de referências
+e os provedores são sintéticos. Cobrir dois produtos, revisão LIVE versus TEST,
+revisão comercial obsoleta, recuperação da lease e preservação do custo desconhecido.
+O teste que simulava `get` não é evidência suficiente dessa fronteira.
+
+Capacidade aprimorada: reserva da tarefa com fontes financeiras canônicas.
+Critério de adoção: resposta HTTP 200 com revisão correta e sem inferência,
+segregação preservada e consulta de revisão explícita antes válida inalterada.
+Reverter se houver troca silenciosa de revisão ou contaminação de identidade.
+Essa correção não comprova demanda, venda ou margem realizada.
+
+### Resultado da regressão adicional
+
+- A chamada anterior foi recompilada e reproduziu HTTP 500 no claim real. O stack
+  local confirmou `findById` sem ID, `FinancialPlanService.required` e o provider.
+- A versão corrigida passou nos 4.548 testes do backend: zero falhas/erros,
+  37 condicionais de outras topologias ignorados. Os 44 testes focados passaram.
+- MySQL 5.7: 65 consultas/comandos da matriz financeira e 22 do claim nativo
+  passaram, com dois produtos, TEST mais recente que LIVE, lease preservada,
+  exclusão de fonte obsoleta e custo ausente `NOT_REPORTED`. Nenhum modelo chamado.
+- Reinício preservou histórico financeiro, parecer e custo; apply/reapply,
+  rollback/restore e validação estática Liquibase passaram. Não há novo changelog.
+- Diff, formatação e sintaxe do runner passaram; a topologia e os volumes foram
+  removidos. Esta rodada foi diagnóstico de persistência/claim: não repete nem
+  substitui as provas de interface e coordenação completas do PR anterior.
+
+A entrega só permite recuperar a mesma tarefa #706 pelo executor. O aceite real
+de Atena, dos demais predecessores e de Íris ainda precisa ser observado após
+publicação, mantendo limites financeiros, revisões e decisões humanas.

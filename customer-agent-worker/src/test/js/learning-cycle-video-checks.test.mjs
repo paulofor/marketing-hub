@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {verifyVideoIdentity,videoBrowserOptions} from '../../main/resources/browser/learning-cycle-video-checks.mjs';
+import {verifyVideoIdentity,verifyPlayback,videoBrowserOptions} from '../../main/resources/browser/learning-cycle-video-checks.mjs';
 
 test('usa o navegador com codecs sem ignorar a configuração explícita da sandbox',()=>{
   assert.equal(videoBrowserOptions({PDE_VIDEO_BROWSER_EXECUTABLE:'/opt/chrome-linux64/chrome'}).executablePath,'/opt/chrome-linux64/chrome');
@@ -31,4 +31,20 @@ test('recusa resposta sem arquivo, falha HTTP e redirecionamento', async()=>{
 });
 test('respeita o limite antes de baixar conteúdo sem tamanho confiável',async()=>{
   const {binding}=fixture();await assert.rejects(verifyVideoIdentity(binding,async()=>new Response('x',{headers:{'content-length':String(65*1024*1024)}})));
+});
+
+// Exercita os limites que o navegador real também mede, sem presumir áudio pelo cadastro.
+function playbackFixture(state) {
+  let evaluations=0;
+  return {
+    evaluate:async()=> (++evaluations===2?state:undefined),
+    elementHandle:async()=>({}),
+    page:()=>({waitForFunction:async()=>{}}),
+  };
+}
+test('reprovação de áudio, duração ou dimensões impede aceite técnico',async()=>{
+  const valid={duration:3,width:720,height:1280,audioBytes:1000,muted:false};
+  assert.equal((await verifyPlayback(playbackFixture(valid),3)).audioBytes,1000);
+  for(const invalid of [{audioBytes:0},{muted:true},{duration:15},{width:0}])
+    await assert.rejects(verifyPlayback(playbackFixture({...valid,...invalid}),3));
 });

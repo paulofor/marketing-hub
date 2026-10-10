@@ -72,14 +72,14 @@ class PdeProductProofOverlayTest {
         }
     }
 
-    /** Confere pixels e prazo de composições de 15 e 30 segundos com FFmpeg real. */
+    /** Confere pixels e prazo de vídeos de 15/30 s, incluindo captura longa de alta densidade. */
     @ParameterizedTest
     @ValueSource(ints = {15, 30})
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
     void composesPixelsWithRealFfmpeg(int duration) throws Exception {
         try (var server = new MockWebServer()) {
             server.start();
-            byte[] pixels = pixels();
+            byte[] pixels = duration == 30 ? pixels(1179, 6138) : pixels();
             server.enqueue(response(pixels));
             var properties = new VideoManagementProperties();
             properties.setBackendBaseUrl(server.url("/").uri());
@@ -87,7 +87,7 @@ class PdeProductProofOverlayTest {
             Path result = null;
             try {
                 var process = new ProcessBuilder("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
-                        "color=c=blue:s=360x640:r=15:d=" + duration, "-c:v", "libx264", "-pix_fmt", "yuv420p", source.toString())
+                        "color=c=blue:s=720x1280:r=30:d=" + duration, "-c:v", "libx264", "-threads", "2", "-pix_fmt", "yuv420p", source.toString())
                         .inheritIO().start();
                 assertThat(process.waitFor()).isZero();
                 var input = metadata(pixels);
@@ -97,8 +97,10 @@ class PdeProductProofOverlayTest {
                 var output = new PdeProductProofOverlay(properties, WebClient.builder()).apply(source, input, 91009L);
                 assertThat(java.time.Duration.ofNanos(System.nanoTime() - started).toSeconds()).isLessThan(120);
                 result = output.videoFile();
-                assertThat(output.audit()).containsEntry("status", "APPLIED").containsEntry("commercialEvidenceClaimed", false);
+                assertThat(output.audit()).containsEntry("status", "APPLIED").containsEntry("commercialEvidenceClaimed", false)
+                        .containsEntry("compositionMode", "PREPARED_FRAME_LOOP_V1");
                 Path target = Path.of("target/pde-proof-real-" + duration + ".mp4");
+                Files.createDirectories(target.getParent());
                 Files.copy(result, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 var probe = new ProcessBuilder("ffprobe", "-v", "error", "-show_entries", "format=duration:stream=width,height",
                         "-of", "json", target.toString()).start();
@@ -131,8 +133,16 @@ class PdeProductProofOverlayTest {
 
     /** Produz apenas pixels artificiais de fixture, segregados de qualquer evidência real. */
     private byte[] pixels() throws Exception {
-        var image = new BufferedImage(300, 400, BufferedImage.TYPE_INT_RGB);
-        for (int x = 0; x < 300; x++) for (int y = 0; y < 400; y++) image.setRGB(x,y,0xffcc33);
+        return pixels(300, 400);
+    }
+
+    /** Produz captura representativa de alta densidade sem dados ou métricas de mercado. */
+    private byte[] pixels(int width, int height) throws Exception {
+        var image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        var graphics = image.createGraphics();
+        graphics.setColor(new java.awt.Color(0xffcc33));
+        graphics.fillRect(0, 0, width, height);
+        graphics.dispose();
         var bytes = new ByteArrayOutputStream();
         ImageIO.write(image, "png", bytes);
         return bytes.toByteArray();

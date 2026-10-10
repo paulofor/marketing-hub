@@ -137,10 +137,13 @@ o filtro ocorre no SQL antes da paginação e a reserva repete a verificação. 
 backend novo não entrega recuperação ao executor anterior durante a atualização.
 A declaração do contrato não substitui conferência de texto, tenant, bytes ou gates.
 
-A composição de prova privada limita threads de filtros e encoder, mantendo pixels,
-hash, intervalos, CRF e prazo de execução. Preset rápido reduz custo operacional sem
-omitir prova ou relaxar gate. Homologação local de 15/30 s confere presença e retirada
-dos pixels no tempo correto. Referência:
+A composição de prova privada prepara a captura estática uma vez e repete somente
+o quadro pronto (`PREPARED_FRAME_LOOP_V1`), com threads de filtros e encoder limitadas.
+Mantém pixels, hash, intervalos, CRF e prazo; não relê/redimensiona uma imagem longa
+a cada frame. Homologação local de 15/30 s inclui alta densidade e CPU limitada,
+conferindo presença e retirada dos pixels no tempo correto. O progresso distingue
+composição, síntese ou reutilização da voz e arquivo pronto com revisão de uso pendente.
+Referência:
 [recuperação de Mira](../homologacao/mira-narration-recovery-v1.md).
 
 A tela apresenta inspeções registradas pelo backend. Termos do roteiro como CTA,
@@ -342,6 +345,27 @@ Parecer `FINANCIAL_BLOCKED` também é intervenção financeira, nunca produçã
 Ao chegar a `VIDEO_APPROVAL`, o pai orienta revisão independente, decisão humana
 e integração pelo ciclo exato. Não representar essa etapa manual como geração
 automática nem considerar a produção técnica uma aprovação de uso.
+
+### Integração privada executável de Mira — 10/10/2026
+
+`LearningCycleVideoBinding` reconhece `/mira-candidate` além de `/vega-private`,
+pois ambos os destinos implementam o mesmo contrato audiovisual. O reconhecimento
+da rota não concede aprovação: as duas peças distintas precisam conservar seus
+aceites, hashes, papéis e contexto de produto/ciclo/experimento/versão. O backend
+persiste o recibo e exige homologação e pareceres posteriores com o mesmo fingerprint.
+
+A resposta `SessionView` dos endpoints existentes `/api/pde/mira/candidate/v1`
+acrescenta `videoIntegration` opcional, com a apresentação do recibo vigente. Sem
+recibo, com contexto divergente ou vínculo indisponível, a rotina continua acessível
+e a falha é registrada com ciclo/sessão e exceção. Nenhuma autorização comercial,
+pagamento ou mídia decorre dessa apresentação privada.
+
+O player compartilhado mantém vídeo recolhido, controles nativos, legenda/transcrição
+e ação principal independente. Falha de reprodução oferece continuação sem vídeo.
+O harness existente de Mira confere bytes dos dois arquivos, reprodução e áudio,
+caráter opcional e recuperação em cada dispositivo; evidências não equivalem à
+escuta humana, ao aceite de uso nem a resultados comerciais. Matriz e limites em
+[homologação de Mira](../homologacao/mira-narration-recovery-v1.md).
 
 ## Falhas HTTP do planejador de Apolo
 

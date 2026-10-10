@@ -21,7 +21,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /** Homologa o contrato exportado no acabamento real, com HTTP/TTS locais e pixels de fixture. */
 class VerifyPrivateProof {
-  /** Executa prova, áudio, legendas e auditoria sem acessar provedor ou registrar métrica comercial. */
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(VerifyPrivateProof.class);
+  /** Homologa mídia de fixture ou bytes preservados locais, sempre com TTS simulado e sem métricas comerciais. */
   public static void main(String[] args) throws Exception {
     Path output = Path.of(args[1]);
     Files.createDirectories(output);
@@ -30,9 +31,15 @@ class VerifyPrivateProof {
     Path source = output.resolve("source.mp4");
     Path proofFile = output.resolve("proof.png");
     Path voiceFile = output.resolve("synthetic-test-tone.mp3");
-    run("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=blue:s=360x640:r=15:d=15",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", source.toString());
-    run("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=gold:s=720x900", "-frames:v", "1", proofFile.toString());
+    int sourceDuration = metadata.path("targetDurationSeconds").asInt(15);
+    if (args.length > 3) {
+      Files.copy(Path.of(args[2]), source, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(Path.of(args[3]), proofFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    } else {
+      run("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=blue:s=360x640:r=15:d=" + sourceDuration,
+          "-c:v", "libx264", "-threads", "2", "-pix_fmt", "yuv420p", source.toString());
+      run("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=gold:s=720x900", "-frames:v", "1", proofFile.toString());
+    }
     run("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
         "-ar", "44100", "-ac", "1", voiceFile.toString());
     byte[] proofBytes = Files.readAllBytes(proofFile);
@@ -67,7 +74,10 @@ class VerifyPrivateProof {
             .toString().getBytes();
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         exchange.sendResponseHeaders(200,response.length); exchange.getResponseBody().write(response);
-      } catch (Exception ex) { throw new RuntimeException(ex); }
+      } catch (Exception ex) {
+        log.error("Falha no upload simulado da homologação; jobId=91009 endpoint=/internal/video/assets", ex);
+        throw new RuntimeException(ex);
+      }
       finally { exchange.close(); }
     });
     server.createContext(proof.path("contentPath").asText(), exchange -> {
@@ -103,13 +113,15 @@ class VerifyPrivateProof {
       properties.getProviders().getPostProduction().setOpenAiApiKey("fixture-only");
       properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(base + "/v1"));
       metadata.put("sourceVideoUrl", base + "/source.mp4");
-      String candidateText = "Escolha ocasião e combinação. | Veja seu ajuste. Aplique e avalie. | Salve para retomar. | Experimente o primeiro ajuste MUSA. | Sem compra ou cobrança.";
+      String candidateText = args.length > 3 ? metadata.path("captionText").asText()
+          : "Escolha ocasião e combinação. | Veja seu ajuste. Aplique e avalie. | Salve para retomar. | Experimente o primeiro ajuste MUSA. | Sem compra ou cobrança.";
+      int expectedSegments = candidateText.split("\\|").length;
       metadata.put("captionText", candidateText);
       metadata.put("voiceOverScript", candidateText);
       metadata.put("syntheticTestOnly", true);
       var job = mapper.createObjectNode().put("id",91009).put("profileId",91001).put("jobType","POST_PRODUCTION")
           .put("tenantId",metadata.path("tenantId").asText()).put("providerName","MUSA_POST_PRODUCTION").put("metadataJson", metadata.toString());
-      var profile = mapper.createObjectNode().put("id",91001).put("targetDurationSeconds",15);
+      var profile = mapper.createObjectNode().put("id",91001).put("targetDurationSeconds",sourceDuration);
       var provider = new PostProductionVideoProvider(properties, mapper, WebClient.builder());
       new PdeProductProofOverlay(properties, WebClient.builder()).verify(metadata,91009L);
       var result = provider.render(mapper.treeToValue(job,SalesVideoJob.class), mapper.treeToValue(profile,SalesVideoProfile.class),
@@ -118,7 +130,7 @@ class VerifyPrivateProof {
       if (!"APPLIED".equals(report.at("/product_reference_overlay/status").asText())
           || !"APPROVED".equals(report.at("/caption_narration_sync/timing_status").asText())
           || !report.at("/captions/burned_in").asBoolean() || !report.path("has_audio").asBoolean()
-          || calls.get() != 5 || proofs.get() != 2) throw new IllegalStateException("Contrato integrado incompleto: " + report);
+          || calls.get() != expectedSegments || proofs.get() != 2) throw new IllegalStateException("Contrato integrado incompleto: " + report);
       Files.write(output.resolve("final-fixture.mp4"),result.videoFile().content());
       Files.write(output.resolve("final-fixture.vtt"),result.captionFile().content());
       Files.writeString(output.resolve("worker-result.json"),report.toPrettyString());
@@ -155,7 +167,7 @@ class VerifyPrivateProof {
           .put("captionSha256",HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(result.captionFile().content())));
       var recoveryJob = mapper.treeToValue(job.deepCopy().put("id",91010).put("metadataJson",recoveryMetadata.toString()),SalesVideoJob.class);
       var recovered = provider.render(recoveryJob,mapper.treeToValue(profile,SalesVideoProfile.class),(p,s,m)->{});
-      if (!java.util.Arrays.equals(recovered.videoFile().content(),result.videoFile().content()) || calls.get()!=5
+      if (!java.util.Arrays.equals(recovered.videoFile().content(),result.videoFile().content()) || calls.get()!=expectedSegments
           || !java.math.BigDecimal.ZERO.equals(recovered.metadata().get("cost_usd"))) throw new IllegalStateException("Recuperação alterou bytes ou chamou TTS");
       var recoveredUpload = new VideoAssetUploader(new VideoAssetClient(WebClient.builder(),properties),mapper,properties).uploadAssets(recoveryJob,recovered);
       if (recoveredUpload.streamPlaybackUrl()==null) throw new IllegalStateException("Recuperação não entregou HLS");

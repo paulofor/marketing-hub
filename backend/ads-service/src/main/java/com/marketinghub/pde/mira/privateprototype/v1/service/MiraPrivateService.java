@@ -33,6 +33,10 @@ public class MiraPrivateService {
   private final ProductRepository products;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+      videoBinding;
+
   /** Expõe capacidades efetivamente implementadas, sem abrir acesso ou emitir sinal comercial. */
   public Contract contract() {
     return new Contract(
@@ -313,7 +317,7 @@ public class MiraPrivateService {
     return row;
   }
 
-  /** Projeta a verdade persistida com limites e próximo movimento compreensíveis. */
+  /** Projeta estado persistido e vídeo aprovado opcional, sem conceder uso comercial. */
   private SessionView view(MiraPrivateSession row) {
     var data = read(row);
     List<ProductInput> input = new ArrayList<>();
@@ -355,7 +359,31 @@ public class MiraPrivateService {
         "SIMULATED_NO_CHARGE",
         false,
         false,
-        0);
+        0,
+        videoPresentation(row));
+  }
+
+  /** Resolve mídia do mesmo contexto e versão; indisponibilidade não bloqueia a rotina. */
+  private com.fasterxml.jackson.databind.JsonNode videoPresentation(MiraPrivateSession row) {
+    if (videoBinding == null) return null;
+    try {
+      return videoBinding
+          .presentation(row.getCycleId(), row.getPrototypeVersion())
+          .filter(
+              v ->
+                  v.path("cycleId").asLong() == row.getCycleId()
+                      && v.path("productId").asLong() == row.getProductId()
+                      && v.path("experimentId").asLong() == row.getExperimentId()
+                      && row.getPrototypeVersion().equals(v.path("productVersion").asText()))
+          .orElse(null);
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Mira preservou a rotina sem vídeo opcional; cycleId={} sessionId={}",
+          row.getCycleId(),
+          row.getId(),
+          ex);
+      return null;
+    }
   }
 
   /** Preserva request e response da operação real com custo externo observado nulo. */

@@ -6936,6 +6936,17 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   pixels, corte e duração; fixtures com outros IDs e caminhos antes válidos previnem
   exceção por produto. Matriz: `docs/homologacao/mira-narration-recovery-v1.md`.
 
+- **Recorrência Mira/#102 — 10/10/2026:** 21256 concluiu o anúncio recuperado, mas
+  21257 repetiu o timeout de 120 s na demonstração antes do TTS. Captura íntegra
+  1179×6138 e render 30 s/30 fps descartam ausência de prova ou fps incorreto.
+  O teste anterior usava uma captura pequena e não representava o custo da real.
+  O demuxer com `-loop 1` decodificava 752 imagens e os filtros repetiam escala/pad;
+  cachear o quadro transformado decodifica uma só, preservando SSIM 1,0.
+  Com 0,25 CPU e 768 MiB, o caminho anterior excedeu 120 s; o corrigido terminou
+  em 36,74 s, sem aumentar o prazo. Teste Java/FFmpeg com alta densidade, validação
+  integrada MP4/HLS e execução do teste real no workflow previnem a mesma classe.
+  Falha anterior ao TTS não autoriza nova síntese do anúncio já aceito.
+
 ## LOOP-VIDEO-CTA-COMO-DEFEITO-VISUAL — 2026-09-14
 
 - **Confirmado na recuperação de Vega:** a página de acabamento classificava os jobs

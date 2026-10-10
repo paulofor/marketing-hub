@@ -128,6 +128,44 @@ public class MiraPrivateLocalApplication {
     return repository;
   }
 
+  /** Simula apenas o recibo audiovisual local, sem conceder aprovação a qualquer peça produtiva. */
+  @Bean
+  @Conditional(MiraVideoFixtureEnabled.class)
+  com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+      videoBinding() throws java.io.IOException {
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var proof =
+        mapper.readTree(
+            java.nio.file.Files.readString(
+                java.nio.file.Path.of(System.getenv("MIRA_TEST_VIDEO_BINDING_FILE"))));
+    var binding =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+                .class);
+    when(binding.presentation(anyLong(), eq(MiraPrivateService.VERSION)))
+        .thenAnswer(
+            a -> {
+              long id = a.getArgument(0);
+              var scoped = proof.deepCopy();
+              ((com.fasterxml.jackson.databind.node.ObjectNode) scoped)
+                  .put("cycleId", id)
+                  .put("productId", id + 1000)
+                  .put("experimentId", id + 2000);
+              return Optional.of(scoped);
+            });
+    return binding;
+  }
+
+  /** Habilita o recibo simulado somente quando o ensaio fornece explicitamente o arquivo local. */
+  static class MiraVideoFixtureEnabled implements Condition {
+    /** Mantém o caminho anterior sem vídeo quando não existe configuração de fixture. */
+    @Override
+    public boolean matches(
+        ConditionContext context, org.springframework.core.type.AnnotatedTypeMetadata metadata) {
+      return System.getenv("MIRA_TEST_VIDEO_BINDING_FILE") != null;
+    }
+  }
+
   /** Usa os repositories oficiais com o gerenciador transacional da fixture. */
   private <T> T repository(EntityManagerFactory factory, Class<T> type) {
     return new JpaRepositoryFactory(SharedEntityManagerCreator.createSharedEntityManager(factory))

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, type FormEvent } from "react";
+import { PrivateCycleVideo, type PrivateVideo } from "./PrivateCycleVideo";
 
 const endpoint = "/api/pde/mira/candidate/v1";
 const storageKey = "mira-candidate-v1-session";
@@ -14,6 +15,10 @@ type Card = {
   sourceUrl?: string | null;
 };
 type Session = {
+  videoIntegration?: {
+    heroVideo: PrivateVideo;
+    integrationFingerprint: string;
+  };
   id: string;
   prototypeVersion: string;
   condition: string;
@@ -217,6 +222,11 @@ export function MiraCandidateApp() {
           <p data-testid="agent-validation-mode">
             Teste interno · organização a partir do texto informado
           </p>
+          <PrivateCycleVideo
+            media={session.videoIntegration?.heroVideo}
+            label="Como funciona sua organização"
+            fallback="O vídeo não abriu. Você pode continuar e organizar seus produtos normalmente."
+          />
           {(!ready || editing) && (
             <form onSubmit={generate}>
               <h2>Conte o mínimo necessário</h2>

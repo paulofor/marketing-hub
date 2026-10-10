@@ -38,7 +38,7 @@ final class PdeProductProofOverlay {
         if (!metadata.at("/post_production/product_proof").isMissingNode()) load(metadata, jobId);
     }
 
-    /** Insere a captura nos cortes funcionais com CPU limitada, preservando pixels e área de legenda. */
+    /** Prepara a captura estática uma vez e repete o quadro nos cortes, preservando pixels e legenda. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId) {
         if (metadata.at("/post_production/product_proof").isMissingNode()) {
             return new ProductUgcReferenceOverlay.OverlayResult(source, Map.of());
@@ -55,14 +55,18 @@ final class PdeProductProofOverlay {
             String crop = "crop=%d:%d:%d:%d,".formatted(proof.width(), proof.height(), proof.x(), proof.y());
             String filter = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
                     + "[1:v]" + crop + "scale=972:1360:force_original_aspect_ratio=decrease,"
-                    + "pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee[proof];"
+                    + "pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee,"
+                    + "format=yuva420p,loop=loop=-1:size=1:start=0,setpts=N/(25*TB)[proof];"
                     + "[base][proof]overlay=0:0:enable='" + proof.intervals() + "'[out]";
             List<String> command = List.of(properties.getProviders().getPostProduction().getFfmpegPath(),
                     "-hide_banner", "-loglevel", "error", "-y", "-i", source.toString(),
-                    "-loop", "1", "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
+                    "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
                     "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-threads", "2", "-preset", "ultrafast",
                     "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "copy", "-t", number(proof.duration()),
                     "-movflags", "+faststart", output.toString());
+            long started = System.nanoTime();
+            log.info("Compondo captura estática do PDE; jobId={} pixels={}x{} duration={} mode=PREPARED_FRAME_LOOP_V1",
+                    jobId, proof.width(), proof.height(), proof.duration());
             Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(processLog.toFile()).start();
             if (!process.waitFor(120, TimeUnit.SECONDS)) {
                 process.destroyForcibly();
@@ -74,7 +78,10 @@ final class PdeProductProofOverlay {
                     "sha256", proof.sha256(), "source", proof.contentPath(),
                     "crop", List.of(proof.x(), proof.y(), proof.width(), proof.height()),
                     "intervals", proof.intervals(), "syntheticScenario", true,
-                    "commercialEvidenceClaimed", false);
+                    "commercialEvidenceClaimed", false,
+                    "compositionMode", "PREPARED_FRAME_LOOP_V1");
+            log.info("Captura do PDE composta; jobId={} elapsedMs={} sha256={} mode=PREPARED_FRAME_LOOP_V1",
+                    jobId, Duration.ofNanos(System.nanoTime() - started).toMillis(), proof.sha256());
             return new ProductUgcReferenceOverlay.OverlayResult(output, audit);
         } catch (IOException | InterruptedException | RuntimeException ex) {
             if (ex instanceof InterruptedException) Thread.currentThread().interrupt();

@@ -4,8 +4,8 @@
     {
       "productSlug": "pde-planejado-36",
       "prototypeVersion": "mira-private-candidate-v3",
-      "resource": "contracts/operational-evidence/mira-private-controls-v1.json",
-      "sha256": "de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4"
+      "resource": "contracts/operational-evidence/mira-private-controls-v2.json",
+      "sha256": "a0f3527492deffaacfc5b2a3f0242ad337dc2c2650670d5b10227d7f8d0ad9ed"
     }
   ]
 }

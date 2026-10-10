@@ -54,7 +54,11 @@ class PostProductionNarrationRecoveryIntegrationTest {
           "MUSA_POST_PRODUCTION", null, SalesVideoJobType.POST_PRODUCTION, SalesVideoStatus.VIDEO_REQUESTED,
           1, null, 91098L, null, 0, null, null, "fixture@sandbox.local", Instant.now(), null, null, null,
           null, null, null, mapper.writeValueAsString(metadata), Instant.now(), Instant.now());
-      var artifacts = new PostProductionVideoProvider(settings, mapper, WebClient.builder()).render(job, null, (p, s, m) -> {});
+      var progress = new java.util.ArrayList<String>();
+      var artifacts = new PostProductionVideoProvider(settings, mapper, WebClient.builder()).render(job, null, (p, s, m) -> progress.add(m));
+      assertThat(progress).contains("Compondo a captura real do produto", "Captura aplicada; preparando o acabamento",
+          "Voz auditada reutilizada, sem nova síntese", "Arquivo finalizado; revisão de uso pendente");
+      assertThat(progress).noneMatch(message -> message.contains("gerada") || message.contains("finalizado para venda"));
       assertThat(synthesisRequests.get()).isZero();
       assertThat(requests.get()).isEqualTo(7);
       assertThat(artifacts.metadata()).containsEntry("duration_seconds", 20.0)

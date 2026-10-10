@@ -55,7 +55,7 @@ public final class MiraPrivateContract {
   /** Retorna a credencial uma única vez, separada da projeção auditável. */
   public record CreatedSession(String sessionToken, SessionView session) {}
 
-  /** Expõe dados funcionais persistidos e explicitamente segregados de mercado. */
+  /** Expõe estado privado e, quando vigente, o vínculo audiovisual aprovado do mesmo contexto. */
   public record SessionView(
       String id,
       Long productId,
@@ -82,7 +82,10 @@ public final class MiraPrivateContract {
       String checkoutMode,
       boolean paymentEnabled,
       boolean published,
-      int mediaSpendBrl) {}
+      int mediaSpendBrl,
+      @com.fasterxml.jackson.annotation.JsonInclude(
+              com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+          com.fasterxml.jackson.databind.JsonNode videoIntegration) {}
 
   /** Preserva um resultado útil consumível sem confundi-lo com a entrada atual. */
   public record ReadyResult(

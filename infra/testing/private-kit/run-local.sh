@@ -9,6 +9,21 @@ if [[ -z "${KIT_TEST_DB_HOST:-}" && "${DOCKER_HOST:-}" == tcp://sandbox-docker:*
   export KIT_TEST_DB_HOST=sandbox-docker
 fi
 round_dir="$(mktemp -d "$repo_dir/.git/private-kit-XXXXXX")"
+if [[ "${KIT_TEST_WITH_VIDEO:-false}" == true ]]; then
+  mkdir -p "$round_dir/media"
+  ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=purple:s=360x640:d=1 -f lavfi -i sine=frequency=440:duration=1 -vf 'drawtext=text=Homologacao local:fontcolor=white:fontsize=24:x=20:y=h-60' -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest -movflags +faststart "$round_dir/media/ad.mp4"
+  ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=blue:s=360x640:d=1 -f lavfi -i sine=frequency=660:duration=1 -vf 'drawtext=text=Homologacao local:fontcolor=white:fontsize=24:x=20:y=h-60' -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest -movflags +faststart "$round_dir/media/hero.mp4"
+  export KIT_LOCAL_VIDEO_MEDIA_DIR="$round_dir/media"
+  export KIT_LOCAL_VIDEO_FIXTURE="$round_dir/video-fixture.json"
+  python3 - "$round_dir" <<'PY'
+import hashlib,json,pathlib,sys
+root=pathlib.Path(sys.argv[1])
+proof=dict(evidenceType='LEARNING_CYCLE_VIDEO_INTEGRATION_V1',mode='PRIVATE_PDE',destinationUrl='https://127.0.0.1:57284/api/pde/kit/private/v1/prototype',paymentEnabled=False,publicationAuthorized=False,campaignAuthorized=False,mediaSpendAuthorized=False,technicalValidationRequired=True,humanApprovalReused=True)
+for index,(key,role,name) in enumerate((('campaignVideo','AD','ad'),('heroVideo','LANDING_HERO','hero'))):
+    proof[key]=dict(assetId=90055+index,role=role,assetUrl=f'https://127.0.0.1:57284/__kit-test-media/{name}.mp4',durationSeconds=1,sha256=hashlib.sha256((root/'media'/f'{name}.mp4').read_bytes()).hexdigest(),captions='Homologacao local',captionsBurnedIn=True,reviewStatus='APPROVED',reviewedBy='Fixture local, sem aceite humano real',reviewedAt='2026-10-10T00:00:00Z')
+(root/'video-fixture.json').write_text(json.dumps(proof))
+PY
+fi
 backend_pid=''
 worker_pid=''
 tls_pid=''
@@ -56,13 +71,26 @@ worker_pid=$!
 cat >"$round_dir/input.json" <<'JSON'
 {"mode":"TECHNICAL","sourceReference":"experiment:9007","productId":8007,"productSlug":"kit-local-nails","profileCode":"nails-v1","cycleId":7007,"prototypeVersion":"v1","captureSessionId":"kit-local-round","sourceUrl":"https://127.0.0.1:57284/api/pde/kit/private/v1/prototype"}
 JSON
-PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/input.json" "$round_dir/report.json" "$round_dir/captures"
 python3 - "$round_dir/input.json" "$round_dir/other-product.json" <<'PY'
 import json,sys
 value=json.load(open(sys.argv[1]))
 value.update(mode='TECHNICAL',productId=8018,cycleId=7018,sourceReference='experiment:9018',productSlug='kit-local-barber',profileCode='barber-v1',prototypeVersion='barber-candidate-v1',captureSessionId='kit-local-other-product')
 with open(sys.argv[2],'w') as output:json.dump(value,output)
 PY
+if [[ "${KIT_TEST_WITH_VIDEO:-false}" == true ]]; then
+  python3 - "$round_dir/input.json" "$round_dir/other-product.json" <<'PY'
+import json,pathlib,sys,urllib.request,uuid
+for name in sys.argv[1:]:
+    path=pathlib.Path(name);value=json.loads(path.read_text())
+    payload=dict(requestKey=str(uuid.uuid4()),productId=value['productId'],cycleId=value['cycleId'],prototypeVersion=value['prototypeVersion'],scenarioCode='ADHERENT',deviceProfile='DESKTOP_1440')
+    request=urllib.request.Request('http://127.0.0.1:57282/api/pde/kit/private/v1/internal/sessions',data=json.dumps(payload).encode(),headers={'Content-Type':'application/json','X-PDE-Internal-Token':'kit-local-internal-only'})
+    with urllib.request.urlopen(request) as response:created=json.load(response)
+    value['videoIntegration']=created['session']['videoIntegration']
+    assert value['videoIntegration'] is not None
+    path.write_text(json.dumps(value))
+PY
+fi
+PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/input.json" "$round_dir/report.json" "$round_dir/captures"
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/other-product.json" "$round_dir/other-product-report.json" "$round_dir/other-product-captures"
 KIT_SCENARIO_LOCAL=true KIT_LOCAL_INPUT="$round_dir/input.json" KIT_OTHER_LOCAL_INPUT="$round_dir/other-product.json" KIT_SCENARIO_RESULTS="$round_dir/scenario-results" mvn -q -f customer-agent-worker/pom.xml -Dtest=PrivateKitScenarioIntegrationTest test >"$round_dir/scenario-integration-tests.log" 2>&1
 python3 - "$round_dir" <<'PY'

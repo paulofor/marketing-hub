@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -169,6 +170,60 @@ class LearningCycleVideoBindingTest {
     assertTrue(binding.awaitingApproval(cycle));
     assertThrows(RuntimeException.class, () -> binding.prepare(cycle));
     assertEquals(ExperimentVideoReviewStatus.PENDING, hero.getReviewStatus());
+  }
+
+  /** Integra os dois perfis implementados sem depender do nome, ID ou host de Capella. */
+  @ParameterizedTest
+  @CsvSource({"7,nails-v1,mh-api", "9202,barber-v1,api"})
+  void integratesImplementedPrivateKit(long productId, String profile, String proxy) {
+    cycle.setProductId(productId);
+    experiment.getProduct().setId(productId);
+    var prototype =
+        json.createObjectNode()
+            .put("productVersion", cycle.getProductVersion())
+            .set("privatePrototype", kitPrototype(profile, proxy));
+    history.getFirst().setEvidenceJson(prototype.toString());
+    assertTrue(binding.supports(cycle));
+    var proof = binding.prepare(cycle);
+    assertEquals(productId, proof.path("productId").asLong());
+    assertTrue(proof.path("destinationUrl").asText().endsWith("/prototype"));
+    assertFalse(proof.path("paymentEnabled").asBoolean(true));
+    assertFalse(proof.path("publicationAuthorized").asBoolean(true));
+    hero.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+    assertTrue(binding.awaitingApproval(cycle));
+    assertThrows(RuntimeException.class, () -> binding.prepare(cycle));
+    assertEquals(ExperimentVideoReviewStatus.PENDING, hero.getReviewStatus());
+    verify(events, never()).save(any());
+  }
+
+  /** Recusa formato histórico ou destino sem cliente e harness implementados. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {"runtimeKind", "packageContractVersion", "profileCode", "privateAccessUrl"})
+  void refusesKitWithoutImplementedContract(String field) {
+    var target = kitPrototype("nails-v1", "mh-api");
+    target.put(field, "incompatible");
+    history
+        .getFirst()
+        .setEvidenceJson(
+            json.createObjectNode()
+                .put("productVersion", cycle.getProductVersion())
+                .set("privatePrototype", target)
+                .toString());
+    assertFalse(binding.supports(cycle));
+    assertThrows(RuntimeException.class, () -> binding.prepare(cycle));
+  }
+
+  /** Monta apenas prova sintética da implementação de kit, sem consultar ou alterar produção. */
+  private ObjectNode kitPrototype(String profile, String proxy) {
+    return json.createObjectNode()
+        .put("prototypeVersion", cycle.getProductVersion())
+        .put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1")
+        .put("packageContractVersion", "PDE_PRIVATE_KIT_PACKAGE_V2")
+        .put("profileCode", profile)
+        .put(
+            "privateAccessUrl",
+            "https://fixture.invalid/" + proxy + "/pde/kit/private/v1/prototype");
   }
 
   /**

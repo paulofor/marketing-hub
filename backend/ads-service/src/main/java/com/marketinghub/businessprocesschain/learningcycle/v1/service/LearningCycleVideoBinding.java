@@ -46,15 +46,19 @@ public class LearningCycleVideoBinding {
   /** Reconhece somente as rotas privadas cujo frontend e harness implementam a integração. */
   public boolean supports(LearningSalesCycle cycle) {
     return !cycle.isBaseline()
-        && prototypes
-            .resolve(cycle)
-            .map(
-                target ->
-                    target
-                        .path("privateAccessUrl")
-                        .asText()
-                        .matches("https://[^/]+/(vega-private|mira-candidate)"))
-            .orElse(false);
+        && prototypes.resolve(cycle).map(this::implementedDestination).orElse(false);
+  }
+
+  /** Reconhece o runtime de kits pelo contrato aceito, sem exceções por produto ou host. */
+  private boolean implementedDestination(JsonNode target) {
+    String url = target.path("privateAccessUrl").asText();
+    return url.matches("https://[^/]+/(vega-private|mira-candidate)")
+        || "DETERMINISTIC_PRIVATE_KIT_V1".equals(target.path("runtimeKind").asText())
+            && com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
+                .PACKAGE_CONTRACT_VERSION
+                .equals(target.path("packageContractVersion").asText())
+            && List.of("nails-v1", "barber-v1").contains(target.path("profileCode").asText())
+            && url.matches("https://[^/]+/(mh-api|api)/pde/kit/private/v1/prototype");
   }
 
   /** Identifica a única decisão humana necessária para as peças atuais. */

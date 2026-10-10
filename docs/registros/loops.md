@@ -9767,6 +9767,26 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   reverter a projeção se ocultar falha ou fabricar aprovação. Não remover o gate.
   [Matriz e contexto](../homologacao/mira-narration-recovery-v1.md).
 
+### Capacidade de integração ausente no kit privado — 10/10/2026
+
+- **Evidência:** Capella 7/ciclo 12/experimento 105 tem peças 55/56 prontas,
+  aceites pendentes e `automaticContinuation=false`. A prova aceita aponta o
+  runtime de kit V1/pacote V2; o binding, cliente e harness só implementavam
+  integração para os destinos de Mira/Vega.
+- **Causa:** apresentar a decisão humana não completava a capacidade executora
+  seguinte. Uma seleção correta ainda dependeria de implementação posterior.
+- **Correção reutilizável:** reconhecer o runtime/rota implementados, entregar
+  o recibo isolado no SessionView e reutilizar os quatro gates audiovisuais no
+  harness de kits; sem exceção por produto ou duplicação de fila.
+- **Falha local adicional:** o verificador compartilhado usava `waitForFunction`,
+  bloqueado pela CSP real do kit. Substituir por observação de eventos nativos,
+  mantendo a CSP e o critério de reprodução com áudio decodificado.
+- **Prevenção e limites:** matriz com nails/barber, identidades distintas,
+  desktop/iPhone/Pixel, falha/retorno e caminhos antes válidos. Os aceites reais
+  continuam humanos e a campanha depende de homologação e autorização. Testes
+  locais comprovam capacidade, sem inventar aumento de vendas.
+  [Matriz e adoção](../homologacao/capella-video-integration-private-kit-v1.md).
+
 ## LOOP-PRIMEIRO-EXPERIMENTO-FILA-CIRCULAR — 10/10/2026
 
 - **Evidência:** Alcyone/produto 11/plano 34/experimento 97 `PLANNED`, sem ciclo.

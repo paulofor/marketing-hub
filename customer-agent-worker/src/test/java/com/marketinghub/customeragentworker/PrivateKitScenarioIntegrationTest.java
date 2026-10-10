@@ -61,6 +61,8 @@ class PrivateKitScenarioIntegrationTest {
     target.put("experienceVersion", input.path("prototypeVersion").asText());
     target.put("publicUrl", input.path("sourceUrl").asText());
     var context = target.putObject("pdeContext");
+    if (input.path("videoIntegration").isObject())
+      context.set("videoIntegration", input.path("videoIntegration"));
     context
         .putObject("lineage")
         .put("productId", input.path("productId").asLong())

@@ -33,7 +33,9 @@ public class ProcessRunGuidance {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private ProcessRunCommunicationGuidance communicationGuidance;
 
-  /** Resolve a próxima ação pela ocorrência exata, sem autorizar consumo ou alterar estado. */
+  /**
+   * Resolve ação e acesso às peças da ocorrência exata, sem autorizar consumo ou alterar estado.
+   */
   public ProcessRunUserAction resolve(ProcessRun run) {
     if (!Set.of("QUEUED", "WAITING_ACTIVITY", "WAITING_HUMAN", "WAITING_INPUT")
             .contains(run.getStatus())
@@ -90,7 +92,10 @@ public class ProcessRunGuidance {
           "Aprove as peças na biblioteca. As aprovações existentes são reutilizadas e a integração privada segue automaticamente pelo processo.",
           "Você · aprovação das peças",
           "Ver vídeos e aprovações",
-          "/videos",
+          "/creative-video-review?productId="
+              + cycle.getProductId()
+              + "&experimentId="
+              + cycle.getExperimentId(),
           "A aprovação de uso não autoriza campanha, cobrança ou gasto de mídia.",
           "internal://learning-cycles/" + cycle.getId());
     }

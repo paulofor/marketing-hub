@@ -8,11 +8,17 @@ import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleProcessContext.Work;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.video.*;
 import com.marketinghub.pde.kit.privateprototype.v1.service.*;
 import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract.Capability;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.kit.KitPrivateArtifactRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
 import java.time.Instant;
 import java.util.*;
@@ -33,6 +39,14 @@ class LearningCycleValueFlowProjectionTest {
       mock(LearningSalesCycleEventRepository.class);
   private final LearningCyclePrototypeContext prototype = mock(LearningCyclePrototypeContext.class);
   private final ProcessRunRepository runs = mock(ProcessRunRepository.class);
+  private final ExperimentVideoAssetRepository videos = mock(ExperimentVideoAssetRepository.class);
+  private final LearningCycleVideoEvidence videoEvidence =
+      new LearningCycleVideoEvidence(
+          videos,
+          mock(CreativeRepository.class),
+          mock(PdeProductionSlotRepository.class),
+          events,
+          new LearningCycleJson(mapper));
   private final LearningCycleValueFlowProjection projection =
       new LearningCycleValueFlowProjection(
           capabilities,
@@ -42,7 +56,138 @@ class LearningCycleValueFlowProjectionTest {
           runs,
           prototype,
           new LearningCycleJson(mapper),
-          new LearningCycleVideoBudget(events, new LearningCycleJson(mapper)));
+          new LearningCycleVideoBudget(events, new LearningCycleJson(mapper)),
+          videoEvidence);
+
+  /** Mira e outro contexto usam as duas peças reais selecionadas para expor o aceite pendente. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102,mira-private-candidate-v3", "87,56,195,independent-v2"})
+  void producedVideosExposeActualHumanDecision(
+      long productId, long cycleId, long experimentId, String version) throws Exception {
+    var cycle = videoFixture(productId, cycleId, experimentId, version);
+    cycle.setStage("VIDEO_APPROVAL");
+    var selected = producedVideos(cycle);
+    selected.getFirst().setReviewStatus(ExperimentVideoReviewStatus.APPROVED);
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isTrue();
+    assertThat(flow.situation()).contains("produzidos", "aceite de uso");
+    assertThat(flow.resolvingResponsible()).startsWith("Você");
+    assertThat(flow.decisionReason())
+        .contains("com som", "pedir ajustes", "Ver aprovações dos vídeos")
+        .doesNotContain("Nenhuma decisão nova");
+    assertThat(flow.saleBlocker()).contains("seleção humana", "teto financeiro não substitui");
+    assertThat(flow.activeExecution()).isFalse();
+    assertThat(flow.acceptance()).contains("homologação", "antes da campanha");
+    assertThat(flow.marketMeasurement()).isNull();
+    verify(videos, never()).save(any());
+    verify(events, never()).saveAndFlush(any());
+    verifyNoInteractions(runs);
+    String evidenceDirectory = System.getProperty("learningCycle.valueFlow.evidence");
+    if (evidenceDirectory != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(
+              evidenceDirectory, "value-flow-" + productId + "-" + cycleId + ".json"),
+          mapper
+              .copy()
+              .findAndRegisterModules()
+              .disable(
+                  com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+              .writeValueAsString(flow));
+  }
+
+  /** Ambos os aceites eliminam a pergunta sem fabricar integração, homologação ou execução. */
+  @Test
+  void approvedVideosDoNotRequestApprovalAgain() {
+    var cycle = videoFixture(4, 113, 206, "vega-private-candidate-v14");
+    cycle.setStage("VIDEO_APPROVAL");
+    producedVideos(cycle).forEach(v -> v.setReviewStatus(ExperimentVideoReviewStatus.APPROVED));
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isFalse();
+    assertThat(flow.situation()).contains("aceite", "registrado", "precisam ser comprovadas");
+    assertThat(flow.saleBlocker()).contains("integração", "homologação", "liberação comercial");
+    assertThat(flow.resolvingResponsible()).startsWith("Backend");
+    assertThat(flow.activeExecution()).isFalse();
+    assertThat(flow.decisionReason()).contains("reutilizados");
+    verify(events, never()).saveAndFlush(any());
+  }
+
+  /** Evidência divergente permanece como falha técnica, sem inventar uma decisão do operador. */
+  @Test
+  void changedVideoEvidenceDoesNotMasqueradeAsHumanApproval() {
+    var cycle = videoFixture(87, 56, 195, "independent-v2");
+    cycle.setStage("VIDEO_APPROVAL");
+    producedVideos(cycle).getFirst().setAssetUrl("https://fixture.invalid/changed.mp4");
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isNull();
+    assertThat(flow.saleBlocker()).contains("evidência");
+    assertThat(flow.situation()).contains("conferência");
+    assertThat(flow.resolvingResponsible()).contains("vínculos");
+    verify(events, never()).saveAndFlush(any());
+  }
+
+  /** O relógio considera a última entrega audiovisual, em vez da implementação antiga. */
+  @Test
+  void videoApprovalWaitStartsAtCurrentVideoDelivery() {
+    var cycle = videoFixture(10, 9, 102, "mira-private-candidate-v3");
+    cycle.setStage("VIDEO_APPROVAL");
+    producedVideos(cycle);
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.stalledSince()).isAfter(Instant.now().minusSeconds(60));
+    assertThat(flow.stalledSeconds()).isBetween(0L, 60L);
+  }
+
+  /** O histórico encerrado não solicita outra seleção nem consulta as peças para execução. */
+  @Test
+  void closedVideoApprovalDoesNotRequestHumanDecision() {
+    var cycle = videoFixture(10, 9, 102, "mira-private-candidate-v3");
+    cycle.setStage("VIDEO_APPROVAL");
+    cycle.setStatus("CLOSED");
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isFalse();
+    assertThat(flow.situation()).contains("encerrado");
+    verifyNoInteractions(videos);
+  }
+
+  /** Monta seleções com fingerprints calculados pelo gate canônico, sem aprovar qualquer peça. */
+  private List<ExperimentVideoAsset> producedVideos(LearningSalesCycle cycle) {
+    var product = new Product();
+    product.setId(cycle.getProductId());
+    var experiment = new Experiment();
+    experiment.setId(cycle.getExperimentId());
+    experiment.setProduct(product);
+    var history = new ArrayList<LearningSalesCycleEvent>();
+    when(events.findByCycleIdOrderByRevisionAsc(cycle.getId())).thenReturn(history);
+    var selected = new ArrayList<ExperimentVideoAsset>();
+    for (var role : List.of(ExperimentVideoSlot.AD, ExperimentVideoSlot.LANDING_HERO)) {
+      long id = cycle.getExperimentId() * 10 + selected.size();
+      var video = new ExperimentVideoAsset();
+      video.setId(id);
+      video.setExperiment(experiment);
+      video.setSlot(role);
+      video.setStatus(ExperimentVideoStatus.READY);
+      video.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+      video.setHasAudio(true);
+      video.setDurationSeconds(30);
+      video.setAssetUrl("https://fixture.invalid/" + id + ".mp4");
+      video.setHlsPlaybackUrl("https://fixture.invalid/" + id + ".m3u8");
+      when(videos.findById(id)).thenReturn(Optional.of(video));
+      var proof =
+          mapper
+              .createObjectNode()
+              .put(role == ExperimentVideoSlot.AD ? "campaignVideoAssetId" : "pdeVideoAssetId", id)
+              .put("productionEvidence", "Entrega simulada e segregada de homologação local");
+      videoEvidence.production(cycle, proof, role);
+      var event = new LearningSalesCycleEvent();
+      event.setCycleId(cycle.getId());
+      event.setAction("COMPLETE");
+      event.setFromStage(role == ExperimentVideoSlot.AD ? "CAMPAIGN_VIDEO" : "PDE_ENTRY_VIDEO");
+      event.setCreatedAt(Instant.now());
+      event.setEvidenceJson(proof.toString());
+      history.add(event);
+      selected.add(video);
+    }
+    return selected;
+  }
 
   /** Mira e outro produto devem expor a decisão real sem inventar orçamento ou execução. */
   @ParameterizedTest

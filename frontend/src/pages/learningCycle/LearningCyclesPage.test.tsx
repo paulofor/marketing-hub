@@ -262,8 +262,32 @@ describe("Ciclos de aprendizado e vendas", () => {
       screen.queryByLabelText(/Criativo de campanha aprovado/),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Ver aprovações dos vídeos" }),
-    ).toHaveAttribute("href", "/videos");
+      screen.queryByRole("link", { name: "Ver aprovações dos vídeos" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("abre a revisão das peças no contexto enviado pelo backend, sem gravar aceite", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    const workUrl = "/creative-video-review?productId=4&experimentId=91";
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? {
+            data: [
+              {
+                ...cycle,
+                stage: "VIDEO_APPROVAL",
+                automaticContinuation: true,
+                workUrl,
+              },
+            ],
+          }
+        : original(url, ...args),
+    );
+    wrapper(<LearningCyclesPage />);
+    expect(
+      await screen.findByRole("link", { name: "Ver aprovações dos vídeos" }),
+    ).toHaveAttribute("href", workUrl);
     expect(axios.post).not.toHaveBeenCalled();
   });
 

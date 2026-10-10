@@ -7621,3 +7621,22 @@ o snapshot segregado do #105 e Pixel com produto #9007/experimento #9302 simulad
 As três atualizações preservaram jornada ausente, orçamento, paradas, janela e status;
 nenhuma requisição mutável saiu do ambiente local. Typecheck, build e Prettier integram
 a verificação de entrega. A conferência produtiva depende do PR e deploy oficiais.
+
+## Mira — vídeos entregues e pendência de uso explícita — 10/10/2026
+
+Solicitação #3332, produto 10, ciclo 9, experimento 102. A autorização registrada
+é US$ 10 totais para os dois vídeos e revisões, separados da preparação anterior;
+R$ 100 totais de Instagram por cinco dias somente após homologação. Anúncio 53
+de 20 s e demonstração 54 de 35 s estão prontos com voz e legendas. O anúncio
+reutilizou cinco áudios preservados, sem outra síntese. O efeito comercial segue
+desconhecido e os aceites humanos continuam pendentes.
+
+A conferência encontrou um impedimento de compreensão: o destaque negava a
+decisão humana existente, a navegação abria a biblioteca geral e o tempo de
+espera ignorava a entrega dos vídeos. Corrigida a fonte compartilhada no backend,
+com a mesma validação das mídias selecionadas, sem aprovar artefato, inferir
+execução ativa ou ampliar gastos. Aprovações existentes e falhas técnicas têm
+tratamentos distintos. A hipótese de aprendizado é reduzir busca manual e
+tempo parado antes da entrega comercial; não há medição de ganho de vendas.
+
+[Causa, matriz e limites](../homologacao/mira-narration-recovery-v1.md).

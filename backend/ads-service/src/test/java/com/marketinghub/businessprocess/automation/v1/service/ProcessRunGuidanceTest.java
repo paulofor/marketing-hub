@@ -112,6 +112,22 @@ class ProcessRunGuidanceTest {
     verify(events, never()).saveAndFlush(any());
   }
 
+  /** A ação do processo abre as mesmas peças da visão do ciclo, preservando os limites. */
+  @Test
+  void videoUseDecisionDirectsToExactReviewContext() {
+    cycle.setStage("VIDEO_APPROVAL");
+    var binding = mock(LearningCycleVideoBinding.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(guidance, "videoBinding", binding);
+    when(binding.supports(cycle)).thenReturn(true);
+    when(binding.awaitingApproval(cycle)).thenReturn(true);
+    var action = guidance.resolve(run);
+    assertThat(action.code()).isEqualTo("APPROVE_CYCLE_VIDEOS");
+    assertThat(action.actionUrl()).isEqualTo("/creative-video-review?productId=4&experimentId=92");
+    assertThat(action.afterAction()).contains("não autoriza campanha");
+    verify(cycles, never()).save(any());
+    verify(events, never()).saveAndFlush(any());
+  }
+
   /** Distingue autorização e publicação pendentes sem exigir repetir vídeos ou concluir vendas. */
   @ParameterizedTest
   @ValueSource(strings = {"AUTHORIZATION", "PUBLICATION"})

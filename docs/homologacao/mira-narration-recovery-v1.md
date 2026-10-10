@@ -151,3 +151,33 @@ passaram, sem efeito externo. O emissor existente produziu
 `mira-private-controls-v2.json`; o catálogo aponta para esse recibo e seu hash.
 O runner de Mira passa a executar a conferência existente de fontes junto ao
 contrato da matriz, prevenindo descoberta tardia da mesma divergência.
+
+## Conferência da pendência de uso dos vídeos — 10/10/2026
+
+Após a produção de 53/54, o ciclo 9 estava em `VIDEO_APPROVAL`, com ambos os
+aceites `PENDING`. A API e o destaque da tela informavam `decisionNeeded=false`
+e ausência de decisão; o botão de revisão abria `/videos`, sem o contexto.
+O histórico e os gates confirmaram que produção pronta não era seleção de uso.
+O relógio também ignorava as entregas audiovisuais recentes e mantinha a data
+da comunicação antiga.
+
+Compararam-se mudar só a mensagem do frontend (duplicaria a decisão), inferir
+aprovação pela produção pronta (violaria o gate) e reutilizar a conferência das
+peças selecionadas no backend. Adota-se a terceira: mesmo produto, ciclo,
+experimento, versão e fingerprints, sem escrita pela leitura. O acesso usa a
+revisão filtrada por produto/experimento. O relógio considera as entregas dos
+dois vídeos da versão atual. Evidência inválida continua pendência técnica;
+aprovações já registradas não exigem outra seleção nem comprovam integração.
+
+| Critério | Validação pertinente |
+| --- | --- |
+| Mira e outra identidade | Peças selecionadas, só um aceite e decisão restante explícita |
+| Caminho antes válido | Dois aceites reutilizados; briefing, pausa e ciclo encerrado preservados |
+| Falhas | Mídia alterada não vira decisão humana nem aprovação |
+| Navegação | Ciclo e processo apontam para a revisão do produto/experimento correntes |
+| Observabilidade | Tempo desde a entrega audiovisual atual; exceção com contexto e stack trace |
+| Dispositivos | Visão local real em desktop, iPhone e Pixel com resposta calculada pelo backend |
+| Segregação | Test doubles de persistência, GETs de apoio e nenhuma mutação externa |
+
+Esta melhoria reduz orientação contraditória e busca manual. O efeito em tempo
+parado e vendas é hipótese a medir; testes não comprovam conversão ou lucro.

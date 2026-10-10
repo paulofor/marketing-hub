@@ -173,19 +173,33 @@ public class SalesVideoProfileService {
     return SalesVideoMapper.toDto(saved);
   }
 
-  /** Solicita o render e incorpora o quadro final aprovado do plano anterior quando informado. */
+  /** Confere perfil, tenant e roteiro aprovado sem criar job ou consumir um provedor. */
+  @Transactional(readOnly = true)
+  public void assertRenderReady(Long profileId) {
+    loadProfile(profileId);
+    loadApprovedScript(profileId);
+  }
+
+  /** Reutiliza a regra canônica de roteiro tanto na preparação quanto na renderização. */
+  private SalesVideoScript loadApprovedScript(Long profileId) {
+    return scriptRepository
+        .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
+        .orElseThrow(
+            () ->
+                VideoModuleException.badRequest(
+                    VideoModuleErrorCode.SCRIPT_NOT_FOUND,
+                    "Registre um roteiro aprovado no perfil de vídeo #"
+                        + profileId
+                        + " antes de solicitar produção a Plutus e Apolo."));
+  }
+
+  /**
+   * Solicita o render com roteiro aprovado e incorpora o quadro final anterior quando informado.
+   */
   @Transactional
   public SalesVideoJobDto requestRender(Long profileId, RequestVideoRenderRequest request) {
     SalesVideoProfile profile = loadProfile(profileId);
-    SalesVideoScript script =
-        scriptRepository
-            .findFirstByProfileIdAndStatusOrderByVersionDesc(
-                profileId, SalesVideoScriptStatus.APPROVED)
-            .orElseThrow(
-                () ->
-                    VideoModuleException.badRequest(
-                        VideoModuleErrorCode.SCRIPT_NOT_FOUND,
-                        "É necessário ter um script aprovado antes da renderização"));
+    SalesVideoScript script = loadApprovedScript(profileId);
     validateProviderDuration(
         request.getProviderName(),
         Optional.ofNullable(request.getTargetDurationSeconds())

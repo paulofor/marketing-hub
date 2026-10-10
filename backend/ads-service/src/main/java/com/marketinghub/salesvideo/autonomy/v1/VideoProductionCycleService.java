@@ -117,7 +117,7 @@ public class VideoProductionCycleService {
     return create(request, "PENDING_PROVIDER_PREFLIGHT_ONLY");
   }
 
-  /** Persiste o contexto comum e abre o preflight oficial no modo solicitado. */
+  /** Valida a prontidão antes de persistir produção; consultas isoladas não exigem roteiro. */
   private VideoProductionCycleContracts.Response create(
       VideoProductionCycleContracts.CreateRequest request, String initialStatus) {
     VideoProject project = project(request.videoProjectId());
@@ -129,6 +129,9 @@ public class VideoProductionCycleService {
     if (project.getSalesVideoProfileId() == null) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O projeto precisa de um perfil de vídeo antes do ciclo autônomo.");
+    }
+    if (!"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
+      salesVideoService.assertRenderReady(project.getSalesVideoProfileId());
     }
     Instant now = Instant.now();
     VideoProductionCycle cycle = new VideoProductionCycle();
@@ -1004,8 +1007,9 @@ public class VideoProductionCycleService {
     }
   }
 
-  /** Cria o gate financeiro somente depois de saldo, quota e custo do payload existirem. */
+  /** Revalida o roteiro após o preflight e só então entrega o gate financeiro a Plutus. */
   private AgentTaskResponse createFinancialGate(VideoProductionCycle cycle, VideoProject project) {
+    salesVideoService.assertRenderReady(project.getSalesVideoProfileId());
     return taskService.createGateByAgent(
         new CreateAgentTaskByAgentRequest(
             APOLLO_KEY,

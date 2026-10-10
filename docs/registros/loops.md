@@ -1,3 +1,22 @@
+## LOOP-VIDEO-PARECER-ANTES-DO-ROTEIRO — 10/10/2026
+
+- **Histórico:** Capella, ciclo 12/experimento 105, projetos 11/12, abriu ciclos
+  audiovisuais 31/32 com perfis 67/68 sem roteiro aprovado. Plutus 718 respondeu
+  com US$ 0,057238 estimados, mas o callback de 21:22:42 UTC encontrou
+  `SCRIPT_NOT_FOUND`. Mira 29/30 tinha roteiros aprovados e avançou ao vídeo.
+- **Causa:** a abertura validava perfil e prova, mas só a renderização exigia o
+  roteiro canônico. Texto no Estúdio não preenchia o contrato do perfil.
+- **Correção:** prontidão canônica antes da criação de produção e do parecer,
+  com o mesmo carregamento da renderização e isolamento de tenant. A tela
+  expõe causa e perfil a preparar; preflight isolado continua sem consumo.
+- **Caso atual:** roteiros 568/569 registrados pela tela e parecer 718 recuperado
+  pela auditoria, sem nova inferência. O aceite operacional do roteiro não
+  equivale a aprovação independente ou publicação comercial.
+- **Prevenção e limites:** caso original, outro perfil, tenant, consulta isolada,
+  recuperação e caminhos válidos em
+  `docs/homologacao/capella-video-readiness-v1.md`. Melhoria operacional;
+  impacto em vendas depende de medição real posterior.
+
 ## LOOP-PDE-PARECERES-MULTIPLICAM-MATRIZ — 07/10/2026
 
 - Evidência: Mira, tarefas 613–617, transformou três pareceres independentes em 27 percursos

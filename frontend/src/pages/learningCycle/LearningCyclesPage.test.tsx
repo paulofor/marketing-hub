@@ -267,29 +267,45 @@ describe("Ciclos de aprendizado e vendas", () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it("abre a revisão das peças no contexto enviado pelo backend, sem gravar aceite", async () => {
-    const original = vi.mocked(axios.get).getMockImplementation()!;
-    const workUrl = "/creative-video-review?productId=4&experimentId=91";
-    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
-      url === `${cycleApi}/products/4`
-        ? {
-            data: [
-              {
-                ...cycle,
-                stage: "VIDEO_APPROVAL",
-                automaticContinuation: true,
-                workUrl,
-              },
-            ],
-          }
-        : original(url, ...args),
-    );
-    wrapper(<LearningCyclesPage />);
-    expect(
-      await screen.findByRole("link", { name: "Ver aprovações dos vídeos" }),
-    ).toHaveAttribute("href", workUrl);
-    expect(axios.post).not.toHaveBeenCalled();
-  });
+  it.each([
+    { productId: 4, experimentId: 91, automaticContinuation: true },
+    { productId: 7, experimentId: 105, automaticContinuation: false },
+    { productId: 9202, experimentId: 9303, automaticContinuation: false },
+  ])(
+    "abre a revisão de $productId sem depender de integração automática nem gravar aceite",
+    async ({ productId, experimentId, automaticContinuation }) => {
+      const original = vi.mocked(axios.get).getMockImplementation()!;
+      const reviewUrl = `/creative-video-review?productId=${productId}&experimentId=${experimentId}`;
+      vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+        url === "/api/products"
+          ? { data: [{ id: productId, internalName: "Produto em revisão" }] }
+          : url === `${cycleApi}/products/${productId}`
+            ? {
+                data: [
+                  {
+                    ...cycle,
+                    productId,
+                    experimentId,
+                    stage: "VIDEO_APPROVAL",
+                    automaticContinuation,
+                    workUrl: automaticContinuation
+                      ? reviewUrl
+                      : `/products/${productId}/pde-versions`,
+                  },
+                ],
+              }
+            : original(url, ...args),
+      );
+      wrapper(
+        <LearningCyclesPage />,
+        `/business-process-chains/learning-cycles?productId=${productId}&chainId=12`,
+      );
+      expect(
+        await screen.findByRole("link", { name: "Ver aprovações dos vídeos" }),
+      ).toHaveAttribute("href", reviewUrl);
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
 
   it("não apresenta o parecer herdado como nova execução automática no planejamento", async () => {
     const original = vi.mocked(axios.get).getMockImplementation()!;

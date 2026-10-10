@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+/** Preserva a causa retornada pelo backend sem tratar uma recusa como produção iniciada. */
+export function videoProductionError(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const detail =
+      error.response?.data?.detail ?? error.response?.data?.message;
+    if (typeof detail === "string" && detail.trim()) return detail;
+  }
+  return fallback;
+}
+
 export type VideoProductionCycle = {
   id: number;
   videoProjectId: number;

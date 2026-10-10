@@ -6,6 +6,7 @@ paths:
   /api/sales-videos/autonomy/v1/cycles:
     post:
       summary: Solicita um ciclo de produção ainda sem autorização de consumo
+      description: Exige perfil do tenant e roteiro aprovado antes de criar ciclo, preflight ou tarefa paga de Plutus. A prontidão técnica não aprova publicação comercial.
       requestBody:
         required: true
         content:
@@ -22,6 +23,8 @@ paths:
                 requestedBy: {type: string, minLength: 1}
       responses:
         '201': {description: Ciclo enviado ao preflight oficial do agregador}
+        '400': {description: Perfil sem roteiro aprovado; SCRIPT_NOT_FOUND identifica o perfil a preparar e não cria ciclo nem tarefa paga}
+        '403': {description: Perfil não pertence ao tenant ativo}
   /api/sales-videos/autonomy/v1/provider-preflights:
     post:
       summary: Executa somente saldo, quota e dry run, sem reserva ou geração

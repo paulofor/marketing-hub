@@ -236,6 +236,11 @@ public class SalesVideoService {
     return profileService.approveScript(profileId, request);
   }
 
+  /** Confere o roteiro canônico sem criar render ou substituir aprovação humana. */
+  public void assertRenderReady(Long profileId) {
+    profileService.assertRenderReady(profileId);
+  }
+
   /** Solicita a renderização do vídeo aprovado. */
   public SalesVideoJobDto requestRender(Long profileId, RequestVideoRenderRequest request) {
     return profileService.requestRender(profileId, request);

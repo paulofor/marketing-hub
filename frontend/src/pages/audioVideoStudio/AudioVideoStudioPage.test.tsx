@@ -1403,7 +1403,7 @@ describe("AudioVideoStudioPage", () => {
           }),
         ),
       );
-      let reject!: (error: Error) => void;
+      let reject!: (error: unknown) => void;
       (axios.post as any).mockImplementationOnce(
         () => new Promise((_resolve, rejection) => (reject = rejection)),
       );
@@ -1420,10 +1420,14 @@ describe("AudioVideoStudioPage", () => {
       expect(payload).not.toHaveProperty("usdBrlExchangeRate");
       expect(payload).not.toHaveProperty("exchangeRateSource");
       expect(payload).not.toHaveProperty("exchangeRateDate");
-      reject(new Error("Integração de teste indisponível"));
+      const message = `Registre um roteiro aprovado no perfil de vídeo #${productId + 200} antes de solicitar produção a Plutus e Apolo.`;
+      vi.mocked(axios.isAxiosError).mockReturnValueOnce(true);
+      reject({ response: { status: 400, data: { message } } });
+      expect(await screen.findByText(message)).toBeTruthy();
       expect(
-        await screen.findByText("Não foi possível abrir o ciclo."),
-      ).toBeTruthy();
+        screen.getByRole("link", { name: "Conferir perfil e roteiro" }),
+      ).toHaveAttribute("href", `/sales-videos/profiles/${productId + 200}`);
+      expect(screen.queryByText("Não foi possível abrir o ciclo.")).toBeNull();
       await user.selectOptions(
         screen.getByLabelText("Moeda da autorização"),
         "BRL",

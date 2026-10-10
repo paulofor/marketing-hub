@@ -9799,3 +9799,23 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** prova histórica não aprova nova integração nem libera experimento,
   publicação, cobrança ou mídia. Preservar os resultados e custos originais.
   [Matriz](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).
+
+## LOOP-PDE-ESTRATEGIA-ENTRADA-IMPLEMENTADA — 10/10/2026
+
+- **Evidência:** Vega, ciclo #13/experimento #106, Atena #700 e Plutus #701
+  aprovados; Dédalo #702 bloqueou quatro escolhas inexistentes na v14. Código e
+  formulário usam ocasião, roupa disponível e observação opcional. A mudança
+  v13→v14 tratava o encerramento, preservando essas entradas.
+- **Causa:** memória descritiva anterior preenchia a entrada mínima sem um
+  contrato da implementação exata; a divergência chegava à arquitetura depois
+  de análises pagas. READY do executor não comprova concordância funcional.
+- **Correção:** backend entrega `PDE_IMPLEMENTED_INPUT_V1` para produto e versão
+  catalogados; prompt v11 de Atena preserva a entrada e o validador recusa resumo
+  ou identidade divergentes antes da passagem. Catálogo de harness atualizado.
+- **Harness:** confronto com records/Bean Validation reais de Vega e Mira;
+  identidades sintéticas diferentes, versões anteriores, ausência de catálogo e
+  resposta divergente. Rejeição preserva resposta/tokens e replay do callback
+  sem segunda inferência. Harness real v14 com MySQL 5.7 e três dispositivos.
+- **Limites:** descrição não aprova agente, gasto ou mercado; não muda experiência
+  nem renova histórico. Versão desconhecida conserva o caminho sem descrição.
+  [Matriz e aprendizado](../homologacao/vega-entrada-implementada-planejamento-v1.md).

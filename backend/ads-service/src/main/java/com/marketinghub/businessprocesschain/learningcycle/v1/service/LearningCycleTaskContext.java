@@ -26,7 +26,10 @@ public class LearningCycleTaskContext {
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
 
-  /** Resolve contexto por identidade exata, recusando tarefa antiga ou referência ambígua. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private LearningCycleImplementedInputContext implementedInput;
+
+  /** Entrega memória e entrada implementada pela identidade exata, recusando tarefas antigas. */
   @Transactional(readOnly = true)
   public Optional<Map<String, Object>> resolve(String reference, Instant taskCreatedAt) {
     if (reference == null || taskCreatedAt == null) return Optional.empty();
@@ -41,32 +44,41 @@ public class LearningCycleTaskContext {
     return cycle
         .filter(value -> !taskCreatedAt.isBefore(value.getCreatedAt()))
         .map(
-            value ->
-                Map.ofEntries(
-                    Map.entry("agentValidationExecution", validationExecution()),
-                    Map.entry("contractVersion", "LEARNING_SALES_CYCLE_V1"),
-                    Map.entry("cycleId", value.getId()),
-                    Map.entry("productId", value.getProductId()),
-                    Map.entry("experimentId", value.getExperimentId()),
-                    Map.entry("productVersion", value.getProductVersion()),
-                    Map.entry("stage", value.getStage()),
-                    Map.entry("brief", json.read(value.getBriefJson())),
-                    Map.entry("inheritedLearning", json.read(value.getInheritedLearningJson())),
-                    Map.entry(
-                        "currentDecisions",
-                        events.findByCycleIdOrderByRevisionAsc(value.getId()).stream()
-                            .map(
-                                event ->
-                                    Map.of(
-                                        "action",
-                                        event.getAction(),
-                                        "summary",
-                                        event.getSummary(),
-                                        "evidenceReference",
-                                        event.getEvidenceReference(),
-                                        "evidence",
-                                        json.read(event.getEvidenceJson())))
-                            .toList())));
+            value -> {
+              var context =
+                  new java.util.LinkedHashMap<String, Object>(
+                      Map.ofEntries(
+                          Map.entry("agentValidationExecution", validationExecution()),
+                          Map.entry("contractVersion", "LEARNING_SALES_CYCLE_V1"),
+                          Map.entry("cycleId", value.getId()),
+                          Map.entry("productId", value.getProductId()),
+                          Map.entry("experimentId", value.getExperimentId()),
+                          Map.entry("productVersion", value.getProductVersion()),
+                          Map.entry("stage", value.getStage()),
+                          Map.entry("brief", json.read(value.getBriefJson())),
+                          Map.entry(
+                              "inheritedLearning", json.read(value.getInheritedLearningJson())),
+                          Map.entry(
+                              "currentDecisions",
+                              events.findByCycleIdOrderByRevisionAsc(value.getId()).stream()
+                                  .map(
+                                      event ->
+                                          Map.of(
+                                              "action",
+                                              event.getAction(),
+                                              "summary",
+                                              event.getSummary(),
+                                              "evidenceReference",
+                                              event.getEvidenceReference(),
+                                              "evidence",
+                                              json.read(event.getEvidenceJson())))
+                                  .toList())));
+              if (implementedInput != null)
+                implementedInput
+                    .resolve(value)
+                    .ifPresent(input -> context.put("implementedInput", input));
+              return context;
+            });
   }
 
   /**

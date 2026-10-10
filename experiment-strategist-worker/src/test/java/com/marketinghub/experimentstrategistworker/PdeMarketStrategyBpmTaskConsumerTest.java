@@ -276,7 +276,7 @@ class PdeMarketStrategyBpmTaskConsumerTest {
         .hasMessageContaining("homologação multiagente");
   }
 
-  /** Mantém schema e prompt v10 fechados contra o retorno do piloto humano legado. */
+  /** Mantém o schema e o prompt vigente fechados contra o retorno do piloto humano legado. */
   @Test
   void keepsAgentValidationResourcesStrictAndHumanIndependent() throws Exception {
     String rawSchema =
@@ -285,7 +285,7 @@ class PdeMarketStrategyBpmTaskConsumerTest {
                 "src/main/resources/prompts/pde-commercial-plan/v10/market-strategy-schema.json"));
     String prompt =
         Files.readString(
-            Path.of("src/main/resources/prompts/pde-commercial-plan/v10/market-strategy.md"));
+            Path.of("src/main/resources/prompts/pde-commercial-plan/v11/market-strategy.md"));
     JsonNode schema = objectMapper.readTree(rawSchema);
 
     assertStrictObjects(schema);
@@ -299,6 +299,83 @@ class PdeMarketStrategyBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains("Nunca proponha entrevista", "somente o mercado comprova demanda")
         .doesNotContain("duas leituras", "READY_FOR_PRIVATE_VALIDATION");
+  }
+
+  /** Reproduz a deriva de Vega e aceita somente a entrada descrita pela implementação recebida. */
+  @Test
+  void preservesImplementedInputBeforeHandingOffToDedalo() throws Exception {
+    ObjectNode result = agentValidationResult();
+    ObjectNode task =
+        implementedInputTask(
+            91004L, 91013L, 91106L, "Ocasião e roupa disponível; observação opcional.");
+    var delivery =
+        result.withObject("/marketStrategicContract/agentValidationPlan/customerValueDelivery");
+    delivery.put(
+        "minimumCustomerInput",
+        "Quatro escolhas categoriais: situação, mensagem percebida, sinal desejado e recurso existente.");
+    assertThatThrownBy(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(result, "experiment:91106", false, task))
+        .hasMessageContaining("entrada implementada");
+    delivery.put("minimumCustomerInput", "Ocasião e roupa disponível; observação opcional.");
+    assertThatCode(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(result, "experiment:91106", false, task))
+        .doesNotThrowAnyException();
+  }
+
+  /** Confere outro produto com entrada diferente e recusa trocar a identidade do contrato. */
+  @Test
+  void preservesOtherProductInputAndRejectsCrossedIdentity() throws Exception {
+    ObjectNode result = agentValidationResult();
+    ObjectNode task =
+        implementedInputTask(
+            92010L, 92009L, 92102L, "Objetivo e produtos com instruções do rótulo.");
+    result
+        .withObject("/marketStrategicContract/agentValidationPlan/customerValueDelivery")
+        .put("minimumCustomerInput", "Objetivo e produtos com instruções do rótulo.");
+    assertThatCode(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(result, "experiment:92102", false, task))
+        .doesNotThrowAnyException();
+    ObjectNode context =
+        (ObjectNode) objectMapper.readTree(task.path("processContextJson").asText());
+    context.withObject("/learningSalesCycle/implementedInput").put("productId", 91004L);
+    task.put("processContextJson", context.toString());
+    assertThatThrownBy(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(result, "experiment:92102", false, task))
+        .hasMessageContaining("não corresponde");
+  }
+
+  /**
+   * Monta contrato de transporte sintético com produto, ciclo, experimento e versão inequívocos.
+   */
+  private ObjectNode implementedInputTask(
+      Long productId, Long cycleId, Long experimentId, String summary) throws Exception {
+    ObjectNode task = (ObjectNode) agentDiscoveryTask();
+    task.put("sourceReference", "experiment:" + experimentId);
+    task.putObject("taskTarget").put("productId", productId);
+    ObjectNode context = objectMapper.createObjectNode();
+    var cycle = context.putObject("learningSalesCycle");
+    cycle
+        .put("productId", productId)
+        .put("cycleId", cycleId)
+        .put("experimentId", experimentId)
+        .put("productVersion", "fixture-current-v1");
+    cycle
+        .putObject("implementedInput")
+        .put("contractVersion", "PDE_IMPLEMENTED_INPUT_V1")
+        .put("productId", productId)
+        .put("cycleId", cycleId)
+        .put("experimentId", experimentId)
+        .put("prototypeVersion", "fixture-current-v1")
+        .put("sourceReference", "Fixture do contrato executável local")
+        .put("minimumCustomerInput", summary)
+        .putArray("requiredFields")
+        .add("fixtureInput");
+    task.put("processContextJson", context.toString());
+    return task;
   }
 
   /** Compartilha uma estratégia v4 completa com os testes de contrato e entrega multiagente. */

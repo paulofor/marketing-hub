@@ -39,6 +39,7 @@ class PdeMarketStrategyDeliveryTest {
   private boolean omitInitialPlanningContext;
   private boolean catalogedSuccessor;
   private boolean omitCatalogIdentity;
+  private boolean implementedInputProvided;
 
   /** Inicia backend HTTP e modelo descartáveis, sem qualquer credencial ou conexão produtiva. */
   @BeforeEach
@@ -138,6 +139,37 @@ class PdeMarketStrategyDeliveryTest {
     assertThat(Files.readString(temporary.resolve("prompt.txt")))
         .contains("learningSalesCycle", "Estrela", "Quartzo", "PDE_COMMERCIAL_PLANNING_INPUT_V1");
     assertThat(Files.exists(temporary.resolve("state/pending.json"))).isFalse();
+  }
+
+  /** Preserva resposta recusada, tokens e callback após reinício, sem repetir o modelo local. */
+  @Test
+  void preservesRejectedImplementedInputWithUsageAndReplay() throws Exception {
+    catalogedSuccessor = true;
+    implementedInputProvided = true;
+    var result = new PdeMarketStrategyBpmTaskConsumerTest().agentValidationResult();
+    result
+        .withObject("/productIdentity")
+        .put("mode", "PRESERVE")
+        .put("internalName", "Estrela")
+        .put("productTypeCode", "LOW_TICKET_DIGITAL_PRODUCT")
+        .put("productTypeInternalName", "Quartzo");
+    result
+        .withObject("/marketStrategicContract/agentValidationPlan/customerValueDelivery")
+        .put("minimumCustomerInput", "Quatro escolhas categoriais não implementadas.");
+    Files.writeString(temporary.resolve("answer.json"), json.writeValueAsString(result));
+    callbackFailures = 1;
+
+    consumer().processOne();
+    assertThat(paths).containsExactly("pending", "execution-audit", "failure");
+    assertThat(callbacks.getFirst().path("resultJson").asText()).contains("não implementadas");
+    assertThat(callbacks.getFirst().path("modelUsages").get(0).path("inputTokens").asInt())
+        .isEqualTo(100);
+    assertThat(callbacks.getFirst().path("error").asText()).contains("entrada implementada");
+    consumer().processOne();
+    assertThat(callbacks).hasSize(2);
+    assertThat(callbacks.get(1)).isEqualTo(callbacks.getFirst());
+    assertThat(invocations()).isEqualTo(1);
+    assertThat(claims).isEqualTo(1);
   }
 
   /** Mantém a recusa prévia quando a identidade catalogada realmente não foi entregue. */
@@ -345,6 +377,28 @@ class PdeMarketStrategyDeliveryTest {
               .put("productTypeInternalName", "Quartzo");
           task.put("taskTarget", target);
         }
+      }
+      if (implementedInputProvided) {
+        var context = json.createObjectNode();
+        var cycle = context.putObject("learningSalesCycle");
+        cycle
+            .put("productId", targetProductId)
+            .put("experimentId", 92L)
+            .put("cycleId", 91013L)
+            .put("productVersion", "v8-fixture");
+        cycle
+            .putObject("implementedInput")
+            .put("contractVersion", "PDE_IMPLEMENTED_INPUT_V1")
+            .put("productId", targetProductId)
+            .put("experimentId", 92L)
+            .put("cycleId", 91013L)
+            .put("prototypeVersion", "v8-fixture")
+            .put("sourceReference", "Record sintético local")
+            .put("minimumCustomerInput", "Ocasião e roupa disponível; observação opcional.")
+            .putArray("requiredFields")
+            .add("occasion")
+            .add("existingSelection");
+        task.put("processContextJson", context.toString());
       }
       response = json.writeValueAsBytes(List.of(task));
       status = 200;

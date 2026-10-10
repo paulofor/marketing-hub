@@ -36,7 +36,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private static final String IDENTITY_SCHEMA =
       "prompts/pde-commercial-plan/v9/market-strategy-schema.json";
   private static final String AGENT_VALIDATION_PROMPT =
-      "prompts/pde-commercial-plan/v10/market-strategy.md";
+      "prompts/pde-commercial-plan/v11/market-strategy.md";
   private static final String AGENT_VALIDATION_SCHEMA =
       "prompts/pde-commercial-plan/v10/market-strategy-schema.json";
   private static final String READY_FOR_PRIVATE_VALIDATION = "READY_FOR_PRIVATE_VALIDATION";
@@ -135,7 +135,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
           .retrieve()
           .toBodilessEntity();
       outbox.save(new PdeMarketStrategyOutbox.Pending(task, audit, true, null, null));
-      Execution execution;
+      Execution execution = null;
       try {
         execution = execute(task, prompt);
         validate(
@@ -149,7 +149,10 @@ public class PdeMarketStrategyBpmTaskConsumer {
             taskId(task),
             sourceReference(task),
             ex);
-        enqueue(task, audit, "failure", technicalFailure(task, audit, ex));
+        Map<String, Object> failure = technicalFailure(task, audit, ex);
+        if (execution != null) failure.putAll(callback(task, execution));
+        failure.put("error", "Atena não concluiu a estratégia: " + ex.getMessage());
+        enqueue(task, audit, "failure", failure);
         return;
       }
       String operation =
@@ -356,6 +359,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
         throw new IllegalArgumentException(
             "O ciclo de aprendizado não corresponde ao produto e experimento da tarefa.");
       }
+      implementedInput(objectMapper.valueToTree(task));
       return;
     }
     if (sourceReference(task).startsWith("experiment:")) {
@@ -416,7 +420,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "Atena",
             "promptVersion",
             requiresAgentValidation(task)
-                ? "pde-commercial-plan-v10"
+                ? "pde-commercial-plan-v11"
                 : requiresProductIdentity(task)
                     ? "pde-commercial-plan-v9"
                     : "pde-commercial-plan-v8",
@@ -444,7 +448,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
     validate(result, sourceReference, false, null);
   }
 
-  /** Valida também identidade e homologação multiagente conforme a versão do Processo 2. */
+  /** Valida identidade, entrada executável preservada e homologação multiagente do Processo 2. */
   static void validate(
       JsonNode result, String sourceReference, boolean requiresProductIdentity, JsonNode task) {
     JsonNode contract = result.path("marketStrategicContract");
@@ -488,6 +492,57 @@ public class PdeMarketStrategyBpmTaskConsumer {
     }
     if (requiresProductIdentity) {
       validateProductIdentity(result.path("productIdentity"), decision, sourceReference, task);
+    }
+    if (agentValidation && "APPROVE".equals(decision)) {
+      JsonNode implemented = implementedInput(task);
+      if (implemented.isObject()
+          && !implemented
+              .path("minimumCustomerInput")
+              .asText()
+              .equals(
+                  validationPlan
+                      .path("customerValueDelivery")
+                      .path("minimumCustomerInput")
+                      .asText()))
+        throw new IllegalArgumentException(
+            "Atena alterou a entrada implementada da candidata; preserve o contrato recebido.");
+    }
+  }
+
+  /** Confere a origem da descrição implementada sem aceitar outro produto, ciclo ou versão. */
+  private static JsonNode implementedInput(JsonNode task) {
+    if (task == null) return CONTRACT_MAPPER.missingNode();
+    try {
+      JsonNode cycle =
+          CONTRACT_MAPPER
+              .readTree(task.path("processContextJson").asText("{}"))
+              .path("learningSalesCycle");
+      JsonNode input = cycle.path("implementedInput");
+      if (input.isMissingNode() || input.isNull()) return CONTRACT_MAPPER.missingNode();
+      if (!input.isObject()
+          || !"PDE_IMPLEMENTED_INPUT_V1".equals(input.path("contractVersion").asText())
+          || !hasText(input, "minimumCustomerInput")
+          || !hasText(input, "sourceReference")
+          || !input.path("requiredFields").isArray()
+          || input.path("requiredFields").isEmpty()
+          || input.path("productId").asLong(-1) != cycle.path("productId").asLong(-2)
+          || input.path("productId").asLong(-1)
+              != task.path("taskTarget").path("productId").asLong(-2)
+          || input.path("cycleId").asLong(-1) != cycle.path("cycleId").asLong(-2)
+          || input.path("experimentId").asLong(-1) != cycle.path("experimentId").asLong(-2)
+          || !task.path("sourceReference")
+              .asText()
+              .equals("experiment:" + cycle.path("experimentId").asLong(-2))
+          || !input.path("prototypeVersion").asText().equals(cycle.path("productVersion").asText()))
+        throw new IllegalArgumentException(
+            "A entrada implementada não corresponde ao alvo da tarefa.");
+      return input;
+    } catch (IOException ex) {
+      log.error(
+          "Falha ao conferir entrada implementada de Atena sourceReference={}",
+          task.path("sourceReference").asText(),
+          ex);
+      throw new IllegalArgumentException("Contexto da entrada implementada inválido.", ex);
     }
   }
 

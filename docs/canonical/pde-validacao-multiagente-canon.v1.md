@@ -521,3 +521,11 @@ de mercado. Versão não suportada permanece sem descrição; outra identidade �
 recusada. Falha de validação após inferência preserva resposta, tokens e callback
 para replay sem repetir consumo. Causa e regressões:
 `docs/homologacao/vega-entrada-implementada-planejamento-v1.md`.
+
+No ciclo aberto em planejamento, uma estratégia concluída que contradiz essa
+entrada deixa de satisfazer o aceite atual. A retomada segue Atena → Plutus →
+Dédalo: pareceres dependentes da descrição antiga também são revalidados, sem
+apagar tarefas, custos ou auditoria. Pendência em execução não é duplicada;
+rejeição atual não provoca retentativa automática. Ciclos encerrados e etapas
+posteriores conservam a história. O serviço real de prontidão deve demonstrar
+essa passagem com o caso original, outro produto e um caminho antes válido.

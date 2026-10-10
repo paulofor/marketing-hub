@@ -337,6 +337,21 @@
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleImplementedInputContextTest.java",
       "sha256": "949e8275cc5c6ff73cfa5cd9eba0e4994cbd89101e10a60ca35f282a0fc8caeb",
       "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeImplementedInputPlanningReadinessProvider.java",
+      "sha256": "fd8e0090e102b6e2e21c04edd667d58586d712d60a062013f07019bbc5c5aa8d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeImplementedInputPlanningReadinessProviderTest.java",
+      "sha256": "71dd5660541b8a5d717c6b41e8452f8ad3e782e81e1e70b6fc56f19a5c71b10f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeImplementedInputPlanningHandoffTest.java",
+      "sha256": "51c510b527a09814d56a3aaec1e0c932c8394f1d9c81fce17d93db92c975b260",
+      "promptMode": "FULL"
     }
   ],
   "executableEvidence": [
@@ -567,7 +582,7 @@
     {
       "path": "docs/canonical/pde-validacao-multiagente-canon.v1.md",
       "promptMode": "FULL",
-      "sha256": "a2930d749e6645e26ec61fa026aeb00f9822051403e00485170b7ec563b5f5d3"
+      "sha256": "db1cf47fdb30de90f3e16de52ec9cf80814ebf750d754135027a7996fd3df0b8"
     },
     {
       "path": "docs/registros/mira-download-pacote-deploy-2026-10-07.md",
@@ -627,14 +642,14 @@
     },
     {
       "path": "docs/homologacao/vega-entrada-implementada-planejamento-v1.md",
-      "sha256": "1940f746e78e668e452bea59f1970cfa82855777a95005ccb82d04de60ebb7c6",
+      "sha256": "8f1331997516162d0f0dfebdc5f83abf0e5453d66ec8ed9fe956332c3803e643",
       "promptMode": "FULL"
     }
   ],
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/mira-private-candidate-v14.json",
     "previousManifestSha256": "fa87ab65460c64f1f12aad2d1311e54dfd9a47f00bc6608abdead8c882bd2307",
-    "scope": "Revalidação do contexto compartilhado de planejamento: descreve somente a entrada implementada da versão exata, conferida contra records/Bean Validation de Vega e Mira. Não muda experiência, frontend, pareceres, orçamento ou autorização comercial de Mira.",
+    "scope": "Revalidação do contexto compartilhado de planejamento: descreve somente a entrada implementada da versão exata, conferida contra records/Bean Validation de Vega e Mira, e revalida os pareceres dependentes no ciclo aberto antes da arquitetura. Preserva tarefas ativas, rejeições atuais e ciclos encerrados. Não muda experiência, frontend, pareceres históricos, orçamento ou autorização comercial de Mira.",
     "changedEvidence": [
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContext.java",
@@ -659,7 +674,7 @@
       {
         "path": "docs/canonical/pde-validacao-multiagente-canon.v1.md",
         "previousSha256": "a40412429d56e6e36a3013a3e5dd595ef7df29ac0b7df43e308ea5341008fc04",
-        "currentSha256": "a2930d749e6645e26ec61fa026aeb00f9822051403e00485170b7ec563b5f5d3"
+        "currentSha256": "db1cf47fdb30de90f3e16de52ec9cf80814ebf750d754135027a7996fd3df0b8"
       }
     ]
   }

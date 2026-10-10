@@ -34,6 +34,7 @@ evidência histórica. READY do executor não significa trabalho funcional concl
 | Caminho antes válido | v12/v13 e tarefas sem implementação registrada conservam seus contratos |
 | Proteções | Produto, ciclo, experimento e versão divergentes são recusados; tarefa anterior ao ciclo não ganha contexto atual |
 | Passagem | Backend entrega contexto; validador real de Atena confere resposta simulada; Dédalo recebe campos implementados |
+| Retomada | Serviço real da tela volta à estratégia incompatível; somente após correção libera Plutus e Dédalo, preservando tentativas e recusas atuais |
 | Experiência | Harness existente da v14 em Chromium desktop/iPhone/Pixel, estados terminais, entrada, salvamento e retomada |
 | Observabilidade e custos | Resultado e auditoria preservados; nenhuma inferência, mídia ou cobrança nos testes; desconhecidos não viram zero |
 | Entrega | Diff e testes completos locais antes de PR; checks, revisão real, merge, workflows e versão publicada conferidos |
@@ -51,6 +52,10 @@ descrição; a divergência só era encontrada por Dédalo após duas análises 
 Depois: prompt v11 recebe entrada estruturada, e o validador exige o texto canônico
 no campo de entrada mínima. O schema de saída MARKET_STRATEGY_V4 permanece compatível.
 O catálogo é validado contra classes reais, incluindo outro produto.
+O provedor de prontidão revalida a estratégia antiga e os pareceres dependentes
+na mesma execução aberta. O serviço real da tela comprova a ordem das novas
+solicitações. Tarefas ativas e rejeições atuais não são repetidas automaticamente;
+ciclos encerrados, contratos legados e versões sem catálogo não são reabertos.
 
 Hipótese: reduzir retornos por divergência de entrada, tempo parado e custo até
 aceite da arquitetura. Critério local: divergência original rejeitada e entradas
@@ -59,8 +64,8 @@ da matriz; reverter se houver contexto cruzado ou deriva em relação ao record.
 Impacto em vendas só poderá ser medido no mercado autorizado.
 
 O teto de Vega segue US$ 10 cumulativos, confirmado para o ciclo 13; mídia e vídeos
-pagos continuam separados. Estimativa conhecida anterior de US$ 4,6282796 mais
-#700/#701/#702 de US$ 1,014178 resulta em US$ 5,6424576, antes de tarefas novas.
+pagos continuam separados. Reconciliação por tarefa dos experimentos
+#100/#103/#106 resulta em US$ 5,6424572 conhecidos estimados, antes de tarefas novas.
 Estimativa não é fatura conciliada. A reconciliação operacional precede a retomada.
 
 ## Resultados locais
@@ -70,6 +75,9 @@ Estimativa não é fatura conciliada. A reconciliação operacional precede a re
   A suíte completa foi executada; repetiu-se apenas catálogo/contexto afetados.
 - Executor de Atena: 53 testes, zero falhas/erros, incluindo retorno recusado com
   tokens preservados, reinício e replay idêntico sem segunda inferência.
+- Retomada: 133 testes relacionados de prontidão, serviço real da tela e
+  arquitetura aprovados. O caso original e Mira retornam à origem e preservam
+  a sequência de pareceres; bloqueio atual não cria loop de novas inferências.
 - TypeScript/build da superfície de Vega aprovados. Harness real com backend,
   MySQL 5.7 e fixture determinística: cinco cenários em desktop/iPhone/Pixel,
   14 controles aprovados, custo zero e tráfego sintético segregado.

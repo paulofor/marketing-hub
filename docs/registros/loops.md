@@ -9812,10 +9812,14 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Correção:** backend entrega `PDE_IMPLEMENTED_INPUT_V1` para produto e versão
   catalogados; prompt v11 de Atena preserva a entrada e o validador recusa resumo
   ou identidade divergentes antes da passagem. Catálogo de harness atualizado.
+  A prontidão do backend volta à origem e revalida pareceres dependentes, em
+  vez de encaminhar Dédalo novamente com o mesmo contrato incorreto.
 - **Harness:** confronto com records/Bean Validation reais de Vega e Mira;
   identidades sintéticas diferentes, versões anteriores, ausência de catálogo e
   resposta divergente. Rejeição preserva resposta/tokens e replay do callback
   sem segunda inferência. Harness real v14 com MySQL 5.7 e três dispositivos.
+  Serviço real da tela comprova Atena → Plutus → Dédalo com dois produtos;
+  tarefas ativas, rejeições atuais e ciclos encerrados não são retentados.
 - **Limites:** descrição não aprova agente, gasto ou mercado; não muda experiência
   nem renova histórico. Versão desconhecida conserva o caminho sem descrição.
   [Matriz e aprendizado](../homologacao/vega-entrada-implementada-planejamento-v1.md).

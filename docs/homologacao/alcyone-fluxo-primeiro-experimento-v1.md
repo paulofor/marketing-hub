@@ -196,3 +196,20 @@ pendente de revisão independente; a prova histórica não o aprova retroativame
 O pacote final passou: 4.312 classes idênticas às compiladas, 765 recursos íntegros
 e catálogo executável com 527 cartões. Diff e comentários de responsabilidade
 foram revisados. Nenhum changelog, autorização ou execução histórica foi alterado.
+
+
+### Destino preservado antes do merge
+
+A conferência do consumidor visual real identificou que a nova projeção técnica
+precisa preservar PRIVATE_PDE_DESTINATION_V1, tipo e indicação de não gerar
+landing, além de URL e versão. Um helper compartilhado conserva exatamente o
+contrato anterior nos leitores completo e parcial. A regressão de duas identidades
+agora passa pelo FrozenCreativeVisualAuthorization, antes da leitura HTTP.
+
+A projeção incompleta falhou nos dois casos, sem erros do ensaio. O ajuste passou
+nos 109 testes relacionados a contexto, capturas, callback, prontidão e formatos;
+a entrada atualizada foi validada novamente no executor. Não repetir a matriz
+inteira após essa projeção: a rodada completa de 4.551 precede o ajuste, e as
+regressões afetadas foram repetidas. CI do HEAD final continuará sendo obrigatório.
+As nove capturas persistidas de #583 conservam URL de origem e hashes válidos;
+enhum arquivo, parecer ou resultado histórico foi substituído.

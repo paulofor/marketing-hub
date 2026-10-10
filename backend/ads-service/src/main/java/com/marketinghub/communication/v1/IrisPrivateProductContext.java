@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
+import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.product.service.agentvalidation.PdeAgentValidationGateActivityExecutor;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -82,9 +83,7 @@ public class IrisPrivateProductContext {
       result.put("product", Map.of("id", product.getId(), "slug", product.getSlug()));
       result.put("prototypeVersion", target.experienceVersion());
       result.put("privatePrototypeAcceptance", verified.pde().path("privatePrototypeAcceptance"));
-      result.put(
-          "approvedDestination",
-          Map.of("url", target.publicUrl(), "prototypeVersion", target.experienceVersion()));
+      result.put("approvedDestination", approvedDestination(target));
       result.put("approvedUpstreamArtifacts", verified.artifacts());
       result.put("gateInstanceId", verified.gate().getId());
       result.put("validationGate", verified.evidence());
@@ -318,19 +317,7 @@ public class IrisPrivateProductContext {
             target.experienceVersion()));
     result.put("marketStrategicContract", strategy);
     result.put("privatePrototypeAcceptance", pde.path("privatePrototypeAcceptance"));
-    result.put(
-        "approvedDestination",
-        Map.of(
-            "contractVersion",
-            "PRIVATE_PDE_DESTINATION_V1",
-            "type",
-            "APPROVED_PRIVATE_PDE",
-            "url",
-            target.publicUrl(),
-            "prototypeVersion",
-            target.experienceVersion(),
-            "requiresLandingGeneration",
-            false));
+    result.put("approvedDestination", approvedDestination(target));
     result.put("approvedUpstreamArtifacts", List.copyOf(artifacts));
     result.put(
         "communicationArtifacts",
@@ -358,6 +345,21 @@ public class IrisPrivateProductContext {
         "publicationBoundary",
         "Preparar comunicação privada com provas sintéticas; sem alegar preferência, venda ou satisfação humana e sem autorizar publicação, cobrança ou mídia.");
     return Collections.unmodifiableMap(result);
+  }
+
+  /** Preserva o contrato completo do destino privado em todas as projeções da mesma prova. */
+  private Map<String, Object> approvedDestination(AgentTaskTargetResponse target) {
+    return Map.of(
+        "contractVersion",
+        "PRIVATE_PDE_DESTINATION_V1",
+        "type",
+        "APPROVED_PRIVATE_PDE",
+        "url",
+        target.publicUrl(),
+        "prototypeVersion",
+        target.experienceVersion(),
+        "requiresLandingGeneration",
+        false);
   }
 
   /** Exige o último parecer aprovado e a correspondência integral com o contrato materializado. */

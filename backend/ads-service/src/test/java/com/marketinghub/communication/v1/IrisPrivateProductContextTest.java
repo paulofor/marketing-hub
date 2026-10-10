@@ -274,7 +274,8 @@ class IrisPrivateProductContextTest {
         .putArray("artifacts")
         .addObject()
         .put("artifactId", id + 1)
-        .put("sha256", "a".repeat(64));
+        .put("sha256", "a".repeat(64))
+        .put("sourceUrl", target.publicUrl());
     String raw = technical.toString();
     var previous = reviews.getFirst();
     reviews.set(
@@ -319,7 +320,16 @@ class IrisPrivateProductContextTest {
     org.springframework.test.util.ReflectionTestUtils.setField(
         fixture.provider(), "privateProducts", provider);
     var context = fixture.provider().resolve("experiment:88").orElseThrow();
-    if (economicsReady) exportClaimedIrisInput(fixture.provider());
+    if (economicsReady) {
+      String visualDestination =
+          org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+              Class.forName("com.marketinghub.agenttask.FrozenCreativeVisualAuthorization"),
+              "resolve",
+              json.valueToTree(context),
+              "experiment:88");
+      assertThat(visualDestination).isEqualTo("https://mira.example/private");
+      exportClaimedIrisInput(fixture.provider());
+    }
     return context;
   }
 

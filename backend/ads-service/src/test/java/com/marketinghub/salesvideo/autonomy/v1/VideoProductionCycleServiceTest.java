@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.autonomy.v1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,8 @@ import com.marketinghub.salesvideo.VideoProviderPreflight;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
+import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
@@ -122,6 +125,88 @@ class VideoProductionCycleServiceTest {
     verify(providerPreflightService).open(result.id(), "DRAFT_INSTAGRAM", null);
     verify(taskService, never()).createGateByAgent(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Recusa Capella e outro produto antes de persistência, preflight e qualquer parecer pago. */
+  @ParameterizedTest
+  @ValueSource(longs = {67L, 9202L})
+  void shouldRejectProductionWithoutApprovedProfileScriptBeforeAnyCost(Long profileId) {
+    VideoProject project = project();
+    project.setSalesVideoProfileId(profileId);
+    when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+    doThrow(
+            VideoModuleException.badRequest(
+                VideoModuleErrorCode.SCRIPT_NOT_FOUND,
+                "Registre um roteiro aprovado no perfil de vídeo #" + profileId))
+        .when(salesVideoService)
+        .assertRenderReady(profileId);
+
+    assertThatThrownBy(() -> service.create(readinessRequest(project.getId())))
+        .isInstanceOf(VideoModuleException.class)
+        .hasMessageContaining(profileId.toString());
+    verify(repository, never()).save(any());
+    verify(providerPreflightService, never()).open(any(), any(), any());
+    verify(providerPreflightService, never()).reserve(any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Mantém a consulta sem consumo disponível mesmo quando o roteiro ainda não existe. */
+  @Test
+  void shouldAllowReadOnlyPreflightWithoutApprovedScript() {
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+
+    var result = service.createProviderPreflight(readinessRequest(7L));
+
+    assertThat(result.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT_ONLY");
+    verify(salesVideoService, never()).assertRenderReady(any());
+    verify(providerPreflightService, never()).reserve(any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Impede parecer pago se um ciclo antigo chega do preflight sem roteiro utilizável. */
+  @Test
+  void shouldRejectFinancialGateAfterPreflightWithoutApprovedScript() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
+    VideoProject project = project();
+    VideoProviderPreflight preflight = new VideoProviderPreflight();
+    preflight.setStatus("READY_WITH_BLOCKER");
+    when(repository.findById(cycle.getId())).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+    when(providerPreflightService.complete(any(), any())).thenReturn(preflight);
+    doThrow(
+            VideoModuleException.badRequest(
+                VideoModuleErrorCode.SCRIPT_NOT_FOUND, "Registre um roteiro aprovado"))
+        .when(salesVideoService)
+        .assertRenderReady(project.getSalesVideoProfileId());
+
+    assertThatThrownBy(
+            () ->
+                service.completeProviderPreflight(
+                    cycle.getId(),
+                    org.mockito.Mockito.mock(VideoProviderPreflightContracts.ResultRequest.class)))
+        .isInstanceOf(VideoModuleException.class);
+
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Reproduz uma solicitação limitada sem publicar nem duplicar o teto entre peças. */
+  private VideoProductionCycleContracts.CreateRequest readinessRequest(Long projectId) {
+    return new VideoProductionCycleContracts.CreateRequest(
+        projectId,
+        new BigDecimal("4.00"),
+        "FINAL_CAMPAIGN",
+        "Demonstrar a prova real do produto",
+        "Vídeo fiel, custo conhecido e revisões independentes",
+        "operador@sandbox.local",
+        new BigDecimal("4.00"),
+        "USD",
+        null,
+        null,
+        null);
   }
 
   /** Mantém o preflight isolado sem reserva, gate de Plutus ou job pago. */

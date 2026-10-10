@@ -17,6 +17,8 @@ import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
+import com.marketinghub.salesvideo.tenant.TenantContext;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +41,56 @@ class SalesVideoProfileServiceTest {
   @Mock private SalesVideoRolloutService rolloutService;
 
   private SalesVideoProfileService service;
+
+  /** Recusa o perfil sem roteiro mantendo status, orçamento e executores intactos. */
+  @Test
+  void shouldRejectReadinessWithoutApprovedScriptWithoutCreatingJob() {
+    SalesVideoProfile profile = profileWithDefaults();
+    given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+
+    VideoModuleException error =
+        assertThrows(VideoModuleException.class, () -> service.assertRenderReady(profile.getId()));
+
+    assertThat(error.getMessage()).contains("roteiro aprovado", "#7");
+    assertThat(profile.getStatus()).isEqualTo(SalesVideoStatus.SCRIPT_READY);
+    org.mockito.Mockito.verify(profileRepository, org.mockito.Mockito.never()).save(any());
+    org.mockito.Mockito.verifyNoInteractions(jobService, jobRepository, rolloutService);
+  }
+
+  /** Libera somente a prontidão técnica sem transformar roteiro em aprovação comercial. */
+  @Test
+  void shouldValidateApprovedScriptWithoutCreatingJobOrApprovingCompliance() {
+    SalesVideoProfile profile = profileWithDefaults();
+    given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+    given(
+            scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(
+                profile.getId(), SalesVideoScriptStatus.APPROVED))
+        .willReturn(Optional.of(approvedScript(profile)));
+
+    service.assertRenderReady(profile.getId());
+
+    assertThat(profile.getHumanReviewApprovedAt()).isNull();
+    org.mockito.Mockito.verify(profileRepository, org.mockito.Mockito.never()).save(any());
+    org.mockito.Mockito.verifyNoInteractions(jobService, jobRepository, rolloutService);
+  }
+
+  /** Recusa outro tenant antes de ler o roteiro ou abrir qualquer execução. */
+  @Test
+  void shouldRejectReadinessFromAnotherTenantBeforeReadingScript() {
+    SalesVideoProfile profile = profileWithDefaults();
+    given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+    TenantContextHolder.set(new TenantContext("tenant-b", "operador@sandbox.local", false));
+    try {
+      VideoModuleException error =
+          assertThrows(
+              VideoModuleException.class, () -> service.assertRenderReady(profile.getId()));
+
+      assertThat(error.getErrorCode()).isEqualTo(VideoModuleErrorCode.TENANT_FORBIDDEN);
+      org.mockito.Mockito.verifyNoInteractions(scriptRepository, jobService, jobRepository);
+    } finally {
+      TenantContextHolder.clear();
+    }
+  }
 
   @BeforeEach
   void setUp() {

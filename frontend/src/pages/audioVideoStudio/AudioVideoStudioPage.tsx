@@ -45,6 +45,7 @@ import {
   useCreateVideoProductionCycle,
   useCreateVideoProviderPreflight,
   useVideoProductionCycles,
+  videoProductionError,
 } from "../../api/salesVideo/useVideoProductionCycles";
 import {
   useApolloLearningExperiments,
@@ -2817,8 +2818,7 @@ export default function AudioVideoStudioPage() {
                         onChange={(event) =>
                           setCycleProductionProfile(
                             event.target.value as
-                              | "DRAFT_INSTAGRAM"
-                              | "FINAL_CAMPAIGN",
+                              "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN",
                           )
                         }
                       >
@@ -2887,7 +2887,10 @@ export default function AudioVideoStudioPage() {
                         </small>
                         {createProviderPreflight.isError ? (
                           <p role="alert">
-                            Não foi possível executar o preflight.
+                            {videoProductionError(
+                              createProviderPreflight.error,
+                              "Não foi possível executar o preflight.",
+                            )}
                           </p>
                         ) : null}
                       </div>
@@ -2926,7 +2929,22 @@ export default function AudioVideoStudioPage() {
                           deste ciclo. Apolo trabalha em TEST e não publica.
                         </small>
                         {createProductionCycle.isError ? (
-                          <p role="alert">Não foi possível abrir o ciclo.</p>
+                          <p role="alert">
+                            {videoProductionError(
+                              createProductionCycle.error,
+                              "Não foi possível abrir o ciclo.",
+                            )}
+                            {linkedProfileId ? (
+                              <>
+                                {" "}
+                                <Link
+                                  to={`/sales-videos/profiles/${linkedProfileId}`}
+                                >
+                                  Conferir perfil e roteiro
+                                </Link>
+                              </>
+                            ) : null}
+                          </p>
                         ) : null}
                       </div>
                     </div>

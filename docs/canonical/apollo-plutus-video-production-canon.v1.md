@@ -6,7 +6,7 @@ Apolo é o executor criativo dos vídeos do Estúdio. Plutus é o gate financeir
 
 ## Fluxo canônico
 
-1. Um usuário solicita pelo Estúdio um ciclo associado a produto, planejamento, projeto e perfil de vídeo.
+1. Um usuário solicita pelo Estúdio um ciclo associado a produto, planejamento, projeto e perfil de vídeo. Antes de persistir produção ou abrir parecer pago, o backend confere o tenant e o roteiro aprovado do perfil pela mesma regra da renderização. Texto no projeto do Estúdio não substitui esse roteiro. A consulta isolada de preflight não exige roteiro e nunca abre parecer, reserva ou job. O roteiro é revalidado antes de abrir Plutus após o preflight; essa prontidão técnica não substitui revisões independentes nem seleção comercial.
 2. O backend persiste o ciclo como `PENDING_PROVIDER_PREFLIGHT` e publica a pendência de consulta da conta e das rotas candidatas para o executor de vídeo.
 3. O executor realiza somente leituras e simulações sem cobrança, e reporta ao backend o snapshot sanitizado de saldo, quota, elegibilidade e custo previsto.
 4. Com o snapshot vigente, o backend move o ciclo para `PENDING_FINANCIAL_REVIEW` e abre na mesa de Plutus uma tarefa de gate `VIDEO_PROVIDER_COST_BENEFIT_APPROVAL`, com Apolo como solicitante.

@@ -412,6 +412,14 @@ export default function LearningCyclesPage() {
             </details>
             {cycle.status !== "OPEN" ? <p>{cycle.nextAction}</p> : null}
             <div className="d-flex flex-wrap gap-2">
+              {cycle.stage === "VIDEO_APPROVAL" ? (
+                <Link
+                  to={`/creative-video-review?productId=${cycle.productId}&experimentId=${cycle.experimentId}`}
+                  className="btn btn-primary"
+                >
+                  Ver aprovações dos vídeos
+                </Link>
+              ) : null}
               <Link
                 to={`/experiments/${cycle.experimentId}`}
                 className="btn btn-outline-primary"
@@ -491,11 +499,6 @@ export default function LearningCyclesPage() {
               <p>{cycle.nextAction}</p>
               <p className="mb-2">Responsável: {cycle.responsible}</p>
               <div className="d-flex flex-wrap gap-2">
-                {cycle.stage === "VIDEO_APPROVAL" && cycle.workUrl ? (
-                  <Link to={cycle.workUrl} className="btn btn-outline-primary">
-                    Ver aprovações dos vídeos
-                  </Link>
-                ) : null}
                 {cycle.workUrl ? (
                   <Link to={cycle.workUrl} className="btn btn-primary">
                     Acompanhar atividade

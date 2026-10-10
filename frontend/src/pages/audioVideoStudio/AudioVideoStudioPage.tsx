@@ -63,6 +63,7 @@ import type {
   VideoProjectStatus,
 } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
+import { videoCycleBudget } from "./videoCycleBudget";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
 
@@ -1172,7 +1173,10 @@ export default function AudioVideoStudioPage() {
     useCreateVideoProductionCycle(editableProjectId);
   const createProviderPreflight =
     useCreateVideoProviderPreflight(editableProjectId);
-  const [cycleAuthorizedBudgetBrl, setCycleAuthorizedBudgetBrl] = useState("");
+  const [cycleAuthorizedBudget, setCycleAuthorizedBudget] = useState("");
+  const [cycleAuthorizedCurrency, setCycleAuthorizedCurrency] = useState<
+    "BRL" | "USD"
+  >("BRL");
   const [cycleExchangeRateBrlPerUsd, setCycleExchangeRateBrlPerUsd] =
     useState("");
   const [cycleExchangeRateSource, setCycleExchangeRateSource] = useState("");
@@ -1200,15 +1204,13 @@ export default function AudioVideoStudioPage() {
   const targetDurationSeconds = parsePositiveInteger(
     briefing.targetDurationSeconds,
   );
-  const authorizedBudgetBrl = Number(cycleAuthorizedBudgetBrl);
-  const exchangeRateBrlPerUsd = Number(cycleExchangeRateBrlPerUsd);
-  const cycleBudgetUsd =
-    Number.isFinite(authorizedBudgetBrl) &&
-    authorizedBudgetBrl > 0 &&
-    Number.isFinite(exchangeRateBrlPerUsd) &&
-    exchangeRateBrlPerUsd > 0
-      ? Math.floor((authorizedBudgetBrl / exchangeRateBrlPerUsd) * 100) / 100
-      : Number.NaN;
+  const cycleBudgetAuthorization = videoCycleBudget({
+    amount: cycleAuthorizedBudget,
+    currency: cycleAuthorizedCurrency,
+    exchangeRate: cycleExchangeRateBrlPerUsd,
+    exchangeRateSource: cycleExchangeRateSource,
+    exchangeRateDate: cycleExchangeRateDate,
+  });
 
   useEffect(() => {
     if (selectedProject) {
@@ -2728,59 +2730,84 @@ export default function AudioVideoStudioPage() {
                 {selectedProject ? (
                   <div className="audio-video-studio-page__cycle-form">
                     <label>
-                      Teto autorizado em BRL *
+                      Moeda da autorização *
+                      <select
+                        aria-label="Moeda da autorização"
+                        value={cycleAuthorizedCurrency}
+                        onChange={(event) => {
+                          setCycleAuthorizedCurrency(
+                            event.target.value as "BRL" | "USD",
+                          );
+                          setCycleAuthorizedBudget("");
+                        }}
+                      >
+                        <option value="BRL">Reais (BRL)</option>
+                        <option value="USD">Dólares (USD)</option>
+                      </select>
+                    </label>
+                    <label>
+                      Teto autorizado em {cycleAuthorizedCurrency} *
                       <input
-                        aria-label="Teto autorizado em BRL"
+                        aria-label={`Teto autorizado em ${cycleAuthorizedCurrency}`}
                         min="0.01"
                         step="0.01"
                         type="number"
-                        value={cycleAuthorizedBudgetBrl}
+                        value={cycleAuthorizedBudget}
                         onChange={(event) =>
-                          setCycleAuthorizedBudgetBrl(event.target.value)
+                          setCycleAuthorizedBudget(event.target.value)
                         }
                       />
                     </label>
-                    <label>
-                      Cotação BRL por USD *
-                      <input
-                        aria-label="Cotação BRL por USD"
-                        min="0.000001"
-                        step="0.000001"
-                        type="number"
-                        value={cycleExchangeRateBrlPerUsd}
-                        onChange={(event) =>
-                          setCycleExchangeRateBrlPerUsd(event.target.value)
-                        }
-                      />
-                    </label>
-                    <label>
-                      Fonte da cotação *
-                      <input
-                        aria-label="Fonte da cotação"
-                        value={cycleExchangeRateSource}
-                        onChange={(event) =>
-                          setCycleExchangeRateSource(event.target.value)
-                        }
-                      />
-                    </label>
-                    <label>
-                      Data da cotação *
-                      <input
-                        aria-label="Data da cotação"
-                        type="date"
-                        value={cycleExchangeRateDate}
-                        onChange={(event) =>
-                          setCycleExchangeRateDate(event.target.value)
-                        }
-                      />
-                    </label>
+                    {cycleAuthorizedCurrency === "BRL" ? (
+                      <>
+                        <label>
+                          Cotação BRL por USD *
+                          <input
+                            aria-label="Cotação BRL por USD"
+                            min="0.000001"
+                            step="0.000001"
+                            type="number"
+                            value={cycleExchangeRateBrlPerUsd}
+                            onChange={(event) =>
+                              setCycleExchangeRateBrlPerUsd(event.target.value)
+                            }
+                          />
+                        </label>
+                        <label>
+                          Fonte da cotação *
+                          <input
+                            aria-label="Fonte da cotação"
+                            value={cycleExchangeRateSource}
+                            onChange={(event) =>
+                              setCycleExchangeRateSource(event.target.value)
+                            }
+                          />
+                        </label>
+                        <label>
+                          Data da cotação *
+                          <input
+                            aria-label="Data da cotação"
+                            type="date"
+                            value={cycleExchangeRateDate}
+                            onChange={(event) =>
+                              setCycleExchangeRateDate(event.target.value)
+                            }
+                          />
+                        </label>
+                      </>
+                    ) : null}
                     <p role="status">
                       Teto operacional conservador: US${" "}
-                      {Number.isFinite(cycleBudgetUsd)
-                        ? cycleBudgetUsd.toFixed(2)
+                      {cycleBudgetAuthorization
+                        ? cycleBudgetAuthorization.budgetLimitUsd.toFixed(2)
                         : "—"}
-                      . A conversão arredonda para baixo e não amplia a
-                      autorização.
+                      .{" "}
+                      {cycleAuthorizedCurrency === "BRL"
+                        ? "A conversão arredonda para baixo e não amplia a autorização."
+                        : "A autorização em dólares é preservada sem conversão."}{" "}
+                      Se o limite cobrir várias peças e revisões, divida esse
+                      total entre os projetos; não repita o total para cada
+                      vídeo.
                     </p>
                     <label>
                       Perfil de produção *
@@ -2790,7 +2817,8 @@ export default function AudioVideoStudioPage() {
                         onChange={(event) =>
                           setCycleProductionProfile(
                             event.target.value as
-                              "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN",
+                              | "DRAFT_INSTAGRAM"
+                              | "FINAL_CAMPAIGN",
                           )
                         }
                       >
@@ -2830,29 +2858,21 @@ export default function AudioVideoStudioPage() {
                           disabled={
                             createProviderPreflight.isPending ||
                             createProductionCycle.isPending ||
-                            !Number.isFinite(cycleBudgetUsd) ||
-                            cycleBudgetUsd <= 0 ||
-                            !cycleExchangeRateSource.trim() ||
-                            !cycleExchangeRateDate ||
+                            !cycleBudgetAuthorization ||
                             !cycleLearningObjective.trim() ||
                             !cycleSuccessCriterion.trim() ||
                             Boolean(providerConfigurationIssue)
                           }
-                          onClick={() =>
+                          onClick={() => {
+                            if (!cycleBudgetAuthorization) return;
                             createProviderPreflight.mutate({
-                              budgetLimitUsd: cycleBudgetUsd,
+                              ...cycleBudgetAuthorization,
                               productionProfile: cycleProductionProfile,
                               learningObjective: cycleLearningObjective.trim(),
                               successCriterion: cycleSuccessCriterion.trim(),
                               requestedBy: tenantContext.userEmail,
-                              authorizedBudgetAmount: authorizedBudgetBrl,
-                              authorizedBudgetCurrency: "BRL",
-                              usdBrlExchangeRate: exchangeRateBrlPerUsd,
-                              exchangeRateSource:
-                                cycleExchangeRateSource.trim(),
-                              exchangeRateDate: cycleExchangeRateDate,
-                            })
-                          }
+                            });
+                          }}
                         >
                           {createProviderPreflight.isPending ? (
                             <span className="spinner-border spinner-border-sm" />
@@ -2878,29 +2898,21 @@ export default function AudioVideoStudioPage() {
                           disabled={
                             createProductionCycle.isPending ||
                             createProviderPreflight.isPending ||
-                            !Number.isFinite(cycleBudgetUsd) ||
-                            cycleBudgetUsd <= 0 ||
-                            !cycleExchangeRateSource.trim() ||
-                            !cycleExchangeRateDate ||
+                            !cycleBudgetAuthorization ||
                             !cycleLearningObjective.trim() ||
                             !cycleSuccessCriterion.trim() ||
                             Boolean(providerConfigurationIssue)
                           }
-                          onClick={() =>
+                          onClick={() => {
+                            if (!cycleBudgetAuthorization) return;
                             createProductionCycle.mutate({
-                              budgetLimitUsd: cycleBudgetUsd,
+                              ...cycleBudgetAuthorization,
                               productionProfile: cycleProductionProfile,
                               learningObjective: cycleLearningObjective.trim(),
                               successCriterion: cycleSuccessCriterion.trim(),
                               requestedBy: tenantContext.userEmail,
-                              authorizedBudgetAmount: authorizedBudgetBrl,
-                              authorizedBudgetCurrency: "BRL",
-                              usdBrlExchangeRate: exchangeRateBrlPerUsd,
-                              exchangeRateSource:
-                                cycleExchangeRateSource.trim(),
-                              exchangeRateDate: cycleExchangeRateDate,
-                            })
-                          }
+                            });
+                          }}
                         >
                           {createProductionCycle.isPending ? (
                             <span className="spinner-border spinner-border-sm" />
@@ -3158,7 +3170,7 @@ export default function AudioVideoStudioPage() {
                           {productionCycles.data[0].budgetLimitUsd.toFixed(2)}
                           {productionCycles.data[0].authorizedBudgetAmount !=
                           null
-                            ? ` · autorizado ${productionCycles.data[0].authorizedBudgetCurrency} ${productionCycles.data[0].authorizedBudgetAmount.toFixed(2)} com câmbio ${productionCycles.data[0].usdBrlExchangeRate?.toFixed(6)} em ${productionCycles.data[0].exchangeRateDate}`
+                            ? ` · autorizado ${productionCycles.data[0].authorizedBudgetCurrency} ${productionCycles.data[0].authorizedBudgetAmount.toFixed(2)}${productionCycles.data[0].authorizedBudgetCurrency === "BRL" ? ` com câmbio ${productionCycles.data[0].usdBrlExchangeRate?.toFixed(6)} em ${productionCycles.data[0].exchangeRateDate}` : ""}`
                             : ""}
                           {productionCycles.data[0].budgetAlertDetail
                             ? ` · ${productionCycles.data[0].budgetAlertDetail}`

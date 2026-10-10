@@ -57,3 +57,46 @@ protege a passagem sem depender de ordem de containers ou inferência de READY.
 Testes: consulta real em H2 com limite 1, claim incompatível sem mudança de estado,
 HTTP do executor e caminhos anteriores. Passou: filtro antes do limite, claim legado sem mudança de estado, declaração HTTP
 na fila/reserva e consumo anterior preservado.
+
+
+## Captura longa sob recursos limitados — recorrência após #5564
+
+A publicação `1871e279153e225e159688b784ba1ef8be9eed9c` entregou o anúncio
+21256/ativo 53 sem síntese nova. A demonstração 21257 repetiu o timeout de 120 s
+antes de TTS. A limitação de threads foi insuficiente: o teste anterior usava uma
+captura pequena. Não declarar a composição resolvida apenas pelo preset ou health.
+
+Foram comparadas três alternativas: ampliar apenas o prazo (conserva desperdício);
+reduzir previamente a imagem (ainda repete decode e filtros); cachear o quadro já
+transformado (retira trabalho repetido e conserva pixels). A terceira foi validada
+com o MP4 original de 30 s/30 fps e PNG 1179×6138, hash
+`45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7`.
+O processo já redirecionava stderr para arquivo: descartado bloqueio de pipe.
+
+Matriz complementar definida antes da correção:
+
+| Critério | Verificação | Resultado |
+| --- | --- | --- |
+| Reprodução da causa | Mesmos bytes, prazo 120 s, 0,25 CPU/768 MiB, rede bloqueada | Anterior excedeu 120,19 s |
+| Composição corrigida | Quadro preparado uma vez; mesmo prazo e limites | Passou em 36,74 s |
+| Integridade temporal/visual | Comparação dos 900 frames, duração e cortes | SSIM Y/U/V/total = 1,0 |
+| Custo operacional | Decode/CPU/memória no mesmo host local | 752 → 1 decodes; 57,93 → 8,03 CPU-s; 411488 → 193096 KiB |
+| Executor Java real | 15/30 s, outro tenant/projeto e captura 1179×6138, 0,25 CPU | Passou; composição 13,71/26,79 s |
+| Fluxo completo da demonstração | Bytes locais, sete textos, TTS simulado, duração explícita 35 s, MP4/VTT/HLS, callback e replay | Passou |
+| Recuperação antes válida | Cinco áudios preservados, custo original pendente, zero TTS novo | Passou |
+| Observabilidade | Composição distinta de download; reutilização distinta de síntese; uso ainda pendente | Passou |
+| Prevenção no publicador | Teste real habilitado no job que já instala FFmpeg | Configurado; validação local YAML |
+
+A medida nativa de CPU/memória é distinta do ensaio com quota: o timeout anterior
+consumiu 29,86 CPU-s até ser interrompido; o corrigido consumiu 8,66 CPU-s até concluir.
+A quota é um teste determinístico de pressão, não uma equivalência de hardware com VPS.
+`VerifyPrivateProof` aceita MP4/PNG locais opcionais, preserva os textos e conta o
+número real de segmentos; não depende de cinco cortes nem de IDs específicos.
+O tom sintetizado da fixture não avalia naturalidade da voz da demonstração final.
+A adoção mantém gates, bytes auditados, tempo e limites financeiros. Impacto comercial
+continua sem medida; a melhoria comprovada é conclusão com menor custo operacional.
+
+Validação final local do publicador: 256 testes do executor/arquitetura, zero falhas;
+a recuperação opt-in com os cinco áudios reais passou separadamente sem TTS novo.
+Os dois casos Java/FFmpeg sob quota passaram, com pixels, dimensões e duração conferidos.
+YAML do workflow válido. Diff e comentários de responsabilidade Java revisados.

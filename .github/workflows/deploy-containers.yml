@@ -491,9 +491,9 @@ jobs:
       - name: Install audiovisual tooling
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
-      - name: Run unit tests
+      - name: Run unit tests and real product proof composition
         working-directory: video-management-service
-        run: mvn -B test
+        run: mvn -B -Dvideo.proof.real-ffmpeg=true test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

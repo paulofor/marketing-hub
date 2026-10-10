@@ -88,7 +88,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Compõe o acabamento contratado e preserva respostas TTS mesmo quando um gate bloqueia. */
+    /** Reporta composição e voz separadamente e preserva respostas TTS quando um gate bloqueia. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -114,12 +114,18 @@ public class PostProductionVideoProvider implements VideoProvider {
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
+            if (!metadata.at("/post_production/product_proof").isMissingNode()) {
+                progressCallback.onProgress(20, SalesVideoStatus.VIDEO_PROCESSING, "Compondo a captura real do produto");
+            }
             ProductUgcReferenceOverlay.OverlayResult overlay =
                     metadata.at("/post_production/product_proof").isMissingNode()
                             ? productReferenceOverlay.apply(source, metadata, job.id())
                             : pdeProductProofOverlay.apply(source, metadata, job.id());
             preparedSource = overlay.videoFile();
             productReferenceAudit = overlay.audit();
+            if (!productReferenceAudit.isEmpty()) {
+                progressCallback.onProgress(25, SalesVideoStatus.VIDEO_PROCESSING, "Captura aplicada; preparando o acabamento");
+            }
             double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());
             durationAdjustedSource = extendRequestedDuration(preparedSource, durationSeconds, metadata, job.id());
             if (durationAdjustedSource != null) {
@@ -153,8 +159,10 @@ public class PostProductionVideoProvider implements VideoProvider {
                             : List.of(voiceOverAudio.rawResponseFile());
                 }
                 voice = voiceOverAudio.file();
-                progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Voz off em português gerada por "
-                        + voiceOverAudio.providerLabel());
+                progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING,
+                        metadata.has("preservedNarration")
+                                ? "Voz auditada reutilizada, sem nova síntese"
+                                : "Voz off em português gerada por " + voiceOverAudio.providerLabel());
             } else {
                 captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
             }
@@ -201,7 +209,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                     ttsInteractions,
                     productReferenceAudit,
                     sourceAudioPreserved);
-            progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Vídeo finalizado para venda");
+            progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Arquivo finalizado; revisão de uso pendente");
             return new ProviderArtifacts(
                     "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
         } catch (IOException ex) {

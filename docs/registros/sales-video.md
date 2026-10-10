@@ -413,3 +413,22 @@
 - Métrica reutilizável: chamadas TTS evitadas e recuperação aceita sem alterar copy/prova;
   impacto em conversão, vendas e contribuição exige mercado posterior, ainda não medido.
 - Matriz e critérios: [homologação de Mira](../homologacao/mira-narration-recovery-v1.md).
+
+
+## 2026-10-10 — Mira: captura longa preparada uma vez
+
+- Após a publicação #5564, anúncio 21256/ativo 53 ficou READY sem novo TTS; a
+  demonstração 21257 repetiu timeout antes da voz. A prova de 1179×6138 e o render
+  de 30 s estavam íntegros; o ensaio anterior pequeno não reproduzia o custo real.
+- Fonte compartilhada corrigida: decodificar/enquadrar a captura uma vez e repetir
+  o canvas transformado. Mantidos hash, pixels, cortes e prazo de 120 s. FFmpeg
+  decodificou 752 → 1 imagens; comparação dos vídeos obteve SSIM 1,0.
+- Sob 0,25 CPU e 768 MiB, anterior excedeu o prazo, corrigido concluiu em 36,74 s.
+  Progresso separa composição, síntese/reutilização e revisão de uso pendente.
+- Harness existente recebe mídia local opcional e não presume cinco segmentos;
+  demonstração de sete segmentos passou com voz de fixture, 35 s, MP4/VTT/HLS,
+  callback e replay sem regeneração. O workflow já com FFmpeg executa o teste real.
+- Condição de adoção: captura estática íntegra e ensaio temporal/visual aceito;
+  rollback se pixels/cortes divergirem, sem remover prova ou aumentar gasto.
+  Ganho medido é operacional; não implica aumento de vendas, margem ou aceitação humana.
+- Matriz: [recuperação de Mira](../homologacao/mira-narration-recovery-v1.md).

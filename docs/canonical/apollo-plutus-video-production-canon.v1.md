@@ -137,10 +137,13 @@ o filtro ocorre no SQL antes da paginação e a reserva repete a verificação. 
 backend novo não entrega recuperação ao executor anterior durante a atualização.
 A declaração do contrato não substitui conferência de texto, tenant, bytes ou gates.
 
-A composição de prova privada limita threads de filtros e encoder, mantendo pixels,
-hash, intervalos, CRF e prazo de execução. Preset rápido reduz custo operacional sem
-omitir prova ou relaxar gate. Homologação local de 15/30 s confere presença e retirada
-dos pixels no tempo correto. Referência:
+A composição de prova privada prepara a captura estática uma vez e repete somente
+o quadro pronto (`PREPARED_FRAME_LOOP_V1`), com threads de filtros e encoder limitadas.
+Mantém pixels, hash, intervalos, CRF e prazo; não relê/redimensiona uma imagem longa
+a cada frame. Homologação local de 15/30 s inclui alta densidade e CPU limitada,
+conferindo presença e retirada dos pixels no tempo correto. O progresso distingue
+composição, síntese ou reutilização da voz e arquivo pronto com revisão de uso pendente.
+Referência:
 [recuperação de Mira](../homologacao/mira-narration-recovery-v1.md).
 
 A tela apresenta inspeções registradas pelo backend. Termos do roteiro como CTA,

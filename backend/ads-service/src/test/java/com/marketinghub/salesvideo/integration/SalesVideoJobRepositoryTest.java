@@ -28,6 +28,55 @@ class SalesVideoJobRepositoryTest {
   @Autowired private SalesVideoProfileRepository profileRepository;
   @Autowired private ProductRepository productRepository;
 
+  /** Filtra contratos incompatíveis no banco antes do limite sem ocultar trabalho normal. */
+  @Test
+  void excludesRecoveryFromLegacyWorkerBeforePagination() {
+    var product =
+        productRepository.save(
+            Product.builder().slug("fixture-recovery-query").name("Fixture").build());
+    var profile =
+        profileRepository.save(
+            SalesVideoProfile.builder()
+                .product(product)
+                .videoKind(SalesVideoKind.HERO)
+                .title("Recuperação isolada")
+                .status(SalesVideoStatus.VIDEO_REQUESTED)
+                .build());
+    for (int i = 0; i < 3; i++) {
+      jobRepository.saveAndFlush(
+          SalesVideoJob.builder()
+              .profile(profile)
+              .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+              .jobType(SalesVideoJobType.POST_PRODUCTION)
+              .status(SalesVideoStatus.VIDEO_REQUESTED)
+              .requestedAt(Instant.parse("2026-10-10T00:00:00Z").plusSeconds(i))
+              .metadataJson(
+                  i == 0
+                      ? "{\"preservedNarration\":{}}"
+                      : i == 1 ? "{\"captionText\":\"Texto normal\"}" : null)
+              .build());
+    }
+    var page =
+        org.springframework.data.domain.PageRequest.of(
+            0, 1, org.springframework.data.domain.Sort.by("requestedAt"));
+    var legacy =
+        jobRepository.findAll(
+            com.marketinghub.salesvideo.service.VideoNarrationRecovery.consumableBy(null), page);
+    assertThat(legacy.getTotalElements()).isEqualTo(2);
+    assertThat(legacy.getContent())
+        .singleElement()
+        .satisfies(job -> assertThat(job.getMetadataJson()).contains("Texto normal"));
+    var capable =
+        jobRepository.findAll(
+            com.marketinghub.salesvideo.service.VideoNarrationRecovery.consumableBy(
+                com.marketinghub.salesvideo.service.VideoNarrationRecovery.CONTRACT),
+            page);
+    assertThat(capable.getTotalElements()).isEqualTo(3);
+    assertThat(capable.getContent())
+        .singleElement()
+        .satisfies(job -> assertThat(job.getMetadataJson()).contains("preservedNarration"));
+  }
+
   /** Reserva uma vez, bloqueia concorrência, retoma lease vencida e preserva estado terminal. */
   @Test
   void claimsOnlyAvailableOrStaleJobs() {

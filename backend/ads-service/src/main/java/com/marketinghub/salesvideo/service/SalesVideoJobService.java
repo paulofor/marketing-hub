@@ -147,12 +147,25 @@ public class SalesVideoJobService {
     return saved;
   }
 
+  /** Lista jobs administrativos preservando visibilidade das recuperações. */
   @Transactional(readOnly = true)
   public List<SalesVideoJobDto> findJobs(
       SalesVideoProviderFamily providerFamily,
       SalesVideoStatus status,
       SalesVideoJobType jobType,
       int limit) {
+    return findJobsForWorker(
+        providerFamily, status, jobType, limit, VideoNarrationRecovery.CONTRACT);
+  }
+
+  /** Lista no SQL somente contratos executáveis pelo consumidor, antes de aplicar o limite. */
+  @Transactional(readOnly = true)
+  public List<SalesVideoJobDto> findJobsForWorker(
+      SalesVideoProviderFamily providerFamily,
+      SalesVideoStatus status,
+      SalesVideoJobType jobType,
+      int limit,
+      String workerContract) {
     Specification<SalesVideoJob> spec = Specification.where(null);
     if (providerFamily != null) {
       spec = spec.and((root, query, cb) -> cb.equal(root.get("providerFamily"), providerFamily));
@@ -163,6 +176,7 @@ public class SalesVideoJobService {
     if (jobType != null) {
       spec = spec.and((root, query, cb) -> cb.equal(root.get("jobType"), jobType));
     }
+    spec = spec.and(VideoNarrationRecovery.consumableBy(workerContract));
     Pageable pageable =
         PageRequest.of(
             0,
@@ -203,10 +217,12 @@ public class SalesVideoJobService {
         .toList();
   }
 
-  /** Reserva atomicamente um job novo ou órfão e inicia sua lease operacional. */
+  /** Confere compatibilidade, reserva atomicamente o job e inicia sua lease operacional. */
   @Transactional
   public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
     SalesVideoJob candidate = loadJob(jobId);
+    VideoNarrationRecovery.requireCompatible(
+        candidate, request.getPostProductionContract(), objectMapper);
     SalesVideoStatus previous = candidate.getStatus();
     Instant claimedAt = Instant.now();
     int claimed =

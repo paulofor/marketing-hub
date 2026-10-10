@@ -25,6 +25,8 @@ import org.springframework.web.server.ResponseStatusException;
  * Deriva um contrato de recuperação da fala recebida, sem autorizar outra síntese ou alterar copy.
  */
 public final class VideoNarrationRecovery {
+  public static final String CONTRACT = "PRESERVED_TTS_NARRATION_V1";
+
   private static final Logger log = LoggerFactory.getLogger(VideoNarrationRecovery.class);
 
   /** Impede instanciação do validador sem estado. */
@@ -139,6 +141,28 @@ public final class VideoNarrationRecovery {
             segments));
   }
 
+  /** Filtra no SQL antes da paginação para que executor antigo não receba recuperação. */
+  public static org.springframework.data.jpa.domain.Specification<SalesVideoJob> consumableBy(
+      String contract) {
+    return (root, query, cb) ->
+        CONTRACT.equals(contract)
+            ? cb.conjunction()
+            : cb.or(
+                cb.isNull(root.get("metadataJson")),
+                cb.notLike(root.get("metadataJson"), "%\"preservedNarration\"%"));
+  }
+
+  /** Impede reservar recuperação por executor que não declarou o contrato exato. */
+  public static void requireCompatible(
+      SalesVideoJob job, String workerContract, ObjectMapper mapper) {
+    if (!read(mapper, job.getMetadataJson(), job.getId())
+        .path("preservedNarration")
+        .isMissingNode())
+      require(
+          CONTRACT.equals(workerContract),
+          "O executor precisa declarar o contrato de recuperação antes de reservar a fala preservada.");
+  }
+
   /** Exige recibo de upload com o mesmo nome e hash do binário recebido. */
   private static JsonNode matchingReceipt(JsonNode receipts, JsonNode response, Long jobId) {
     for (JsonNode receipt : receipts) {
@@ -153,7 +177,7 @@ public final class VideoNarrationRecovery {
   /** Lê a auditoria e conserva o stack trace quando o contrato estiver corrompido. */
   private static JsonNode read(ObjectMapper mapper, String value, Long jobId) {
     try {
-      return mapper.readTree(value == null ? "{}" : value);
+      return mapper.readTree(value == null || value.isBlank() ? "{}" : value);
     } catch (JsonProcessingException ex) {
       log.error("Falha ao ler auditoria de recuperação da fala; jobId={}", jobId, ex);
       throw conflict("Auditoria da fala inválida.");

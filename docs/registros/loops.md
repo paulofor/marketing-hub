@@ -6929,6 +6929,8 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   worker confere hashes e mede os binários, sem TTS novo ou fallback pago.
   A homologação local com os cinco arquivos reais resultou em MP4 20 s, voz íntegra,
   legendas temporizadas e custo antigo ainda pendente de conciliação.
+  Durante a atualização, consulta e claim exigem capacidade explícita, evitando
+  entregar metadados novos ao executor antigo que os ignoraria e chamaria TTS.
   O job 21255 também mostrou timeout da composição 30 s antes da voz; limitar threads
   e adotar preset rápido preservou o prazo e a prova. Testes reais 15/30 s conferem
   pixels, corte e duração; fixtures com outros IDs e caminhos antes válidos previnem

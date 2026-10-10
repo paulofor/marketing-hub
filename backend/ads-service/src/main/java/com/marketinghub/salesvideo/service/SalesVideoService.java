@@ -276,6 +276,17 @@ public class SalesVideoService {
     return jobService.listJobsByProduct(productId);
   }
 
+  /** Delega a fila interna com a capacidade declarada pelo executor. */
+  public List<SalesVideoJobDto> findJobsForWorker(
+      SalesVideoProviderFamily providerFamily,
+      SalesVideoStatus status,
+      SalesVideoJobType jobType,
+      int limit,
+      String postProductionContract) {
+    return jobService.findJobsForWorker(
+        providerFamily, status, jobType, limit, postProductionContract);
+  }
+
   /** Consulta um job pelo identificador. */
   public SalesVideoJobDto getJob(Long jobId) {
     return jobService.getJob(jobId);

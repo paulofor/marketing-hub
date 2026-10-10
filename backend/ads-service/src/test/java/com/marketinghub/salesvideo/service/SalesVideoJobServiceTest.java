@@ -293,6 +293,27 @@ class SalesVideoJobServiceTest {
   private SalesVideoJobService service;
   private SalesVideoProductionCostCalculator costCalculator;
 
+  /** Executor antigo não pode reservar recuperação nem mudar estado durante rollout. */
+  @Test
+  void shouldRefuseLegacyWorkerClaimOfRecovery() {
+    var job =
+        SalesVideoJob.builder()
+            .id(91099L)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .metadataJson(
+                "{\"preservedNarration\":{\"contractVersion\":\"PRESERVED_TTS_NARRATION_V1\"}}")
+            .build();
+    given(jobRepository.findById(job.getId())).willReturn(Optional.of(job));
+    var request = new JobClaimRequest();
+    request.setWorkerId("old-fixture");
+    assertThrows(
+        org.springframework.web.server.ResponseStatusException.class,
+        () -> service.claimJob(job.getId(), request));
+    verify(jobRepository, never()).claimIfAvailable(any(), any(), any(), any(), any());
+    verify(eventRepository, never()).save(any());
+    assertThat(job.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
+  }
+
   /** Deriva a recuperação de auditoria persistida e conserva linhagem e tentativa falha. */
   @Test
   void shouldEnqueuePreservedNarrationFromFailedAttempt() throws Exception {

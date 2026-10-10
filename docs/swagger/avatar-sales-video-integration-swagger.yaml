@@ -105,6 +105,11 @@ paths:
       summary: Lista jobs de vídeo para processamento assíncrono
       parameters:
         - in: query
+          name: postProductionContract
+          description: PRESERVED_TTS_NARRATION_V1 inclui recuperação de áudio preservado. Ausência/valor antigo oculta esses jobs antes da paginação, mantendo trabalho normal.
+          schema: { type: string }
+
+        - in: query
           name: status
           schema:
             $ref: '#/components/schemas/SalesVideoStatus'
@@ -709,6 +714,9 @@ components:
           minLength: 1
         message:
           type: string
+        postProductionContract:
+          type: string
+          description: PRESERVED_TTS_NARRATION_V1 é obrigatório somente para reservar recuperação; ausente não altera jobs normais.
 
     RequestVideoRenderRequest:
       type: object

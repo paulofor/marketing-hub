@@ -34,7 +34,7 @@ Adota-se a terceira: filtro com uma thread, encoder com duas, preset ultrafast,
 CRF 20 e prazo original, sem remover homologação ou prova.
 A matriz inclui composição real 15/30 s, pixels dentro/fora dos intervalos e prazo.
 
-Resultados locais: 180 testes de backend/arquitetura sem falhas; 254 testes do executor,
+Resultados locais: 184 testes de backend/arquitetura sem falhas; 255 testes do executor,
 sem falhas (duas homologações reais opt-in executadas separadamente); 71 testes do frontend,
 typecheck e build passaram. FFmpeg real recuperou os cinco binários com hashes conferidos,
 MP4 20,0 s e áudio íntegro de 15,72 s, cinco cues e zero requests de síntese.
@@ -46,3 +46,14 @@ Custo antigo de TTS permanece pendente de conciliação no metadado. Os dois par
 financeiros conhecidos somam US$ 0,107738 estimados; não é fatura conciliada nem total completo.
 A entrega dos vídeos e seus aceites em produção serão conferidos depois da publicação,
 sem regenerar a voz do anúncio ou reabrir os ciclos financeiros já aceitos.
+
+Compatibilidade adicional definida antes de testar: backend novo com executor antigo
+mantém recuperações na fila, sem claim ou TTS; executor compatível declara
+`PRESERVED_TTS_NARRATION_V1` na consulta e na reserva. O SQL filtra antes do limite,
+preservando jobs normais. Executor novo continua consumindo backend anterior, que
+ignora o parâmetro adicional nos jobs sem recuperação. Foram comparados ordenação
+de deploy apenas, consulta de health e contrato explícito na fila/reserva; este último
+protege a passagem sem depender de ordem de containers ou inferência de READY.
+Testes: consulta real em H2 com limite 1, claim incompatível sem mudança de estado,
+HTTP do executor e caminhos anteriores. Passou: filtro antes do limite, claim legado sem mudança de estado, declaração HTTP
+na fila/reserva e consumo anterior preservado.

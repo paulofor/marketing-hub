@@ -88,6 +88,16 @@ class VideoNarrationRecoveryTest {
         .hasMessageContaining("409");
   }
 
+  /** Capacidade exata aceita a recuperação; jobs normais preservam compatibilidade. */
+  @Test
+  void acceptsCapableWorkerAndPreviousNormalJobs() {
+    var job =
+        SalesVideoJob.builder().id(91009L).metadataJson("{\"preservedNarration\":{}}").build();
+    VideoNarrationRecovery.requireCompatible(job, VideoNarrationRecovery.CONTRACT, mapper);
+    job.setMetadataJson("");
+    VideoNarrationRecovery.requireCompatible(job, null, mapper);
+  }
+
   /** Preserva produção normal e outra classe de falha sem criar contrato de voz. */
   @Test
   void preservesPreviousValidPaths() throws Exception {

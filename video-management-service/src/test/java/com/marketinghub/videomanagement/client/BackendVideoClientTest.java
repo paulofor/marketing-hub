@@ -86,7 +86,19 @@ class BackendVideoClientTest {
         assertThat(server.takeRequest().getPath())
                 .isEqualTo("/api/internal/sales-videos/autonomy/v1/apollo/reconcile");
         assertThat(server.takeRequest().getPath())
-                .isEqualTo("/internal/video/jobs?status=VIDEO_REQUESTED&limit=10");
+                .isEqualTo("/internal/video/jobs?status=VIDEO_REQUESTED&limit=10&postProductionContract=PRESERVED_TTS_NARRATION_V1");
+    }
+
+    /** Declara capacidade no claim para impedir consumo por versão antiga durante rollout. */
+    @Test
+    void declaresRecoveryCapabilityWhenClaiming() throws Exception {
+        server.enqueue(new MockResponse().setHeader("Content-Type", "application/json").setBody("{\"id\":91009}"));
+        var client = new BackendVideoClient(WebClient.builder(), properties(),
+                new VideoJobObservabilityService(new SimpleMeterRegistry()));
+        client.claimJob(91009L, new com.marketinghub.videomanagement.client.payload.JobClaimPayload("fixture", "recuperação"));
+        var request = server.takeRequest();
+        assertThat(request.getPath()).isEqualTo("/internal/video/jobs/91009/claim");
+        assertThat(request.getBody().readUtf8()).contains("\"postProductionContract\":\"PRESERVED_TTS_NARRATION_V1\"");
     }
 
     /** Consome a fila canônica de preflight sem depender de endpoint administrativo ou tenant. */

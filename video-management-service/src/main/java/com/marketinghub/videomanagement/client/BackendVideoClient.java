@@ -125,6 +125,7 @@ public class BackendVideoClient {
         }
     }
 
+    /** Consome a fila declarando recuperação de voz; backend antigo preserva jobs normais. */
     public List<SalesVideoJob> fetchJobsByStatus(SalesVideoStatus status,
                                                  int limit) {
         try {
@@ -133,6 +134,7 @@ public class BackendVideoClient {
                                     .path("/internal/video/jobs")
                                     .queryParam("status", status)
                                     .queryParam("limit", Math.max(limit, 1))
+                                    .queryParam("postProductionContract", JobClaimPayload.RECOVERY_CONTRACT)
                                     .build()))
                     .retrieve()
                     .onStatus(httpStatus -> !httpStatus.is2xxSuccessful(), response ->
@@ -141,6 +143,7 @@ public class BackendVideoClient {
                     .blockOptional()
                     .orElse(Collections.emptyList()));
         } catch (BackendIntegrationException ex) {
+            log.error("Falha ao consultar fila de vídeo; status={}", status, ex);
             throw ex;
         } catch (Exception ex) {
             log.error("Falha ao consultar jobs no backend", ex);

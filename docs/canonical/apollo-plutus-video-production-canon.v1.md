@@ -131,6 +131,12 @@ não chama TTS como fallback nem acelera/corta/sobrepõe fala. Os custos origina
 pendentes continuam desconhecidos; custo incremental de reutilização não é conciliação
 do custo anterior. Copy diferente exige novo preflight, não recuperação silenciosa.
 
+A fila interna e o claim exigem `postProductionContract=PRESERVED_TTS_NARRATION_V1`
+para a recuperação. Consumidores sem essa capacidade recebem apenas trabalho normal;
+o filtro ocorre no SQL antes da paginação e a reserva repete a verificação. Assim,
+backend novo não entrega recuperação ao executor anterior durante a atualização.
+A declaração do contrato não substitui conferência de texto, tenant, bytes ou gates.
+
 A composição de prova privada limita threads de filtros e encoder, mantendo pixels,
 hash, intervalos, CRF e prazo de execução. Preset rápido reduz custo operacional sem
 omitir prova ou relaxar gate. Homologação local de 15/30 s confere presença e retirada

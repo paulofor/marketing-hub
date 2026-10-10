@@ -9,4 +9,6 @@ public class JobClaimRequest {
   @NotBlank private String workerId;
 
   private String message;
+
+  private String postProductionContract;
 }

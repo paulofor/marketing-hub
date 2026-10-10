@@ -500,3 +500,32 @@ por modelo. Enviar Dédalo ao mesmo contexto imutável apenas para diagnosticar 
 falta da candidata não é entrega utilizável. Falhas técnicas sem mudança das
 condições e o contrato legado de produto mantêm seus caminhos próprios. Preserve
 resultados, custos e pareceres, sem herdar autorização ou fabricar aprovação.
+
+## Entrada implementada durante planejamento de sucessores — 10/10/2026
+
+Quando o ajuste preserva a entrada de uma candidata já implementada, o contexto
+interno pode entregar `learningSalesCycle.implementedInput`
+(`PDE_IMPLEMENTED_INPUT_V1`), com produto, ciclo, experimento, versão, campos
+obrigatórios/opcionais e fonte. O catálogo versionado do backend é conferido por
+testes contra os records e a validação reais de cada runtime suportado.
+
+Atena copia o resumo canônico para `customerValueDelivery.minimumCustomerInput`
+e descreve mecanismo/jornada com esses campos. O validador do executor recusa
+divergência antes de encaminhar a estratégia. Descrições de versões anteriores
+não acrescentam escolhas, campos ou promessas. Se a hipótese exigir uma entrada
+diferente, o agente aponta a mudança; não declara que ela foi implementada.
+
+Esse dado descreve uma capacidade do código. Não substitui prova do runtime,
+homologação técnica, parecer independente, autorização financeira ou evidência
+de mercado. Versão não suportada permanece sem descrição; outra identidade é
+recusada. Falha de validação após inferência preserva resposta, tokens e callback
+para replay sem repetir consumo. Causa e regressões:
+`docs/homologacao/vega-entrada-implementada-planejamento-v1.md`.
+
+No ciclo aberto em planejamento, uma estratégia concluída que contradiz essa
+entrada deixa de satisfazer o aceite atual. A retomada segue Atena → Plutus →
+Dédalo: pareceres dependentes da descrição antiga também são revalidados, sem
+apagar tarefas, custos ou auditoria. Pendência em execução não é duplicada;
+rejeição atual não provoca retentativa automática. Ciclos encerrados e etapas
+posteriores conservam a história. O serviço real de prontidão deve demonstrar
+essa passagem com o caso original, outro produto e um caminho antes válido.

@@ -1,0 +1,25 @@
+{
+  "contractVersion": "PDE_IMPLEMENTED_INPUTS_CATALOG_V1",
+  "implementations": [
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersions": [
+        "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "musa-pde-entry-v13-primeiro-ajuste-aplicavel",
+        "musa-pde-entry-v14-primeiro-ajuste-aplicavel"
+      ],
+      "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/privateprototype/v1/service/contract/VegaPrivateContract.java#Input",
+      "minimumCustomerInput": "Ocasião (occasion) e roupa ou combinação disponível (existingSelection); observação (optionalNote) opcional.",
+      "requiredFields": ["occasion", "existingSelection"],
+      "optionalFields": ["optionalNote"]
+    },
+    {
+      "productSlug": "pde-planejado-36",
+      "prototypeVersions": ["mira-private-candidate-v3"],
+      "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/contract/MiraPrivateContract.java#Input",
+      "minimumCustomerInput": "Objetivo (objective) e produtos disponíveis (products), cada um com nome e instruções do rótulo; URL da fonte opcional.",
+      "requiredFields": ["objective", "products"],
+      "optionalFields": []
+    }
+  ]
+}

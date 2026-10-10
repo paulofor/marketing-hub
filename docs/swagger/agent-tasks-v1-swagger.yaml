@@ -631,6 +631,11 @@ components:
             e requiredSequence. Essa política governa a avaliação atual sem apagar evidências
             humanas ou pareceres históricos. Referências experiment:<id> preservam a linhagem
             do ciclo e usam os mesmos contratos sintéticos das referências iniciais do produto.
+            Quando a versão possui entrada implementada catalogada, learningSalesCycle.implementedInput
+            publica PDE_IMPLEMENTED_INPUT_V1, com identidade exata de produto/ciclo/experimento/versão,
+            sourceReference do código, minimumCustomerInput, requiredFields e optionalFields.
+            Atena preserva essa entrada no planejamento; o executor recusa identidade ou resumo
+            divergente. Esse dado descreve implementação, sem aprovar agente, gasto ou mercado.
         researchIntelligence:
           nullable: true
           description: Seleção compacta da Biblioteca de Inteligência aplicável à atividade audiovisual.

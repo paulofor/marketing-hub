@@ -107,7 +107,7 @@ public class ProcessAutomationLocalApplication {
         "CREATE TABLE IF NOT EXISTS fixture_task (id BIGINT AUTO_INCREMENT PRIMARY KEY, product_id BIGINT NOT NULL, process_id BIGINT NOT NULL, activity_id VARCHAR(100) NOT NULL, status VARCHAR(32) NOT NULL, achieved BIT NOT NULL DEFAULT 0, reason VARCHAR(300) NOT NULL, KEY ix_fixture_task(product_id,process_id,activity_id,id)) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_process (id BIGINT PRIMARY KEY, status VARCHAR(32) NOT NULL DEFAULT 'PUBLISHED') ENGINE=InnoDB");
-    for (long id = 92001; id <= 92048; id++) {
+    for (long id = 92001; id <= 92053; id++) {
       jdbc.update("INSERT IGNORE INTO product VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO fixture_product(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO business_process_definition VALUES (?)", id);
@@ -240,10 +240,25 @@ public class ProcessAutomationLocalApplication {
     return products;
   }
 
-  /** Isola o catálogo de experimentos exigido pelo contexto; a política real permanece ativa. */
+  /** Isola experimentos e identifica somente as fixtures planejadas da precedência inicial. */
   @Bean
-  com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments() {
-    return mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+  com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments(JdbcTemplate jdbc) {
+    var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    when(experiments.findById(anyLong()))
+        .thenAnswer(
+            inv -> {
+              Long id = inv.getArgument(0);
+              if (id < 92049 || id > 92053) return Optional.empty();
+              return product(jdbc, id, false)
+                  .map(
+                      product ->
+                          com.marketinghub.experiment.Experiment.builder()
+                              .id(id)
+                              .product(product)
+                              .status(com.marketinghub.experiment.ExperimentStatus.PLANNED)
+                              .build());
+            });
+    return experiments;
   }
 
   /** Isola a consulta funcional adicional; esta fixture não produz pareceres de agentes reais. */
@@ -324,11 +339,13 @@ public class ProcessAutomationLocalApplication {
     return profiles;
   }
 
-  /** Declara fluxos locais felizes, incompletos, de aprovação, subprocesso e recuperação. */
+  /** Declara fluxos locais e os papéis canônicos da comunicação e do primeiro planejamento. */
   static BusinessProcessDefinition definition(Long id) {
     var process = new BusinessProcessDefinition();
     process.setId(id);
     process.setProcessCode("local-process-" + id);
+    if (id == 92049) process.setProcessCode("pde-communication-sales-journey");
+    if (id == 92050) process.setProcessCode("pde-commercial-plan-offer");
     process.setName("Processo de teste " + id);
     process.setVersionNumber(1);
     process.setStatus("PUBLISHED");
@@ -345,6 +362,9 @@ public class ProcessAutomationLocalApplication {
             + "},{\"id\":\"gate\",\"type\":\"TASK\"}"
             + (id == 92011 ? ", {\"id\":\"missing\",\"type\":\"TASK\"}" : "")
             + "],\"flows\":[{\"from\":\"a\",\"to\":\"b\"},{\"from\":\"b\",\"to\":\"gate\"}]}");
+    if (id == 92049)
+      process.setDiagramJson(
+          process.getDiagramJson().replace("\"a\"", "\"communicationContract\""));
     return process;
   }
 
@@ -355,7 +375,7 @@ public class ProcessAutomationLocalApplication {
     var chain = new BusinessProcessChainDefinition();
     chain.setId(92014L);
     chain.setStatus("PUBLISHED");
-    for (long id = 92001; id <= 92048; id++) {
+    for (long id = 92001; id <= 92053; id++) {
       var item = new BusinessProcessChainItem();
       item.setProcessDefinition(definition(id));
       item.setSequenceNumber((int) (id - 92000));
@@ -442,7 +462,7 @@ public class ProcessAutomationLocalApplication {
     return activities;
   }
 
-  /** Registra a tentativa local sem substituir a referência operacional congelada. */
+  /** Registra a tentativa local e aplica a saída simulada do planejamento na mesma referência. */
   static ProductProcessActivityExecutionRequestResponse request(
       JdbcTemplate jdbc, Long process, Long product, String activity, String sourceReference) {
     requireSourceReference(product, sourceReference);
@@ -460,6 +480,8 @@ public class ProcessAutomationLocalApplication {
         gate ? "COMPLETED" : "PENDING",
         gate,
         gate ? "Gate aprovado" : "Aguardando agente local");
+    if (process == 92050 && gate)
+      jdbc.update("UPDATE fixture_product SET blocked_process_id=NULL WHERE id=?", product);
     if (process == 92030)
       throw new IllegalStateException("Falha após escrita para testar rollback");
     return new ProductProcessActivityExecutionRequestResponse(
@@ -492,7 +514,7 @@ public class ProcessAutomationLocalApplication {
     return tasks.isEmpty() ? null : tasks.getFirst();
   }
 
-  /** Projeta contratos e medição sem tarefa real, preservando a distinção do estado persistido. */
+  /** Projeta contratos e precedências iniciais sem declarar uma tarefa simulada como prova real. */
   static ProductProcessActivityExecutionHistoryResponse snapshot(
       JdbcTemplate jdbc, Long product, Long process, String sourceReference) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new ArrayList<>();
@@ -503,13 +525,14 @@ public class ProcessAutomationLocalApplication {
             && latest(jdbc, product, process, "a") != null
             && "BLOCKED".equals(latest(jdbc, product, process, "a").get("status"))
             && !"EXECUTOR_FAILURE".equals(latest(jdbc, product, process, "a").get("reason"));
-    for (String id : List.of("b", "a", "gate", "fix")) {
+    String firstActivity = process == 92049 ? "communicationContract" : "a";
+    for (String id : List.of("b", firstActivity, "gate", "fix")) {
       if (id.equals("fix") && process != 92003) continue;
       var task = latest(jdbc, product, process, id);
       boolean achieved = task != null && Boolean.TRUE.equals(task.get("achieved"));
       String state = task == null ? "NOT_STARTED" : task.get("status").toString();
       boolean projected =
-          id.equals("a")
+          id.equals(firstActivity)
               && !achieved
               && Objects.equals(productState.get("projected_process_id"), process);
       if (projected) state = productState.get("projected_state").toString();
@@ -557,7 +580,7 @@ public class ProcessAutomationLocalApplication {
               "Atividade " + id,
               "Objetivo " + id,
               id.equals("gate") ? "Backend" : "Agente local",
-              id.equals("a") ? 1 : id.equals("b") ? 2 : 3,
+              id.equals(firstActivity) ? 1 : id.equals("b") ? 2 : 3,
               selected,
               achieved ? "COMPLETED" : state,
               task == null ? "Sem tarefa" : task.get("reason").toString(),

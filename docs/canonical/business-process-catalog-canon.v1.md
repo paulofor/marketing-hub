@@ -1030,6 +1030,15 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
   silenciosa para a versão nova. Encerramento e motivo são persistidos uma única vez no diário.
 - Produtos diferentes avançam em paralelo. Processos do mesmo produto aguardam uma execução
   anterior terminar ou pausar; subprocessos da mesma raiz compartilham a autorização da chamada.
+- Na preparação do primeiro experimento `PLANNED`, sem ciclo ou predecessor, a
+  comunicação `pde-communication-sales-journey` em `WAITING_INPUT`, sem falha e
+  aguardando `communicationContract`, não reserva a fila contra o planejamento
+  `pde-commercial-plan-offer` do mesmo produto, cadeia e referência `experiment:*`.
+  Essa precedência resolve a dependência circular; tarefas ou filhos em curso
+  continuam reservando o produto. Pausa, decisão humana, outros estados, referências,
+  ciclos e sucessores não recebem essa exceção. A consulta expõe a mesma regra usada
+  pelo conciliador, sem mudar status, custos ou diário. Planejamento recebe a vez;
+  comunicação só avança após o aceite dos próprios contratos, sem aprovação automática.
 - O estado ativo projetado por `SALES_FLOW_EVENT`, sem tarefa ativa nem instância registrada,
   representa medição do ciclo, não execução de trabalho. Essa projeção não impede pausa,
   encerramento de contexto sem autorização ou delegação canônica ao subprocesso. Tarefas e

@@ -420,6 +420,80 @@ await scenario(
     );
   },
 );
+for (const product of [92049, 92051]) {
+  await scenario(
+    `primeiro experimento ${product}: planejamento resolve espera sem pausa nem duplicação`,
+    async () => {
+      const input = {
+        chainId: 92014,
+        sourceReference: `experiment:${product}`,
+      };
+      const current = (process) =>
+        request(`${root(product, process)}?${new URLSearchParams(input)}`);
+      await request(`/fixture/products/${product}`, {
+        blockedProcessId: 92049,
+      });
+      const communication = await request(root(product, 92049), input);
+      assert.equal((await tick(communication.id)).status, "WAITING_INPUT");
+      assert.equal((await tasks(product, 92049)).length, 0);
+      const planning = await request(root(product, 92050), input);
+      assert.equal(planning.status, "QUEUED");
+      assert.equal(planning.queueBlocker, null);
+      assert.equal((await current(92049)).status, "WAITING_INPUT");
+      assert.equal((await tick(planning.id)).status, "WAITING_ACTIVITY");
+      assert.equal((await tasks(product, 92050)).length, 1);
+      assert.equal((await tick(communication.id)).status, "WAITING_INPUT");
+      await callback(product, 92050, "a");
+      await tick(planning.id);
+      await callback(product, 92050, "b");
+      await tick(planning.id);
+      assert.equal((await tick(planning.id)).status, "COMPLETED");
+      await tick(communication.id);
+      assert.equal((await current(92049)).status, "WAITING_ACTIVITY");
+      assert.equal(
+        (await current(92049)).currentActivityId,
+        "communicationContract",
+      );
+      assert.equal((await tasks(product, 92049)).length, 1);
+      await callback(product, 92049, "communicationContract");
+      await tick(communication.id);
+      await callback(product, 92049, "b");
+      await tick(communication.id);
+      assert.equal((await tick(communication.id)).status, "COMPLETED");
+      assert.deepEqual(
+        (await tasks(product, 92050)).map((t) => t.activity_id),
+        ["a", "b", "gate"],
+      );
+      assert.deepEqual(
+        (await tasks(product, 92049)).map((t) => t.activity_id),
+        ["communicationContract", "b", "gate"],
+      );
+      assert.equal((await current(92049)).learningCycleId, null);
+      assert.equal(
+        (await current(92049)).sourceReference,
+        input.sourceReference,
+      );
+      assert.equal((await current(92049)).costCoverage, "NOT_REPORTED");
+      for (const [process, run] of [
+        [92049, communication],
+        [92050, planning],
+      ]) {
+        const events = await request(
+          `${root(product, process)}/${run.id}/events`,
+        );
+        assert(
+          !events.some((e) =>
+            ["PAUSED", "PAUSING", "RESUMED"].includes(e.eventType),
+          ),
+        );
+        assert.equal(
+          events.filter((e) => e.eventType === "COMPLETED").length,
+          1,
+        );
+      }
+    },
+  );
+}
 console.log(
   JSON.stringify({
     passed,

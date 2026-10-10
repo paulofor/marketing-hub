@@ -9747,3 +9747,23 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Adoção/reversão:** adotar se pendência, vínculo e evidências forem coerentes;
   reverter a projeção se ocultar falha ou fabricar aprovação. Não remover o gate.
   [Matriz e contexto](../homologacao/mira-narration-recovery-v1.md).
+
+## LOOP-PRIMEIRO-EXPERIMENTO-FILA-CIRCULAR — 10/10/2026
+
+- **Evidência:** Alcyone/produto 11/plano 34/experimento 97 `PLANNED`, sem ciclo.
+  Comunicação #44 `WAITING_INPUT`; planejamento nativo #67 `QUEUED` com
+  `queueBlocker=44`. Plutus #77 aprovou a projeção privada; Atena #20 conservou
+  a necessidade de revisão independente. Nenhum parecer foi reescrito.
+- **Causa:** a serialização por produto reservava a fila para a comunicação que
+  aguardava o próprio planejamento. O coordenador já reconhecia a precedência
+  comercial Processo 6 → 5, mas não a preparação nativa do primeiro experimento.
+- **Correção:** precedência limitada a `communicationContract` em espera sem falha,
+  mesmo produto/cadeia/referência inicial, `PLANNED`, sem ciclo ou predecessor.
+  Trabalho em curso continua protegido; pausa e outros gates não são atravessados.
+- **Harness:** regressão antes/depois, outro produto, contextos negativos, caminho
+  comercial antes válido, HTTP/JPA e MySQL/conciliador reais com agentes simulados,
+  navegação desktop/iPhone/Pixel. O contexto nativo recebe revisão LIVE atual e
+  prova integrada do mesmo experimento sem copiar JSON, custo zero ou aprovação.
+- **Limites:** só resolve coordenação e fontes. Revisão privada, seleção humana,
+  homologação comercial, mídia e cobrança continuam com seus próprios contratos.
+  [Matriz e aprendizado](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).

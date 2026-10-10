@@ -30,6 +30,172 @@ import org.junit.jupiter.params.provider.CsvSource;
 /** Responsabilidade: impedir que tarefas comerciais percam ou misturem a identidade do PDE. */
 class ExperimentAgentTaskTargetContextProviderTest {
 
+  /** Encaminha projeção e prova atuais de duas identidades sem declarar aprovação comercial. */
+  @ParameterizedTest
+  @CsvSource({"95111,95121,95131", "95211,95221,95231"})
+  void includesCurrentPlanningEvidence(long productId, long experimentId, long planId)
+      throws Exception {
+    var fixture = planningEvidenceFixture(productId, experimentId, planId);
+    var target =
+        fixture
+            .provider()
+            .resolve("experiment:" + experimentId, "pde-commercial-plan-offer")
+            .orElseThrow();
+    var context = target.pdeContext();
+    assertThat(context.path("currentFinancialPlan").path("scopeId").asLong()).isEqualTo(productId);
+    assertThat(
+            context
+                .path("currentFinancialPlan")
+                .path("assumptions")
+                .path("minimumMarginPercent")
+                .decimalValue())
+        .isEqualByComparingTo("40");
+    assertThat(context.path("financialEvidenceScope").asText())
+        .isEqualTo("PROJECTION_NOT_COMMERCIAL_APPROVAL");
+    assertThat(
+            context.path("integratedPersonalizationProof").path("functionalReviewStatus").asText())
+        .isEqualTo("PENDING_INDEPENDENT_REVIEW");
+    assertThat(context.path("integratedPersonalizationProof").has("estimatedCostUsd")).isFalse();
+    assertThat(context.path("publicationAuthorized").asBoolean()).isFalse();
+    assertThat(context.path("mediaSpendAuthorized").asBoolean()).isFalse();
+  }
+
+  /** Outra versão, ambiente ou plano financeiro não pode contaminar a entrada do agente. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"product", "plan", "test", "stale", "version", "scope"})
+  void refusesMismatchedPlanningFinancialEvidence(String changed) throws Exception {
+    var fixture = planningEvidenceFixture(95111L, 95121L, 95131L);
+    var financial =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            fixture.json().valueToTree(fixture.financial());
+    switch (changed) {
+      case "product" -> financial.put("scopeId", 95112L);
+      case "plan" -> financial.put("commercialPlanId", 95132L);
+      case "test" -> financial.put("environment", "TEST");
+      case "stale" -> financial.put("stale", true);
+      case "version" ->
+          ((com.fasterxml.jackson.databind.node.ObjectNode) financial.path("assumptions"))
+              .put("productVersion", "other-version");
+      case "scope" -> financial.put("scope", "TYPE");
+      default -> throw new AssertionError(changed);
+    }
+    when(fixture
+            .finances()
+            .get(
+                "PRODUCT",
+                95111L,
+                com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
+                null))
+        .thenReturn(
+            fixture
+                .json()
+                .treeToValue(
+                    financial, com.marketinghub.financialplan.v1.service.getplan.PlanView.class));
+    var target =
+        fixture.provider().resolve("experiment:95121", "pde-commercial-plan-offer").orElseThrow();
+    assertThat(target.pdeContext().has("currentFinancialPlan")).isFalse();
+  }
+
+  /** Fonte ausente permanece desconhecida e não habilita operação comercial. */
+  @Test
+  void preservesMissingFinancialAndForeignVisualEvidence() throws Exception {
+    var fixture = planningEvidenceFixture(95111L, 95121L, 95131L);
+    when(fixture
+            .finances()
+            .get(
+                "PRODUCT",
+                95111L,
+                com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
+                null))
+        .thenThrow(
+            new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.NOT_FOUND, "Sem revisão local"));
+    when(fixture.visuals().latestSummary(95111L, 95131L, 95121L))
+        .thenReturn(
+            Optional.of(
+                (com.fasterxml.jackson.databind.node.ObjectNode)
+                    fixture
+                        .json()
+                        .readTree(
+                            "{\"productId\":95112,\"commercialPlanId\":95131,\"experimentId\":95121}")));
+    var target =
+        fixture.provider().resolve("experiment:95121", "pde-commercial-plan-offer").orElseThrow();
+    assertThat(target.pdeContext().path("financialEvidenceAvailability").asText())
+        .isEqualTo("UNAVAILABLE");
+    assertThat(target.pdeContext().has("currentFinancialPlan")).isFalse();
+    assertThat(target.pdeContext().has("integratedPersonalizationProof")).isFalse();
+    assertThat(target.pdeContext().path("publicationAuthorized").asBoolean()).isFalse();
+  }
+
+  /** Monta fontes sintéticas atuais usando os contratos financeiros e visuais existentes. */
+  private PlanningEvidenceFixture planningEvidenceFixture(
+      long productId, long experimentId, long planId) throws Exception {
+    var json = new ObjectMapper();
+    var experiments = mock(ExperimentRepository.class);
+    var products = mock(ProductRepository.class);
+    var plans = mock(CommercialPlanRepository.class);
+    var product =
+        Product.builder()
+            .id(productId)
+            .slug("produto-local-" + productId)
+            .validationDefinitionVersion("PDE_AGENT_VALIDATED_V1")
+            .build();
+    var experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .product(product)
+            .hypothesisRef(Hypothesis.builder().id(UUID.randomUUID()).build())
+            .status(ExperimentStatus.PLANNED)
+            .build();
+    var plan = CommercialPlan.builder().id(planId).experiment(experiment).build();
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(plans.findByExperimentReference(experimentId)).thenReturn(java.util.List.of(plan));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, json, null, plans);
+    var finances = mock(com.marketinghub.financialplan.v1.service.FinancialPlanService.class);
+    var visuals =
+        mock(com.marketinghub.pde.visualpersonalization.v1.service.VisualPreparationService.class);
+    var financial =
+        json.readValue(
+            """
+      {"id":95171,"scope":"PRODUCT","scopeId":%d,"environment":"LIVE","revision":5,
+       "commercialPlanId":%d,"commercialPlanVersion":4,"stale":false,
+       "assumptions":{"productVersion":"PDE_AGENT_VALIDATED_V1","minimumMarginPercent":40,"priceBrl":79},
+       "analysis":{"executionId":95181,"status":"COMPLETED","result":{"decision":"APPROVE"}}}
+      """
+                .formatted(productId, planId),
+            com.marketinghub.financialplan.v1.service.getplan.PlanView.class);
+    when(finances.get(
+            "PRODUCT",
+            productId,
+            com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
+            null))
+        .thenReturn(financial);
+    var proof =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(
+                """
+      {"productId":%d,"commercialPlanId":%d,"experimentId":%d,"status":"PDE_COMPLETED",
+       "functionalReviewStatus":"PENDING_INDEPENDENT_REVIEW","trafficClass":"AGENT_VALIDATION"}
+      """
+                    .formatted(productId, planId, experimentId));
+    when(visuals.latestSummary(productId, planId, experimentId)).thenReturn(Optional.of(proof));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "financialPlans", finances);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "visualPreparations", visuals);
+    return new PlanningEvidenceFixture(provider, finances, visuals, financial, json);
+  }
+
+  /** Mantém as fontes independentes de cada produto somente durante o teste. */
+  private record PlanningEvidenceFixture(
+      ExperimentAgentTaskTargetContextProvider provider,
+      com.marketinghub.financialplan.v1.service.FinancialPlanService finances,
+      com.marketinghub.pde.visualpersonalization.v1.service.VisualPreparationService visuals,
+      com.marketinghub.financialplan.v1.service.getplan.PlanView financial,
+      ObjectMapper json) {}
+
   /** Planejamento preserva o catálogo mesmo quando o produto não possui experiência PDE. */
   @ParameterizedTest
   @CsvSource({"7,98,Capella,LOW_TICKET_DIGITAL_PRODUCT,Quartzo", "83,207,Estrela,PDE,Opala"})

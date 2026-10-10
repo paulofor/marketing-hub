@@ -97,24 +97,33 @@ for agent in agents:
     codex_home = codex_home_by_agent.get(agent['key'])
     if workflow and codex_home:
         workflow_text = workflow.read_text() if workflow.exists() else ''
-        exported_blocks = re.findall(r'export\s+(.+?)\\\s*\n\s*&&', workflow_text, re.DOTALL)
+        runtime_text = workflow_text
+        protected_runtime = agent['key'] == 'experiment-strategist' and '-- bash scripts/start-validated-runtime.sh' in workflow_text
+        if protected_runtime:
+            startup = module/'scripts/start-validated-runtime.sh'
+            runtime_text = startup.read_text() if startup.is_file() else ''
+            if not re.search(r"with-agent-consumer-lock\.py[^\n]+--revision '\$\{DEPLOY_SOURCE_SHA\}' -- bash scripts/start-validated-runtime\.sh '\$\{REPOSITORY_DIR\}' '\$\{DEPLOY_SOURCE_SHA\}'", workflow_text):
+                errors.append(f"{agent['key']}: comando versionado não está sob lock e revisão imutável")
+            exported_blocks = re.findall(r'export\s+([^\n]+)', runtime_text)
+        else:
+            exported_blocks = re.findall(r'export\s+(.+?)\\\s*\n\s*&&', workflow_text, re.DOTALL)
         if not any(f'{codex_home}=' in block for block in exported_blocks):
             errors.append(
                 f"{agent['key']}: workflow não exporta {codex_home} para toda a sessão remota"
             )
         isolated_home = f'/opt/growth-operator/agents/{agent["key"]}/codex-home'
         for marker in (
-            f'install -d -o 10001 -g 10001 {isolated_home}',
+            f'install -d -o 10001 -g 10001 "${codex_home}"' if protected_runtime else f'install -d -o 10001 -g 10001 {isolated_home}',
             f'{codex_home}={isolated_home}',
             'node /app/agent-health-report.mjs',
         ):
-            if marker not in workflow_text:
+            if marker not in runtime_text:
                 errors.append(
                     f"{agent['key']}: workflow sem bootstrap/readiness seguro da identidade Codex ({marker})"
                 )
-        if 'scripts/reconcile-agent-codex-auth.sh' in workflow_text:
+        if 'scripts/reconcile-agent-codex-auth.sh' in runtime_text + workflow_text:
             errors.append(f"{agent['key']}: workflow ainda reconcilia a sessão compartilhada legada")
-        if re.search(r'install .*auth\.json .*agents/.*/codex-home/auth\.json', workflow_text):
+        if re.search(r'install .*auth\.json .*agents/.*/codex-home/auth\.json', runtime_text + workflow_text):
             errors.append(f"{agent['key']}: workflow clona refresh token para identidade isolada")
         if 'group: codex-agent-host-deploy' in workflow_text:
             errors.append(f"{agent['key']}: workflow usa fila compartilhada que cancela deploys pendentes")

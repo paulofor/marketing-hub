@@ -94,3 +94,17 @@ número de chamadas não corresponder, bloquear e recalcular antes de consumir.
 - Contratos de imagens: 20 testes passaram; MCP público de Atena: sete testes passaram.
 - Docker: imagem local construída pelo Dockerfile versionado; removida após validação.
 - YAML e pacote de evidências canônico: válidos; atestação de compatibilidade v16 preserva v15 e o frontend de Mira.
+
+## Conferência dos verificadores de publicação
+
+O primeiro CI do PR detectou verificadores que exigiam bootstrap, modelo e SHA
+escritos no YAML. A partida agora está em script versionado sob lock; os
+verificadores foram ajustados para seguir essa ligação e conferir o comando
+real. Não inserir texto decorativo no YAML nem dispensar autenticação/versão.
+O catálogo de saúde aponta para a fonte executável do modelo.
+
+Validação local adicional: 21 testes de coordenação passaram, inclusive revisão
+alterada e reporte `local` recusados; conformidade premium, sete identidades
+Codex isoladas, modelo vigente e nove health-checks passaram. `bash -n` e
+ShellCheck aprovados nos dois verificadores alterados. Java e comportamento
+do consumidor permanecem iguais aos 4.562/56 testes já aprovados.

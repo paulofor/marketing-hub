@@ -109,7 +109,7 @@ function triggerBlock(workflow, trigger) {
   );
 }
 
-function assertEventDrivenCoordination(workflow, sourceWorkflow, artifactBased) {
+function assertEventDrivenCoordination(workflow, sourceWorkflow, artifactBased, startup = null) {
   const configuration = workflow.split(/^jobs:\s*$/m)[0];
   assert.match(
     configuration,
@@ -157,7 +157,17 @@ function assertEventDrivenCoordination(workflow, sourceWorkflow, artifactBased) 
   assert.equal(hasRemoteCommand(deploy), true, "somente a continuação aprovada pode acessar o VPS");
 
   if (artifactBased) {
-    assert.match(deploy, /AGENT_BUILD_REFERENCE=['"]?\$\{DEPLOY_SOURCE_SHA\}/);
+    if (sourceWorkflow === "experiment-strategist-worker-ci.yml") {
+      assert.ok(startup, "[ARQUITETURA] Atena exige comando versionado de partida");
+      assert.match(deploy, /with-agent-consumer-lock\.py[^\n]+--revision '\$\{DEPLOY_SOURCE_SHA\}' -- bash scripts\/start-validated-runtime\.sh '\$\{REPOSITORY_DIR\}' '\$\{DEPLOY_SOURCE_SHA\}'/,
+        "[ARQUITETURA] Atena deve passar a revisão testada ao publicador e à partida");
+      assert.match(startup, /validated_revision="\$\{2:\?[^\n]+\n/,
+        "[ARQUITETURA] partida deve exigir a revisão recebida do workflow");
+      assert.match(startup, /export AGENT_BUILD_REFERENCE="\$validated_revision"/,
+        "[ARQUITETURA] Atena deve reportar a revisão recebida");
+    } else {
+      assert.match(deploy, /AGENT_BUILD_REFERENCE=['"]?\$\{DEPLOY_SOURCE_SHA\}/);
+    }
     assert.match(deploy, /github-token: \$\{\{ github\.token \}\}/);
     assert.match(deploy, /run-id:.*needs\.source-run\.outputs\.source_run_id/);
     assert.match(deploy, /name: agent-images-\$\{\{ env\.DEPLOY_SOURCE_SHA \}\}/);
@@ -576,6 +586,17 @@ test("todos os agentes Java aguardam a aplicação e usam o pacote do mesmo SHA"
   for (const module of ["growth-operator-worker", "financial-agent-worker",
     "experiment-strategist-worker", "landing-generator-agent-worker", "communication-agent-worker"]) {
     const workflow = await readFile(path.join(repositoryRoot, `.github/workflows/${module}-ci.yml`), "utf8");
-    assertEventDrivenCoordination(workflow, `${module}-ci.yml`, true);
+    const startup = module === "experiment-strategist-worker"
+      ? await readFile(path.join(repositoryRoot, `${module}/scripts/start-validated-runtime.sh`), "utf8")
+      : null;
+    assertEventDrivenCoordination(workflow, `${module}-ci.yml`, true, startup);
   }
+});
+
+test("partida protegida de Atena não pode trocar a revisão de origem", async () => {
+  const name = "experiment-strategist-worker-ci.yml";
+  const workflow = await readFile(path.join(repositoryRoot, `.github/workflows/${name}`), "utf8");
+  const startup = await readFile(path.join(repositoryRoot, "experiment-strategist-worker/scripts/start-validated-runtime.sh"), "utf8");
+  assert.throws(() => assertEventDrivenCoordination(workflow.replace("--revision '${DEPLOY_SOURCE_SHA}'", "--revision '${GITHUB_SHA}'"), name, true, startup));
+  assert.throws(() => assertEventDrivenCoordination(workflow, name, true, startup.replace('export AGENT_BUILD_REFERENCE="$validated_revision"', 'export AGENT_BUILD_REFERENCE="local"')));
 });

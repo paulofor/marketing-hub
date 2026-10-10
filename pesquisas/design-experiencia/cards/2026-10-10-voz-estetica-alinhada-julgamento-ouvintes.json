@@ -1,0 +1,18 @@
+{
+  "cardKey": "voz-estetica-alinhada-julgamento-ouvintes",
+  "collection": "prazer-audio-visual",
+  "title": "Avaliar a expressão vocal com ouvintes reais, não só com notas de IA",
+  "finding": "Em benchmark de cerca de 3 mil respostas de voz, um modelo ajustado com distribuição de julgamentos humanos apresentou macro-F1 perceptivo de 50,1% versus 44,2% do comparador Gemini 3.1 Pro; a evidência é de concordância com rótulos, não de preferência ou eficácia comercial.",
+  "mechanism": "Emoção e entrega vocal são percebidas no contexto conversacional e comportam discordância legítima; a agregação de múltiplos ouvintes evita tratar uma única etiqueta de IA como verdade perceptiva.",
+  "commercialApplication": "Testar variantes de narração de criativos e agentes de voz com pequenos painéis de ouvintes reais, acompanhando adequação percebida e sinais de abandono antes de conectar qualquer resultado a retenção ou vendas.",
+  "evidenceStrength": "Preprint com milhares de amostras avaliadas em múltiplas anotações humanas; validade restrita à concordância perceptiva no benchmark em inglês, sem teste comercial.",
+  "publishedOn": "2026-10-10",
+  "validUntil": "2026-11-24",
+  "experimentHypothesis": "Uma seleção de voz complementada por ouvintes reduzirá divergência entre voz pretendida e voz percebida versus seleção apenas por avaliador LLM; medir avaliação cega, compreensão e abandono.",
+  "risks": "Interpretar calor, confiança ou emoção como atributo real do locutor; ignorar diversidade de escutas; inferir traços pessoais sensíveis; usar rótulos para manipular públicos.",
+  "limits": "Não demonstrou aumento de prazer, confiança, CTA ou pagamentos; corpus CANDOR em inglês e classes emocionais raras continuam difíceis.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-10-voz-estetica-alinhada-julgamento-ouvintes.md",
+  "sourceTitle": "Fonte revisada — estética de voz contextual baseada em julgamentos humanos",
+  "sourceSha256": "e5a09bd8fdb4c8ab1c882ddbea700b6b44343bca1fea8c3ae9136ff6ec0974e2"
+}

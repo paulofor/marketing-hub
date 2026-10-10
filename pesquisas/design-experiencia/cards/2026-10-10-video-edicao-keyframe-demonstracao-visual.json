@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-edicao-keyframe-demonstracao-visual",
+  "collection": "video",
+  "title": "Editar um keyframe de referência antes de propagar mudanças no vídeo",
+  "finding": "No VINCIE-NExT, um quadro editado orienta a propagação de alterações em clipes curtos; dez avaliadores julgaram 431 clipes, favorecendo a configuração completa versus a reduzida em aderência à instrução (38% vs. 24%, com 39% empates). Não se isolou aprovação humana do keyframe.",
+  "mechanism": "Uma âncora visual explícita torna a aparência desejada mais verificável e orienta a consistência temporal, mas um erro no quadro pode se repetir em todos os frames.",
+  "commercialApplication": "No Apolo, testar fluxo vídeo→quadro editado revisável→propagação→checagem de continuidade versus edição direta; acompanhar erro visual, drift, custo e retrabalho por ativo aprovado.",
+  "evidenceStrength": "Artigo aceito no NeurIPS 2026 com benchmark de 431 vídeos e avaliação humana pareada entre configurações do método; não é teste de audiência nem conversão.",
+  "publishedOn": "2026-10-10",
+  "validUntil": "2026-11-24",
+  "experimentHypothesis": "Para edições de aparência em clipes curtos, keyframe revisável pode reduzir regenerações e inconsistências mantendo a intenção visual, sob ferramentas e orçamento comparáveis.",
+  "risks": "Propagação de alucinações da imagem de referência; manipulação visual enganosa; custo e latência adicionais; alterar regiões ou pessoas sem autorização.",
+  "limits": "O estudo não isolou efeito da revisão humana; não validou campanhas, vídeos longos, cortes rápidos ou aumento de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-10-video-edicao-keyframe-demonstracao-visual.md",
+  "sourceTitle": "Fonte revisada — edição de vídeo com keyframe visual como referência",
+  "sourceSha256": "11d6476e4215e8a01e248f7c32e0e766b3c2e2894996e4b920dfdc730154a9f9"
+}

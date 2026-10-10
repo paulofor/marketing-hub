@@ -58,6 +58,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private final ObjectMapper objectMapper;
   private final AutomaticExecutionControl automaticExecution;
   private final PdeMarketStrategyOutbox outbox;
+  private final PdeMarketStrategyPublicationPause publicationPause;
 
   /** Configura fila canônica, sandbox Codex e controle operacional PLAY/STOP. */
   public PdeMarketStrategyBpmTaskConsumer(
@@ -74,9 +75,11 @@ public class PdeMarketStrategyBpmTaskConsumer {
     this.automaticExecution = automaticExecution;
     this.outbox =
         new PdeMarketStrategyOutbox(Path.of(properties.getBpmStateDirectory()), objectMapper);
+    this.publicationPause =
+        new PdeMarketStrategyPublicationPause(Path.of(properties.getBpmStateDirectory()));
   }
 
-  /** Retoma entregas primeiro e reserva no máximo uma estratégia quando o agente está em PLAY. */
+  /** Reenvia entregas e só reserva estratégia em PLAY, fora da pausa protegida de publicação. */
   @Scheduled(cron = "40 */1 * * * *")
   public synchronized void processOne() {
     try (var lock = outbox.lock()) {
@@ -96,7 +99,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
         enqueue(pending.task(), pending.audit(), "failure", failure);
         return;
       }
-      if (!automaticExecution.allowsAutomaticExecution()) return;
+      if (publicationPause.paused() || !automaticExecution.allowsAutomaticExecution()) return;
       Map<String, Object> task = pending == null ? claim() : pending.task();
       if (task == null) return;
       if (pending == null) {
@@ -224,7 +227,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
       Map<String, Object> task, Map<String, Object> audit, Exception ex) throws IOException {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("error", ex.toString());
-    body.put("evidenceJson", evidence(task));
+    body.put("evidenceJson", evidence(task, audit));
     if (audit != null) body.put("executionAudit", audit);
     if (Files.exists(outbox.output())) body.put("resultJson", Files.readString(outbox.output()));
     if (Files.exists(outbox.events()))
@@ -244,16 +247,17 @@ public class PdeMarketStrategyBpmTaskConsumer {
     return body;
   }
 
-  /** Reserva somente a atividade oficial de estratégia após predecessoras aprovadas. */
+  /** Reserva a atividade oficial com handshake que impede claims da imagem anterior ao rollout. */
   private Map<String, Object> claim() {
     List<Map<String, Object>> pending =
         backend
             .get()
             .uri(
-                "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={process}&activityId={activity}",
+                "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={process}&activityId={activity}&workerContract={contract}",
                 AGENT_KEY,
                 PROCESS_CODE,
-                ACTIVITY_ID)
+                ACTIVITY_ID,
+                "ATENA_PDE_MARKET_STRATEGY_V1")
             .retrieve()
             .body(new ParameterizedTypeReference<>() {});
     return pending == null || pending.isEmpty() ? null : pending.getFirst();
@@ -414,16 +418,23 @@ public class PdeMarketStrategyBpmTaskConsumer {
 
   /** Preserva a origem e confirma que a atividade não publicou nem movimentou orçamento. */
   private String evidence(Map<String, Object> task) throws IOException {
+    return evidence(task, null);
+  }
+
+  /** Usa a versão auditada antes da inferência, sem atribuir o prompt novo a um trabalho antigo. */
+  private String evidence(Map<String, Object> task, Map<String, Object> audit) throws IOException {
     return objectMapper.writeValueAsString(
         Map.of(
             "agent",
             "Atena",
             "promptVersion",
-            requiresAgentValidation(task)
-                ? "pde-commercial-plan-v11"
-                : requiresProductIdentity(task)
-                    ? "pde-commercial-plan-v9"
-                    : "pde-commercial-plan-v8",
+            audit != null
+                ? auditedPromptVersion(audit)
+                : requiresAgentValidation(task)
+                    ? "pde-commercial-plan-v11"
+                    : requiresProductIdentity(task)
+                        ? "pde-commercial-plan-v9"
+                        : "pde-commercial-plan-v8",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -436,6 +447,20 @@ public class PdeMarketStrategyBpmTaskConsumer {
             false,
             "serviceTierException",
             "Codex OAuth não anuncia Flex para este harness; execução auditada em default."));
+  }
+
+  /** Recupera a versão da auditoria ou do cabeçalho legado; ausência não vira versão corrente. */
+  private String auditedPromptVersion(Map<String, Object> audit) {
+    Object declared = audit.get("promptVersion");
+    if (declared instanceof String value && value.startsWith("pde-commercial-plan-v")) return value;
+    Object part = audit.get("activityPromptPart");
+    if (part instanceof String value) {
+      var match =
+          java.util.regex.Pattern.compile("(?m)^# Atividade[^\\n]*Processo 2 v([0-9]+)\\b")
+              .matcher(value);
+      if (match.find()) return "pde-commercial-plan-v" + match.group(1);
+    }
+    return "UNKNOWN_PROMPT_VERSION";
   }
 
   /** Rejeita estratégia sem comparação, contrato versionado ou justificativa. */

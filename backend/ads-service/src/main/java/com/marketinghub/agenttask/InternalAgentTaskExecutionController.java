@@ -2,6 +2,7 @@ package com.marketinghub.agenttask;
 
 import com.marketinghub.agenttask.service.pending.AgentTaskOperatorGuidance;
 import com.marketinghub.agenttask.service.pending.AgentTaskPendingWithOperatorGuidance;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
@@ -36,14 +37,18 @@ public class InternalAgentTaskExecutionController {
     this(service, visualEvidenceService, null);
   }
 
-  /** Reserva uma atividade pelo contrato do worker e entrega as notas do próprio produto. */
+  /** Reserva pelo handshake da fila e entrega as notas segregadas do próprio produto. */
   @GetMapping("/pending")
   public List<AgentTaskPendingWithOperatorGuidance> pending(
       @PathVariable String agentKey,
       @RequestParam(required = false) String processCode,
       @RequestParam(required = false) String activityId,
       @RequestParam(required = false) String executionResourceCode,
-      @RequestParam(required = false) String workerContract) {
+      @Parameter(
+              description =
+                  "Contrato versionado do executor. Atena em pde-commercial-plan-offer/marketStrategy exige ATENA_PDE_MARKET_STRATEGY_V1; sem contrato essa fila não reserva tarefas.")
+          @RequestParam(required = false)
+          String workerContract) {
     return service
         .claimEligibleProcessTask(
             agentKey, processCode, activityId, executionResourceCode, workerContract)

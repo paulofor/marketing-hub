@@ -6,6 +6,8 @@ on:
     paths:
       - experiment-strategist-worker/**
       - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/with-agent-consumer-lock.py
+      - scripts/test-agent-consumer-publication-lock.py
       - scripts/codex-app-server-device-login.mjs
   pull_request:
     paths:
@@ -13,6 +15,8 @@ on:
       - .github/workflows/experiment-strategist-worker-ci.yml
       - config/agents/codex-agent-health-compliance.json
       - scripts/test-codex-agent-health-standard.mjs
+      - scripts/with-agent-consumer-lock.py
+      - scripts/test-agent-consumer-publication-lock.py
   workflow_run:
     workflows: ["Build & Deploy containers"]
     types: [completed]
@@ -60,6 +64,12 @@ jobs:
 
       - name: Validate premium agent architecture
         run: bash scripts/validate-premium-agents.sh
+
+      - name: Validate publication without interrupting inference
+        run: |
+          python3 scripts/test-agent-consumer-publication-lock.py
+          bash -n experiment-strategist-worker/scripts/start-validated-runtime.sh
+          shellcheck experiment-strategist-worker/scripts/start-validated-runtime.sh
 
       - uses: actions/setup-java@v4
         with:
@@ -198,6 +208,7 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/experiment-strategist-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete experiment-strategist-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/experiment-strategist-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/with-agent-consumer-lock.py "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
       - name: Start validated worker
         env:
@@ -206,39 +217,7 @@ jobs:
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "install -d -o 10001 -g 10001 -m 700 /opt/growth-operator/agents/experiment-strategist/secrets && if [ ! -f /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token ]; then install -o 10001 -g 10001 -m 600 /dev/null /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; fi && chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token && chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
           printf '%s' "${CLARITY_API_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "umask 077; tee /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token >/dev/null; chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
-          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
-            install -d -o 10001 -g 10001 /opt/growth-operator/agents/experiment-strategist/codex-home \
-            && export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/growth-operator/agents/experiment-strategist/codex-home \
-            && cd '${REPOSITORY_DIR}/experiment-strategist-worker' \
-            && BACKEND_URL=http://191.252.181.168 \
-               MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
-               CODEX_MODEL=gpt-6.1-sol \
-               AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}' \
-               EXPERIMENT_STRATEGIST_IMAGE=marketing-hub/experiment-strategist-worker:${DEPLOY_SOURCE_SHA} \
-               docker compose up -d --no-build --pull never --remove-orphans \
-            && for attempt in \$(seq 1 24); do \
-                 status=\$(docker inspect --format '{{.State.Status}}' experiment-strategist-worker-experiment-strategist-worker-1 2>/dev/null || true); \
-                 codex_ready=false; \
-                 if [ \"\${status}\" = running ] \
-                   && docker exec experiment-strategist-worker-experiment-strategist-worker-1 \
-                        sh -lc 'test -w /home/strategist/.codex && codex login status' >/dev/null 2>&1; then \
-                   codex_ready=true; \
-                 fi; \
-                 health_body=\$(curl -fsS http://127.0.0.1:8096/ops-experiment-strategist-observability-v1/health 2>/dev/null || true); \
-                 logfile_status=\$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8096/ops-experiment-strategist-observability-v1/logfile 2>/dev/null || true); \
-                 printf 'readiness attempt=%s container=%s codex=%s health=%s logfile=%s\\n' \
-                   \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\" \"\${logfile_status:-unavailable}\"; \
-                 if [ \"\${status}\" = running ] \
-                   && [ \"\${logfile_status}\" = 200 ] \
-                   && docker exec experiment-strategist-worker-experiment-strategist-worker-1 node /app/agent-health-report.mjs \
-                   && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then \
-                   exit 0; \
-                 fi; \
-                 sleep 5; \
-               done; \
-            printf '%s\n' 'Falha: container nao confirmou versao implantada, backend e health operacional.'; \
-            docker compose logs --tail=150 experiment-strategist-worker; \
-            exit 1"
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "cd '${REPOSITORY_DIR}/experiment-strategist-worker' && python3 '../scripts/with-agent-consumer-lock.py' --container experiment-strategist-worker-experiment-strategist-worker-1 --revision '${DEPLOY_SOURCE_SHA}' -- bash scripts/start-validated-runtime.sh '${REPOSITORY_DIR}' '${DEPLOY_SOURCE_SHA}'"
 
       - name: Report deployed revision
         run: |

@@ -321,3 +321,21 @@ selecionado, Flex deve ser adotado. O worker não chama uma nova API paga nesta 
 A homologação usa um executável de modelo simulado; não comprova qualidade editorial de uma
 inferência produtiva. [Contrato do ciclo](ciclos-aprendizado-vendas-canon.v1.md) e
 [API de propostas](../swagger/learning-cycle-decision-v1-swagger.yaml).
+
+### Fontes do primeiro planejamento nativo — 10/10/2026
+
+Em `INITIAL_PLANNED_EXPERIMENT`, o backend acrescenta `currentFinancialPlan`
+como estrutura, somente para a revisão LIVE vigente do mesmo produto, plano e
+versão, não vencida. `financialEvidenceScope=PROJECTION_NOT_COMMERCIAL_APPROVAL`
+preserva a distinção entre projeção privada e liberação de mercado. Fonte ausente
+ou inacessível continua ausente; não implica custo zero nem autorização.
+
+`integratedPersonalizationProof` conserva o resumo canônico da geração do mesmo
+produto/plano/experimento, incluindo necessidade de revisão independente. Resultado
+gerado não equivale a homologação, demanda ou entrega comercial aceita. A montagem
+não repete inferência, não copia aprovação e não transporta fonte TEST, divergente
+ou antiga. Sucessores conservam seus próprios contratos e autorizações.
+
+A comunicação que aguarda esse planejamento inicial deve ceder a precedência exata
+no coordenador existente, sem pausar o processo, cancelar trabalho ou abrir ciclo
+artificial. [Matriz e evidência](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).

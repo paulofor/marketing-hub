@@ -206,10 +206,9 @@ public class ProcessRunContext {
     return null;
   }
 
-  /**
-   * Reconhece a preparação Opala ou Quartzo da mesma ocorrência aguardada pelo processo de vendas.
-   */
+  /** Reconhece dependências preparatórias da mesma ocorrência sem liberar trabalho em curso. */
   public boolean permitsCommercialContinuation(ProcessRun waiting, ProcessRun candidate) {
+    if (permitsInitialPlanning(waiting, candidate)) return true;
     if (waiting.getLearningCycleId() == null
         || !"learningCycle".equals(waiting.getCurrentActivityId())
         || waiting.getFailureCount() > 0
@@ -234,6 +233,32 @@ public class ProcessRunContext {
                 "quartzo-commercial-preparation-v1",
                 "safira-commercial-preparation-v1")
             .contains(process(candidate.getProcessDefinitionId()).getProcessCode());
+  }
+
+  /** Permite preparar o primeiro experimento enquanto sua comunicação aguarda os predecessores. */
+  private boolean permitsInitialPlanning(ProcessRun waiting, ProcessRun candidate) {
+    if (!"WAITING_INPUT".equals(waiting.getStatus())
+        || waiting.getFailureCount() > 0
+        || !"communicationContract".equals(waiting.getCurrentActivityId())
+        || waiting.getLearningCycleId() != null
+        || candidate.getLearningCycleId() != null
+        || !Objects.equals(waiting.getProductId(), candidate.getProductId())
+        || !Objects.equals(waiting.getChainDefinitionId(), candidate.getChainDefinitionId())
+        || !Objects.equals(waiting.getSourceReference(), candidate.getSourceReference())
+        || waiting.getSourceReference() == null
+        || !waiting.getSourceReference().matches("experiment:[1-9][0-9]{0,17}")) return false;
+    if (!"pde-communication-sales-journey"
+            .equals(process(waiting.getProcessDefinitionId()).getProcessCode())
+        || !"pde-commercial-plan-offer"
+            .equals(process(candidate.getProcessDefinitionId()).getProcessCode())) return false;
+    Long experimentId = Long.valueOf(waiting.getSourceReference().substring(11));
+    var experiment = experiments.findById(experimentId).orElse(null);
+    return experiment != null
+        && experiment.getProduct() != null
+        && Objects.equals(waiting.getProductId(), experiment.getProduct().getId())
+        && experiment.getStatus() == com.marketinghub.experiment.ExperimentStatus.PLANNED
+        && experiment.getSourceExperiment() == null
+        && cycles.findByExperimentId(experimentId).isEmpty();
   }
 
   /** Reconstrói somente os identificadores imutáveis da solicitação original. */

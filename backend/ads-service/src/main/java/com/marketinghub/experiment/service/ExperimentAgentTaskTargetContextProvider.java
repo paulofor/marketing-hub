@@ -76,6 +76,14 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   @Autowired(required = false)
   private com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext safiraContext;
 
+  @Autowired(required = false)
+  @org.springframework.context.annotation.Lazy
+  private com.marketinghub.financialplan.v1.service.FinancialPlanService financialPlans;
+
+  @Autowired(required = false)
+  private com.marketinghub.pde.visualpersonalization.v1.service.VisualPreparationService
+      visualPreparations;
+
   /** Configura as fontes canônicas de experimento, produto e contrato PDE. */
   @Autowired
   public ExperimentAgentTaskTargetContextProvider(
@@ -534,8 +542,56 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       planNode.put("fixedOperationalCostBrl", plan.getFixedOperationalCostBrl());
       planNode.put("nextAction", plan.getNextAction());
       planNode.put("currentBlocker", plan.getCurrentBlocker());
+      if ("INITIAL_PLANNED_EXPERIMENT".equals(mode)
+          && experiment.getStatus() == com.marketinghub.experiment.ExperimentStatus.PLANNED)
+        planningEvidence(context, product, experiment, plan);
     }
     return context;
+  }
+
+  /** Entrega fontes atuais da mesma preparação sem transformar projeção ou geração em aprovação. */
+  private void planningEvidence(
+      ObjectNode context, Product product, Experiment experiment, CommercialPlan plan) {
+    if (financialPlans != null) {
+      try {
+        var financial =
+            financialPlans.get(
+                "PRODUCT",
+                product.getId(),
+                com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
+                null);
+        if (financial != null
+            && "PRODUCT".equals(financial.scope())
+            && Objects.equals(product.getId(), financial.scopeId())
+            && Objects.equals(plan.getId(), financial.commercialPlanId())
+            && financial.environment()
+                == com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE
+            && !financial.stale()
+            && financial.assumptions() != null
+            && Objects.equals(
+                product.getValidationDefinitionVersion(),
+                financial.assumptions().productVersion())) {
+          context.set("currentFinancialPlan", objectMapper.valueToTree(financial));
+          context.put("financialEvidenceScope", "PROJECTION_NOT_COMMERCIAL_APPROVAL");
+        }
+      } catch (org.springframework.web.server.ResponseStatusException ex) {
+        log.warn(
+            "Plano financeiro indisponível no planejamento. productId={} experimentId={} commercialPlanId={}",
+            product.getId(),
+            experiment.getId(),
+            plan.getId(),
+            ex);
+        context.put("financialEvidenceAvailability", "UNAVAILABLE");
+      }
+    }
+    if (visualPreparations != null) {
+      visualPreparations
+          .latestSummary(product.getId(), plan.getId(), experiment.getId())
+          .filter(proof -> proof.path("productId").asLong() == product.getId())
+          .filter(proof -> proof.path("commercialPlanId").asLong() == plan.getId())
+          .filter(proof -> proof.path("experimentId").asLong() == experiment.getId())
+          .ifPresent(proof -> context.set("integratedPersonalizationProof", proof));
+    }
   }
 
   /** Converte contratos JSON persistidos em objetos estruturados e registra qualquer corrupção. */

@@ -157,6 +157,75 @@ class ProcessRunQueueBlockerPersistenceTest {
     assertThat(events.count()).isZero();
   }
 
+  /**
+   * A política real permite a dependência inicial por HTTP e preserva a comunicação e seu custo.
+   */
+  @Test
+  void exposesInitialPlanningTurnWithoutApprovingOrPausingCommunication() throws Exception {
+    waiting.setCurrentActivityId("communicationContract");
+    queued.setSourceReference(waiting.getSourceReference());
+    queued.setScopeKey(run(95001L, 95012L, "experiment:95021", "QUEUED").getScopeKey());
+    var definitions =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    var communication = new BusinessProcessDefinition();
+    communication.setId(95011L);
+    communication.setProcessCode("pde-communication-sales-journey");
+    var planning = new BusinessProcessDefinition();
+    planning.setId(95012L);
+    planning.setProcessCode("pde-commercial-plan-offer");
+    when(definitions.findById(95011L)).thenReturn(Optional.of(communication));
+    when(definitions.findById(95012L)).thenReturn(Optional.of(planning));
+    when(experiments.findById(95021L))
+        .thenReturn(
+            Optional.of(
+                com.marketinghub.experiment.Experiment.builder()
+                    .id(95021L)
+                    .product(com.marketinghub.product.Product.builder().id(95001L).build())
+                    .status(com.marketinghub.experiment.ExperimentStatus.PLANNED)
+                    .build()));
+    var policy =
+        new ProcessRunContext(
+            null,
+            definitions,
+            null,
+            cycles,
+            null,
+            json,
+            experiments,
+            mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
+    when(context.permitsCommercialContinuation(any(), any()))
+        .thenAnswer(
+            inv -> policy.permitsCommercialContinuation(inv.getArgument(0), inv.getArgument(1)));
+    when(context.read(any(ProcessRun.class), eq(false)))
+        .thenReturn(
+            json.readValue(
+                "{\"selectedActivityCount\":4,\"completedActivityCount\":3,\"remainingActivityCount\":1,\"activities\":[]}",
+                ProductProcessActivityExecutionHistoryResponse.class));
+    entityManager.flush();
+    long revision = waiting.getRevision();
+    mvc.perform(
+            get("/api/business-processes/95012/products/95001/automation/v1")
+                .param("chainId", "95014")
+                .param("sourceReference", "experiment:95021"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("QUEUED"))
+        .andExpect(jsonPath("$.queueBlocker").isEmpty());
+    entityManager.flush();
+    entityManager.clear();
+    var persisted = runs.findById(waiting.getId()).orElseThrow();
+    assertThat(persisted.getStatus()).isEqualTo("WAITING_INPUT");
+    assertThat(persisted.getRevision()).isEqualTo(revision);
+    assertThat(persisted.getKnownCostUsd()).isEqualByComparingTo("0.25");
+    assertThat(persisted.getCompletedActivities()).isEqualTo(3);
+    assertThat(events.count()).isZero();
+    verifyNoInteractions(activities);
+  }
+
   /** Uma raiz própria compartilha a vez com seus filhos, sem apontar a si mesma como bloqueio. */
   @Test
   void sharesReservationWithinSameRoot() {

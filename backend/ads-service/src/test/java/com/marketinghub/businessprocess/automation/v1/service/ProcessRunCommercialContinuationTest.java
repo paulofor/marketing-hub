@@ -19,6 +19,8 @@ class ProcessRunCommercialContinuationTest {
   private final BusinessProcessDefinitionRepository definitions =
       mock(BusinessProcessDefinitionRepository.class);
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
+  private final com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments =
+      mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
   private final ProcessRunContext context =
       new ProcessRunContext(
           null,
@@ -27,8 +29,7 @@ class ProcessRunCommercialContinuationTest {
           cycles,
           null,
           new ObjectMapper(),
-          org.mockito.Mockito.mock(
-              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class),
+          experiments,
           mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
   private final ProcessRun waiting = new ProcessRun();
   private final ProcessRun candidate = new ProcessRun();
@@ -121,6 +122,72 @@ class ProcessRunCommercialContinuationTest {
   void preservesProtectedStates(String status) {
     waiting.setStatus(status);
     assertThat(context.permitsCommercialContinuation(waiting, candidate)).isFalse();
+  }
+
+  /** O planejamento do primeiro experimento recebe vez sem concluir sua comunicação bloqueada. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"95111,95121", "95211,95221"})
+  void allowsInitialPlanningBeforeWaitingCommunication(long productId, long experimentId) {
+    initialPlanning(productId, experimentId);
+    assertThat(context.permitsCommercialContinuation(waiting, candidate)).isTrue();
+    assertThat(waiting.getStatus()).isEqualTo("WAITING_INPUT");
+    assertThat(waiting.getCompletedActivities()).isZero();
+    verify(cycles, never()).save(any());
+    verify(experiments, never()).save(any());
+  }
+
+  /** A precedência inicial não pode atravessar pausa, história, outra identidade ou sucessor. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "product", "chain", "reference", "cycle", "existingCycle", "successor", "running",
+        "missing", "foreignProduct", "failure", "process", "activity", "paused", "human"
+      })
+  void isolatesInitialPlanning(String changed) {
+    var experiment = initialPlanning(95111L, 95121L);
+    switch (changed) {
+      case "product" -> candidate.setProductId(95112L);
+      case "chain" -> candidate.setChainDefinitionId(95115L);
+      case "reference" -> candidate.setSourceReference("experiment:95122");
+      case "cycle" -> candidate.setLearningCycleId(95131L);
+      case "existingCycle" ->
+          when(cycles.findByExperimentId(95121L)).thenReturn(Optional.of(cycle));
+      case "successor" ->
+          experiment.setSourceExperiment(new com.marketinghub.experiment.Experiment());
+      case "running" -> experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING);
+      case "missing" -> when(experiments.findById(95121L)).thenReturn(Optional.empty());
+      case "foreignProduct" -> experiment.getProduct().setId(95112L);
+      case "failure" -> waiting.setFailureCount(1);
+      case "process" -> definition(56L, "pde-construction-approval");
+      case "activity" -> waiting.setCurrentActivityId("creatives");
+      case "paused" -> waiting.setStatus("PAUSED");
+      case "human" -> waiting.setStatus("WAITING_HUMAN");
+      default -> throw new AssertionError(changed);
+    }
+    assertThat(context.permitsCommercialContinuation(waiting, candidate)).isFalse();
+  }
+
+  /** Conserva o experimento sintético planejado e a referência exata de ambas as execuções. */
+  private com.marketinghub.experiment.Experiment initialPlanning(
+      long productId, long experimentId) {
+    for (var run : new ProcessRun[] {waiting, candidate}) {
+      run.setProductId(productId);
+      run.setLearningCycleId(null);
+      run.setSourceReference("experiment:" + experimentId);
+    }
+    waiting.setStatus("WAITING_INPUT");
+    waiting.setCurrentActivityId("communicationContract");
+    definition(75L, "pde-communication-sales-journey");
+    definition(56L, "pde-commercial-plan-offer");
+    var product = com.marketinghub.product.Product.builder().id(productId).build();
+    var experiment =
+        com.marketinghub.experiment.Experiment.builder()
+            .id(experimentId)
+            .product(product)
+            .status(com.marketinghub.experiment.ExperimentStatus.PLANNED)
+            .build();
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    return experiment;
   }
 
   /** Registra as definições sintéticas com as responsabilidades canônicas de cada processo. */

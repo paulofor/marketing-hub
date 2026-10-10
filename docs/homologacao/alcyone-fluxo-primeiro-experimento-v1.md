@@ -1,0 +1,87 @@
+# Alcyone — primeiro planejamento e fila — 10/10/2026
+
+## Estado e causa
+
+O PR #5567 está integrado em d1fbe7a90c2e57142eeb7e7c399e4381b2855866.
+O preflight financeiro passou, Plutus #77 aprovou a projeção privada e Atena #20
+identificou a revisão independente da integração como dependência. Preservar esses
+pareceres; projeção não comprova demanda nem libera cobrança ou aquisição.
+
+Produto 11, plano 34/v4, experimento 97 PLANNED, sem ciclo. Comunicação #44
+aguarda predecessores. Ao solicitar pela tela o planejamento nativo #67, o backend
+retornou QUEUED e queueBlocker #44: a dependência fica impedida pela própria espera.
+O histórico e as regressões mostram que a continuação do Processo 6 para o Processo 5
+já possui exceção segura de precedência, sem tarefa em curso; faltava reconhecer a
+preparação do primeiro experimento no Processo 2.
+
+O contexto nativo ainda entrega somente os campos antigos do plano comercial.
+A revisão LIVE vigente e a prova integrada precisam acompanhar o planejamento,
+para que as novas decisões não dependam de copiar pareceres entre telas.
+
+## Alternativas
+
+| Caminho | Benefício | Risco/esforço | Escolha |
+| --- | --- | --- | --- |
+| Pausar comunicação e retomar manualmente | Destrava o caso | Mantém repasse e recorrência | Não como solução compartilhada |
+| Liberar qualquer processo em espera | Remove a fila | Atravessa pausas, gastos e identidades | Rejeitado |
+| Reconhecer a dependência inicial exata e entregar fontes atuais | Reutiliza coordenador e contratos | Validação de identidade, estado e trabalho em curso | Adotado |
+
+A exceção limita-se à comunicação WAITING_INPUT, sem falha, aguardando o
+planejamento do mesmo produto/cadeia/experimento inicial PLANNED, sem ciclo ou
+predecessor. O coordenador continua impedindo ultrapassagem de tarefas e filhos
+em curso. Nenhuma pausa é removida, resultado aprovado ou gasto autorizado por
+essa precedência. A comunicação só continua quando seus próprios gates aceitarem
+a nova entrada. A referência do primeiro experimento é preservada; não criar ciclo
+ou copiar aprovação para solucionar uma fila.
+
+## Matriz definida antes da validação
+
+| Área | Aceite |
+| --- | --- |
+| Caso original e outro produto | Planejamento recebe vez; comunicação e custos ficam preservados |
+| Antes válido | Continuação de preparação comercial do ciclo mantém comportamento |
+| Proteções | Outra identidade, ciclo, sucessor, experimento em operação, pausa, falha e tarefa em curso conservam reserva |
+| Persistência e HTTP | Consulta expõe fila sem escrever, aprovar, pausar ou duplicar tarefas |
+| Passagem ponta a ponta | MySQL e coordenador reais; agentes simulados concluem dependência e permitem reavaliar comunicação |
+| Contexto | Revisão LIVE atual do produto/plano/versão e prova do mesmo experimento; TEST, stale e origem divergente excluídos |
+| Custo e autoridade | Ausência permanece desconhecida; projeção e geração não são aprovação comercial |
+| Dispositivos | Chromium desktop, iPhone e Pixel no harness existente |
+| Publicação | Testes locais e diff primeiro; PR/revisão/merge e workflows/saúde depois |
+
+Fixtures têm identidades sintéticas 92049–92053/95111–95231. Provedores e agentes
+são simulados, sem credenciais, consumo real ou dados comerciais de teste.
+
+## Aprendizado
+
+Capacidade: coordenação de dependências antes de Íris e contexto de planejamento.
+Hipótese: reconhecer a precedência inicial e transportar as fontes canônicas reduz
+tempo parado e repasses, mantendo gates independentes. Critério local: ausência de
+fila circular e de contaminação de contexto, com reserva preservada nos negativos.
+Adoção condicionada à matriz; reversão se houver ultrapassagem de trabalho real ou
+uso de fonte financeira de outra identidade. Testes não comprovam aumento de vendas.
+
+## Resultados locais
+
+- Backend completo: 4.544 testes, zero falhas/erros; 37 condicionais de outras
+  topologias ignorados. A fila desta mudança foi validada com MySQL 5.7 real.
+
+- A regra anterior falhou nos dois casos positivos novos; a regra corrigida passou
+  com outra identidade, casos negativos e caminhos comerciais já existentes.
+- MySQL 5.7 e HTTP: 21 cenários de API e 22 de lifecycle passaram. A passagem
+  planejada → comunicação conservou identidade, custos desconhecidos e gates.
+- Navegação: passagem completa em Chromium desktop e iPhone/Pixel emulados;
+  reserva por decisão humana antes válida permaneceu visível e protegida.
+- Reinício: dez processos sintéticos dos cinco produtos preservaram conclusão e
+  referência sem ciclo, além das regressões existentes de tarefa ativa e histórico.
+- Worker de processos: seis testes; runner: quatro; contrato de entrega: cinco;
+  atestações comerciais: 16 testes/104 manifestos/497 arquivos sem divergência.
+- `bash -n`, ShellCheck, formatação e diff passaram. Topologia Compose, volumes e
+  processos locais foram removidos após as evidências. Não houve inferência real
+  nessa matriz; emulações Chromium não equivalem a aparelhos físicos ou Safari.
+
+O pacote conserva as 4.311 classes testadas, 765 recursos externos e catálogo com
+527 cartões. A revisão do diff e dos comentários de responsabilidade passou.
+A retomada publicada será acrescentada nas evidências do PR. A preparação real inclui Plutus #77 (APPROVE privado, USD
+0,1290348) e Atena #20 (revisão ainda pendente, USD 0,2734852). Total conhecido desta
+preparação: USD 1,214161, incluindo USD 0,811641 anteriores. Esses valores são
+estimativas, não faturamento reconciliado. Mídia e vídeo pago seguem sem autorização.

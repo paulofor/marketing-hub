@@ -148,7 +148,7 @@
     },
     {
       "path": "pde-platform/contracts/mira-private-candidate-v13.json",
-      "sha256": "ce1158d0ddc5ffe1041e2e69752bcee319ccdd99a51f2ff195e1cc7fe269e8cd",
+      "sha256": "1031c25e266888cd576b300b886fc4bab2570e9c472790735ec0056c5f20e6ae",
       "promptMode": "FULL"
     }
   ],
@@ -205,7 +205,7 @@
     },
     {
       "path": "infra/testing/mira-candidate/run-local.sh",
-      "sha256": "f1f0dfcdd12bc8a5eac37e6d5a135ab0e64b496785412ab3b5705d8bd715f561",
+      "sha256": "3ac149f9b487e80791f70ed2a04884f7d075c313f09d08e74f78d5a2be14bb99",
       "promptMode": "FULL"
     }
   ],
@@ -218,7 +218,7 @@
       {
         "path": "infra/testing/mira-candidate/run-local.sh",
         "previousSha256": "27d065ede01bbc25b7b3b31f24ccadec77f2747c4dc846b6818aeacefb7b09cd",
-        "currentSha256": "f1f0dfcdd12bc8a5eac37e6d5a135ab0e64b496785412ab3b5705d8bd715f561"
+        "currentSha256": "3ac149f9b487e80791f70ed2a04884f7d075c313f09d08e74f78d5a2be14bb99"
       }
     ]
   }

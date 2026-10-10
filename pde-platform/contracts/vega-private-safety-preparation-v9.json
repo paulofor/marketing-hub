@@ -77,7 +77,7 @@
     },
     {
       "path": "docs/homologacao/mira-narration-recovery-v1.md",
-      "sha256": "82b810c1cd55f3aa50a5d1c32de8d7e3545d87f2627c0f917f578c4d27618ae6",
+      "sha256": "df8f13ac0cac57bd8eb1f5547827caf2d544e2bed03f9ec8227b2262448b18aa",
       "promptMode": "FULL"
     }
   ],

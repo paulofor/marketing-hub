@@ -223,13 +223,13 @@
     },
     {
       "promptMode": "FULL",
-      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/mira-private-controls-v1.json",
-      "sha256": "de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4"
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/mira-private-controls-v2.json",
+      "sha256": "a0f3527492deffaacfc5b2a3f0242ad337dc2c2650670d5b10227d7f8d0ad9ed"
     },
     {
       "promptMode": "FULL",
       "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
-      "sha256": "267d1cda2987e168e18f7eb0f4085e3b4cbd95b0af380e29458243d76937ba04"
+      "sha256": "3ef866f13241325716db4f3b71917c9f0672a53e5837426e05e857959632dea1"
     },
     {
       "promptMode": "FULL",
@@ -342,7 +342,7 @@
     },
     {
       "path": "infra/testing/mira-candidate/run-local.sh",
-      "sha256": "f1f0dfcdd12bc8a5eac37e6d5a135ab0e64b496785412ab3b5705d8bd715f561",
+      "sha256": "3ac149f9b487e80791f70ed2a04884f7d075c313f09d08e74f78d5a2be14bb99",
       "promptMode": "FULL"
     },
     {
@@ -581,7 +581,7 @@
     },
     {
       "path": "docs/homologacao/mira-narration-recovery-v1.md",
-      "sha256": "82b810c1cd55f3aa50a5d1c32de8d7e3545d87f2627c0f917f578c4d27618ae6",
+      "sha256": "df8f13ac0cac57bd8eb1f5547827caf2d544e2bed03f9ec8227b2262448b18aa",
       "promptMode": "FULL"
     }
   ],
@@ -616,9 +616,14 @@
         "currentSha256": "c37f4aa0af5591982d3fa173d3c01f00da8a8b392de899bac1840cd04c7dbfdd"
       },
       {
+        "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
+        "previousSha256": "267d1cda2987e168e18f7eb0f4085e3b4cbd95b0af380e29458243d76937ba04",
+        "currentSha256": "3ef866f13241325716db4f3b71917c9f0672a53e5837426e05e857959632dea1"
+      },
+      {
         "path": "infra/testing/mira-candidate/run-local.sh",
         "previousSha256": "27d065ede01bbc25b7b3b31f24ccadec77f2747c4dc846b6818aeacefb7b09cd",
-        "currentSha256": "f1f0dfcdd12bc8a5eac37e6d5a135ab0e64b496785412ab3b5705d8bd715f561"
+        "currentSha256": "3ac149f9b487e80791f70ed2a04884f7d075c313f09d08e74f78d5a2be14bb99"
       },
       {
         "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateServiceTest.java",

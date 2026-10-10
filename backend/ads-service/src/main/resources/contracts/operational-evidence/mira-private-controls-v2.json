@@ -1,0 +1,164 @@
+{
+  "contractVersion": "PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1",
+  "productSlug": "pde-planejado-36",
+  "prototypeVersion": "mira-private-candidate-v3",
+  "status": "PASS",
+  "origin": "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "generatedAt": "2026-10-10T05:11:08.525814+00:00",
+  "frontendSourceFingerprint": "023cf881ddd2b9e0064d1a90ab8b9c002f005325f9d7d1f7e839735d208d2046",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "requiredCriteria": [
+    "CONCURRENT_SINGLE_CONSUMPTION",
+    "ORGANIZATION_LIMIT",
+    "PRODUCT_ITEM_LIMIT",
+    "EXPIRATION",
+    "REVOCATION",
+    "CLOSED_CONTEXT",
+    "INCOMPATIBLE_CONTEXT"
+  ],
+  "criteria": [
+    {
+      "code": "PRODUCT_ITEM_LIMIT",
+      "status": "PASS",
+      "testMethod": "twelveItemsAcceptedThirteenthRejected",
+      "resultSha256": "0277c6213ce6df2d26f14c9b05e1ff2ad734589e50510a5f8c7132710c256247",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "twelveItemsAcceptedThirteenthRejected",
+        "status": "PASS",
+        "durationSeconds": 0.609
+      }
+    },
+    {
+      "code": "ORGANIZATION_LIMIT",
+      "status": "PASS",
+      "testMethod": "twoOrganizationsRejectThird",
+      "resultSha256": "5a61564e364ebfd06023b88893f81675b7106c995626437c9c74ebefb400690c",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "twoOrganizationsRejectThird",
+        "status": "PASS",
+        "durationSeconds": 0.228
+      }
+    },
+    {
+      "code": "INCOMPATIBLE_CONTEXT",
+      "status": "PASS",
+      "testMethod": "incompatibleContextRejectsMutations",
+      "resultSha256": "2181445b4a99aa0657e285dafb8f0539bd0cc25d784dd595666bc6bc837687b2",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "incompatibleContextRejectsMutations",
+        "status": "PASS",
+        "durationSeconds": 0.13
+      }
+    },
+    {
+      "code": "CONCURRENT_SINGLE_CONSUMPTION",
+      "status": "PASS",
+      "testMethod": "concurrentGenerationConsumesOnce",
+      "resultSha256": "c52558494cc93b09c3df12ccd591b6d683013d5a8f31aa918ee0c25dd60f2ee6",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "concurrentGenerationConsumesOnce",
+        "status": "PASS",
+        "durationSeconds": 0.098
+      }
+    },
+    {
+      "code": "EXPIRATION",
+      "status": "PASS",
+      "testMethod": "expiredCredentialRejected",
+      "resultSha256": "214d8660882a73ac80edaeac0c7ac7b170f739ce840887aefac0ffd5de63ef77",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "expiredCredentialRejected",
+        "status": "PASS",
+        "durationSeconds": 0.077
+      }
+    },
+    {
+      "code": "CLOSED_CONTEXT",
+      "status": "PASS",
+      "testMethod": "closedContextRejectsMutationsAndPreservesResult",
+      "resultSha256": "428477612422a0d8734eabfccdbf423c71ae3bd54fa53b0129716552f63db79f",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "closedContextRejectsMutationsAndPreservesResult",
+        "status": "PASS",
+        "durationSeconds": 0.107
+      }
+    },
+    {
+      "code": "REVOCATION",
+      "status": "PASS",
+      "testMethod": "revokedCredentialRejected",
+      "resultSha256": "2e50df7895cdb3304f6908c386e9a70645f80170db497f853dd4157f6d73dcb4",
+      "source": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "result": {
+        "class": "com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test",
+        "method": "revokedCredentialRejected",
+        "status": "PASS",
+        "durationSeconds": 0.084
+      }
+    }
+  ],
+  "testReceiptSha256": "57f9e4fa332e0bece2bf3fea41a6fbc6adac798d55e6543dac8b8a18822729e3",
+  "rawJunitSha256": "057bedc3c2e5814c01b4467b60f091f2b650cadef87bec2475dcc9cc4eea514a",
+  "testedProductIds": [
+    8006,
+    8017
+  ],
+  "testedCycleIds": [
+    7006,
+    7017
+  ],
+  "testedExperimentIds": [
+    9006,
+    9017
+  ],
+  "sourceFiles": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "sha256": "c844807b47c123b94da67fba63adc6ed0fc8f1b1fcedd3db2b4cacc54d7b81a8"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateLocalApplication.java",
+      "sha256": "0dddde02e33ef79ce09dacc8d0b50c2e7d584efb532814c1f46655c63777ceee"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraPrivateService.java",
+      "sha256": "e8e0342fc7467d5d526ac37189804398862c20dcb734e9633696b2c735a1dcae"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/controller/MiraPrivateController.java",
+      "sha256": "ebfd3da9a40bf721b331bf0d7d2acdad4e099ab317ca4a5564974983255e3ce9"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/contract/MiraPrivateContract.java",
+      "sha256": "c37f4aa0af5591982d3fa173d3c01f00da8a8b392de899bac1840cd04c7dbfdd"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraRoutinePolicy.java",
+      "sha256": "480c2550e1891f7eb46ae2e5dcafe83fe74d5e47161b824bfde9cf085b1bf864"
+    }
+  ],
+  "limits": {
+    "organizations": 2,
+    "productsPerInput": 12,
+    "credentialDays": 7
+  },
+  "boundaries": [
+    "HTTP, validação e transações de sessão reais em MySQL 5.7 isolado.",
+    "Cadastros de ciclo são doubles locais; expiração altera somente sessão sintética local.",
+    "Não houve mutação de ciclo publicado, cliente humano, pagamento, mídia ou provedor externo.",
+    "Prova técnica da implementação; não é parecer independente nem evidência de mercado."
+  ]
+}

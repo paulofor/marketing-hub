@@ -73,7 +73,8 @@ PY
   PDE_INTERNAL_API_TOKEN=mira-local-internal-only node customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs \
     "$round_dir/scenario-$scenario-input.json" "$round_dir/scenario-$scenario.json" "$round_dir/captures-$scenario"
 done
-MIRA_LOCAL_REPORT="$round_dir/report.json" mvn -q -f backend/ads-service/pom.xml -Dtest=PdeInputComparisonScenarioMatrixV1Test test >"$round_dir/backend-contract-tests.log" 2>&1
+# Confere também o recibo operacional vigente para não publicar prova de fontes antigas.
+MIRA_LOCAL_REPORT="$round_dir/report.json" mvn -q -f backend/ads-service/pom.xml -Dtest=PdeInputComparisonScenarioMatrixV1Test,PdeOperationalControlEvidenceTest test >"$round_dir/backend-contract-tests.log" 2>&1
 MIRA_LOCAL_REPORT="$round_dir/report.json" MIRA_LOCAL_SCENARIO_REPORT_DIR="$round_dir" \
   mvn -q -f customer-agent-worker/pom.xml test >"$round_dir/worker-contract-tests.log" 2>&1
 python3 - "$round_dir/report.json" <<'PY'

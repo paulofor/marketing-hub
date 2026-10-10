@@ -135,3 +135,19 @@ opcional; o mesmo recibo entra no backend local e no harness, sem alterar produ�
 O teste forneceu certificado local válido e pinagem específica ao Chromium, sem
 desabilitar a verificação TLS de Node. A primeira tentativa detectou certificado
 histórico expirado; o ensaio corrigido passou e a topologia temporária foi removida.
+
+### Recibo operacional revalidado
+
+A CI detectou que `mira-private-controls-v1.json` conservava o hash anterior da
+fixture `MiraPrivateLocalApplication`; os controles não podem usar esse recibo
+para fontes alteradas. A falha foi identificada em
+`PdeOperationalControlEvidenceTest.publishedReceiptMatchesActualSourceFiles`,
+sem falhas nos demais 4505 testes do backend. Preservou-se o recibo histórico.
+
+Executaram-se novamente os sete controles por HTTP/transações no MySQL 5.7
+isolado, em dois contextos: concorrência com consumo único, limites de organizações
+e itens, expiração, revogação, contexto encerrado e contexto incompatível. Todos
+passaram, sem efeito externo. O emissor existente produziu
+`mira-private-controls-v2.json`; o catálogo aponta para esse recibo e seu hash.
+O runner de Mira passa a executar a conferência existente de fontes junto ao
+contrato da matriz, prevenindo descoberta tardia da mesma divergência.

@@ -21,6 +21,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Responsabilidade: reproduzir perda de callback e reinício usando worker e HTTP locais reais. */
 class PdeMarketStrategyDeliveryTest {
@@ -91,12 +93,18 @@ class PdeMarketStrategyDeliveryTest {
     assertThat(Files.exists(state.resolve("publisher-pause.json"))).isTrue();
   }
 
-  /** Preserva o prompt antigo ao relatar interrupção, sem atribuir a imagem nova à inferência. */
-  @Test
-  void interruptedAttemptKeepsOriginalAuditedPromptVersion() throws Exception {
+  /** Preserva cada cabeçalho versionado real ao relatar interrupção, sem nova inferência. */
+  @ParameterizedTest
+  @ValueSource(ints = {8, 9, 10, 11})
+  void interruptedAttemptKeepsOriginalAuditedPromptVersion(int version) throws Exception {
     Map<String, Object> task =
         Map.of(
-            "taskId", 930709L, "sourceReference", "experiment:930106", "processVersionNumber", 12);
+            "taskId",
+            930709L + version,
+            "sourceReference",
+            "experiment:" + (930106 + version),
+            "processVersionNumber",
+            12);
     Map<String, Object> audit =
         Map.of(
             "executionMode",
@@ -106,7 +114,11 @@ class PdeMarketStrategyDeliveryTest {
             "reasoningEffort",
             "xhigh",
             "activityPromptPart",
-            "# Atividade — estratégia no Processo 2 v10\nContrato original.");
+            Files.readString(
+                Path.of(
+                    "src/main/resources/prompts/pde-commercial-plan/v"
+                        + version
+                        + "/market-strategy.md")));
     Path state = Path.of(properties.getBpmStateDirectory());
     Files.createDirectories(state);
     var outbox = new PdeMarketStrategyOutbox(state, json);
@@ -118,7 +130,36 @@ class PdeMarketStrategyDeliveryTest {
             json.readTree(callbacks.getFirst().path("evidenceJson").asText())
                 .path("promptVersion")
                 .asText())
-        .isEqualTo("pde-commercial-plan-v10");
+        .isEqualTo("pde-commercial-plan-v" + version);
+    assertThat(callbacks.getFirst().path("executionAudit")).isEqualTo(json.valueToTree(audit));
+  }
+
+  /** Não atribui versão por ausência de cabeçalho ou por título copiado dentro do contexto. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "Contrato sem cabeçalho auditável.",
+        "Contrato sem cabeçalho auditável.\n# Atividade — Processo 2 v10\nConteúdo copiado."
+      })
+  void interruptedAttemptWithoutOperationalHeaderKeepsVersionUnknown(String prompt)
+      throws Exception {
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 940709L, "sourceReference", "experiment:940106", "processVersionNumber", 12);
+    Map<String, Object> audit = Map.of("executionMode", "MODEL", "activityPromptPart", prompt);
+    Path state = Path.of(properties.getBpmStateDirectory());
+    Files.createDirectories(state);
+    new PdeMarketStrategyOutbox(state, json)
+        .save(new PdeMarketStrategyOutbox.Pending(task, audit, true, null, null));
+    consumer().processOne();
+    assertThat(invocations()).isZero();
+    assertThat(claims).isZero();
+    assertThat(callbacks).hasSize(1);
+    assertThat(
+            json.readTree(callbacks.getFirst().path("evidenceJson").asText())
+                .path("promptVersion")
+                .asText())
+        .isEqualTo("UNKNOWN_PROMPT_VERSION");
     assertThat(callbacks.getFirst().path("executionAudit")).isEqualTo(json.valueToTree(audit));
   }
 

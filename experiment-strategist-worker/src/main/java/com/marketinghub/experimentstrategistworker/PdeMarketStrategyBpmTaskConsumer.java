@@ -449,14 +449,15 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "Codex OAuth não anuncia Flex para este harness; execução auditada em default."));
   }
 
-  /** Recupera a versão da auditoria ou do cabeçalho legado; ausência não vira versão corrente. */
+  /** Recupera a versão do cabeçalho operacional publicado, sem inferi-la do contexto copiado. */
   private String auditedPromptVersion(Map<String, Object> audit) {
     Object declared = audit.get("promptVersion");
     if (declared instanceof String value && value.startsWith("pde-commercial-plan-v")) return value;
     Object part = audit.get("activityPromptPart");
     if (part instanceof String value) {
       var match =
-          java.util.regex.Pattern.compile("(?m)^# Atividade[^\\n]*Processo 2 v([0-9]+)\\b")
+          java.util.regex.Pattern.compile(
+                  "^# (?:Atividade[^\\n]*(?:Processo 2|PDE) v|Prompt v)([0-9]+)\\b")
               .matcher(value);
       if (match.find()) return "pde-commercial-plan-v" + match.group(1);
     }

@@ -373,7 +373,10 @@ public class FinancialPlanService {
     return view(p);
   }
 
-  /** Apresenta projeção persistida e status atual, sem aprovar gastos ou misturar realizado. */
+  /**
+   * Apresenta a projeção, o parecer e as pendências do mesmo preflight do comando, sem aprovar
+   * gastos ou misturar realizado.
+   */
   private PlanView view(FinancialPlanRevision p) {
     var assumptions = read(p.getAssumptionsJson(), PlanAssumptions.class, p.getId());
     var evaluation = read(p.getEvaluationJson(), PlanEvaluation.class, p.getId());
@@ -430,24 +433,35 @@ public class FinancialPlanService {
               e.getEstimatedCost() == null ? "NOT_REPORTED" : "REPORTED",
               e.getFinishedAt());
     }
-    return new PlanView(
-        p.getId(),
-        p.getScopeKind(),
-        p.getScopeId(),
-        p.getEnvironment(),
-        p.getName(),
-        p.getRevisionNumber(),
-        p.getTemplateId(),
-        p.getCommercialPlanId(),
-        p.getCommercialPlanVersion(),
-        p.getCreatedBy(),
-        p.getCreatedAt(),
-        assumptions,
-        evaluation,
-        stale,
-        List.copyOf(pending),
-        p.getFinancialExecutionId() == null && pending.isEmpty(),
-        analysis);
+    var current =
+        new PlanView(
+            p.getId(),
+            p.getScopeKind(),
+            p.getScopeId(),
+            p.getEnvironment(),
+            p.getName(),
+            p.getRevisionNumber(),
+            p.getTemplateId(),
+            p.getCommercialPlanId(),
+            p.getCommercialPlanVersion(),
+            p.getCreatedBy(),
+            p.getCreatedAt(),
+            assumptions,
+            evaluation,
+            stale,
+            List.copyOf(pending),
+            p.getFinancialExecutionId() == null && pending.isEmpty(),
+            analysis);
+    if (current.canRequestAnalysis()) {
+      var product = products.findById(p.getScopeId()).orElseThrow(() -> missing("Produto"));
+      var plan =
+          plans.findById(p.getCommercialPlanId()).orElseThrow(() -> missing("Plano comercial"));
+      var projection =
+          FinancialProjectionContext.build(
+              product, plan, p.getCommercialPlanVersion(), current, json);
+      if (!projection.ready()) return current.withPreflightBlockers(projection.blockers());
+    }
+    return current;
   }
 
   /** Confirma propriedade e ambiente antes de ler ou bloquear uma revisão. */

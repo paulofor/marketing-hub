@@ -320,7 +320,10 @@ class FinancialPlanPreparationTest {
             "\"optimisticRecoveryCustomers\":8");
   }
 
-  /** Bloqueia a chamada paga quando contrato e receita-alvo não definem o cenário-base. */
+  /**
+   * Exibe o bloqueio antes do botão e recusa a chamada paga quando o cenário-base não está
+   * definido.
+   */
   @Test
   void missingCommercialTargetBlocksBeforePlutus() {
     product.setValidationDefinitionJson(
@@ -340,6 +343,10 @@ class FinancialPlanPreparationTest {
         .saveAndFlush(any());
     var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
     when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+
+    assertThat(saved.canRequestAnalysis()).isFalse();
+    assertThat(saved.pendingActions())
+        .anySatisfy(action -> assertThat(action).contains("meta de clientes ou receita"));
 
     assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
         .hasMessageContaining("meta de clientes ou receita");

@@ -19,6 +19,31 @@
   function audit() {
     $('audit').textContent = JSON.stringify({ productId: current.productId, cycleId: current.cycleId, experimentId: current.experimentId, prototypeVersion: current.prototypeVersion, sessionId: current.id, state: current.status, transfers: current.transfers, events: current.events.map(e => e.code), providerCalls: 0, commercialEvidenceEligible: false }, null, 2);
   }
+  // Consome apenas o recibo privado da sessão; leitura e reprodução não aprovam peças ou comércio.
+  function renderVideo() {
+    const binding = current.videoIntegration;
+    const hero = binding?.heroVideo;
+    const matches = binding?.evidenceType === 'LEARNING_CYCLE_VIDEO_INTEGRATION_V1'
+      && /^[a-f0-9]{64}$/.test(binding.integrationFingerprint)
+      && binding.productId === current.productId && binding.cycleId === current.cycleId
+      && binding.experimentId === current.experimentId && binding.productVersion === current.prototypeVersion
+      && hero?.role === 'LANDING_HERO' && hero.reviewStatus === 'APPROVED';
+    $('video-demo').hidden = !matches;
+    const video = $('kit-video');
+    if (!matches) {
+      if (video.hasAttribute('src')) { video.pause(); video.removeAttribute('src'); video.load(); }
+      delete video.dataset.fingerprint; $('video-demo').open = false; return;
+    }
+    if (video.dataset.fingerprint === binding.integrationFingerprint) return;
+    let source;
+    try { source = new URL(hero.assetUrl); } catch { $('video-demo').hidden = true; return; }
+    if (source.protocol !== 'https:' || source.username || source.password) { $('video-demo').hidden = true; return; }
+    video.dataset.fingerprint = binding.integrationFingerprint;
+    video.src = source.href;
+    $('video-captions').textContent = hero.captions;
+    $('video-error').hidden = true;
+    video.onerror = () => { $('video-error').hidden = false; };
+  }
   async function showResult() {
     if (displaying === current.id) return;
     displaying = current.id;
@@ -55,6 +80,7 @@
     $('resume').hidden = true;
     $('prepare').disabled = current.status !== 'INPUT';
     audit();
+    renderVideo();
     if (current.status === 'READY') {
       try { await showResult(); $('result').hidden = false; window.scrollTo(0, 0); } catch (ex) { displaying = ''; throw ex; }
     }

@@ -89,7 +89,8 @@ public final class KitPrivateContract {
       JsonNode manifest,
       List<JsonNode> events,
       int transfers,
-      Instant expiresAt) {}
+      Instant expiresAt,
+      JsonNode videoIntegration) {}
 
   /** Entrega explicação e ação permitida do estado persistido para apresentação pela interface. */
   public record Presentation(

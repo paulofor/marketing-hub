@@ -4,6 +4,7 @@ import com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateService;
 import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract.*;
 import jakarta.validation.Valid;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
@@ -25,17 +26,41 @@ public class KitPrivateController {
   private final KitPrivateService service;
   private final String pdeToken;
   private final String compositorToken;
+  private final String mediaOrigin;
 
-  /** Recebe as credenciais existentes, separando o compositor do emissor de acessos de QA. */
+  /** Recebe credenciais separadas e a origem pública de mídia já configurada no armazenamento. */
   public KitPrivateController(
       KitPrivateService service,
       @Value("${integrations.pde-platform.internal-token:${PDE_INTERNAL_API_TOKEN:}}")
           String pdeToken,
       @Value("${integrations.lead-portal-payments.auth-token:${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}}")
-          String compositorToken) {
+          String compositorToken,
+      @Value("${lead-portal.storage.public-base-url:}") String publicAssetBaseUrl) {
     this.service = service;
     this.pdeToken = pdeToken;
     this.compositorToken = compositorToken;
+    this.mediaOrigin = mediaOrigin(publicAssetBaseUrl);
+  }
+
+  /** Aceita somente uma origem HTTPS de mídia, sem credenciais ou diretivas injetadas na CSP. */
+  private String mediaOrigin(String base) {
+    if (base == null || base.isBlank()) return "";
+    try {
+      URI uri = URI.create(base);
+      if (!"https".equals(uri.getScheme())
+          || uri.getHost() == null
+          || uri.getRawUserInfo() != null
+          || uri.getRawQuery() != null
+          || uri.getRawFragment() != null
+          || uri.getPort() > 65535) {
+        log.warn("Kit privado: origem pública de mídia incompatível com a CSP HTTPS.");
+        return "";
+      }
+      return "https://" + uri.getHost() + (uri.getPort() == -1 ? "" : ":" + uri.getPort());
+    } catch (IllegalArgumentException ex) {
+      log.warn("Kit privado: falha ao validar a origem pública de mídia para CSP.", ex);
+      return "";
+    }
   }
 
   /** Entrega a interface versionada, sem informação privada e sem emitir evento de funil. */
@@ -196,7 +221,9 @@ public class KitPrivateController {
     return ResponseEntity.ok().headers(privateHeaders()).body(value);
   }
 
-  /** Carrega recursos versionados sem aceitar caminho fornecido pelo navegador. */
+  /**
+   * Carrega recursos privados e libera mídia somente da origem canônica, mantendo scripts locais.
+   */
   private ResponseEntity<byte[]> resource(String name, String type) {
     try {
       var bytes = new ClassPathResource("private-kit-v1/" + name).getContentAsByteArray();
@@ -204,7 +231,9 @@ public class KitPrivateController {
           .headers(privateHeaders())
           .header(
               "Content-Security-Policy",
-              "default-src 'self'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'")
+              "default-src 'self'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self'"
+                  + (mediaOrigin.isBlank() ? "" : " " + mediaOrigin)
+                  + "; frame-ancestors 'none'; base-uri 'self'")
           .contentType(MediaType.parseMediaType(type))
           .body(bytes);
     } catch (IOException ex) {

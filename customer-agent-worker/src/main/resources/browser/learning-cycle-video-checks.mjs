@@ -67,13 +67,23 @@ export async function verifyVideoIdentity(binding, fetcher = fetch) {
 // Mede reprodução e áudio decodificado com o navegador real, sem inferir pelo status do cadastro.
 export async function verifyPlayback(video, expectedSeconds) {
   await video.evaluate((element) => element.play());
-  await video
-    .page()
-    .waitForFunction(
-      (element) => element.currentTime >= 0.25 && !element.paused,
-      await video.elementHandle(),
-      { timeout: 30000 },
-    );
+  // Observa eventos nativos; waitForFunction depende de eval, recusado pela CSP do kit privado.
+  await video.evaluate((element) => new Promise((resolve, reject) => {
+    const finish = (callback) => {
+      clearTimeout(timer);
+      element.removeEventListener('timeupdate', check);
+      element.removeEventListener('error', failure);
+      callback();
+    };
+    const check = () => {
+      if (element.currentTime >= 0.25 && !element.paused) finish(resolve);
+    };
+    const failure = () => finish(() => reject(new Error('Falha na reprodução do vídeo')));
+    const timer = setTimeout(() => finish(() => reject(new Error('Reprodução não avançou em 30 segundos'))), 30000);
+    element.addEventListener('timeupdate', check);
+    element.addEventListener('error', failure);
+    check();
+  }));
   const result = await video.evaluate((element) => ({
     duration: element.duration,
     width: element.videoWidth,

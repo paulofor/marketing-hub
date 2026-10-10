@@ -367,6 +367,30 @@ caráter opcional e recuperação em cada dispositivo; evidências não equivale
 escuta humana, ao aceite de uso nem a resultados comerciais. Matriz e limites em
 [homologação de Mira](../homologacao/mira-narration-recovery-v1.md).
 
+### Integração privada executável de kits — 10/10/2026
+
+O runtime `DETERMINISTIC_PRIVATE_KIT_V1`, com perfil explícito `nails-v1` ou
+`barber-v1` e pacote `PDE_PRIVATE_KIT_PACKAGE_V2`, implementa o mesmo recibo em
+`/api/pde/kit/private/v1/prototype` (ou prefixo público `/mh-api`). Reconhecer
+essa capacidade depende da prova aceita do ciclo, nunca de nome, ID ou host.
+Os dois aceites humanos e a identidade das mídias permanecem obrigatórios.
+
+O `SessionView` da API de kits acrescenta `videoIntegration` opcional da mesma
+sessão/produto/ciclo/experimento/versão. Ausência, divergência ou erro de leitura
+não bloqueiam o pacote; erro registra o contexto e a exceção completa. O cliente
+mantém player recolhido, controles nativos, legenda/transcrição e continuidade
+independente do vídeo, inclusive durante falha e retorno.
+
+O harness privado reutiliza `learning-cycle-video-checks.mjs`, confere bytes,
+reprodução/áudio e recuperação e devolve `videoIntegrationFingerprint` e os
+quatro checks existentes. O verificador observa eventos nativos de mídia sem
+`waitForFunction`, pois a CSP do kit proíbe avaliação dinâmica. A CSP permanece
+restrita. Nenhum teste cria aceite humano ou evidencia demanda, compra ou lucro.
+O controller permite `media-src` somente para a origem HTTPS do armazenamento
+configurado, além de `self`, preservando scripts e conexões locais. Configuração
+insegura ou que injete credenciais/diretivas não amplia a CSP.
+Matriz, histórico e limites: [integração privada de Capella](../homologacao/capella-video-integration-private-kit-v1.md).
+
 ## Falhas HTTP do planejador de Apolo
 
 Antes de cada envio, persistir o evento `APOLLO_PLANNING_HTTP` com job, tentativa,

@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
 import { validateFirstKitActions } from './private-kit-first-actions-contract.mjs';
+import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 const require=createRequire(import.meta.url);
 let library;try{library=require('playwright-core');}catch(ex){if(ex.code!=='MODULE_NOT_FOUND')throw ex;library=require('playwright');}
 const {chromium,devices}=library;
@@ -17,7 +18,8 @@ const packageContractVersion='PDE_PRIVATE_KIT_PACKAGE_V2';
 const packageNames=['calendario/calendario-7-dias.txt',...Array.from({length:10},(_,i)=>['posts/post-','stories/story-','legendas/legenda-'].map(prefix=>prefix+String(i+1).padStart(2,'0')+(prefix.startsWith('legendas')?'.txt':'.png'))).flat(),...Array.from({length:5},(_,i)=>'mensagens/mensagem-'+String(i+1).padStart(2,'0')+'.txt')].sort();
 const plans=input.mode==='TECHNICAL'?['ADHERENT','RECOVERY','SAFETY'].flatMap(s=>Object.keys(profiles).map(d=>[s,d])):[[input.scenarioCode,{ADHERENT:'DESKTOP_1440',RECOVERY:'IPHONE_15_PRO',SAFETY:'PIXEL_7'}[input.scenarioCode]]];
 await mkdir(directory,{recursive:true});const startedAt=new Date(),scenarios=[],artifacts=[];
-const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox']});
+const verifiedVideos=input.videoIntegration?await verifyVideoIdentity(input.videoIntegration):null;
+const browser=await chromium.launch(videoBrowserOptions());
 async function api(path,{method='GET',body,session}={}) {
   const response=await fetch(base+path,{method,headers:session?{'X-Kit-Session':session,'Content-Type':'application/json'}:{'X-PDE-Internal-Token':token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
   if(!response.ok)throw new Error('Contrato privado recusou '+path+' · HTTP '+response.status);
@@ -49,6 +51,10 @@ try {
     try {
       await page.addInitScript(secret=>sessionStorage.setItem('private-kit-session-v1',secret),created.sessionToken);
       await page.goto(input.sourceUrl);await page.locator('#briefing').waitFor({state:'visible'});
+      const videoPlayback=input.videoIntegration?await verifyIntegratedPage(page,input.videoIntegration,created.session,{
+        startName:'Preparar meu kit de teste',videoLabel:'Demonstração do kit de divulgação',
+        failureMessage:'O vídeo não abriu. Você pode continuar e usar seu kit normalmente.',
+      }):null;
       if(input.profileCode==='barber-v1')await page.locator('[name=services]').fill('Corte e barba');
       // A fixture permanece igual entre dispositivos para comprovar reutilização sem nova composição.
       await page.locator('[name=professionalName]').fill(scenarioCode==='RECOVERY'?'Studio Retomada':'Studio Exemplo');
@@ -103,10 +109,11 @@ try {
       if(!layout.noHorizontalOverflow||!layout.controlsNamed)throw new Error('Layout ou acessibilidade básica reprovados.');
       const key=scenarioCode+'-'+deviceProfile,path=resolve(directory,key+'.png');await page.screenshot({path,fullPage:true});
       artifacts.push({captureSessionId:input.captureSessionId,evidenceKey:key,evidenceType:'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:null,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,pageHeightPx:layout.height,scrollY:0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:path});
-      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
+      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,videoPlayback,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
       await writeFile(outputFile+'.partial',JSON.stringify({status:'IN_PROGRESS',scenarios,artifacts},null,2));
     }finally{await context.close();}
   }
 }finally{await browser.close();}
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||Object.keys(profiles).every(d=>scenarios.some(s=>s.deviceProfile===d)),happyResultWithinTenMinutes:scenarios.every(s=>s.resultReadySeconds<=600),recoveryPreserved:scenarios.filter(s=>s.scenarioCode==='RECOVERY').every(s=>s.recovered),safetyBlocked:scenarios.filter(s=>s.scenarioCode==='SAFETY').every(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:true,paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
-await writeFile(outputFile,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',fixtureContract:'PDE_PRIVATE_KIT_FIXTURES_V1',packageContractVersion,mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,cycleId:input.cycleId,productSlug:input.productSlug,profileCode:input.profileCode,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',providerCalls:0,startedAt:startedAt.toISOString(),finishedAt:new Date().toISOString(),durationSeconds:(Date.now()-startedAt)/1000,devices:Object.keys(profiles).filter(d=>plans.some(p=>p[1]===d)).map(deviceProfile=>({deviceProfile,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)})),scenarios,checks,artifacts,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)},null,2));
+if(input.videoIntegration)Object.assign(checks,{videoIdentity:verifiedVideos.length===2,videoPlayback:scenarios.every(s=>s.videoPlayback?.hero&&s.videoPlayback?.campaign),videoOptional:scenarios.every(s=>s.videoPlayback?.optional),videoFailureRecovery:scenarios.every(s=>s.videoPlayback?.failureRecovery)});
+await writeFile(outputFile,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',fixtureContract:'PDE_PRIVATE_KIT_FIXTURES_V1',packageContractVersion,...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,verifiedVideos}:{}),mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,cycleId:input.cycleId,productSlug:input.productSlug,profileCode:input.profileCode,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',providerCalls:0,startedAt:startedAt.toISOString(),finishedAt:new Date().toISOString(),durationSeconds:(Date.now()-startedAt)/1000,devices:Object.keys(profiles).filter(d=>plans.some(p=>p[1]===d)).map(deviceProfile=>({deviceProfile,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)})),scenarios,checks,artifacts,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)},null,2));

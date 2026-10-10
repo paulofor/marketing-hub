@@ -35,16 +35,20 @@ test('respeita o limite antes de baixar conteúdo sem tamanho confiável',async(
 
 // Exercita os limites que o navegador real também mede, sem presumir áudio pelo cadastro.
 function playbackFixture(state) {
-  let evaluations=0;
-  return {
-    evaluate:async()=> (++evaluations===2?state:undefined),
-    elementHandle:async()=>({}),
-    page:()=>({waitForFunction:async()=>{}}),
-  };
+  const element=Object.assign(new EventTarget(),state,{videoWidth:state.width,videoHeight:state.height,
+    webkitAudioDecodedByteCount:state.audioBytes,currentTime:0.5,paused:false,
+    play:async()=>{},pause:()=>{}});
+  return {evaluate:async operation=>operation(element)};
 }
 test('reprovação de áudio, duração ou dimensões impede aceite técnico',async()=>{
   const valid={duration:3,width:720,height:1280,audioBytes:1000,muted:false};
   assert.equal((await verifyPlayback(playbackFixture(valid),3)).audioBytes,1000);
   for(const invalid of [{audioBytes:0},{muted:true},{duration:15},{width:0}])
     await assert.rejects(verifyPlayback(playbackFixture({...valid,...invalid}),3));
+});
+
+test('falha nativa de reprodução recusa a prova sem usar avaliação bloqueada pela CSP',async()=>{
+  const element=Object.assign(new EventTarget(),{currentTime:0,paused:false,
+    play:async()=>{setTimeout(()=>element.dispatchEvent(new Event('error')),5);}});
+  await assert.rejects(verifyPlayback({evaluate:async operation=>operation(element)},3),/Falha na reprodução/);
 });

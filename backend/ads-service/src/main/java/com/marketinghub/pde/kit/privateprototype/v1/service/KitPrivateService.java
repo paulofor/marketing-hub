@@ -5,6 +5,7 @@ import static com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactCo
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding;
 import com.marketinghub.pde.kit.privateprototype.v1.*;
 import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract.*;
 import com.marketinghub.repository.jpa.kit.*;
@@ -45,6 +46,9 @@ public class KitPrivateService {
   private final ObjectMapper json;
   private final String pepper;
   private final Clock clock;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private LearningCycleVideoBinding videoBinding;
 
   /** Configura persistência canônica e assinatura de acessos sem manter segredo bruto no banco. */
   public KitPrivateService(
@@ -436,7 +440,7 @@ public class KitPrivateService {
     return a;
   }
 
-  /** Organiza estado, orientação permitida e saída reais, com metadados técnicos separados. */
+  /** Organiza estado, saída e vínculo audiovisual vigente, com metadados técnicos separados. */
   private SessionView view(KitPrivateSession s) {
     var data = read(s.getPayloadJson());
     KitPrivateArtifact a =
@@ -481,7 +485,33 @@ public class KitPrivateService {
         manifest,
         list,
         data.path("transfers").asInt(),
-        s.getExpiresAt());
+        s.getExpiresAt(),
+        videoIntegration(s));
+  }
+
+  /** Apresenta somente vídeos do mesmo contexto; falha do vínculo não impede recuperar o kit. */
+  private JsonNode videoIntegration(KitPrivateSession session) {
+    if (videoBinding == null) return null;
+    try {
+      var cycle = cycles.findById(session.getCycleId()).orElse(null);
+      if (cycle == null
+          || !Objects.equals(session.getProductId(), cycle.getProductId())
+          || !Objects.equals(session.getExperimentId(), cycle.getExperimentId())
+          || !Objects.equals(session.getPrototypeVersion(), cycle.getProductVersion())) return null;
+      return videoBinding
+          .presentation(session.getCycleId(), session.getPrototypeVersion())
+          .orElse(null);
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha no vínculo audiovisual do kit productId={} cycleId={} experimentId={} sessionId={} version={}",
+          session.getProductId(),
+          session.getCycleId(),
+          session.getExperimentId(),
+          session.getId(),
+          session.getPrototypeVersion(),
+          ex);
+      return null;
+    }
   }
 
   /** Entrega contexto de composição sem acesso, byte de arquivo ou efeito externo. */

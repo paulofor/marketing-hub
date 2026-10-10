@@ -40,7 +40,12 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableAutoConfiguration(
     exclude = {HibernateJpaAutoConfiguration.class, JpaRepositoriesAutoConfiguration.class})
 @EnableTransactionManagement
-@Import({KitPrivateService.class, KitArtifactContract.class, KitPrivateController.class})
+@Import({
+  KitPrivateService.class,
+  KitArtifactContract.class,
+  KitPrivateController.class,
+  KitPrivateVideoLocalFixture.class
+})
 public class KitPrivateLocalApplication {
   /**
    * Inicializa somente portas locais e credenciais fictícias, sem carregar configuração produtiva.

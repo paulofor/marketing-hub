@@ -1624,7 +1624,7 @@ public class AgentTaskService {
     return claimEligibleProcessTask(agentKey, processCode, activityId, executionResourceCode, null);
   }
 
-  /** Reserva trabalho usando um contrato versionado que limita contexto e recuperação do worker. */
+  /** Exige a imagem compatível antes de reservar trabalho, contexto e recuperação do worker. */
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
       String agentKey,
@@ -1633,6 +1633,8 @@ public class AgentTaskService {
       String executionResourceCode,
       String workerContract) {
     agent(agentKey);
+    boolean atenaBpmQueue = AtenaBpmWorkerContract.supports(agentKey, processCode, activityId);
+    boolean atenaBpmContract = atenaBpmQueue && AtenaBpmWorkerContract.accepts(workerContract);
     boolean apolloAudiovisualQueue =
         isApolloAudiovisualQueue(agentKey, processCode, activityId, executionResourceCode);
     boolean temisBpmQueue = isTemisBpmQueue(agentKey, processCode, activityId);
@@ -1649,9 +1651,14 @@ public class AgentTaskService {
             && "creative-production-approval".equals(trimToNull(processCode))
             && "nonAudiovisual".equals(trimToNull(activityId));
     rejectWorkerContractOutsideItsQueue(
-        workerContract, apolloAudiovisualContract, temisBpmContract, irisRenderContract);
+        workerContract,
+        apolloAudiovisualContract,
+        temisBpmContract,
+        irisRenderContract,
+        atenaBpmContract);
     if ((apolloAudiovisualQueue && !apolloAudiovisualContract)
-        || (temisBpmQueue && !temisBpmContract)) {
+        || (temisBpmQueue && !temisBpmContract)
+        || (atenaBpmQueue && !atenaBpmContract)) {
       return Optional.empty();
     }
     Optional<AgentTask> replayable =
@@ -1764,11 +1771,13 @@ public class AgentTaskService {
       String workerContract,
       boolean apolloAudiovisualContract,
       boolean temisBpmContract,
-      boolean irisRenderContract) {
+      boolean irisRenderContract,
+      boolean atenaBpmContract) {
     if (trimToNull(workerContract) != null
         && !apolloAudiovisualContract
         && !temisBpmContract
-        && !irisRenderContract) {
+        && !irisRenderContract
+        && !atenaBpmContract) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "Contrato versionado do worker incompatível com a fila solicitada.");

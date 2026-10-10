@@ -62,7 +62,7 @@
       "modelSources": [
         "experiment-strategist-worker/docker-compose.yml",
         "experiment-strategist-worker/src/main/resources/application.yml",
-        ".github/workflows/experiment-strategist-worker-ci.yml",
+        "experiment-strategist-worker/scripts/start-validated-runtime.sh",
         "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/OpportunityReviewConsumer.java"
       ]
     },

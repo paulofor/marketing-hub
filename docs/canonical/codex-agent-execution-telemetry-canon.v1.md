@@ -75,3 +75,25 @@ integral são obrigatórios. Todo
 bloqueio deve acrescentar categoria, orientação concreta e ao menos um link seguro. URLs realmente
 abertas por Psique devem ser distinguidas de URLs apenas recebidas no contexto e vinculadas somente
 ao `taskId`; parâmetros de credencial não podem ser persistidos nem mostrados.
+
+## Publicação de Atena sem interromper a atividade — 10/10/2026
+
+A fila BPM `pde-commercial-plan-offer/marketStrategy` exige o handshake
+`ATENA_PDE_MARKET_STRATEGY_V1`; polling sem contrato não reserva tarefas, e contrato
+incompatível é rejeitado. Isso impede a imagem anterior de consumir uma tarefa
+encaminhada por um backend novo. As filas dos outros agentes conservam seus contratos.
+
+A publicação versionada de Atena deve primeiro gravar `publisher-pause.json` no
+volume do outbox e adquirir o mesmo lock POSIX de `consumer.lock` usado pelo
+`FileChannel` Java. A execução corrente termina normalmente, preservando resultado,
+custo e callback; não cancelar processo remoto para liberar o publicador. Replay de
+callback continua permitido durante a pausa. A troca mantém o lock até comprovar
+imagem do SHA validado, autenticação, backend, health e logfile. Falha, interrupção ou
+timeout mantém a pausa durável; somente sucesso libera a pausa que o próprio
+publicador possui. Essa proteção não transfere a orquestração do BPM ao executor.
+
+Ao relatar inferência interrompida sem resultado, usar a versão do prompt auditado
+na tentativa, nunca a versão instalada depois. Uso parcial estruturado permanece
+parcial; não tratá-lo como total, parecer ou cobrança conciliada.
+
+[Prova e matriz de regressão](../homologacao/vega-publicacao-segura-atena-v1.md).

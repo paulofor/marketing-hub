@@ -11,7 +11,7 @@ const modules = ["agent-executor-admin-controller", "communication-agent-worker"
   "experiment-strategist-worker", "financial-agent-worker", "growth-operator-worker",
   "landing-generator-agent-worker", "meta-ad-approver-worker"];
 
-function validate(workflow, module) {
+function validate(workflow, module, startup = null) {
   const [before, deploy] = workflow.split(/^  deploy:\s*$/m);
   assert.ok(deploy, `${module}: deploy ausente`);
   const eventDriven = module !== "agent-executor-admin-controller";
@@ -45,16 +45,29 @@ function validate(workflow, module) {
   assert.ok(verification?.includes(deployedReference), module);
   const load = deploy.indexOf("node scripts/agent-image-bundle.mjs send");
   assert.ok(load > deploy.indexOf("< scripts/ensure-agent-vps-disk-space.sh"), `${module}: carga deve seguir gate inicial`);
-  assert.ok(load < deploy.indexOf("docker compose up"), `${module}: carga deve preceder restart`);
+  const guardedRuntime = module === "experiment-strategist-worker";
+  const restart = guardedRuntime
+    ? deploy.indexOf("-- bash scripts/start-validated-runtime.sh")
+    : deploy.indexOf("docker compose up");
+  assert.ok(load < restart, `${module}: carga deve preceder restart`);
+  if (guardedRuntime) {
+    assert.ok(startup, `${module}: comando versionado ausente`);
+    assert.match(deploy, /with-agent-consumer-lock\.py[^\n]+--revision '\$\{DEPLOY_SOURCE_SHA\}' -- bash scripts\/start-validated-runtime\.sh/, module);
+    assert.match(startup, /EXPERIMENT_STRATEGIST_IMAGE="marketing-hub\/experiment-strategist-worker:\$validated_revision"/, module);
+    assert.doesNotMatch(startup, /docker (?:build|buildx|compose build)\b|\s--build\b/, `${module}: build no VPS proibido`);
+  }
   assert.doesNotMatch(deploy, /docker (?:build|buildx|compose build)\b|\s--build\b/, `${module}: build no VPS proibido`);
-  assert.match(deploy, /docker compose up -d --no-build --pull never --remove-orphans/, module);
+  assert.match(guardedRuntime ? startup : deploy, /docker compose up -d --no-build --pull never --remove-orphans/, module);
   assert.match(deploy, /group: deploy-vps-163-245-202-80\s+queue: max\s+cancel-in-progress: false/, module);
   assert.equal((deploy.match(/bash -s -- retention/g) ?? []).length, 2, `${module}: retenção preventiva ausente`);
 }
 
 for (const module of modules) {
   test(`${module}: a imagem aprovada chega ao Compose sem recompilar`, () => {
-    validate(readFileSync(path.join(root, `.github/workflows/${module}-ci.yml`), "utf8"), module);
+    const startup = module === "experiment-strategist-worker"
+      ? readFileSync(path.join(root, `${module}/scripts/start-validated-runtime.sh`), "utf8")
+      : null;
+    validate(readFileSync(path.join(root, `.github/workflows/${module}-ci.yml`), "utf8"), module, startup);
   });
 }
 
@@ -67,6 +80,15 @@ test("regressões de build, revisão, ausência do pacote e ordem são bloqueada
     source.replace("agent-image-bundle.mjs send", "agent-image-bundle.mjs ignored")]) {
     assert.throws(() => validate(changed, module));
   }
+});
+
+test("Atena preserva imagem imutável e lock ao extrair o comando versionado", () => {
+  const module = "experiment-strategist-worker";
+  const workflow = readFileSync(path.join(root, `.github/workflows/${module}-ci.yml`), "utf8");
+  const startup = readFileSync(path.join(root, `${module}/scripts/start-validated-runtime.sh`), "utf8");
+  assert.throws(() => validate(workflow.replace("with-agent-consumer-lock.py' --container", "unprotected.py' --container"), module, startup));
+  assert.throws(() => validate(workflow, module, startup.replace("--no-build --pull never", "--build")));
+  assert.throws(() => validate(workflow, module, startup.replace("marketing-hub/experiment-strategist-worker:$validated_revision", "marketing-hub/experiment-strategist-worker:latest")));
 });
 
 // Impede somar os picos de extração de duas imagens que podem ser carregadas em sequência.

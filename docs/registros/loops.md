@@ -9823,3 +9823,22 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** descrição não aprova agente, gasto ou mercado; não muda experiência
   nem renova histórico. Versão desconhecida conserva o caminho sem descrição.
   [Matriz e aprendizado](../homologacao/vega-entrada-implementada-planejamento-v1.md).
+
+## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
+
+- **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a
+  revalidação; a imagem anterior reservou Atena com prompt v10. A publicação
+  interrompeu a tarefa; sessão preserva consumo parcial, sem resposta final.
+- **Causa:** contrato de capacidade ausente no polling e na reserva de Atena;
+  pipeline substituía o container sem aguardar o lock do outbox existente.
+- **Correção:** handshake `ATENA_PDE_MARKET_STRATEGY_V1` na fila canônica e pausa
+  durável com o mesmo lock POSIX/Java durante a publicação. Não cancelar a tarefa
+  ativa; comprovar SHA, autenticação e saúde antes de liberar novas reservas.
+- **Harness:** imagem antiga não reserva; imagem compatível reserva; outros
+  contratos permanecem válidos. Subprocessos reais Python/Java comprovam espera,
+  sucesso, falha, timeout, propriedade da pausa e callback recuperável. Fixtures
+  verificam imagem errada, autenticação, health e logs sem rede nem provedor.
+  Callback de interrupção conserva o prompt original, inclusive v10 legado.
+- **Limites:** proteção restrita ao BPM de Atena e seu publicador; não declara
+  outros executores protegidos, não renova parecer nem completa custo ausente.
+  [Matriz, evidência e aprendizado](../homologacao/vega-publicacao-segura-atena-v1.md).

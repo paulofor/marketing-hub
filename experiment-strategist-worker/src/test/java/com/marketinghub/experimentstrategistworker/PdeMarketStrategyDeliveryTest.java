@@ -75,6 +75,53 @@ class PdeMarketStrategyDeliveryTest {
     when(control.allowsAutomaticExecution()).thenReturn(true);
   }
 
+  /**
+   * Mantém a pausa entre reinícios sem reservar tarefa ou iniciar modelo enquanto há publicação.
+   */
+  @Test
+  void publicationPausePreventsClaimsAndInferenceAcrossRestart() throws Exception {
+    Path state = Path.of(properties.getBpmStateDirectory());
+    Files.createDirectories(state);
+    Files.writeString(state.resolve("publisher-pause.json"), "{\"revision\":\"fixture\"}");
+    consumer().processOne();
+    consumer().processOne();
+    assertThat(claims).isZero();
+    assertThat(callbacks).isEmpty();
+    assertThat(Files.exists(temporary.resolve("invocations.txt"))).isFalse();
+    assertThat(Files.exists(state.resolve("publisher-pause.json"))).isTrue();
+  }
+
+  /** Preserva o prompt antigo ao relatar interrupção, sem atribuir a imagem nova à inferência. */
+  @Test
+  void interruptedAttemptKeepsOriginalAuditedPromptVersion() throws Exception {
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 930709L, "sourceReference", "experiment:930106", "processVersionNumber", 12);
+    Map<String, Object> audit =
+        Map.of(
+            "executionMode",
+            "MODEL",
+            "modelCode",
+            "fixture-no-network",
+            "reasoningEffort",
+            "xhigh",
+            "activityPromptPart",
+            "# Atividade — estratégia no Processo 2 v10\nContrato original.");
+    Path state = Path.of(properties.getBpmStateDirectory());
+    Files.createDirectories(state);
+    var outbox = new PdeMarketStrategyOutbox(state, json);
+    outbox.save(new PdeMarketStrategyOutbox.Pending(task, audit, true, null, null));
+    consumer().processOne();
+    assertThat(invocations()).isZero();
+    assertThat(callbacks).hasSize(1);
+    assertThat(
+            json.readTree(callbacks.getFirst().path("evidenceJson").asText())
+                .path("promptVersion")
+                .asText())
+        .isEqualTo("pde-commercial-plan-v10");
+    assertThat(callbacks.getFirst().path("executionAudit")).isEqualTo(json.valueToTree(audit));
+  }
+
   /** Encerra o servidor da fixture mesmo quando uma asserção falha. */
   @AfterEach
   void stop() {
@@ -165,6 +212,9 @@ class PdeMarketStrategyDeliveryTest {
     assertThat(callbacks.getFirst().path("modelUsages").get(0).path("inputTokens").asInt())
         .isEqualTo(100);
     assertThat(callbacks.getFirst().path("error").asText()).contains("entrada implementada");
+    Files.writeString(
+        Path.of(properties.getBpmStateDirectory()).resolve("publisher-pause.json"),
+        "{\"revision\":\"fixture\"}");
     consumer().processOne();
     assertThat(callbacks).hasSize(2);
     assertThat(callbacks.get(1)).isEqualTo(callbacks.getFirst());

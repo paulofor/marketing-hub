@@ -20,14 +20,23 @@ for agent in "${!homes[@]}"; do
     workflow="$repo_root/.github/workflows/communication-agent-worker-ci.yml"
   fi
   expected_home="/opt/growth-operator/agents/$agent/codex-home"
-  grep -q "${homes[$agent]}=$expected_home" "$workflow"
-  grep -q "install -d -o 10001 -g 10001 $expected_home" "$workflow"
+  runtime="$workflow"
+  if [[ "$agent" == experiment-strategist ]] && grep -Fq -- '-- bash scripts/start-validated-runtime.sh' "$workflow"; then
+    runtime="$repo_root/experiment-strategist-worker/scripts/start-validated-runtime.sh"
+    # Confere a revisão passada ao lock e à partida, sem aceitar um script solto no workflow.
+    # shellcheck disable=SC2016
+    grep -Fq -- "--revision '\${DEPLOY_SOURCE_SHA}' -- bash scripts/start-validated-runtime.sh '\${REPOSITORY_DIR}' '\${DEPLOY_SOURCE_SHA}'" "$workflow"
+    grep -Fq "install -d -o 10001 -g 10001 \"\$${homes[$agent]}\"" "$runtime"
+  else
+    grep -q "install -d -o 10001 -g 10001 $expected_home" "$runtime"
+  fi
+  grep -q "${homes[$agent]}=$expected_home" "$runtime"
   grep -q 'cancel-in-progress: false' "$workflow"
   grep -qE -- '- ["]?scripts/codex-app-server-device-login\.mjs["]?' "$workflow"
   # O transporte e o caminho de origem preservam configuração SSH e identidade isoladas.
   # shellcheck disable=SC2016
   grep -Fq 'rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs' "$workflow"
-  if grep -qE 'reconcile-agent-codex-auth|CODEX_HOME=/opt/growth-operator/codex-home|install .*auth\.json .*codex-home/auth\.json' "$workflow"; then
+  if grep -qE 'reconcile-agent-codex-auth|CODEX_HOME=/opt/growth-operator/codex-home|install .*auth\.json .*codex-home/auth\.json' "$workflow" "$runtime"; then
     printf '[ARQUITETURA] %s ainda compartilha ou clona a identidade Codex.\n' "$workflow" >&2
     exit 1
   fi

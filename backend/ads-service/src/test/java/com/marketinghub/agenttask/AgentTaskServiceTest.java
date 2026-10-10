@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -2379,6 +2380,32 @@ class AgentTaskServiceTest {
     assertThat(orphan.getStatus()).isEqualTo("IN_PROGRESS");
     verify(repository).save(orphan);
     verify(projector).project(orphan, null);
+  }
+
+  /** Não reserva trabalho para uma imagem antiga que não declarou o handshake seguro. */
+  @Test
+  void doesNotClaimAtenaTaskWithoutVersionedWorkerContract() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    when(agents.findByAgentKey("experiment-strategist"))
+        .thenReturn(Optional.of(agent(4L, "experiment-strategist", "Atena")));
+    var service = service(repository, agents, Clock.systemUTC());
+    assertThat(
+            service.claimEligibleProcessTask(
+                "experiment-strategist", "pde-commercial-plan-offer", "marketStrategy", null, null))
+        .isEmpty();
+    verifyNoInteractions(repository);
+    assertThat(
+            service.claimEligibleProcessTask(
+                "experiment-strategist",
+                "pde-commercial-plan-offer",
+                "marketStrategy",
+                null,
+                AtenaBpmWorkerContract.VERSION))
+        .isEmpty();
+    verify(repository)
+        .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "experiment-strategist", "WORK", "PENDING");
   }
 
   /** Não reserva trabalho para uma imagem antiga que não declarou o handshake seguro. */

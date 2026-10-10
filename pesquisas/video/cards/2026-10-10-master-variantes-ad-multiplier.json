@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-master-variantes-edicao-localizada",
+  "collection": "video",
+  "title": "Variantes de anuncios a partir de master aprovado",
+  "finding": "Ad Multiplier da Higgsfield disponibilizado em 6/10 aceita video de referencia de 4 a 30 segundos, ate 20 imagens e mudancas de produto, elenco, local, roteiro e CTA. Katana de 8/10 introduz edicoes por preset via MCP com Claude.",
+  "mechanism": "O master preserva a estrutura temporal do anuncio e permite criar alternativas sem redesenhar todo o video.",
+  "commercialApplication": "Gerar variantes de masters proprios para testes A/B no Marketing Hub e medir custo por anuncio aprovado, CTR, CVR e CPL.",
+  "evidenceStrength": "Changelog oficial confirma o lancamento e os parametros; impacto na conversao ainda nao foi medido.",
+  "publishedOn": "2026-10-10",
+  "validUntil": "2026-11-24",
+  "experimentHypothesis": "Variantes derivadas de um master reduzirao o custo e o tempo por criativo aprovado.",
+  "risks": "Revisar direitos sobre os materiais, integridade das alteracoes, marcas e precisao dos anuncios.",
+  "limits": "Custo unitario e API dedicada nao foram verificados; a duracao de presets Katana nao demonstra limite geral do renderer.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-10-ad-multiplier-katana.md",
+  "sourceTitle": "Higgsfield Ad Multiplier e Katana",
+  "sourceSha256": "3207c0189a8faf64c4fc11bc64396fa030b2c19af739604b26169e6859039c86"
+}

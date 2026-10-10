@@ -48,6 +48,15 @@ done
 cat >"$round_dir/input.json" <<'JSON'
 {"mode":"TECHNICAL","sourceReference":"experiment:9006","productId":8006,"productSlug":"pde-planejado-36","cycleId":7006,"prototypeVersion":"mira-private-candidate-v3","captureSessionId":"mira-local-round","sourceUrl":"http://127.0.0.1:57181/mira-candidate"}
 JSON
+# Reutiliza a matriz e o backend reais com recibo sintético opcional, sem aprovar vídeos produtivos.
+if [[ -n "${MIRA_TEST_VIDEO_BINDING_FILE:-}" ]]; then
+  python3 - "$round_dir/input.json" "$MIRA_TEST_VIDEO_BINDING_FILE" <<'PY'
+import json,sys
+with open(sys.argv[1]) as source:value=json.load(source)
+with open(sys.argv[2]) as source:value['videoIntegration']=json.load(source)
+with open(sys.argv[1],'w') as output:json.dump(value,output)
+PY
+fi
 PDE_INTERNAL_API_TOKEN=mira-local-internal-only node customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs "$round_dir/input.json" "$round_dir/report.json" "$round_dir/captures"
 PDE_INTERNAL_API_TOKEN=mira-local-internal-only node infra/testing/mira-candidate/history-browser-test.mjs "$round_dir/input.json" "$round_dir/history.json"
 for scenario in ADHERENT RECOVERY SAFETY; do
@@ -57,6 +66,8 @@ value=json.load(open(sys.argv[1]))
 value.update(mode='SCENARIO',scenarioCode=sys.argv[3],captureSessionId='mira-local-'+sys.argv[3])
 if sys.argv[3]=='RECOVERY':
     value.update(productId=8017,cycleId=7017,sourceReference='experiment:9017')
+    if 'videoIntegration' in value:
+        value['videoIntegration'].update(productId=8017,cycleId=7017,experimentId=9017)
 with open(sys.argv[2],'w') as output:json.dump(value,output)
 PY
   PDE_INTERNAL_API_TOKEN=mira-local-internal-only node customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs \
@@ -71,6 +82,10 @@ report=json.load(open(sys.argv[1]))
 assert report['decision']=='APPROVED'
 assert len(report['scenarios'])==18
 assert report['providerCalls']==0
+if 'videoIntegrationFingerprint' in report:
+    assert len(report['videoIdentity'])==2
+    assert len(report['videoResults'])==18
+    assert all(report['checks'][name] for name in ['videoIdentity','videoPlayback','videoOptional','videoFailureRecovery'])
 print('Mira: 18 percursos aprovados, nenhum provedor externo acionado.')
 PY
 if [[ -n "${MIRA_TEST_EVIDENCE_DIR:-}" ]]; then mkdir -p "$MIRA_TEST_EVIDENCE_DIR"; cp -a "$round_dir/." "$MIRA_TEST_EVIDENCE_DIR/"; fi

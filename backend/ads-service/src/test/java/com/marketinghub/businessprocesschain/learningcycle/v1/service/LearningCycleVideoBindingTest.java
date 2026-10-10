@@ -154,6 +154,23 @@ class LearningCycleVideoBindingTest {
     assertThrows(RuntimeException.class, () -> evidence.current(cycle, true));
   }
 
+  /** Reutiliza o mesmo contrato de aprovação e isolamento na rota executável de Mira. */
+  @Test
+  void integratesMiraAndPreservesHumanApproval() {
+    history
+        .getFirst()
+        .setEvidenceJson(
+            history.getFirst().getEvidenceJson().replace("/vega-private", "/mira-candidate"));
+    assertTrue(binding.supports(cycle));
+    var proof = binding.prepare(cycle);
+    assertEquals("https://fixture.invalid/mira-candidate", proof.path("destinationUrl").asText());
+    assertFalse(proof.path("publicationAuthorized").asBoolean(true));
+    hero.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+    assertTrue(binding.awaitingApproval(cycle));
+    assertThrows(RuntimeException.class, () -> binding.prepare(cycle));
+    assertEquals(ExperimentVideoReviewStatus.PENDING, hero.getReviewStatus());
+  }
+
   /**
    * Aceita a promoção somente quando o contrato público ativo preserva as mídias aprovadas e o
    * criativo aponta para o destino comercial exato.

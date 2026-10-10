@@ -346,6 +346,27 @@ Ao chegar a `VIDEO_APPROVAL`, o pai orienta revisão independente, decisão huma
 e integração pelo ciclo exato. Não representar essa etapa manual como geração
 automática nem considerar a produção técnica uma aprovação de uso.
 
+### Integração privada executável de Mira — 10/10/2026
+
+`LearningCycleVideoBinding` reconhece `/mira-candidate` além de `/vega-private`,
+pois ambos os destinos implementam o mesmo contrato audiovisual. O reconhecimento
+da rota não concede aprovação: as duas peças distintas precisam conservar seus
+aceites, hashes, papéis e contexto de produto/ciclo/experimento/versão. O backend
+persiste o recibo e exige homologação e pareceres posteriores com o mesmo fingerprint.
+
+A resposta `SessionView` dos endpoints existentes `/api/pde/mira/candidate/v1`
+acrescenta `videoIntegration` opcional, com a apresentação do recibo vigente. Sem
+recibo, com contexto divergente ou vínculo indisponível, a rotina continua acessível
+e a falha é registrada com ciclo/sessão e exceção. Nenhuma autorização comercial,
+pagamento ou mídia decorre dessa apresentação privada.
+
+O player compartilhado mantém vídeo recolhido, controles nativos, legenda/transcrição
+e ação principal independente. Falha de reprodução oferece continuação sem vídeo.
+O harness existente de Mira confere bytes dos dois arquivos, reprodução e áudio,
+caráter opcional e recuperação em cada dispositivo; evidências não equivalem à
+escuta humana, ao aceite de uso nem a resultados comerciais. Matriz e limites em
+[homologação de Mira](../homologacao/mira-narration-recovery-v1.md).
+
 ## Falhas HTTP do planejador de Apolo
 
 Antes de cada envio, persistir o evento `APOLLO_PLANNING_HTTP` com job, tentativa,

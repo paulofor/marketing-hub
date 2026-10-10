@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./style.css";
+import { PrivateCycleVideo, type PrivateVideo } from "../src/PrivateCycleVideo";
 const API = "/api/pde/vega/private/v1";
 const continuityVersion = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
 const stateAwareClosureVersion = "musa-pde-entry-v14-primeiro-ajuste-aplicavel";
@@ -11,14 +12,11 @@ type Card = {
   selfAssessmentPrompt: string;
   cardId: string;
 };
-type Video = {
-  assetUrl: string;
-  thumbnailUrl?: string;
-  vttUrl?: string;
-  captions: string;
-};
 type Session = {
-  videoIntegration?: { heroVideo: Video; integrationFingerprint: string };
+  videoIntegration?: {
+    heroVideo: PrivateVideo;
+    integrationFingerprint: string;
+  };
   id: string;
   state: string;
   generationStatus?: string;
@@ -46,7 +44,6 @@ export default function VegaPrivatePrototype() {
   const [loading, setLoading] = useState(true);
   const [consent, setConsent] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [videoFailed, setVideoFailed] = useState(false);
   function recoverInvitation(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
@@ -185,46 +182,11 @@ export default function VegaPrivatePrototype() {
             precisar de nada novo.
           </p>
         </div>
-        {session?.videoIntegration?.heroVideo ? (
-          <details className="video-demo">
-            <summary>Veja como funciona (opcional)</summary>
-            {!videoFailed ? (
-              <video
-                aria-label="Como funciona seu primeiro ajuste"
-                controls
-                playsInline
-                preload="none"
-                poster={session.videoIntegration.heroVideo.thumbnailUrl}
-                onError={() => setVideoFailed(true)}
-                src={session.videoIntegration.heroVideo.assetUrl}
-              >
-                {session.videoIntegration.heroVideo.vttUrl ? (
-                  <track
-                    kind="captions"
-                    srcLang="pt-BR"
-                    label="Português"
-                    src={session.videoIntegration.heroVideo.vttUrl}
-                  />
-                ) : null}
-              </video>
-            ) : (
-              <p role="status">
-                O vídeo não abriu. Você pode continuar e criar seu ajuste
-                normalmente.
-              </p>
-            )}
-            <p>Você pode começar sem assistir.</p>
-            <details>
-              <summary>Ler a explicação</summary>
-              <p>
-                {session.videoIntegration.heroVideo.captions.replace(
-                  /\|/g,
-                  " ",
-                )}
-              </p>
-            </details>
-          </details>
-        ) : null}
+        <PrivateCycleVideo
+          media={session?.videoIntegration?.heroVideo}
+          label="Como funciona seu primeiro ajuste"
+          fallback="O vídeo não abriu. Você pode continuar e criar seu ajuste normalmente."
+        />
         {error && (
           <div role="alert" className="notice error">
             {error}

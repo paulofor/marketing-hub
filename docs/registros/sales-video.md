@@ -432,3 +432,16 @@
   rollback se pixels/cortes divergirem, sem remover prova ou aumentar gasto.
   Ganho medido é operacional; não implica aumento de vendas, margem ou aceitação humana.
 - Matriz: [recuperação de Mira](../homologacao/mira-narration-recovery-v1.md).
+
+## 2026-10-10 — Continuação audiovisual de Mira no contrato existente
+
+- Lacuna observada antes da integração: somente `/vega-private` era reconhecido;
+  a candidata `/mira-candidate` não expunha vídeo nem medições do conjunto aprovado.
+- Fonte compartilhada corrigida: binding, apresentação da sessão, player opcional
+  e verificações de identidade/reprodução/recuperação no harness existente.
+- As aprovações humanas e a rehomologação posterior continuam obrigatórias;
+  ausência/revogação/divergência do vínculo não fabrica sucesso nem interrompe a rotina.
+- Regressão usa dois contextos segregados e preserva Vega; fixtures de voz/vídeo
+  são sintéticas, sem chamadas pagas, e nunca entram em métricas comerciais.
+- A hipótese é reduzir tempo parado entre vídeo e experiência utilizável. O teste
+  mede a passagem executável; conversão e contribuição dependem do mercado posterior.

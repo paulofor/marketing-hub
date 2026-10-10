@@ -100,3 +100,38 @@ Validação final local do publicador: 256 testes do executor/arquitetura, zero 
 a recuperação opt-in com os cinco áudios reais passou separadamente sem TTS novo.
 Os dois casos Java/FFmpeg sob quota passaram, com pixels, dimensões e duração conferidos.
 YAML do workflow válido. Diff e comentários de responsabilidade Java revisados.
+
+
+## Integração de Mira no percurso existente
+
+A conferência da próxima passagem mostrou que `LearningCycleVideoBinding` reconhecia
+apenas `/vega-private`; a candidata real `/mira-candidate` não recebia o vídeo e seu
+harness não media reprodução/recuperação. Compararam-se concluir o vídeo isolado,
+criar outro pipeline e estender contrato/player/harness existentes. Adota-se a terceira,
+com decisão humana preservada, vínculo ao mesmo ciclo/versão e rehomologação obrigatória.
+
+Matriz complementar definida antes dos testes:
+
+| Critério | Verificação | Resultado |
+| --- | --- | --- |
+| Caso Mira | Gate de aprovações e sessão do mesmo produto/ciclo/experimento/versão | Passou local; aceite humano produtivo continua pendente |
+| Outro contexto | Segunda identidade isolada e mídia divergente omitida | Passou, ciclos sintéticos 7006/7017 e regressões de contexto |
+| Caminho Vega | Mesmo player opcional, seletores e contrato antes válidos | Passou em desktop/iPhone/Pixel |
+| Falhas | Mídia indisponível/revogada, hash divergente, voz ausente, erro de reprodução | Passou em testes unitários e falha de mídia nos navegadores |
+| Passagem | Recibo único, fingerprint atual, homologação medida antes das revisões | Passou no contrato e relatório local |
+| Dispositivos | Desktop/iPhone/Pixel, ação principal sem assistir, fallback e legendas | Passou em 18 percursos e três cenários adicionais |
+| Segregação | HTTP/SQL locais, fontes e decisões de fixture, zero chamadas pagas | Passou, MySQL 5.7 e mídia sintética com áudio |
+
+Sessão expõe `videoIntegration` opcional pela API já existente. Sem recibo ou se
+contexto divergir, a organização/retomada anterior continua funcionando. O player
+não inicia sozinho nem exige assistir. O harness compara hashes e mede reprodução,
+áudio decodificado e recuperação, sem afirmar aceite humano ou evidência comercial.
+
+Resultados: 146 testes relevantes de backend/arquitetura (um opt-in sem relatório
+na rodada unitária; a matriz com relatório foi executada depois), 173 testes do
+Customer Agent Worker (cinco opt-ins de outros fluxos não ativados), 39 testes Node,
+build/typecheck de Mira e Vega. O runner existente aceita `MIRA_TEST_VIDEO_BINDING_FILE`
+opcional; o mesmo recibo entra no backend local e no harness, sem alterar produção.
+O teste forneceu certificado local válido e pinagem específica ao Chromium, sem
+desabilitar a verificação TLS de Node. A primeira tentativa detectou certificado
+histórico expirado; o ensaio corrigido passou e a topologia temporária foi removida.

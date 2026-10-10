@@ -118,6 +118,44 @@ class MiraPrivateServiceTest {
     }
   }
 
+  /** Apresenta somente os vídeos do contexto e conserva a organização se a mídia falhar. */
+  @Test
+  void optionalVideoKeepsContextAndRecoveryWithoutNewOrganization() {
+    var binding =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+                .class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "videoBinding", binding);
+    for (long cycle : List.of(6L, 7017L)) {
+      var proof =
+          new ObjectMapper()
+              .createObjectNode()
+              .put("cycleId", cycle)
+              .put("productVersion", MiraPrivateService.VERSION)
+              .put("productId", cycle + 100)
+              .put("experimentId", cycle + 200)
+              .put("integrationFingerprint", "fixture-" + cycle);
+      when(binding.presentation(cycle, MiraPrivateService.VERSION)).thenReturn(Optional.of(proof));
+      String token = create(cycle, "REDUCED", "ADHERENT");
+      assertThat(service.session(token).videoIntegration()).isEqualTo(proof);
+      service.input(token, input("Produto da fixture"));
+      var ready = service.generate(token);
+      assertThat(ready.videoIntegration()).isEqualTo(proof);
+      proof.put("experimentId", 99999);
+      assertThat(service.session(token).videoIntegration()).isNull();
+      proof.put("experimentId", cycle + 200).put("cycleId", cycle + 1);
+      assertThat(service.session(token).videoIntegration()).isNull();
+      proof.put("cycleId", cycle).put("productVersion", "versao-da-fixture-divergente");
+      assertThat(service.session(token).videoIntegration()).isNull();
+      when(binding.presentation(cycle, MiraPrivateService.VERSION))
+          .thenThrow(new IllegalStateException("Mídia da fixture indisponível"));
+      var restored = service.session(token);
+      assertThat(restored.videoIntegration()).isNull();
+      assertThat(restored.routine()).isEqualTo(ready.routine());
+      assertThat(restored.organizationsUsed()).isEqualTo(ready.organizationsUsed());
+    }
+  }
+
   /** Rejeita links ativos inseguros ou com credenciais antes de gravar a entrada. */
   @Test
   void rejectsUnsafeSourcesWithoutSavingThem() {

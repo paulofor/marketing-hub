@@ -43,14 +43,17 @@ public class LearningCycleVideoBinding {
   private final LearningCyclePrototypeContext prototypes;
   private final ObjectMapper json;
 
-  /** Reconhece o destino privado cujo frontend e harness implementam o contrato de integração. */
+  /** Reconhece somente as rotas privadas cujo frontend e harness implementam a integração. */
   public boolean supports(LearningSalesCycle cycle) {
     return !cycle.isBaseline()
         && prototypes
             .resolve(cycle)
             .map(
                 target ->
-                    target.path("privateAccessUrl").asText().matches("https://[^/]+/vega-private"))
+                    target
+                        .path("privateAccessUrl")
+                        .asText()
+                        .matches("https://[^/]+/(vega-private|mira-candidate)"))
             .orElse(false);
   }
 

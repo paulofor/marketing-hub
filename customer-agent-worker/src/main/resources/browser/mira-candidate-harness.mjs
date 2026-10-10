@@ -3,6 +3,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { MiraCandidateMeasurements } from "./mira-candidate-metrics.mjs";
+import {
+  verifyVideoIdentity,
+  verifyIntegratedPage,
+  videoBrowserOptions,
+} from "./learning-cycle-video-checks.mjs";
 const require = createRequire(import.meta.url);
 let library;
 try {
@@ -89,16 +94,15 @@ const plans =
         ],
       ];
 await mkdir(directory, { recursive: true });
-const browser = await chromium.launch({
-  headless: true,
-  ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
-    : {}),
-});
+const browser = await chromium.launch(videoBrowserOptions());
 const startedAt = new Date();
 const scenarios = [];
 const artifacts = [];
+let videoIdentity = null;
+const videoResults = [];
 try {
+  if (input.videoIntegration)
+    videoIdentity = await verifyVideoIdentity(input.videoIntegration);
   for (const [scenarioCode, deviceProfile, condition] of plans) {
     scenarios.push(await execute(scenarioCode, deviceProfile, condition));
     await writeFile(
@@ -146,6 +150,13 @@ const checks = {
   campaignDisabled: true,
   zeroMediaSpend: true,
 };
+if (input.videoIntegration)
+  Object.assign(checks, {
+    videoIdentity: videoIdentity.length === 2,
+    videoPlayback: videoResults.length === plans.length,
+    videoOptional: videoResults.every((r) => r.optional),
+    videoFailureRecovery: videoResults.every((r) => r.failureRecovery),
+  });
 // Comparação funcional usa inventário idêntico, nunca uma saída de um item contra outra de dois.
 for (const scenarioCode of ["ADHERENT", "RECOVERY"])
   for (const deviceProfile of Object.keys(profiles)) {
@@ -189,6 +200,14 @@ await writeFile(
             .map((a) => a.evidenceKey),
         })),
       scenarios,
+      ...(input.videoIntegration
+        ? {
+            videoIntegrationFingerprint:
+              input.videoIntegration.integrationFingerprint,
+            videoIdentity,
+            videoResults,
+          }
+        : {}),
       checks,
       artifacts,
       sideEffects,
@@ -253,6 +272,15 @@ async function execute(scenarioCode, deviceProfile, condition) {
     await page
       .getByRole("heading", { name: "Conte o mínimo necessário" })
       .waitFor();
+    if (input.videoIntegration)
+      videoResults.push(
+        await verifyIntegratedPage(page, input.videoIntegration, session, {
+          startName: "Gerar rotina segura",
+          videoLabel: "Como funciona sua organização",
+          failureMessage:
+            "O vídeo não abriu. Você pode continuar e organizar seus produtos normalmente.",
+        }),
+      );
     const minimumRequiredProductFields = await page
       .locator("fieldset input[required], fieldset textarea[required]")
       .count();

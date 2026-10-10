@@ -127,6 +127,10 @@ export default function ProductSalesVideoPage() {
   const [seedReviewNotes, setSeedReviewNotes] = useState("");
   const [postProductionVoiceOver, setPostProductionVoiceOver] = useState("");
   const [postProductionCaption, setPostProductionCaption] = useState("");
+  const [postProductionDuration, setPostProductionDuration] = useState("");
+  const validPostProductionDuration = isValidFinalDuration(
+    postProductionDuration,
+  );
   const [heyGenVoiceId, setHeyGenVoiceId] = useState(DEFAULT_HEYGEN_VOICE_ID);
   const [montageJobIds, setMontageJobIds] = useState<string[]>([]);
   const [profileForm, setProfileForm] =
@@ -224,9 +228,9 @@ export default function ProductSalesVideoPage() {
   );
   const providerDurationLimitExceeded = Boolean(
     selectedProvider.maxDirectDurationSeconds &&
-      selectedProfile?.targetDurationSeconds &&
-      selectedProfile.targetDurationSeconds >
-        selectedProvider.maxDirectDurationSeconds,
+    selectedProfile?.targetDurationSeconds &&
+    selectedProfile.targetDurationSeconds >
+      selectedProvider.maxDirectDurationSeconds,
   );
   const providerDurationLimitMessage =
     providerDurationLimitExceeded && selectedProvider.maxDirectDurationSeconds
@@ -424,6 +428,10 @@ export default function ProductSalesVideoPage() {
       toast.error("Informe a legenda para finalizar o vídeo");
       return;
     }
+    if (!validPostProductionDuration) {
+      toast.error("Informe uma duração inteira entre 6 e 60 segundos");
+      return;
+    }
     if (!selectedVideoSourceUrl) {
       toast.error("Aguarde o carregamento do asset ou stream do vídeo");
       return;
@@ -434,6 +442,9 @@ export default function ProductSalesVideoPage() {
         sourceVideoUrl: selectedVideoSourceUrl || undefined,
         voiceOverScript: postProductionVoiceOver.trim() || undefined,
         captionText: postProductionCaption.trim(),
+        targetDurationSeconds: postProductionDuration.trim()
+          ? Number(postProductionDuration)
+          : undefined,
       });
       toast.success("Pós-produção solicitada");
     } catch (error) {
@@ -1268,6 +1279,28 @@ export default function ProductSalesVideoPage() {
                   setPostProductionCaption(event.target.value)
                 }
               />
+              <label className="form-label" htmlFor="post-production-duration">
+                Duração final (segundos)
+              </label>
+              <input
+                id="post-production-duration"
+                type="number"
+                min={6}
+                max={60}
+                step={1}
+                className="form-control"
+                value={postProductionDuration}
+                onChange={(event) =>
+                  setPostProductionDuration(event.target.value)
+                }
+                aria-describedby="post-production-duration-help"
+              />
+              <small id="post-production-duration-help">
+                Opcional. Para recuperar uma falha de duração, mantenha a mesma
+                voz e legenda e informe um tempo que comporte a fala. O sistema
+                reutiliza os áudios auditados e mantém o último quadro até o
+                fim, sem gerar novamente a voz.
+              </small>
               <div className="product-video-page__strategy">
                 <strong>Uso recomendado</strong>
                 <span>Finalize vídeos Luma/Kling aprovados visualmente.</span>
@@ -1301,6 +1334,7 @@ export default function ProductSalesVideoPage() {
                   !selectedVideoJob ||
                   !isPostProductionSourceJob(selectedVideoJob) ||
                   !selectedVideoSourceUrl ||
+                  !validPostProductionDuration ||
                   requestPostProduction.isPending
                 }
               >
@@ -1971,4 +2005,11 @@ function formatDate(value?: string | null) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+/** Valida uma duração opcional sem truncar valores decimais ou aceitar limites inválidos. */
+export function isValidFinalDuration(value: string) {
+  if (!value.trim()) return true;
+  const duration = Number(value);
+  return Number.isInteger(duration) && duration >= 6 && duration <= 60;
 }

@@ -774,7 +774,7 @@ public class SalesVideoJobService {
 
   /**
    * Serializa a finalização por fonte, preserva o bruto e impede processamento simultâneo
-   * duplicado.
+   * duplicado. Recuperação temporal conserva a fala auditada e a duração solicitada.
    */
   @Transactional
   public SalesVideoJobDto requestPostProduction(
@@ -807,8 +807,12 @@ public class SalesVideoJobService {
               previous.path("captionText").asText(null), request.getCaptionText())
           && java.util.Objects.equals(
               previous.path("voiceOverScript").asText(null), request.getVoiceOverScript())
-          && java.util.Objects.equals(previous.path("sourceVideoUrl").asText(null), sourceVideoUrl))
-        return toDto(existing.get());
+          && java.util.Objects.equals(previous.path("sourceVideoUrl").asText(null), sourceVideoUrl)
+          && java.util.Objects.equals(
+              previous.has("postProductionDurationSeconds")
+                  ? previous.path("postProductionDurationSeconds").asInt()
+                  : null,
+              request.getTargetDurationSeconds())) return toDto(existing.get());
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
           "Esta fonte já possui finalização em execução. Aguarde o resultado antes de alterar o texto.");
@@ -829,7 +833,8 @@ public class SalesVideoJobService {
     postProductionJob.setMetadataJson(
         request.isDeliveryOnly()
             ? VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper)
-            : buildPostProductionMetadata(sourceJob, sourceVideoUrl, request));
+            : buildPostProductionMetadata(
+                sourceJob, sourceVideoUrl, request, existing.orElse(null)));
     postProductionJob.setAuditSnapshotJson(
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
     jobRepository.save(postProductionJob);
@@ -1167,17 +1172,24 @@ public class SalesVideoJobService {
         "Informe uma URL fonte ou selecione um vídeo com asset disponível.");
   }
 
-  /** Monta o metadata operacional consumido pelo provider local de pós-produção. */
+  /** Monta o acabamento e deriva a recuperação somente da auditoria da tentativa anterior. */
   private String buildPostProductionMetadata(
       SalesVideoJob sourceJob,
       String sourceVideoUrl,
-      RequestSalesVideoPostProductionRequest request) {
+      RequestSalesVideoPostProductionRequest request,
+      SalesVideoJob previousFinalization) {
     Map<String, Object> metadata = new LinkedHashMap<>();
     preserveGovernedLineage(sourceJob, metadata);
     metadata.put("sourceJobId", sourceJob.getId());
     metadata.put("sourceVideoUrl", sourceVideoUrl);
     metadata.put("voiceOverScript", request.getVoiceOverScript());
     metadata.put("captionText", request.getCaptionText());
+    if (request.getTargetDurationSeconds() != null) {
+      metadata.put("postProductionDurationSeconds", request.getTargetDurationSeconds());
+    }
+    metadata.putAll(
+        VideoNarrationRecovery.prepare(
+            sourceJob, previousFinalization, request, objectMapper, assetRepository));
     metadata.put(
         "sourceAssetId", sourceJob.getAsset() != null ? sourceJob.getAsset().getId() : null);
     metadata.put("sourceProviderName", sourceJob.getProviderName());

@@ -121,6 +121,22 @@ não sobrescreve finalização aprovada ou tentativa posterior. Solicitações c
 são serializadas pela fonte e consultam o filho sob lock de leitura atual do MySQL;
 entradas idênticas reutilizam trabalho ativo e entradas alteradas aguardam sua conclusão.
 
+Na recuperação de `APOLLO_NARRATION_DURATION_EXCEEDED`, o backend deriva
+`PRESERVED_TTS_NARRATION_V1` da auditoria e dos recibos da última finalização falha
+da mesma fonte/tenant. Mesma legenda, mesma voz, ordem, hashes e ativos íntegros são
+obrigatórios. `targetDurationSeconds` explícito no comando de acabamento, entre 6 e
+60 s, precisa comportar toda a fala medida e não pode truncar a fonte. O executor
+restaura os binários, mede-os novamente e alonga o último quadro quando necessário;
+não chama TTS como fallback nem acelera/corta/sobrepõe fala. Os custos originais
+pendentes continuam desconhecidos; custo incremental de reutilização não é conciliação
+do custo anterior. Copy diferente exige novo preflight, não recuperação silenciosa.
+
+A composição de prova privada limita threads de filtros e encoder, mantendo pixels,
+hash, intervalos, CRF e prazo de execução. Preset rápido reduz custo operacional sem
+omitir prova ou relaxar gate. Homologação local de 15/30 s confere presença e retirada
+dos pixels no tempo correto. Referência:
+[recuperação de Mira](../homologacao/mira-narration-recovery-v1.md).
+
 A tela apresenta inspeções registradas pelo backend. Termos do roteiro como CTA,
 listas de problemas a evitar, IDs de ativos e nome do fornecedor não são evidência
 de defeito ou aprovação. Na ausência de inspeção conclusiva, a revisão visual fica

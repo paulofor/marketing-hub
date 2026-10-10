@@ -38,7 +38,7 @@ final class PdeProductProofOverlay {
         if (!metadata.at("/post_production/product_proof").isMissingNode()) load(metadata, jobId);
     }
 
-    /** Insere a captura nos cortes de mecanismo, resultado e prova, reservando área para legenda. */
+    /** Insere a captura nos cortes funcionais com CPU limitada, preservando pixels e área de legenda. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId) {
         if (metadata.at("/post_production/product_proof").isMissingNode()) {
             return new ProductUgcReferenceOverlay.OverlayResult(source, Map.of());
@@ -59,8 +59,8 @@ final class PdeProductProofOverlay {
                     + "[base][proof]overlay=0:0:enable='" + proof.intervals() + "'[out]";
             List<String> command = List.of(properties.getProviders().getPostProduction().getFfmpegPath(),
                     "-hide_banner", "-loglevel", "error", "-y", "-i", source.toString(),
-                    "-loop", "1", "-i", image.toString(), "-filter_complex", filter,
-                    "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-preset", "veryfast",
+                    "-loop", "1", "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
+                    "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-threads", "2", "-preset", "ultrafast",
                     "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "copy", "-t", number(proof.duration()),
                     "-movflags", "+faststart", output.toString());
             Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(processLog.toFile()).start();

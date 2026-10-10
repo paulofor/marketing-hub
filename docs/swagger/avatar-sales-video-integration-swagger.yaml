@@ -743,6 +743,11 @@ components:
         captionText:
           type: string
           description: Legenda principal. Na recuperação, deve ser idêntica à legenda persistida no acabamento fonte.
+        targetDurationSeconds:
+          type: integer
+          minimum: 6
+          maximum: 60
+          description: Duração final opcional. Recuperação de APOLLO_NARRATION_DURATION_EXCEEDED exige mesma voz/legenda, recibos e hashes íntegros, duração suficiente e mesma fonte/tenant; reutiliza fala sem TTS novo e alonga o último quadro. Não pode truncar fonte nem autorizar publicação.
         deliveryOnly:
           type: boolean
           default: false

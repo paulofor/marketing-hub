@@ -575,3 +575,22 @@ integração, cobrindo V3/V4, outro produto, ausência/divergência de autoria e
 histórico válido. Replay offline usa os IDs/definições exportados e o contexto
 congelado, sem reescrever resultados ou acessar produção. Matriz e evidências:
 [Capella — passagem ao destino](../homologacao/capella-destino-comunicacao-2026-10-09.md).
+
+### Primeiro experimento: prova técnica e planejamento próprio — 10/10/2026
+
+Em INITIAL_EXPERIMENT_PRIVATE, distinguir a prova imutável da versão de software
+aceita dos pareceres do planejamento corrente. A leitura
+IRIS_PRIVATE_PRODUCT_PROOF_V1 declara PRIVATE_SOFTWARE_VERSION_ONLY: confere gate,
+identidade, versão, hashes e revisões técnicas; não transporta aprovação de
+estratégia, economia ou arquitetura antigas para o novo planejamento.
+
+O consumidor exige Atena, Plutus e Dédalo da mesma referência e definição atual,
+conservando os bloqueios funcionais. O contexto PRODUCT_PRIVATE completo mantém
+a igualdade com os contratos de origem. Mudança da projeção estratégica não
+reescreve descoberta, revisão ou custo histórico. Uma integração nova continua
+exigindo sua revisão independente antes do uso comercial.
+
+Regressões devem unir produtores e consumidor reais, testar outra identidade,
+hashes alterados, parecer ausente e o contrato completo antes válido. Consultas
+não criam ciclo, tarefa, aprovação ou autorização financeira/comercial.
+Matriz: [Alcyone — primeiro experimento](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).

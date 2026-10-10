@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
+import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.product.service.agentvalidation.PdeAgentValidationGateActivityExecutor;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -16,12 +17,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: entregar a comunicação privada do produto governado antes do experimento. */
+/** Responsabilidade: validar e fornecer a entrada privada do produto para sua comunicação. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class IrisPrivateProductContext {
   public static final String MODE = "PRODUCT_PRIVATE";
+  public static final String PROOF_MODE = "PRODUCT_PRIVATE_PROOF";
+  public static final String PROOF_SCOPE = "PRIVATE_SOFTWARE_VERSION_ONLY";
   private static final String CONSTRUCTION = "pde-construction-approval";
   private final ProductRepository products;
   private final AgentTaskRepository tasks;
@@ -60,8 +63,62 @@ public class IrisPrivateProductContext {
     }
   }
 
-  /** Confere contratos de origem, prova histórica vigente e identidade sem criar ciclo. */
-  private Map<String, Object> context(String reference) throws Exception {
+  /**
+   * Entrega somente a versão técnica aceita; planejamento atual deve ter seus próprios pareceres.
+   */
+  @Transactional(readOnly = true)
+  public Optional<Map<String, Object>> approvedProductProof(String reference) {
+    if (!supports(reference)) return Optional.empty();
+    try {
+      var verified = productProof(reference);
+      var product = verified.product();
+      var target = verified.target();
+      Map<String, Object> result = new LinkedHashMap<>();
+      result.put("availability", "AVAILABLE");
+      result.put("inputReadiness", "READY");
+      result.put("contractVersion", "IRIS_PRIVATE_PRODUCT_PROOF_V1");
+      result.put("mode", PROOF_MODE);
+      result.put("proofScope", PROOF_SCOPE);
+      result.put("sourceReference", reference);
+      result.put("product", Map.of("id", product.getId(), "slug", product.getSlug()));
+      result.put("prototypeVersion", target.experienceVersion());
+      result.put("privatePrototypeAcceptance", verified.pde().path("privatePrototypeAcceptance"));
+      result.put("approvedDestination", approvedDestination(target));
+      result.put("approvedUpstreamArtifacts", verified.artifacts());
+      result.put("gateInstanceId", verified.gate().getId());
+      result.put("validationGate", verified.evidence());
+      result.put("discoveryLineage", verified.pde().path("lineage"));
+      result.put("paymentEnabled", false);
+      result.put("publicationAuthorized", false);
+      result.put("externalMediaSpendAuthorized", false);
+      result.put("commercialEvidenceClaimed", false);
+      result.put("humanEvidenceClaimed", false);
+      return Optional.of(Collections.unmodifiableMap(result));
+    } catch (Exception ex) {
+      log.warn(
+          "Prova técnica privada indisponível para o planejamento atual. sourceReference={}",
+          reference,
+          ex);
+      return Optional.of(
+          Map.of(
+              "availability",
+              "MISSING",
+              "inputReadiness",
+              "BLOCKED",
+              "mode",
+              PROOF_MODE,
+              "proofScope",
+              PROOF_SCOPE,
+              "sourceReference",
+              reference,
+              "reason",
+              Objects.requireNonNullElse(
+                  ex.getMessage(), "Confirme a versão e o gate técnico do produto.")));
+    }
+  }
+
+  /** Valida gate, hashes, revisões e identidade do software sem atribuir aprovação estratégica. */
+  private ProductProof productProof(String reference) throws Exception {
     long productId = Long.parseLong(reference.substring(8, reference.indexOf('@')));
     var product = products.findById(productId).orElseThrow();
     require(
@@ -153,6 +210,29 @@ public class IrisPrivateProductContext {
                 "psiqueSafety",
                 "commercialIntegrityReview")),
         "O conjunto aprovado de provas está incompleto.");
+    return new ProductProof(product, target, pde, gate, proof, List.copyOf(artifacts));
+  }
+
+  /** Mantém juntas apenas as provas verificadas da mesma versão privada. */
+  private record ProductProof(
+      com.marketinghub.product.Product product,
+      com.marketinghub.agenttask.AgentTaskTargetResponse target,
+      JsonNode pde,
+      com.marketinghub.agenttask.BusinessProcessActivityInstance gate,
+      JsonNode evidence,
+      List<Map<String, Object>> artifacts) {}
+
+  /** Confere prova técnica e contratos de origem sem criar ciclo ou substituir parecer. */
+  private Map<String, Object> context(String reference) throws Exception {
+    var verified = productProof(reference);
+    var product = verified.product();
+    long productId = product.getId();
+    var target = verified.target();
+    var pde = verified.pde();
+    var gate = verified.gate();
+    var definition = gate.getActivityDefinition();
+    var proof = verified.evidence();
+    List<Map<String, Object>> artifacts = new ArrayList<>(verified.artifacts());
     var lineage = pde.path("lineage");
     require(
         lineage.path("cycleId").asLong() > 0 && lineage.path("dossierId").asLong() > 0,
@@ -237,19 +317,7 @@ public class IrisPrivateProductContext {
             target.experienceVersion()));
     result.put("marketStrategicContract", strategy);
     result.put("privatePrototypeAcceptance", pde.path("privatePrototypeAcceptance"));
-    result.put(
-        "approvedDestination",
-        Map.of(
-            "contractVersion",
-            "PRIVATE_PDE_DESTINATION_V1",
-            "type",
-            "APPROVED_PRIVATE_PDE",
-            "url",
-            target.publicUrl(),
-            "prototypeVersion",
-            target.experienceVersion(),
-            "requiresLandingGeneration",
-            false));
+    result.put("approvedDestination", approvedDestination(target));
     result.put("approvedUpstreamArtifacts", List.copyOf(artifacts));
     result.put(
         "communicationArtifacts",
@@ -277,6 +345,21 @@ public class IrisPrivateProductContext {
         "publicationBoundary",
         "Preparar comunicação privada com provas sintéticas; sem alegar preferência, venda ou satisfação humana e sem autorizar publicação, cobrança ou mídia.");
     return Collections.unmodifiableMap(result);
+  }
+
+  /** Preserva o contrato completo do destino privado em todas as projeções da mesma prova. */
+  private Map<String, Object> approvedDestination(AgentTaskTargetResponse target) {
+    return Map.of(
+        "contractVersion",
+        "PRIVATE_PDE_DESTINATION_V1",
+        "type",
+        "APPROVED_PRIVATE_PDE",
+        "url",
+        target.publicUrl(),
+        "prototypeVersion",
+        target.experienceVersion(),
+        "requiresLandingGeneration",
+        false);
   }
 
   /** Exige o último parecer aprovado e a correspondência integral com o contrato materializado. */

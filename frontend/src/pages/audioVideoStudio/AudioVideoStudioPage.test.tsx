@@ -1317,6 +1317,122 @@ describe("AudioVideoStudioPage", () => {
     ).toBeTruthy();
   });
 
+  it.each([10, 91011])(
+    "preserva autorização USD no preflight e produção do produto %i, sem cotação",
+    async (productId) => {
+      (axios.get as any).mockImplementation((url: string) =>
+        Promise.resolve({
+          data:
+            url === "/api/sales-videos/projects/1"
+              ? {
+                  id: 1,
+                  productId,
+                  experimentId: productId + 100,
+                  salesVideoProfileId: productId + 200,
+                  title: "Demonstração real",
+                  objective: "Demonstrar o resultado real antes do compromisso",
+                  videoCategory: "COMMERCIAL_SHORT",
+                  contextType: "PDE",
+                  productionMode: "STORY_FIRST_AUDIO_VIDEO",
+                  targetChannel: "PDE_AND_SOCIAL",
+                  format: "VERTICAL_9_16",
+                  targetDurationSeconds: 15,
+                  status: "DRAFT",
+                }
+              : url === "/api/sales-videos/projects/1/autonomy/v1/cycles"
+                ? [
+                    {
+                      id: 123,
+                      videoProjectId: 1,
+                      status: "PENDING_FINANCIAL_REVIEW",
+                      budgetLimitUsd: 4,
+                      authorizedBudgetAmount: 4,
+                      authorizedBudgetCurrency: "USD",
+                      knownCostUsd: 0,
+                      budgetMonitorStatus: "WATCHING",
+                      monitoredTaskCount: 0,
+                      monitoredCredits: 0,
+                      generationClipCount: 1,
+                      editCutCount: 4,
+                    },
+                  ]
+                : [],
+        }),
+      );
+      setupProject();
+      await screen.findByDisplayValue("Demonstração real");
+      const user = userEvent.setup();
+      await user.type(screen.getByLabelText("Teto autorizado em BRL"), "50");
+      await user.type(screen.getByLabelText("Cotação BRL por USD"), "5");
+      await user.selectOptions(
+        screen.getByLabelText("Moeda da autorização"),
+        "USD",
+      );
+      expect(screen.getByLabelText("Teto autorizado em USD")).toHaveValue(null);
+      expect(screen.queryByLabelText("Cotação BRL por USD")).toBeNull();
+      expect(screen.queryByLabelText("Fonte da cotação")).toBeNull();
+      expect(screen.queryByLabelText("Data da cotação")).toBeNull();
+      expect(screen.getByText(/autorizado USD 4.00/).textContent).not.toMatch(
+        /câmbio|undefined/,
+      );
+      const preflight = screen.getByRole("button", {
+        name: /executar somente preflight sem gerar vídeo/i,
+      });
+      const production = screen.getByRole("button", {
+        name: /solicitar produção a Apolo sob controle de Plutus/i,
+      });
+      expect(preflight).toBeDisabled();
+      await user.type(screen.getByLabelText("Teto autorizado em USD"), "4.00");
+      await user.type(
+        screen.getByLabelText("Objetivo de aprendizado"),
+        "Demonstrar a entrega real",
+      );
+      await user.type(
+        screen.getByLabelText("Critério de sucesso"),
+        "QA independente e custo dentro do teto conjunto",
+      );
+      await user.click(preflight);
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          "/api/sales-videos/autonomy/v1/provider-preflights",
+          expect.objectContaining({
+            videoProjectId: 1,
+            authorizedBudgetAmount: 4,
+            authorizedBudgetCurrency: "USD",
+            budgetLimitUsd: 4,
+          }),
+        ),
+      );
+      let reject!: (error: Error) => void;
+      (axios.post as any).mockImplementationOnce(
+        () => new Promise((_resolve, rejection) => (reject = rejection)),
+      );
+      await user.click(production);
+      await waitFor(() => expect(production).toBeDisabled());
+      expect(preflight).toBeDisabled();
+      const payload = (axios.post as any).mock.calls.at(-1)[1];
+      expect(payload).toMatchObject({
+        videoProjectId: 1,
+        authorizedBudgetAmount: 4,
+        authorizedBudgetCurrency: "USD",
+        budgetLimitUsd: 4,
+      });
+      expect(payload).not.toHaveProperty("usdBrlExchangeRate");
+      expect(payload).not.toHaveProperty("exchangeRateSource");
+      expect(payload).not.toHaveProperty("exchangeRateDate");
+      reject(new Error("Integração de teste indisponível"));
+      expect(
+        await screen.findByText("Não foi possível abrir o ciclo."),
+      ).toBeTruthy();
+      await user.selectOptions(
+        screen.getByLabelText("Moeda da autorização"),
+        "BRL",
+      );
+      expect(screen.getByLabelText("Teto autorizado em BRL")).toHaveValue(null);
+      expect(preflight).toBeDisabled();
+    },
+  );
+
   it("mostra o preflight e envia o perfil reutilizável escolhido para o novo ciclo", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {

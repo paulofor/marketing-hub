@@ -253,6 +253,20 @@ como reconciliado, nunca como saldo oficial do provider quando a API externa nã
 
 ## Vídeos no ciclo comercial PDE — 08/09/2026
 
+### Autorização na moeda original — correção de 10/10/2026
+
+O Estúdio usa o contrato existente `CreateRequest`: USD conserva exatamente o valor autorizado,
+sem exigir ou inventar cotação; BRL conserva fonte, data e conversão conservadora. Trocar moeda
+limpa o valor do formulário para impedir que reais sejam reinterpretados como dólares. Dados de
+cotação antigos não integram uma autorização USD nem seu recibo. Preflight e produção usam o
+mesmo adaptador de entrada; os gates de backend, Plutus e QA continuam sendo as autoridades.
+
+Um limite concedido para duas peças e revisões é compartilhado: os tetos destinados aos projetos
+e às revisões precisam caber no conjunto, sem repetir o total em cada vídeo. A escolha da moeda
+não cria orçamento novo, autorização comercial ou nova campanha. A regressão cobre o caso original,
+outros identificadores, o caminho BRL antes válido, falha e troca de moeda em desktop e mobile.
+Evidências e critério de adoção em `docs/homologacao/mira-video-usd-v1.md`.
+
 O BPM v2 de Ciclos de aprendizado e vendas explicita briefing, produção de vídeo AD de campanha,
 produção de LANDING_HERO de entrada e revisão/integração antes da homologação. Usa o Estúdio
 existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. O backend confere

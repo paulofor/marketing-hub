@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 const base = "http://127.0.0.1:18095";
 const queue =
   "/api/internal/agent-tasks/experiment-strategist/stage-executions";
+const legacyPending = `${queue}/pending?processCode=pde-commercial-plan-offer&activityId=marketStrategy`;
+const compatiblePending = `${legacyPending}&workerContract=ATENA_PDE_MARKET_STRATEGY_V1`;
 let checks = 0;
 async function request(path, method = "GET", body) {
   const response = await fetch(base + path, {
@@ -34,9 +36,15 @@ for (const id of [95121, 95122]) {
     );
   }
   await request(`/fixture/native-planning/${id}`, "POST");
-  const pending = await request(
-    `${queue}/pending?processCode=pde-commercial-plan-offer&activityId=marketStrategy`,
+  assert.deepEqual(await request(legacyPending), []);
+  const incompatible = await fetch(
+    `${base}${legacyPending}&workerContract=ATENA_PDE_MARKET_STRATEGY_V0`,
   );
+  const rejection = await incompatible.text();
+  assert.equal(incompatible.status, 400, rejection);
+  assert.match(rejection, /Contrato versionado do worker incompatível/);
+  checks++;
+  const pending = await request(compatiblePending);
   assert.equal(pending.length, 1);
   const task = pending[0];
   assert.equal(task.sourceReference, `experiment:${id}`);
@@ -57,12 +65,7 @@ for (const id of [95121, 95122]) {
   assert.equal(context.publicationAuthorized, false);
   assert.equal(context.mediaSpendAuthorized, false);
   assert.ok(task.receivedAt);
-  assert.deepEqual(
-    await request(
-      `${queue}/pending?processCode=pde-commercial-plan-offer&activityId=marketStrategy`,
-    ),
-    [],
-  );
+  assert.deepEqual(await request(compatiblePending), []);
   const recovered = await request(`${queue}/${task.taskId}`);
   assert.equal(recovered.taskId, task.taskId);
   assert.equal(recovered.receivedAt, task.receivedAt);

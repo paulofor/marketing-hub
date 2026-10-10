@@ -108,3 +108,17 @@ alterada e reporte `local` recusados; conformidade premium, sete identidades
 Codex isoladas, modelo vigente e nove health-checks passaram. `bash -n` e
 ShellCheck aprovados nos dois verificadores alterados. Java e comportamento
 do consumidor permanecem iguais aos 4.562/56 testes já aprovados.
+
+## Integração com o plano financeiro
+
+O CI com MySQL 5.7 revelou uma fixture que ainda consumia a fila de Atena sem
+declarar seu contrato. A fixture foi atualizada para provar, em dois produtos
+sintéticos, que uma chamada legada não reserva a tarefa e que uma versão
+incompatível recebe erro de contrato. A chamada compatível reserva a mesma
+tarefa, conserva o contexto financeiro LIVE e permite recuperação sem duplicar
+trabalho. Revisões TEST não substituem a projeção vigente.
+
+A validação local de persistência passou com MySQL 5.7 real, API/JPA, contexto
+nativo, reinício preservando histórico e migração/rollback. Nenhum modelo foi
+invocado. Esse diagnóstico confirma a passagem afetada; não é a matriz completa
+de navegador nem evidência comercial. A topologia temporária foi removida.

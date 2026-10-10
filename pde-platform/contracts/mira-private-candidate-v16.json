@@ -653,7 +653,7 @@
     },
     {
       "path": "docs/homologacao/vega-publicacao-segura-atena-v1.md",
-      "sha256": "170d65df5d203b95790670758830844ed6285882f3a9e39893a0f7f57b85aac4",
+      "sha256": "294029d119006a175bceb20e62a6700ce4e3fbec29d1b22c6095c2b6bb258d4a",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Comprova espera pela execução corrente, handshake e recuperação sem inferência duplicada."
     }

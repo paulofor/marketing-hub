@@ -191,6 +191,7 @@ export interface RequestSalesVideoPostProductionPayload {
   voiceOverScript?: string;
   captionText: string;
   deliveryOnly?: boolean;
+  targetDurationSeconds?: number;
 }
 
 export interface RequestSalesVideoMontagePayload {

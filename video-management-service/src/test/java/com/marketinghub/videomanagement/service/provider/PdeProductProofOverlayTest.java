@@ -72,10 +72,11 @@ class PdeProductProofOverlayTest {
         }
     }
 
-    /** Executa composição real quando a homologação local habilita explicitamente FFmpeg. */
-    @Test
+    /** Confere pixels e prazo de composições de 15 e 30 segundos com FFmpeg real. */
+    @ParameterizedTest
+    @ValueSource(ints = {15, 30})
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
-    void composesPixelsWithRealFfmpeg() throws Exception {
+    void composesPixelsWithRealFfmpeg(int duration) throws Exception {
         try (var server = new MockWebServer()) {
             server.start();
             byte[] pixels = pixels();
@@ -86,13 +87,18 @@ class PdeProductProofOverlayTest {
             Path result = null;
             try {
                 var process = new ProcessBuilder("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
-                        "color=c=blue:s=360x640:r=15:d=15", "-c:v", "libx264", "-pix_fmt", "yuv420p", source.toString())
+                        "color=c=blue:s=360x640:r=15:d=" + duration, "-c:v", "libx264", "-pix_fmt", "yuv420p", source.toString())
                         .inheritIO().start();
                 assertThat(process.waitFor()).isZero();
-                var output = new PdeProductProofOverlay(properties, WebClient.builder()).apply(source, metadata(pixels), 91009L);
+                var input = metadata(pixels);
+                input.put("targetDurationSeconds", duration);
+                for (var cut : input.path("cut_plan")) ((ObjectNode) cut).put("duration_seconds", duration / 5);
+                long started = System.nanoTime();
+                var output = new PdeProductProofOverlay(properties, WebClient.builder()).apply(source, input, 91009L);
+                assertThat(java.time.Duration.ofNanos(System.nanoTime() - started).toSeconds()).isLessThan(120);
                 result = output.videoFile();
                 assertThat(output.audit()).containsEntry("status", "APPLIED").containsEntry("commercialEvidenceClaimed", false);
-                Path target = Path.of("target/pde-proof-real.mp4");
+                Path target = Path.of("target/pde-proof-real-" + duration + ".mp4");
                 Files.copy(result, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 var probe = new ProcessBuilder("ffprobe", "-v", "error", "-show_entries", "format=duration:stream=width,height",
                         "-of", "json", target.toString()).start();
@@ -100,12 +106,12 @@ class PdeProductProofOverlayTest {
                 assertThat(probe.waitFor()).isZero();
                 assertThat(measured.at("/streams/0/width").asInt()).isEqualTo(1080);
                 assertThat(measured.at("/streams/0/height").asInt()).isEqualTo(1920);
-                assertThat(measured.at("/format/duration").asDouble()).isBetween(14.9, 15.1);
-                assertThat(samplePixel(target, 1)[2] & 255).isGreaterThan(200);
-                byte[] proofPixel = samplePixel(target, 6);
+                assertThat(measured.at("/format/duration").asDouble()).isBetween(duration - .1, duration + .1);
+                assertThat(samplePixel(target, duration / 15)[2] & 255).isGreaterThan(200);
+                byte[] proofPixel = samplePixel(target, duration * 2 / 5);
                 assertThat(proofPixel[0] & 255).isGreaterThan(230);
                 assertThat(proofPixel[1] & 255).isBetween(180, 220);
-                assertThat(samplePixel(target, 14)[2] & 255).isGreaterThan(200);
+                assertThat(samplePixel(target, duration - 1)[2] & 255).isGreaterThan(200);
             } finally {
                 Files.deleteIfExists(source);
                 if (result != null) Files.deleteIfExists(result);

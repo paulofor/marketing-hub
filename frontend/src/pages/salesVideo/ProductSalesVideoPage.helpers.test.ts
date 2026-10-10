@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SalesVideoJob, SalesVideoProfile } from "../../api/salesVideo/types";
 import {
+  isValidFinalDuration,
   assessVideoVisualQuality,
   isPostProductionSourceJob,
   describeVideoObjective,
@@ -122,5 +123,14 @@ describe("qualidade visual baseada em evidência persistida", () => {
         metadataJson,
       } as SalesVideoJob).label,
     ).toBe("Revisão visual pendente");
+  });
+});
+
+describe("duração explícita para recuperar a mesma voz", () => {
+  it.each(["", "20", "6", "60"])("aceita %s", (value) => {
+    expect(isValidFinalDuration(value)).toBe(true);
+  });
+  it.each(["5", "61", "15.7", "invalid", "Infinity"])("recusa %s", (value) => {
+    expect(isValidFinalDuration(value)).toBe(false);
   });
 });

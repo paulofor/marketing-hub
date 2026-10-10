@@ -6922,6 +6922,20 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
 - **Evidências:** `docs/homologacao/vega-producao-apos-preflight-v1.md`. Os binários
   históricos descartados não são declarados recuperados e o custo não vira zero.
 
+- **Extensão Mira/#102 — 10/10/2026:** o evento 79539 preservou os cinco áudios
+  da finalização 21253 (15,720 s para visual de 15 s), mas faltava contrato executável
+  para recuperá-los. O comando agora permite duração final explícita e deriva os
+  segmentos somente da auditoria própria. Backend valida contexto/texto/recibo;
+  worker confere hashes e mede os binários, sem TTS novo ou fallback pago.
+  A homologação local com os cinco arquivos reais resultou em MP4 20 s, voz íntegra,
+  legendas temporizadas e custo antigo ainda pendente de conciliação.
+  Durante a atualização, consulta e claim exigem capacidade explícita, evitando
+  entregar metadados novos ao executor antigo que os ignoraria e chamaria TTS.
+  O job 21255 também mostrou timeout da composição 30 s antes da voz; limitar threads
+  e adotar preset rápido preservou o prazo e a prova. Testes reais 15/30 s conferem
+  pixels, corte e duração; fixtures com outros IDs e caminhos antes válidos previnem
+  exceção por produto. Matriz: `docs/homologacao/mira-narration-recovery-v1.md`.
+
 ## LOOP-VIDEO-CTA-COMO-DEFEITO-VISUAL — 2026-09-14
 
 - **Confirmado na recuperação de Vega:** a página de acabamento classificava os jobs

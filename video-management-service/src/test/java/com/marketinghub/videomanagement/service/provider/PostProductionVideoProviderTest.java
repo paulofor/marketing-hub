@@ -327,6 +327,51 @@ class PostProductionVideoProviderTest {
         assertThat(server.getRequestCount()).isEqualTo(3);
     }
 
+    /** Reusa fala medida, alonga visual explicitamente e não chama síntese mesmo com TTS habilitado. */
+    @Test
+    void shouldRecoverLongNarrationWithoutAnotherPaidCall() throws Exception {
+        narrationSegmentDurationSeconds = 13.0;
+        server.enqueue(mp4Response());
+        byte[] bytes = {1, 2, 3, 4};
+        for (int i = 0; i < 2; i++) server.enqueue(new MockResponse().setBody(new Buffer().write(bytes)));
+        var mapper = new ObjectMapper();
+        var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(governedTextJob(true).metadataJson());
+        metadata.put("tenantId", "tenant-a").put("postProductionDurationSeconds", 30);
+        var contract = metadata.putObject("preservedNarration");
+        contract.put("contractVersion", "PRESERVED_TTS_NARRATION_V1").put("sourceJobId", 91098)
+                .put("tenantId", "tenant-a").put("captionText", metadata.path("captionText").asText())
+                .put("newTtsAuthorized", false);
+        var segments = contract.putArray("segments");
+        var texts = metadata.path("captionText").asText().split(" \\| ");
+        for (int i = 0; i < 2; i++) {
+            var segment = segments.addObject().put("segmentIndex", i + 1).put("assetId", 91000 + i)
+                    .put("url", server.url("/voice-" + i + ".mp3").toString()).put("text", texts[i])
+                    .put("model", "tts-model").put("voice", "marin")
+                    .put("sha256", "9f64a747e1b97f131fabb6b447296c9b6f0201e79fb3c5356e6c77e89b6a806a");
+            segment.putObject("sourcePricing").put("reconciliation_status", "PENDING_PROVIDER_RECONCILIATION");
+        }
+        var base = governedTextJob(true);
+        var recovered = new SalesVideoJob(base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                mapper.writeValueAsString(metadata), base.createdAt(), base.updatedAt());
+        var settings = properties();
+        settings.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        settings.getProviders().getPostProduction().setOpenAiApiKey("synthetic-key");
+        settings.getProviders().getPostProduction().setOpenAiBaseUrl(server.url("/").uri());
+        var artifacts = new PostProductionVideoProvider(settings, mapper, WebClient.builder())
+                .render(recovered, profile(), (percent, status, message) -> {});
+        assertThat(server.getRequestCount()).isEqualTo(3);
+        assertThat(artifacts.metadata()).containsEntry("duration_seconds", 30.0)
+                .containsEntry("tts_cost_reconciliation_status", "PENDING_PROVIDER_RECONCILIATION");
+        assertThat(artifacts.metadata().get("tts_interactions").toString())
+                .contains("TEXT_TO_SPEECH_REUSE", "output_duration_seconds=13.0", "incremental_cost_usd=0");
+        assertThat(Files.readString(ffmpegArguments)).contains("tpad=stop_mode=clone:stop_duration=6.0");
+        assertThat(artifacts.auditFiles()).isEmpty();
+    }
+
     /** Falha de medição preserva o trecho já recebido e impede a chamada do trecho seguinte. */
     @Test
     void shouldPreserveReceivedAudioBeforeDurationProbeFailure() throws Exception {

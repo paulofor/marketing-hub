@@ -403,16 +403,18 @@ public class SalesVideoController {
     return salesVideoService.fail(jobId, request);
   }
 
-  /** Lista jobs internos do módulo externo de vídeo. */
+  /** Lista trabalhos internos respeitando o contrato declarado pelo executor. */
   @GetMapping("/internal/video/jobs")
   public List<SalesVideoJobDto> listVideoJobs(
       @RequestParam(required = false) SalesVideoStatus status,
       @RequestParam(required = false, name = "type") SalesVideoJobType jobType,
       @RequestParam(required = false) SalesVideoProviderFamily providerFamily,
-      @RequestParam(defaultValue = "25") int limit) {
+      @RequestParam(defaultValue = "25") int limit,
+      @RequestParam(required = false) String postProductionContract) {
     SalesVideoProviderFamily family =
         providerFamily != null ? providerFamily : SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE;
-    return salesVideoService.findJobs(family, status, jobType, limit);
+    return salesVideoService.findJobsForWorker(
+        family, status, jobType, limit, postProductionContract);
   }
 
   /** Consulta job interno do módulo externo de vídeo. */

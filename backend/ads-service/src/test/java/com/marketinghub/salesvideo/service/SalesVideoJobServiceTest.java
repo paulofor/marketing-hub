@@ -293,6 +293,58 @@ class SalesVideoJobServiceTest {
   private SalesVideoJobService service;
   private SalesVideoProductionCostCalculator costCalculator;
 
+  /** Executor antigo não pode reservar recuperação nem mudar estado durante rollout. */
+  @Test
+  void shouldRefuseLegacyWorkerClaimOfRecovery() {
+    var job =
+        SalesVideoJob.builder()
+            .id(91099L)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .metadataJson(
+                "{\"preservedNarration\":{\"contractVersion\":\"PRESERVED_TTS_NARRATION_V1\"}}")
+            .build();
+    given(jobRepository.findById(job.getId())).willReturn(Optional.of(job));
+    var request = new JobClaimRequest();
+    request.setWorkerId("old-fixture");
+    assertThrows(
+        org.springframework.web.server.ResponseStatusException.class,
+        () -> service.claimJob(job.getId(), request));
+    verify(jobRepository, never()).claimIfAvailable(any(), any(), any(), any(), any());
+    verify(eventRepository, never()).save(any());
+    assertThat(job.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
+  }
+
+  /** Deriva a recuperação de auditoria persistida e conserva linhagem e tentativa falha. */
+  @Test
+  void shouldEnqueuePreservedNarrationFromFailedAttempt() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    var f = VideoNarrationRecoveryTest.fixture(91009, mapper);
+    f.source()
+        .setMetadataJson("{\"tenantId\":\"default\",\"productId\":91002,\"experimentId\":91003}");
+    given(jobRepository.findById(f.source().getId())).willReturn(Optional.of(f.source()));
+    given(jobRepository.findByIdForUpdate(f.source().getId())).willReturn(Optional.of(f.source()));
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(f.source().getId()))
+        .willReturn(Optional.of(f.previous()));
+    for (long id = 91019; id <= 91023; id++) {
+      var asset = f.assets().findById(id);
+      given(assetRepository.findById(id)).willReturn(asset);
+    }
+    given(jobRepository.save(any()))
+        .willAnswer(
+            invocation -> {
+              SalesVideoJob job = invocation.getArgument(0);
+              if (job.getId() == null) job.setId(91099L);
+              return job;
+            });
+    var result = service.requestPostProduction(f.source().getId(), f.request());
+    JsonNode metadata = mapper.readTree(result.getMetadataJson());
+    assertThat(metadata.at("/preservedNarration/segments")).hasSize(5);
+    assertThat(metadata.path("postProductionDurationSeconds").asInt()).isEqualTo(20);
+    assertThat(metadata.path("experimentId").asLong()).isEqualTo(91003L);
+    assertThat(f.previous().getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+    assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
+  }
+
   /** Inicializa o service com dependencias simuladas para cada teste. */
   @BeforeEach
   void setUp() {

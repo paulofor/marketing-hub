@@ -104,6 +104,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 validateCaptionNarrationSync(metadata, captionText, voiceOverScript);
         Path source = null;
         Path preparedSource = null;
+        Path durationAdjustedSource = null;
         Path voice = null;
         Path caption = null;
         Path output = null;
@@ -120,6 +121,12 @@ public class PostProductionVideoProvider implements VideoProvider {
             preparedSource = overlay.videoFile();
             productReferenceAudit = overlay.audit();
             double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());
+            durationAdjustedSource = extendRequestedDuration(preparedSource, durationSeconds, metadata, job.id());
+            if (durationAdjustedSource != null) {
+                if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
+                preparedSource = durationAdjustedSource;
+                durationSeconds = metadata.path("postProductionDurationSeconds").asDouble();
+            }
             boolean sourceAudioAvailable = hasAudioStream(preparedSource, job.id());
             boolean sourceAudioPreserved = sourceAudioAvailable && sourceAudioUseAllowed(metadata);
             if (sourceAudioAvailable && !sourceAudioPreserved) {
@@ -131,7 +138,7 @@ public class PostProductionVideoProvider implements VideoProvider {
             if (StringUtils.hasText(voiceOverScript)) {
                 if (captionNarrationTimingRequired(metadata)) {
                     SynchronizedNarration synchronizedNarration =
-                            generateSynchronizedNarration(captionText, durationSeconds, job.id());
+                            generateSynchronizedNarration(captionText, durationSeconds, job.id(), metadata);
                     voiceOverAudio = synchronizedNarration.audio();
                     captionTimeline = synchronizedNarration.timeline();
                     textSyncReview = mergeTimingReview(textSyncReview, synchronizedNarration);
@@ -218,6 +225,30 @@ public class PostProductionVideoProvider implements VideoProvider {
         }
     }
 
+    /** Alongamento explícito preserva o último quadro; nunca corta ou acelera a fala. */
+    private Path extendRequestedDuration(Path source, double currentDuration, JsonNode metadata, Long jobId) throws IOException {
+        if (metadata.path("postProductionDurationSeconds").isMissingNode()) return null;
+        double requested = metadata.path("postProductionDurationSeconds").asDouble();
+        if (requested < currentDuration - 0.05 || requested < 6 || requested > 60) {
+            throw new VideoProviderException("POST_PRODUCTION_DURATION_INVALID", "Duração solicitada não pode truncar a fonte nem exceder 60 segundos.");
+        }
+        if (requested <= currentDuration + 0.05) return null;
+        Path extended = Files.createTempFile("sales-video-" + jobId + "-extended-", ".mp4");
+        try {
+            runProcess(List.of(properties.getProviders().getPostProduction().getFfmpegPath(), "-y", "-i",
+                    source.toAbsolutePath().toString(), "-vf", "tpad=stop_mode=clone:stop_duration=" + (requested - currentDuration),
+                    "-t", Double.toString(requested), "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+                    "-c:a", "copy", "-movflags", "+faststart", extended.toAbsolutePath().toString()),
+                    "Falha ao alongar visual preservado");
+            log.info("Visual alongado explicitamente; jobId={} sourceDuration={} requestedDuration={}", jobId, currentDuration, requested);
+            return extended;
+        } catch (RuntimeException ex) {
+            log.error("Falha ao alongar visual preservado; jobId={}", jobId, ex);
+            deleteIfExists(extended);
+            throw ex;
+        }
+    }
+
     /** Baixa o MP4 fonte preservando URLs absolutas e relativas ao backend. */
     private Path downloadSourceVideo(SalesVideoJob job, String sourceVideoUrl) throws IOException {
         URI sourceUri = resolveSourceUri(sourceVideoUrl);
@@ -261,17 +292,28 @@ public class PostProductionVideoProvider implements VideoProvider {
                 null);
     }
 
-    /** Mede os trechos exatos e conserva as respostas recebidas em caso de falha temporal. */
+    /** Restaura ou gera os trechos exatos e conserva sua auditoria quando o gate temporal bloqueia. */
     private SynchronizedNarration generateSynchronizedNarration(
-            String captionText, double videoDurationSeconds, Long jobId) throws IOException {
+            String captionText, double videoDurationSeconds, Long jobId, JsonNode metadata) throws IOException {
         List<String> segments = captionSegments(captionText);
         List<VoiceOverAudio> segmentAudios = new ArrayList<>();
+        if (!metadata.path("preservedNarration").isMissingNode()) {
+            for (var segment : PreservedNarrationSegments.restore(metadata, segments, jobId, downloadWebClient, objectMapper)) {
+                segmentAudios.add(new VoiceOverAudio(segment.file(), "OPENAI_TTS", segment.model(), segment.voice(),
+                        segment.interaction(), null));
+            }
+        }
         Path combined = null;
         try {
             List<Double> durations = new ArrayList<>();
             for (int index = 0; index < segments.size(); index++) {
-                VoiceOverAudio audio = generateVoiceOver(segments.get(index), jobId, index + 1);
-                segmentAudios.add(audio);
+                VoiceOverAudio audio;
+                if (metadata.path("preservedNarration").isMissingNode()) {
+                    audio = generateVoiceOver(segments.get(index), jobId, index + 1);
+                    segmentAudios.add(audio);
+                } else {
+                    audio = segmentAudios.get(index);
+                }
                 double duration = probeNarrationDurationSeconds(audio.file(), jobId, index + 1);
                 audio = audio.withMeasuredDuration(duration);
                 segmentAudios.set(index, audio);

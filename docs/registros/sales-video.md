@@ -393,3 +393,23 @@
   regressões de política, HTTP/H2, React e navegador verificam os dois estados,
   transições, filtros e a preservação dos gates.
 - Matriz e evidências: `docs/homologacao/video-review-optional-v1.md`.
+
+## 2026-10-10 — Mira: recuperar voz medida sem repetir síntese
+
+- Solicitação #3332: limite compartilhado de US$ 10 para anúncio/demonstração e revisão;
+  R$ 100/5 dias somente após homologação comercial. Prévia interna não autoriza campanha.
+- Falha original 21253: cinco trechos somam 15,720 s, visual tem 15 s; o gate estava
+  correto, mas auditoria preservada não possuía consumo executável de recuperação.
+- Mudança compartilhada: backend deriva contrato da última tentativa com mesma fonte,
+  tenant, textos, recibos e ativos; executor verifica hash, mede áudio e mantém último
+  quadro até duração explicitamente solicitada. Não há TTS novo nem custo antigo zero.
+- Outra falha 21255: prova de 30 s excedeu 120 s de composição antes do TTS. Threads
+  limitadas e preset rápido preservam pixels/CRF/tempo, sem aumentar apenas o timeout.
+- Antes/depois local: original 15 s bloqueado versus 20 s recuperado com os cinco áudios;
+  custo incremental de síntese zero, custo original pendente; cinco cues sincronizados,
+  MP4 1080×1920, -17,1 LUFS, pico -1,8 dBFS. Prova real 15/30 s passou no mesmo prazo.
+- Adoção limitada a contrato íntegro e duração explícita; divergência bloqueia antes de
+  consumir. Fixtures isoladas com outros IDs e caminhos normais/HLS continuam válidos.
+- Métrica reutilizável: chamadas TTS evitadas e recuperação aceita sem alterar copy/prova;
+  impacto em conversão, vendas e contribuição exige mercado posterior, ainda não medido.
+- Matriz e critérios: [homologação de Mira](../homologacao/mira-narration-recovery-v1.md).

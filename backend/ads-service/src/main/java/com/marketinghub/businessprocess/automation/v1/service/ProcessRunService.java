@@ -643,19 +643,27 @@ public class ProcessRunService {
     return blockingRoot(run, true).isEmpty();
   }
 
-  /** Identifica a mesma reserva usada na conciliação, sem atualizar progresso durante consultas. */
+  /**
+   * Identifica a reserva pela tarefa solicitada ao revalidar origem concluída, sem alterar a árvore
+   * durante consultas nem liberar outro trabalho da origem.
+   */
   private Optional<ProcessRun> blockingRoot(ProcessRun run, boolean refreshProgress) {
     var roots = runs.activeRoots(run.getProductId());
     Long currentRootId = rootId(run);
     if (roots.isEmpty() || Objects.equals(roots.getFirst().getId(), currentRootId))
       return Optional.empty();
-    var candidate = runs.findById(currentRootId).orElseThrow();
+    var root = runs.findById(currentRootId).orElseThrow();
+    boolean completedRootRevalidation =
+        "COMPLETED".equals(root.getStatus())
+            && revalidationAncestors(run).stream()
+                .anyMatch(parent -> Objects.equals(parent.getId(), currentRootId));
+    var candidate = completedRootRevalidation ? run : root;
     for (var waiting : roots) {
       if (Objects.equals(waiting.getId(), currentRootId)) return Optional.empty();
       if (!context.permitsCommercialContinuation(waiting, candidate)
           || inFlight(waiting, new HashSet<>(), refreshProgress)) return Optional.of(waiting);
     }
-    return Optional.of(roots.getFirst());
+    return completedRootRevalidation ? Optional.empty() : Optional.of(roots.getFirst());
   }
 
   /**
@@ -987,33 +995,10 @@ public class ProcessRunService {
    * Reabre somente a espera dos ancestrais concluídos após comando novo e contexto ainda válido.
    */
   private void recoverCompletedAncestorsForRevalidation(ProcessRun run) {
-    if (run.getParentRunId() == null
-        || run.getRetryEpoch() < 1
-        || Boolean.FALSE.equals(
-            products.findById(run.getProductId()).orElseThrow().getAutomaticExecutionEnabled()))
-      return;
-    var ancestors = new ArrayList<ProcessRun>();
-    var cursor = run;
-    var seen = new HashSet<Long>();
-    while (cursor.getParentRunId() != null) {
-      if (!seen.add(cursor.getId()))
-        throw new IllegalStateException("Ciclo inválido na delegação do processo.");
-      var parent = runs.findById(cursor.getParentRunId()).orElseThrow();
-      if (!Objects.equals(parent.getProductId(), run.getProductId())
-          || !Objects.equals(parent.getChainDefinitionId(), run.getChainDefinitionId())
-          || !Objects.equals(parent.getLearningCycleId(), run.getLearningCycleId())
-          || !Objects.equals(parent.getSourceReference(), run.getSourceReference())
-          || Set.of("PAUSING", "PAUSED", "ERROR", "CLOSED").contains(parent.getStatus())) return;
-      if ("COMPLETED".equals(parent.getStatus())
-          && (parent.getFinishedAt() == null
-              || !events.existsByRunIdAndEventTypeAndCreatedAtAfter(
-                  run.getId(), "REVALIDATION_REQUESTED", parent.getFinishedAt()))) return;
-      ancestors.add(parent);
-      cursor = parent;
-    }
+    var ancestors = revalidationAncestors(run);
     if (ancestors.stream().noneMatch(parent -> "COMPLETED".equals(parent.getStatus()))
         || !hasTurn(run)) return;
-    cursor = run;
+    var cursor = run;
     for (var parent : ancestors) {
       if ("COMPLETED".equals(parent.getStatus())) {
         parent.setChildRunId(cursor.getId());
@@ -1035,6 +1020,36 @@ public class ProcessRunService {
       }
       cursor = parent;
     }
+  }
+
+  /** Confere a autorização da árvore concluída sem modificar reservas, pausas ou provas. */
+  private List<ProcessRun> revalidationAncestors(ProcessRun run) {
+    if (run.getParentRunId() == null
+        || run.getRetryEpoch() < 1
+        || Boolean.FALSE.equals(
+            products.findById(run.getProductId()).orElseThrow().getAutomaticExecutionEnabled()))
+      return List.of();
+    var ancestors = new ArrayList<ProcessRun>();
+    var cursor = run;
+    var seen = new HashSet<Long>();
+    while (cursor.getParentRunId() != null) {
+      if (!seen.add(cursor.getId()))
+        throw new IllegalStateException("Ciclo inválido na delegação do processo.");
+      var parent = runs.findById(cursor.getParentRunId()).orElseThrow();
+      if (!Objects.equals(parent.getProductId(), run.getProductId())
+          || !Objects.equals(parent.getChainDefinitionId(), run.getChainDefinitionId())
+          || !Objects.equals(parent.getLearningCycleId(), run.getLearningCycleId())
+          || !Objects.equals(parent.getSourceReference(), run.getSourceReference())
+          || Set.of("PAUSING", "PAUSED", "ERROR", "CLOSED").contains(parent.getStatus()))
+        return List.of();
+      if ("COMPLETED".equals(parent.getStatus())
+          && (parent.getFinishedAt() == null
+              || !events.existsByRunIdAndEventTypeAndCreatedAtAfter(
+                  run.getId(), "REVALIDATION_REQUESTED", parent.getFinishedAt()))) return List.of();
+      ancestors.add(parent);
+      cursor = parent;
+    }
+    return ancestors;
   }
 
   /**

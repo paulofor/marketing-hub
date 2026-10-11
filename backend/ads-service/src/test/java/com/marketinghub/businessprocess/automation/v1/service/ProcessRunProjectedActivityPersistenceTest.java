@@ -198,6 +198,137 @@ class ProcessRunProjectedActivityPersistenceTest {
         .hasSize(1);
   }
 
+  /** Revalida vídeos sob pai concluído enquanto vendas aguarda seleção, sem repetir o aceite. */
+  @ParameterizedTest
+  @ValueSource(longs = {96001L, 96201L})
+  void revalidatesCompletedTreeBeforeVideoSelection(long productId) throws Exception {
+    var waiting = prepareVideoSelectionRevalidation(productId);
+    assertThat(service.resume(productId, 96012L, next.getId()).status()).isEqualTo("QUEUED");
+    assertThat(service.reconcile(next.getId()).status()).isEqualTo("WAITING_ACTIVITY");
+    assertThat(parent.getStatus()).isEqualTo("WAITING_SUBPROCESS");
+    snapshot(96012L, "PENDING", true, true, false, false);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("WAITING_SUBPROCESS");
+    assertThat(service.reconcile(next.getId()).status()).isEqualTo("WAITING_ACTIVITY");
+    snapshot(96012L, "COMPLETED", false, true, false, true);
+    assertThat(service.reconcile(next.getId()).status()).isEqualTo("COMPLETED");
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("COMPLETED");
+    service.reconcile(parent.getId());
+    verify(activities, times(1))
+        .requestProductActivityExecution(
+            eq(96012L),
+            eq(productId),
+            eq("a"),
+            isNull(),
+            eq(96031L),
+            eq(next.getSourceReference()));
+    verify(subprocesses, times(1)).complete(eq(parent), any(), eq(next), eq(snapshots.get(96012L)));
+    assertThat(waiting.getStatus()).isEqualTo("WAITING_HUMAN");
+    assertThat(waiting.getKnownCostUsd()).isEqualByComparingTo("0.75");
+    assertThat(runs.count()).isEqualTo(3);
+    assertThat(
+            events.findAll().stream()
+                .filter(e -> "SUBPROCESS_REVALIDATION_AUTHORIZED".equals(e.getEventType())))
+        .hasSize(1);
+  }
+
+  /** A recuperação aninhada preserva autoridade, escopo e tarefas reais na reserva de vendas. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "NO_COMMAND",
+        "OLD_COMMAND",
+        "PARENT_PAUSED",
+        "OTHER_CYCLE",
+        "REAL_TASK",
+        "OTHER_ROOT",
+        "STOP"
+      })
+  void refusesUnsafeVideoSelectionRevalidation(String guard) throws Exception {
+    var waiting = prepareVideoSelectionRevalidation(96001L);
+    if ("NO_COMMAND".equals(guard)) next.setStatus("QUEUED");
+    else service.resume(96001L, 96012L, next.getId());
+    if ("OLD_COMMAND".equals(guard)) parent.setFinishedAt(Instant.now().plusSeconds(60));
+    if ("PARENT_PAUSED".equals(guard)) parent.setStatus("PAUSED");
+    if ("OTHER_CYCLE".equals(guard)) waiting.setLearningCycleId(96099L);
+    if ("REAL_TASK".equals(guard)) snapshot(96013L, "IN_PROGRESS", true, true, false, false);
+    if ("OTHER_ROOT".equals(guard)) runs.saveAndFlush(run(96014L, "RUNNING"));
+    if ("STOP".equals(guard)) {
+      var products =
+          (ProductRepository)
+              org.springframework.test.util.ReflectionTestUtils.getField(service, "products");
+      products.findById(96001L).orElseThrow().setAutomaticExecutionEnabled(false);
+    }
+    String parentStatus = parent.getStatus();
+    assertThat(service.reconcile(next.getId()).status()).isNotEqualTo("WAITING_ACTIVITY");
+    assertThat(parent.getStatus()).isEqualTo(parentStatus);
+    assertThat(waiting.getStatus()).isEqualTo("WAITING_HUMAN");
+    verifyNoInteractions(activities, subprocesses);
+  }
+
+  /** Reproduz a árvore completa e usa a política real de prioridade da revisão de vídeos. */
+  private ProcessRun prepareVideoSelectionRevalidation(long productId) throws Exception {
+    prepareCompletedParentRevalidation(productId);
+    var waiting = run(96013L, "WAITING_HUMAN");
+    waiting.setProductId(productId);
+    waiting.setSourceReference(next.getSourceReference());
+    waiting.setCurrentActivityId("learningCycle");
+    for (var run : List.of(parent, next, waiting)) run.setLearningCycleId(96031L);
+    waiting = runs.saveAndFlush(waiting);
+    snapshot(96013L, "IN_PROGRESS", false, false, false, false);
+    var definitions =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    for (var entry :
+        Map.of(
+                96011L,
+                "pde-communication-sales-journey",
+                96012L,
+                "creative-production-approval",
+                96013L,
+                "pde-sales-delivery-learning")
+            .entrySet()) {
+      var definition = new BusinessProcessDefinition();
+      definition.setId(entry.getKey());
+      definition.setProcessCode(entry.getValue());
+      when(definitions.findById(entry.getKey())).thenReturn(Optional.of(definition));
+    }
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(96031L);
+    cycle.setProductId(productId);
+    cycle.setChainDefinitionId(parent.getChainDefinitionId());
+    cycle.setExperimentId(productId + 20);
+    cycle.setStatus("OPEN");
+    cycle.setStage("VIDEO_APPROVAL");
+    when(cycles.findById(96031L)).thenReturn(Optional.of(cycle));
+    var policy = new ProcessRunContext(null, definitions, null, cycles, null, json, null, null);
+    when(context.permitsCommercialContinuation(any(), any()))
+        .thenAnswer(
+            inv -> policy.permitsCommercialContinuation(inv.getArgument(0), inv.getArgument(1)));
+    var dispatched =
+        mock(
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .requestProductProcessActivityExecution
+                .ProductProcessActivityExecutionRequestResponse
+                .class);
+    when(dispatched.sourceReference()).thenReturn(next.getSourceReference());
+    when(dispatched.tasks()).thenReturn(List.of());
+    when(activities.requestProductActivityExecution(
+            eq(96012L),
+            eq(productId),
+            eq("a"),
+            isNull(),
+            eq(96031L),
+            eq(next.getSourceReference())))
+        .thenReturn(dispatched);
+    return waiting;
+  }
+
   /**
    * Histórico concluído não libera revisão sem comando novo nem ultrapassa pausa, STOP ou outra
    * fila.

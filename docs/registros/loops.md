@@ -10001,3 +10001,11 @@ Não reescrever resultados já emitidos. Matriz, montagem e limites em
   e estados protegidos continuam cobertos.
 - Limite: coordenação não é aprovação de qualidade nem evidência de vendas.
   [Matriz e entrega](../homologacao/capella-video-quality-v2.md).
+- Complemento da causa: a execução 65 é filha da 64, já concluída. O evento 2196
+  comprova revalidação nova, mas a fila comparava a origem 64 à dependência de
+  vídeo e devolvia reserva mesmo após todas as esperas permitirem a revisão.
+  O teste inicial cobria revisão como raiz e não essa árvore persistida.
+- Prevenção ampliada: reproduzir pai concluído, filho reaberto e vendas esperando
+  seleção com a política real, em duas identidades; conferir disparo único,
+  retorno aceito, custos e espera humana preservados. Comando antigo/ausente,
+  pausa, STOP, outro ciclo, tarefa real e outra reserva continuam bloqueados.

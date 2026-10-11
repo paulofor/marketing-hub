@@ -107,3 +107,25 @@ falhas ou skips. A fixture HTTP foi corrigida para usar a chave do ciclo real em
 vez da chave sem ciclo; depois passou em duas identidades. Spotless e revisão do
 diff confirmaram comentários de responsabilidade em todas as classes/métodos
 alterados. A correção não muda banco, orçamento, peça nem seleção humana.
+
+## Revalidação sob origem concluída
+
+Após a publicação, a fila mostrou `WAITING_PARENT`: a execução criativa 65 tem
+origem 64, concluída em 09/10. O evento 2196 comprova o novo comando de revalidação
+em 11/10. O controlador comparava a raiz de comunicação à dependência de revisão;
+além disso, uma raiz concluída não aparece na lista de reservas ativas.
+
+Desvincular o filho perderia o retorno; reabrir a origem sem condição enfraqueceria
+a pausa e a autoridade. A correção escolhida reaproveita a validação dos ancestrais
+e avalia o subprocesso autorizado para a prioridade. Só reabre a espera do pai,
+depois de todas as reservas permitirem a revisão e sem tarefa conflitante.
+
+Matriz complementar: duas identidades com pai concluído → comando novo → revisão
+→ parecer → retorno único, mantendo a seleção humana e os custos. Comando ausente
+ou anterior à conclusão, pai pausado, STOP, outro ciclo, tarefa em execução e outra
+reserva devem impedir disparo. Os dois casos positivos reproduziram localmente
+`WAITING_PARENT` antes da correção. Os testes usam a política real de precedência,
+persistência local e agentes simulados, sem novas chamadas pagas.
+
+Resultado: 337 testes das 15 suítes relacionadas, sem falhas, erros ou skips,
+incluindo retorno único ao pai e proteção das reservas. Spotless e diff conferidos.

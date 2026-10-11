@@ -247,6 +247,25 @@ class PrivateCommunicationJourneyReplayTest {
     verify(tasks, never()).save(any());
   }
 
+  /** Confere a leitura atual das provas exportadas sem exigir aceite humano das novas mídias. */
+  @Test
+  void readsCurrentPrivateContextWithoutMutatingExportedHistory() throws Exception {
+    var json = new ObjectMapper().findAndRegisterModules();
+    var exported = json.readTree(Path.of(System.getenv("PRIVATE_JOURNEY_REPLAY")).toFile());
+    var tasks = mock(AgentTaskRepository.class);
+    var instances = mock(BusinessProcessActivityInstanceRepository.class);
+    var cycles = mock(LearningSalesCycleRepository.class);
+    var provider = projectedContext(exported, tasks, instances, cycles, json);
+    String reference = exported.path("constructionTarget").path("sourceReference").asText();
+    var result = provider.resolve(reference).orElseThrow();
+    assertThat(result.get("inputReadiness")).isEqualTo("READY");
+    assertThat(result.get("publicationAuthorized")).isEqualTo(false);
+    assertThat(result.get("paymentEnabled")).isEqualTo(false);
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+    verify(cycles, never()).save(any());
+  }
+
   /**
    * Recompõe o produtor com SELECTs exportados, preservando identidades e bytes sem chamar APIs.
    */
@@ -343,8 +362,15 @@ class PrivateCommunicationJourneyReplayTest {
         .thenReturn(reviews);
     when(tasks.findFunctionalSnapshots(eq(reference), anyCollection(), eq(cycle.getCreatedAt())))
         .thenReturn(artifacts);
-    return new IrisLearningCycleContext(
-        cycles, experiments, chains, construction, instances, tasks, json);
+    var provider =
+        new IrisLearningCycleContext(
+            cycles, experiments, chains, construction, instances, tasks, json);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider,
+        "operationalEvidence",
+        new com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader()));
+    return provider;
   }
 
   /** Converte o formato UTC retornado pelo MCP sem inferir horário local. */

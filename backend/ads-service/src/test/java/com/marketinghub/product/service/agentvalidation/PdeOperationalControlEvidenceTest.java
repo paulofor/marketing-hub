@@ -139,6 +139,75 @@ class PdeOperationalControlEvidenceTest {
     }
   }
 
+  /** A consulta por hash preserva o relatório aprovado sem substituir a seleção atual. */
+  @Test
+  void resolvesHistoricalHashWithoutPromotingItToCurrent() throws Exception {
+    catalog(false);
+    byte[] previous = json.writeValueAsBytes(report);
+    String previousHash =
+        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(previous));
+    report.put("generatedAt", Instant.now().minusSeconds(30).toString());
+    byte[] current = json.writeValueAsBytes(report);
+    String currentHash =
+        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(current));
+    var index = json.createObjectNode();
+    for (String section : java.util.List.of("reports", "historicalReports")) {
+      boolean historical = section.equals("historicalReports");
+      index
+          .putArray(section)
+          .addObject()
+          .put("productSlug", "original")
+          .put("prototypeVersion", "v3")
+          .put(
+              "resource",
+              "contracts/operational-evidence/" + (historical ? "previous" : "current") + ".json")
+          .put("sha256", historical ? previousHash : currentHash);
+    }
+    when(resources.getResource("classpath:contracts/pde-operational-controls-catalog-v1.json"))
+        .thenReturn(new ByteArrayResource(json.writeValueAsBytes(index)));
+    when(resources.getResource("classpath:contracts/operational-evidence/previous.json"))
+        .thenReturn(new ByteArrayResource(previous));
+    when(resources.getResource("classpath:contracts/operational-evidence/current.json"))
+        .thenReturn(new ByteArrayResource(current));
+    assertThat(provider.resolve("original", "v3").orElseThrow().path("reportSha256").asText())
+        .isEqualTo(currentHash);
+    assertThat(
+            provider
+                .resolveReviewed("original", "v3", previousHash)
+                .orElseThrow()
+                .path("reportSha256")
+                .asText())
+        .isEqualTo(previousHash);
+    assertThat(provider.resolveReviewed("original", "v3", currentHash)).isPresent();
+    assertThat(provider.resolveReviewed("foreign", "v3", previousHash)).isEmpty();
+    assertThat(provider.resolveReviewed("original", "v4", previousHash)).isEmpty();
+    assertThat(provider.resolveReviewed("original", "v3", "d".repeat(64))).isEmpty();
+    assertThat(provider.resolveReviewed("original", "v3", null)).isEmpty();
+    when(resources.getResource("classpath:contracts/operational-evidence/previous.json"))
+        .thenReturn(new ByteArrayResource(current));
+    assertThat(provider.resolveReviewed("original", "v3", previousHash)).isEmpty();
+  }
+
+  /**
+   * Reproduz a prova de Mira aceita no gate sem confundi-la com o relatório posterior da
+   * integração.
+   */
+  @Test
+  void preservesPublishedReviewedReportBesideCurrentIntegrationProof() {
+    var real =
+        new PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader());
+    String previous = "de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4";
+    var old =
+        real.resolveReviewed("pde-planejado-36", "mira-private-candidate-v3", previous)
+            .orElseThrow();
+    var current = real.resolve("pde-planejado-36", "mira-private-candidate-v3").orElseThrow();
+    assertThat(old.path("generatedAt").asText()).startsWith("2026-10-07");
+    assertThat(current.path("reportSha256").asText()).isNotEqualTo(previous);
+    assertThat(old.path("agentApprovalClaimed").asBoolean()).isFalse();
+    assertThat(old.path("commercialEvidenceClaimed").asBoolean()).isFalse();
+  }
+
   /** Gera índice e conteúdo coerentes exclusivamente em memória, preservando recursos reais. */
   private void catalog(boolean wrongHash) throws Exception {
     byte[] bytes = json.writeValueAsBytes(report);

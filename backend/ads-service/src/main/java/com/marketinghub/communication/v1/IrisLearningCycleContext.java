@@ -52,6 +52,10 @@ public class IrisLearningCycleContext {
   private final AgentTaskRepository tasks;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence
+      operationalEvidence;
+
   /**
    * Reconhece o sucessor exato e mantém a lacuna explícita, sem buscar provas de plano ou produto.
    */
@@ -289,7 +293,8 @@ public class IrisLearningCycleContext {
   }
 
   /**
-   * Confere o recibo calculado pelo gate, seus hashes e a prova atual antes de preservar revisões.
+   * Confere o recibo imutável do gate com o relatório efetivamente revisado, preservando a prova
+   * atual separadamente.
    */
   private boolean evidenceCorrectionResolved(
       PdeValidationTaskSnapshot correction,
@@ -300,6 +305,19 @@ public class IrisLearningCycleContext {
       throws Exception {
     var resolution = proof.path("evidenceCorrectionResolution");
     var report = pde.path("operationalControlEvidence");
+    if (!proof.path("prototypeVersion").equals(report.path("prototypeVersion"))
+        || !report.path("reportSha256").asText().matches("[a-f0-9]{64}")) return false;
+    if (!report.path("reportSha256").equals(resolution.path("reportSha256"))) {
+      if (operationalEvidence == null) return false;
+      report =
+          operationalEvidence
+              .resolveReviewed(
+                  proof.path("productSlug").asText(),
+                  proof.path("prototypeVersion").asText(),
+                  resolution.path("reportSha256").asText())
+              .orElse(null);
+      if (report == null) return false;
+    }
     if (!"BLOCKED".equals(correction.status())
         || review == null
         || !"COMPLETED".equals(review.status())

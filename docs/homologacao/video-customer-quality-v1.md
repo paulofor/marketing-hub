@@ -158,3 +158,25 @@ opcionais de replay/captura não habilitados nesta rodada já haviam sido execut
 validações anteriores dos vídeos. A nova passagem produtor → leitor foi executada nos dois
 contextos, sem skips. Inclui 92 regras de arquitetura. A atestação sucessora v20 preserva
 a experiência privada v3 e atualiza somente a compatibilidade dessa leitura.
+
+### Resolução de relatório histórico — 11/10/2026
+
+A execução 724 revelou uma segunda causa independente da etapa: o gate 545 aponta
+para o relatório de controles v1, enquanto o contexto atual entrega v2. A v2 foi
+produzida em 10/10 para a integração audiovisual; Têmis 633 havia examinado a v1 em
+07/10. Preservar o relatório antigo não significa aprovar a integração nova.
+
+A consulta por hash no catálogo existente permite conferir o recibo histórico sem
+substituir a prova atual. Regressão inicial: duas identidades falham com READY
+esperado/BLOCKED obtido. Critérios de aceite: ler a mesma imagem aceita em
+VIDEO_APPROVAL; manter relatório atual e recibo anterior distintos; recusar bytes
+adulterados, produto/versão/hash desconhecidos, gate inválido e ciclo fechado;
+nenhuma gravação, inferência ou aprovação implícita. O replay local usa somente
+SELECTs exportados de Mira, incluindo alvo 724, gate 545 e histórico exato.
+
+Resultados: 55 testes direcionados passaram; o replay dos dados atuais passou junto
+a eles (56 execuções). A regressão ampliada executou 651 testes sem falhas, incluindo
+92 regras de arquitetura; duas rotinas de replay opcional ficaram fora da rodada sem
+exportação. O replay relevante foi executado separadamente com o arquivo exportado.
+Bundle de revisão: 516 arquivos e 111 manifestos válidos. A atestação v21 mantém
+a experiência v3 e seus limites privados; relatórios v1/v2 permanecem imutáveis.

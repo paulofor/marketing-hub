@@ -227,9 +227,15 @@ class IrisLearningCycleContextTest {
 
   /** Reproduz produtor de contexto e leitura real dos pixels antes e depois da etapa de vídeo. */
   @ParameterizedTest
-  @CsvSource({"10,9,102,26", "91004,91002,91092,91014"})
+  @CsvSource({
+    "10,9,102,26,false",
+    "91004,91002,91092,91014,false",
+    "10,9,102,26,true",
+    "91004,91002,91092,91014,true"
+  })
   void servesSameApprovedCreativeToVideoReviewerAcrossStageTransition(
-      long productId, long cycleId, long experimentId, long chainId) throws Exception {
+      long productId, long cycleId, long experimentId, long chainId, boolean refreshedReport)
+      throws Exception {
     fixture(productId, cycleId, experimentId, chainId);
     String source = "experiment:" + experimentId;
     String technical =
@@ -311,6 +317,10 @@ class IrisLearningCycleContextTest {
         .thenReturn(new AgentTaskVisualEvidenceService.EvidenceContent("image/png", bytes));
     var reader = new CreativeVisualEvidenceService(tasks, images, storage, provider::resolve, json);
     var before = reader.inputs("customer-agent", 723L);
+    if (refreshedReport) {
+      evidenceSupplementFixture();
+      refreshOperationalProof();
+    }
     cycle.setStage("VIDEO_APPROVAL");
     assertThat(reader.inputs("customer-agent", 723L)).isEqualTo(before);
     assertThat(reader.read("customer-agent", 723L, 654L, 569L).bytes()).isEqualTo(bytes);
@@ -539,6 +549,42 @@ class IrisLearningCycleContextTest {
         .isEqualTo("BLOCKED");
   }
 
+  /** Preserva o recibo já aprovado quando outra rodada de testes atualiza o relatório da versão. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102,26", "91004,91002,91092,91014"})
+  void preservesApprovedReceiptAfterCurrentReportRefresh(
+      long productId, long cycleId, long experimentId, long chainId) throws Exception {
+    fixture(productId, cycleId, experimentId, chainId);
+    evidenceSupplementFixture();
+    cycle.setStage("VIDEO_APPROVAL");
+    refreshOperationalProof();
+    var result = provider.resolve("experiment:" + experimentId).orElseThrow();
+    assertThat(result.get("inputReadiness")).isEqualTo("READY");
+    assertThat(
+            json.valueToTree(result.get("operationalControlEvidence"))
+                .path("reportSha256")
+                .asText())
+        .isEqualTo("b".repeat(64));
+    assertThat(proof.path("evidenceCorrectionResolution").path("reportSha256").asText())
+        .isEqualTo("a".repeat(64));
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+  }
+
+  /** Simula catálogo com relatório atual novo e versão anterior imutável referida pelo gate. */
+  private void refreshOperationalProof() {
+    var reviewed = pde.path("operationalControlEvidence").deepCopy();
+    var evidence =
+        mock(com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence.class);
+    when(evidence.resolveReviewed("vega-qa", VERSION, "a".repeat(64)))
+        .thenReturn(Optional.of(reviewed));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "operationalEvidence", evidence);
+    ((ObjectNode) pde.path("operationalControlEvidence"))
+        .put("reportSha256", "b".repeat(64))
+        .put("generatedAt", "2026-10-10T08:00:00Z");
+  }
+
   /** Bloqueia recibos ausentes ou divergentes, novas correções e alterações do histórico. */
   @ParameterizedTest
   @ValueSource(
@@ -623,7 +669,7 @@ class IrisLearningCycleContextTest {
     proof
         .putObject("evidenceCorrectionResolution")
         .put("contractVersion", "PDE_EVIDENCE_CORRECTION_RESOLUTION_V1")
-        .put("sourceReference", SOURCE)
+        .put("sourceReference", "experiment:" + cycle.getExperimentId())
         .put("prototypeVersion", VERSION)
         .put("correctionTaskId", 402L)
         .put("correctionResultSha256", fixtureHash(correction))

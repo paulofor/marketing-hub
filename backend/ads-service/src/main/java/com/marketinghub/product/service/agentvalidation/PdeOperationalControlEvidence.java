@@ -25,15 +25,33 @@ public class PdeOperationalControlEvidence {
    * Confere identidade, hash, origem e cobertura sem converter teste local em aprovação de agente.
    */
   public Optional<JsonNode> resolve(String productSlug, String prototypeVersion) {
+    return resolveCatalog(productSlug, prototypeVersion, null);
+  }
+
+  /** Recupera os bytes exatos referidos por um parecer, sem promover a prova histórica a atual. */
+  public Optional<JsonNode> resolveReviewed(
+      String productSlug, String prototypeVersion, String reportSha256) {
+    if (reportSha256 == null || !reportSha256.matches("[a-f0-9]{64}")) return Optional.empty();
+    return resolveCatalog(productSlug, prototypeVersion, reportSha256);
+  }
+
+  /** Confere índice, identidade e hash; arquivos históricos só participam de consulta explícita. */
+  private Optional<JsonNode> resolveCatalog(
+      String productSlug, String prototypeVersion, String reportSha256) {
     try (var indexInput =
         resources
             .getResource("classpath:contracts/pde-operational-controls-catalog-v1.json")
             .getInputStream()) {
       var matches = new ArrayList<JsonNode>();
-      for (var item : json.readTree(indexInput).path("reports"))
-        if (Objects.equals(productSlug, item.path("productSlug").asText())
-            && Objects.equals(prototypeVersion, item.path("prototypeVersion").asText()))
-          matches.add(item);
+      var index = json.readTree(indexInput);
+      var sections =
+          reportSha256 == null ? List.of("reports") : List.of("reports", "historicalReports");
+      for (String section : sections)
+        for (var item : index.path(section))
+          if (Objects.equals(productSlug, item.path("productSlug").asText())
+              && Objects.equals(prototypeVersion, item.path("prototypeVersion").asText())
+              && (reportSha256 == null || reportSha256.equals(item.path("sha256").asText())))
+            matches.add(item);
       if (matches.size() != 1) return Optional.empty();
       var item = matches.getFirst();
       String path = item.path("resource").asText();

@@ -226,6 +226,88 @@ class ProcessRunQueueBlockerPersistenceTest {
     verifyNoInteractions(activities);
   }
 
+  /** A revisão ganha vez por HTTP, preservando seleção humana, custo e histórico no banco local. */
+  @ParameterizedTest
+  @ValueSource(longs = {95001L, 95201L})
+  void exposesVideoReviewTurnWithoutApprovingWaitingSelection(long productId) throws Exception {
+    waiting.setProductId(productId);
+    queued.setProductId(productId);
+    waiting.setStatus("WAITING_HUMAN");
+    waiting.setCurrentActivityId("learningCycle");
+    waiting.setLearningCycleId(95031L);
+    queued.setLearningCycleId(95031L);
+    queued.setSourceReference(waiting.getSourceReference());
+    for (var value : new ProcessRun[] {waiting, queued}) {
+      value.setScopeKey(
+          HexFormat.of()
+              .formatHex(
+                  java.security.MessageDigest.getInstance("SHA-256")
+                      .digest(
+                          (productId
+                                  + "|"
+                                  + value.getProcessDefinitionId()
+                                  + "|95014|95031|experiment:95021")
+                              .getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+    }
+    var definitions =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    var sales = new BusinessProcessDefinition();
+    sales.setId(95011L);
+    sales.setProcessCode("pde-sales-delivery-learning");
+    var review = new BusinessProcessDefinition();
+    review.setId(95012L);
+    review.setProcessCode("creative-production-approval");
+    when(definitions.findById(95011L)).thenReturn(Optional.of(sales));
+    when(definitions.findById(95012L)).thenReturn(Optional.of(review));
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setProductId(productId);
+    cycle.setChainDefinitionId(95014L);
+    cycle.setExperimentId(95021L);
+    cycle.setStage("VIDEO_APPROVAL");
+    cycle.setStatus("OPEN");
+    when(cycles.findById(95031L)).thenReturn(Optional.of(cycle));
+    var policy =
+        new ProcessRunContext(
+            null,
+            definitions,
+            null,
+            cycles,
+            null,
+            json,
+            mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class),
+            mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
+    when(context.permitsCommercialContinuation(any(), any()))
+        .thenAnswer(
+            inv -> policy.permitsCommercialContinuation(inv.getArgument(0), inv.getArgument(1)));
+    when(context.read(any(ProcessRun.class), eq(false)))
+        .thenReturn(
+            json.readValue(
+                "{\"selectedActivityCount\":4,\"completedActivityCount\":3,\"remainingActivityCount\":1,\"activities\":[]}",
+                ProductProcessActivityExecutionHistoryResponse.class));
+    entityManager.flush();
+    long revision = waiting.getRevision();
+    mvc.perform(
+            get("/api/business-processes/95012/products/" + productId + "/automation/v1")
+                .param("chainId", "95014")
+                .param("learningCycleId", "95031")
+                .param("sourceReference", "experiment:95021"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("QUEUED"))
+        .andExpect(jsonPath("$.queueBlocker").isEmpty());
+    entityManager.flush();
+    entityManager.clear();
+    var persisted = runs.findById(waiting.getId()).orElseThrow();
+    assertThat(persisted.getStatus()).isEqualTo("WAITING_HUMAN");
+    assertThat(persisted.getRevision()).isEqualTo(revision);
+    assertThat(persisted.getKnownCostUsd()).isEqualByComparingTo("0.25");
+    assertThat(events.count()).isZero();
+    verifyNoInteractions(activities);
+  }
+
   /** Uma raiz própria compartilha a vez com seus filhos, sem apontar a si mesma como bloqueio. */
   @Test
   void sharesReservationWithinSameRoot() {

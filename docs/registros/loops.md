@@ -9985,3 +9985,19 @@ Não reescrever resultados já emitidos. Matriz, montagem e limites em
 - Prevenção: regressões de produtos distintos, tenant, direitos, hashes, variedade,
   frames com FFmpeg real e recuperação da voz. Aceite humano e gastos preservados.
 - Evidências e limites: `docs/homologacao/capella-video-quality-v2.md`.
+
+## LOOP-SELECAO-VIDEO-BLOQUEIA-REVISAO — 11/10/2026
+
+- Evidência: Capella/ciclo 12/experimento 105 recebeu vídeos 65/66 novos, mas a
+  execução criativa 65 ficou `QUEUED` atrás da execução 70 em `WAITING_HUMAN`.
+  O bloqueio humano exige justamente o parecer dos novos hashes.
+- Causa: a política de precedência cobria preparação comercial em
+  AUTHORIZATION/PUBLICATION, mas não revisão em VIDEO_APPROVAL.
+- Correção: liberar a revisão da mesma ocorrência, mantendo a checagem de tarefa
+  real em andamento, identidades, pausa, gates e aceites. Não pausar o pai nem
+  aprovar peças para contornar a fila.
+- Prevenção: regressão antes/depois para Capella e outro produto, HTTP/JPA com
+  duas identidades e histórico/custos preservados; caminhos comerciais anteriores
+  e estados protegidos continuam cobertos.
+- Limite: coordenação não é aprovação de qualidade nem evidência de vendas.
+  [Matriz e entrega](../homologacao/capella-video-quality-v2.md).

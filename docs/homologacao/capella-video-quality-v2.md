@@ -83,3 +83,27 @@ Regressão comprovada: sem a correção, o caso local expandiu 1440 para 6334 px
 com ela, passou nos três dispositivos, preservando também roteiro e importação.
 A conferência visual publicada com o mesmo ajuste apenas no navegador retornou
 1440 px, sem alterar dados ou enviar geração. Typecheck e build foram executados.
+
+## Passagem para a revisão independente
+
+A montagem publicada criou vídeos 65 (27 s) e 66 (45 s), com bytes e hashes
+conferidos, 16 segmentos de voz reutilizados e nenhuma nova síntese. Reprodução
+com áudio decodificado e controles passou em desktop, iPhone e Pixel.
+
+A retomada do subprocesso criativo revelou fila circular com a espera de seleção.
+Alternativas: pausar manualmente o processo de vendas, liberar toda concorrência ou
+reconhecer a dependência exata. A última preserva o acompanhamento e custa menos
+manutenção, sem liberar contextos independentes ou tarefas em curso.
+
+Matriz local adicional: o caso original e outro produto devem ganhar vez para
+revisão; produto/cadeia/ciclo/experimento diferentes, ciclo encerrado, pausa, falha,
+etapa errada e tarefa real devem manter o bloqueio. A preparação comercial já
+válida continua permitida. HTTP/JPA deve preservar espera humana, revisão, custos e
+histórico, sem criar tarefa durante leitura. Os dois casos positivos falharam
+antes da correção; nenhuma inferência ou cobrança é usada nos testes.
+
+Validação: 328 testes das 15 suítes de execução, revisão final e arquitetura sem
+falhas ou skips. A fixture HTTP foi corrigida para usar a chave do ciclo real em
+vez da chave sem ciclo; depois passou em duas identidades. Spotless e revisão do
+diff confirmaram comentários de responsabilidade em todas as classes/métodos
+alterados. A correção não muda banco, orçamento, peça nem seleção humana.

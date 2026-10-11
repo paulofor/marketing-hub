@@ -121,6 +121,19 @@ jobs:
             --input-type=module \
             < customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs
 
+      - name: Validate final video pixels with runtime codecs
+        run: |
+          docker run --rm --init --read-only --interactive --network none \
+            --tmpfs /tmp:size=256m,noexec,nosuid \
+            --security-opt no-new-privileges:true \
+            --volume "${GITHUB_WORKSPACE}/customer-agent-worker/src/test/fixtures:/fixtures:ro" \
+            --env CUSTOMER_AGENT_FINAL_VIDEO_SCRIPT=/app/browser/final-video-review.mjs \
+            --env CUSTOMER_AGENT_VIDEO_FIXTURE=/fixtures/final-video-red-blue.mp4.b64 \
+            --entrypoint node \
+            marketing-hub/customer-agent-worker:${{ github.sha }} \
+            --input-type=module \
+            < customer-agent-worker/src/test/js/final-video-pixel.smoke.mjs
+
       - name: Package tested images
         if: github.event_name != 'pull_request'
         run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/customer-agent-worker:${{ github.sha }}

@@ -21,7 +21,8 @@ export function ProductProofSequenceEditor({
       <p>
         Mostre entrada, resultado e continuidade com capturas homologadas. Cada
         trecho acompanha uma parte da legenda, separada por |. A primeira parte
-        é 1. Sem trechos adicionais, a prova atual será mantida.
+        é 1. Você pode combinar artes da entrega com a demonstração das ações
+        narradas. Sem trechos adicionais, a montagem escolhida será mantida.
       </p>
       {value.map((shot, index) => (
         <fieldset

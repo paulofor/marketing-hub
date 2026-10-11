@@ -46,6 +46,30 @@ class VideoNarrationRecoveryTest {
         .doesNotThrowAnyException();
   }
 
+  /** Recusa montagem combinada no V3 e aceita somente o executor que preserva as duas fontes. */
+  @ParameterizedTest
+  @ValueSource(longs = {91007, 92018})
+  void requiresHybridCapability(long id) {
+    var job =
+        SalesVideoJob.builder()
+            .id(id)
+            .metadataJson(
+                "{\"post_production\":{\"deliveryExamples\":{},\"proofShots\":[]},\"preservedNarration\":{}}")
+            .build();
+    for (String contract :
+        java.util.List.of(
+            VideoNarrationRecovery.CONTRACT,
+            VideoNarrationRecovery.SEQUENCE_CONTRACT,
+            VideoNarrationRecovery.DELIVERY_CONTRACT))
+      assertThatThrownBy(() -> VideoNarrationRecovery.requireCompatible(job, contract, mapper))
+          .hasMessageContaining("montagem combinada");
+    assertThatCode(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.HYBRID_CONTRACT, mapper))
+        .doesNotThrowAnyException();
+  }
+
   private final ObjectMapper mapper = new ObjectMapper();
 
   /**

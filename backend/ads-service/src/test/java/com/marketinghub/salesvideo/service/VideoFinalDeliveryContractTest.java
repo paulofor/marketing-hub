@@ -73,6 +73,17 @@ class VideoFinalDeliveryContractTest {
         .hasMessageContaining("não permite alterar conteúdo");
   }
 
+  /** Impede trocar as artes aprovadas durante recuperação dos mesmos bytes. */
+  @Test
+  void refusesExamplesChangesDuringDeliveryOnly() {
+    var request = request();
+    request.setDeliveryExamples(
+        java.util.List.of(
+            new com.marketinghub.salesvideo.service.postproduction.DeliveryExampleShot(91001L, 0)));
+    assertThatThrownBy(() -> VideoFinalDeliveryContract.prepare(source(), request, mapper))
+        .hasMessageContaining("não permite alterar conteúdo");
+  }
+
   /** Monta fonte sintética com identidade de upload e custo preservável. */
   static SalesVideoJob source() {
     return SalesVideoJob.builder()

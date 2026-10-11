@@ -50,7 +50,7 @@ final class PdeProductProofOverlay {
         return apply(source, metadata, jobId, List.of());
     }
 
-    /** Compõe a captura no trecho efetivamente narrado, preservando movimento e identidade. */
+    /** Compõe a captura no trecho narrado, preservando título, arte de fundo e identidade. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId,
                                                   List<PdeProofCaptionTiming.Window> captions) {
         if (hasSequence(metadata)) return applySequence(source, metadata, jobId, captions);
@@ -64,6 +64,7 @@ final class PdeProductProofOverlay {
                 && metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false)
                 && ((timing.cueIndex() == 0 && timing.start() < .1)
                     || timing.cueIndex() == captions.size() - 1);
+        boolean hybrid = DeliveryExamplesMontage.requested(metadata);
         String intervals = timing == null ? proof.intervals()
                 : "between(t," + number(timing.start()) + "," + number(timing.end()) + ")";
         Path image = null;
@@ -76,18 +77,20 @@ final class PdeProductProofOverlay {
             Files.write(image, proof.bytes());
             String crop = "crop=%d:%d:%d:%d,".formatted(proof.width(), proof.height(), proof.x(), proof.y());
             int proofHeight = metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false) ? 1100 : 1360;
-            String proofFrame = contextual
+            String proofFrame = hybrid
+                    ? "scale=972:800:force_original_aspect_ratio=decrease,pad=1080:900:(ow-iw)/2:80:color=0xf8f3ee,"
+                    : contextual
                     ? "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:770:(ow-iw)/2:60:color=0xf8f3ee,"
                     : "scale=972:" + proofHeight + ":force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee,";
             String filter = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
                     + "[1:v]" + crop + proofFrame
                     + "format=yuva420p,loop=loop=-1:size=1:start=0,setpts=N/(25*TB)[proof];"
-                    + "[base][proof]overlay=0:" + (contextual ? "690" : "0") + ":enable='" + intervals + "',"
+                    + "[base][proof]overlay=0:" + (hybrid ? "540" : contextual ? "690" : "0") + ":enable='" + intervals + "',"
                     + "drawtext=text='Exemplo com dados de teste':fontsize=38:fontcolor=0x333333:"
-                    + "x=(w-text_w)/2:y=" + (contextual ? "700" : "50") + ":enable='" + intervals + "'[out]";
+                    + "x=(w-text_w)/2:y=" + (hybrid ? "560" : contextual ? "700" : "50") + ":enable='" + intervals + "'[out]";
             List<String> command = List.of(properties.getProviders().getPostProduction().getFfmpegPath(),
-                    "-hide_banner", "-loglevel", "error", "-y", "-i", source.toString(),
-                    "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
+                    "-hide_banner", "-loglevel", "error", "-y", "-threads", "1", "-i", source.toString(),
+                    "-threads", "1", "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
                     "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-threads", "2", "-preset", "ultrafast",
                     "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "copy", "-t", number(outputDuration),
                     "-movflags", "+faststart", output.toString());
@@ -111,7 +114,7 @@ final class PdeProductProofOverlay {
                 audit.put("timingSource", "NARRATION_CUE_V1");
                 audit.put("reviewMoments", List.of((timing.start() + timing.end()) / 2));
                 audit.put("captionCueIndex", timing.cueIndex());
-                audit.put("layout", contextual ? "MOTION_WITH_PRODUCT_PROOF_V1" : "FULL_PRODUCT_PROOF_V1");
+                audit.put("layout", hybrid ? "DELIVERY_WITH_REAL_ACTION_V1" : contextual ? "MOTION_WITH_PRODUCT_PROOF_V1" : "FULL_PRODUCT_PROOF_V1");
             }
             log.info("Captura do PDE composta; jobId={} elapsedMs={} sha256={} mode=PREPARED_FRAME_LOOP_V1",
                     jobId, Duration.ofNanos(System.nanoTime() - started).toMillis(), proof.sha256());

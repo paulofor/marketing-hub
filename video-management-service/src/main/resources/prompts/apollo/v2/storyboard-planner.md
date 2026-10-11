@@ -72,3 +72,18 @@ esse critério. A nova montagem alterna composição e amostras no ritmo da fala
 áudio compatível e passa novamente por Psique. Amostra ilustrativa de catálogo não é captura
 da interface vigente, depoimento, resultado de cliente ou prova de demanda. Para demonstração
 da interface, mantenha o contrato de capturas homologadas. Não misture as duas alegações.
+
+
+### Correspondência verificável entre fala e ação
+
+Ao narrar preenchimento, cópia, calendário ou download, mostre a ação ou seu conteúdo
+real naquele trecho. Uma arte bonita não prova essas funções. Combine `deliveryExamples`
+com `proofShots` no executor V4: títulos e artes atraem; capturas homologadas, recortadas
+sem termos internos, demonstram uso. Preserve origem/hash de cada fonte e marque dados
+fictícios. Se a captura não existe, peça ao harness os momentos de briefing e conteúdo;
+não desenhe interface inventada nem use outra imagem como substituta.
+
+A abertura precisa dizer o que está à venda e para quem. No caso de um kit personalizado,
+a aplicação é meio de acesso e consulta, não licença de software ou serviço do negócio
+retratado na amostra. Encerre com CTA próprio do produto, distinto do CTA ilustrativo de
+uma peça do kit. Verifique frames de entrada e saída para não cortar textos essenciais.

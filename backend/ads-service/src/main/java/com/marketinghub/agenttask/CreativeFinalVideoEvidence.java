@@ -91,7 +91,7 @@ public class CreativeFinalVideoEvidence {
     return inputs;
   }
 
-  /** Inclui cada trecho narrado e a prova curta para não deixá-los fora da amostragem visual. */
+  /** Inclui trechos narrados, artes e capturas da montagem combinada na amostragem visual. */
   private ArrayNode reviewMoments(JsonNode result, Integer duration) {
     if (duration == null || duration <= 0) return json.createArrayNode();
     var moments = new java.util.TreeSet<Double>();
@@ -106,7 +106,7 @@ public class CreativeFinalVideoEvidence {
       }
     }
     var proof = result.at("/product_reference_overlay/reviewMoments");
-    if (proof.isArray() && proof.size() <= 12) {
+    if (proof.isArray() && proof.size() <= 24) {
       for (var value : proof) {
         double second = value.asDouble(-1);
         if (Double.isFinite(second) && second > 0 && second < duration) moments.add(second);

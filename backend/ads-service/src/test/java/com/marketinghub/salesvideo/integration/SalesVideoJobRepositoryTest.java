@@ -77,6 +77,64 @@ class SalesVideoJobRepositoryTest {
         .satisfies(job -> assertThat(job.getMetadataJson()).contains("preservedNarration"));
   }
 
+  /** A paginação V3 ignora apenas combinações novas; V4 recebe todas as modalidades. */
+  @Test
+  void filtersHybridBeforePagination() {
+    var product =
+        productRepository.save(
+            Product.builder().slug("fixture-hybrid-query").name("Fixture").build());
+    var profile =
+        profileRepository.save(
+            SalesVideoProfile.builder()
+                .product(product)
+                .videoKind(SalesVideoKind.HERO)
+                .title("Montagem isolada")
+                .status(SalesVideoStatus.VIDEO_REQUESTED)
+                .build());
+    var payloads =
+        java.util.List.of(
+            "{\"post_production\":{\"deliveryExamples\":{},\"proofShots\":[]}}",
+            "{\"post_production\":{\"deliveryExamples\":{}}}",
+            "{\"post_production\":{\"proofShots\":[]}}",
+            "{}");
+    for (int i = 0; i < payloads.size(); i++)
+      jobRepository.saveAndFlush(
+          SalesVideoJob.builder()
+              .profile(profile)
+              .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+              .jobType(SalesVideoJobType.POST_PRODUCTION)
+              .status(SalesVideoStatus.VIDEO_REQUESTED)
+              .requestedAt(Instant.parse("2026-10-12T00:00:00Z").plusSeconds(i))
+              .metadataJson(payloads.get(i))
+              .build());
+    var page =
+        org.springframework.data.domain.PageRequest.of(
+            0, 1, org.springframework.data.domain.Sort.by("requestedAt"));
+    var old =
+        jobRepository.findAll(
+            com.marketinghub.salesvideo.service.VideoNarrationRecovery.consumableBy(
+                com.marketinghub.salesvideo.service.VideoNarrationRecovery.DELIVERY_CONTRACT),
+            page);
+    assertThat(old.getTotalElements()).isEqualTo(3);
+    assertThat(old.getContent())
+        .singleElement()
+        .satisfies(
+            job ->
+                assertThat(job.getMetadataJson())
+                    .contains("deliveryExamples")
+                    .doesNotContain("proofShots"));
+    var current =
+        jobRepository.findAll(
+            com.marketinghub.salesvideo.service.VideoNarrationRecovery.consumableBy(
+                com.marketinghub.salesvideo.service.VideoNarrationRecovery.HYBRID_CONTRACT),
+            page);
+    assertThat(current.getTotalElements()).isEqualTo(4);
+    assertThat(current.getContent())
+        .singleElement()
+        .satisfies(
+            job -> assertThat(job.getMetadataJson()).contains("deliveryExamples", "proofShots"));
+  }
+
   /** Reserva uma vez, bloqueia concorrência, retoma lease vencida e preserva estado terminal. */
   @Test
   void claimsOnlyAvailableOrStaleJobs() {

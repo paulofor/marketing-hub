@@ -226,3 +226,13 @@ A voz simulada valida sincronização e recuperação, não naturalidade ou efei
 A fila exige `PDE_VIDEO_POST_PRODUCTION_V2` para a sequência: filtro SQL antes da paginação
 e checagem de claim impedem que um executor antigo ignore os trechos durante o rollout.
 O contrato dos recibos de voz permanece V1; a capacidade nova continua aceitando-o.
+
+
+Na inspeção da peça incidental #728/658, o cabeçalho continuava vazando “APLICAÇÃO WEB
+PRIVADA”: era imposto pelo renderizador e por seu contrato versionado. A correção remove
+o rótulo interno, valida os seis campos visíveis e preserva fontes, limites e identificação
+de dados de teste. Antes da mudança, sete regressões falharam: duas sobre o cabeçalho e
+cinco sobre textos operacionais, em diferentes identidades. Não se reescreve #728 nem se
+aprova essa imagem; qualquer produção sucessora terá hash e revisão próprios.
+
+Íris: 84 testes declarados; 82 executados sem falhas após a correção, incluindo replay real dos pixels de #523. Dois harnesses opcionais sem entrada permaneceram fora da rodada. A referência de teste não foi enviada como artefato de produção.

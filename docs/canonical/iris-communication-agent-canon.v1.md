@@ -499,7 +499,8 @@ Registro e matriz: `docs/homologacao/mira-retomada-parecer-resumido-2026-10-08.m
 ### Rótulo preservado e revisão da peça em celular — 2026-10-09
 
 No `PROOF_CARD_V1` privado, preservar o `eyebrow` solicitado junto à prova, além da
-identificação obrigatória `APLICAÇÃO WEB PRIVADA` e do aviso sintético. A composição
+identificação `DEMONSTRAÇÃO DO SITE` e do aviso de dados de teste.
+O rótulo anterior `APLICAÇÃO WEB PRIVADA` foi substituído em 11/10 após feedback do usuário. A composição
 privada reserva 952 × 667 pixels para a prova, sem redesenhar o recorte nem remover
 instruções, fontes ou limites. A composição comercial conserva seu contrato anterior.
 
@@ -541,7 +542,7 @@ Evidência: [Mira — seleção criativa privada](../homologacao/mira-selecao-cr
 ### Preservação da ressalva factual no template privado — 2026-10-09
 
 O `footer` de `PROOF_CARD_V1` permanece obrigatório e impresso na validação privada,
-além de “Demonstração sintética · sem compra ou cobrança”. O marcador privado não
+além de “Exemplo com dados de teste · sem cobrança”. O aviso de demonstração não
 substitui limitações factuais da oferta ou do produto. Os dois textos usam fonte
 36 na área disponível após o CTA; excesso ou ausência bloqueia a peça, sem cortar
 texto, diminuir fonte ou alterar a prova. A composição comercial permanece própria.
@@ -604,3 +605,15 @@ produto, versão e hash. O contexto continua expondo o relatório atual separada
 este não herda aprovação independente do anterior. Versão diferente, nova correção
 funcional ou gate inválido continuam bloqueando. A integração audiovisual nova tem
 suas próprias revisões antes do uso comercial; nenhuma leitura altera essas decisões.
+
+### Separação entre copy da cliente e modo interno — 2026-10-11
+
+O usuário rejeitou o vazamento de “acesso privado” na comunicação. O renderer de Íris
+forçava “APLICAÇÃO WEB PRIVADA” mesmo quando o modelo escrevia outro rótulo. Retirar
+apenas do prompt era insuficiente: o executor passa a nomear a demonstração do site,
+a recusar termos operacionais no `renderSpec` e a preservar estado privado somente
+na auditoria. “Exemplo com dados de teste” permanece visível, assim como limites factuais.
+Não transformar `privateValidation` em autorização comercial nem remover fontes da prova.
+Peças históricas e seus pareceres continuam imutáveis. A próxima produção usa o contrato
+corrigido e requer seus próprios pareceres; sete regressões inicialmente falhas comprovam
+a mudança de comportamento, com outras identidades e template comercial preservados.

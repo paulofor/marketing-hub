@@ -29,11 +29,13 @@ class ProofCardRendererTest {
     assertThat(IrisCreativeMaterializer.sha(output)).hasSize(64);
   }
 
-  /** Explicita o formato da aplicação privada e preserva o rótulo recebido fora desse modo. */
+  /**
+   * Explicita o formato ao cliente sem imprimir o modo de revisão e preserva o formato comercial.
+   */
   @Test
-  void identifiesPrivateWebApplication() throws Exception {
+  void identifiesSiteWithoutLeakingReviewMode() throws Exception {
     var spec = spec().put("eyebrow", "Demonstração");
-    assertThat(ProofCardRenderer.eyebrow(spec, true)).isEqualTo("APLICAÇÃO WEB PRIVADA");
+    assertThat(ProofCardRenderer.eyebrow(spec, true)).isEqualTo("DEMONSTRAÇÃO DO SITE");
     assertThat(ProofCardRenderer.eyebrow(spec, false)).isEqualTo("Demonstração");
   }
 
@@ -44,7 +46,7 @@ class ProofCardRendererTest {
     var second = spec().put("eyebrow", "Detalhe da aplicação");
     assertThat(renderer.render(first, source(), true))
         .isNotEqualTo(renderer.render(second, source(), true));
-    assertThat(ProofCardRenderer.eyebrow(first, true)).isEqualTo("APLICAÇÃO WEB PRIVADA");
+    assertThat(ProofCardRenderer.eyebrow(first, true)).isEqualTo("DEMONSTRAÇÃO DO SITE");
   }
 
   /**
@@ -64,10 +66,10 @@ class ProofCardRendererTest {
         .isNotEqualTo(IrisCreativeMaterializer.sha(before));
     var first = ImageIO.read(new ByteArrayInputStream(before));
     var second = ImageIO.read(new ByteArrayInputStream(after));
-    assertThat(second.getRGB(0, 0, 1080, 1295, null, 0, 1080))
-        .isEqualTo(first.getRGB(0, 0, 1080, 1295, null, 0, 1080));
-    assertThat(second.getRGB(0, 1295, 1080, 55, null, 0, 1080))
-        .isNotEqualTo(first.getRGB(0, 1295, 1080, 55, null, 0, 1080));
+    assertThat(second.getRGB(0, 0, 1080, 1252, null, 0, 1080))
+        .isEqualTo(first.getRGB(0, 0, 1080, 1252, null, 0, 1080));
+    assertThat(second.getRGB(0, 1252, 1080, 98, null, 0, 1080))
+        .isNotEqualTo(first.getRGB(0, 1252, 1080, 98, null, 0, 1080));
     assertThat(second.getRGB(540, 772)).isEqualTo(Color.BLUE.getRGB());
   }
 
@@ -179,8 +181,28 @@ class ProofCardRendererTest {
         new ObjectMapper()
             .readTree(
                 """
-      {"templateVersion":"PROOF_CARD_V1","sourceArtifactId":910118,"sourceSha256":"SOURCE_HASH","crop":{"x":0,"y":0,"width":800,"height":500},"brandLabel":"Produto de teste","eyebrow":"Demonstração","headline":"Primeiro resultado, pronto","body":"Uma pequena ação com o que você já tem.","ctaText":"Ver meu primeiro resultado","footer":"Demonstração privada","backgroundColor":"#F8F3ED","accentColor":"#713953"}
+      {"templateVersion":"PROOF_CARD_V1","sourceArtifactId":910118,"sourceSha256":"SOURCE_HASH","crop":{"x":0,"y":0,"width":800,"height":500},"brandLabel":"Produto de teste","eyebrow":"Demonstração","headline":"Primeiro resultado, pronto","body":"Uma pequena ação com o que você já tem.","ctaText":"Ver meu primeiro resultado","footer":"Condições na página de destino","backgroundColor":"#F8F3ED","accentColor":"#713953"}
       """);
+  }
+
+  /**
+   * Recusa metadados internos na copy visível de diferentes produtos, mantendo privacidade
+   * legítima.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "910118,ctaText,Experimentar Mira em privado",
+    "910219,body,Acesso privado liberado",
+    "910320,footer,Credencial de 7 dias",
+    "910421,eyebrow,APLICAÇÃO WEB PRIVADA",
+    "910522,headline,Aguardando homologação"
+  })
+  void rejectsInternalWorkflowCopy(long artifact, String field, String text) throws Exception {
+    var input = spec().put("sourceArtifactId", artifact).put(field, text);
+    assertThatThrownBy(() -> renderer.render(input, source(), true))
+        .hasMessageContaining("Linguagem interna");
+    assertThat(renderer.render(spec().put("body", "Sua privacidade é preservada."), source(), true))
+        .isNotEmpty();
   }
 
   /** Produz pixels locais segregados para detectar alteração indevida da prova original. */

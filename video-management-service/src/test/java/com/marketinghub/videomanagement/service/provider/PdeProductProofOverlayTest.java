@@ -188,10 +188,70 @@ class PdeProductProofOverlayTest {
         }
     }
 
+    /** Comprova interface e contexto simultâneos na abertura e no último frame de dois produtos. */
+    @ParameterizedTest
+    @ValueSource(longs = {10, 93010})
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
+    void preservesMotionContextAndProofAtBothEnds(long productId) throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start();
+            byte[] pixels = pixels();
+            var input = metadata(pixels);
+            input.put("productId", productId).put("captionText", "Conheça o site. | Veja o resultado. | Experimente.");
+            input.putObject("technicalQualityGate").put("captionMustMatchNarration", true);
+            var original = (ObjectNode) input.at("/post_production/product_proof");
+            original.put("productId", productId);
+            var shots = ((ObjectNode) input.path("post_production")).putArray("proofShots");
+            for (int index = 0; index < 3; index++) {
+                var shot = original.deepCopy();
+                shot.put("taskId", 91004).put("evidenceId", 91005 + index)
+                        .put("captionCueIndex", index).put("minimumSeconds", 2);
+                shot.put("contentPath", "/api/sales-videos/projects/91001/product-proof/91004/" + (91005 + index));
+                shot.putArray("crop").add(0).add(0).add(300).add(400);
+                shots.add(shot);
+                server.enqueue(response(pixels));
+            }
+            var properties = new VideoManagementProperties();
+            properties.setBackendBaseUrl(server.url("/").uri());
+            Path source = Files.createTempFile("boundary-fixture", ".mp4");
+            Path result = null;
+            try {
+                var process = new ProcessBuilder("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+                        "color=c=blue:s=720x1280:r=25:d=15", "-c:v", "libx264", "-threads", "2",
+                        "-pix_fmt", "yuv420p", source.toString()).start();
+                assertThat(process.waitFor()).isZero();
+                var captions = java.util.List.of(new PdeProofCaptionTiming.Window(0, 4, 0),
+                        new PdeProofCaptionTiming.Window(4, 10, 1),
+                        new PdeProofCaptionTiming.Window(10, 14, 2));
+                var output = new PdeProductProofOverlay(properties, WebClient.builder())
+                        .apply(source, input, 91009L, captions);
+                result = output.videoFile();
+                for (double second : new double[] {.1, 14.8}) {
+                    assertThat(samplePixelAt(result, second, 540, 300)[2] & 255).isGreaterThan(200);
+                    assertThat(samplePixelAt(result, second, 540, 900)[0] & 255).isGreaterThan(230);
+                }
+                assertThat(samplePixelAt(result, 6, 540, 600)[0] & 255).isGreaterThan(230);
+                assertThat(samplePixelAt(result, 6, 540, 1400)[1] & 255).isGreaterThan(230);
+                var audit = new ObjectMapper().valueToTree(output.audit());
+                assertThat(audit.at("/shots/0/layout").asText()).isEqualTo("MOTION_WITH_PRODUCT_PROOF_V1");
+                assertThat(audit.at("/shots/1/layout").asText()).isEqualTo("FULL_PRODUCT_PROOF_V1");
+                assertThat(audit.at("/shots/2/intervals").asText()).isEqualTo("between(t,12.000,15.000)");
+            } finally {
+                Files.deleteIfExists(source);
+                if (result != null) Files.deleteIfExists(result);
+            }
+        }
+    }
+
     /** Mede um pixel central para comprovar a presença e a retirada da prova nos instantes certos. */
     private byte[] samplePixel(Path video, int second) throws Exception {
-        var process = new ProcessBuilder("ffmpeg", "-v", "error", "-ss", Integer.toString(second), "-i", video.toString(),
-                "-frames:v", "1", "-vf", "crop=2:2:540:600,scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-").start();
+        return samplePixelAt(video, second, 540, 600);
+    }
+
+    /** Confere uma região e um instante exatos do arquivo renderizado, incluindo seus extremos. */
+    private byte[] samplePixelAt(Path video, double second, int x, int y) throws Exception {
+        var process = new ProcessBuilder("ffmpeg", "-v", "error", "-ss", Double.toString(second), "-i", video.toString(),
+                "-frames:v", "1", "-vf", "crop=2:2:" + x + ":" + y + ",scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-").start();
         byte[] pixel = process.getInputStream().readAllBytes();
         assertThat(process.waitFor()).isZero();
         assertThat(pixel).hasSize(3);

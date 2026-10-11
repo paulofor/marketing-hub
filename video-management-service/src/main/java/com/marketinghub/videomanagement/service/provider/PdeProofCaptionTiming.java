@@ -31,7 +31,7 @@ final class PdeProofCaptionTiming {
         return matches.getFirst();
     }
 
-    /** Resolve o intervalo real do áudio, preservando o plano de cortes somente no contrato legado. */
+    /** Resolve a prova pela fala e mantém o encerramento da sequência visível até o último frame. */
     static Window resolve(JsonNode metadata, List<Window> captions) {
         int index = cueIndex(metadata);
         if (index < 0) return null;
@@ -44,6 +44,14 @@ final class PdeProofCaptionTiming {
         double reading = metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false)
                 ? metadata.at("/post_production/product_proof/minimumSeconds").asDouble(6) : 6;
         if (!Double.isFinite(reading) || reading < 2 || reading > 12) throw invalid();
+        if (metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false)
+                && index == captions.size() - 1) {
+            double start = Math.max(cue.start(), duration - 3);
+            if (reading > 3 || duration - cue.end() > 3 || duration - start < reading)
+                throw new VideoProviderException("PDE_PROOF_CAPTION_TIMING_INVALID",
+                        "O encerramento precisa de dois a três segundos legíveis, sem prolongar a chamada após a voz.");
+            return new Window(start, duration, index);
+        }
         double end = Math.max(cue.end(), cue.start() + reading);
         if (end > duration - 2) throw new VideoProviderException("PDE_PROOF_CAPTION_TIMING_INVALID",
                 "A prova precisa do tempo de leitura declarado (seis segundos no contrato original) e dois segundos de encerramento; ajuste a finalização reutilizando a voz auditada.");

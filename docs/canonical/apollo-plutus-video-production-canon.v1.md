@@ -472,3 +472,17 @@ Cada trecho mantém contexto, hash, recorte e duração de leitura; interface e 
 pixels verdadeiros, nunca telas imaginadas pelo gerador. A abertura identifica o produto,
 a primeira ação é compreensível e a continuidade paga tem incremento sustentado.
 A validação continua independente e não transfere aceites para outro arquivo.
+
+
+### Prova na abertura e no encerramento — 2026-10-11
+
+Uma sequência narrada de aplicação digital conserva a identidade do produto também
+nos extremos. Ao vincular a primeira captura ao primeiro trecho narrado, a montagem
+combina prova legível com a fonte em movimento; no último trecho, exibe a prova até
+o último frame, por dois a três segundos, sem cauda longa após a voz. As provas
+centrais continuam integrais. Recortes não podem ocultar a função descrita: para
+segunda organização, mostrar o resultado preservado e a ação correspondente,
+sem inventar cliques ou usar apenas uma pergunta como evidência da entrega.
+O ajuste de montagem reaproveita os recibos de voz quando texto e identidade são
+compatíveis. Novo hash continua exigindo revisão própria; não concede aceite de
+uso nem altera limites financeiros.

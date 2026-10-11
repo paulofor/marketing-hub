@@ -29,13 +29,16 @@ class PostProductionNarrationRecoveryIntegrationTest {
     var synthesisRequests = new AtomicInteger();
     try (var server = new MockWebServer()) {
       server.setDispatcher(new Dispatcher() {
-        /** Entrega apenas binários locais e reprova qualquer tentativa de chamar serviço pago. */
+        /** Entrega binários locais da sequência correta e reprova qualquer chamada de síntese paga. */
         @Override public MockResponse dispatch(RecordedRequest request) {
           requests.incrementAndGet();
           String path = request.getPath();
           if (path.contains("/audio/speech")) { synthesisRequests.incrementAndGet(); return new MockResponse().setResponseCode(503); }
-          Path file = path.contains("/product-proof") ? root.resolve("proof.png")
-              : root.resolve(path.substring(1));
+          Path file = root.resolve(path.substring(1));
+          if (path.contains("/product-proof")) {
+            Path specific = root.resolve(path.substring(path.lastIndexOf('/') + 1) + ".png");
+            file = Files.exists(specific) ? specific : root.resolve("proof.png");
+          }
           try { return new MockResponse().setBody(new Buffer().write(Files.readAllBytes(file))); }
           catch (java.io.IOException ex) { throw new java.io.UncheckedIOException(ex); }
         }
@@ -60,7 +63,9 @@ class PostProductionNarrationRecoveryIntegrationTest {
           "Voz auditada reutilizada, sem nova síntese", "Arquivo finalizado; revisão de uso pendente");
       assertThat(progress).noneMatch(message -> message.contains("gerada") || message.contains("finalizado para venda"));
       assertThat(synthesisRequests.get()).isZero();
-      assertThat(requests.get()).isEqualTo(metadata.at("/preservedNarration/segments").size() + 3);
+      int shots = metadata.at("/post_production/proofShots").isArray()
+          ? metadata.at("/post_production/proofShots").size() : 1;
+      assertThat(requests.get()).isEqualTo(metadata.at("/preservedNarration/segments").size() + 1 + 2 * shots);
       double expectedDuration = metadata.path("postProductionDurationSeconds").asDouble(metadata.path("targetDurationSeconds").asDouble());
       assertThat(artifacts.metadata()).containsEntry("duration_seconds", expectedDuration)
           .containsEntry("tts_cost_reconciliation_status", "PENDING_PROVIDER_RECONCILIATION");

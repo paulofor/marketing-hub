@@ -109,6 +109,37 @@ class ApolloPlanningAiClientTest {
         assertThat(server.getRequestCount()).isEqualTo(1);
     }
 
+    /** Reproduz o código explícito recebido por Mira, preservando a espera longa sem nova cobrança. */
+    @ParameterizedTest
+    @CsvSource({"21265,gpt-6.1-sol", "99265,gpt-5.6-sol"})
+    void flexUnavailableWithFiveMinuteDelayIsTemporaryWithoutEarlyRetry(long jobId, String model) throws Exception {
+        request = mapper.readTree("{\"model\":\"" + model + "\",\"service_tier\":\"flex\",\"input\":\"fixture segregada\"}");
+        server.enqueue(new MockResponse().setResponseCode(429).setHeader("Content-Type", "application/json")
+                .setHeader("Retry-After", "300")
+                .setBody("{\"error\":{\"message\":\"Flex processing is temporarily unavailable.\","
+                        + "\"type\":\"resource_unavailable\",\"code\":\"flex_unavailable\"}}"));
+        assertThatThrownBy(() -> client.plan(jobId, request, events::add))
+                .isInstanceOfSatisfying(VideoProviderException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("APOLLO_PLANNING_UNAVAILABLE"));
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(waits).isEmpty();
+        assertThat(events.getLast().path("retryAfter").asText()).isEqualTo("300");
+        assertThat(events.getLast().path("request")).isEqualTo(request);
+        assertThat(events.getLast().path("rawResponse").asText()).contains("flex_unavailable");
+    }
+
+    /** Recupera indisponibilidade curta no mesmo modelo e Flex, sem afetar os bloqueios de conta. */
+    @Test
+    void shortFlexUnavailableReusesSameRequestThenSucceeds() throws Exception {
+        server.enqueue(error(429, "flex_unavailable").setHeader("Retry-After", "12"));
+        server.enqueue(new MockResponse().setHeader("Content-Type", "application/json").setBody("{\"output\":[]}"));
+        client.plan(99266L, request, events::add);
+        assertThat(waits).containsExactly(12000L);
+        assertThat(server.getRequestCount()).isEqualTo(2);
+        assertThat(mapper.readTree(server.takeRequest().getBody().readUtf8())).isEqualTo(request);
+        assertThat(mapper.readTree(server.takeRequest().getBody().readUtf8())).isEqualTo(request);
+    }
+
     /** Aceita a data HTTP e recusa cabeçalho inválido ou superior à janela local. */
     @Test
     void retryAfterDatesPreserveMinimumServerDelay() {

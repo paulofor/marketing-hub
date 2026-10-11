@@ -6700,6 +6700,14 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
 - Prevenção: `ApolloPlanningAiClientTest` com HTTP local, replay do callback no
   `ApolloStoryboardPlannerTest`, teste do pai e matriz completa. Modelo, Flex,
   gates e orçamento não são alterados para obter sucesso.
+- Recorrência em 11/10/2026: Mira/job 21265 preservou o corpo com
+  `error.code=flex_unavailable`, `error.type=resource_unavailable` e `Retry-After: 300`.
+  O alias explícito ainda era classificado como erro HTTP desconhecido. O cliente agora
+  reconhece esse código temporário; mantém Flex/modelo e não encurta a espera de cinco
+  minutos nem repete quota/transporte ambíguo. Testes com o corpo real sanitizado, outro
+  job/modelo, recuperação curta e caminhos anteriores protegem o contrato. A retomada longa
+  continua explícita após o intervalo, sem gerar vídeo durante a recusa do planejador.
+  Referência: [OpenAI — indisponibilidade Flex](https://developers.openai.com/api/docs/guides/flex-processing#resource-unavailable-errors).
 
 ## LOOP-IRIS-PRODUTO-VALIDADO-SEM-EXPERIMENTO — continuidade privada ausente
 

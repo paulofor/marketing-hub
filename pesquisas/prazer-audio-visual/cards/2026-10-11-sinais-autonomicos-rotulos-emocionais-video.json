@@ -1,0 +1,18 @@
+{
+  "cardKey": "sinais-autonomicos-rotulos-emocionais-video",
+  "title": "Arousal autonômico não identifica a emoção individual",
+  "finding": "Em 47 participantes observando dez vídeos, sinais pupilares e eletrodérmicos apresentaram sobreposições entre emoções de diferentes valências; HRV ruidosa foi descartada dos classificadores centrais.",
+  "mechanism": "Várias emoções ativam processos autonômicos semelhantes; dilatação pupilar pode captar arousal sem identificar prazer, valência ou significado.",
+  "commercialApplication": "Exigir autorrelato, controle de luminância e gaze, qualidade do sinal e validação fora da amostra antes de utilizar biometria para personalização de vídeos.",
+  "evidenceStrength": "Média-baixa para classificadores emocionais de uso real: n=47, poucos vídeos, rótulos limitados e generalização não demonstrada.",
+  "experimentHypothesis": "Calibração multimodal com autorrelato, luminância, gaze e validação em vídeos/pessoas não vistos reduzirá confusão de valência em relação à pupila isolada.",
+  "risks": "Monitoramento biométrico sem consentimento, diagnóstico emocional falso, discriminação e claims incorretos sobre dopamina.",
+  "limits": "Estímulos e amostra reduzidos, emoções rotuladas por escolha forçada e variabilidade fisiológica; sem métricas de venda.",
+  "sourceTitle": "Fonte revisada — sinais autonômicos e emoções em vídeo",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-10-11",
+  "validUntil": "2026-11-25",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-11-sinais-autonomicos-rotulos-emocionais-video.md",
+  "sourceSha256": "363548964fe6237aabec3609507e65373cbb9230ea236bc47d0d673de38e10c5"
+}

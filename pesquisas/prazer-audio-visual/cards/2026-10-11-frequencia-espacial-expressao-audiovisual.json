@@ -1,0 +1,18 @@
+{
+  "cardKey": "frequencia-espacial-expressao-audiovisual",
+  "title": "Detalhes faciais modulam integração audiovisual da emoção",
+  "finding": "Um experimento com rostos filtrados e ERP observou facilitação audiovisual de identificação de expressão maior com conteúdo visual de alta frequência espacial, com respostas neurais moduladas por emoção e estágio temporal.",
+  "mechanism": "Pistas visuais finas e globais e pistas sonoras participam diferentemente do reconhecimento multissensorial conforme a expressão, com prioridade precoce para medo; ERP não mede prazer.",
+  "commercialApplication": "Em QA de vídeos e avatares, comparar detalhe facial com áudio congruente controlando contraste, brilho, volume, duração e baselines unimodais.",
+  "evidenceStrength": "Média para a tarefa de categorização de expressões; generalização para vídeo narrativo e vendas desconhecida.",
+  "experimentHypothesis": "Preservar detalhes faciais aumentará acurácia de identificação de expressão versus filtragem de baixa frequência espacial, sem mais desconforto e controlando os canais sensoriais.",
+  "risks": "Confundir frequência espacial com qualidade de codificação; interpretar sinal de medo como atratividade; inferir prazer/dopamina de ERP.",
+  "limits": "Rostos isolados e filtrados; número de participantes não confirmado no resumo; sem dados sobre intenção de compra.",
+  "sourceTitle": "Fonte revisada — frequência espacial e emoção audiovisual",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-10-11",
+  "validUntil": "2026-11-25",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-11-frequencia-espacial-expressao-audiovisual.md",
+  "sourceSha256": "215d737e96b59e4ac1101474fb0e6be8d4166477cbfba92e843c0aa8a1148e8c"
+}

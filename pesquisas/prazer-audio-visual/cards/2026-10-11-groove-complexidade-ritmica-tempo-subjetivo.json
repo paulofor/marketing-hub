@@ -1,0 +1,18 @@
+{
+  "cardKey": "groove-complexidade-ritmica-tempo-subjetivo",
+  "title": "Síncope e andamento afetam groove e tempo subjetivo",
+  "finding": "Em 192 participantes com ritmos funk, graus baixo e moderado de síncope produziram groove superior à alta síncope; moderada e andamento maior acompanharam sensação de tempo passar mais rapidamente, sem alterar estimativa de duração.",
+  "mechanism": "Predições de pulso e surpresa moderada, associadas a arousal e atenção, podem modificar vontade de mover e prazer; passagem subjetiva difere de duração física.",
+  "commercialApplication": "Comparar síncope baixa, moderada e alta com BPM controlado em trilhas de vídeo e avaliar prazer, vontade de mover, compreensão e conforto.",
+  "evidenceStrength": "Média para padrões de percussão funk n=192; não se demonstrou efeito fora desse estilo nem em conversões.",
+  "experimentHypothesis": "Em mesmo roteiro e timbre, síncope moderada produzirá maior prazer e vontade de mover que alta síncope sem reduzir recordação da mensagem.",
+  "risks": "Tratar resultado funk como regra universal ou sensação de tempo rápido como evidência de venda.",
+  "limits": "Dois andamentos (110 e 130 BPM), padrões curtos, relatos subjetivos; sem medição de dopamina.",
+  "sourceTitle": "Fonte revisada — complexidade rítmica, groove e tempo subjetivo",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-10-11",
+  "validUntil": "2026-11-25",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-11-groove-complexidade-tempo-subjetivo.md",
+  "sourceSha256": "e40e441e792934c77aed9601d43a1dfa629fefb5449e29af52cecdda452eb2a1"
+}

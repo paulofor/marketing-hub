@@ -344,7 +344,7 @@ public class BpmVisualEvidenceRunner {
   }
 
   /** Bloqueia esquema, credencial e endereço privado antes de iniciar o Chromium. */
-  private void validatePublicUrl(String value) throws Exception {
+  static void validatePublicUrl(String value) throws Exception {
     URI uri = URI.create(value == null ? "" : value.trim());
     if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
         || uri.getHost() == null

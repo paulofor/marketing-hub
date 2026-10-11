@@ -30,6 +30,10 @@ import org.springframework.web.client.RestClient;
 @Component
 public class CustomerBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CustomerBpmTaskConsumer.class);
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private FinalVideoReviewInputs finalVideoReviewInputs;
+
   private static final String AGENT_KEY = "customer-agent";
   private static final int RESULT_CALLBACK_ATTEMPT_LIMIT = 3;
   private static final String REQUESTED_SERVICE_TIER = "default";
@@ -225,9 +229,10 @@ public class CustomerBpmTaskConsumer {
         AGENT_KEY,
         jsonTextValues(result.path("evidence")),
         !"BLOCKED".equals(result.path("decision").asText()));
-    if ("creative-production-approval".equals(processCode(task)))
+    if ("creative-production-approval".equals(processCode(task))) {
       validateCreativeAudit(result, execution.visualEvidence());
-    else validateVisualAudit(result, execution.visualEvidence());
+      FinalVideoReviewInputs.validate(json, task, result);
+    } else validateVisualAudit(result, execution.visualEvidence());
   }
 
   /** Converte um array JSON textual em evidências usadas pelo gate determinístico. */
@@ -322,11 +327,17 @@ public class CustomerBpmTaskConsumer {
     if ("creative-production-approval".equals(processCode(task))) {
       Path directory = Files.createTempDirectory("psique-creative-" + taskId(task) + "-");
       try {
-        return new PreparedVisualEvidence(
-            null,
-            visualEvidenceBackendClient.creativeInputs(taskId(task), directory),
-            null,
-            directory);
+        var images =
+            new ArrayList<>(visualEvidenceBackendClient.creativeInputs(taskId(task), directory));
+        if (!FinalVideoReviewInputs.inputs(json, task).isMissingNode()
+            && !FinalVideoReviewInputs.inputs(json, task).isEmpty()) {
+          if (finalVideoReviewInputs == null)
+            throw new IllegalStateException("Capturador audiovisual de Psique indisponível.");
+          images.addAll(
+              visualEvidenceBackendClient.uploadArtifacts(
+                  taskId(task), finalVideoReviewInputs.capture(task, directory)));
+        }
+        return new PreparedVisualEvidence(null, List.copyOf(images), null, directory);
       } catch (Exception ex) {
         log.error("Falha na preparação criativa de Psique. taskId={}", taskId(task), ex);
         deleteDirectory(directory, taskId(task));

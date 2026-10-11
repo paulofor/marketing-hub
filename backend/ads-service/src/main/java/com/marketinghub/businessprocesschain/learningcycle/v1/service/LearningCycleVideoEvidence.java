@@ -72,6 +72,21 @@ public class LearningCycleVideoEvidence {
             != ExperimentVideoReviewStatus.APPROVED;
   }
 
+  /** Identifica rejeição da peça selecionada sem atribuir ao usuário outra decisão já tomada. */
+  public boolean hasRejectedVideo(LearningSalesCycle cycle) {
+    return selected(cycle, "CAMPAIGN_VIDEO", "campaignVideoAssetId", ExperimentVideoSlot.AD, false)
+                .getReviewStatus()
+            == ExperimentVideoReviewStatus.REJECTED
+        || selected(
+                    cycle,
+                    "PDE_ENTRY_VIDEO",
+                    "pdeVideoAssetId",
+                    ExperimentVideoSlot.LANDING_HERO,
+                    false)
+                .getReviewStatus()
+            == ExperimentVideoReviewStatus.REJECTED;
+  }
+
   /** Reutiliza a aprovação da peça exata selecionada na etapa de produção do ciclo. */
   public ExperimentVideoAsset approved(LearningSalesCycle cycle, ExperimentVideoSlot role) {
     return selected(

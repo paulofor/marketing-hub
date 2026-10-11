@@ -445,3 +445,23 @@
   são sintéticas, sem chamadas pagas, e nunca entram em métricas comerciais.
 - A hipótese é reduzir tempo parado entre vídeo e experiência utilizável. O teste
   mede a passagem executável; conversão e contribuição dependem do mercado posterior.
+
+
+## 11/10/2026 — vídeo final precisa de revisão própria da cliente
+
+- Evidência: Mira, ciclo #9/experimento #102, vídeos #53/#54 rejeitados. Briefing #634 narrava
+  “acesso privado”; finalizações #21256/#21258 reduziam a página inteira e sobrepunham captura
+  aos planos funcionais. Psique #655 havia revisado o PNG #654, não esses MP4s.
+- Causa: mistura de contexto interno e copy, composição que oculta movimento, ausência de
+  identidade temporal na revisão e orientação que interpretava REJECTED como aceite pendente.
+- Correção compartilhada `CUSTOMER_VIDEO_QUALITY_V1`: veto à copy interna antes de TTS;
+  recorte legível só em PROVA; frames do MP4 vinculados a hash/instante; parecer próprio de
+  Psique antes da seleção de novas finalizações governadas; reabertura por mídia nova, sem
+  repetir revisão já compatível. Uma rejeição solicita correção a Íris/Apolo, não novo aceite.
+- Hipótese: diminuir rejeições por jargão/legibilidade e retrabalho até a próxima peça aceita.
+  Medir motivos de rejeição, tempo até aceite e custo acumulado; conversão somente depois
+  de campanha autorizada com compras conciliadas. Não há medida de aumento de vendas.
+- Limites: frames permitem inspeção visual temporal amostrada; não equivalem a ouvir a voz
+  ou observar movimento contínuo. Áudio fica explicitamente NOT_LISTENED; seleção humana
+  permanece obrigatória. Aprovações históricas preservadas; sem autorização de mídia nova.
+- Regressões, antes/depois e critérios: `docs/homologacao/video-customer-quality-v1.md`.

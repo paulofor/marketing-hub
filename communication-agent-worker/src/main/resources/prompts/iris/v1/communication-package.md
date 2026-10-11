@@ -81,3 +81,25 @@ homologada que este primeiro experimento deve comunicar. Cite a versão exata na
 e no briefing da prova. Não proponha, renomeie ou fabrique uma versão inferior ou futura; uma
 mudança de versão exige novo gate e novas capturas. Use somente os pixels autorizados e mantenha
 o CTA na experiência privada enquanto `paymentEnabled=false`.
+
+
+## Linguagem da cliente e briefing audiovisual — v2
+
+Separe o destino privado da linguagem da peça: `paymentEnabled=false` e os identificadores de
+versão ficam no contexto de produção, nunca na narração, legenda, headline ou CTA. Não escreva
+“acesso privado”, “demonstração interna”, “homologação”, nomes de agentes ou etapas na comunicação
+à cliente. Um CTA de experimentar deve explicar a ação real disponível, sem prometer compra ou
+resultado inexistente. “Exemplo ilustrativo” e limites de uso claros são permitidos e necessários.
+
+No briefing de Apolo, separe explicitamente NARRAÇÃO, TEXTO NA TELA e INSTRUÇÕES DE PRODUÇÃO.
+Abra pela situação e pelo desejo reconhecido; mostre a primeira ação simples, um resultado útil
+legível e o valor adicional real da continuidade. Não use urgência, depoimentos, eficácia clínica
+ou escassez inventados. Não transforme “privado” em benefício. Uma pessoa sem conhecer o Hub deve
+entender o produto e a próxima ação.
+
+O anúncio deve funcionar no feed: contexto visual de identificação/uso, mudanças significativas
+de plano e recompensa visual. Uma página inteira encolhida, ampliada lentamente ou repetida não
+comprova demonstração nem variedade. A demonstração deve mostrar ação → resultado, em recortes
+legíveis no celular. Preserve a identidade da prova; pessoas ou cenas sintéticas são ilustrações,
+nunca clientes, depoimentos ou resultados clínicos reais. Apolo deve entregar o vídeo final para
+Psique inspecionar a sequência temporal, não reutilizar um parecer de PNG como aceite do vídeo.

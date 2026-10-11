@@ -80,6 +80,7 @@ public class EditorialMotionVideoProvider implements VideoProvider {
                                     SalesVideoProfile profile,
                                     ProgressCallback progressCallback) {
         JsonNode metadata = readMetadata(job);
+        com.marketinghub.videomanagement.service.CustomerVideoCopyGuard.validate(metadata);
         List<SourceImage> sources = resolveSources(metadata);
         List<Cut> cuts = resolveCuts(metadata, profile, sources);
         Map<String, DownloadedImage> downloaded = new LinkedHashMap<>();

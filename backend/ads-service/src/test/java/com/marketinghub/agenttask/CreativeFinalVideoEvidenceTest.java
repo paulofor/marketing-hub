@@ -1,0 +1,139 @@
+package com.marketinghub.agenttask;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.experiment.video.*;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
+import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.VideoProject;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+/** Protege a identidade da revisão final e impede que um parecer estático libere outra mídia. */
+class CreativeFinalVideoEvidenceTest {
+  private final ObjectMapper json = new ObjectMapper();
+  private final ExperimentVideoAssetRepository videos = mock(ExperimentVideoAssetRepository.class);
+  private final VideoProjectRepository projects = mock(VideoProjectRepository.class);
+  private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+  private final CreativeFinalVideoEvidence service =
+      new CreativeFinalVideoEvidence(videos, projects, tasks, json);
+
+  /** Mira e um produto distinto recebem somente vídeo pertencente à sua própria versão. */
+  @ParameterizedTest
+  @ValueSource(longs = {10, 93010})
+  void projectsExactVersionAndRejectsOtherTenant(long productId) {
+    var video = video(53L);
+    var job = new SalesVideoJob();
+    job.setMetadataJson("{\"videoProjectId\":13}");
+    job.setTenantId("tenant-a");
+    video.setSalesVideoJob(job);
+    var project = new VideoProject();
+    project.setId(13L);
+    project.setTenantId("tenant-a");
+    project.setProductId(productId);
+    project.setExperimentId(102L);
+    project.setCampaignKey("candidate-v3");
+    when(projects.findById(13L)).thenReturn(Optional.of(project));
+    when(videos.findReadyExperimentVideosForReview(
+            ExperimentVideoStatus.READY, null, productId, 102L))
+        .thenReturn(List.of(video));
+    when(videos.findById(53L)).thenReturn(Optional.of(video));
+    var target = target(productId);
+    assertThat(service.needsReview(target)).isTrue();
+    var projected = service.project(task(), target);
+    assertThat(projected.pdeContext().path("finalVideoReview")).hasSize(1);
+    assertThat(
+            service.permitsFrame(
+                task(), target, video.getAssetUrl(), "video-53-" + "a".repeat(64) + "-1000"))
+        .isTrue();
+    assertThat(
+            service.permitsFrame(
+                task(),
+                target,
+                "https://other.invalid/53.mp4",
+                "video-53-" + "a".repeat(64) + "-1000"))
+        .isFalse();
+    project.setTenantId("tenant-b");
+    assertThat(service.project(task(), target).pdeContext().path("finalVideoReview")).isEmpty();
+  }
+
+  /** Parecer antigo, arquivo alterado e produção própria não substituem a revisão independente. */
+  @Test
+  void requiresIndependentReviewForExactHash() {
+    var video = video(53L);
+    var review = task();
+    review.setStatus("COMPLETED");
+    when(tasks.findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+            "customer-agent", "experiment:102"))
+        .thenReturn(Optional.of(review));
+    review.setResultJson("{\"decision\":\"APPROVED\",\"renderedAssetAudit\":[]}");
+    assertThat(service.approvalBlockReason(video)).contains("vídeo final");
+    review.setResultJson(
+        "{\"decision\":\"APPROVED\",\"videoAudit\":[{\"assetId\":53,\"sha256\":\""
+            + "a".repeat(64)
+            + "\",\"criticalDeficit\":false}]}");
+    assertThat(service.approvalBlockReason(video)).isNull();
+    video.setResponseJson(video.getResponseJson().replace("a".repeat(64), "b".repeat(64)));
+    assertThat(service.approvalBlockReason(video)).isNotNull();
+    video.setResponseJson("{}");
+    assertThat(service.approvalBlockReason(video)).isNull();
+  }
+
+  /** Monta mídia sintética com identidade e duração, sem autorização comercial. */
+  private ExperimentVideoAsset video(Long id) {
+    var video = new ExperimentVideoAsset();
+    video.setId(id);
+    video.setSlot(ExperimentVideoSlot.AD);
+    video.setDurationSeconds(20);
+    video.setAssetUrl("https://fixtures.invalid/53.mp4");
+    var experiment = new Experiment();
+    experiment.setId(102L);
+    video.setExperiment(experiment);
+    video.setResponseJson(
+        "{\"customerQualityContract\":\"CUSTOMER_VIDEO_QUALITY_V1\",\"hls_delivery\":{\"sourceSha256\":\""
+            + "a".repeat(64)
+            + "\"}}");
+    return video;
+  }
+
+  /** Identifica a atividade existente de revisão criativa de Psique. */
+  private AgentTask task() {
+    var task = new AgentTask();
+    var agent = mock(com.marketinghub.agent.Agent.class);
+    when(agent.getAgentKey()).thenReturn("customer-agent");
+    task.setAssignedAgent(agent);
+    var process = new BusinessProcessDefinition();
+    process.setProcessCode("creative-production-approval");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("customer");
+    return task;
+  }
+
+  /** Preserva o contexto do produto e sua versão no contrato entregue ao executor. */
+  private AgentTaskTargetResponse target(long productId) {
+    return new AgentTaskTargetResponse(
+        "experiment:102",
+        102L,
+        productId,
+        "fixture",
+        "Produto",
+        "Produto",
+        "candidate-v3",
+        "https://fixtures.invalid/",
+        null,
+        null,
+        null,
+        null,
+        json.createObjectNode());
+  }
+}

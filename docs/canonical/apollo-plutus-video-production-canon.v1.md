@@ -411,3 +411,34 @@ Uma falha de integração usa `APOLLO_PLANNING_*`; `APOLLO_STORYBOARD_BLOCKED` f
 reservado às regras do plano. O job não inicia vídeo sem resposta e gate aprovados.
 Fontes oficiais: [Flex](https://developers.openai.com/api/docs/guides/flex-processing)
 e [erros HTTP](https://developers.openai.com/api/docs/guides/error-codes).
+
+
+## Clareza e progressão audiovisual para a cliente — 11/10/2026
+
+Decisão do usuário ao reprovar Mira #53/#54: o vídeo deve despertar desejo compreensível e
+demonstrar valor; capturas paradas com linguagem do sistema não atendem a essa finalidade.
+
+- Íris separa instruções de produção, IDs, modo privado, orçamento e homologação da copy que
+  será vista ou ouvida. `acesso privado`, `demonstração interna`, nomes de agentes e estados do
+  pipeline não são benefício nem CTA para a cliente. Essa separação não omite condições reais
+  da oferta nem o disclosure de conteúdo sintético; metadados não viram locução.
+- Apolo abre pelo desejo reconhecido, mostra um primeiro passo simples, uma prova legível e
+  uma ação concreta. Anúncio e demonstração têm papéis diferentes; não repetir o briefing
+  administrativo como roteiro de ambos. Continuidade paga deve explicar a entrega adicional
+  real, sem inventar preço, franquia, resultado clínico ou disponibilidade comercial.
+- A montagem preserva movimento e progressão de informação. Reenquadrar uma única captura
+  não equivale a demonstrar uso. Não reduzir uma página longa inteira para caber num quadro
+  ilegível nem cobrir o vídeo com a mesma imagem durante todos os cortes funcionais. Usar
+  recortes legíveis de provas reais e fontes autorizadas, preservando identidade e limites.
+- Psique avalia o arquivo final e sua linha do tempo: compreensão inicial, desejo, esforço,
+  progressão visual, leitura mobile, correspondência entre voz e cena, benefício e CTA.
+  Parecer de imagem estática, roteiro, playback ou presença de áudio não aprova o vídeo.
+  Modalidade não inspecionada permanece desconhecida; nunca declarar escuta por ffprobe.
+- Rejeição humana é trabalho de correção, não outra solicitação para aprovar o mesmo arquivo.
+  Preservar motivo, versão, custos e identidade da tentativa. Troca de bytes/copy exige
+  nova revisão da versão final; nenhuma correção concede aceite humano ou campanha.
+
+Adoção: regressões do caso original, outra identidade e caminho antes válido; testes locais
+comprovam comportamento. Retenção, clique qualificado, compra conciliada e contribuição só
+podem confirmar efeito comercial em experimento autorizado. Matriz:
+[qualidade audiovisual para a cliente](../homologacao/video-customer-quality-v1.md).

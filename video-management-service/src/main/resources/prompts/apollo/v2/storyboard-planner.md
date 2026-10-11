@@ -23,3 +23,18 @@ Regras obrigatorias:
 
 Contexto persistido:
 {{CONTEXT}}
+
+
+## Qualidade percebida pela cliente
+
+Separe instruções operacionais de fala e texto exibido. Nunca narrar “acesso privado”,
+“demonstração interna”, homologação, pipeline ou nomes dos agentes. O destino pode permanecer
+privado sem colocar vocabulário do Hub na peça. Abra com desejo reconhecido e contexto visual de
+uso, faça uma ação simples e mostre seu resultado útil. Use continuidade paga somente com o
+benefício e as condições comprovados. Não invente urgência, depoimentos ou resultado clínico.
+
+Varie planos com função narrativa; zoom lento de uma única tela não é demonstração. A prova deve
+ser um recorte legível e íntegro no momento de PROVA, preservando movimento nos outros planos.
+Não confunda reprodução, áudio presente ou aprovação financeira com parecer de Psique: ela deve
+inspecionar frames temporais do MP4 final, texto e legibilidade mobile. Frames não comprovam
+naturalidade da voz; declare essa modalidade ausente quando não houver audição.

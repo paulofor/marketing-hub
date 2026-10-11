@@ -47,7 +47,8 @@ import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 public class AgentTaskVisualEvidenceService {
   private static final Logger log = LoggerFactory.getLogger(AgentTaskVisualEvidenceService.class);
   private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z0-9._-]+");
-  private static final Set<String> EVIDENCE_TYPES = Set.of("FULL_PAGE", "FOLD", "CREATIVE_RENDER");
+  private static final Set<String> EVIDENCE_TYPES =
+      Set.of("FULL_PAGE", "FOLD", "CREATIVE_RENDER", "VIDEO_FRAME");
   private static final Set<String> DEVICE_PROFILES =
       Set.of("IPHONE_15_PRO", "PIXEL_7", "DESKTOP_1440", "CREATIVE_1080X1350");
   private static final Set<String> SENSITIVE_QUERY_PARAMETERS =
@@ -66,6 +67,9 @@ public class AgentTaskVisualEvidenceService {
           "token");
   private static final byte[] PNG_SIGNATURE =
       new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private CreativeFinalVideoEvidence finalVideoEvidence;
 
   private final CustomerAgentMemoryProperties properties;
   private final S3Client s3;
@@ -247,7 +251,19 @@ public class AgentTaskVisualEvidenceService {
     }
     String sourceUrl = publicUrl(request.sourceUrl(), "URL solicitada");
     String finalUrl = publicUrl(request.finalUrl(), "URL final");
-    validateFrozenTarget(task, sourceUrl, request.pageNumber());
+    if ("VIDEO_FRAME".equals(evidenceType)) {
+      var target =
+          targetContextProvider
+              .resolve(task.getSourceReference(), task.getProcessDefinition().getProcessCode())
+              .orElse(null);
+      if (finalVideoEvidence == null
+          || !sourceUrl.equals(finalUrl)
+          || request.foldNumber() != null
+          || request.scrollY() != 0
+          || !finalVideoEvidence.permitsFrame(task, target, sourceUrl, evidenceKey))
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "Frame fora do vídeo final autorizado para esta tarefa.");
+    } else validateFrozenTarget(task, sourceUrl, request.pageNumber());
     if (request.capturedAt() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Horário de captura ausente.");
     }
@@ -396,6 +412,9 @@ public class AgentTaskVisualEvidenceService {
       if (image == null || image.getWidth() < 1 || image.getHeight() < 1) {
         throw new IllegalArgumentException("PNG sem dimensões válidas.");
       }
+      if ("VIDEO_FRAME".equals(request.evidenceType())
+          && (image.getWidth() != request.viewportWidth() || image.getHeight() != request.viewportHeight()))
+        throw new IllegalArgumentException("Pixels do frame divergem do viewport auditado.");
       if ("CREATIVE_RENDER".equals(request.evidenceType())
           && (image.getWidth() != 1080 || image.getHeight() != 1350)) {
         throw new IllegalArgumentException("Os pixels não correspondem ao formato do criativo.");
@@ -609,7 +628,9 @@ public class AgentTaskVisualEvidenceService {
   /** Converte a entidade sem expor chave privada ou bucket. */
   static AgentTaskVisualEvidenceResponse response(AgentTaskVisualEvidence value) {
     String label =
-        "CREATIVE_RENDER".equals(value.getEvidenceType())
+        "VIDEO_FRAME".equals(value.getEvidenceType())
+            ? "Vídeo final · frame em " + value.getEvidenceKey().substring(value.getEvidenceKey().lastIndexOf('-') + 1) + " ms"
+            : "CREATIVE_RENDER".equals(value.getEvidenceType())
             ? "Criativo estático " + value.getPageNumber() + " · 1080 × 1350"
             : "FULL_PAGE".equals(value.getEvidenceType())
                 ? "Página " + value.getPageNumber() + " · visão completa"

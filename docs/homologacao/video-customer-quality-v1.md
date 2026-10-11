@@ -97,3 +97,17 @@ instante, e a ausência de viewport mobile reduzia a imagem a uma fração da te
 capturador agora usa Blob dos bytes verificados, confere o tempo efetivo e declara o
 viewport. Um MP4 determinístico vermelho/azul testa pixels reais de abertura e fim,
 impedindo que screenshots incorretos sejam rotulados como evidência do instante pedido.
+
+### Regressão obrigatória na imagem do agente
+
+O CI do PR #5580 executou os testes funcionais, mas pulou a verificação de pixels porque
+a imagem genérica de navegador não possuía FFmpeg no caminho esperado. A regressão foi
+separada em `final-video-pixel.smoke.mjs` e passou a usar um MP4 sintético versionado
+(vermelho por três segundos, azul por três segundos, H.264, 90×160, 5 fps) e Canvas para
+conferir os pixels. Não depende mais de FFmpeg nem de download durante o teste.
+
+O workflow executa obrigatoriamente esse teste na imagem Docker do próprio agente, com
+o usuário de runtime, filesystem somente leitura e rede desabilitada, além dos 43 testes
+Node existentes. Ausência de navegador, codecs ou captura correta falha o job; não há skip.
+A fixture foi sintetizada localmente com FFmpeg (`color` + `concat` + `libx264`) e contém
+somente cores, sem produto, pessoa, cliente ou dado comercial.

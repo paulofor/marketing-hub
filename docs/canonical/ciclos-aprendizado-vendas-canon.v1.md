@@ -735,3 +735,9 @@ A precedência exige produto, cadeia, ciclo e experimento idênticos, ausência 
 falha na espera e nenhum trabalho real em curso. Pausa, STOP, revisão independente,
 limites financeiros e seleção humana permanecem nos contratos existentes.
 A liberação de vez não aprova uma peça nem autoriza campanha ou consumo adicional.
+
+Quando a revisão for subprocesso de uma origem já concluída, a precedência deve
+considerar a revisão efetivamente solicitada. A origem só pode voltar à espera
+do filho após comando de revalidação posterior à sua conclusão, com toda a árvore
+no mesmo contexto e sem pausa, STOP ou trabalho conflitante. Depois do parecer,
+o retorno é recebido uma vez, preservando as entregas anteriores e a seleção humana.

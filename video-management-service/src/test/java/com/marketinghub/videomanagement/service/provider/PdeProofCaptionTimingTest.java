@@ -48,6 +48,38 @@ class PdeProofCaptionTimingTest {
         assertThat(PdeProofCaptionTiming.resolve(input, List.of())).isNull();
     }
 
+    /** Mantém a prova no encerramento de três segundos sem cortar a voz já produzida. */
+    @ParameterizedTest
+    @ValueSource(longs = {10, 93010})
+    void keepsFinalSequenceProofUntilLastFrame(long productId) {
+        var input = metadata("Conheça o site. | Veja o resultado. | Experimente a demonstração.");
+        input.put("productId", productId).put("targetDurationSeconds", 22);
+        input.withObject("/post_production/product_proof").put("captionCueIndex", 2)
+                .put("sequenceShot", true).put("minimumSeconds", 2);
+        var captions = List.of(new PdeProofCaptionTiming.Window(0, 8.4, 0),
+                new PdeProofCaptionTiming.Window(8.4, 17.184, 1),
+                new PdeProofCaptionTiming.Window(17.184, 21.048, 2));
+        assertThat(PdeProofCaptionTiming.resolve(input, captions))
+                .isEqualTo(new PdeProofCaptionTiming.Window(19, 22, 2));
+        input.withObject("/post_production/product_proof").put("minimumSeconds", 6);
+        assertThatThrownBy(() -> PdeProofCaptionTiming.resolve(input, captions))
+                .isInstanceOf(VideoProviderException.class);
+    }
+
+    /** Recusa um encerramento artificialmente prolongado ou sem tempo mínimo de leitura. */
+    @Test
+    void rejectsClosingWithoutTimingForReadingOrWithLongHold() {
+        var input = metadata("Conheça o site. | Experimente.");
+        input.withObject("/post_production/product_proof").put("captionCueIndex", 1)
+                .put("sequenceShot", true).put("minimumSeconds", 2);
+        for (var cue : List.of(new PdeProofCaptionTiming.Window(12, 16, 1),
+                new PdeProofCaptionTiming.Window(29, 30, 1))) {
+            assertThatThrownBy(() -> PdeProofCaptionTiming.resolve(input,
+                    List.of(new PdeProofCaptionTiming.Window(0, 12, 0), cue)))
+                    .isInstanceOf(VideoProviderException.class);
+        }
+    }
+
     /** Monta uma entrada segregada, sem prova nem custo comercial. */
     private ObjectNode metadata(String caption) {
         var input = new ObjectMapper().createObjectNode();

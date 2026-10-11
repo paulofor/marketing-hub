@@ -236,3 +236,37 @@ cinco sobre textos operacionais, em diferentes identidades. Não se reescreve #7
 aprova essa imagem; qualquer produção sucessora terá hash e revisão próprios.
 
 Íris: 84 testes declarados; 82 executados sem falhas após a correção, incluindo replay real dos pixels de #523. Dois harnesses opcionais sem entrada permaneceram fora da rodada. A referência de teste não foi enviada como artefato de produção.
+
+
+### Abertura e encerramento com prova — parecer #730
+
+Psique #730 reconheceu desejo e clareza 3/5, primeira ação 4/5 e prova 3/5 nos
+MP4s #61/#62. Manteve ADJUST na progressão: a aplicação não aparecia na abertura,
+o fechamento voltava aos cosméticos e a continuidade mostrava somente botão e
+pergunta. A imagem #659 permaneceu adequada. O retorno FINAL_VIDEO corretamente
+não criou outra tarefa de Íris. Custo estimado desse parecer: US$ 0,679708.
+
+A regra de montagem reservava dois segundos finais sem prova, tornando impossível
+encerrar com a própria interface. Foram comparados cobrir tudo com telas (perderia
+contexto e movimento), regenerar cenas/voz (gasto sem necessidade) e preservar a
+fonte em movimento com prova legível na abertura e no fechamento. A terceira opção
+é aplicada somente aos extremos de uma sequência explícita; o caminho legado e
+as provas centrais permanecem integrais. O último trecho tem dois a três segundos
+legíveis, termina junto do arquivo e não permite uma cauda longa após a voz.
+
+Matriz local adicional definida antes da rodada: último frame com produto visível,
+contexto preservado no topo, prova de entrada/resultado legível, encerramento com
+no máximo três segundos, recusa de duração insuficiente/cauda longa/sobreposição,
+dois produtos com identidades distintas, caminho legado, FFmpeg real, recuperação
+dos mesmos onze áudios sem uma chamada de síntese e reprodução a 393 pixels.
+Os primeiros testes reproduziram a recusa incorreta do fechamento e a aceitação
+de uma cauda longa; a correção deve inverter esses resultados.
+
+Resultado local: 277 testes declarados do módulo audiovisual, 274 executados sem
+falhas e três replays opcionais desativados. O replay de mídia relevante foi
+executado separadamente com os onze áudios reais. A rodada inclui FFmpeg e pixels de abertura/último frame em
+duas identidades. Os replays completos AD/HERO passaram sem requisição de síntese,
+com durações de 22/33 segundos. A conferência visual detectou legenda sobre o botão
+da segunda organização; a sequência agora reserva sua área, preservando a dimensão
+do contrato legado. As duas mídias ajustadas passaram na captura por hash e na
+reprodução em desktop, iPhone e Pixel emulados. A audição não foi alegada.

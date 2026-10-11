@@ -60,6 +60,10 @@ final class PdeProductProofOverlay {
         Proof proof = load(metadata, jobId);
         double outputDuration = Math.max(proof.duration(), metadata.path("postProductionDurationSeconds").asDouble());
         var timing = PdeProofCaptionTiming.resolve(metadata, captions);
+        boolean contextual = timing != null
+                && metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false)
+                && ((timing.cueIndex() == 0 && timing.start() < .1)
+                    || timing.cueIndex() == captions.size() - 1);
         String intervals = timing == null ? proof.intervals()
                 : "between(t," + number(timing.start()) + "," + number(timing.end()) + ")";
         Path image = null;
@@ -71,13 +75,16 @@ final class PdeProductProofOverlay {
             processLog = Files.createTempFile("pde-proof-" + jobId, ".log");
             Files.write(image, proof.bytes());
             String crop = "crop=%d:%d:%d:%d,".formatted(proof.width(), proof.height(), proof.x(), proof.y());
+            int proofHeight = metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false) ? 1100 : 1360;
+            String proofFrame = contextual
+                    ? "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:770:(ow-iw)/2:60:color=0xf8f3ee,"
+                    : "scale=972:" + proofHeight + ":force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee,";
             String filter = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
-                    + "[1:v]" + crop + "scale=972:1360:force_original_aspect_ratio=decrease,"
-                    + "pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee,"
+                    + "[1:v]" + crop + proofFrame
                     + "format=yuva420p,loop=loop=-1:size=1:start=0,setpts=N/(25*TB)[proof];"
-                    + "[base][proof]overlay=0:0:enable='" + intervals + "',"
+                    + "[base][proof]overlay=0:" + (contextual ? "690" : "0") + ":enable='" + intervals + "',"
                     + "drawtext=text='Exemplo com dados de teste':fontsize=38:fontcolor=0x333333:"
-                    + "x=(w-text_w)/2:y=50:enable='" + intervals + "'[out]";
+                    + "x=(w-text_w)/2:y=" + (contextual ? "700" : "50") + ":enable='" + intervals + "'[out]";
             List<String> command = List.of(properties.getProviders().getPostProduction().getFfmpegPath(),
                     "-hide_banner", "-loglevel", "error", "-y", "-i", source.toString(),
                     "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
@@ -104,6 +111,7 @@ final class PdeProductProofOverlay {
                 audit.put("timingSource", "NARRATION_CUE_V1");
                 audit.put("reviewMoments", List.of((timing.start() + timing.end()) / 2));
                 audit.put("captionCueIndex", timing.cueIndex());
+                audit.put("layout", contextual ? "MOTION_WITH_PRODUCT_PROOF_V1" : "FULL_PRODUCT_PROOF_V1");
             }
             log.info("Captura do PDE composta; jobId={} elapsedMs={} sha256={} mode=PREPARED_FRAME_LOOP_V1",
                     jobId, Duration.ofNanos(System.nanoTime() - started).toMillis(), proof.sha256());

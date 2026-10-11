@@ -43,6 +43,13 @@ import org.springframework.util.StringUtils;
 @Component
 public class SalesVideoJobService {
   private VideoProductProofService productProofService;
+  private VideoDeliveryExampleService deliveryExampleService;
+
+  /** Conecta a seleção governada de amostras de entrega para recomposição do vídeo. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setDeliveryExampleService(VideoDeliveryExampleService service) {
+    this.deliveryExampleService = service;
+  }
 
   /** Conecta a resolução governada de capturas, sem aceitar URLs ou hashes do cliente. */
   @org.springframework.beans.factory.annotation.Autowired
@@ -833,6 +840,11 @@ public class SalesVideoJobService {
               previous.path("voiceOverScript").asText(null), request.getVoiceOverScript())
           && java.util.Objects.equals(previous.path("sourceVideoUrl").asText(null), sourceVideoUrl)
           && java.util.Objects.equals(
+              previous.path("requestedDeliveryExamples"),
+              request.getDeliveryExamples() == null || request.getDeliveryExamples().isEmpty()
+                  ? com.fasterxml.jackson.databind.node.MissingNode.getInstance()
+                  : objectMapper.valueToTree(request.getDeliveryExamples()))
+          && java.util.Objects.equals(
               previous.path("requestedProofShots"),
               request.getProofShots() == null || request.getProofShots().isEmpty()
                   ? com.fasterxml.jackson.databind.node.MissingNode.getInstance()
@@ -1238,7 +1250,7 @@ public class SalesVideoJobService {
   }
 
   /**
-   * Monta o acabamento, resolve a sequência homologada e recupera voz somente da auditoria
+   * Monta o acabamento com capturas ou amostras aprovadas e recupera voz somente da auditoria
    * anterior.
    */
   private String buildPostProductionMetadata(
@@ -1248,6 +1260,30 @@ public class SalesVideoJobService {
       SalesVideoJob previousFinalization) {
     Map<String, Object> metadata = new LinkedHashMap<>();
     preserveGovernedLineage(sourceJob, metadata);
+    if (request.getDeliveryExamples() != null && !request.getDeliveryExamples().isEmpty()) {
+      if (request.getProofShots() != null && !request.getProofShots().isEmpty())
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "Escolha demonstração da interface ou montagem de amostras nesta finalização.");
+      var lineage = objectMapper.valueToTree(metadata);
+      long projectId = lineage.path("videoProjectId").asLong();
+      if (projectId <= 0 || deliveryExampleService == null)
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "A montagem exige um projeto com produto e biblioteca aprovada.");
+      var post = lineage.path("post_production").deepCopy();
+      if (!(post instanceof com.fasterxml.jackson.databind.node.ObjectNode postObject))
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST, "Contrato audiovisual ausente.");
+      postObject.remove("proofShots");
+      var examples =
+          deliveryExampleService.sequence(
+              projectId, request.getDeliveryExamples(), request.getCaptionText());
+      postObject.set("deliveryExamples", objectMapper.valueToTree(examples));
+      metadata.put("campaign_key", examples.get("productVersion"));
+      metadata.put("post_production", postObject);
+      metadata.put("requestedDeliveryExamples", request.getDeliveryExamples());
+    }
     if (request.getProofShots() != null && !request.getProofShots().isEmpty()) {
       var lineage = objectMapper.valueToTree(metadata);
       long projectId = lineage.path("videoProjectId").asLong();
@@ -1258,6 +1294,7 @@ public class SalesVideoJobService {
       if (!(post instanceof com.fasterxml.jackson.databind.node.ObjectNode postObject))
         throw VideoModuleException.badRequest(
             VideoModuleErrorCode.BAD_REQUEST, "Contrato de demonstração ausente.");
+      postObject.remove("deliveryExamples");
       postObject.set(
           "proofShots",
           objectMapper.valueToTree(

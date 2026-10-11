@@ -486,3 +486,26 @@ sem inventar cliques ou usar apenas uma pergunta como evidência da entrega.
 O ajuste de montagem reaproveita os recibos de voz quando texto e identidade são
 compatíveis. Novo hash continua exigindo revisão própria; não concede aceite de
 uso nem altera limites financeiros.
+
+## Artes da entrega na montagem audiovisual — 2026-10-11
+
+O feedback sobre Capella #55/#56 confirmou que movimento de câmera não compensa
+arte inadequada. Capturas de homologação podem conter fixtures; elas comprovam
+funcionamento e não autorizam usá-las como demonstração de acabamento comercial.
+
+Quando o produto entrega peças visuais, Apolo pode montar amostras da biblioteca
+aprovada do mesmo produto pelo contrato `APPROVED_DELIVERY_EXAMPLES_V1`. A tela
+seleciona IDs; backend resolve contexto, direitos e hashes; executor verifica bytes
+antes de consumir voz. O hash legado só é aceito quando recuperado do recibo original
+de geração concluída. Repetir uma imagem com IDs diferentes não constitui variedade.
+
+A composição deve alternar artes e enquadramentos com função narrativa, preservar
+legibilidade e sincronizar os trechos com a fala. Deve identificar amostras como
+ilustrativas, sem confundi-las com capturas da versão vigente, clientes ou demanda.
+Psique avalia qualidade das fontes e progressão do MP4 final, mesmo quando a
+aprovação técnica e financeira já existe. A correção não herda aceite humano.
+Áudio compatível é reutilizado com seu custo anterior, nunca contabilizado como
+gratuito por falta de conciliação. Não muda oferta, orçamento ou autorização comercial.
+
+Contrato: `docs/swagger/video-delivery-examples-v1.md`. Matriz e aprendizado:
+`docs/homologacao/capella-video-quality-v2.md`.

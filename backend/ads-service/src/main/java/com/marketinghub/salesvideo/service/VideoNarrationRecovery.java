@@ -28,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 public final class VideoNarrationRecovery {
   public static final String CONTRACT = "PRESERVED_TTS_NARRATION_V1";
   public static final String SEQUENCE_CONTRACT = "PDE_VIDEO_POST_PRODUCTION_V2";
+  public static final String DELIVERY_CONTRACT = "PDE_VIDEO_POST_PRODUCTION_V3";
 
   private static final Logger log = LoggerFactory.getLogger(VideoNarrationRecovery.class);
 
@@ -251,17 +252,23 @@ public final class VideoNarrationRecovery {
     return asset;
   }
 
-  /** Filtra no SQL antes da paginação, separando capacidades de recuperação e sequência. */
+  /** Filtra antes da paginação conforme suporte a recuperação, captura e montagem de amostras. */
   public static org.springframework.data.jpa.domain.Specification<SalesVideoJob> consumableBy(
       String contract) {
     return (root, query, cb) -> {
-      if (SEQUENCE_CONTRACT.equals(contract)) return cb.conjunction();
+      if (DELIVERY_CONTRACT.equals(contract)) return cb.conjunction();
+      var noDelivery =
+          cb.or(
+              cb.isNull(root.get("metadataJson")),
+              cb.notLike(root.get("metadataJson"), "%\"deliveryExamples\"%"));
+      if (SEQUENCE_CONTRACT.equals(contract)) return noDelivery;
       var noSequence =
           cb.or(
               cb.isNull(root.get("metadataJson")),
               cb.notLike(root.get("metadataJson"), "%\"proofShots\"%"));
-      if (CONTRACT.equals(contract)) return noSequence;
+      if (CONTRACT.equals(contract)) return cb.and(noDelivery, noSequence);
       return cb.and(
+          noDelivery,
           noSequence,
           cb.or(
               cb.isNull(root.get("metadataJson")),
@@ -269,17 +276,25 @@ public final class VideoNarrationRecovery {
     };
   }
 
-  /** Impede reservar acabamento por executor que não suporta recuperação ou sequência declarada. */
+  /**
+   * Impede que executor antigo ignore amostras, capturas ou voz preservada durante a publicação.
+   */
   public static void requireCompatible(
       SalesVideoJob job, String workerContract, ObjectMapper mapper) {
     JsonNode metadata = read(mapper, job.getMetadataJson(), job.getId());
+    if (!metadata.at("/post_production/deliveryExamples").isMissingNode())
+      require(
+          DELIVERY_CONTRACT.equals(workerContract),
+          "O executor precisa declarar suporte à montagem de amostras antes de reservar este vídeo.");
     if (!metadata.at("/post_production/proofShots").isMissingNode())
       require(
-          SEQUENCE_CONTRACT.equals(workerContract),
+          SEQUENCE_CONTRACT.equals(workerContract) || DELIVERY_CONTRACT.equals(workerContract),
           "O executor precisa declarar o contrato de sequência antes de reservar as capturas narradas.");
     if (!metadata.path("preservedNarration").isMissingNode())
       require(
-          CONTRACT.equals(workerContract) || SEQUENCE_CONTRACT.equals(workerContract),
+          CONTRACT.equals(workerContract)
+              || SEQUENCE_CONTRACT.equals(workerContract)
+              || DELIVERY_CONTRACT.equals(workerContract),
           "O executor precisa declarar o contrato de recuperação antes de reservar a fala preservada.");
   }
 

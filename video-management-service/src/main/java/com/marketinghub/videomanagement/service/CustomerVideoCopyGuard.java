@@ -31,6 +31,11 @@ public final class CustomerVideoCopyGuard {
                                 + ": " + match.group() + ". Corrija o roteiro antes de consumir produção ou voz.");
             }
         }
+        for (JsonNode shot : metadata.at("/post_production/deliveryExamples/shots")) {
+            var match = INTERNAL.matcher(normalize(shot.path("headline").asText()));
+            if (match.find()) throw new VideoProviderException("CUSTOMER_VIDEO_INTERNAL_LANGUAGE",
+                    "O título da cena contém linguagem operacional: " + match.group());
+        }
     }
 
     /** Normaliza acentos, caixa e espaços sem alterar o texto persistido ou a narração. */

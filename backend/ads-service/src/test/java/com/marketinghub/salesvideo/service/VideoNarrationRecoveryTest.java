@@ -20,6 +20,32 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Protege recuperação da mesma fala sem novo consumo ou transferência entre contextos. */
 class VideoNarrationRecoveryTest {
+  /** Impede consumo da nova montagem por worker antigo e mantém capturas e voz compatíveis. */
+  @org.junit.jupiter.api.Test
+  void requiresDeliveryCapabilityWithoutBreakingExistingContracts() {
+    var job = new com.marketinghub.salesvideo.SalesVideoJob();
+    job.setId(91999L);
+    job.setMetadataJson(
+        "{\"post_production\":{\"deliveryExamples\":{}},\"preservedNarration\":{}}");
+    var parser = new com.fasterxml.jackson.databind.ObjectMapper();
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.SEQUENCE_CONTRACT, parser))
+        .hasMessageContaining("montagem de amostras");
+    org.assertj.core.api.Assertions.assertThatCode(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.DELIVERY_CONTRACT, parser))
+        .doesNotThrowAnyException();
+    job.setMetadataJson("{\"post_production\":{\"proofShots\":[]},\"preservedNarration\":{}}");
+    org.assertj.core.api.Assertions.assertThatCode(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.DELIVERY_CONTRACT, parser))
+        .doesNotThrowAnyException();
+  }
+
   private final ObjectMapper mapper = new ObjectMapper();
 
   /**

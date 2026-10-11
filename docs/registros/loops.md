@@ -9971,3 +9971,17 @@ Não reescrever resultados já emitidos. Matriz, montagem e limites em
   tenant e identidade; ausência de auditoria bloqueia em vez de autorizar síntese.
   Regressões de três recuperações em dois produtos, sucesso/falha e recibos inválidos.
 - Evidências, alternativas e limites: `docs/homologacao/video-customer-quality-v1.md`.
+
+## LOOP-VIDEO-USA-FIXTURE-COMO-ARTE-COMERCIAL — 2026-10-11
+
+- Evidência: rejeição humana dos vídeos Capella #55/#56 por monotonia e posts fracos.
+  A montagem usava captura longa e ilustrações técnicas, embora existisse biblioteca
+  de artes de entrega revisadas. Homologação de pixels não avalia atratividade.
+- Causa: ausência de seleção governada das amostras de entrega no acabamento; a
+  referência técnica única era promovida a fonte visual de todos os cortes.
+- Correção: montagem explícita com fontes aprovadas do próprio produto, direitos,
+  hash e tempo narrado; prova técnica e amostra comercial permanecem distintas.
+  Psique revisa as artes e a progressão temporal do arquivo final.
+- Prevenção: regressões de produtos distintos, tenant, direitos, hashes, variedade,
+  frames com FFmpeg real e recuperação da voz. Aceite humano e gastos preservados.
+- Evidências e limites: `docs/homologacao/capella-video-quality-v2.md`.

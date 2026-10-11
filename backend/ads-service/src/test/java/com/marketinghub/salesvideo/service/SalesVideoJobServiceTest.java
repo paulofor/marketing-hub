@@ -163,7 +163,7 @@ class SalesVideoJobServiceTest {
   void persistsResolvedProofSequence() throws Exception {
     var source = VideoFinalDeliveryContractTest.source();
     source.setMetadataJson(
-        "{\"videoProjectId\":91004,\"post_production\":{\"product_proof\":{\"sha256\":\"abc\"}}}");
+        "{\"videoProjectId\":91004,\"post_production\":{\"product_proof\":{\"sha256\":\"abc\"},\"deliveryExamples\":{\"contractVersion\":\"APPROVED_DELIVERY_EXAMPLES_V1\"}}}");
     given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
     given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
     given(jobRepository.save(any()))
@@ -188,9 +188,59 @@ class SalesVideoJobServiceTest {
     var result = service.requestPostProduction(source.getId(), request);
     var metadata = new ObjectMapper().readTree(result.getMetadataJson());
     assertThat(metadata.at("/post_production/proofShots/0/sha256").asText()).isEqualTo("abc");
+    assertThat(metadata.at("/post_production/deliveryExamples").isMissingNode()).isTrue();
     assertThat(metadata.path("requestedProofShots").get(0).path("reference").asText())
         .isEqualTo(shots.getFirst().reference());
     verify(proof).sequence(91004L, shots, request.getCaptionText());
+  }
+
+  /** Congela amostras resolvidas e mantém a prova técnica distinta na auditoria. */
+  @Test
+  void persistsDeliveryExamplesWithoutRelabellingTechnicalProof() throws Exception {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.setMetadataJson(
+        "{\"videoProjectId\":91004,\"post_production\":{\"product_proof\":{\"sha256\":\"original\"}}}");
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.save(any()))
+        .willAnswer(
+            i -> {
+              SalesVideoJob job = i.getArgument(0);
+              job.setId(91011L);
+              return job;
+            });
+    var examples = org.mockito.Mockito.mock(VideoDeliveryExampleService.class);
+    service.setDeliveryExampleService(examples);
+    var shots =
+        List.of(
+            new com.marketinghub.salesvideo.service.postproduction.DeliveryExampleShot(9133L, 0),
+            new com.marketinghub.salesvideo.service.postproduction.DeliveryExampleShot(9134L, 1));
+    given(examples.sequence(91004L, shots, "Veja. | Compare."))
+        .willReturn(
+            java.util.Map.of(
+                "contractVersion",
+                "APPROVED_DELIVERY_EXAMPLES_V1",
+                "productVersion",
+                "fixture-v3",
+                "shots",
+                shots));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("fixture@sandbox.local");
+    request.setCaptionText("Veja. | Compare.");
+    request.setDeliveryExamples(shots);
+    var result = service.requestPostProduction(source.getId(), request);
+    var metadata = new ObjectMapper().readTree(result.getMetadataJson());
+    assertThat(metadata.at("/post_production/product_proof/sha256").asText()).isEqualTo("original");
+    assertThat(metadata.at("/post_production/deliveryExamples/contractVersion").asText())
+        .isEqualTo("APPROVED_DELIVERY_EXAMPLES_V1");
+    assertThat(metadata.path("campaign_key").asText()).isEqualTo("fixture-v3");
+    assertThat(metadata.path("requestedDeliveryExamples").size()).isEqualTo(2);
+    request.setProofShots(
+        List.of(
+            new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+                "invalid", 0, 3)));
+    assertThrows(
+        VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
   }
 
   /** A revisão da voz usa o limite da própria fonte, nunca uma aprovação de outro produto. */

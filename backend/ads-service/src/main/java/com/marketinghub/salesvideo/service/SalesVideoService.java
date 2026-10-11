@@ -92,6 +92,19 @@ public class SalesVideoService {
   }
 
   private VideoProductProofService productProofService;
+  private VideoDeliveryExampleService deliveryExampleService;
+
+  /** Conecta a biblioteca de amostras comerciais, distinta das capturas técnicas. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setDeliveryExampleService(VideoDeliveryExampleService service) {
+    this.deliveryExampleService = service;
+  }
+
+  /** Expõe as fontes aprovadas do próprio produto para o editor de montagem. */
+  public java.util.List<com.marketinghub.salesvideo.dto.DeliveryExampleDto> deliveryExamples(
+      Long projectId) {
+    return deliveryExampleService.available(projectId);
+  }
 
   /** Conecta o acesso governado à captura privada que o executor de vídeo irá compor. */
   @org.springframework.beans.factory.annotation.Autowired(required = false)

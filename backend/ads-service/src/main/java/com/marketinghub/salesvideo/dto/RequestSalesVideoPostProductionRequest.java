@@ -20,6 +20,9 @@ public class RequestSalesVideoPostProductionRequest {
 
   private boolean narrationRevisionConfirmed;
 
+  private java.util.List<com.marketinghub.salesvideo.service.postproduction.DeliveryExampleShot>
+      deliveryExamples;
+
   private java.util.List<com.marketinghub.salesvideo.service.postproduction.ProductProofShot>
       proofShots;
 

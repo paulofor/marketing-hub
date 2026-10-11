@@ -73,6 +73,10 @@ A evidência original permanece em `validation_history`; não há liberação ne
 nesse comando. O reconciliador continua responsável por comprovar a nova revisão e retomar os
 publicadores. Essa recuperação não autoriza registros antigos sem `prepare-resume`, não presume
 equivalência parcial e não dispensa a validação local nem o fluxo de PR da correção.
+Se o detalhe REST do PR omitir `merge_commit_sha`, a comprovação usa seu evento `merged`
+na timeline oficial, com SHA e URL canônica do commit no mesmo repositório. A consulta é paginada
+e limitada; ausência, ambiguidade ou resposta inválida mantêm a pausa. Contrato verificado em
+11/10/2026 com REST `2026-03-10` e a [referência oficial de eventos](https://docs.github.com/en/rest/using-the-rest-api/issue-event-types#merged).
 
 Para homologação ainda em curso, manter a pausa. Registros antigos sem preparação de retomada
 continuam protegidos. Restaurar somente workflows anteriormente ativos; não reativar os que já

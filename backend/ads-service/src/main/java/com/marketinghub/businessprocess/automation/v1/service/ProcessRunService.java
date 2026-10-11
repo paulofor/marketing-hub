@@ -207,7 +207,7 @@ public class ProcessRunService {
           if (Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT", "COMPLETED")
               .contains(run.getStatus())) {
             var readiness = context.read(run, false);
-            if (completedObjectives(readiness)) {
+            if (completedObjectives(readiness) && !hasRequestedChildRevalidation(run)) {
               if (!revalidation) {
                 updateCounts(run, readiness);
                 complete(run);
@@ -338,6 +338,8 @@ public class ProcessRunService {
         return response(run);
       }
     }
+    if (dispatchBlockReason(run) == null && awaitRequestedChildRevalidation(run, snapshot))
+      return response(run);
     if (videoContinuation != null
         && !"PAUSING".equals(run.getStatus())
         && dispatchBlockReason(run) == null
@@ -398,6 +400,7 @@ public class ProcessRunService {
       transition(run, "CLOSED", blocker, "CONTEXT_CLOSED");
       return response(run);
     }
+    recoverCompletedAncestorsForRevalidation(run);
     if (ancestorPaused(run)) {
       transition(run, "WAITING_PARENT", "Aguardando a retomada do processo de origem.", "WAITING");
       return response(run);
@@ -978,6 +981,113 @@ public class ProcessRunService {
       run = runs.findById(run.getParentRunId()).orElseThrow();
     }
     return run.getId();
+  }
+
+  /**
+   * Reabre somente a espera dos ancestrais concluídos após comando novo e contexto ainda válido.
+   */
+  private void recoverCompletedAncestorsForRevalidation(ProcessRun run) {
+    if (run.getParentRunId() == null
+        || run.getRetryEpoch() < 1
+        || Boolean.FALSE.equals(
+            products.findById(run.getProductId()).orElseThrow().getAutomaticExecutionEnabled()))
+      return;
+    var ancestors = new ArrayList<ProcessRun>();
+    var cursor = run;
+    var seen = new HashSet<Long>();
+    while (cursor.getParentRunId() != null) {
+      if (!seen.add(cursor.getId()))
+        throw new IllegalStateException("Ciclo inválido na delegação do processo.");
+      var parent = runs.findById(cursor.getParentRunId()).orElseThrow();
+      if (!Objects.equals(parent.getProductId(), run.getProductId())
+          || !Objects.equals(parent.getChainDefinitionId(), run.getChainDefinitionId())
+          || !Objects.equals(parent.getLearningCycleId(), run.getLearningCycleId())
+          || !Objects.equals(parent.getSourceReference(), run.getSourceReference())
+          || Set.of("PAUSING", "PAUSED", "ERROR", "CLOSED").contains(parent.getStatus())) return;
+      if ("COMPLETED".equals(parent.getStatus())
+          && (parent.getFinishedAt() == null
+              || !events.existsByRunIdAndEventTypeAndCreatedAtAfter(
+                  run.getId(), "REVALIDATION_REQUESTED", parent.getFinishedAt()))) return;
+      ancestors.add(parent);
+      cursor = parent;
+    }
+    if (ancestors.stream().noneMatch(parent -> "COMPLETED".equals(parent.getStatus()))
+        || !hasTurn(run)) return;
+    cursor = run;
+    for (var parent : ancestors) {
+      if ("COMPLETED".equals(parent.getStatus())) {
+        parent.setChildRunId(cursor.getId());
+        parent.setFinishedAt(null);
+        parent.setNavigationUrl(navigation.executionUrl(cursor));
+        transition(
+            parent,
+            "WAITING_SUBPROCESS",
+            "Revalidação autorizada do subprocesso. As entregas anteriores permanecem preservadas.",
+            "SUBPROCESS_REVALIDATION_REQUESTED");
+        String key = "revalidation-child:" + cursor.getId();
+        if (!events.existsByRunIdAndActionKey(parent.getId(), key))
+          event(
+              parent,
+              "SUBPROCESS_REVALIDATION_AUTHORIZED",
+              parent.getReason(),
+              key,
+              Map.of("childRunId", cursor.getId(), "requestedRunId", run.getId()));
+      }
+      cursor = parent;
+    }
+  }
+
+  /**
+   * Identifica a chamada reaberta ainda não recebida, inclusive após pausa e nova tentativa do
+   * filho.
+   */
+  private boolean hasRequestedChildRevalidation(ProcessRun run) {
+    return run.getChildRunId() != null
+        && events.existsByRunIdAndActionKey(
+            run.getId(), "revalidation-child:" + run.getChildRunId());
+  }
+
+  /** Mantém a reserva do pai durante a revisão solicitada e aplica seu retorno uma única vez. */
+  private boolean awaitRequestedChildRevalidation(
+      ProcessRun run, ProductProcessActivityExecutionHistoryResponse snapshot) {
+    if (!hasRequestedChildRevalidation(run)) return false;
+    var child = runs.findById(run.getChildRunId()).orElseThrow();
+    var relation =
+        navigation.children(run).stream()
+            .filter(
+                item -> Objects.equals(item.processDefinitionId(), child.getProcessDefinitionId()))
+            .findFirst();
+    var activity =
+        relation.flatMap(
+            item ->
+                snapshot.activities().stream()
+                    .filter(value -> Objects.equals(item.activityId(), value.activityId()))
+                    .findFirst());
+    if ("COMPLETED".equals(child.getStatus()) && activity.isPresent()) {
+      var childSnapshot = context.read(child, false);
+      if (completedObjectives(childSnapshot)) {
+        subprocesses.complete(run, activity.get(), child, childSnapshot);
+        run.setChildRunId(null);
+        event(
+            run,
+            "SUBPROCESS_REVALIDATION_COMPLETED",
+            "Revisão recebida sem repetir as entregas anteriores.",
+            null,
+            Map.of("childRunId", child.getId()));
+        return false;
+      }
+    }
+    if ("PAUSING".equals(run.getStatus())) {
+      transition(
+          run, "PAUSED", "Pausado antes de continuar a revalidação do subprocesso.", "PAUSED");
+    } else {
+      transition(
+          run,
+          "CLOSED".equals(child.getStatus()) ? "BLOCKED" : "WAITING_SUBPROCESS",
+          "Aguardando a revalidação do subprocesso: " + child.getReason(),
+          "WAITING_REVALIDATION");
+    }
+    return true;
   }
 
   /** Respeita pausa de qualquer processo de origem, inclusive em delegações aninhadas. */

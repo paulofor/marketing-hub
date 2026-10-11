@@ -167,6 +167,127 @@ class ProcessRunProjectedActivityPersistenceTest {
             eq(96011L), eq(96001L), eq("a"), isNull(), isNull(), eq("experiment:96021"));
   }
 
+  /** Revalidação explícita reabre somente a espera do pai, despacha uma vez e devolve o aceite. */
+  @ParameterizedTest
+  @ValueSource(longs = {96001L, 96201L})
+  void revalidatesChildUnderCompletedParentAndReturnsWithoutRepeatingAcceptedWork(long productId)
+      throws Exception {
+    prepareCompletedParentRevalidation(productId);
+    assertThat(service.resume(productId, 96012L, next.getId()).status()).isEqualTo("QUEUED");
+    assertThat(service.reconcile(next.getId()).status()).isEqualTo("WAITING_ACTIVITY");
+    assertThat(parent.getStatus()).isEqualTo("WAITING_SUBPROCESS");
+    snapshot(96012L, "PENDING", true, true, false, false);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("WAITING_SUBPROCESS");
+    assertThat(service.pause(productId, 96011L, parent.getId()).status()).isEqualTo("PAUSING");
+    assertThat(service.resume(productId, 96011L, parent.getId()).status()).isEqualTo("QUEUED");
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("WAITING_SUBPROCESS");
+    assertThat(service.reconcile(next.getId()).status()).isEqualTo("WAITING_ACTIVITY");
+    verify(activities, times(1))
+        .requestProductActivityExecution(
+            eq(96012L), eq(productId), eq("a"), isNull(), isNull(), eq(next.getSourceReference()));
+    snapshot(96012L, "COMPLETED", false, true, false, true);
+    assertThat(service.reconcile(next.getId()).status()).isEqualTo("COMPLETED");
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("COMPLETED");
+    service.reconcile(parent.getId());
+    verify(subprocesses, times(1)).complete(eq(parent), any(), eq(next), eq(snapshots.get(96012L)));
+    assertThat(parent.getKnownCostUsd()).isEqualByComparingTo("0.75");
+    assertThat(runs.count()).isEqualTo(2);
+    assertThat(
+            events.findAll().stream()
+                .filter(e -> "SUBPROCESS_REVALIDATION_AUTHORIZED".equals(e.getEventType())))
+        .hasSize(1);
+  }
+
+  /**
+   * Histórico concluído não libera revisão sem comando novo nem ultrapassa pausa, STOP ou outra
+   * fila.
+   */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "NO_COMMAND",
+        "OLD_COMMAND",
+        "PAUSED",
+        "PAUSING",
+        "ERROR",
+        "CLOSED",
+        "STOP",
+        "CONTEXT_CLOSED",
+        "OTHER_PRODUCT",
+        "OTHER_ROOT"
+      })
+  void preservesRevalidationAuthorityAndProductReservation(String guard) throws Exception {
+    prepareCompletedParentRevalidation(96001L);
+    if ("NO_COMMAND".equals(guard)) next.setStatus("QUEUED");
+    else service.resume(96001L, 96012L, next.getId());
+    if (Set.of("PAUSED", "PAUSING", "ERROR", "CLOSED").contains(guard)) parent.setStatus(guard);
+    if ("OLD_COMMAND".equals(guard)) parent.setFinishedAt(Instant.now().plusSeconds(60));
+    if ("OTHER_PRODUCT".equals(guard)) parent.setProductId(96888L);
+    if ("CONTEXT_CLOSED".equals(guard)) authorized = false;
+    if ("STOP".equals(guard)) {
+      var products =
+          (ProductRepository)
+              org.springframework.test.util.ReflectionTestUtils.getField(service, "products");
+      products.findById(96001L).orElseThrow().setAutomaticExecutionEnabled(false);
+    }
+    if ("OTHER_ROOT".equals(guard)) runs.saveAndFlush(run(96013L, "RUNNING"));
+    String original = parent.getStatus();
+    assertThat(service.reconcile(next.getId()).status()).isNotEqualTo("WAITING_ACTIVITY");
+    assertThat(parent.getStatus()).isEqualTo(original);
+    verifyNoInteractions(activities, subprocesses);
+  }
+
+  /** Monta o caso de vídeo novo no mesmo ciclo, com identidades e autorização próprias. */
+  private void prepareCompletedParentRevalidation(long productId) throws Exception {
+    authorized = true;
+    var products =
+        (ProductRepository)
+            org.springframework.test.util.ReflectionTestUtils.getField(service, "products");
+    var product = new Product();
+    product.setId(productId);
+    product.setAutomaticExecutionEnabled(true);
+    when(products.findById(productId)).thenReturn(Optional.of(product));
+    when(products.findLockedById(productId)).thenReturn(Optional.of(product));
+    for (var run : List.of(parent, next)) {
+      run.setProductId(productId);
+      run.setSourceReference("experiment:" + (productId + 20));
+      run.setStatus("COMPLETED");
+      run.setFinishedAt(Instant.now().minusSeconds(60));
+    }
+    next.setParentRunId(parent.getId());
+    snapshot(96011L, "COMPLETED", false, true, true, true);
+    snapshot(96012L, "NOT_STARTED", false, false, false, false);
+    var value =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96012L));
+    var activity = (com.fasterxml.jackson.databind.node.ObjectNode) value.path("activities").get(0);
+    activity.put("executionRequestAvailable", true);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) activity.path("executionControl"))
+        .put("actionAvailable", true)
+        .put("executorType", "AGENT");
+    snapshots.put(
+        96012L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    when(navigation.children(parent))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.businessprocess.automation.v1.service.status
+                    .ProcessRunRelationResponse(
+                    96012L, "Revisão independente", 1, "a", "Revisar", "/review")));
+    var dispatched =
+        mock(
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .requestProductProcessActivityExecution
+                .ProductProcessActivityExecutionRequestResponse
+                .class);
+    when(dispatched.sourceReference()).thenReturn(next.getSourceReference());
+    when(dispatched.tasks()).thenReturn(List.of());
+    when(activities.requestProductActivityExecution(
+            eq(96012L), eq(productId), eq("a"), isNull(), isNull(), eq(next.getSourceReference())))
+        .thenReturn(dispatched);
+  }
+
   /**
    * Conclusão, início com provas e recuperação explícita preservam o destino, inclusive pausado.
    */

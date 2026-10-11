@@ -9889,3 +9889,22 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** proteção restrita ao BPM de Atena e seu publicador; não declara
   outros executores protegidos, não renova parecer nem completa custo ausente.
   [Matriz, evidência e aprendizado](../homologacao/vega-publicacao-segura-atena-v1.md).
+
+## LOOP-SUBPROCESSO-REVALIDADO-AGUARDA-PAI-CONCLUIDO — 11/10/2026
+
+- Evidência: Mira, ciclo #9/experimento #102. A execução #55 aceitou `REVALIDATION_REQUESTED`
+  (evento #2126), mas passou a `WAITING_PARENT` (#2127). O pai #54 continuava concluído em
+  4/4 e não oferecia retomada. As revisões #655/#656 eram da peça estática anterior; os vídeos
+  #59/#60 exigem parecer próprio. Nenhuma tarefa nova havia sido criada.
+- Causa: o comando reconhecia prova nova no filho, mas a conciliação equiparava pai concluído
+  a pai pausado; a projeção do pai ainda mantinha suas entregas aceitas. Histórico de delegação
+  normal e testes existentes descartam falha geral no consumidor.
+- Correção: o motor usa o comando de revalidação persistido, posterior à conclusão e no mesmo
+  contexto, para reabrir apenas a espera dos ancestrais concluídos. Mantém a reserva do produto,
+  recebe o novo aceite do subprocesso e preserva tarefas, custos, vínculos e saídas anteriores.
+- Limites: não reabre pausa, STOP, erro, contexto fechado, outro produto ou outra reserva ativa;
+  não transfere orçamento, aprova mídia ou repete inferência aceita. Comando antigo não basta.
+- Harness: dois produtos reproduziram `WAITING_PARENT` antes da correção. A regressão cobre
+  despacho único, callback/retorno, pausa/retomada durante a espera e dez barreiras de autoridade.
+  Ver `docs/homologacao/video-customer-quality-v1.md`. Relacionado ao
+  `LOOP-CICLO-PROCESSO-CONCLUIDO-SEM-PASSAGEM`, com causa distinta no retorno hierárquico.

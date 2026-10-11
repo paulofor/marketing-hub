@@ -111,3 +111,25 @@ o usuário de runtime, filesystem somente leitura e rede desabilitada, além dos
 Node existentes. Ausência de navegador, codecs ou captura correta falha o job; não há skip.
 A fixture foi sintetizada localmente com FFmpeg (`color` + `concat` + `libx264`) e contém
 somente cores, sem produto, pessoa, cliente ou dado comercial.
+
+### Revalidação após a conclusão do processo de origem
+
+Após a produção corrigida #59/#60, o comando de revisão da execução #55 foi aceito, mas
+aguardou o pai #54, já concluído. O problema foi reproduzido localmente em dois produtos:
+os testes esperavam o despacho da revisão e receberam `WAITING_PARENT`.
+
+Foram comparadas uma revisão independente fora da árvore (menor mudança, mas perde a
+passagem automática), uma nova execução completa (mais ampla e sujeita a retrabalho) e
+recuperar a delegação existente. A terceira alternativa mantém a identidade e as provas:
+somente um comando explícito posterior à conclusão, com contexto vigente, reabre a espera
+dos ancestrais concluídos. O pai conserva seus aceites e aguarda o retorno validado do filho.
+
+Matriz local adicional: despacho único em dois produtos; retorno confirmado antes de encerrar
+o pai; pausa e retomada durante a revisão; nenhuma tarefa sem comando novo, com comando
+antigo, sob PAUSED/PAUSING/ERROR/CLOSED, STOP, contexto fechado, produto divergente ou outra
+reserva ativa. As delegações antes válidas e os controles de vídeo continuam nas regressões.
+A alteração não autoriza gasto novo nem substitui revisão independente ou seleção humana.
+
+Resultado local desta passagem: 222 testes de processo, persistência, fila, revisão audiovisual
+e recuperação passaram, sem falhas ou skips. Incluem os dois casos que falhavam antes com
+`WAITING_PARENT`. A revisão real de Mira e os workflows de publicação ficam vinculados ao PR.

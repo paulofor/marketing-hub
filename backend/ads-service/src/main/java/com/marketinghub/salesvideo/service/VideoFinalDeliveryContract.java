@@ -21,7 +21,10 @@ final class VideoFinalDeliveryContract {
   /** Impede instanciar o montador determinístico do contrato. */
   private VideoFinalDeliveryContract() {}
 
-  /** Valida a fonte persistida e proíbe mudar roteiro, legenda ou URL durante a recuperação. */
+  /**
+   * Valida a fonte persistida e proíbe mudar roteiro, legenda, capturas ou URL durante a
+   * recuperação.
+   */
   static String prepare(
       SalesVideoJob source, RequestSalesVideoPostProductionRequest request, ObjectMapper mapper) {
     try {
@@ -35,7 +38,9 @@ final class VideoFinalDeliveryContract {
       if (!"AVAILABLE".equals(eligibility.status())
           || !caption.equals(request.getCaptionText())
           || request.getSourceVideoUrl() != null
-          || request.getVoiceOverScript() != null) {
+          || request.getVoiceOverScript() != null
+          || request.isNarrationRevisionConfirmed()
+          || (request.getProofShots() != null && !request.getProofShots().isEmpty())) {
         throw new IllegalArgumentException(
             "Recuperação HLS deve preservar integralmente o acabamento e seus textos.");
       }

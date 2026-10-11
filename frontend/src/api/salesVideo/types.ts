@@ -185,12 +185,20 @@ export interface RequestVideoRenderPayload {
   metadataJson?: string;
 }
 
+export interface ProductProofShot {
+  reference: string;
+  captionCueIndex: number;
+  minimumSeconds: number;
+}
+
 export interface RequestSalesVideoPostProductionPayload {
   requestedBy: string;
   sourceVideoUrl?: string;
   voiceOverScript?: string;
   captionText: string;
   deliveryOnly?: boolean;
+  proofShots?: ProductProofShot[];
+  narrationRevisionConfirmed?: boolean;
   targetDurationSeconds?: number;
 }
 

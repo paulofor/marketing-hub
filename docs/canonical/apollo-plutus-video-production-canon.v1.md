@@ -460,3 +460,15 @@ por quartil não bastam quando omitem esses momentos. Correção visual da mesma
 rejeitada deve recuperar a narração auditada e manter seu custo anterior; mudança de copy,
 identidade ou autorização continua sujeita ao fluxo próprio. Isso não concede aceite de
 uso nem comprova demanda ou conversão.
+
+
+## Retorno focalizado e demonstração por sequência — 2026-10-11
+
+A revisão deve distinguir ajuste do vídeo (`FINAL_VIDEO`), da imagem (`STATIC_ASSET`) ou
+misto (`MIXED`); aprovação usa `NONE`. Um retorno exclusivo dos vídeos não refaz a imagem.
+Pareceres legados sem escopo conservam a regra anterior, sem inferência retroativa por texto.
+A pós-produção pode sincronizar até cinco capturas homologadas à locução (`proofShots`).
+Cada trecho mantém contexto, hash, recorte e duração de leitura; interface e resultado são
+pixels verdadeiros, nunca telas imaginadas pelo gerador. A abertura identifica o produto,
+a primeira ação é compreensível e a continuidade paga tem incremento sustentado.
+A validação continua independente e não transfere aceites para outro arquivo.

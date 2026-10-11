@@ -35,6 +35,10 @@ final class PdeProductProofOverlay {
 
     /** Confere bytes, hash, enquadramento e cortes antes de consumir o gerador pago. */
     void verify(JsonNode metadata, Long jobId) {
+        if (hasSequence(metadata)) {
+            for (JsonNode shot : sequence(metadata)) verify(withShot(metadata, shot), jobId);
+            return;
+        }
         if (!metadata.at("/post_production/product_proof").isMissingNode()) {
             PdeProofCaptionTiming.cueIndex(metadata);
             load(metadata, jobId);
@@ -49,6 +53,7 @@ final class PdeProductProofOverlay {
     /** Compõe a captura no trecho efetivamente narrado, preservando movimento e identidade. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId,
                                                   List<PdeProofCaptionTiming.Window> captions) {
+        if (hasSequence(metadata)) return applySequence(source, metadata, jobId, captions);
         if (metadata.at("/post_production/product_proof").isMissingNode()) {
             return new ProductUgcReferenceOverlay.OverlayResult(source, Map.of());
         }
@@ -115,11 +120,95 @@ final class PdeProductProofOverlay {
         }
     }
 
+    /** Reconhece a sequência explícita sem alterar o comportamento do contrato legado. */
+    private boolean hasSequence(JsonNode metadata) {
+        return !metadata.at("/post_production/proofShots").isMissingNode();
+    }
+
+    /** Exige trechos ordenados e limitados antes de consumir voz ou baixar capturas. */
+    private JsonNode sequence(JsonNode metadata) {
+        JsonNode shots = metadata.at("/post_production/proofShots");
+        if (!shots.isArray() || shots.isEmpty() || shots.size() > 5
+                || !metadata.at("/technicalQualityGate/captionMustMatchNarration").asBoolean())
+            throw invalid("Sequência da demonstração inválida.");
+        boolean containsOriginal = false;
+        int previous = -1;
+        for (JsonNode shot : shots) {
+            containsOriginal |= !shot.path("sha256").asText().isBlank()
+                    && shot.path("sha256").asText().equals(metadata.at("/post_production/product_proof/sha256").asText());
+            int cue = shot.path("captionCueIndex").asInt(-1);
+            double seconds = shot.path("minimumSeconds").asDouble(Double.NaN);
+            if (cue <= previous || !Double.isFinite(seconds) || seconds < 2 || seconds > 12)
+                throw invalid("Trechos da demonstração fora de ordem ou sem duração válida.");
+            previous = cue;
+        }
+        if (!containsOriginal) throw invalid("A sequência precisa preservar a prova homologada original.");
+        return shots;
+    }
+
+    /** Isola o contrato de um trecho mantendo a identidade do projeto e o plano narrativo. */
+    private JsonNode withShot(JsonNode metadata, JsonNode shot) {
+        var copy = (com.fasterxml.jackson.databind.node.ObjectNode) metadata.deepCopy();
+        var post = (com.fasterxml.jackson.databind.node.ObjectNode) copy.path("post_production");
+        post.remove("proofShots");
+        var proof = (com.fasterxml.jackson.databind.node.ObjectNode) shot.deepCopy();
+        proof.put("sequenceShot", true);
+        post.set("product_proof", proof);
+        return copy;
+    }
+
+    /** Monta capturas reais no relógio da fala e audita cada hash, enquadramento e intervalo. */
+    private ProductUgcReferenceOverlay.OverlayResult applySequence(Path source, JsonNode metadata, Long jobId,
+            List<PdeProofCaptionTiming.Window> captions) {
+        var shots = sequence(metadata);
+        double previousEnd = -1;
+        for (var shot : shots) {
+            var window = PdeProofCaptionTiming.resolve(withShot(metadata, shot), captions);
+            if (window == null || window.start() < previousEnd - .01)
+                throw invalid("As capturas se sobrepõem; distribua a fala e o tempo de leitura antes de finalizar.");
+            previousEnd = window.end();
+        }
+        Path current = source;
+        var audits = new ArrayList<Map<String, Object>>();
+        var moments = new ArrayList<Double>();
+        try {
+            for (var shot : shots) {
+                var output = apply(current, withShot(metadata, shot), jobId, captions);
+                if (!current.equals(source)) delete(current, jobId);
+                current = output.videoFile();
+                audits.add(output.audit());
+                var window = PdeProofCaptionTiming.resolve(withShot(metadata, shot), captions);
+                moments.add((window.start() + window.end()) / 2);
+            }
+            var original = metadata.at("/post_production/product_proof");
+            var audit = new java.util.LinkedHashMap<String, Object>();
+            audit.put("contractVersion", "PDE_PRIVATE_VIDEO_PROOF_V1");
+            audit.put("status", "APPLIED");
+            audit.put("sha256", original.path("sha256").asText());
+            audit.put("source", original.path("contentPath").asText());
+            audit.put("syntheticScenario", true);
+            audit.put("commercialEvidenceClaimed", false);
+            audit.put("compositionMode", "NARRATED_PROOF_SEQUENCE_V1");
+            audit.put("shots", audits);
+            audit.put("reviewMoments", moments);
+            return new ProductUgcReferenceOverlay.OverlayResult(current, audit);
+        } catch (RuntimeException ex) {
+            if (!current.equals(source)) delete(current, jobId);
+            log.error("Falha na sequência da demonstração; jobId={}", jobId, ex);
+            throw ex;
+        }
+    }
+
     /** Baixa somente a rota de vídeo esperada e recusa captura ou contexto divergentes. */
     private Proof load(JsonNode metadata, Long jobId) {
         JsonNode proof = metadata.at("/post_production/product_proof");
         long projectId = metadata.path("videoProjectId").asLong();
         String path = "/api/sales-videos/projects/" + projectId + "/product-proof";
+        if (proof.path("sequenceShot").asBoolean(false)) {
+            if (proof.path("taskId").asLong() <= 0 || proof.path("evidenceId").asLong() <= 0)
+                throw invalid("Identidade da captura da sequência ausente.");
+            path += "/" + proof.path("taskId").asLong() + "/" + proof.path("evidenceId").asLong();
+        }
         String tenantId = metadata.path("tenantId").asText();
         if (tenantId.isBlank() || !tenantId.equals(proof.path("tenantId").asText())
                 || projectId <= 0 || projectId != proof.path("projectId").asLong()

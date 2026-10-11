@@ -756,6 +756,29 @@ components:
           minimum: 6
           maximum: 60
           description: Duração final opcional. Recuperação de APOLLO_NARRATION_DURATION_EXCEEDED exige mesma voz/legenda, recibos e hashes íntegros, duração suficiente e mesma fonte/tenant; reutiliza fala sem TTS novo e alonga o último quadro. Não pode truncar fonte nem autorizar publicação.
+        narrationRevisionConfirmed:
+          type: boolean
+          default: false
+          description: Confirma nova locução apenas se a copy mudou, após rejeição do acabamento anterior e preflight financeiro da mesma fonte. Exige decisão financeira APPROVED, custo conhecido abaixo do teto e monitor não bloqueado. Não amplia o limite. Copy igual conserva recuperação sem nova síntese; custos pendentes não se tornam zero.
+        proofShots:
+          type: array
+          maxItems: 5
+          description: Sequência opcional de capturas homologadas sincronizadas à locução. Ausência preserva a prova anterior. O backend resolve os hashes; a finalização recusa sobreposição ou tempo insuficiente e preserva os arquivos anteriores.
+          items:
+            type: object
+            required: [reference, captionCueIndex, minimumSeconds]
+            properties:
+              reference:
+                type: string
+                example: 'internal://agent-tasks/123/visual-evidence/456#crop=0,0,900,1200'
+              captionCueIndex:
+                type: integer
+                minimum: 0
+                description: Índice da parte da legenda separada por |, em ordem crescente.
+              minimumSeconds:
+                type: number
+                minimum: 2
+                maximum: 12
         deliveryOnly:
           type: boolean
           default: false

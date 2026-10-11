@@ -18,6 +18,11 @@ public class RequestSalesVideoPostProductionRequest {
 
   private boolean deliveryOnly;
 
+  private boolean narrationRevisionConfirmed;
+
+  private java.util.List<com.marketinghub.salesvideo.service.postproduction.ProductProofShot>
+      proofShots;
+
   @Min(6)
   @Max(60)
   private Integer targetDurationSeconds;

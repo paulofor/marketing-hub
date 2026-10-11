@@ -72,6 +72,36 @@ class VideoNarrationRecoveryTest {
         .isInstanceOf(ResponseStatusException.class);
   }
 
+  /** Nova copy exige confirmação; o texto idêntico continua recuperando a voz sem nova síntese. */
+  @Test
+  void separatesConfirmedNarrationRevisionFromRecovery() throws Exception {
+    var f = fixture(91009, mapper);
+    f.request().setCaptionText("Novo texto.");
+    f.request().setVoiceOverScript("Novo texto.");
+    f.request().setNarrationRevisionConfirmed(true);
+    var result =
+        mapper.valueToTree(
+            VideoNarrationRecovery.prepare(
+                f.source(), f.previous(), f.request(), mapper, f.assets()));
+    assertThat(result.at("/narrationRevision/newNarrationRequested").asBoolean()).isTrue();
+    assertThat(result.has("preservedNarration")).isFalse();
+    verifyNoInteractions(f.assets());
+  }
+
+  /** Falha de montagem após receber a fala reutiliza o recibo íntegro, sem pagar novamente. */
+  @ParameterizedTest
+  @ValueSource(strings = {"PDE_PRODUCT_PROOF_INVALID", "PDE_PROOF_CAPTION_TIMING_INVALID"})
+  void recoversAuditedVoiceAfterProofCompositionFailure(String code) throws Exception {
+    var f = fixture(91009, mapper);
+    f.previous().setFailureCode(code);
+    var result =
+        mapper.valueToTree(
+            VideoNarrationRecovery.prepare(
+                f.source(), f.previous(), f.request(), mapper, f.assets()));
+    assertThat(result.at("/preservedNarration/segments")).hasSize(5);
+    assertThat(result.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
+  }
+
   /** Recusa falhas de identidade, texto, recibo e tempo antes de enfileirar outro job. */
   @ParameterizedTest
   @ValueSource(
@@ -123,13 +153,39 @@ class VideoNarrationRecoveryTest {
     VideoNarrationRecovery.requireCompatible(job, null, mapper);
   }
 
+  /** Um worker antigo não pode ignorar a sequência e entregar outra montagem como sucesso. */
+  @Test
+  void requiresSequenceCapabilityBeforeClaiming() {
+    var job =
+        SalesVideoJob.builder()
+            .id(91009L)
+            .metadataJson("{\"post_production\":{\"proofShots\":[{}]}}")
+            .build();
+    assertThatThrownBy(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.CONTRACT, mapper))
+        .hasMessageContaining("sequência");
+    assertThatCode(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.SEQUENCE_CONTRACT, mapper))
+        .doesNotThrowAnyException();
+    job.setMetadataJson("{\"preservedNarration\":{}}");
+    assertThatCode(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    job, VideoNarrationRecovery.SEQUENCE_CONTRACT, mapper))
+        .doesNotThrowAnyException();
+  }
+
   /** Preserva produção normal e outra classe de falha sem criar contrato de voz. */
   @Test
   void preservesPreviousValidPaths() throws Exception {
     var f = fixture(91009, mapper);
     assertThat(VideoNarrationRecovery.prepare(f.source(), null, f.request(), mapper, f.assets()))
         .isEmpty();
-    f.previous().setFailureCode("PDE_PRODUCT_PROOF_INVALID");
+    f.previous().setFailureCode("NETWORK_FAILURE");
     assertThat(
             VideoNarrationRecovery.prepare(
                 f.source(), f.previous(), f.request(), mapper, f.assets()))

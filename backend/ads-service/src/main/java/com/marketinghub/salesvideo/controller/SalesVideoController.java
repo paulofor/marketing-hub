@@ -92,6 +92,19 @@ public class SalesVideoController {
         .body(salesVideoService.readProductProof(projectId));
   }
 
+  /** Entrega uma captura da sequência pelo contrato do módulo, com contexto e tenant validados. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Ler captura homologada da sequência de demonstração")
+  @GetMapping(
+      value = "/api/sales-videos/projects/{projectId}/product-proof/{taskId}/{evidenceId}",
+      produces = "image/png")
+  public org.springframework.http.ResponseEntity<byte[]> productProofShot(
+      @PathVariable Long projectId, @PathVariable Long taskId, @PathVariable Long evidenceId) {
+    return org.springframework.http.ResponseEntity.ok()
+        .cacheControl(org.springframework.http.CacheControl.noStore())
+        .body(salesVideoService.readProductProof(projectId, taskId, evidenceId));
+  }
+
   /** Consulta o catalogo operacional do estudio de audio e video. */
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {

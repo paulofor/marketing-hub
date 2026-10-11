@@ -76,7 +76,16 @@ public class FinalVideoReviewInputs {
   /** Impede que o parecer da imagem estática ou de outra edição aprove o vídeo atual. */
   static void validate(ObjectMapper json, Map<String, Object> task, JsonNode result) {
     JsonNode inputs = inputs(json, task);
-    if (inputs.isMissingNode() || inputs.isEmpty()) return;
+    String scope = result.path("correctionScope").asText();
+    boolean approved = "APPROVED".equals(result.path("decision").asText());
+    if (!scope.isBlank() && ((approved && !"NONE".equals(scope))
+        || (!approved && "NONE".equals(scope))))
+      throw new IllegalArgumentException("O escopo da correção deve corresponder à decisão.");
+    if (inputs.isMissingNode() || inputs.isEmpty()) {
+      if (java.util.Set.of("FINAL_VIDEO", "MIXED").contains(scope))
+        throw new IllegalArgumentException("Correção de vídeo exige vídeos efetivamente inspecionados.");
+      return;
+    }
     for (JsonNode modality : result.at("/behavioralResponse/sensoryExperience/availableModalities")) {
       if ("AUDIO".equals(modality.asText()))
         throw new IllegalArgumentException("Frames e transcrição não comprovam audição de áudio.");

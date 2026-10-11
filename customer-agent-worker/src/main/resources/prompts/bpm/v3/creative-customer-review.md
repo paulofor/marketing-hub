@@ -83,3 +83,18 @@ o resultado mostrado no mesmo instante. Rejeite a peça quando “veja o exemplo
 sem exemplo correspondente, quando a prova chega só depois da explicação ou quando o
 recorte/tempo impede compreender a entrega. Amostras temporais não comprovam audição
 nem continuidade perfeita entre frames; registre esses limites sem fabricar observação.
+
+
+### Escopo executável do retorno — v2
+
+Declare `correctionScope`: `NONE` somente em APPROVED; `FINAL_VIDEO` quando as alterações
+se limitam aos MP4s e a imagem permanece adequada; `STATIC_ASSET` quando só a imagem
+precisa mudar; `MIXED` quando ambos precisam de correção. Nunca devolva produção de imagem
+para corrigir apenas vídeo. Preserve pareceres e arquivos compatíveis, sem aprovar outro hash.
+Na justificativa separe explicitamente a imagem dos vídeos. Para ADJUST, descreva a ação
+observável por trecho e o critério de aceite, sem exigir uma nova hipótese comercial.
+
+Uma aplicação digital deve ser reconhecível na abertura. Cenas de pessoas ou objetos não
+podem sugerir que se vende cosmético quando a entrega é software. A primeira ação descrita
+deve corresponder à entrada real; a continuidade paga deve mostrar seu incremento concreto.
+Movimento deve conduzir contexto → ação → resultado, e não apenas decorar a narração.

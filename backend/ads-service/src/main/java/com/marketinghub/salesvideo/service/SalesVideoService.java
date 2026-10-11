@@ -104,6 +104,11 @@ public class SalesVideoService {
     return productProofService.read(projectId);
   }
 
+  /** Entrega uma captura específica somente após conferir a homologação e o contexto do projeto. */
+  public byte[] readProductProof(Long projectId, Long taskId, Long evidenceId) {
+    return productProofService.read(projectId, taskId, evidenceId);
+  }
+
   /** Lista o catálogo administrável de provedores e modelos de vídeo. */
   public List<SalesVideoProviderModelDto> listProviderModels() {
     return providerCatalogService.list();

@@ -62,6 +62,24 @@ class SalesVideoAssetControllerTest {
     verify(salesVideoService).readProductProof(91001L);
   }
 
+  /** A sequência usa rota do módulo com tenant obrigatório e cache desabilitado. */
+  @Test
+  void exposesOwnedSequenceProof() throws Exception {
+    when(salesVideoService.readProductProof(91001L, 91004L, 91005L)).thenReturn(new byte[] {1, 2});
+    mockMvc
+        .perform(get("/api/sales-videos/projects/91001/product-proof/91004/91005"))
+        .andExpect(status().isBadRequest());
+    mockMvc
+        .perform(
+            get("/api/sales-videos/projects/91001/product-proof/91004/91005")
+                .header("X-Tenant-ID", "fixture"))
+        .andExpect(status().isOk())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .bytes(new byte[] {1, 2}));
+    verify(salesVideoService).readProductProof(91001L, 91004L, 91005L);
+  }
+
   /** Deve expor o catalogo visual do estudio para personagens e legendas. */
   @Test
   void shouldExposeStudioCatalog() throws Exception {

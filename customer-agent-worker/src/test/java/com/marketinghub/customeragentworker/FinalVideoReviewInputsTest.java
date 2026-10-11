@@ -56,6 +56,16 @@ class FinalVideoReviewInputsTest {
         .doesNotThrowAnyException();
   }
 
+  /** O retorno exclusivo de vídeo requer inspeção e não pode coexistir com uma aprovação. */
+  @Test
+  void preservesCorrectionScopeWithoutInventingReview() {
+    var result = result(53); result.put("correctionScope", "FINAL_VIDEO");
+    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(53), result)).hasMessageContaining("escopo");
+    result.put("decision", "ADJUST");
+    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(53), result)).doesNotThrowAnyException();
+    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, Map.of(), result)).hasMessageContaining("inspecionados");
+  }
+
   /** Monta uma entrada isolada de inspeção, sem autorização de mídia ou prova de mercado. */
   private Map<String, Object> task(long id) {
     return Map.of(

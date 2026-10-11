@@ -1,3 +1,8 @@
+import {
+  ProductProofSequenceEditor,
+  validateProofSequence,
+} from "./ProductProofSequenceEditor";
+import type { ProductProofShot } from "../../api/salesVideo/types";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -128,6 +133,11 @@ export default function ProductSalesVideoPage() {
   const [postProductionVoiceOver, setPostProductionVoiceOver] = useState("");
   const [postProductionCaption, setPostProductionCaption] = useState("");
   const [postProductionDuration, setPostProductionDuration] = useState("");
+  const [proofShots, setProofShots] = useState<ProductProofShot[]>([]);
+  const [narrationRevisionConfirmed, setNarrationRevisionConfirmed] =
+    useState(false);
+  useEffect(() => setNarrationRevisionConfirmed(false), [selectedJobId]);
+  useEffect(() => setProofShots([]), [selectedJobId]);
   const validPostProductionDuration = isValidFinalDuration(
     postProductionDuration,
   );
@@ -432,6 +442,11 @@ export default function ProductSalesVideoPage() {
       toast.error("Informe uma duração inteira entre 6 e 60 segundos");
       return;
     }
+    const proofError = validateProofSequence(proofShots, postProductionCaption);
+    if (proofError) {
+      toast.error(proofError);
+      return;
+    }
     if (!selectedVideoSourceUrl) {
       toast.error("Aguarde o carregamento do asset ou stream do vídeo");
       return;
@@ -441,6 +456,8 @@ export default function ProductSalesVideoPage() {
         requestedBy: tenantContext.userEmail,
         sourceVideoUrl: selectedVideoSourceUrl || undefined,
         voiceOverScript: postProductionVoiceOver.trim() || undefined,
+        proofShots: proofShots.length ? proofShots : undefined,
+        narrationRevisionConfirmed,
         captionText: postProductionCaption.trim(),
         targetDurationSeconds: postProductionDuration.trim()
           ? Number(postProductionDuration)
@@ -1278,6 +1295,32 @@ export default function ProductSalesVideoPage() {
                 onChange={(event) =>
                   setPostProductionCaption(event.target.value)
                 }
+              />
+              <label className="form-check mt-2">
+                <input
+                  id="post-production-new-narration"
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={narrationRevisionConfirmed}
+                  disabled={requestPostProduction.isPending}
+                  onChange={(event) =>
+                    setNarrationRevisionConfirmed(event.target.checked)
+                  }
+                />
+                <span>
+                  Criar nova locução se o texto mudou, dentro do limite
+                  audiovisual já autorizado.
+                </span>
+                <small className="d-block">
+                  Uma nova locução pode consumir IA. Com o mesmo texto, o áudio
+                  auditado será reutilizado. Este controle não amplia o
+                  orçamento.
+                </small>
+              </label>
+              <ProductProofSequenceEditor
+                value={proofShots}
+                onChange={setProofShots}
+                disabled={requestPostProduction.isPending}
               />
               <label className="form-label" htmlFor="post-production-duration">
                 Duração final (segundos)

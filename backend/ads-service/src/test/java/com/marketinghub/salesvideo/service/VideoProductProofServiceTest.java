@@ -127,6 +127,44 @@ class VideoProductProofServiceTest {
     }
   }
 
+  /**
+   * Resolve trechos somente do proprietário, preservando hash e recusando ordem/identidade
+   * inválidas.
+   */
+  @Test
+  void resolvesSequenceAndRejectsUnsafeEdits() {
+    var projects = mock(VideoProjectRepository.class);
+    when(projects.findById(91001L)).thenReturn(Optional.of(project));
+    var reader = new VideoProductProofService(repository, projects, new ObjectMapper());
+    var shot =
+        new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+            project.getReferencePerformanceUri(), 0, 4);
+    try {
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.set(
+          new com.marketinghub.salesvideo.tenant.TenantContext("default", "fixture", false));
+      var shots = reader.sequence(91001L, java.util.List.of(shot), "Informe os nomes. | Consulte.");
+      assertThat(shots.getFirst())
+          .containsEntry(
+              "contentPath", "/api/sales-videos/projects/91001/product-proof/91004/91005")
+          .containsEntry("sha256", "abc")
+          .containsEntry("captionCueIndex", 0)
+          .containsEntry("minimumSeconds", 4.0);
+      assertThatThrownBy(() -> reader.sequence(91001L, java.util.List.of(shot, shot), "A | B"))
+          .hasMessageContaining("ordem");
+      when(repository.read(91004L, 91005L)).thenReturn(new byte[] {1, 2});
+      assertThat(reader.read(91001L, 91004L, 91005L)).containsExactly(1, 2);
+      project.setExperimentId(91999L);
+      assertThatThrownBy(() -> reader.sequence(91001L, java.util.List.of(shot), "A"))
+          .hasMessageContaining("mesma versão");
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.set(
+          new com.marketinghub.salesvideo.tenant.TenantContext("other", "fixture", false));
+      assertThatThrownBy(() -> reader.read(91001L, 91004L, 91005L))
+          .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    } finally {
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
+    }
+  }
+
   /** Preserva projetos sem prova interna sem procurar uma captura por semelhança ou por título. */
   @Test
   void doesNotInventProofForLegacyProject() {

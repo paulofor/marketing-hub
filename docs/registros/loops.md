@@ -9958,3 +9958,16 @@ imagem sem escopo do artefato. Prevenção: correctionScope tipado, validação 
 e regressão de vídeo/imagem/misto/legado em CreativeProductionReadinessProviderTest.
 Não reescrever resultados já emitidos. Matriz, montagem e limites em
 `docs/homologacao/video-customer-quality-v1.md`.
+
+
+## LOOP-RECUPERACAO-LOCUCAO-REJEITA-REUSED — 2026-10-11
+
+- Evidência: a nova montagem de Mira recusou 21274, cuja voz já recuperava 21272,
+  com 409 antes de criar tarefa. Os cinco áudios e hashes permaneciam persistidos.
+- Causa: o backend só lia recibo COMPLETED com upload; o worker emitia corretamente
+  REUSED, custo incremental zero e referências aos mesmos assets. Recuperar uma
+  segunda vez era um caminho ausente no contrato do consumidor.
+- Prevenção: validar REUSED contra preservedNarration, mantendo custo original,
+  tenant e identidade; ausência de auditoria bloqueia em vez de autorizar síntese.
+  Regressões de três recuperações em dois produtos, sucesso/falha e recibos inválidos.
+- Evidências, alternativas e limites: `docs/homologacao/video-customer-quality-v1.md`.

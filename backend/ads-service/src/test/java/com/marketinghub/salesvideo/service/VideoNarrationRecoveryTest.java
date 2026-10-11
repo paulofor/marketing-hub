@@ -72,6 +72,134 @@ class VideoNarrationRecoveryTest {
         .isInstanceOf(ResponseStatusException.class);
   }
 
+  /** Reaproveita repetidamente a mesma fala em dois produtos, com sucesso ou falha de montagem. */
+  @ParameterizedTest
+  @ValueSource(longs = {21267, 94167})
+  void restoresRepeatedRecoveryWithoutLosingOriginalCost(long id) throws Exception {
+    for (boolean failed : new boolean[] {false, true}) {
+      var f = recoveredFixture(id, failed);
+      for (int attempt = 0; attempt < 3; attempt++) {
+        var result =
+            mapper.valueToTree(
+                VideoNarrationRecovery.prepare(
+                    f.source(), f.previous(), f.request(), mapper, f.assets()));
+        assertThat(result.at("/preservedNarration/segments")).hasSize(5);
+        assertThat(result.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
+        assertThat(result.at("/preservedNarration/segments/0/assetId").asLong()).isEqualTo(id + 10);
+        assertThat(
+                result.at("/preservedNarration/segments/0/sourcePricing/known_cost_usd").isNull())
+            .isTrue();
+        recordReusedResult(f, result.path("preservedNarration"), failed);
+      }
+    }
+  }
+
+  /** Uma recuperação repetida recusa recibos sem vínculo, conteúdo ou custo íntegros. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "source",
+        "tenant",
+        "copy",
+        "new-tts",
+        "asset",
+        "hash",
+        "index",
+        "text",
+        "duration",
+        "cost",
+        "missing-audit",
+        "model"
+      })
+  void rejectsUnprovenRepeatedRecovery(String scenario) throws Exception {
+    var f = recoveredFixture(94167, false);
+    var metadata = (ObjectNode) mapper.readTree(f.previous().getMetadataJson());
+    var contract = (ObjectNode) metadata.path("preservedNarration");
+    var segment = (ObjectNode) contract.path("segments").get(0);
+    var receipt = (ObjectNode) metadata.path("tts_interactions").get(0);
+    switch (scenario) {
+      case "source" -> receipt.put("source_job_id", 1);
+      case "tenant" -> contract.put("tenantId", "other");
+      case "copy" -> contract.put("captionText", "Outra copy");
+      case "new-tts" -> contract.put("newTtsAuthorized", true);
+      case "asset" -> receipt.put("source_asset_id", 1);
+      case "hash" -> receipt.put("source_sha256", "f".repeat(64));
+      case "index" -> receipt.put("segment_index", 2);
+      case "text" -> segment.put("text", "Outro texto");
+      case "duration" -> receipt.put("output_duration_seconds", 1);
+      case "cost" -> receipt.put("incremental_cost_usd", 1);
+      case "missing-audit" -> metadata.remove("tts_interactions");
+      case "model" -> receipt.put("model", "other");
+    }
+    f.previous().setMetadataJson(metadata.toString());
+    assertThatThrownBy(
+            () ->
+                VideoNarrationRecovery.prepare(
+                    f.source(), f.previous(), f.request(), mapper, f.assets()))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("409");
+  }
+
+  /** Cria o contrato e o recibo de uma fala já recuperada, como o executor publicado. */
+  private Fixture recoveredFixture(long id, boolean failed) throws Exception {
+    var f = fixture(id, mapper);
+    var first =
+        mapper.valueToTree(
+            VideoNarrationRecovery.prepare(
+                f.source(), f.previous(), f.request(), mapper, f.assets()));
+    recordReusedResult(f, first.path("preservedNarration"), failed);
+    return f;
+  }
+
+  /**
+   * Simula o recibo REUSED sem novo upload nem request externo, inclusive após falha da montagem.
+   */
+  private void recordReusedResult(
+      Fixture f, com.fasterxml.jackson.databind.JsonNode contract, boolean failed)
+      throws Exception {
+    var metadata = mapper.createObjectNode();
+    metadata.put("captionText", f.request().getCaptionText());
+    metadata.put("voiceOverScript", f.request().getVoiceOverScript());
+    metadata.set("preservedNarration", contract.deepCopy());
+    f.previous().setId(f.previous().getId() + 1);
+    var audit = mapper.createObjectNode();
+    var interactions = audit.putArray("tts_interactions");
+    for (var segment : contract.path("segments")) {
+      var interaction = interactions.addObject();
+      interaction
+          .put("interaction_type", "TEXT_TO_SPEECH_REUSE")
+          .put("provider", "OPENAI")
+          .put("status", "REUSED")
+          .put("job_id", f.previous().getId())
+          .put("source_job_id", contract.path("sourceJobId").asLong())
+          .put("source_asset_id", segment.path("assetId").asLong())
+          .put("source_sha256", segment.path("sha256").asText())
+          .put("segment_index", segment.path("segmentIndex").asInt())
+          .put("model", segment.path("model").asText())
+          .put("output_duration_seconds", segment.path("durationSeconds").asDouble())
+          .put("incremental_cost_usd", 0);
+      interaction.set("source_pricing", segment.path("sourcePricing").deepCopy());
+    }
+    f.previous().getEvents().clear();
+    if (failed) {
+      f.previous().setStatus(SalesVideoStatus.VIDEO_FAILED);
+      f.previous().setFailureCode("PDE_PROOF_CAPTION_TIMING_INVALID");
+      f.previous()
+          .getEvents()
+          .add(
+              SalesVideoJobEvent.builder()
+                  .id(f.previous().getId() + 1)
+                  .job(f.previous())
+                  .detailsJson(audit.toString())
+                  .build());
+    } else {
+      f.previous().setStatus(SalesVideoStatus.VIDEO_READY);
+      f.previous().setFailureCode(null);
+      metadata.setAll(audit);
+    }
+    f.previous().setMetadataJson(metadata.toString());
+  }
+
   /** Nova copy exige confirmação; o texto idêntico continua recuperando a voz sem nova síntese. */
   @Test
   void separatesConfirmedNarrationRevisionFromRecovery() throws Exception {

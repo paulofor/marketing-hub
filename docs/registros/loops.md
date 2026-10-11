@@ -9908,3 +9908,21 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   despacho único, callback/retorno, pausa/retomada durante a espera e dez barreiras de autoridade.
   Ver `docs/homologacao/video-customer-quality-v1.md`. Relacionado ao
   `LOOP-CICLO-PROCESSO-CONCLUIDO-SEM-PASSAGEM`, com causa distinta no retorno hierárquico.
+
+## LOOP-APROVACAO-VIDEO-REJEITA-PROVA-DO-CICLO — 11/10/2026
+
+- Evidência: após a retomada #55, Psique #723 recebeu HTTP 409 em `visual-inputs` antes da
+  inferência. Mira #9 estava `OPEN`/`VIDEO_APPROVAL`, com versão v3 e prova #654 preservadas.
+  O backend registrava `Ciclo privado não aberto`; o histórico #655 havia lido a mesma imagem
+  antes da passagem audiovisual. Capella #12 também ocupa `VIDEO_APPROVAL`.
+- Causa: `IrisLearningCycleContext` só reconhecia `ADJUSTMENT`/`VALIDATION`, embora as quatro
+  etapas audiovisuais canônicas pertençam à preparação entre essas duas fases. O consumidor
+  validava corretamente a origem, mas o produtor negava o contexto vigente pelo nome da etapa.
+- Correção: reconhecer `LearningCycleRules.VIDEO_STAGES` no ciclo aberto, mantendo todas as
+  verificações atuais de identidade, gate, tarefas, hashes e limites privados.
+- Harness: produtor e leitor reais, com banco/storage locais substituídos, reproduzem HTTP 409
+  para Mira e outro produto antes da correção. Regressões verificam os quatro estados, caminho
+  antes válido, ciclo encerrado, fases comerciais e provas substituídas. Não há exceção por ID.
+- Limites: ler prova não cria aprovação, autorização de gasto, publicação ou nova hipótese;
+  não regride a etapa nem altera pareceres históricos. A revisão dos MP4s e seleção humana
+  continuam próprias. Evidências e validação em `docs/homologacao/video-customer-quality-v1.md`.

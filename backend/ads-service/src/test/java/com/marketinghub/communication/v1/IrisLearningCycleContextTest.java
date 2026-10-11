@@ -1,13 +1,20 @@
 package com.marketinghub.communication.v1;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agent.Agent;
+import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
+import com.marketinghub.agenttask.AgentTaskVisualEvidence;
+import com.marketinghub.agenttask.AgentTaskVisualEvidenceService;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
+import com.marketinghub.agenttask.CreativeVisualEvidenceService;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
@@ -19,6 +26,7 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskVisualEvidenceRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -35,6 +43,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -65,22 +74,32 @@ class IrisLearningCycleContextTest {
   /** Prepara contexto sintético com três contratos privados e cinco provas imutáveis aprovadas. */
   @BeforeEach
   void fixture() throws Exception {
-    cycle.setId(91002L);
-    cycle.setProductId(91004L);
-    cycle.setExperimentId(91092L);
-    cycle.setChainDefinitionId(91014L);
+    fixture(91004L, 91002L, 91092L, 91014L);
+  }
+
+  /** Monta a mesma passagem para identidades distintas sem depender do produto real. */
+  private void fixture(long productId, long cycleId, long experimentId, long chainId)
+      throws Exception {
+    String source = "experiment:" + experimentId;
+    history.clear();
+    proof.removeAll();
+    pde.removeAll();
+    cycle.setId(cycleId);
+    cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    cycle.setChainDefinitionId(chainId);
     cycle.setProductVersion(VERSION);
     cycle.setStatus("OPEN");
     cycle.setStage("ADJUSTMENT");
     var product =
         Product.builder()
-            .id(91004L)
+            .id(productId)
             .name("PDE sintético")
             .internalName("Vega QA")
             .slug("vega-qa")
             .build();
     var experiment = new Experiment();
-    experiment.setId(91092L);
+    experiment.setId(experimentId);
     experiment.setProduct(product);
     experiment.setStatus(ExperimentStatus.PLANNED);
     var process = new BusinessProcessDefinition();
@@ -99,9 +118,9 @@ class IrisLearningCycleContextTest {
     gate.setStatus("COMPLETED");
     gate.setObjectiveAchieved(true);
     pde.putObject("lineage")
-        .put("learningCycleId", 91002L)
-        .put("productId", 91004L)
-        .put("experimentId", 91092L)
+        .put("learningCycleId", cycleId)
+        .put("productId", productId)
+        .put("experimentId", experimentId)
         .put("strategyTaskId", 359L)
         .put("economicsTaskId", 361L)
         .put("architectureTaskId", 362L);
@@ -118,9 +137,9 @@ class IrisLearningCycleContextTest {
         .put("limitation", "Amostra pequena sem causa comprovada.");
     var target =
         new AgentTaskTargetResponse(
-            SOURCE,
-            91092L,
-            91004L,
+            source,
+            experimentId,
+            productId,
             "vega-qa",
             "PDE sintético",
             "Vega QA",
@@ -133,9 +152,9 @@ class IrisLearningCycleContextTest {
             pde);
     proof
         .put("evidenceType", "PDE_AGENT_VALIDATION_GATE_V1")
-        .put("productId", 91004L)
+        .put("productId", productId)
         .put("productSlug", "vega-qa")
-        .put("sourceReference", SOURCE)
+        .put("sourceReference", source)
         .put("prototypeVersion", VERSION)
         .put("publicUrl", target.publicUrl())
         .put("trafficClass", "AGENT_VALIDATION")
@@ -175,21 +194,161 @@ class IrisLearningCycleContextTest {
     history.add(
         new PdeValidationTaskSnapshot(
             394L, 70L, "prototypeCorrection", "COMPLETED", null, null, "{}", null));
-    when(cycles.findByExperimentId(91092L)).thenReturn(Optional.of(cycle));
-    when(experiments.findById(91092L)).thenReturn(Optional.of(experiment));
-    when(chains.findById(91014L)).thenReturn(Optional.of(chain));
-    when(construction.resolve(SOURCE, experiment, "pde-construction-approval"))
+    when(cycles.findByExperimentId(experimentId)).thenReturn(Optional.of(cycle));
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(chains.findById(chainId)).thenReturn(Optional.of(chain));
+    when(construction.resolve(source, experiment, "pde-construction-approval"))
         .thenReturn(Optional.of(target));
     when(instances
             .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
-                70L, SOURCE))
+                70L, source))
         .thenAnswer(
             ignored -> {
               gate.setObjectiveEvidenceJson(proof.toString());
               return List.of(gate);
             });
-    when(tasks.findPdeValidationTaskSnapshots(SOURCE, "pde-construction-approval"))
+    when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
         .thenReturn(history);
+  }
+
+  /** Preserva leitura de provas nas etapas audiovisuais sem conceder autorização comercial. */
+  @ParameterizedTest
+  @ValueSource(strings = {"VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "VIDEO_APPROVAL"})
+  void exposesCurrentProofThroughoutPrivateVideoPreparation(String stage) {
+    cycle.setStage(stage);
+    var result = provider.resolve(SOURCE).orElseThrow();
+    assertThat(result.get("inputReadiness")).isEqualTo("READY");
+    assertThat(result.get("publicationAuthorized")).isEqualTo(false);
+    assertThat(result.get("externalMediaSpendAuthorized")).isEqualTo(false);
+    assertThat(result.get("paymentEnabled")).isEqualTo(false);
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+  }
+
+  /** Reproduz produtor de contexto e leitura real dos pixels antes e depois da etapa de vídeo. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102,26", "91004,91002,91092,91014"})
+  void servesSameApprovedCreativeToVideoReviewerAcrossStageTransition(
+      long productId, long cycleId, long experimentId, long chainId) throws Exception {
+    fixture(productId, cycleId, experimentId, chainId);
+    String source = "experiment:" + experimentId;
+    String technical =
+        json.writeValueAsString(
+            Map.of(
+                "decision",
+                "APPROVED",
+                "prototypeVersion",
+                VERSION,
+                "sourceReference",
+                source,
+                "artifacts",
+                List.of(Map.of("artifactId", 910118L, "sha256", "a".repeat(64)))));
+    history.set(
+        0,
+        new PdeValidationTaskSnapshot(
+            395L, 70L, "technicalHomologation", "COMPLETED", null, null, technical, null));
+    ((ObjectNode) proof.path("taskEvidence").get(0)).put("resultSha256", fixtureHash(technical));
+    var process = new BusinessProcessDefinition();
+    process.setId(121L);
+    process.setProcessCode("creative-production-approval");
+    var review = new AgentTask();
+    review.setId(723L);
+    review.setProcessDefinition(process);
+    review.setSourceReference(source);
+    review.setProcessActivityId("customer");
+    review.setStatus("IN_PROGRESS");
+    review.setAssignedAgent(Agent.builder().agentKey("customer-agent").build());
+    when(tasks.findById(723L)).thenReturn(Optional.of(review));
+    String rendered =
+        json.writeValueAsString(
+            Map.of(
+                "sourceReference",
+                source,
+                "functionalOutput",
+                Map.of(
+                    "staticAssets",
+                    List.of(Map.of()),
+                    "renderedAssets",
+                    List.of(
+                        Map.of(
+                            "artifactId",
+                            569L,
+                            "sha256",
+                            "b".repeat(64),
+                            "sourceTaskId",
+                            395L,
+                            "sourceArtifactId",
+                            910118L,
+                            "sourceSha256",
+                            "a".repeat(64),
+                            "prototypeVersion",
+                            VERSION,
+                            "templateVersion",
+                            "PROOF_CARD_V1",
+                            "crop",
+                            Map.of("x", 0, "y", 0, "width", 800, "height", 500))))));
+    when(tasks.findFunctionalSnapshotsByProcessSince(121L, source, null))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    654L,
+                    121L,
+                    "creative-production-approval",
+                    "nonAudiovisual",
+                    "communication-director",
+                    "COMPLETED",
+                    null,
+                    null,
+                    rendered)));
+    var images = mock(AgentTaskVisualEvidenceRepository.class);
+    when(images.findByIdAndTaskId(910118L, 395L))
+        .thenReturn(Optional.of(image(395L, 910118L, "FULL_PAGE", "a".repeat(64))));
+    when(images.findByIdAndTaskId(569L, 654L))
+        .thenReturn(Optional.of(image(654L, 569L, "CREATIVE_RENDER", "b".repeat(64))));
+    var storage = mock(AgentTaskVisualEvidenceService.class);
+    var bytes = new byte[] {1, 2, 3};
+    when(storage.read(654L, 569L))
+        .thenReturn(new AgentTaskVisualEvidenceService.EvidenceContent("image/png", bytes));
+    var reader = new CreativeVisualEvidenceService(tasks, images, storage, provider::resolve, json);
+    var before = reader.inputs("customer-agent", 723L);
+    cycle.setStage("VIDEO_APPROVAL");
+    assertThat(reader.inputs("customer-agent", 723L)).isEqualTo(before);
+    assertThat(reader.read("customer-agent", 723L, 654L, 569L).bytes()).isEqualTo(bytes);
+    assertThat(cycle.getStage()).isEqualTo("VIDEO_APPROVAL");
+    cycle.setStatus("CLOSED");
+    assertThatThrownBy(() -> reader.inputs("customer-agent", 723L))
+        .hasMessageContaining("aprovação dos predecessores");
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+  }
+
+  /** Mantém autoria e hash da imagem em um armazenamento substituto local. */
+  private AgentTaskVisualEvidence image(long taskId, long id, String type, String hash) {
+    var owner = new AgentTask();
+    owner.setId(taskId);
+    var image = new AgentTaskVisualEvidence();
+    image.setTask(owner);
+    image.setId(id);
+    image.setEvidenceType(type);
+    image.setSha256(hash);
+    return image;
+  }
+
+  /** Não reabre leitura de preparação privada nas fases comerciais ou fora do ciclo vigente. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "LEARNING",
+        "PLANNING",
+        "AUTHORIZATION",
+        "PUBLICATION",
+        "MEASUREMENT",
+        "DECISION",
+        "SCALE_AUTHORIZATION"
+      })
+  void rejectsNonPreparationStage(String stage) {
+    cycle.setStage(stage);
+    assertThat(provider.resolve(SOURCE).orElseThrow().get("inputReadiness")).isEqualTo("BLOCKED");
   }
 
   /** Preserva a geração econômica vigente na projeção entregue a Íris. */
@@ -262,7 +421,7 @@ class IrisLearningCycleContextTest {
     String result =
         "{\"contractVersion\":\"IRIS_COMMUNICATION_V1\",\"sourceReference\":\"" + SOURCE + "\"}";
     var contract =
-        new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        new AgentTaskFunctionalSnapshot(
             402L,
             63L,
             "pde-communication-sales-journey",
@@ -273,7 +432,7 @@ class IrisLearningCycleContextTest {
             now,
             result);
     var superseded =
-        new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        new AgentTaskFunctionalSnapshot(
             403L,
             64L,
             "creative-production-approval",
@@ -284,7 +443,7 @@ class IrisLearningCycleContextTest {
             now,
             result);
     var blocked =
-        new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        new AgentTaskFunctionalSnapshot(
             404L,
             64L,
             "creative-production-approval",
@@ -308,7 +467,9 @@ class IrisLearningCycleContextTest {
     verify(tasks, never()).findBySourceReferenceOrderByCreatedAtAscIdAsc(anyString());
   }
 
-  /** Rejeita identidades divergentes e qualquer autorização comercial indevida na prova. */
+  /**
+   * Rejeita identidades divergentes e autorização comercial indevida também na revisão de vídeo.
+   */
   @ParameterizedTest
   @ValueSource(
       strings = {
@@ -321,15 +482,17 @@ class IrisLearningCycleContextTest {
         "humanEvidenceClaimed"
       })
   void rejectsChangedGateIdentityOrBoundary(String field) {
+    cycle.setStage("VIDEO_APPROVAL");
     if (field.endsWith("Authorized") || field.endsWith("Claimed")) proof.put(field, true);
     else proof.put(field, "divergente");
     assertThat(provider.resolve(SOURCE).orElseThrow().get("availability")).isEqualTo("MISSING");
   }
 
-  /** Nenhuma tentativa posterior, alteração de conteúdo ou novo planejamento reutiliza o gate. */
+  /** Nem a revisão audiovisual reutiliza gate após nova tentativa, conteúdo ou planejamento. */
   @ParameterizedTest
   @ValueSource(strings = {"pending", "blocked", "changedResult", "correction", "strategy", "gate"})
   void rejectsSupersededEvidence(String change) {
+    cycle.setStage("VIDEO_APPROVAL");
     switch (change) {
       case "pending", "blocked" ->
           history.add(

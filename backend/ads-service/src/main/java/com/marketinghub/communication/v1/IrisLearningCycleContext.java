@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleConstructionContext;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -85,11 +86,15 @@ public class IrisLearningCycleContext {
     }
   }
 
-  /** Consolida estratégia, economia e gate, preservando a resolução auditável de provas. */
+  /**
+   * Conserva estratégia, economia e gate durante toda a preparação privada, incluindo a revisão
+   * audiovisual da mesma versão antes da autorização comercial.
+   */
   private Map<String, Object> context(String reference, LearningSalesCycle cycle) throws Exception {
     require(
         "OPEN".equals(cycle.getStatus())
-            && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage()),
+            && (Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+                || LearningCycleRules.VIDEO_STAGES.contains(cycle.getStage())),
         "Ciclo privado não aberto.");
     var experiment = experiments.findById(cycle.getExperimentId()).orElseThrow();
     var target = construction.resolve(reference, experiment, CONSTRUCTION).orElseThrow();

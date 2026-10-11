@@ -133,3 +133,28 @@ A alteração não autoriza gasto novo nem substitui revisão independente ou se
 Resultado local desta passagem: 222 testes de processo, persistência, fila, revisão audiovisual
 e recuperação passaram, sem falhas ou skips. Incluem os dois casos que falhavam antes com
 `WAITING_PARENT`. A revisão real de Mira e os workflows de publicação ficam vinculados ao PR.
+
+### Leitura de provas durante a aprovação audiovisual
+
+A retomada criou a tarefa #723, mas o leitor de imagens recebeu HTTP 409 antes de executar
+o modelo. O banco mantinha Mira #9 aberta em `VIDEO_APPROVAL`; o log de
+`IrisLearningCycleContext` registrou `Ciclo privado não aberto`. O contexto aceito por #654
+estava `READY` na preparação anterior. A imagem e sua versão não haviam sido substituídas.
+
+Foram comparados regredir a etapa do ciclo, usar apenas o contexto histórico congelado ou
+reconhecer as etapas audiovisuais já definidas entre ajuste e homologação. A terceira opção
+preserva o estado real e confere novamente produto, versão, gate e hashes atuais; não ignora
+uma prova substituída nem renova autorização financeira ou comercial.
+
+A matriz adicional liga o produtor real do contexto ao serviço real de leitura dos pixels,
+com persistência e armazenamento substituídos localmente: mesma prova antes/depois da
+transição, identidades de Mira e outro produto, quatro etapas audiovisuais e recusa de ciclo
+encerrado, fases comerciais, versão/gate divergentes, tarefa posterior ou resultado alterado.
+Antes da correção, os quatro estados falhavam e as duas leituras integradas retornavam o
+mesmo HTTP 409 observado. Não houve chamada de IA na tentativa operacional bloqueada.
+
+Validação desta correção: 597 testes declarados, 594 executados sem falhas; três harnesses
+opcionais de replay/captura não habilitados nesta rodada já haviam sido executados nas
+validações anteriores dos vídeos. A nova passagem produtor → leitor foi executada nos dois
+contextos, sem skips. Inclui 92 regras de arquitetura. A atestação sucessora v20 preserva
+a experiência privada v3 e atualiza somente a compatibilidade dessa leitura.

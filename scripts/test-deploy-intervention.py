@@ -232,6 +232,117 @@ class LocalCoordinationTest(unittest.TestCase):
         self.assertEqual(self.store.load()["phase"], "ACTIVE")
         self.assertFalse(any(path.endswith("/enable") for _, path in self.github.calls))
 
+    def prepared_revalidation(self):
+        """Prepara uma homologação encerrada e o contrato do seu PR integrado por squash."""
+        state = self.begin()
+        self.coordinator.prepare_resume(state["id"], INTEGRATED, "homologação original")
+        pull = {"merged": True, "head": {"sha": INTEGRATED},
+                "base": {"ref": "main", "repo": {"full_name": module.REPOSITORY}},
+                "merge_commit_sha": "e" * 40}
+        return state, pull
+
+    def revalidation_api(self, pull, main_reads=None):
+        """Simula a main revalidada sem presumir equivalência com a árvore original."""
+        original = self.github.api
+        reads = iter(main_reads or ["c" * 40, "c" * 40])
+
+        def api(path, method="GET"):
+            if path == "pulls/731":
+                return copy.deepcopy(pull)
+            if path == "git/ref/heads/main":
+                return {"object": {"sha": next(reads)}}
+            return original(path, method)
+        return api
+
+    def test_revalidation_preserves_original_evidence_and_never_releases_publishers(self):
+        state, pull = self.prepared_revalidation()
+        with patch.object(self.github, "api", side_effect=self.revalidation_api(pull)):
+            result = self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "main completa testada")
+        self.assertEqual(result["phase"], "AWAITING_MERGE")
+        self.assertEqual(result["automatic_resume"]["validated_commit"], "c" * 40)
+        self.assertEqual(result["automatic_resume"]["original_validated_commit"], INTEGRATED)
+        self.assertEqual(result["automatic_resume"]["integrated_pr"], 731)
+        self.assertEqual(result["validation_history"][0]["validated_commit"], INTEGRATED)
+        self.assertEqual(result["validation_history"][0]["evidence"], "homologação original")
+        self.assertFalse(any(path.endswith("/enable") for _, path in self.github.calls))
+        with self.assertRaises(module.CoordinationError):
+            self.coordinator.check(state["id"])
+
+    def test_revalidation_rejects_unmerged_or_unrelated_pull_without_changing_state(self):
+        state, accepted = self.prepared_revalidation()
+        variants = [dict(accepted, merged=False), dict(accepted, head={"sha": "f" * 40}),
+                    dict(accepted, base={"ref": "feature", "repo": {"full_name": module.REPOSITORY}}),
+                    dict(accepted, base={"ref": "main", "repo": {"full_name": "other/repository"}}),
+                    dict(accepted, merge_commit_sha="abc"), None]
+        before = self.store.load()
+        for pull in variants:
+            with self.subTest(pull=pull), patch.object(self.github, "api", side_effect=self.revalidation_api(pull)):
+                with self.assertRaises(module.CoordinationError):
+                    self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+            self.assertEqual(self.store.load(), before)
+
+    def test_revalidation_rejects_stale_or_concurrently_changed_main(self):
+        state, pull = self.prepared_revalidation()
+        before = self.store.load()
+        for reads in [["f" * 40], ["c" * 40, "f" * 40]]:
+            with self.subTest(reads=reads), patch.object(self.github, "api", side_effect=self.revalidation_api(pull, reads)):
+                with self.assertRaises(module.CoordinationError):
+                    self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+            self.assertEqual(self.store.load(), before)
+
+    def test_revalidation_rejects_missing_lineage_and_active_publishers(self):
+        state, pull = self.prepared_revalidation()
+        before = self.store.load()
+        self.github.integrated = False
+        with patch.object(self.github, "api", side_effect=self.revalidation_api(pull)):
+            with self.assertRaises(module.CoordinationError):
+                self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+        self.assertEqual(self.store.load(), before)
+        self.github.integrated = True
+        self.github.workflows["deploy-containers.yml"]["state"] = "active"
+        with self.assertRaises(module.CoordinationError):
+            self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+        self.assertEqual(self.store.load(), before)
+
+    def test_revalidation_does_not_authorize_old_unprepared_intervention(self):
+        state = self.begin()
+        with self.assertRaises(module.CoordinationError):
+            self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+        self.assertNotIn("automatic_resume", self.store.load())
+
+    def test_revalidation_rejects_invalid_tree_and_api_failure(self):
+        state, pull = self.prepared_revalidation()
+        before = self.store.load()
+        for response in [None, {"sha": "c" * 40, "commit": {"tree": {"sha": "invalid"}}},
+                         {"sha": "f" * 40, "commit": {"tree": {"sha": "d" * 40}}}]:
+            original = self.revalidation_api(pull)
+
+            def api(path, method="GET"):
+                return response if path == "commits/" + "c" * 40 else original(path, method)
+            with self.subTest(response=response), patch.object(self.github, "api", side_effect=api):
+                with self.assertRaises(module.CoordinationError):
+                    self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+            self.assertEqual(self.store.load(), before)
+        self.github.fail = lambda *_: True
+        with self.assertRaises(module.CoordinationError):
+            self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+        self.assertEqual(self.store.load(), before)
+
+    def test_revalidation_rejects_pending_execution(self):
+        state, _ = self.prepared_revalidation()
+        before = self.store.load()
+        workflow_id = self.github.workflows["deploy-containers.yml"]["id"]
+        self.github.runs[workflow_id] = [{"id": 913, "status": "pending", "head_sha": SHA}]
+        with self.assertRaises(module.CoordinationError):
+            self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "nova prova")
+        self.assertEqual(self.store.load(), before)
+
+    def test_revalidation_rejects_incomplete_attestation(self):
+        state, _ = self.prepared_revalidation()
+        for commit, pull, evidence in [("main", 731, "prova"), ("c" * 40, 0, "prova"), ("c" * 40, 731, " ")]:
+            with self.subTest(commit=commit, pull=pull, evidence=evidence), self.assertRaises(module.CoordinationError):
+                self.coordinator.revalidate_resume(state["id"], commit, pull, evidence)
+
     def test_api_error_on_check_is_never_safe(self):
         state = self.begin()
         self.github.fail = lambda *_: True

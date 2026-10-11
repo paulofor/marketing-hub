@@ -32,22 +32,31 @@ public final class VideoNarrationRecovery {
   /** Impede instanciação do validador sem estado. */
   private VideoNarrationRecovery() {}
 
-  /** Recupera somente a última finalização temporal falha da mesma fonte e tenant. */
+  /**
+   * Recupera a voz da finalização anterior; o service exige rejeição antes de substituir sucesso.
+   */
   public static Map<String, Object> prepare(
       SalesVideoJob source,
       SalesVideoJob previous,
       RequestSalesVideoPostProductionRequest request,
       ObjectMapper mapper,
       AssetRepository assets) {
-    if (previous == null
-        || previous.getStatus() != SalesVideoStatus.VIDEO_FAILED
-        || !"APOLLO_NARRATION_DURATION_EXCEEDED".equals(previous.getFailureCode())) return Map.of();
+    if (previous == null) return Map.of();
+    boolean completedFinalization =
+        previous.getStatus() == SalesVideoStatus.VIDEO_READY
+            && previous.getJobType()
+                == com.marketinghub.salesvideo.SalesVideoJobType.POST_PRODUCTION;
+    boolean durationFailure =
+        previous.getStatus() == SalesVideoStatus.VIDEO_FAILED
+            && "APOLLO_NARRATION_DURATION_EXCEEDED".equals(previous.getFailureCode());
+    if (!completedFinalization && !durationFailure) return Map.of();
     require(
         Objects.equals(source.getTenantId(), previous.getTenantId())
             && previous.getRetryOfJob() != null
             && Objects.equals(previous.getRetryOfJob().getId(), source.getId()),
         "A voz pertence a outra fonte.");
     JsonNode prior = read(mapper, previous.getMetadataJson(), previous.getId());
+    if (completedFinalization && prior.path("tts_interactions").isMissingNode()) return Map.of();
     require(
         Objects.equals(prior.path("captionText").asText(), request.getCaptionText())
             && Objects.equals(prior.path("voiceOverScript").asText(), request.getVoiceOverScript()),
@@ -61,19 +70,21 @@ public final class VideoNarrationRecovery {
             .filter(text -> !text.isBlank())
             .toList();
     JsonNode audit =
-        previous.getEvents().stream()
-            .filter(
-                event ->
-                    event.getDetailsJson() != null
-                        && event.getDetailsJson().contains("persisted_audit_assets"))
-            .sorted(
-                Comparator.comparing(
-                        (com.marketinghub.salesvideo.SalesVideoJobEvent event) -> event.getId(),
-                        Comparator.nullsFirst(Comparator.naturalOrder()))
-                    .reversed())
-            .map(event -> read(mapper, event.getDetailsJson(), previous.getId()))
-            .findFirst()
-            .orElseThrow(() -> conflict("Os áudios preservados não possuem recibo íntegro."));
+        completedFinalization
+            ? prior
+            : previous.getEvents().stream()
+                .filter(
+                    event ->
+                        event.getDetailsJson() != null
+                            && event.getDetailsJson().contains("persisted_audit_assets"))
+                .sorted(
+                    Comparator.comparing(
+                            (com.marketinghub.salesvideo.SalesVideoJobEvent event) -> event.getId(),
+                            Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .reversed())
+                .map(event -> read(mapper, event.getDetailsJson(), previous.getId()))
+                .findFirst()
+                .orElseThrow(() -> conflict("Os áudios preservados não possuem recibo íntegro."));
     JsonNode interactions = audit.path("tts_interactions");
     require(
         interactions.isArray() && interactions.size() == texts.size(),

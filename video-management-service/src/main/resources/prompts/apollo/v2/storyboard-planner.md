@@ -38,3 +38,9 @@ ser um recorte legível e íntegro no momento de PROVA, preservando movimento no
 Não confunda reprodução, áudio presente ou aprovação financeira com parecer de Psique: ela deve
 inspecionar frames temporais do MP4 final, texto e legibilidade mobile. Frames não comprovam
 naturalidade da voz; declare essa modalidade ausente quando não houver audição.
+
+A prova real deve aparecer junto da frase que apresenta o exemplo. Na locução aprovada,
+identifique uma única referência explícita a exemplo, amostra, demonstração ou prova;
+não desloque essa explicação para um CTA ou para depois do encerramento. O finalizador
+usará o relógio real dessa fala, com seis segundos de leitura e dois de encerramento.
+O storyboard não pode transformar um instante estimado em prova de sincronização.

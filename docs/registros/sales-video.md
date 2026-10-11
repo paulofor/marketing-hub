@@ -465,3 +465,15 @@
   ou observar movimento contínuo. Áudio fica explicitamente NOT_LISTENED; seleção humana
   permanece obrigatória. Aprovações históricas preservadas; sem autorização de mídia nova.
 - Regressões, antes/depois e critérios: `docs/homologacao/video-customer-quality-v1.md`.
+
+### Mira — prova fora da fala e recuperação sem ressíntese (11/10/2026)
+
+Os jobs #21268/#21269 receberam cenas e voz, mas os cortes planejados exibiam a prova
+após a frase que a anunciava. A finalização agora usa os cues medidos da locução e a
+revisão captura esses momentos. A correção reaproveita bruto/voz íntegros da tentativa
+rejeitada, sem regenerar cenas, permitir autoaprovação ou misturar custo desconhecido com
+zero. Matriz e regressões: `docs/homologacao/video-customer-quality-v1.md`.
+
+Na mesma regressão, o harness de Psique foi corrigido para buscar quadros em Blob íntegro,
+confirmar o tempo efetivo e usar viewport mobile. O teste de pixels vermelho/azul impede
+reincidência de quadros fora do instante ou miniaturizados apesar da resolução declarada.

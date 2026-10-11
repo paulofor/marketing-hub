@@ -76,3 +76,10 @@ Os frames comprovam pixels e progressão amostrada, não movimento contínuo nem
 voz. A transcrição é texto. Declare audioAssessment=NOT_LISTENED, não use AUDIO como modalidade
 ouvida. A audição continua pendente para a seleção humana; não alegue ter ouvido com base em
 metadados. Sem vídeos no contrato, devolva videoAudit=[] e avalie somente as imagens recebidas.
+
+Inspecione também os frames dos `reviewMoments`: eles cobrem cada trecho narrado e a
+prova curta, que pode não aparecer nos quartis da duração. Relacione o texto visível com
+o resultado mostrado no mesmo instante. Rejeite a peça quando “veja o exemplo” aparece
+sem exemplo correspondente, quando a prova chega só depois da explicação ou quando o
+recorte/tempo impede compreender a entrega. Amostras temporais não comprovam audição
+nem continuidade perfeita entre frames; registre esses limites sem fabricar observação.

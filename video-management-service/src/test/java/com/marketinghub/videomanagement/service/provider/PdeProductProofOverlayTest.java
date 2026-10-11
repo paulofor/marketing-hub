@@ -86,7 +86,7 @@ class PdeProductProofOverlayTest {
         }
     }
 
-    /** Confere prova recortada e preserva os demais planos em vídeos de 15/30 segundos. */
+    /** Confere pixels no relógio da fala e preserva o caminho legado sem locução. */
     @ParameterizedTest
     @ValueSource(ints = {15, 30})
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
@@ -109,8 +109,15 @@ class PdeProductProofOverlayTest {
                 if (duration == 30) ((ObjectNode) input.at("/post_production/product_proof"))
                         .putArray("crop").add(0).add(500).add(1179).add(1600);
                 for (var cut : input.path("cut_plan")) ((ObjectNode) cut).put("duration_seconds", duration / 5);
+                if (duration == 30) {
+                    input.put("captionText", "Organize seus produtos. | Veja o exemplo real. | Conheça a entrega.");
+                    input.putObject("technicalQualityGate").put("captionMustMatchNarration", true);
+                }
                 long started = System.nanoTime();
-                var output = new PdeProductProofOverlay(properties, WebClient.builder()).apply(source, input, 91009L);
+                var output = new PdeProductProofOverlay(properties, WebClient.builder()).apply(source, input, 91009L,
+                        java.util.List.of(new PdeProofCaptionTiming.Window(0, 5, -1),
+                                new PdeProofCaptionTiming.Window(5, 10, -1),
+                                new PdeProofCaptionTiming.Window(10, duration, -1)));
                 assertThat(java.time.Duration.ofNanos(System.nanoTime() - started).toSeconds()).isLessThan(120);
                 result = output.videoFile();
                 assertThat(output.audit()).containsEntry("status", "APPLIED").containsEntry("commercialEvidenceClaimed", false)
@@ -127,10 +134,14 @@ class PdeProductProofOverlayTest {
                 assertThat(measured.at("/format/duration").asDouble()).isBetween(duration - .1, duration + .1);
                 assertThat(samplePixel(target, duration / 15)[2] & 255).isGreaterThan(200);
                 assertThat(samplePixel(target, duration * 2 / 5)[2] & 255).isGreaterThan(200);
-                byte[] proofPixel = samplePixel(target, duration * 3 / 5 + 1);
+                byte[] proofPixel = samplePixel(target, duration == 30 ? 7 : duration * 3 / 5 + 1);
                 assertThat(proofPixel[0] & 255).isGreaterThan(230);
                 assertThat(proofPixel[1] & 255).isBetween(180, 220);
                 assertThat(samplePixel(target, duration - 1)[2] & 255).isGreaterThan(200);
+                if (duration == 30) {
+                    assertThat(samplePixel(target, 22)[2] & 255).isGreaterThan(200);
+                    assertThat(output.audit()).containsEntry("timingSource", "NARRATION_CUE_V1");
+                }
             } finally {
                 Files.deleteIfExists(source);
                 if (result != null) Files.deleteIfExists(result);

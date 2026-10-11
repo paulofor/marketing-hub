@@ -8,9 +8,11 @@ import { videoBrowserOptions } from "./learning-cycle-video-checks.mjs";
 const { chromium, devices } = createRequire(import.meta.url)("playwright-core");
 
 // Amostra abertura, progressão e encerramento, sem alegar audição ou comportamento humano real.
-export function sampleTimes(duration) {
+export function sampleTimes(duration, reviewMoments = []) {
   assert.ok(Number.isFinite(duration) && duration >= 3 && duration <= 120);
-  return [...new Set([0.1, 1, 2, duration * .25, duration * .5, duration * .75, duration - .2]
+  assert.ok(Array.isArray(reviewMoments) && reviewMoments.length <= 24);
+  assert.ok(reviewMoments.every(value => Number.isFinite(value) && value > 0 && value < duration));
+  return [...new Set([0.1, 1, 2, duration * .25, duration * .5, duration * .75, duration - .2, ...reviewMoments]
     .map(value => Math.round(value * 1000) / 1000))].sort((a, b) => a - b);
 }
 
@@ -46,14 +48,19 @@ export async function captureVideos(inputs, directory, options = videoBrowserOpt
   try {
     for (const media of inputs) {
       assert.ok(Number.isSafeInteger(media.assetId) && media.assetId > 0);
-      const times = sampleTimes(media.durationSeconds);
+      const times = sampleTimes(media.durationSeconds, media.reviewMoments);
       const bytes = await downloadVideo(media, fetcher);
       const context = await browser.newContext({ ...devices["iPhone 15 Pro"], viewport: { width: 393, height: 700 }, deviceScaleFactor: 1 });
       try {
-        await context.route("**/*", route => route.request().url() === "https://review.invalid/media.mp4"
-          ? route.fulfill({ status: 200, contentType: "video/mp4", body: bytes }) : route.abort());
+        await context.route("**/*", route => route.abort());
         const page = await context.newPage();
-        await page.setContent('<style>body{margin:0;background:#000}video{width:393px;height:700px;object-fit:contain}</style><video muted preload="auto" src="https://review.invalid/media.mp4"></video>');
+        await page.setContent('<meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#000}video{width:393px;height:700px;object-fit:contain}</style><video muted preload="auto"></video>');
+        // O Blob contém os bytes já verificados e permite seek sem simular HTTP Range parcialmente.
+        await page.locator("video").evaluate((video, encoded) => {
+          const data = Uint8Array.from(atob(encoded), value => value.charCodeAt(0));
+          video.src = URL.createObjectURL(new Blob([data], { type: "video/mp4" }));
+          video.load();
+        }, bytes.toString("base64"));
         await page.waitForFunction(() => document.querySelector("video").readyState >= 2);
         const duration = await page.locator("video").evaluate(v => v.duration);
         assert.ok(Math.abs(duration - media.durationSeconds) <= 1, "Duração divergente do contrato");
@@ -64,6 +71,8 @@ export async function captureVideos(inputs, directory, options = videoBrowserOpt
             video.currentTime = time;
           }), second);
           await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          assert.ok(Math.abs(await page.locator("video").evaluate(video => video.currentTime) - second) <= .08,
+            "O frame não corresponde ao instante solicitado");
           const evidenceKey = `video-${media.assetId}-${media.sha256}-${Math.round(second * 1000)}`;
           const localPath = path.resolve(directory, `${evidenceKey}.png`);
           await page.screenshot({ path: localPath });

@@ -442,3 +442,21 @@ Adoção: regressões do caso original, outra identidade e caminho antes válido
 comprovam comportamento. Retenção, clique qualificado, compra conciliada e contribuição só
 podem confirmar efeito comercial em experimento autorizado. Matriz:
 [qualidade audiovisual para a cliente](../homologacao/video-customer-quality-v1.md).
+
+### Prova sincronizada com a fala — 11/10/2026
+
+No contrato `captionMustMatchNarration`, a prova PDE acompanha o tempo medido do trecho
+narrado que a apresenta; o instante planejado do storyboard não substitui esse relógio.
+A copy deve ter uma única referência explícita ao exemplo, amostra, demonstração ou prova.
+Esses aliases em português são aceitos pelo vínculo determinístico; outra redação exige
+`post_production.product_proof.captionCueIndex` explícito, índice base zero. Ausência ou
+ambiguidade bloqueiam antes da voz; insuficiência temporal comprovada após a medição
+preserva os áudios para correção, sem nova síntese automática. Manter ao menos seis
+segundos de prova legível e dois segundos de encerramento, sem alterar pixels, fontes ou
+limites. Identificar a prova com dados de teste durante sua exibição.
+
+Psique recebe também os instantes medidos da fala e da prova no MP4 final. Capturas fixas
+por quartil não bastam quando omitem esses momentos. Correção visual da mesma fonte
+rejeitada deve recuperar a narração auditada e manter seu custo anterior; mudança de copy,
+identidade ou autorização continua sujeita ao fluxo próprio. Isso não concede aceite de
+uso nem comprova demanda ou conversão.

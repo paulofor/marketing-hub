@@ -61,3 +61,39 @@ Se a validação rejeitar uma entrada válida, preservar o job e sua auditoria, 
 com uma fixture de regressão e reproduzir localmente. Não remover o gate nem repetir inferência
 para contornar a falha. Rastrear a entrega pelo commit e pela versão do contrato.
 
+
+## Sincronização observada na produção — 11/10/2026
+
+A montagem #21268 mostrou outra causa: a frase de exemplo começava em 7,488 s, mas o
+storyboard colocava a prova em 24–27 s. No anúncio #21269 a fala começava em 7,776 s e a
+prova só entrava em 12 s. Voz/legenda estavam sincronizadas entre si, porém a prova usava
+outro relógio. Sete screenshots fixos também podiam omitir um inserto curto.
+
+Foram comparados ajustar somente os cortes do caso, sintetizar novamente a locução para
+seguir o storyboard ou sincronizar a prova pelo áudio já auditado. A última opção preserva
+custo e identidade e corrige a fonte compartilhada. A finalização passa a mostrar a prova
+no trecho explicitamente associado ao exemplo, com seis segundos para leitura e dois
+segundos reservados ao encerramento. Contrato ambíguo bloqueia, sem adivinhar associação.
+
+- Regressões incluem Mira, outro produto, entrada ambígua, tempo inválido e composição
+  legada. FFmpeg real verifica pixels durante a fala e ausência no antigo intervalo.
+- O backend entrega os momentos de cada trecho narrado e da prova à captura de Psique.
+  A amostragem mantém abertura/encerramento e passa a incluir esses instantes.
+- Nova finalização da mesma fonte rejeitada conserva os recibos e bytes de TTS quando
+  texto, fonte, tenant e duração são compatíveis. A autorização de nova síntese permanece
+  falsa. O service continua impedindo substituir finalização aprovada ou ativa.
+- O teste local usa os arquivos reais recebidos de Mira com servidor HTTP local e recusa
+  qualquer chamada de síntese. A conferência operacional posterior é registrada no PR.
+
+Validação desta correção: 67 testes de backend; 270 do módulo audiovisual (um cenário
+opcional não aplicável); 181 de Psique (dez opcionais não habilitados). Os 44 testes de
+navegador passaram. A execução final foi sequencial para evitar a concorrência de
+Chromium com os testes Java na sandbox. Os dois MP4s de 20/30 s foram recompostos localmente usando os
+10 áudios recebidos, com zero request de síntese. A captura real gerou 26 frames incluindo
+a prova; reprodução foi conferida em desktop, iPhone 15 Pro e Pixel 7 emulados.
+
+A captura também revelou que simular a resposta HTTP sem Range podia devolver outro
+instante, e a ausência de viewport mobile reduzia a imagem a uma fração da tela. O
+capturador agora usa Blob dos bytes verificados, confere o tempo efetivo e declara o
+viewport. Um MP4 determinístico vermelho/azul testa pixels reais de abertura e fim,
+impedindo que screenshots incorretos sejam rotulados como evidência do instante pedido.

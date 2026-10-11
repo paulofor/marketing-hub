@@ -30,7 +30,7 @@ import reactor.netty.http.client.HttpClient;
 @Component
 public class ApolloPlanningAiClient {
     private static final Logger log = LoggerFactory.getLogger(ApolloPlanningAiClient.class);
-    private static final Set<String> TEMPORARY = Set.of("resource_unavailable", "rate_limit_exceeded", "slow_down");
+    private static final Set<String> TEMPORARY = Set.of("resource_unavailable", "flex_unavailable", "rate_limit_exceeded", "slow_down");
     private static final Set<String> ACCOUNT_BLOCKS = Set.of("insufficient_quota", "credit_balance_exhausted",
             "organization_spend_limit_exceeded", "project_spend_limit_exceeded", "organization_usage_limit_exceeded");
     private final VideoManagementProperties properties;

@@ -52,3 +52,27 @@ persistidos em `visualEvidence`, descrevendo a leitura da prévia na avaliação
 Os anexos `visualEvidence` com evidenceType `CREATIVE_RENDER` são os PNGs finais persistidos pelo produtor, com hash e origem governados pelo backend. Inspecione esses pixels e retorne `renderedAssetAudit` com um item por imagem (artifactId, sha256 e assessment com legibilidade, hierarquia, CTA e reação ao visualizar no feed do celular). Não use a captura do produto como substituta do anúncio. Não exija prova humana de resultado para aprovar apenas a coerência perceptiva de uma demonstração privada sintética, identificada como tal; não alegue eficácia comercial nem autorize publicação.
 
 Se não existir imagem recebida, use BLOCKED e descreva a ausência em requiredChanges/evidence. Sem modalidade VISUAL, visualComposition deve ter applicable=false, archetype=NOT_APPLICABLE, criticalDeficitPresent=false, todos os escores visuais=0 e humanConnection functionalRole=NONE, peopleObserved=false, appropriatenessScore=0, absenceImpact=NONE. A ausência do arquivo é bloqueio de entrada, não déficit visual de uma composição que não foi inspecionada. Não force SINGLE_CREATIVE sem pixels.
+
+
+## Vídeo final — CUSTOMER_VIDEO_QUALITY_V1
+
+Quando `taskTarget.pdeContext.finalVideoReview` existir, os anexos VIDEO_FRAME são frames extraídos
+dos bytes finais verificados por SHA-256. A chave termina no instante em milissegundos. Inspecione
+abertura (0,1/1/2 s), meio e encerramento em ordem temporal e no tamanho real de celular. Inclua
+TODOS os frames e PNGs em renderedAssetAudit com seus IDs e hashes persistidos.
+
+Em videoAudit preencha um item por vídeo, com assetId e sha256 do MP4, escores 0–5 para desejo
+reconhecível, clareza do produto, primeira ação fácil, prova legível e progressão visual. Explique
+com instantes concretos. Aprovar exige todos os critérios >=3 e ausência de déficit crítico.
+Uma tela inteira minúscula, repetição sem evolução de significado, jargão interno como “acesso
+privado”/“demonstração interna”, desejo abstrato sem benefício compreensível ou CTA sem ação clara
+exigem ADJUST. Compare o feedback de rejeição; não aprove só por haver legendas e áudio técnico.
+
+Diferencie cenas de identificação/uso, prova real e ilustração sintética. Não exija pessoas por
+regra; exija função narrativa. Não aceite promessa clínica, depoimento ou urgência fabricados.
+A continuidade paga deve ter benefício comprovado; não invente preço ou facilidade inexistente.
+
+Os frames comprovam pixels e progressão amostrada, não movimento contínuo nem naturalidade da
+voz. A transcrição é texto. Declare audioAssessment=NOT_LISTENED, não use AUDIO como modalidade
+ouvida. A audição continua pendente para a seleção humana; não alegue ter ouvido com base em
+metadados. Sem vídeos no contrato, devolva videoAudit=[] e avalie somente as imagens recebidas.

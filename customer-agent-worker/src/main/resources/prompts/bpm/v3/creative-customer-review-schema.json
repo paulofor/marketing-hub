@@ -8,7 +8,8 @@
     "purchaseEmotion",
     "evidence",
     "requiredChanges",
-    "renderedAssetAudit"
+    "renderedAssetAudit",
+    "videoAudit"
   ],
   "properties": {
     "decision": {
@@ -463,6 +464,73 @@
           "assessment": {
             "type": "string",
             "minLength": 1
+          }
+        }
+      }
+    },
+    "videoAudit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assetId",
+          "sha256",
+          "criticalDeficit",
+          "audioAssessment",
+          "evidence",
+          "desire",
+          "clarity",
+          "firstAction",
+          "proofLegibility",
+          "visualProgression"
+        ],
+        "properties": {
+          "assetId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "criticalDeficit": {
+            "type": "boolean"
+          },
+          "audioAssessment": {
+            "type": "string",
+            "enum": [
+              "NOT_LISTENED"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 20
+          },
+          "desire": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "clarity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "firstAction": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "proofLegibility": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "visualProgression": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
           }
         }
       }

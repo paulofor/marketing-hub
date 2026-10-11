@@ -38,7 +38,7 @@ final class PdeProductProofOverlay {
         if (!metadata.at("/post_production/product_proof").isMissingNode()) load(metadata, jobId);
     }
 
-    /** Prepara a captura estática uma vez e repete o quadro nos cortes, preservando pixels e legenda. */
+    /** Compõe a captura legível somente no corte de prova, preservando o movimento dos demais planos. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId) {
         if (metadata.at("/post_production/product_proof").isMissingNode()) {
             return new ProductUgcReferenceOverlay.OverlayResult(source, Map.of());
@@ -133,12 +133,16 @@ final class PdeProductProofOverlay {
                     throw invalid("O enquadramento ultrapassa a captura homologada.");
                 }
             }
+            // Uma página inteira reduzida não é prova legível no celular.
+            if (height > width * 2L) {
+                throw invalid("A captura longa exige um recorte legível da prova; não reduza a página inteira.");
+            }
             double elapsed = 0;
             List<String> intervals = new ArrayList<>();
             for (JsonNode cut : metadata.path("cut_plan")) {
                 double seconds = cut.path("duration_seconds").asDouble();
                 if (!Double.isFinite(seconds) || seconds <= 0) throw invalid("Duração de corte inválida.");
-                if (List.of("MECANISMO", "RESULTADO", "PROVA").contains(cut.path("role").asText())) {
+                if ("PROVA".equals(cut.path("role").asText())) {
                     intervals.add("between(t," + number(elapsed) + "," + number(elapsed + seconds) + ")");
                 }
                 elapsed += seconds;

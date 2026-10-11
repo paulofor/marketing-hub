@@ -148,6 +148,21 @@ class LearningCycleValueFlowProjectionTest {
     verifyNoInteractions(videos);
   }
 
+  /** Uma rejeição de Mira ou outro produto volta à produção sem pedir o mesmo aceite ao usuário. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102,mira-private-candidate-v3", "87,56,195,independent-v2"})
+  void rejectedVideoRequiresCorrectionNotAnotherHumanDecision(
+      long productId, long cycleId, long experimentId, String version) {
+    var cycle = videoFixture(productId, cycleId, experimentId, version);
+    cycle.setStage("VIDEO_APPROVAL");
+    producedVideos(cycle).getFirst().setReviewStatus(ExperimentVideoReviewStatus.REJECTED);
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isFalse();
+    assertThat(flow.situation()).contains("rejeitado");
+    assertThat(flow.resolvingResponsible()).contains("Íris", "Apolo", "Psique");
+    verify(events, never()).saveAndFlush(any());
+  }
+
   /** Monta seleções com fingerprints calculados pelo gate canônico, sem aprovar qualquer peça. */
   private List<ExperimentVideoAsset> producedVideos(LearningSalesCycle cycle) {
     var product = new Product();

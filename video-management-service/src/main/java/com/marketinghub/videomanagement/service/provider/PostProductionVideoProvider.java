@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.service.provider;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.videomanagement.service.CustomerVideoCopyGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
@@ -97,6 +98,7 @@ public class PostProductionVideoProvider implements VideoProvider {
         if (metadata.path("deliveryOnly").asBoolean(false)) {
             return new FinalVideoReuse(downloadWebClient, objectMapper).restore(job, metadata);
         }
+        CustomerVideoCopyGuard.validate(metadata);
         String sourceVideoUrl = requiredText(metadata, "sourceVideoUrl");
         String captionText = requiredText(metadata, "captionText");
         String voiceOverScript = optionalText(metadata, "voiceOverScript");
@@ -1131,6 +1133,10 @@ public class PostProductionVideoProvider implements VideoProvider {
                                                boolean sourceAudioPreserved) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
+        if (sourceMetadata.path("videoProjectId").asLong() > 0
+                && sourceMetadata.path("productId").asLong() > 0
+                && sourceMetadata.path("experimentId").asLong() > 0)
+            metadata.put("customerQualityContract", "CUSTOMER_VIDEO_QUALITY_V1");
         metadata.put("provider_job_id", "post-production-" + job.id());
         metadata.put("post_production_mode", StringUtils.hasText(voiceOverScript) ? "VOICE_AND_CAPTION" : "CAPTION_ONLY");
         metadata.put("duration_seconds", captionTimeline.durationSeconds());

@@ -58,6 +58,7 @@ public class ApolloStoryboardPlanner {
                                         SalesVideoProfile profile,
                                         ProgressCallback progressCallback) {
         JsonNode metadata = readJson(job.metadataJson());
+        CustomerVideoCopyGuard.validate(metadata);
         if (job.jobType() != SalesVideoJobType.RENDER || !metadata.has("videoProductionCycleId")) {
             return job;
         }

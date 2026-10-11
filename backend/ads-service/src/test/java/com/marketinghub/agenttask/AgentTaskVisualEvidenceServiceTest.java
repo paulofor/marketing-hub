@@ -114,6 +114,36 @@ class AgentTaskVisualEvidenceServiceTest {
     }
   }
 
+  /** Persiste os frames reais do caso rejeitado com instante/hash e recusa origem divergente. */
+  @Test
+  @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.review.frames", matches = ".+")
+  void storesFinalVideoFramesFromWorker() throws Exception {
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("creative-production-approval");
+    task.setProcessDefinition(process); task.setProcessActivityId("customer");
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    var guard = org.mockito.Mockito.mock(CreativeFinalVideoEvidence.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "finalVideoEvidence", guard);
+    when(guard.permitsFrame(any(), org.mockito.ArgumentMatchers.isNull(), any(), any())).thenReturn(true);
+    when(evidenceRepository.saveAndFlush(any())).thenAnswer(call -> {
+      AgentTaskVisualEvidence value = call.getArgument(0); value.setId(91088L); return value;
+    });
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+    var frames = mapper.readTree(java.nio.file.Path.of(System.getProperty("video.review.frames")).toFile());
+    for (var frame : frames) {
+      var request = new AgentTaskVisualEvidenceRequest(frame.path("captureSessionId").asText(),
+          frame.path("evidenceKey").asText(), "VIDEO_FRAME", "IPHONE_15_PRO", 1, null, 393, 700, 700, 0,
+          frame.path("sourceUrl").asText(), frame.path("finalUrl").asText(), Instant.parse(frame.path("capturedAt").asText()));
+      var file = new MockMultipartFile("file", "frame.png", "image/png",
+          java.nio.file.Files.readAllBytes(java.nio.file.Path.of(frame.path("localPath").asText())));
+      assertThat(service.store("customer-agent", 258L, request, file).label()).contains("Vídeo final", "ms");
+    }
+    when(guard.permitsFrame(any(), org.mockito.ArgumentMatchers.isNull(), any(), any())).thenReturn(false);
+    var invalid = new AgentTaskVisualEvidenceRequest("invalid", "video-wrong", "VIDEO_FRAME", "IPHONE_15_PRO",
+        1, null, 393, 700, 700, 0, "https://fixtures.invalid/wrong.mp4", "https://fixtures.invalid/wrong.mp4", Instant.now());
+    assertThatThrownBy(() -> service.store("customer-agent", 258L, invalid, png("invalid"))).hasMessageContaining("Frame fora");
+  }
+
   /** Aceita checkout só na página prevista, no mesmo produto e com a preferência exata. */
   @Test
   void storesOnlyCanonicalQuartzoCheckoutOnSecondPage() throws Exception {

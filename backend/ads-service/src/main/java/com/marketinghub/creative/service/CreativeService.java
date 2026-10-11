@@ -101,6 +101,10 @@ public class CreativeService {
   private final CostAttributionService costAttributionService;
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.agenttask.CreativeFinalVideoEvidence finalVideoEvidence;
+
   private final ProductRepository productRepository;
   private final CreativeConvergenceService convergenceService;
   private final CommercialPlanRepository commercialPlanRepository;
@@ -1321,6 +1325,11 @@ public class CreativeService {
     }
     if (status == CreativeStatus.READY) {
       validateExperimentVideoVisualSourceDiversity(videoAsset);
+      if (videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED
+          && finalVideoEvidence != null) {
+        String reason = finalVideoEvidence.approvalBlockReason(videoAsset);
+        if (reason != null) throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+      }
     }
     ExperimentVideoReviewStatus reviewStatus = toExperimentVideoReviewStatus(status);
     if (reviewStatus == ExperimentVideoReviewStatus.REJECTED
@@ -1345,7 +1354,12 @@ public class CreativeService {
         || !hasPublicExperimentVideoUrl(videoAsset))
       return "Vídeo ainda não está pronto com URL pública.";
     if (!Boolean.TRUE.equals(videoAsset.getHasAudio())) return "Vídeo precisa ter áudio validado.";
-    return experimentVideoVisualSourceBlockReason(videoAsset);
+    String visualReason = experimentVideoVisualSourceBlockReason(videoAsset);
+    if (visualReason != null) return visualReason;
+    return finalVideoEvidence == null
+            || videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
+        ? null
+        : finalVideoEvidence.approvalBlockReason(videoAsset);
   }
 
   /** Bloqueia aprovação de anúncio e hero com a mesma origem visual sem justificativa comercial. */

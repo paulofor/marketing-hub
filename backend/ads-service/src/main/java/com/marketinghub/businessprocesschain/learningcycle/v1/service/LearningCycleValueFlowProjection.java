@@ -346,6 +346,14 @@ public class LearningCycleValueFlowProjection {
   /** Reutiliza o gate das peças selecionadas e mantém divergência de evidência como pendência. */
   private VideoReviewGuidance videoReview(LearningSalesCycle cycle) {
     try {
+      if (videoEvidence.hasRejectedVideo(cycle))
+        return new VideoReviewGuidance(
+            "Há vídeo rejeitado; a comunicação precisa de correção antes de pedir novo aceite.",
+            "A versão rejeitada não pode seguir para integração. O feedback precisa orientar o roteiro, a produção e a revisão do vídeo final.",
+            "Íris e Apolo · correção; Psique · revisão independente",
+            Boolean.FALSE,
+            "A rejeição já está registrada. Não é necessário aprovar novamente a mesma peça; acompanhe a correção no Estúdio audiovisual.",
+            "Nova versão corrigida, revisada no arquivo final e apresentada para seleção; preservar a rejeição e os custos anteriores.");
       if (videoEvidence.awaitingApproval(cycle))
         return new VideoReviewGuidance(
             "Os dois vídeos estão produzidos e aguardam seu aceite de uso.",

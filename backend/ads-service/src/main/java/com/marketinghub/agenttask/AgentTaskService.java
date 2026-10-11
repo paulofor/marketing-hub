@@ -195,6 +195,9 @@ public class AgentTaskService {
   @Autowired(required = false)
   private ApolloAudiovisualTaskTargetProjector apolloAudiovisualTaskTargetProjector;
 
+  @Autowired(required = false)
+  private CreativeFinalVideoEvidence creativeFinalVideoEvidence;
+
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
   public AgentTaskService(
@@ -2660,6 +2663,8 @@ public class AgentTaskService {
     if (targetOnly && apolloAudiovisualTaskTargetProjector != null) {
       taskTarget = apolloAudiovisualTaskTargetProjector.project(task, taskTarget);
     }
+    if (!targetOnly && creativeFinalVideoEvidence != null)
+      taskTarget = creativeFinalVideoEvidence.project(task, taskTarget);
     String processContextJson = targetOnly ? null : processContext(task);
     return new AgentTaskPendingResponse(
         task.getId(),

@@ -72,7 +72,21 @@ class PdeProductProofOverlayTest {
         }
     }
 
-    /** Confere pixels e prazo de vídeos de 15/30 s, incluindo captura longa de alta densidade. */
+    /** Não deixa uma página longa virar texto minúsculo em lugar de resultado útil. */
+    @Test
+    void rejectsUncroppedLongPageBeforeVoice() throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start();
+            byte[] pixels = pixels(1179, 6138);
+            server.enqueue(response(pixels));
+            var properties = new VideoManagementProperties();
+            properties.setBackendBaseUrl(server.url("/").uri());
+            assertThatThrownBy(() -> new PdeProductProofOverlay(properties, WebClient.builder()).verify(metadata(pixels), 91009L))
+                    .hasMessageContaining("recorte legível");
+        }
+    }
+
+    /** Confere prova recortada e preserva os demais planos em vídeos de 15/30 segundos. */
     @ParameterizedTest
     @ValueSource(ints = {15, 30})
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
@@ -92,6 +106,8 @@ class PdeProductProofOverlayTest {
                 assertThat(process.waitFor()).isZero();
                 var input = metadata(pixels);
                 input.put("targetDurationSeconds", duration);
+                if (duration == 30) ((ObjectNode) input.at("/post_production/product_proof"))
+                        .putArray("crop").add(0).add(500).add(1179).add(1600);
                 for (var cut : input.path("cut_plan")) ((ObjectNode) cut).put("duration_seconds", duration / 5);
                 long started = System.nanoTime();
                 var output = new PdeProductProofOverlay(properties, WebClient.builder()).apply(source, input, 91009L);
@@ -110,7 +126,8 @@ class PdeProductProofOverlayTest {
                 assertThat(measured.at("/streams/0/height").asInt()).isEqualTo(1920);
                 assertThat(measured.at("/format/duration").asDouble()).isBetween(duration - .1, duration + .1);
                 assertThat(samplePixel(target, duration / 15)[2] & 255).isGreaterThan(200);
-                byte[] proofPixel = samplePixel(target, duration * 2 / 5);
+                assertThat(samplePixel(target, duration * 2 / 5)[2] & 255).isGreaterThan(200);
+                byte[] proofPixel = samplePixel(target, duration * 3 / 5 + 1);
                 assertThat(proofPixel[0] & 255).isGreaterThan(230);
                 assertThat(proofPixel[1] & 255).isBetween(180, 220);
                 assertThat(samplePixel(target, duration - 1)[2] & 255).isGreaterThan(200);

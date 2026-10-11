@@ -146,3 +146,7 @@ components:
         reason: { type: string }
         approvalAvailable: { type: boolean }
         agentReviewRequestAvailable: { type: boolean }
+
+# CUSTOMER_VIDEO_QUALITY_V1: novas finalizações governadas somente habilitam seleção de uso
+# depois do parecer de Psique com assetId e SHA-256 do MP4 final. Uma revisão de PNG não serve.
+# Aprovações históricas permanecem preservadas. Rejeição indica correção, não novo aceite humano.

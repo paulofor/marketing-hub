@@ -12,6 +12,10 @@ public interface ProcessRunEventRepository extends JpaRepository<ProcessRunEvent
   /** Impede repetir a mesma entrada sem progresso ou retomada explícita. */
   boolean existsByRunIdAndActionKey(Long runId, String actionKey);
 
+  /** Confirma uma retomada explícita posterior à conclusão da origem, sem inferir autorização. */
+  boolean existsByRunIdAndEventTypeAndCreatedAtAfter(
+      Long runId, String eventType, java.time.Instant createdAt);
+
   /** Pagina decisões da execução exata sem transferir histórico ilimitado. */
   @Query(
       "select e from ProcessRunEvent e where e.runId = :runId and (:beforeId is null or e.id < :beforeId) order by e.id desc")

@@ -270,3 +270,39 @@ com durações de 22/33 segundos. A conferência visual detectou legenda sobre o
 da segunda organização; a sequência agora reserva sua área, preservando a dimensão
 do contrato legado. As duas mídias ajustadas passaram na captura por hash e na
 reprodução em desktop, iPhone e Pixel emulados. A audição não foi alegada.
+
+
+### Recuperação repetida da mesma locução — 2026-10-11
+
+A montagem solicitada após Psique #730 foi bloqueada antes de enfileirar consumo:
+21274 recuperava áudios de 21272, mas `VideoNarrationRecovery` só reconhecia
+`COMPLETED` com request/response e recibo de upload. O executor já produzia
+`TEXT_TO_SPEECH_REUSE`/`REUSED` com identidade do áudio original e custo incremental
+zero. Não faltava áudio: o consumidor não reconhecia seu próprio contrato de recuperação.
+
+Alternativas consideradas: sintetizar novamente repete custo e exige autorização;
+buscar uma tentativa antiga por heurística pode cruzar copy ou contexto; conferir o
+recibo REUSED contra o contrato persistido conserva a identidade sem novo serviço.
+A terceira opção foi escolhida. O backend verifica tenant, fonte, texto, ordem,
+modelo, duração, hash, asset e custo original antes de recuperar novamente.
+Ausência de auditoria com contrato preservado bloqueia a operação, sem cair em
+síntese nova. A URL é relida do asset persistido; o worker continua verificando o
+hash dos bytes recebidos.
+
+Matriz adicional: recuperação após sucesso e falha de montagem; três recuperações
+consecutivas; produto original e outra identidade; contrato/tenant/copy/fonte/hash/
+asset/ordem/texto/duração/modelo/custo divergentes; auditoria ausente; produção e
+recuperação inicial anteriormente válidas. A regressão falhou antes da correção nos
+dois contextos e na ausência de auditoria. O ajuste não altera orçamento, aceite
+humano, parecer independente, gate comercial nem a incerteza do custo original.
+Adoção: mesma fala recuperável sem nova síntese. Reversão: divergência de identidade
+ou custo deve bloquear antes da fila; nunca gerar voz como compensação silenciosa.
+
+Conferência local: o recibo real de 21274 e os cinco assets READY produziram novo
+contrato íntegro. Esse contrato passou pelo compositor real com FFmpeg e servidor
+local de binários; a asserção confirmou zero chamadas TTS e preservação dos cinco
+áudios. Os testes de regressão não utilizam API paga nem dados comerciais.
+
+Suíte local do backend: 4.662 casos declarados, sem falhas/erros; 39 condicionais
+ou previamente desabilitados. As regressões de recuperação e service passaram
+novamente após a formatação e a conferência final do contrato.

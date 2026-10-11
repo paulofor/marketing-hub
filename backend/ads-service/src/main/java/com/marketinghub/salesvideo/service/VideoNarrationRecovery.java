@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.repository.jpa.media.AssetRepository;
@@ -35,7 +36,7 @@ public final class VideoNarrationRecovery {
 
   /**
    * Recupera a mesma voz ou registra mudança explícita de texto; o service valida rejeição e
-   * financeiro.
+   * financeiro. Recuperações sucessivas conservam os mesmos áudios e seu custo original pendente.
    */
   public static Map<String, Object> prepare(
       SalesVideoJob source,
@@ -62,7 +63,12 @@ public final class VideoNarrationRecovery {
             && Objects.equals(previous.getRetryOfJob().getId(), source.getId()),
         "A voz pertence a outra fonte.");
     JsonNode prior = read(mapper, previous.getMetadataJson(), previous.getId());
-    if (completedFinalization && prior.path("tts_interactions").isMissingNode()) return Map.of();
+    if (completedFinalization && prior.path("tts_interactions").isMissingNode()) {
+      require(
+          prior.path("preservedNarration").isMissingNode(),
+          "A recuperação anterior está sem auditoria da fala; nova síntese não está autorizada.");
+      return Map.of();
+    }
     boolean sameCopy =
         Objects.equals(prior.path("captionText").asText(), request.getCaptionText())
             && Objects.equals(prior.path("voiceOverScript").asText(), request.getVoiceOverScript());
@@ -96,7 +102,7 @@ public final class VideoNarrationRecovery {
                 .filter(
                     event ->
                         event.getDetailsJson() != null
-                            && event.getDetailsJson().contains("persisted_audit_assets"))
+                            && event.getDetailsJson().contains("tts_interactions"))
                 .sorted(
                     Comparator.comparing(
                             (com.marketinghub.salesvideo.SalesVideoJobEvent event) -> event.getId(),
@@ -113,6 +119,22 @@ public final class VideoNarrationRecovery {
     double total = 0;
     for (int index = 0; index < texts.size(); index++) {
       JsonNode interaction = interactions.get(index);
+      if ("REUSED".equals(interaction.path("status").asText())) {
+        Map<String, Object> segment =
+            restoreRepeatedSegment(
+                prior.path("preservedNarration"),
+                interaction,
+                index,
+                texts,
+                source,
+                previous,
+                request,
+                mapper,
+                assets);
+        total += ((Number) segment.get("durationSeconds")).doubleValue();
+        segments.add(segment);
+        continue;
+      }
       JsonNode response = interaction.path("raw_response");
       String hash = response.path("sha256").asText();
       require(
@@ -123,16 +145,7 @@ public final class VideoNarrationRecovery {
           "Texto, ordem ou hash da fala divergente.");
       JsonNode receipt =
           matchingReceipt(audit.path("persisted_audit_assets"), response, previous.getId());
-      var asset =
-          assets
-              .findById(receipt.path("asset_id").asLong())
-              .orElseThrow(() -> conflict("Áudio preservado não encontrado."));
-      require(
-          asset.getType() == AssetType.AUDIO
-              && asset.getStatus() == AssetStatus.READY
-              && asset.getUrl() != null
-              && asset.getUrl().startsWith("https://"),
-          "Áudio preservado indisponível.");
+      var asset = readyAudio(receipt.path("asset_id").asLong(), assets);
       double duration = interaction.path("output_duration_seconds").asDouble();
       require(Double.isFinite(duration) && duration > 0, "Duração da fala não foi medida.");
       total += duration;
@@ -170,6 +183,72 @@ public final class VideoNarrationRecovery {
             false,
             "segments",
             segments));
+  }
+
+  /** Confere o recibo REUSED contra o contrato recebido, sem exigir novo upload nem inferência. */
+  private static Map<String, Object> restoreRepeatedSegment(
+      JsonNode contract,
+      JsonNode receipt,
+      int index,
+      List<String> texts,
+      SalesVideoJob source,
+      SalesVideoJob previous,
+      RequestSalesVideoPostProductionRequest request,
+      ObjectMapper mapper,
+      AssetRepository assets) {
+    require(
+        CONTRACT.equals(contract.path("contractVersion").asText())
+            && !contract.path("newTtsAuthorized").asBoolean(true)
+            && contract.path("sourceJobId").asLong() > 0
+            && Objects.equals(contract.path("tenantId").asText(), source.getTenantId())
+            && contract.path("captionText").asText().equals(request.getCaptionText())
+            && contract.path("segments").isArray()
+            && contract.path("segments").size() == texts.size(),
+        "Contrato da recuperação anterior divergente.");
+    JsonNode segment = contract.path("segments").path(index);
+    String hash = segment.path("sha256").asText();
+    double duration = segment.path("durationSeconds").asDouble();
+    require(
+        segment.path("segmentIndex").asInt() == index + 1
+            && segment.path("text").asText().equals(texts.get(index))
+            && segment.path("assetId").asLong() > 0
+            && hash.matches("[a-f0-9]{64}")
+            && Double.isFinite(duration)
+            && duration > 0
+            && !segment.path("model").asText().isBlank()
+            && !segment.path("voice").asText().isBlank()
+            && segment.path("sourcePricing").isObject(),
+        "Segmento da recuperação anterior divergente.");
+    require(
+        "TEXT_TO_SPEECH_REUSE".equals(receipt.path("interaction_type").asText())
+            && receipt.path("job_id").asLong() == previous.getId()
+            && receipt.path("source_job_id").asLong() == contract.path("sourceJobId").asLong()
+            && receipt.path("source_asset_id").asLong() == segment.path("assetId").asLong()
+            && receipt.path("source_sha256").asText().equals(hash)
+            && receipt.path("segment_index").asInt() == index + 1
+            && receipt.path("model").asText().equals(segment.path("model").asText())
+            && receipt.path("output_duration_seconds").isNumber()
+            && Math.abs(receipt.path("output_duration_seconds").asDouble() - duration) < .001
+            && receipt.path("incremental_cost_usd").isNumber()
+            && receipt.path("incremental_cost_usd").asDouble() == 0
+            && receipt.path("source_pricing").equals(segment.path("sourcePricing")),
+        "Recibo da fala reutilizada divergente.");
+    var asset = readyAudio(segment.path("assetId").asLong(), assets);
+    Map<String, Object> restored = mapper.convertValue(segment, Map.class);
+    restored.put("url", asset.getUrl());
+    return restored;
+  }
+
+  /** Revalida a disponibilidade do áudio original a cada recuperação, usando a URL persistida. */
+  private static Asset readyAudio(long id, AssetRepository assets) {
+    var asset = assets.findById(id).orElseThrow(() -> conflict("Áudio preservado não encontrado."));
+    require(
+        asset.getType() == AssetType.AUDIO
+            && asset.getStatus() == AssetStatus.READY
+            && asset.getUrl() != null
+            && asset.getUrl().startsWith("https://"),
+        "Áudio preservado indisponível.");
+    return asset;
   }
 
   /** Filtra no SQL antes da paginação, separando capacidades de recuperação e sequência. */

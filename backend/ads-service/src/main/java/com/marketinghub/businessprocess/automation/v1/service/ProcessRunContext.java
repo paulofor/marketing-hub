@@ -206,7 +206,10 @@ public class ProcessRunContext {
     return null;
   }
 
-  /** Reconhece dependências preparatórias da mesma ocorrência sem liberar trabalho em curso. */
+  /**
+   * Reconhece preparação e revisão de vídeos da mesma ocorrência sem liberar trabalho em curso,
+   * selecionar peças ou atravessar os gates de cada atividade.
+   */
   public boolean permitsCommercialContinuation(ProcessRun waiting, ProcessRun candidate) {
     if (permitsInitialPlanning(waiting, candidate)) return true;
     if (waiting.getLearningCycleId() == null
@@ -220,19 +223,22 @@ public class ProcessRunContext {
         || !Objects.equals(waiting.getSourceReference(), candidate.getSourceReference()))
       return false;
     var cycle = cycles.findById(waiting.getLearningCycleId()).orElseThrow();
-    return "OPEN".equals(cycle.getStatus())
-        && Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage())
-        && Objects.equals(cycle.getProductId(), waiting.getProductId())
-        && Objects.equals(cycle.getChainDefinitionId(), waiting.getChainDefinitionId())
-        && Objects.equals("experiment:" + cycle.getExperimentId(), waiting.getSourceReference())
-        && "pde-sales-delivery-learning"
-            .equals(process(waiting.getProcessDefinitionId()).getProcessCode())
+    if (!"OPEN".equals(cycle.getStatus())
+        || !Objects.equals(cycle.getProductId(), waiting.getProductId())
+        || !Objects.equals(cycle.getChainDefinitionId(), waiting.getChainDefinitionId())
+        || !Objects.equals("experiment:" + cycle.getExperimentId(), waiting.getSourceReference())
+        || !"pde-sales-delivery-learning"
+            .equals(process(waiting.getProcessDefinitionId()).getProcessCode())) return false;
+    String candidateCode = process(candidate.getProcessDefinitionId()).getProcessCode();
+    if ("VIDEO_APPROVAL".equals(cycle.getStage()))
+      return "creative-production-approval".equals(candidateCode);
+    return Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage())
         && Set.of(
                 "pde-commercial-homologation-activation",
                 "opala-commercial-preparation-v1",
                 "quartzo-commercial-preparation-v1",
                 "safira-commercial-preparation-v1")
-            .contains(process(candidate.getProcessDefinitionId()).getProcessCode());
+            .contains(candidateCode);
   }
 
   /** Permite preparar o primeiro experimento enquanto sua comunicação aguarda os predecessores. */

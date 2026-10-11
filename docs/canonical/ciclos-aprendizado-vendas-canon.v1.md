@@ -725,3 +725,13 @@ Replays reutilizam o sucessor. A tela apresenta primeiro essa preparação basea
 sem exigir transcrição ou janela/mídia prematuras; o cadastro manual permanece disponível.
 O log distingue início de execução de autorização de mídia. Testes cobrem decisão histórica
 aprovada, outro produto, HTTP, persistência e continuação automática anteriormente válida.
+
+## Revisão audiovisual antes da seleção — 11/10/2026
+
+No ciclo aberto em `VIDEO_APPROVAL`, a execução de vendas que espera em
+`learningCycle` não pode reservar a fila contra `creative-production-approval`
+da mesma ocorrência. A revisão dos arquivos finais é pré-requisito da seleção.
+A precedência exige produto, cadeia, ciclo e experimento idênticos, ausência de
+falha na espera e nenhum trabalho real em curso. Pausa, STOP, revisão independente,
+limites financeiros e seleção humana permanecem nos contratos existentes.
+A liberação de vez não aprova uma peça nem autoriza campanha ou consumo adicional.

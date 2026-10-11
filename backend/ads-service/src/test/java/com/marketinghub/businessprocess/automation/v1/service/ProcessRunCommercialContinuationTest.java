@@ -167,6 +167,69 @@ class ProcessRunCommercialContinuationTest {
     assertThat(context.permitsCommercialContinuation(waiting, candidate)).isFalse();
   }
 
+  /** A seleção de vídeos aguarda a revisão da própria ocorrência sem reservar a fila contra ela. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"7,12,105", "95007,95012,95105"})
+  void allowsVideoReviewBeforeHumanSelection(long productId, long cycleId, long experimentId) {
+    videoReview(productId, cycleId, experimentId);
+    assertThat(context.permitsCommercialContinuation(waiting, candidate)).isTrue();
+    assertThat(waiting.getStatus()).isEqualTo("WAITING_HUMAN");
+    verify(cycles, never()).save(any());
+    verify(experiments, never()).save(any());
+  }
+
+  /**
+   * A passagem audiovisual mantém identidade, pausa, ciclo aberto e responsabilidade do revisor.
+   */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "product",
+        "chain",
+        "cycle",
+        "reference",
+        "stage",
+        "closed",
+        "failure",
+        "paused",
+        "running",
+        "process",
+        "activity"
+      })
+  void isolatesVideoReviewContinuation(String changed) {
+    videoReview(95007L, 95012L, 95105L);
+    switch (changed) {
+      case "product" -> candidate.setProductId(95008L);
+      case "chain" -> candidate.setChainDefinitionId(99L);
+      case "cycle" -> candidate.setLearningCycleId(95013L);
+      case "reference" -> candidate.setSourceReference("experiment:95106");
+      case "stage" -> cycle.setStage("MEASUREMENT");
+      case "closed" -> cycle.setStatus("CLOSED");
+      case "failure" -> waiting.setFailureCount(1);
+      case "paused" -> waiting.setStatus("PAUSED");
+      case "running" -> waiting.setStatus("RUNNING");
+      case "process" -> definition(56L, "pde-commercial-plan-offer");
+      case "activity" -> waiting.setCurrentActivityId("optimization");
+      default -> throw new AssertionError(changed);
+    }
+    assertThat(context.permitsCommercialContinuation(waiting, candidate)).isFalse();
+  }
+
+  /** Monta a espera exata por vídeos, sem reaproveitar IDs ou autorização de outro produto. */
+  private void videoReview(long productId, long cycleId, long experimentId) {
+    for (var run : new ProcessRun[] {waiting, candidate}) {
+      run.setProductId(productId);
+      run.setLearningCycleId(cycleId);
+      run.setSourceReference("experiment:" + experimentId);
+    }
+    waiting.setStatus("WAITING_HUMAN");
+    cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    cycle.setStage("VIDEO_APPROVAL");
+    when(cycles.findById(cycleId)).thenReturn(Optional.of(cycle));
+    definition(56L, "creative-production-approval");
+  }
+
   /** Conserva o experimento sintético planejado e a referência exata de ambas as execuções. */
   private com.marketinghub.experiment.Experiment initialPlanning(
       long productId, long experimentId) {

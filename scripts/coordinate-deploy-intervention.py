@@ -370,9 +370,12 @@ class Coordinator:
         if (not isinstance(pull, dict) or pull.get("merged") is not True
                 or pull.get("head", {}).get("sha") != origin
                 or pull.get("base", {}).get("ref") != "main"
-                or pull.get("base", {}).get("repo", {}).get("full_name") != REPOSITORY
-                or not re.fullmatch(r"[a-f0-9]{40}", merge_commit or "")):
+                or pull.get("base", {}).get("repo", {}).get("full_name") != REPOSITORY):
             raise CoordinationError("O PR não comprova integração da revisão originalmente homologada.")
+        if "merge_commit_sha" not in pull:
+            merge_commit = self.merged_commit_from_timeline(integrated_pr)
+        if not re.fullmatch(r"[a-f0-9]{40}", merge_commit or ""):
+            raise CoordinationError("O PR não comprova o commit da integração.")
         if self.github.api("git/ref/heads/main")["object"]["sha"] != validated_commit:
             raise CoordinationError("A nova revisão homologada deve ser a main atual, sem inferência de equivalência.")
         commit = self.github.api(f"commits/{validated_commit}")
@@ -395,6 +398,26 @@ class Coordinator:
         self.checkpoint(state, "integrated_main_revalidated", previous_commit=previous["validated_commit"],
                         validated_commit=validated_commit, validated_tree=tree, integrated_pr=integrated_pr)
         return state
+
+    def merged_commit_from_timeline(self, integrated_pr):
+        """Obtém o merge auditável quando a versão REST omite merge_commit_sha no detalhe do PR."""
+        commits = set()
+        for page in range(1, 11):
+            events = self.github.api(f"issues/{integrated_pr}/timeline?per_page=100&page={page}")
+            if not isinstance(events, list) or any(not isinstance(event, dict) for event in events):
+                raise CoordinationError("Timeline de integração inválida; pausa mantida.")
+            for event in events:
+                if event.get("event") == "merged":
+                    sha = event.get("commit_id")
+                    if (not re.fullmatch(r"[a-f0-9]{40}", sha or "")
+                            or event.get("commit_url") != f"https://api.github.com/repos/{REPOSITORY}/commits/{sha}"):
+                        raise CoordinationError("Evento de merge sem identidade canônica; pausa mantida.")
+                    commits.add(sha)
+            if len(events) < 100:
+                if len(commits) != 1:
+                    raise CoordinationError("Timeline não comprova um único merge; pausa mantida.")
+                return commits.pop()
+        raise CoordinationError("Timeline excede a paginação limitada; pausa mantida.")
 
     def resume(self, identifier, integrated_commit, evidence):
         """Restaura estados anteriores só após comprovar integração e fila vazia; não dispara deploy."""

@@ -343,6 +343,37 @@ class LocalCoordinationTest(unittest.TestCase):
             with self.subTest(commit=commit, pull=pull, evidence=evidence), self.assertRaises(module.CoordinationError):
                 self.coordinator.revalidate_resume(state["id"], commit, pull, evidence)
 
+    def test_revalidation_accepts_actual_rest_contract_without_merge_commit_sha(self):
+        state, pull = self.prepared_revalidation()
+        del pull["merge_commit_sha"]
+        original = self.revalidation_api(pull)
+        event = {"event": "merged", "commit_id": "e" * 40,
+                 "commit_url": f"https://api.github.com/repos/{module.REPOSITORY}/commits/" + "e" * 40}
+
+        def api(path, method="GET"):
+            if path == "issues/731/timeline?per_page=100&page=1":
+                return [{"event": "commented"}] * 100
+            if path == "issues/731/timeline?per_page=100&page=2":
+                return [event]
+            return original(path, method)
+        with patch.object(self.github, "api", side_effect=api):
+            result = self.coordinator.revalidate_resume(state["id"], "c" * 40, 731, "main completa testada")
+        self.assertEqual(result["phase"], "AWAITING_MERGE")
+        self.assertEqual(result["automatic_resume"]["validated_commit"], "c" * 40)
+
+    def test_merge_event_rejects_absence_ambiguity_foreign_commit_and_truncation(self):
+        event = {"event": "merged", "commit_id": "e" * 40,
+                 "commit_url": f"https://api.github.com/repos/{module.REPOSITORY}/commits/" + "e" * 40}
+        other = {"event": "merged", "commit_id": "f" * 40,
+                 "commit_url": f"https://api.github.com/repos/{module.REPOSITORY}/commits/" + "f" * 40}
+        responses = [None, {}, [None], [], [dict(event, commit_id="abc")],
+                     [dict(event, commit_url="https://api.github.com/repos/other/repo/commits/" + "e" * 40)],
+                     [event, other], [{"event": "commented"}] * 100]
+        for response in responses:
+            with self.subTest(response=response), patch.object(self.github, "api", return_value=response):
+                with self.assertRaises(module.CoordinationError):
+                    self.coordinator.merged_commit_from_timeline(731)
+
     def test_api_error_on_check_is_never_safe(self):
         state = self.begin()
         self.github.fail = lambda *_: True

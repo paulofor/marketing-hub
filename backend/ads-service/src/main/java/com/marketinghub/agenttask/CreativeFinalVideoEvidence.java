@@ -28,7 +28,8 @@ public class CreativeFinalVideoEvidence {
   /** Acrescenta as mídias finais sem substituir o contexto ou as peças estáticas da tarefa. */
   public AgentTaskTargetResponse project(AgentTask task, AgentTaskTargetResponse target) {
     if (!supports(task) || target == null || target.experimentId() == null) return target;
-    ObjectNode context = target.pdeContext() instanceof ObjectNode node ? node.deepCopy() : json.createObjectNode();
+    ObjectNode context =
+        target.pdeContext() instanceof ObjectNode node ? node.deepCopy() : json.createObjectNode();
     context.set("finalVideoReview", inputs(target));
     return new AgentTaskTargetResponse(
         target.sourceReference(),
@@ -49,7 +50,8 @@ public class CreativeFinalVideoEvidence {
   /** Resolve as mídias atuais pela versão, produto, experimento e tenant, sem inferência. */
   public ArrayNode inputs(AgentTaskTargetResponse target) {
     ArrayNode inputs = json.createArrayNode();
-    if (target == null || target.experimentId() == null || target.productId() == null) return inputs;
+    if (target == null || target.experimentId() == null || target.productId() == null)
+      return inputs;
     var roles = new HashSet<String>();
     for (var video :
         videos.findReadyExperimentVideosForReview(
@@ -78,9 +80,36 @@ public class CreativeFinalVideoEvidence {
           .put(
               "narration",
               result.path("voice_over_script").asText(result.at("/captions/text").asText()))
-          .put("rejectionReason", Objects.toString(video.getRejectionReason(), ""));
+          .put("rejectionReason", Objects.toString(video.getRejectionReason(), ""))
+          .set("reviewMoments", reviewMoments(result, video.getDurationSeconds()));
     }
     return inputs;
+  }
+
+  /** Inclui cada trecho narrado e a prova curta para não deixá-los fora da amostragem visual. */
+  private ArrayNode reviewMoments(JsonNode result, Integer duration) {
+    if (duration == null || duration <= 0) return json.createArrayNode();
+    var moments = new java.util.TreeSet<Double>();
+    double cursor = 0;
+    var segments = result.at("/caption_narration_sync/segment_durations_seconds");
+    if (segments.isArray() && segments.size() <= 12) {
+      for (var segment : segments) {
+        double seconds = segment.asDouble(-1);
+        if (!Double.isFinite(seconds) || seconds <= 0 || cursor + seconds > duration + .1) break;
+        moments.add(cursor + seconds / 2);
+        cursor += seconds;
+      }
+    }
+    var proof = result.at("/product_reference_overlay/reviewMoments");
+    if (proof.isArray() && proof.size() <= 12) {
+      for (var value : proof) {
+        double second = value.asDouble(-1);
+        if (Double.isFinite(second) && second > 0 && second < duration) moments.add(second);
+      }
+    }
+    var output = json.createArrayNode();
+    moments.stream().limit(24).forEach(output::add);
+    return output;
   }
 
   /** Informa se uma edição final nova exige reabrir a atividade de revisão já existente. */

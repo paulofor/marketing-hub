@@ -35,15 +35,28 @@ final class PdeProductProofOverlay {
 
     /** Confere bytes, hash, enquadramento e cortes antes de consumir o gerador pago. */
     void verify(JsonNode metadata, Long jobId) {
-        if (!metadata.at("/post_production/product_proof").isMissingNode()) load(metadata, jobId);
+        if (!metadata.at("/post_production/product_proof").isMissingNode()) {
+            PdeProofCaptionTiming.cueIndex(metadata);
+            load(metadata, jobId);
+        }
     }
 
-    /** Compõe a captura legível somente no corte de prova, preservando o movimento dos demais planos. */
+    /** Preserva a composição legada sem locução sincronizada. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId) {
+        return apply(source, metadata, jobId, List.of());
+    }
+
+    /** Compõe a captura no trecho efetivamente narrado, preservando movimento e identidade. */
+    ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId,
+                                                  List<PdeProofCaptionTiming.Window> captions) {
         if (metadata.at("/post_production/product_proof").isMissingNode()) {
             return new ProductUgcReferenceOverlay.OverlayResult(source, Map.of());
         }
         Proof proof = load(metadata, jobId);
+        double outputDuration = Math.max(proof.duration(), metadata.path("postProductionDurationSeconds").asDouble());
+        var timing = PdeProofCaptionTiming.resolve(metadata, captions);
+        String intervals = timing == null ? proof.intervals()
+                : "between(t," + number(timing.start()) + "," + number(timing.end()) + ")";
         Path image = null;
         Path output = null;
         Path processLog = null;
@@ -57,12 +70,14 @@ final class PdeProductProofOverlay {
                     + "[1:v]" + crop + "scale=972:1360:force_original_aspect_ratio=decrease,"
                     + "pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee,"
                     + "format=yuva420p,loop=loop=-1:size=1:start=0,setpts=N/(25*TB)[proof];"
-                    + "[base][proof]overlay=0:0:enable='" + proof.intervals() + "'[out]";
+                    + "[base][proof]overlay=0:0:enable='" + intervals + "',"
+                    + "drawtext=text='Exemplo com dados de teste':fontsize=38:fontcolor=0x333333:"
+                    + "x=(w-text_w)/2:y=50:enable='" + intervals + "'[out]";
             List<String> command = List.of(properties.getProviders().getPostProduction().getFfmpegPath(),
                     "-hide_banner", "-loglevel", "error", "-y", "-i", source.toString(),
                     "-i", image.toString(), "-filter_complex_threads", "1", "-filter_complex", filter,
                     "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-threads", "2", "-preset", "ultrafast",
-                    "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "copy", "-t", number(proof.duration()),
+                    "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "copy", "-t", number(outputDuration),
                     "-movflags", "+faststart", output.toString());
             long started = System.nanoTime();
             log.info("Compondo captura estática do PDE; jobId={} pixels={}x{} duration={} mode=PREPARED_FRAME_LOOP_V1",
@@ -73,13 +88,18 @@ final class PdeProductProofOverlay {
                 throw invalid("A composição da prova excedeu o tempo limite.");
             }
             if (process.exitValue() != 0) throw invalid("A composição da prova falhou: " + Files.readString(processLog));
-            Map<String, Object> audit = Map.of(
+            Map<String, Object> audit = new java.util.LinkedHashMap<>(Map.of(
                     "contractVersion", "PDE_PRIVATE_VIDEO_PROOF_V1", "status", "APPLIED",
                     "sha256", proof.sha256(), "source", proof.contentPath(),
                     "crop", List.of(proof.x(), proof.y(), proof.width(), proof.height()),
-                    "intervals", proof.intervals(), "syntheticScenario", true,
+                    "intervals", intervals, "syntheticScenario", true,
                     "commercialEvidenceClaimed", false,
-                    "compositionMode", "PREPARED_FRAME_LOOP_V1");
+                    "compositionMode", "PREPARED_FRAME_LOOP_V1"));
+            if (timing != null) {
+                audit.put("timingSource", "NARRATION_CUE_V1");
+                audit.put("reviewMoments", List.of((timing.start() + timing.end()) / 2));
+                audit.put("captionCueIndex", timing.cueIndex());
+            }
             log.info("Captura do PDE composta; jobId={} elapsedMs={} sha256={} mode=PREPARED_FRAME_LOOP_V1",
                     jobId, Duration.ofNanos(System.nanoTime() - started).toMillis(), proof.sha256());
             return new ProductUgcReferenceOverlay.OverlayResult(output, audit);

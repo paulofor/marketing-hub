@@ -116,19 +116,18 @@ public class PostProductionVideoProvider implements VideoProvider {
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
-            if (!metadata.at("/post_production/product_proof").isMissingNode()) {
-                progressCallback.onProgress(20, SalesVideoStatus.VIDEO_PROCESSING, "Compondo a captura real do produto");
-            }
-            ProductUgcReferenceOverlay.OverlayResult overlay =
-                    metadata.at("/post_production/product_proof").isMissingNode()
-                            ? productReferenceOverlay.apply(source, metadata, job.id())
-                            : pdeProductProofOverlay.apply(source, metadata, job.id());
+            boolean pdeProof = !metadata.at("/post_production/product_proof").isMissingNode();
+            if (pdeProof) pdeProductProofOverlay.verify(metadata, job.id());
+            ProductUgcReferenceOverlay.OverlayResult overlay = pdeProof
+                    ? new ProductUgcReferenceOverlay.OverlayResult(source, Map.of())
+                    : productReferenceOverlay.apply(source, metadata, job.id());
             preparedSource = overlay.videoFile();
             productReferenceAudit = overlay.audit();
-            if (!productReferenceAudit.isEmpty()) {
-                progressCallback.onProgress(25, SalesVideoStatus.VIDEO_PROCESSING, "Captura aplicada; preparando o acabamento");
-            }
             double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());
+            // A composição PDE normaliza a pequena sobra de mux ao tempo aprovado dos cortes.
+            double plannedDuration = metadata.path("targetDurationSeconds").asDouble();
+            if (pdeProof && plannedDuration > 0 && Math.abs(durationSeconds - plannedDuration) <= .25)
+                durationSeconds = plannedDuration;
             durationAdjustedSource = extendRequestedDuration(preparedSource, durationSeconds, metadata, job.id());
             if (durationAdjustedSource != null) {
                 if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
@@ -167,6 +166,16 @@ public class PostProductionVideoProvider implements VideoProvider {
                                 : "Voz off em português gerada por " + voiceOverAudio.providerLabel());
             } else {
                 captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
+            }
+            if (pdeProof) {
+                progressCallback.onProgress(45, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Sincronizando a prova real com o trecho narrado");
+                var windows = captionTimeline.cues().stream()
+                        .map(cue -> new PdeProofCaptionTiming.Window(cue.startSeconds(), cue.endSeconds(), -1)).toList();
+                var proofOverlay = pdeProductProofOverlay.apply(preparedSource, metadata, job.id(), windows);
+                if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
+                preparedSource = proofOverlay.videoFile();
+                productReferenceAudit = proofOverlay.audit();
             }
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");

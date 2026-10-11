@@ -18,7 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /** Reproduz localmente a recuperação com binários preservados, FFmpeg real e rede segregada. */
 class PostProductionNarrationRecoveryIntegrationTest {
-  /** Recupera o caso original sem chamada de TTS, conservando pixels, voz e relógio das legendas. */
+  /** Recupera a fonte auditada sem TTS e sincroniza os pixels da prova com a locução preservada. */
   @Test
   @EnabledIfSystemProperty(named = "video.recovery.media-dir", matches = ".+")
   void recoversFiveReceivedSegmentsWithRealFfmpeg() throws Exception {
@@ -55,23 +55,25 @@ class PostProductionNarrationRecoveryIntegrationTest {
           1, null, 91098L, null, 0, null, null, "fixture@sandbox.local", Instant.now(), null, null, null,
           null, null, null, mapper.writeValueAsString(metadata), Instant.now(), Instant.now());
       var progress = new java.util.ArrayList<String>();
-      var artifacts = new PostProductionVideoProvider(settings, mapper, WebClient.builder()).render(job, null, (p, s, m) -> progress.add(m));
-      assertThat(progress).contains("Compondo a captura real do produto", "Captura aplicada; preparando o acabamento",
+      var artifacts = new PostProductionVideoProvider(settings, mapper, WebClient.builder()).render(job, mapper.readValue("{\"id\":91066}", SalesVideoProfile.class), (p, s, m) -> progress.add(m));
+      assertThat(progress).contains("Sincronizando a prova real com o trecho narrado",
           "Voz auditada reutilizada, sem nova síntese", "Arquivo finalizado; revisão de uso pendente");
       assertThat(progress).noneMatch(message -> message.contains("gerada") || message.contains("finalizado para venda"));
       assertThat(synthesisRequests.get()).isZero();
-      assertThat(requests.get()).isEqualTo(7);
-      assertThat(artifacts.metadata()).containsEntry("duration_seconds", 20.0)
+      assertThat(requests.get()).isEqualTo(metadata.at("/preservedNarration/segments").size() + 3);
+      double expectedDuration = metadata.path("postProductionDurationSeconds").asDouble(metadata.path("targetDurationSeconds").asDouble());
+      assertThat(artifacts.metadata()).containsEntry("duration_seconds", expectedDuration)
           .containsEntry("tts_cost_reconciliation_status", "PENDING_PROVIDER_RECONCILIATION");
-      assertThat(artifacts.metadata().get("tts_interactions").toString()).contains("TEXT_TO_SPEECH_REUSE", "source_job_id=21253");
-      assertThat(artifacts.captionFile().content()).asString().contains("00:00:12.456 --> 00:00:20.000");
+      assertThat(artifacts.metadata().get("tts_interactions").toString()).contains("TEXT_TO_SPEECH_REUSE", "source_job_id=" + metadata.at("/preservedNarration/sourceJobId").asLong());
+      assertThat(artifacts.captionFile().content()).asString().contains("WEBVTT");
+      assertThat(artifacts.metadata().get("product_reference_overlay").toString()).contains("NARRATION_CUE_V1");
       Path output = Path.of("target/mira-narration-recovered.mp4");
       Files.write(output, artifacts.videoFile().content());
       Files.writeString(Path.of("target/mira-narration-recovered-metadata.json"), mapper.writerWithDefaultPrettyPrinter().writeValueAsString(artifacts.metadata()));
       var probe = new ProcessBuilder("ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type,width,height", "-of", "json", output.toString()).start();
       var measured = mapper.readTree(probe.getInputStream());
       assertThat(probe.waitFor()).isZero();
-      assertThat(measured.at("/format/duration").asDouble()).isBetween(19.9, 20.1);
+      assertThat(measured.at("/format/duration").asDouble()).isBetween(expectedDuration - .1, expectedDuration + .1);
       assertThat(measured.at("/streams/0/width").asInt()).isEqualTo(1080);
       assertThat(measured.at("/streams/1/codec_type").asText()).isEqualTo("audio");
     }

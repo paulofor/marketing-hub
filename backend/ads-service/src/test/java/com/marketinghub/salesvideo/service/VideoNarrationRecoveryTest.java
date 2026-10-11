@@ -47,6 +47,31 @@ class VideoNarrationRecoveryTest {
         .isTrue();
   }
 
+  /** A correção visual de uma finalização pronta conserva todos os áudios sem outra síntese. */
+  @ParameterizedTest
+  @ValueSource(longs = {21266, 93166})
+  void restoresCompletedFinalizationForVisualCorrection(long id) throws Exception {
+    var f = fixture(id, mapper);
+    var metadata = (ObjectNode) mapper.readTree(f.previous().getMetadataJson());
+    metadata.setAll(f.audit());
+    f.previous().setStatus(SalesVideoStatus.VIDEO_READY);
+    f.previous().setFailureCode(null);
+    f.previous().setMetadataJson(metadata.toString());
+    f.previous().getEvents().clear();
+    var result =
+        mapper.valueToTree(
+            VideoNarrationRecovery.prepare(
+                f.source(), f.previous(), f.request(), mapper, f.assets()));
+    assertThat(result.at("/preservedNarration/segments")).hasSize(5);
+    assertThat(result.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
+    f.request().setCaptionText("Copy alterada");
+    assertThatThrownBy(
+            () ->
+                VideoNarrationRecovery.prepare(
+                    f.source(), f.previous(), f.request(), mapper, f.assets()))
+        .isInstanceOf(ResponseStatusException.class);
+  }
+
   /** Recusa falhas de identidade, texto, recibo e tempo antes de enfileirar outro job. */
   @ParameterizedTest
   @ValueSource(

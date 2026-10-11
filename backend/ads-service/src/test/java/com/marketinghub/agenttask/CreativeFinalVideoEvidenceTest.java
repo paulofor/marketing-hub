@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.experiment.Experiment;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.*;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -33,6 +33,13 @@ class CreativeFinalVideoEvidenceTest {
   @ValueSource(longs = {10, 93010})
   void projectsExactVersionAndRejectsOtherTenant(long productId) {
     var video = video(53L);
+    video.setResponseJson(
+        video
+            .getResponseJson()
+            .replace(
+                "\"customerQualityContract\"",
+                "\"caption_narration_sync\":{\"segment_durations_seconds\":[4,3,4]},"
+                    + "\"product_reference_overlay\":{\"reviewMoments\":[8.5]},\"customerQualityContract\""));
     var job = new SalesVideoJob();
     job.setMetadataJson("{\"videoProjectId\":13}");
     job.setTenantId("tenant-a");
@@ -52,6 +59,8 @@ class CreativeFinalVideoEvidenceTest {
     assertThat(service.needsReview(target)).isTrue();
     var projected = service.project(task(), target);
     assertThat(projected.pdeContext().path("finalVideoReview")).hasSize(1);
+    assertThat(projected.pdeContext().at("/finalVideoReview/0/reviewMoments").toString())
+        .isEqualTo("[2.0,5.5,8.5,9.0]");
     assertThat(
             service.permitsFrame(
                 task(), target, video.getAssetUrl(), "video-53-" + "a".repeat(64) + "-1000"))

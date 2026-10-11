@@ -191,6 +191,22 @@ export interface ProductProofShot {
   minimumSeconds: number;
 }
 
+export interface DeliveryExample {
+  visualAssetId: number;
+  commercialPlanId: number;
+  label: string;
+  url: string;
+  sha256: string;
+  origin: string;
+  rightsStatement: string;
+}
+
+export interface DeliveryExampleShot {
+  visualAssetId: number;
+  captionCueIndex: number;
+  headline?: string;
+}
+
 export interface RequestSalesVideoPostProductionPayload {
   requestedBy: string;
   sourceVideoUrl?: string;
@@ -198,6 +214,7 @@ export interface RequestSalesVideoPostProductionPayload {
   captionText: string;
   deliveryOnly?: boolean;
   proofShots?: ProductProofShot[];
+  deliveryExamples?: DeliveryExampleShot[];
   narrationRevisionConfirmed?: boolean;
   targetDurationSeconds?: number;
 }

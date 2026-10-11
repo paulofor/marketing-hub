@@ -53,6 +53,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     private final WebClient openAiWebClient;
     private final ProductUgcReferenceOverlay productReferenceOverlay;
     private final PdeProductProofOverlay pdeProductProofOverlay;
+    private final DeliveryExamplesMontage deliveryExamplesMontage;
 
     /** Inicializa o provider de pós-produção com configuração e cliente de download. */
     public PostProductionVideoProvider(VideoManagementProperties properties,
@@ -73,6 +74,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                         .build())
                 .build();
         this.pdeProductProofOverlay = new PdeProductProofOverlay(properties, webClientBuilder);
+        this.deliveryExamplesMontage = new DeliveryExamplesMontage(properties, webClientBuilder);
         this.productReferenceOverlay =
                 new ProductUgcReferenceOverlay(properties, objectMapper, webClientBuilder);
     }
@@ -89,7 +91,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Reporta composição e voz separadamente e preserva respostas TTS quando um gate bloqueia. */
+    /** Valida as fontes antes da voz, compõe capturas ou amostras e preserva recibos e custos. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -113,12 +115,15 @@ public class PostProductionVideoProvider implements VideoProvider {
         List<Map<String, Object>> ttsInteractions = List.of();
         List<ProviderFile> ttsAuditFiles = List.of();
         Map<String, Object> productReferenceAudit = Map.of();
+        DeliveryExamplesMontage.Prepared deliveryPrepared = null;
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
-            boolean pdeProof = !metadata.at("/post_production/product_proof").isMissingNode();
+            boolean deliveryExamples = DeliveryExamplesMontage.requested(metadata);
+            if (deliveryExamples) deliveryPrepared = deliveryExamplesMontage.prepare(metadata, job.id());
+            boolean pdeProof = !deliveryExamples && !metadata.at("/post_production/product_proof").isMissingNode();
             if (pdeProof) pdeProductProofOverlay.verify(metadata, job.id());
-            ProductUgcReferenceOverlay.OverlayResult overlay = pdeProof
+            ProductUgcReferenceOverlay.OverlayResult overlay = pdeProof || deliveryExamples
                     ? new ProductUgcReferenceOverlay.OverlayResult(source, Map.of())
                     : productReferenceOverlay.apply(source, metadata, job.id());
             preparedSource = overlay.videoFile();
@@ -135,8 +140,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                 durationSeconds = metadata.path("postProductionDurationSeconds").asDouble();
             }
             boolean sourceAudioAvailable = hasAudioStream(preparedSource, job.id());
-            boolean sourceAudioPreserved = sourceAudioAvailable && sourceAudioUseAllowed(metadata);
-            if (sourceAudioAvailable && !sourceAudioPreserved) {
+            boolean sourceAudioPreserved = !deliveryExamples && sourceAudioAvailable && sourceAudioUseAllowed(metadata);
+            if (sourceAudioAvailable && !sourceAudioPreserved && !deliveryExamples) {
                 log.warn("Áudio fonte omitido por falta de linhagem auditável; jobId={}", job.id());
             }
             CaptionTimeline captionTimeline;
@@ -177,11 +182,21 @@ public class PostProductionVideoProvider implements VideoProvider {
                 preparedSource = proofOverlay.videoFile();
                 productReferenceAudit = proofOverlay.audit();
             }
+            if (deliveryExamples) {
+                progressCallback.onProgress(45, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Montando amostras aprovadas no ritmo da narração");
+                var windows = captionTimeline.cues().stream()
+                        .map(cue -> new PdeProofCaptionTiming.Window(cue.startSeconds(), cue.endSeconds(), -1)).toList();
+                var montage = deliveryExamplesMontage.compose(deliveryPrepared, metadata, windows, durationSeconds);
+                if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
+                preparedSource = montage.videoFile();
+                productReferenceAudit = montage.audit();
+            }
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
             Files.writeString(
                     caption,
-                    buildAss(captionTimeline, aiDisclosureText(metadata, voiceOverAudio != null)),
+                    buildAss(captionTimeline, aiDisclosureText(metadata, voiceOverAudio != null), deliveryExamples),
                     StandardCharsets.UTF_8);
             if (voiceOverAudio != null) {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e voz premium sincronizadas");
@@ -234,6 +249,7 @@ public class PostProductionVideoProvider implements VideoProvider {
             log.error("Falha inesperada na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
             throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } finally {
+            if (deliveryPrepared != null) deliveryPrepared.close();
             deleteIfExists(source);
             if (preparedSource != null && !preparedSource.equals(source)) {
                 deleteIfExists(preparedSource);
@@ -783,11 +799,16 @@ public class PostProductionVideoProvider implements VideoProvider {
 
     /** Quebra a legenda em linhas curtas para leitura em vídeo vertical. */
     private String wrapCaption(String text) {
+        return wrapCaption(text, 26);
+    }
+
+    /** Adapta a largura da legenda à composição sem alterar seu texto nem o relógio narrado. */
+    private String wrapCaption(String text, int maxCharacters) {
         String[] words = text.replaceAll("\\s+", " ").trim().split(" ");
         StringBuilder result = new StringBuilder();
         StringBuilder line = new StringBuilder();
         for (String word : words) {
-            if (line.length() > 0 && line.length() + word.length() + 1 > 26) {
+            if (line.length() > 0 && line.length() + word.length() + 1 > maxCharacters) {
                 result.append(line).append('\n');
                 line.setLength(0);
             }
@@ -905,8 +926,8 @@ public class PostProductionVideoProvider implements VideoProvider {
         return result;
     }
 
-    /** Gera ASS com caixa legível e margens seguras para Reels e Stories. */
-    private String buildAss(CaptionTimeline timeline, String aiDisclosureText) {
+    /** Gera ASS com área reservada que não cobre artes na montagem de amostras. */
+    private String buildAss(CaptionTimeline timeline, String aiDisclosureText, boolean deliveryExamples) {
         StringBuilder ass = new StringBuilder("""
                 [Script Info]
                 ScriptType: v4.00+
@@ -922,6 +943,11 @@ public class PostProductionVideoProvider implements VideoProvider {
                 [Events]
                 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 """);
+        if (deliveryExamples) {
+            String styles = ass.toString().replace("Style: Default,DejaVu Sans,48,", "Style: Default,DejaVu Sans,32,")
+                    .replace(",2,54,54,170,1", ",2,54,54,125,1");
+            ass.setLength(0); ass.append(styles);
+        }
         if (StringUtils.hasText(aiDisclosureText)) {
             ass.append("Dialogue: 1,")
                     .append(formatAssTime(0)).append(',')
@@ -934,7 +960,7 @@ public class PostProductionVideoProvider implements VideoProvider {
             ass.append("Dialogue: 0,")
                     .append(formatAssTime(cue.startSeconds())).append(',')
                     .append(formatAssTime(cue.endSeconds())).append(",Default,,0,0,0,,")
-                    .append(escapeAssText(wrapCaption(cue.text()))).append('\n');
+                    .append(escapeAssText(wrapCaption(cue.text(), deliveryExamples ? 38 : 26))).append('\n');
         }
         return ass.toString();
     }

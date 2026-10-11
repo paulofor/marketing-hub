@@ -41,7 +41,8 @@ class CreativeFinalVideoEvidenceTest {
                 "\"caption_narration_sync\":{\"segment_durations_seconds\":[4,3,4]},"
                     + "\"product_reference_overlay\":{\"reviewMoments\":[8.5]},\"customerQualityContract\""));
     var job = new SalesVideoJob();
-    job.setMetadataJson("{\"videoProjectId\":13}");
+    job.setMetadataJson(
+        "{\"videoProjectId\":13,\"post_production\":{\"deliveryExamples\":{\"contractVersion\":\"APPROVED_DELIVERY_EXAMPLES_V1\",\"runtimeCaptureClaimed\":false,\"shots\":[{\"visualAssetId\":91001,\"rightsStatement\":\"Fixture local\"}]}}}");
     job.setTenantId("tenant-a");
     video.setSalesVideoJob(job);
     var project = new VideoProject();
@@ -59,6 +60,18 @@ class CreativeFinalVideoEvidenceTest {
     assertThat(service.needsReview(target)).isTrue();
     var projected = service.project(task(), target);
     assertThat(projected.pdeContext().path("finalVideoReview")).hasSize(1);
+    assertThat(
+            projected
+                .pdeContext()
+                .at("/finalVideoReview/0/deliveryExamples/runtimeCaptureClaimed")
+                .asBoolean(true))
+        .isFalse();
+    assertThat(
+            projected
+                .pdeContext()
+                .at("/finalVideoReview/0/deliveryExamples/shots/0/rightsStatement")
+                .asText())
+        .isEqualTo("Fixture local");
     assertThat(projected.pdeContext().at("/finalVideoReview/0/reviewMoments").toString())
         .isEqualTo("[2.0,5.5,8.5,9.0]");
     assertThat(

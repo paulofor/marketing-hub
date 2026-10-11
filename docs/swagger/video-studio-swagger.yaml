@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Video Studio API
-  version: 1.3.0
+  version: 1.4.0
   description: Contratos administrativos para criação e edição de projetos de vídeo do Marketing Hub.
 servers:
   - url: http://191.252.181.168:8000
@@ -12,6 +12,71 @@ tags:
   - name: ResearchIntelligence
     description: Catálogo global de cartões e roteamento contextual para os agentes do harness.
 paths:
+  /api/sales-videos/projects/{projectId}/delivery-examples:
+    get:
+      tags: [VideoStudio]
+      summary: Lista amostras de entrega aprovadas do próprio produto
+      description: Resolve origem, direitos e hash canônico ou do recibo original de geração. Não concede aprovação ao novo vídeo.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Biblioteca utilizável na montagem, possivelmente vazia
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryExample'
+        '404': { description: Projeto fora do tenant ou sem produto e experimento }
+  /api/sales-videos/jobs/{jobId}/request-post-production:
+    post:
+      tags: [VideoStudio]
+      summary: Solicita acabamento com recuperação de voz e montagem opcional
+      description: Amostras e capturas são alternativas. O backend resolve fontes; o executor V3 verifica bytes antes de TTS. Novo MP4 não herda parecer nem aceite humano.
+      parameters:
+        - { in: path, name: jobId, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestedBy, captionText]
+              properties:
+                requestedBy: { type: string, minLength: 1 }
+                captionText: { type: string, minLength: 1, description: Trechos separados por barra vertical }
+                voiceOverScript: { type: string }
+                sourceVideoUrl: { type: string, format: uri }
+                deliveryOnly: { type: boolean, default: false }
+                narrationRevisionConfirmed: { type: boolean, default: false }
+                targetDurationSeconds: { type: integer, minimum: 6, maximum: 60 }
+                deliveryExamples:
+                  type: array
+                  minItems: 2
+                  maxItems: 12
+                  description: Índices crescentes começando em zero, ao menos dois hashes distintos; não combinar com proofShots
+                  items:
+                    type: object
+                    required: [visualAssetId, captionCueIndex]
+                    properties:
+                      visualAssetId: { type: integer, format: int64 }
+                      captionCueIndex: { type: integer, minimum: 0 }
+                      headline: { type: string, maxLength: 90 }
+                proofShots:
+                  type: array
+                  items:
+                    type: object
+                    required: [reference, captionCueIndex, minimumSeconds]
+                    properties:
+                      reference: { type: string }
+                      captionCueIndex: { type: integer, minimum: 0 }
+                      minimumSeconds: { type: number }
+      responses:
+        '200': { description: Job criado ou recuperação idempotente do acabamento }
+        '400': { description: Contrato inválido ou mistura de amostras e capturas }
+        '404': { description: Job ou projeto indisponível no tenant }
+        '409': { description: Fontes não aprovadas ou sequência sem variedade }
   /api/sales-videos/projects/{projectId}/product-proof:
     get:
       summary: Ler pixels da prova privada homologada para o projeto
@@ -299,6 +364,17 @@ components:
         type: integer
         format: int64
   schemas:
+    DeliveryExample:
+      type: object
+      required: [visualAssetId, commercialPlanId, label, url, sha256, origin, rightsStatement]
+      properties:
+        visualAssetId: { type: integer, format: int64 }
+        commercialPlanId: { type: integer, format: int64 }
+        label: { type: string }
+        url: { type: string, format: uri }
+        sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        origin: { type: string }
+        rightsStatement: { type: string }
     VideoProjectStatus:
       type: string
       enum:

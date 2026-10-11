@@ -57,3 +57,18 @@ Não transforme uma página inteira reduzida em prova. Reserve leitura proporcio
 Explique o incremento concreto da continuidade paga e encerre com ação compatível com o destino,
 sem repetir a mesma cena apenas para preencher duração. Em retornos, reaproveite cenas e voz
 compatíveis; nenhuma imagem estática deve ser regenerada por uma correção exclusiva do vídeo.
+
+## Amostras da entrega e qualidade das artes — 2026-10-11
+
+Uma captura técnica pode conter placeholders e ilustrações feitas só para testes. Não use
+esses pixels para prometer acabamento comercial. Quando o produto entrega artes, consulte
+as amostras aprovadas da biblioteca do próprio produto pelo contrato de vídeo
+`GET /api/sales-videos/projects/{projectId}/delivery-examples`. A montagem explícita
+`deliveryExamples` associa `visualAssetId` a `captionCueIndex`; o backend resolve direitos,
+origem e hash. Não invente IDs nem use amostras de outro produto.
+
+Escolha artes que sejam atraentes e representem a oferta; aprovação técnica não comprova
+esse critério. A nova montagem alterna composição e amostras no ritmo da fala, preserva o
+áudio compatível e passa novamente por Psique. Amostra ilustrativa de catálogo não é captura
+da interface vigente, depoimento, resultado de cliente ou prova de demanda. Para demonstração
+da interface, mantenha o contrato de capturas homologadas. Não misture as duas alegações.

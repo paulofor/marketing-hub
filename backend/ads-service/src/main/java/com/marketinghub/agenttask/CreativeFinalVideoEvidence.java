@@ -47,7 +47,9 @@ public class CreativeFinalVideoEvidence {
         context);
   }
 
-  /** Resolve as mídias atuais pela versão, produto, experimento e tenant, sem inferência. */
+  /**
+   * Resolve os vídeos atuais e suas fontes de entrega pela identidade exata, sem herdar pareceres.
+   */
   public ArrayNode inputs(AgentTaskTargetResponse target) {
     ArrayNode inputs = json.createArrayNode();
     if (target == null || target.experimentId() == null || target.productId() == null)
@@ -70,8 +72,8 @@ public class CreativeFinalVideoEvidence {
       String sha = result.at("/hls_delivery/sourceSha256").asText();
       if (!sha.matches("[a-f0-9]{64}") || video.getAssetUrl() == null) continue;
       roles.add(video.getSlot().name());
-      inputs
-          .addObject()
+      var input = inputs.addObject();
+      input
           .put("assetId", video.getId())
           .put("sha256", sha)
           .put("url", video.getAssetUrl())
@@ -82,6 +84,9 @@ public class CreativeFinalVideoEvidence {
               result.path("voice_over_script").asText(result.at("/captions/text").asText()))
           .put("rejectionReason", Objects.toString(video.getRejectionReason(), ""))
           .set("reviewMoments", reviewMoments(result, video.getDurationSeconds()));
+      var examples = metadata.at("/post_production/deliveryExamples");
+      if ("APPROVED_DELIVERY_EXAMPLES_V1".equals(examples.path("contractVersion").asText()))
+        input.set("deliveryExamples", examples.deepCopy());
     }
     return inputs;
   }

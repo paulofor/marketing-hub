@@ -105,6 +105,15 @@ public class SalesVideoController {
         .body(salesVideoService.readProductProof(projectId, taskId, evidenceId));
   }
 
+  /** Lista amostras aprovadas do próprio produto, sem herdar aprovação para o vídeo. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Listar amostras aprovadas do produto para montagem do vídeo")
+  @GetMapping("/api/sales-videos/projects/{projectId}/delivery-examples")
+  public java.util.List<com.marketinghub.salesvideo.dto.DeliveryExampleDto> deliveryExamples(
+      @PathVariable Long projectId) {
+    return salesVideoService.deliveryExamples(projectId);
+  }
+
   /** Consulta o catalogo operacional do estudio de audio e video. */
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {

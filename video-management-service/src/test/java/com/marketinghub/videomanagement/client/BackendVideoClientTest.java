@@ -86,7 +86,7 @@ class BackendVideoClientTest {
         assertThat(server.takeRequest().getPath())
                 .isEqualTo("/api/internal/sales-videos/autonomy/v1/apollo/reconcile");
         assertThat(server.takeRequest().getPath())
-                .isEqualTo("/internal/video/jobs?status=VIDEO_REQUESTED&limit=10&postProductionContract=PDE_VIDEO_POST_PRODUCTION_V2");
+                .isEqualTo("/internal/video/jobs?status=VIDEO_REQUESTED&limit=10&postProductionContract=PDE_VIDEO_POST_PRODUCTION_V3");
     }
 
     /** Declara capacidade no claim para impedir consumo por versão antiga durante rollout. */
@@ -98,7 +98,7 @@ class BackendVideoClientTest {
         client.claimJob(91009L, new com.marketinghub.videomanagement.client.payload.JobClaimPayload("fixture", "recuperação"));
         var request = server.takeRequest();
         assertThat(request.getPath()).isEqualTo("/internal/video/jobs/91009/claim");
-        assertThat(request.getBody().readUtf8()).contains("\"postProductionContract\":\"PDE_VIDEO_POST_PRODUCTION_V2\"");
+        assertThat(request.getBody().readUtf8()).contains("\"postProductionContract\":\"PDE_VIDEO_POST_PRODUCTION_V3\"");
     }
 
     /** Consome a fila canônica de preflight sem depender de endpoint administrativo ou tenant. */

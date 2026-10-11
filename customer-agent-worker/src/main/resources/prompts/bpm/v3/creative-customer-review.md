@@ -87,6 +87,14 @@ nem continuidade perfeita entre frames; registre esses limites sem fabricar obse
 
 ### Escopo executável do retorno — v2
 
+Avalie também a qualidade visual das fontes em cada MP4: placeholders, grades de teste,
+posts pouco atraentes e páginas inteiras reduzidas exigem ADJUST, mesmo que tenham hash,
+aprovação financeira ou homologação técnica. Movimento de câmera sobre a mesma arte fraca
+não resolve a falha. Compare cenas do início, meio e fim: há mudança útil de conteúdo,
+composição e atenção, ou apenas oscilação/zoom? Registre os segundos e exemplos no parecer.
+Artes de catálogo precisam de origem e direitos do mesmo produto; não são capturas da UI
+nem prova de clientes. A classificação da imagem aprovada e a do MP4 são independentes.
+
 Declare `correctionScope`: `NONE` somente em APPROVED; `FINAL_VIDEO` quando as alterações
 se limitam aos MP4s e a imagem permanece adequada; `STATIC_ASSET` quando só a imagem
 precisa mudar; `MIXED` quando ambos precisam de correção. Nunca devolva produção de imagem

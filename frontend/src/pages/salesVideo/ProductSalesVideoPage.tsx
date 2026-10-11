@@ -2,7 +2,15 @@ import {
   ProductProofSequenceEditor,
   validateProofSequence,
 } from "./ProductProofSequenceEditor";
-import type { ProductProofShot } from "../../api/salesVideo/types";
+import type {
+  ProductProofShot,
+  DeliveryExampleShot,
+} from "../../api/salesVideo/types";
+import { useDeliveryExamples } from "../../api/salesVideo/useDeliveryExamples";
+import {
+  DeliveryExamplesEditor,
+  validateDeliveryExamples,
+} from "./DeliveryExamplesEditor";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -134,6 +142,10 @@ export default function ProductSalesVideoPage() {
   const [postProductionCaption, setPostProductionCaption] = useState("");
   const [postProductionDuration, setPostProductionDuration] = useState("");
   const [proofShots, setProofShots] = useState<ProductProofShot[]>([]);
+  const [deliveryExamples, setDeliveryExamples] = useState<
+    DeliveryExampleShot[]
+  >([]);
+  useEffect(() => setDeliveryExamples([]), [selectedJobId]);
   const [narrationRevisionConfirmed, setNarrationRevisionConfirmed] =
     useState(false);
   useEffect(() => setNarrationRevisionConfirmed(false), [selectedJobId]);
@@ -171,6 +183,18 @@ export default function ProductSalesVideoPage() {
     }
     return postProductionSourceJobs[0];
   }, [postProductionSourceJobs, selectedJobId]);
+  const videoProjectId = useMemo(() => {
+    try {
+      return (
+        Number(
+          JSON.parse(selectedVideoJob?.metadataJson || "{}").videoProjectId,
+        ) || undefined
+      );
+    } catch {
+      return undefined;
+    }
+  }, [selectedVideoJob]);
+  const deliveryLibrary = useDeliveryExamples(videoProjectId);
   const { data: selectedVideoAsset } = useAsset(
     selectedVideoJob?.assetId ?? undefined,
   );
@@ -447,6 +471,17 @@ export default function ProductSalesVideoPage() {
       toast.error(proofError);
       return;
     }
+    const deliveryError = validateDeliveryExamples(
+      deliveryExamples,
+      postProductionCaption,
+    );
+    if (deliveryError || (deliveryExamples.length && proofShots.length)) {
+      toast.error(
+        deliveryError ||
+          "Escolha amostras da entrega ou capturas da interface nesta montagem.",
+      );
+      return;
+    }
     if (!selectedVideoSourceUrl) {
       toast.error("Aguarde o carregamento do asset ou stream do vídeo");
       return;
@@ -457,6 +492,9 @@ export default function ProductSalesVideoPage() {
         sourceVideoUrl: selectedVideoSourceUrl || undefined,
         voiceOverScript: postProductionVoiceOver.trim() || undefined,
         proofShots: proofShots.length ? proofShots : undefined,
+        deliveryExamples: deliveryExamples.length
+          ? deliveryExamples
+          : undefined,
         narrationRevisionConfirmed,
         captionText: postProductionCaption.trim(),
         targetDurationSeconds: postProductionDuration.trim()
@@ -1322,6 +1360,17 @@ export default function ProductSalesVideoPage() {
                 onChange={setProofShots}
                 disabled={requestPostProduction.isPending}
               />
+              {videoProjectId && (
+                <DeliveryExamplesEditor
+                  examples={deliveryLibrary.data ?? []}
+                  value={deliveryExamples}
+                  captions={postProductionCaption}
+                  onChange={setDeliveryExamples}
+                  disabled={requestPostProduction.isPending}
+                  loading={deliveryLibrary.isLoading}
+                  error={deliveryLibrary.isError}
+                />
+              )}
               <label className="form-label" htmlFor="post-production-duration">
                 Duração final (segundos)
               </label>

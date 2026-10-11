@@ -84,6 +84,43 @@ class DeliveryExamplesMontageTest {
         }
     }
 
+    /** A camada real aparece na fala certa sem cobrir título nem herdar prova comercial. */
+    @ParameterizedTest @ValueSource(longs = {9007, 9018})
+    @EnabledIfSystemProperty(named = "video.delivery.real-ffmpeg", matches = "true")
+    void combinesRealProofAndIllustrativeArt(long product) throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start();
+            byte[] a = pixels(900, 900, Color.PINK), b = pixels(900, 900, Color.CYAN), proof = pixels(900, 600, Color.GREEN);
+            server.enqueue(response(a)); server.enqueue(response(b)); server.enqueue(response(proof));
+            ObjectNode metadata = metadata(server, a, b, product);
+            metadata.put("captionText", "Veja uma amostra. | Copie o texto. | Conheça o conjunto.").put("targetDurationSeconds", 9).put("postProductionDurationSeconds", 9);
+            ((ObjectNode) metadata.at("/post_production/deliveryExamples/shots/1")).put("captionCueIndex", 2);
+            var post = (ObjectNode) metadata.path("post_production");
+            var capture = post.putObject("product_proof").put("contractVersion", "PDE_PRIVATE_VIDEO_PROOF_V1").put("tenantId", "fixture").put("productId", product).put("experimentId", product + 1).put("projectId", product + 2).put("taskId", 90051).put("evidenceId", 90052).put("sha256", hash(proof)).put("contentPath", "/api/sales-videos/projects/" + (product + 2) + "/product-proof/90051/90052").put("captionCueIndex", 1).put("minimumSeconds", 2).put("commercialEvidenceClaimed", false);
+            post.putArray("proofShots").add(capture.deepCopy());
+            metadata.putArray("cut_plan").addObject().put("duration_seconds", 9).put("role", "PROVA");
+            var properties = new VideoManagementProperties(); properties.setBackendBaseUrl(server.url("/").uri());
+            var montage = new DeliveryExamplesMontage(properties, WebClient.builder());
+            var windows = List.of(new PdeProofCaptionTiming.Window(0, 3, 0), new PdeProofCaptionTiming.Window(3, 5, 1), new PdeProofCaptionTiming.Window(5, 9, 2));
+            try (var sources = montage.prepare(metadata, 99101L)) {
+                var base = montage.compose(sources, metadata, windows, 9);
+                var finalVideo = new PdeProductProofOverlay(properties, WebClient.builder()).apply(base.videoFile(), metadata, 99101L, windows);
+                try {
+                    byte[] before = frame(finalVideo.videoFile(), 1), during = frame(finalVideo.videoFile(), 4), after = frame(finalVideo.videoFile(), 7);
+                    assertThat(before).isNotEqualTo(during); assertThat(after).isNotEqualTo(during);
+                    int point = (100 * 108 + 54) * 3;
+                    assertThat(Byte.toUnsignedInt(during[point + 1])).isGreaterThan(200);
+                    assertThat(Byte.toUnsignedInt(during[point])).isLessThan(40);
+                    int title = (30 * 108 + 54) * 3;
+                    assertThat(java.util.Arrays.copyOfRange(during, title, title + 3)).isEqualTo(java.util.Arrays.copyOfRange(before, title, title + 3));
+                    assertThat(finalVideo.audit().get("commercialEvidenceClaimed")).isEqualTo(false);
+                    assertThat(finalVideo.audit().get("shots").toString()).contains("DELIVERY_WITH_REAL_ACTION_V1");
+                    assertThat(duration(finalVideo.videoFile())).isBetween(8.95, 9.05);
+                } finally { Files.deleteIfExists(base.videoFile()); Files.deleteIfExists(finalVideo.videoFile()); }
+            }
+        }
+    }
+
     /** Executa o finalizador completo com fontes locais e áudio preservado, sem acessar APIs externas. */
     @Test @EnabledIfSystemProperty(named = "video.delivery.preview", matches = ".+")
     void previewsExistingNarrationWithLocalSources() throws Exception {
@@ -96,6 +133,7 @@ class DeliveryExamplesMontageTest {
                     @Override public MockResponse dispatch(RecordedRequest request) {
                         try {
                             String file = request.getPath().substring(1);
+                            if (file.startsWith("api/sales-videos/projects/")) file = "proof-" + file.substring(file.lastIndexOf('/') + 1) + ".png";
                             if (file.contains("..") || file.contains("/")) return new MockResponse().setResponseCode(400);
                             return response(Files.readAllBytes(directory.resolve(file)));
                         } catch (Exception ex) {
@@ -116,6 +154,7 @@ class DeliveryExamplesMontageTest {
                 var profile = mapper.treeToValue(mapper.createObjectNode().put("id", 99098)
                         .put("targetDurationSeconds", metadata.path("postProductionDurationSeconds").asInt()), SalesVideoProfile.class);
                 var properties = new VideoManagementProperties();
+                properties.setBackendBaseUrl(server.url("/").uri());
                 properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
                 properties.getProviders().getPostProduction().setOpenAiApiKey("local-fixture-no-external-access");
                 properties.getProviders().getPostProduction().setOpenAiBaseUrl(server.url("/").uri());
@@ -124,6 +163,13 @@ class DeliveryExamplesMontageTest {
                 Files.writeString(directory.resolve(name + "-result.json"), mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result.metadata()));
                 assertThat(result.metadata().get("tts_interactions").toString()).contains("TEXT_TO_SPEECH_REUSE", "incremental_cost_usd=0");
                 assertThat(result.auditFiles()).isEmpty();
+                if (metadata.at("/post_production/proofShots").isArray()) {
+                    var audit = mapper.valueToTree(result.metadata().get("product_reference_overlay"));
+                    assertThat(audit.path("compositionMode").asText()).isEqualTo("HYBRID_DELIVERY_DEMONSTRATION_V1");
+                    assertThat(audit.at("/productProof/shots")).hasSize(metadata.at("/post_production/proofShots").size());
+                    assertThat(audit.at("/deliveryExamples/runtimeCaptureClaimed").asBoolean(true)).isFalse();
+                    assertThat(audit.at("/productProof/shots/0/layout").asText()).isEqualTo("DELIVERY_WITH_REAL_ACTION_V1");
+                }
             }
         }
     }

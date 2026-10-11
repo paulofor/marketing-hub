@@ -509,3 +509,15 @@ gratuito por falta de conciliação. Não muda oferta, orçamento ou autorizaç�
 
 Contrato: `docs/swagger/video-delivery-examples-v1.md`. Matriz e aprendizado:
 `docs/homologacao/capella-video-quality-v2.md`.
+
+
+### Montagem de amostras e ações reais — 2026-10-11
+
+O parecer de Psique sobre Capella #731 identificou que artes melhores não bastam
+quando a narração descreve funções ausentes dos frames. O compositor V4 deve permitir
+amostras aprovadas e recortes homologados na mesma montagem, mantendo proveniência
+separada e tempos ligados à voz. A abertura identifica produto e público, o encerramento
+usa CTA do produto e a captura não pode vazar linguagem operacional. O harness existente
+preserva os momentos de entrada e conteúdo real sem alterar o runtime comercial.
+A melhoria é adotada somente após testes locais e revisão independente do novo MP4;
+não substitui os aceites humanos, não autoriza gasto adicional e não comprova conversão.

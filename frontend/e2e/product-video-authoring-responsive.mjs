@@ -123,6 +123,8 @@ try {
       ) {
         const body = request.postDataJSON();
         assert.equal(body.deliveryExamples.length, 2);
+        assert.equal(body.proofShots.length, 1);
+        assert.equal(body.proofShots[0].captionCueIndex, 1);
         assert.equal(body.narrationRevisionConfirmed, false);
         assert(body.deliveryExamples.every((s) => !s.url && !s.sha256));
         data = { id: 91035, profileId: profile.id, status: "VIDEO_REQUESTED" };
@@ -247,6 +249,11 @@ try {
       layout.width <= layout.viewport + 1,
       `Montagem transborda em ${name}: ${JSON.stringify(layout)}`,
     );
+    await page.getByText("Sequência da demonstração", { exact: true }).click();
+    await page.getByRole("button", { name: "Adicionar captura", exact: true }).click();
+    await page.locator("#proof-reference-0").fill("internal://agent-tasks/91050/visual-evidence/91051#crop=0,0,900,700");
+    await page.locator("#proof-cue-0").fill("2");
+    await page.locator("#proof-seconds-0").fill("2");
     await page.locator("#delivery-example-0").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${output}/${name}-montage.png` });
     await page

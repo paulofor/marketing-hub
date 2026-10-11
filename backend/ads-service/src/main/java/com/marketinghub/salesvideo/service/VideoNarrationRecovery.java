@@ -29,6 +29,7 @@ public final class VideoNarrationRecovery {
   public static final String CONTRACT = "PRESERVED_TTS_NARRATION_V1";
   public static final String SEQUENCE_CONTRACT = "PDE_VIDEO_POST_PRODUCTION_V2";
   public static final String DELIVERY_CONTRACT = "PDE_VIDEO_POST_PRODUCTION_V3";
+  public static final String HYBRID_CONTRACT = "PDE_VIDEO_POST_PRODUCTION_V4";
 
   private static final Logger log = LoggerFactory.getLogger(VideoNarrationRecovery.class);
 
@@ -252,20 +253,21 @@ public final class VideoNarrationRecovery {
     return asset;
   }
 
-  /** Filtra antes da paginação conforme suporte a recuperação, captura e montagem de amostras. */
+  /** Filtra antes da paginação conforme suporte a voz, capturas, amostras e montagem combinada. */
   public static org.springframework.data.jpa.domain.Specification<SalesVideoJob> consumableBy(
       String contract) {
     return (root, query, cb) -> {
-      if (DELIVERY_CONTRACT.equals(contract)) return cb.conjunction();
+      if (HYBRID_CONTRACT.equals(contract)) return cb.conjunction();
       var noDelivery =
           cb.or(
               cb.isNull(root.get("metadataJson")),
               cb.notLike(root.get("metadataJson"), "%\"deliveryExamples\"%"));
-      if (SEQUENCE_CONTRACT.equals(contract)) return noDelivery;
       var noSequence =
           cb.or(
               cb.isNull(root.get("metadataJson")),
               cb.notLike(root.get("metadataJson"), "%\"proofShots\"%"));
+      if (DELIVERY_CONTRACT.equals(contract)) return cb.or(noDelivery, noSequence);
+      if (SEQUENCE_CONTRACT.equals(contract)) return noDelivery;
       if (CONTRACT.equals(contract)) return cb.and(noDelivery, noSequence);
       return cb.and(
           noDelivery,
@@ -282,19 +284,27 @@ public final class VideoNarrationRecovery {
   public static void requireCompatible(
       SalesVideoJob job, String workerContract, ObjectMapper mapper) {
     JsonNode metadata = read(mapper, job.getMetadataJson(), job.getId());
+    if (!metadata.at("/post_production/deliveryExamples").isMissingNode()
+        && !metadata.at("/post_production/proofShots").isMissingNode())
+      require(
+          HYBRID_CONTRACT.equals(workerContract),
+          "O executor precisa declarar suporte à montagem combinada de amostras e capturas.");
     if (!metadata.at("/post_production/deliveryExamples").isMissingNode())
       require(
-          DELIVERY_CONTRACT.equals(workerContract),
+          DELIVERY_CONTRACT.equals(workerContract) || HYBRID_CONTRACT.equals(workerContract),
           "O executor precisa declarar suporte à montagem de amostras antes de reservar este vídeo.");
     if (!metadata.at("/post_production/proofShots").isMissingNode())
       require(
-          SEQUENCE_CONTRACT.equals(workerContract) || DELIVERY_CONTRACT.equals(workerContract),
+          SEQUENCE_CONTRACT.equals(workerContract)
+              || DELIVERY_CONTRACT.equals(workerContract)
+              || HYBRID_CONTRACT.equals(workerContract),
           "O executor precisa declarar o contrato de sequência antes de reservar as capturas narradas.");
     if (!metadata.path("preservedNarration").isMissingNode())
       require(
           CONTRACT.equals(workerContract)
               || SEQUENCE_CONTRACT.equals(workerContract)
-              || DELIVERY_CONTRACT.equals(workerContract),
+              || DELIVERY_CONTRACT.equals(workerContract)
+              || HYBRID_CONTRACT.equals(workerContract),
           "O executor precisa declarar o contrato de recuperação antes de reservar a fala preservada.");
   }
 

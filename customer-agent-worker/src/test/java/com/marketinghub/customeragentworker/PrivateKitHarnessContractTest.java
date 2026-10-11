@@ -42,14 +42,26 @@ class PrivateKitHarnessContractTest {
             "TECHNICAL",
             null,
             expected);
-    assertThat(artifacts).hasSize(9);
-    for (String failure : List.of("previous-format", "previous-count", "missing-capture")) {
+    assertThat(artifacts).hasSize(15);
+    for (String failure :
+        List.of(
+            "previous-format",
+            "previous-count",
+            "missing-capture",
+            "missing-moment",
+            "wrong-device")) {
       var invalid = report.deepCopy();
       if ("previous-format".equals(failure))
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid).remove("packageContractVersion");
       else if ("previous-count".equals(failure))
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
             .put("packageFileCount", 24);
+      else if ("missing-moment".equals(failure))
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("artifacts").get(0))
+            .put("evidenceKey", "unknown");
+      else if ("wrong-device".equals(failure))
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("artifacts").get(0))
+            .put("deviceProfile", "UNKNOWN");
       else
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
             .remove("screenshotEvidenceKeys");

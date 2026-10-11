@@ -8,7 +8,8 @@ export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -XX:ActiveProcessorCount=2"
 if [[ -z "${KIT_TEST_DB_HOST:-}" && "${DOCKER_HOST:-}" == tcp://sandbox-docker:* ]]; then
   export KIT_TEST_DB_HOST=sandbox-docker
 fi
-round_dir="$(mktemp -d "$repo_dir/.git/private-kit-XXXXXX")"
+round_dir="$(mktemp -d "$(git rev-parse --git-path private-kit-XXXXXX)")"
+round_dir="$(cd "$round_dir" && pwd)"
 if [[ "${KIT_TEST_WITH_VIDEO:-false}" == true ]]; then
   mkdir -p "$round_dir/media"
   ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=purple:s=360x640:d=1 -f lavfi -i sine=frequency=440:duration=1 -vf 'drawtext=text=Homologacao local:fontcolor=white:fontsize=24:x=20:y=h-60' -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest -movflags +faststart "$round_dir/media/ad.mp4"

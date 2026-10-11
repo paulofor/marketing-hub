@@ -475,11 +475,8 @@ export default function ProductSalesVideoPage() {
       deliveryExamples,
       postProductionCaption,
     );
-    if (deliveryError || (deliveryExamples.length && proofShots.length)) {
-      toast.error(
-        deliveryError ||
-          "Escolha amostras da entrega ou capturas da interface nesta montagem.",
-      );
+    if (deliveryError) {
+      toast.error(deliveryError);
       return;
     }
     if (!selectedVideoSourceUrl) {

@@ -1250,7 +1250,7 @@ public class SalesVideoJobService {
   }
 
   /**
-   * Monta o acabamento com capturas ou amostras aprovadas e recupera voz somente da auditoria
+   * Monta o acabamento com capturas e amostras aprovadas e recupera voz somente da auditoria
    * anterior.
    */
   private String buildPostProductionMetadata(
@@ -1261,10 +1261,6 @@ public class SalesVideoJobService {
     Map<String, Object> metadata = new LinkedHashMap<>();
     preserveGovernedLineage(sourceJob, metadata);
     if (request.getDeliveryExamples() != null && !request.getDeliveryExamples().isEmpty()) {
-      if (request.getProofShots() != null && !request.getProofShots().isEmpty())
-        throw VideoModuleException.badRequest(
-            VideoModuleErrorCode.BAD_REQUEST,
-            "Escolha demonstração da interface ou montagem de amostras nesta finalização.");
       var lineage = objectMapper.valueToTree(metadata);
       long projectId = lineage.path("videoProjectId").asLong();
       if (projectId <= 0 || deliveryExampleService == null)
@@ -1294,7 +1290,8 @@ public class SalesVideoJobService {
       if (!(post instanceof com.fasterxml.jackson.databind.node.ObjectNode postObject))
         throw VideoModuleException.badRequest(
             VideoModuleErrorCode.BAD_REQUEST, "Contrato de demonstração ausente.");
-      postObject.remove("deliveryExamples");
+      if (request.getDeliveryExamples() == null || request.getDeliveryExamples().isEmpty())
+        postObject.remove("deliveryExamples");
       postObject.set(
           "proofShots",
           objectMapper.valueToTree(

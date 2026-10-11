@@ -241,7 +241,7 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
-   * vinculadas aos cenários antes do parecer.
+   * vinculadas aos cenários e momentos reais do uso antes do parecer.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -340,10 +340,11 @@ public class PdeAgentValidationHarnessRunner {
     if ("TECHNICAL".equals(mode)) {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
+      int extraKitCaptures = privateKit ? validateKitCaptureMoments(result) : 0;
       int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone || privateKit ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
-          || result.path("artifacts").size() != expectedScenarioDeviceGates
+          || result.path("artifacts").size() != expectedScenarioDeviceGates + extraKitCaptures
           || !devices.equals(Set.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
           || !scenarios.equals(Set.of("ADHERENT", "RECOVERY", "SAFETY"))) {
         throw new HarnessException(
@@ -452,6 +453,39 @@ public class PdeAgentValidationHarnessRunner {
     }
     if (artifacts.isEmpty()) throw new HarnessException("O harness não produziu screenshots.");
     return List.copyOf(artifacts);
+  }
+
+  /** Exige entrada e conteúdo reais nos três dispositivos quando o kit declara momentos extras. */
+  private int validateKitCaptureMoments(JsonNode result) {
+    if (!result.has("captureMomentsContract")) return 0;
+    if (!"PDE_KIT_CAPTURE_MOMENTS_V1".equals(result.path("captureMomentsContract").asText()))
+      throw new HarnessException("Contrato de momentos do kit desconhecido.");
+    var keys = new java.util.HashSet<String>();
+    for (JsonNode artifact : result.path("artifacts")) {
+      if (!keys.add(artifact.path("evidenceKey").asText()))
+        throw new HarnessException("Captura de momento duplicada.");
+    }
+    for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+      var expectedKeys =
+          Set.of(
+              "ADHERENT-" + device + "-BRIEFING",
+              "ADHERENT-" + device + "-CONTENT",
+              "ADHERENT-" + device);
+      JsonNode scenario = null;
+      for (JsonNode value : result.path("scenarios"))
+        if ("ADHERENT".equals(value.path("scenarioCode").asText())
+            && device.equals(value.path("deviceProfile").asText())) scenario = value;
+      var linked = new java.util.HashSet<String>();
+      if (scenario != null)
+        scenario.path("screenshotEvidenceKeys").forEach(value -> linked.add(value.asText()));
+      if (!linked.equals(expectedKeys) || !keys.containsAll(expectedKeys))
+        throw new HarnessException("Entrada e conteúdo não estão ligados ao percurso real do kit.");
+      for (JsonNode artifact : result.path("artifacts"))
+        if (expectedKeys.contains(artifact.path("evidenceKey").asText())
+            && !device.equals(artifact.path("deviceProfile").asText()))
+          throw new HarnessException("Captura de momento pertence a outro dispositivo.");
+    }
+    return 6;
   }
 
   /** Mantém relatórios históricos e exige o contrato de sinais das candidatas novas. */

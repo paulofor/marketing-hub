@@ -129,3 +129,68 @@ persistência local e agentes simulados, sem novas chamadas pagas.
 
 Resultado: 337 testes das 15 suítes relacionadas, sem falhas, erros ou skips,
 incluindo retorno único ao pai e proteção das reservas. Spotless e diff conferidos.
+
+
+## Correspondência entre narração e demonstração — parecer 731
+
+Psique aprovou a evolução das artes, mas pediu ajuste dos MP4s 65/66: a narração
+falava de briefing, textos, calendário e download enquanto a montagem só mostrava
+posts. A abertura ainda permitia confundir o kit com serviço de manicure. Não é
+falha da fonte aprovada; o compositor impedia combinar amostras com ações reais.
+
+Alternativas avaliadas: simplificar somente a copy perderia a demonstração; voltar
+à tela inteira repetiria a monotonia; combinar arte e recortes reais preserva o
+apelo visual e comprova o uso. A terceira foi escolhida, reutilizando voz, capturas
+homologadas e catálogo do mesmo produto. Não muda o produto, preço ou autorização.
+
+Matriz adicional, definida antes dos testes:
+
+- Backend e tela aceitam as duas fontes, resolvidas separadamente pelo contrato
+  existente, com identidade e direitos. V4 impede workers antigos de ignorar uma
+  camada. V1/V2/V3 continuam compatíveis com suas montagens anteriores.
+- O harness técnico captura briefing preenchido e conteúdo expandido além dos nove
+  percursos existentes. Momentos têm vínculo com cenário, dispositivo e sessão;
+  não há compra, envio, nova composição externa nem prova comercial.
+- O render final mantém abertura clara, artes dentro da área visível, demonstração
+  no trecho narrado, legendas legíveis e encerramento próprio. Catálogo ilustrativo
+  e interface real com dados fictícios continuam identificados separadamente.
+- Dois produtos, desktop/iPhone/Pixel, recuperação da mesma voz, bloqueio de fontes
+  adulteradas e testes antigos válidos. A revisão recebe hashes e momentos das
+  duas fontes. Não herda aprovação do MP4 anterior.
+- Adoção depende de regressões locais e novo parecer independente. O parecer 731
+  custou US$ 0,560812 estimados; a locução original continua sem conciliação.
+  Sem alegação de aumento de conversão ou margem antes de medição comercial.
+
+
+A rodada local detectou duas capturas de conteúdo com a mesma chave. A chamada
+repetida foi removida e o harness agora recusa duplicação antes de produzir relatório.
+Os dois contextos passaram com nove percursos e quinze capturas cada; o consumidor
+validou também vínculos e rejeições de momentos ausentes/dispositivo divergente.
+
+Houve saturação real do limite compartilhado de 512 processos/threads da sandbox:
+Chromium ficou sem renderer e FFmpeg recusou decoder com `Resource temporarily
+unavailable`. Node persistente permaneceu saudável. A validação foi retomada com
+afinidade local de duas CPUs e os decoders da composição passaram a declarar uma
+thread por entrada, preservando conteúdo e reduzindo disputa. Não foi alterada a
+instalação global nem utilizada publicação como teste.
+
+Validação da composição combinada: 211 testes de backend nas oito suítes afetadas,
+mais o consumidor da prova técnica real; 182 testes do worker de Psique (9 condicionais
+sem serviço externo) e 292 do executor audiovisual (4 condicionais), sem falhas após
+a correção dos decoders. Os testes de FFmpeg incluem duas identidades e modalidades
+anteriores. Os MP4s completos de 27/45 s passaram em Chromium desktop, iPhone e Pixel,
+com decodificação de áudio, controles e identidade. 28 testes de interface, typecheck,
+formulário combinado nos três dispositivos e análise do script também passaram.
+
+A rodada de integração comprovou 18 percursos técnicos, seis callbacks de cenário,
+dois retornos de integridade/gate e nove controles privados. Após corrigir a chave
+duplicada, os 18 percursos e o consumidor de quinze capturas foram revalidados; a
+segunda rodada de callbacks foi interrompida pela saturação de processos, sem falha
+funcional nova. O modo de cenário permanece sem mudança de contrato. A topologia
+temporária foi removida. Nenhuma inferência paga foi usada na validação local.
+
+Spotless passou nos arquivos alterados do backend e do worker. O worker contém duas
+violações de formatação preexistentes em FinalVideoReviewInputs, fora deste diff. O
+check global do backend também aponta arquivos preexistentes fora desta alteração;
+o check restrito aos arquivos alterados é a evidência usada. O build do frontend passou. O
+executor audiovisual não configura Spotless e manteve seu estilo local.

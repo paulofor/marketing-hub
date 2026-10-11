@@ -180,7 +180,7 @@ final class DeliveryExamplesMontage {
             g.setColor(new Color(0x914b67)); g.fillOval(layout == 1 ? -450 : 600, 480, 940, 1200);
             g.setColor(new Color(0xffeddd));
             g.setFont(new Font("DejaVu Sans", Font.BOLD, 26));
-            g.drawString("AMOSTRAS DO KIT", 80, 160);
+            g.drawString("KIT PERSONALIZADO PARA DIVULGAÇÃO", 80, 160);
             int size = 72;
             List<String> lines;
             do {
@@ -210,7 +210,7 @@ final class DeliveryExamplesMontage {
         return lines;
     }
 
-    /** Anima camadas separadas com entrada rápida, deslocamento e alternância entre arte e coleção. */
+    /** Anima as camadas dentro da margem segura, sem cortar os textos da arte principal. */
     private void render(Path background, Path image, Path companion, Path output, double seconds, int layout, Long jobId) {
         int size = layout == 1 ? 810 : 900;
         String slide = layout == 2 ? "-" : "+";
@@ -219,10 +219,10 @@ final class DeliveryExamplesMontage {
                 + "[1:v]scale=" + size + ":850:force_original_aspect_ratio=decrease,format=rgba," + loop + "[art];"
                 + (layout == 1 ? "[2:v]scale=630:720:force_original_aspect_ratio=decrease,format=rgba,rotate=-0.10:fillcolor=none," + loop + "[other];"
                     + "[background][other]overlay=x='-75+25*sin(t)':y='610-18*sin(t)'[base];" : "[background]null[base];")
-                + "[base][art]overlay=x='(W-w)/2" + slide + "if(lt(t,0.45),180*pow(1-t/0.45,3),28*sin(t*0.9))'"
+                + "[base][art]overlay=x='(W-w)/2" + slide + "if(lt(t,0.45),60*pow(1-t/0.45,3),28*sin(t*0.9))'"
                 + ":y='575+18*sin(t*0.8)'[out]";
-        run(List.of(ffmpeg(), "-v", "error", "-y", "-i", background.toString(),
-                "-i", image.toString(), "-i", companion.toString(),
+        run(List.of(ffmpeg(), "-v", "error", "-y", "-threads", "1", "-i", background.toString(),
+                "-threads", "1", "-i", image.toString(), "-threads", "1", "-i", companion.toString(),
                 "-filter_complex_threads", "1", "-filter_complex", filter, "-map", "[out]", "-an", "-t", number(seconds),
                 "-c:v", "libx264", "-threads", "2", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
                 "-r", "30", "-movflags", "+faststart", output.toString()), jobId);

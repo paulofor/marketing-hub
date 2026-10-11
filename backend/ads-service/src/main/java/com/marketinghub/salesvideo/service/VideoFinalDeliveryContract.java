@@ -22,7 +22,7 @@ final class VideoFinalDeliveryContract {
   private VideoFinalDeliveryContract() {}
 
   /**
-   * Valida a fonte persistida e proíbe mudar roteiro, legenda, capturas ou URL durante a
+   * Valida a fonte persistida e proíbe mudar roteiro, legenda, artes, capturas ou URL durante a
    * recuperação.
    */
   static String prepare(
@@ -40,7 +40,8 @@ final class VideoFinalDeliveryContract {
           || request.getSourceVideoUrl() != null
           || request.getVoiceOverScript() != null
           || request.isNarrationRevisionConfirmed()
-          || (request.getProofShots() != null && !request.getProofShots().isEmpty())) {
+          || (request.getProofShots() != null && !request.getProofShots().isEmpty())
+          || (request.getDeliveryExamples() != null && !request.getDeliveryExamples().isEmpty())) {
         throw new IllegalArgumentException(
             "Recuperação HLS deve preservar integralmente o acabamento e seus textos.");
       }

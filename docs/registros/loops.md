@@ -10009,3 +10009,13 @@ Não reescrever resultados já emitidos. Matriz, montagem e limites em
   seleção com a política real, em duas identidades; conferir disparo único,
   retorno aceito, custos e espera humana preservados. Comando antigo/ausente,
   pausa, STOP, outro ciclo, tarefa real e outra reserva continuam bloqueados.
+
+
+#### Complemento 2026-10-12 — LOOP-VIDEO-USA-FIXTURE-COMO-ARTE-COMERCIAL
+
+Capella #731 confirmou melhora visual, mas rejeitou os vídeos 65/66 por divergência
+entre fala e ações mostradas. A exclusão mútua entre amostras e capturas impedia a
+prova correspondente. Correção: composição V4 com ambas, momentos reais do harness,
+proveniência separada e margem de entrada sem corte. Regressões de backend, executor,
+frontend e captura usam dois produtos e preservam recuperação sem nova voz. Referência:
+`docs/homologacao/capella-video-quality-v2.md`. Impacto comercial ainda não medido.

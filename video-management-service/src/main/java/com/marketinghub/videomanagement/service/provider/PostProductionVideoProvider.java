@@ -121,7 +121,8 @@ public class PostProductionVideoProvider implements VideoProvider {
             source = downloadSourceVideo(job, sourceVideoUrl);
             boolean deliveryExamples = DeliveryExamplesMontage.requested(metadata);
             if (deliveryExamples) deliveryPrepared = deliveryExamplesMontage.prepare(metadata, job.id());
-            boolean pdeProof = !deliveryExamples && !metadata.at("/post_production/product_proof").isMissingNode();
+            boolean pdeProof = !metadata.at("/post_production/product_proof").isMissingNode()
+                    && (!deliveryExamples || !metadata.at("/post_production/proofShots").isMissingNode());
             if (pdeProof) pdeProductProofOverlay.verify(metadata, job.id());
             ProductUgcReferenceOverlay.OverlayResult overlay = pdeProof || deliveryExamples
                     ? new ProductUgcReferenceOverlay.OverlayResult(source, Map.of())
@@ -172,16 +173,6 @@ public class PostProductionVideoProvider implements VideoProvider {
             } else {
                 captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
             }
-            if (pdeProof) {
-                progressCallback.onProgress(45, SalesVideoStatus.VIDEO_PROCESSING,
-                        "Sincronizando a prova real com o trecho narrado");
-                var windows = captionTimeline.cues().stream()
-                        .map(cue -> new PdeProofCaptionTiming.Window(cue.startSeconds(), cue.endSeconds(), -1)).toList();
-                var proofOverlay = pdeProductProofOverlay.apply(preparedSource, metadata, job.id(), windows);
-                if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
-                preparedSource = proofOverlay.videoFile();
-                productReferenceAudit = proofOverlay.audit();
-            }
             if (deliveryExamples) {
                 progressCallback.onProgress(45, SalesVideoStatus.VIDEO_PROCESSING,
                         "Montando amostras aprovadas no ritmo da narração");
@@ -191,6 +182,17 @@ public class PostProductionVideoProvider implements VideoProvider {
                 if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
                 preparedSource = montage.videoFile();
                 productReferenceAudit = montage.audit();
+            }
+            if (pdeProof) {
+                progressCallback.onProgress(45, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Sincronizando a prova real com o trecho narrado");
+                var windows = captionTimeline.cues().stream()
+                        .map(cue -> new PdeProofCaptionTiming.Window(cue.startSeconds(), cue.endSeconds(), -1)).toList();
+                var proofOverlay = pdeProductProofOverlay.apply(preparedSource, metadata, job.id(), windows);
+                if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
+                preparedSource = proofOverlay.videoFile();
+                productReferenceAudit = deliveryExamples
+                        ? combineVisualAudits(productReferenceAudit, proofOverlay.audit()) : proofOverlay.audit();
             }
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
@@ -924,6 +926,19 @@ public class PostProductionVideoProvider implements VideoProvider {
         result.put("narration_duration_seconds", narration.narrationDurationSeconds());
         result.put("synthetic_music_bed", false);
         return result;
+    }
+
+    /** Mantém amostras e interface como fontes distintas, com momentos de revisão das duas. */
+    private Map<String, Object> combineVisualAudits(Map<String, Object> examples, Map<String, Object> proof) {
+        var moments = new java.util.TreeSet<Double>();
+        for (var audit : List.of(examples, proof)) {
+            Object values = audit.get("reviewMoments");
+            if (values instanceof List<?> list)
+                for (Object value : list) if (value instanceof Number number) moments.add(number.doubleValue());
+        }
+        return Map.of("contractVersion", "NARRATED_DELIVERY_AND_PROOF_V1", "status", "APPLIED",
+                "compositionMode", "HYBRID_DELIVERY_DEMONSTRATION_V1", "deliveryExamples", examples,
+                "productProof", proof, "commercialEvidenceClaimed", false, "reviewMoments", List.copyOf(moments));
     }
 
     /** Gera ASS com área reservada que não cobre artes na montagem de amostras. */

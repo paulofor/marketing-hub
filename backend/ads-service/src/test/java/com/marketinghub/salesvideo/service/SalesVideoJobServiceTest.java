@@ -235,12 +235,62 @@ class SalesVideoJobServiceTest {
         .isEqualTo("APPROVED_DELIVERY_EXAMPLES_V1");
     assertThat(metadata.path("campaign_key").asText()).isEqualTo("fixture-v3");
     assertThat(metadata.path("requestedDeliveryExamples").size()).isEqualTo(2);
+  }
+
+  /** Une fontes resolvidas sem perder identidade da captura nem direitos da biblioteca. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {91004, 92018})
+  void persistsHybridSources(long project) throws Exception {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.setMetadataJson(
+        "{\"videoProjectId\":"
+            + project
+            + ",\"post_production\":{\"product_proof\":{\"sha256\":\"original\"}}}");
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.save(any()))
+        .willAnswer(
+            i -> {
+              SalesVideoJob job = i.getArgument(0);
+              job.setId(project + 100);
+              return job;
+            });
+    var examples = org.mockito.Mockito.mock(VideoDeliveryExampleService.class);
+    var proof = org.mockito.Mockito.mock(VideoProductProofService.class);
+    service.setDeliveryExampleService(examples);
+    service.setProductProofService(proof);
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("fixture@sandbox.local");
+    request.setCaptionText("Veja. | Use.");
+    request.setDeliveryExamples(
+        List.of(
+            new com.marketinghub.salesvideo.service.postproduction.DeliveryExampleShot(
+                project + 1, 0),
+            new com.marketinghub.salesvideo.service.postproduction.DeliveryExampleShot(
+                project + 2, 1)));
     request.setProofShots(
         List.of(
             new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
-                "invalid", 0, 3)));
-    assertThrows(
-        VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
+                "internal://agent-tasks/91050/visual-evidence/91051#crop=0,0,900,700", 1, 2)));
+    given(examples.sequence(project, request.getDeliveryExamples(), request.getCaptionText()))
+        .willReturn(
+            java.util.Map.of(
+                "contractVersion",
+                "APPROVED_DELIVERY_EXAMPLES_V1",
+                "productVersion",
+                "fixture-v3",
+                "shots",
+                request.getDeliveryExamples()));
+    given(proof.sequence(project, request.getProofShots(), request.getCaptionText()))
+        .willReturn(List.of(java.util.Map.of("sha256", "original", "captionCueIndex", 1)));
+    var result =
+        new ObjectMapper()
+            .readTree(service.requestPostProduction(source.getId(), request).getMetadataJson());
+    assertThat(result.at("/post_production/deliveryExamples/contractVersion").asText())
+        .isEqualTo("APPROVED_DELIVERY_EXAMPLES_V1");
+    assertThat(result.at("/post_production/proofShots/0/sha256").asText()).isEqualTo("original");
+    assertThat(result.path("requestedDeliveryExamples")).hasSize(2);
+    assertThat(result.path("requestedProofShots")).hasSize(1);
   }
 
   /** A revisão da voz usa o limite da própria fonte, nunca uma aprovação de outro produto. */

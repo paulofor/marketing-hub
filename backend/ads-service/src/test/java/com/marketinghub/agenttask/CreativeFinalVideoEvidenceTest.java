@@ -28,6 +28,19 @@ class CreativeFinalVideoEvidenceTest {
   private final CreativeFinalVideoEvidence service =
       new CreativeFinalVideoEvidence(videos, projects, tasks, json);
 
+  /** Montagens combinadas preservam momentos das duas fontes dentro do limite de amostragem. */
+  @Test
+  void preservesHybridReviewMoments() {
+    var result = json.createObjectNode();
+    var times = result.putObject("product_reference_overlay").putArray("reviewMoments");
+    for (int i = 1; i <= 17; i++) times.add(i);
+    com.fasterxml.jackson.databind.JsonNode resolved =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "reviewMoments", result, 30);
+    assertThat(resolved).hasSize(17);
+    assertThat(resolved.get(16).asDouble()).isEqualTo(17);
+  }
+
   /** Mira e um produto distinto recebem somente vídeo pertencente à sua própria versão. */
   @ParameterizedTest
   @ValueSource(longs = {10, 93010})

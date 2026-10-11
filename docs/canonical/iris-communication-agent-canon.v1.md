@@ -594,3 +594,13 @@ Regressões devem unir produtores e consumidor reais, testar outra identidade,
 hashes alterados, parecer ausente e o contrato completo antes válido. Consultas
 não criam ciclo, tarefa, aprovação ou autorização financeira/comercial.
 Matriz: [Alcyone — primeiro experimento](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).
+
+### Identidade da prova operacional revisada — 11/10/2026
+
+O recibo de um gate já aceito continua ligado ao hash do relatório efetivamente
+examinado. Quando uma rodada posterior de testes produz outro relatório da mesma
+candidata, a leitura conserva o anterior no catálogo histórico e verifica seus bytes,
+produto, versão e hash. O contexto continua expondo o relatório atual separadamente;
+este não herda aprovação independente do anterior. Versão diferente, nova correção
+funcional ou gate inválido continuam bloqueando. A integração audiovisual nova tem
+suas próprias revisões antes do uso comercial; nenhuma leitura altera essas decisões.

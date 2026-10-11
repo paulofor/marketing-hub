@@ -9926,3 +9926,25 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - Limites: ler prova não cria aprovação, autorização de gasto, publicação ou nova hipótese;
   não regride a etapa nem altera pareceres históricos. A revisão dos MP4s e seleção humana
   continuam próprias. Evidências e validação em `docs/homologacao/video-customer-quality-v1.md`.
+
+## LOOP-RELATORIO-ATUAL-SUBSTITUI-PROVA-REVISADA — 11/10/2026
+
+- **Evidência:** tarefa Psique 724 falhou antes de inferência. O gate 545 conservava o
+  relatório `de6c6109...` de 07/10, revisado por Têmis 633; o catálogo passou a entregar
+  `a0f35274...` de 10/10, após a integração audiovisual opcional da mesma candidata v3.
+  O log apontou `Nova correção exige novo gate`, embora não existisse tarefa posterior
+  de correção da candidata. Psique 655 usou o relatório anterior com sucesso.
+- **Causa:** leitura de prova histórica consultava exclusivamente o relatório atual;
+  uma nova rodada determinística invalidava a conferência do recibo imutável anterior.
+- **Alternativas:** restaurar o catálogo antigo ocultaria a prova mais recente; repetir
+  pareceres de todo o produto aumentaria custo e não corrigiria a resolução histórica;
+  consultar o relatório exato do recibo conserva ambas as evidências e foi escolhido.
+- **Correção:** catálogo existente preserva referências históricas, acessíveis apenas
+  por produto, versão e SHA explícitos. Íris verifica o recibo aprovado por esse hash,
+  preserva a prova atual separadamente e mantém validação de tarefas, versão, tempo,
+  gate e limites privados. O relatório atual não herda parecer do anterior.
+- **Prevenção:** regressão vermelha em duas identidades, leitura dos pixels com produtor
+  e consumidor reais, rejeição de bytes/hash/identidade divergentes e replay local dos
+  SELECTs do caso vigente. Não reescreve parecer, gate, mídia, autorização ou custo.
+- **Limite:** preserva somente um gate já aceito da mesma candidata; integração nova
+  continua sujeita às revisões próprias. Não é homologação comercial nem venda.

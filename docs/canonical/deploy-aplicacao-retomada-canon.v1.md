@@ -61,6 +61,19 @@ idêntica mantém a pausa. A equivalência exata deve registrar o commit homolog
 efetivo, a árvore e o evento de decisão antes de chamar `resume`. Comparação de diff, mensagem,
 autor, data ou conteúdo parcial jamais substitui essa igualdade criptográfica da árvore completa.
 
+Se outra alteração entrar na `main` antes do squash, a árvore completa pode diferir mesmo com
+o PR integrado. Nesse caso, preservar a pausa e homologar localmente a nova `main` completa,
+incluindo a alteração concorrente e os testes pertinentes. O comando explícito
+`revalidate-resume --id <id> --validated-commit <sha-main> --integrated-pr <numero> --evidence <prova>`
+registra essa **nova homologação**, sem declarar equivalência com a anterior. Ele exige registro
+já preparado, fila vazia, publicadores pausados, PR efetivamente integrado neste repositório e
+na `main` com o HEAD originalmente homologado, além de ancestralidade da base protegida e do
+merge. A API deve confirmar SHA e árvore completos e a `main` não pode mudar durante a conferência.
+A evidência original permanece em `validation_history`; não há liberação nem intervenção adicional
+nesse comando. O reconciliador continua responsável por comprovar a nova revisão e retomar os
+publicadores. Essa recuperação não autoriza registros antigos sem `prepare-resume`, não presume
+equivalência parcial e não dispensa a validação local nem o fluxo de PR da correção.
+
 Para homologação ainda em curso, manter a pausa. Registros antigos sem preparação de retomada
 continuam protegidos. Restaurar somente workflows anteriormente ativos; não reativar os que já
 estavam desativados. Falta de evidência, comando interrompido, erro de consulta ou passagem do

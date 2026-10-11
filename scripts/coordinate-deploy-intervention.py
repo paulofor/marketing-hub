@@ -352,6 +352,50 @@ class Coordinator:
         self.checkpoint(state, "automatic_resume_prepared", validated_commit=validated_commit, validated_tree=tree)
         return state
 
+    def revalidate_resume(self, identifier, validated_commit, integrated_pr, evidence):
+        """Registra nova homologação completa da main após squash concorrente, sem liberar a proteção."""
+        if (not re.fullmatch(r"[a-f0-9]{40}", validated_commit or "")
+                or not evidence.strip() or integrated_pr < 1):
+            raise CoordinationError("Informe SHA completo, PR integrado e evidência da nova homologação local.")
+        state = self.current(identifier)
+        previous = state.get("automatic_resume")
+        if state["phase"] != "AWAITING_MERGE" or not previous:
+            raise CoordinationError("Revalidação exige homologação já preparada e ainda protegida.")
+        enabled, pending = self.inspect(state)
+        if enabled or pending:
+            raise CoordinationError("Revalidação exige publicadores pausados e fila vazia.")
+        origin = previous.get("original_validated_commit", previous["validated_commit"])
+        pull = self.github.api(f"pulls/{integrated_pr}")
+        merge_commit = pull.get("merge_commit_sha") if isinstance(pull, dict) else None
+        if (not isinstance(pull, dict) or pull.get("merged") is not True
+                or pull.get("head", {}).get("sha") != origin
+                or pull.get("base", {}).get("ref") != "main"
+                or pull.get("base", {}).get("repo", {}).get("full_name") != REPOSITORY
+                or not re.fullmatch(r"[a-f0-9]{40}", merge_commit or "")):
+            raise CoordinationError("O PR não comprova integração da revisão originalmente homologada.")
+        if self.github.api("git/ref/heads/main")["object"]["sha"] != validated_commit:
+            raise CoordinationError("A nova revisão homologada deve ser a main atual, sem inferência de equivalência.")
+        commit = self.github.api(f"commits/{validated_commit}")
+        tree = commit.get("commit", {}).get("tree", {}).get("sha") if isinstance(commit, dict) else None
+        if (not isinstance(commit, dict) or commit.get("sha") != validated_commit
+                or not re.fullmatch(r"[a-f0-9]{40}", tree or "")):
+            raise CoordinationError("GitHub não confirmou a árvore completa da nova homologação.")
+        for predecessor in (state["initial_sha"], merge_commit):
+            comparison = self.github.api(f"compare/{predecessor}...{validated_commit}")
+            if not isinstance(comparison, dict) or comparison.get("status") not in {"ahead", "identical"}:
+                raise CoordinationError("A nova revisão não contém a base protegida e o merge comprovado.")
+        if self.github.api("git/ref/heads/main")["object"]["sha"] != validated_commit:
+            raise CoordinationError("A main mudou durante a conferência; preservar a pausa e revalidar.")
+        state.setdefault("validation_history", []).append(previous)
+        state["automatic_resume"] = {
+            "validated_commit": validated_commit, "validated_tree": tree,
+            "original_validated_commit": origin, "integrated_pr": integrated_pr,
+            "verified_at": now(), "prepared_at": now(), "evidence": evidence,
+        }
+        self.checkpoint(state, "integrated_main_revalidated", previous_commit=previous["validated_commit"],
+                        validated_commit=validated_commit, validated_tree=tree, integrated_pr=integrated_pr)
+        return state
+
     def resume(self, identifier, integrated_commit, evidence):
         """Restaura estados anteriores só após comprovar integração e fila vazia; não dispara deploy."""
         if not re.fullmatch(r"[a-f0-9]{40}", integrated_commit or "") or not evidence.strip():
@@ -420,15 +464,17 @@ def main():
     for argument in ("owner", "reason", "authorization", "protected-version"):
         begin.add_argument("--" + argument, required=True)
     commands.add_parser("status", help="Consultar o registro persistido e a situação real")
-    for name in ("protect", "check", "resume", "prepare-resume", "discard-unstarted"):
+    for name in ("protect", "check", "resume", "prepare-resume", "revalidate-resume", "discard-unstarted"):
         command = commands.add_parser(name)
         command.add_argument("--id", required=True)
         if name == "resume":
             command.add_argument("--integrated-commit", required=True)
             command.add_argument("--evidence", required=True)
-        if name == "prepare-resume":
+        if name in {"prepare-resume", "revalidate-resume"}:
             command.add_argument("--validated-commit", required=True)
             command.add_argument("--evidence", required=True)
+        if name == "revalidate-resume":
+            command.add_argument("--integrated-pr", type=int, required=True)
         if name == "discard-unstarted":
             command.add_argument("--keep-run", type=int, help="Preservar um run existente da main atual")
     execute = commands.add_parser("execute", help="Executar comando autorizado sob a proteção e o lock")
@@ -457,6 +503,8 @@ def main():
                 state = coordinator.resume(args.id, args.integrated_commit, args.evidence)
             elif args.command == "prepare-resume":
                 state = coordinator.prepare_resume(args.id, args.validated_commit, args.evidence)
+            elif args.command == "revalidate-resume":
+                state = coordinator.revalidate_resume(args.id, args.validated_commit, args.integrated_pr, args.evidence)
             elif args.command == "reconcile-publishers":
                 result = PublisherRecovery(coordinator).reconcile()
                 print(json.dumps(result, ensure_ascii=False, indent=2))

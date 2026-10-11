@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 public final class VideoNarrationRecovery {
   public static final String CONTRACT = "PRESERVED_TTS_NARRATION_V1";
+  public static final String SEQUENCE_CONTRACT = "PDE_VIDEO_POST_PRODUCTION_V2";
 
   private static final Logger log = LoggerFactory.getLogger(VideoNarrationRecovery.class);
 
@@ -33,7 +34,8 @@ public final class VideoNarrationRecovery {
   private VideoNarrationRecovery() {}
 
   /**
-   * Recupera a voz da finalização anterior; o service exige rejeição antes de substituir sucesso.
+   * Recupera a mesma voz ou registra mudança explícita de texto; o service valida rejeição e
+   * financeiro.
    */
   public static Map<String, Object> prepare(
       SalesVideoJob source,
@@ -48,7 +50,11 @@ public final class VideoNarrationRecovery {
                 == com.marketinghub.salesvideo.SalesVideoJobType.POST_PRODUCTION;
     boolean durationFailure =
         previous.getStatus() == SalesVideoStatus.VIDEO_FAILED
-            && "APOLLO_NARRATION_DURATION_EXCEEDED".equals(previous.getFailureCode());
+            && java.util.Set.of(
+                    "APOLLO_NARRATION_DURATION_EXCEEDED",
+                    "PDE_PROOF_CAPTION_TIMING_INVALID",
+                    "PDE_PRODUCT_PROOF_INVALID")
+                .contains(previous.getFailureCode() == null ? "" : previous.getFailureCode());
     if (!completedFinalization && !durationFailure) return Map.of();
     require(
         Objects.equals(source.getTenantId(), previous.getTenantId())
@@ -57,10 +63,24 @@ public final class VideoNarrationRecovery {
         "A voz pertence a outra fonte.");
     JsonNode prior = read(mapper, previous.getMetadataJson(), previous.getId());
     if (completedFinalization && prior.path("tts_interactions").isMissingNode()) return Map.of();
-    require(
+    boolean sameCopy =
         Objects.equals(prior.path("captionText").asText(), request.getCaptionText())
-            && Objects.equals(prior.path("voiceOverScript").asText(), request.getVoiceOverScript()),
-        "A recuperação preserva o texto e a voz anteriores; alteração de copy exige novo preflight.");
+            && Objects.equals(prior.path("voiceOverScript").asText(), request.getVoiceOverScript());
+    if (!sameCopy && request.isNarrationRevisionConfirmed())
+      return Map.of(
+          "narrationRevision",
+          Map.of(
+              "contractVersion",
+              "NARRATION_REVISION_V1",
+              "previousJobId",
+              previous.getId(),
+              "newNarrationRequested",
+              true,
+              "providerCostReconciled",
+              false));
+    require(
+        sameCopy,
+        "A recuperação preserva o texto e a voz anteriores; confirme a revisão da locução dentro do limite audiovisual vigente.");
     require(
         request.getTargetDurationSeconds() != null,
         "Informe a duração final para recuperar a fala sem nova síntese.");
@@ -152,25 +172,35 @@ public final class VideoNarrationRecovery {
             segments));
   }
 
-  /** Filtra no SQL antes da paginação para que executor antigo não receba recuperação. */
+  /** Filtra no SQL antes da paginação, separando capacidades de recuperação e sequência. */
   public static org.springframework.data.jpa.domain.Specification<SalesVideoJob> consumableBy(
       String contract) {
-    return (root, query, cb) ->
-        CONTRACT.equals(contract)
-            ? cb.conjunction()
-            : cb.or(
-                cb.isNull(root.get("metadataJson")),
-                cb.notLike(root.get("metadataJson"), "%\"preservedNarration\"%"));
+    return (root, query, cb) -> {
+      if (SEQUENCE_CONTRACT.equals(contract)) return cb.conjunction();
+      var noSequence =
+          cb.or(
+              cb.isNull(root.get("metadataJson")),
+              cb.notLike(root.get("metadataJson"), "%\"proofShots\"%"));
+      if (CONTRACT.equals(contract)) return noSequence;
+      return cb.and(
+          noSequence,
+          cb.or(
+              cb.isNull(root.get("metadataJson")),
+              cb.notLike(root.get("metadataJson"), "%\"preservedNarration\"%")));
+    };
   }
 
-  /** Impede reservar recuperação por executor que não declarou o contrato exato. */
+  /** Impede reservar acabamento por executor que não suporta recuperação ou sequência declarada. */
   public static void requireCompatible(
       SalesVideoJob job, String workerContract, ObjectMapper mapper) {
-    if (!read(mapper, job.getMetadataJson(), job.getId())
-        .path("preservedNarration")
-        .isMissingNode())
+    JsonNode metadata = read(mapper, job.getMetadataJson(), job.getId());
+    if (!metadata.at("/post_production/proofShots").isMissingNode())
       require(
-          CONTRACT.equals(workerContract),
+          SEQUENCE_CONTRACT.equals(workerContract),
+          "O executor precisa declarar o contrato de sequência antes de reservar as capturas narradas.");
+    if (!metadata.path("preservedNarration").isMissingNode())
+      require(
+          CONTRACT.equals(workerContract) || SEQUENCE_CONTRACT.equals(workerContract),
           "O executor precisa declarar o contrato de recuperação antes de reservar a fala preservada.");
   }
 

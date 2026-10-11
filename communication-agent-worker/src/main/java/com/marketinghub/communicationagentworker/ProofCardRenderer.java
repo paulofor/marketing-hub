@@ -16,10 +16,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProofCardRenderer {
-  /** Compõe prova fiel com rótulos e ressalva factual também na preparação privada. */
+  /**
+   * Compõe prova fiel com linguagem de cliente, rótulos e ressalva factual na preparação privada.
+   */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
+    validateCustomerCopy(spec);
     BufferedImage original = ImageIO.read(new ByteArrayInputStream(source));
     if (original == null) throw new IllegalArgumentException("Origem não é PNG decodificável.");
     JsonNode crop = spec.path("crop");
@@ -133,7 +136,7 @@ public class ProofCardRenderer {
         throw new IllegalArgumentException("Texto obrigatório do criativo ausente.");
       text(
           g,
-          privateValidation ? "Demonstração sintética · sem compra ou cobrança " + footer : footer,
+          privateValidation ? "Exemplo com dados de teste · sem cobrança. " + footer : footer,
           64,
           privateValidation ? 1252 : 1245,
           952,
@@ -148,9 +151,26 @@ public class ProofCardRenderer {
     return output.toByteArray();
   }
 
-  /** Nomeia explicitamente a aplicação privada sem esconder o formato real da entrega. */
+  /** Nomeia o formato real sem expor o estado interno de revisão nos pixels da cliente. */
   static String eyebrow(JsonNode spec, boolean privateValidation) {
-    return privateValidation ? "APLICAÇÃO WEB PRIVADA" : spec.path("eyebrow").asText();
+    return privateValidation ? "DEMONSTRAÇÃO DO SITE" : spec.path("eyebrow").asText();
+  }
+
+  /**
+   * Recusa termos operacionais nos textos visíveis, sem alterar a auditoria ou a prova original.
+   */
+  static void validateCustomerCopy(JsonNode spec) {
+    var internal =
+        java.util.regex.Pattern.compile(
+            "\\b(acesso privado|aplicacao web privada|em privado|demonstracao privada|credencial|homologacao|pipeline|mcp|task id)\\b");
+    for (String field : List.of("brandLabel", "eyebrow", "headline", "body", "ctaText", "footer")) {
+      String normalized =
+          java.text.Normalizer.normalize(spec.path(field).asText(), java.text.Normalizer.Form.NFD)
+              .replaceAll("\\p{M}", "")
+              .toLowerCase(java.util.Locale.ROOT);
+      if (internal.matcher(normalized).find())
+        throw new IllegalArgumentException("Linguagem interna no texto da cliente: " + field);
+    }
   }
 
   /** Exige coordenadas inteiras para registrar um recorte reproduzível. */

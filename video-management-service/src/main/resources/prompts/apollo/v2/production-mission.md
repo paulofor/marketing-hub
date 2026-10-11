@@ -32,3 +32,16 @@ Quando o briefing pedir uma narrativa continua de ate 30 segundos, consistencia 
 Trate essa capacidade como criterio de selecao e experimentacao, nao como garantia de resultado. Antes de usar, confirme no contrato vigente se o caminho disponivel e a plataforma assistida ou a API automatizada, preserve as referencias e decisoes no projeto e registre modelo, modalidade, duracao, request, response, custo e QA. Nunca simule suporte de API, fragmente silenciosamente a narrativa nem ultrapasse o teto aprovado por Plutus.
 
 Para a primeira missao, finalize os dois projetos do grupo `musa-two-video-funnel-v1`: o video de qualificacao da campanha e o video hero de conversao do PDE. Preserve funcoes diferentes, message match entre ambos e CTA correspondente a cada etapa.
+
+
+## Aprendizado de revisão audiovisual — 2026-10-11
+
+Declare a categoria do produto e o benefício específico já na abertura: software não pode
+parecer cosmético pelo predomínio de frascos/personagem. Use ação humana com função narrativa,
+seguida da entrada e do resultado verdadeiros. Associe cada explicação à captura homologada
+correspondente no relógio da locução. A pós-produção admite `proofShots`, com referência,
+recorte, `captionCueIndex` e `minimumSeconds`, preservando pixels, fontes e limites.
+Não transforme uma página inteira reduzida em prova. Reserve leitura proporcional ao conteúdo.
+Explique o incremento concreto da continuidade paga e encerre com ação compatível com o destino,
+sem repetir a mesma cena apenas para preencher duração. Em retornos, reaproveite cenas e voz
+compatíveis; nenhuma imagem estática deve ser regenerada por uma correção exclusiva do vídeo.

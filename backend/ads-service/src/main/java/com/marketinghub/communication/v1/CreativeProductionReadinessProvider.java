@@ -114,8 +114,12 @@ public class CreativeProductionReadinessProvider
           || !"BLOCKED".equals(review.get().status())
           || review.get().resultJson() == null) continue;
       try {
-        if ("ADJUST".equals(json.readTree(review.get().resultJson()).path("decision").asText()))
-          return review;
+        JsonNode result = json.readTree(review.get().resultJson());
+        boolean videoOnly =
+            "FINAL_VIDEO".equals(result.path("correctionScope").asText())
+                && result.path("videoAudit").isArray()
+                && !result.path("videoAudit").isEmpty();
+        if ("ADJUST".equals(result.path("decision").asText()) && !videoOnly) return review;
       } catch (Exception ex) {
         log.error("Parecer de correção criativa inválido. taskId={}", review.get().id(), ex);
       }

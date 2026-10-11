@@ -96,6 +96,33 @@ class CreativeProductionReadinessProviderTest {
     assertThat(readiness.reason()).contains("tarefa #11", "Íris", "Psique e Têmis");
   }
 
+  /** Ajuste exclusivo de vídeo não regenera imagem; legado, imagem e misto mantêm a recuperação. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"FINAL_VIDEO", "STATIC_ASSET", "MIXED", ""})
+  void routesOnlyStaticChangesBackToImageProduction(String scope) {
+    var process = new BusinessProcessDefinition();
+    process.setId(91064L);
+    process.setProcessCode("creative-production-approval");
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setActivityId("nonAudiovisual");
+    String rendered = "{\"functionalOutput\":{\"staticAssets\":[{}],\"renderedAssets\":[{}]}}";
+    when(tasks.findFunctionalSnapshotsByProcessSince(91064L, "experiment:91092", null))
+        .thenReturn(
+            List.of(
+                snapshot(10, "nonAudiovisual", "COMPLETED", rendered),
+                snapshot(
+                    11,
+                    "customer",
+                    "BLOCKED",
+                    "{\"decision\":\"ADJUST\",\"correctionScope\":\""
+                        + scope
+                        + "\",\"videoAudit\":[{\"assetId\":91059}]}")));
+    assertThat(
+            provider.requiresFreshExecution(process, activity, new Product(), "experiment:91092"))
+        .isEqualTo(!"FINAL_VIDEO".equals(scope));
+  }
+
   /** Cria somente os dados funcionais necessários à decisão, sem auditoria pesada. */
   private AgentTaskFunctionalSnapshot snapshot(
       long id, String activity, String status, String result) {

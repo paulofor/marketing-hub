@@ -49,7 +49,46 @@ public class VideoProductProofService {
   @Transactional(readOnly = true)
   public Map<String, Object> resolve(VideoProject project) {
     if (!isInternalReference(project.getReferencePerformanceUri())) return Map.of();
-    var match = REFERENCE.matcher(project.getReferencePerformanceUri().trim());
+    return resolveReference(project, project.getReferencePerformanceUri(), false);
+  }
+
+  /** Congela cada captura da sequência, exigindo o mesmo produto, versão, experimento e tenant. */
+  @Transactional(readOnly = true)
+  public java.util.List<Map<String, Object>> sequence(
+      Long projectId,
+      java.util.List<com.marketinghub.salesvideo.service.postproduction.ProductProofShot> shots,
+      String captionText) {
+    VideoProject project = ownedProject(projectId);
+    if (shots == null || shots.isEmpty() || shots.size() > 5)
+      throw invalid("Use de um a cinco trechos de demonstração.");
+    int segments = captionText.split("\\s*\\|\\s*", -1).length;
+    int previous = -1;
+    var result = new java.util.ArrayList<Map<String, Object>>();
+    for (var shot : shots) {
+      if (shot == null
+          || shot.captionCueIndex() <= previous
+          || shot.captionCueIndex() >= segments
+          || !Double.isFinite(shot.minimumSeconds())
+          || shot.minimumSeconds() < 2
+          || shot.minimumSeconds() > 12
+          || !isInternalReference(shot.reference())
+          || !shot.reference().contains("#crop="))
+        throw invalid(
+            "Cada trecho exige legenda em ordem, captura homologada recortada e leitura entre 2 e 12 segundos.");
+      var proof = resolveReference(project, shot.reference(), true);
+      proof.put("captionCueIndex", shot.captionCueIndex());
+      proof.put("minimumSeconds", shot.minimumSeconds());
+      result.add(proof);
+      previous = shot.captionCueIndex();
+    }
+    return java.util.List.copyOf(result);
+  }
+
+  /** Resolve apenas referências canônicas, sem confiar em hash ou URL enviados pelo editor. */
+  private Map<String, Object> resolveReference(
+      VideoProject project, String reference, boolean explicit) {
+    if (!isInternalReference(reference)) throw invalid("Referência de prova inválida.");
+    var match = REFERENCE.matcher(reference.trim());
     match.matches();
     var proof =
         source
@@ -66,7 +105,12 @@ public class VideoProductProofService {
     result.put("experimentId", project.getExperimentId());
     result.put("productVersion", project.getCampaignKey());
     result.put("sha256", proof.sha256());
-    result.put("contentPath", "/api/sales-videos/projects/" + project.getId() + "/product-proof");
+    result.put(
+        "contentPath",
+        "/api/sales-videos/projects/"
+            + project.getId()
+            + "/product-proof"
+            + (explicit ? "/" + proof.taskId() + "/" + proof.evidenceId() : ""));
     result.put("syntheticScenario", true);
     result.put("commercialEvidenceClaimed", false);
     if (match.group(3) != null) {
@@ -84,15 +128,29 @@ public class VideoProductProofService {
   /** Entrega a captura somente pelo módulo de vídeo e pelo tenant do projeto. */
   @Transactional(readOnly = true)
   public byte[] read(Long projectId) {
-    VideoProject project =
-        projectRepository
-            .findById(projectId)
-            .filter(
-                value -> Objects.equals(value.getTenantId(), TenantContextHolder.requireTenant()))
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    VideoProject project = ownedProject(projectId);
     var proof = resolve(project);
     if (proof.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     return source.read((Long) proof.get("taskId"), (Long) proof.get("evidenceId"));
+  }
+
+  /** Entrega outra captura homologada do mesmo projeto para demonstrar entrada e saída reais. */
+  @Transactional(readOnly = true)
+  public byte[] read(Long projectId, Long taskId, Long evidenceId) {
+    var proof =
+        resolveReference(
+            ownedProject(projectId),
+            "internal://agent-tasks/" + taskId + "/visual-evidence/" + evidenceId,
+            true);
+    return source.read((Long) proof.get("taskId"), (Long) proof.get("evidenceId"));
+  }
+
+  /** Recusa projeto de outro tenant antes de resolver sua prova. */
+  private VideoProject ownedProject(Long projectId) {
+    return projectRepository
+        .findById(projectId)
+        .filter(value -> Objects.equals(value.getTenantId(), TenantContextHolder.requireTenant()))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
   /**

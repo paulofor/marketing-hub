@@ -76,14 +76,24 @@ PNG antes desse passo do worker é uma dependência delegada, não lacuna da esp
 Use `BLOCKED` para entradas, decisões ou evidências realmente insuficientes e descreva essas
 lacunas. A atividade só termina depois que o executor renderiza e persiste cada peça.
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
-Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; na composição privada, a área da prova mede 952 × 667, com a identificação obrigatória da aplicação privada e o `eyebrow` solicitado junto ao recorte. A composição comercial conserva a área de 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade. Considere a leitura real da peça reduzida a 393 pixels de largura.
+Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; na composição privada, a área da prova mede 952 × 667, com a identificação do formato da entrega, em linguagem de cliente e o `eyebrow` solicitado junto ao recorte. A composição comercial conserva a área de 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade. Considere a leitura real da peça reduzida a 393 pixels de largura.
 
 Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 
-Em validação privada o executor imprime os marcadores “APLICAÇÃO WEB PRIVADA” e “Demonstração sintética · sem compra ou cobrança”. Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
+Em validação privada o executor imprime os marcadores “DEMONSTRAÇÃO DO SITE” e “Exemplo com dados de teste · sem cobrança”. Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
 
 O `footer` é um limite factual obrigatório e permanece impresso também na peça privada,
 além do aviso de demonstração sintética. Use uma ressalva curta: os dois textos ocupam até
 duas linhas em fonte de 36 pixels, sem reduzir fonte nem cortar a prova ou o CTA. Não repita
 o aviso privado no `footer` nem esconda o limite factual em outro campo para contornar o
 template. Ausência ou excesso de texto bloqueia a renderização antes de persistir a peça.
+
+### Linguagem da cliente e estado interno
+
+`privateValidation` descreve o controle de publicação na auditoria; não é benefício, categoria
+comercial ou CTA. Não escreva “acesso privado”, “em privado”, “aplicação web privada”,
+“credencial”, “homologação”, “pipeline” ou códigos operacionais em nenhum texto visível de
+`renderSpec`. Diga “site”, “experimentar a demonstração”, “acesso por sete dias” quando a
+condição estiver comprovada. Preserve a indicação de exemplo com dados de teste e limites
+factuais; isso não concede publicação ou cobrança. O renderizador recusa linguagem interna
+antes de persistir pixels. Copy, pixels finais e revisões devem pertencer à mesma versão.

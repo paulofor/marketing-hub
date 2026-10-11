@@ -149,6 +149,45 @@ class PdeProductProofOverlayTest {
         }
     }
 
+    /** Usa FFmpeg e capturas distintas para comprovar ordem, rota e pixels, sem provedor externo. */
+    @Test
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
+    void composesOrderedNarratedShotsAndRejectsOverlap() throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start(); byte[] pixels = pixels();
+            var input = metadata(pixels);
+            input.put("captionText", "Entrada. | Resultado. | Consulte.");
+            input.putObject("technicalQualityGate").put("captionMustMatchNarration", true);
+            var shots = ((ObjectNode) input.path("post_production")).putArray("proofShots");
+            for (int index = 0; index < 2; index++) {
+                var shot = (ObjectNode) input.at("/post_production/product_proof").deepCopy();
+                shot.put("taskId", 91004).put("evidenceId", 91005 + index).put("captionCueIndex", index).put("minimumSeconds", 3);
+                shot.put("contentPath", "/api/sales-videos/projects/91001/product-proof/91004/" + (91005 + index));
+                shot.putArray("crop").add(0).add(0).add(300).add(400); shots.add(shot);
+                server.enqueue(response(pixels));
+            }
+            var properties = new VideoManagementProperties(); properties.setBackendBaseUrl(server.url("/").uri());
+            var overlay = new PdeProductProofOverlay(properties, WebClient.builder());
+            Path source = Files.createTempFile("sequence-fixture", ".mp4"); Path result = null;
+            try {
+                var process = new ProcessBuilder("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=blue:s=720x1280:r=25:d=15",
+                    "-c:v", "libx264", "-threads", "2", "-pix_fmt", "yuv420p", source.toString()).start();
+                assertThat(process.waitFor()).isZero();
+                var captions = java.util.List.of(new PdeProofCaptionTiming.Window(1,4,0), new PdeProofCaptionTiming.Window(6,10,1), new PdeProofCaptionTiming.Window(11,13,2));
+                var output = overlay.apply(source, input, 91009L, captions); result = output.videoFile();
+                assertThat(output.audit()).containsEntry("compositionMode", "NARRATED_PROOF_SEQUENCE_V1");
+                assertThat(samplePixel(result,2)[0] & 255).isGreaterThan(230);
+                assertThat(samplePixel(result,5)[2] & 255).isGreaterThan(200);
+                assertThat(samplePixel(result,8)[0] & 255).isGreaterThan(230);
+                assertThat(samplePixel(result,14)[2] & 255).isGreaterThan(200);
+                assertThat(server.takeRequest().getPath()).endsWith("/91004/91005");
+                assertThat(server.takeRequest().getPath()).endsWith("/91004/91006");
+                ((ObjectNode) shots.get(0)).put("minimumSeconds", 7);
+                assertThatThrownBy(() -> overlay.apply(source,input,91009L,captions)).hasMessageContaining("sobrepõem");
+            } finally { Files.deleteIfExists(source); if (result != null) Files.deleteIfExists(result); }
+        }
+    }
+
     /** Mede um pixel central para comprovar a presença e a retirada da prova nos instantes certos. */
     private byte[] samplePixel(Path video, int second) throws Exception {
         var process = new ProcessBuilder("ffmpeg", "-v", "error", "-ss", Integer.toString(second), "-i", video.toString(),

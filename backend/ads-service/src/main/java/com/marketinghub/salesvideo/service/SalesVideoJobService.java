@@ -42,6 +42,14 @@ import org.springframework.util.StringUtils;
 /** Contém as regras de negócio relativas aos jobs do módulo de vídeo. */
 @Component
 public class SalesVideoJobService {
+  private VideoProductProofService productProofService;
+
+  /** Conecta a resolução governada de capturas, sem aceitar URLs ou hashes do cliente. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setProductProofService(VideoProductProofService service) {
+    this.productProofService = service;
+  }
+
   private static final Logger log = LoggerFactory.getLogger(SalesVideoJobService.class);
   private static final int MAX_PAGE_SIZE = 200;
   private static final int MAX_MONTAGE_DURATION_SECONDS = 600;
@@ -825,6 +833,11 @@ public class SalesVideoJobService {
               previous.path("voiceOverScript").asText(null), request.getVoiceOverScript())
           && java.util.Objects.equals(previous.path("sourceVideoUrl").asText(null), sourceVideoUrl)
           && java.util.Objects.equals(
+              previous.path("requestedProofShots"),
+              request.getProofShots() == null || request.getProofShots().isEmpty()
+                  ? com.fasterxml.jackson.databind.node.MissingNode.getInstance()
+                  : objectMapper.valueToTree(request.getProofShots()))
+          && java.util.Objects.equals(
               previous.has("postProductionDurationSeconds")
                   ? previous.path("postProductionDurationSeconds").asInt()
                   : null,
@@ -834,6 +847,17 @@ public class SalesVideoJobService {
           "Esta fonte já possui finalização em execução. Aguarde o resultado antes de alterar o texto.");
     }
     validateFinalizationRecovery(sourceJob);
+    if (request.isNarrationRevisionConfirmed()
+        && existing
+            .map(
+                previous -> {
+                  JsonNode prior = readJobMetadata(previous);
+                  return !java.util.Objects.equals(
+                          prior.path("captionText").asText(), request.getCaptionText())
+                      || !java.util.Objects.equals(
+                          prior.path("voiceOverScript").asText(), request.getVoiceOverScript());
+                })
+            .orElse(true)) validateNarrationRevision(sourceJob);
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
     SalesVideoJob postProductionJob =
         createJob(
@@ -885,6 +909,31 @@ public class SalesVideoJobService {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
           "A fonte não corresponde à tentativa atual do ciclo. Consulte a finalização existente antes de solicitar outra.");
+  }
+
+  /** Confere o limite financeiro da fonte antes de autorizar uma locução de texto alterado. */
+  private void validateNarrationRevision(SalesVideoJob source) {
+    JsonNode metadata = readJobMetadata(source);
+    long cycleId = metadata.path("videoProductionCycleId").asLong();
+    var cycle =
+        productionCycleRepository == null || cycleId <= 0
+            ? null
+            : productionCycleRepository.findById(cycleId).orElse(null);
+    if (cycle == null
+        || !"APPROVED".equals(cycle.getFinancialDecision())
+        || "BLOCKED".equals(cycle.getBudgetMonitorStatus())
+        || cycle.getBudgetLimitUsd() == null
+        || cycle.getKnownCostUsd() == null
+        || cycle.getKnownCostUsd().compareTo(cycle.getBudgetLimitUsd()) >= 0)
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "A revisão da locução exige limite audiovisual vigente, parecer financeiro aceito e custo conhecido inferior ao teto; valores pendentes continuam sujeitos à conciliação.");
+    log.info(
+        "Revisão de locução confirmada; sourceJobId={} cycleId={} budgetUsd={} knownCostUsd={} reconciliation=PENDING",
+        source.getId(),
+        cycleId,
+        cycle.getBudgetLimitUsd(),
+        cycle.getKnownCostUsd());
   }
 
   /** Permite reaproveitar montagem tecnicamente produzida que falhou apenas no gate de duração. */
@@ -1188,7 +1237,10 @@ public class SalesVideoJobService {
         "Informe uma URL fonte ou selecione um vídeo com asset disponível.");
   }
 
-  /** Monta o acabamento e deriva a recuperação somente da auditoria da tentativa anterior. */
+  /**
+   * Monta o acabamento, resolve a sequência homologada e recupera voz somente da auditoria
+   * anterior.
+   */
   private String buildPostProductionMetadata(
       SalesVideoJob sourceJob,
       String sourceVideoUrl,
@@ -1196,6 +1248,24 @@ public class SalesVideoJobService {
       SalesVideoJob previousFinalization) {
     Map<String, Object> metadata = new LinkedHashMap<>();
     preserveGovernedLineage(sourceJob, metadata);
+    if (request.getProofShots() != null && !request.getProofShots().isEmpty()) {
+      var lineage = objectMapper.valueToTree(metadata);
+      long projectId = lineage.path("videoProjectId").asLong();
+      if (projectId <= 0 || productProofService == null)
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST, "A sequência exige um projeto com prova homologada.");
+      var post = lineage.path("post_production").deepCopy();
+      if (!(post instanceof com.fasterxml.jackson.databind.node.ObjectNode postObject))
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST, "Contrato de demonstração ausente.");
+      postObject.set(
+          "proofShots",
+          objectMapper.valueToTree(
+              productProofService.sequence(
+                  projectId, request.getProofShots(), request.getCaptionText())));
+      metadata.put("post_production", postObject);
+      metadata.put("requestedProofShots", request.getProofShots());
+    }
     metadata.put("sourceJobId", sourceJob.getId());
     metadata.put("sourceVideoUrl", sourceVideoUrl);
     metadata.put("voiceOverScript", request.getVoiceOverScript());

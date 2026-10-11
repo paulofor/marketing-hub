@@ -61,6 +61,18 @@ class VideoFinalDeliveryContractTest {
         .hasMessageContaining("canal único");
   }
 
+  /** Recuperação HLS não pode editar as capturas de um MP4 já finalizado. */
+  @Test
+  void refusesProofChangesDuringDeliveryOnly() {
+    var request = request();
+    request.setProofShots(
+        java.util.List.of(
+            new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+                "fixture", 0, 4)));
+    assertThatThrownBy(() -> VideoFinalDeliveryContract.prepare(source(), request, mapper))
+        .hasMessageContaining("não permite alterar conteúdo");
+  }
+
   /** Monta fonte sintética com identidade de upload e custo preservável. */
   static SalesVideoJob source() {
     return SalesVideoJob.builder()

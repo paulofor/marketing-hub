@@ -9948,3 +9948,13 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   SELECTs do caso vigente. Não reescreve parecer, gate, mídia, autorização ou custo.
 - **Limite:** preserva somente um gate já aceito da mesma candidata; integração nova
   continua sujeita às revisões próprias. Não é homologação comercial nem venda.
+
+
+## LOOP-AJUSTE-VIDEO-REFAZ-IMAGEM — 2026-10-11
+
+Evidência: Psique #727 pediu ajustes dos vídeos #59/#60 e preservação do PNG #569;
+o backend abriu Íris #728 na produção estática. Causa: qualquer ADJUST retornava à
+imagem sem escopo do artefato. Prevenção: correctionScope tipado, validação do revisor
+e regressão de vídeo/imagem/misto/legado em CreativeProductionReadinessProviderTest.
+Não reescrever resultados já emitidos. Matriz, montagem e limites em
+`docs/homologacao/video-customer-quality-v1.md`.

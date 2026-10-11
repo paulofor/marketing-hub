@@ -3968,10 +3968,11 @@ class ArquiteturaTest {
     };
   }
 
-  /** Garante que DTOs SalesVideo não acessem camadas executáveis ou persistência. */
+  /** Permite contratos imutáveis da operação, sem liberar serviços executáveis ou persistência. */
   private static ArchCondition<JavaClass> onlyDependOnSalesVideoDtoContracts() {
     return new ArchCondition<>(
         "[ARQUITETURA] [BACKEND][SalesVideo] dto only depends on SalesVideo contracts") {
+      /** Confere dependências de contratos legados e records canônicos da pós-produção. */
       @Override
       public void check(JavaClass item, ConditionEvents events) {
         item.getDirectDependenciesFromSelf()
@@ -3985,7 +3986,9 @@ class ArquiteturaTest {
                   String targetPackage = targetClass.getPackageName();
                   boolean valid =
                       targetPackage.equals(SALES_VIDEO_PACKAGE)
-                          || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE);
+                          || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
+                          || (targetPackage.equals(SALES_VIDEO_PACKAGE + ".service.postproduction")
+                              && targetClass.reflect().isRecord());
                   if (!valid) {
                     String message =
                         "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem="
@@ -3995,7 +3998,8 @@ class ArquiteturaTest {
                             + " (alvo: "
                             + targetName
                             + ") | regra: salesvideo.dto só pode depender de DTOs e tipos de"
-                            + " domínio/enums do próprio SalesVideo.";
+                            + " domínio/enums do próprio SalesVideo ou records do contrato de pós-produção;"
+                            + " serviços executáveis continuam proibidos.";
                     events.add(SimpleConditionEvent.violated(item, message));
                   }
                 });

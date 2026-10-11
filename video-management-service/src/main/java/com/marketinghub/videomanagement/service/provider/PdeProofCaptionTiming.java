@@ -41,9 +41,12 @@ final class PdeProofCaptionTiming {
                 .asDouble(metadata.path("targetDurationSeconds").asDouble());
         if (!Double.isFinite(cue.start()) || !Double.isFinite(cue.end()) || cue.start() < 0
                 || cue.end() <= cue.start() || cue.end() > duration + .1) throw invalid();
-        double end = Math.max(cue.end(), cue.start() + 6);
+        double reading = metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false)
+                ? metadata.at("/post_production/product_proof/minimumSeconds").asDouble(6) : 6;
+        if (!Double.isFinite(reading) || reading < 2 || reading > 12) throw invalid();
+        double end = Math.max(cue.end(), cue.start() + reading);
         if (end > duration - 2) throw new VideoProviderException("PDE_PROOF_CAPTION_TIMING_INVALID",
-                "A prova precisa de seis segundos de leitura e dois segundos de encerramento; ajuste a finalização reutilizando a voz auditada.");
+                "A prova precisa do tempo de leitura declarado (seis segundos no contrato original) e dois segundos de encerramento; ajuste a finalização reutilizando a voz auditada.");
         return new Window(cue.start(), end, index);
     }
 

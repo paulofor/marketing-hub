@@ -9,7 +9,8 @@
     "evidence",
     "requiredChanges",
     "renderedAssetAudit",
-    "videoAudit"
+    "videoAudit",
+    "correctionScope"
   ],
   "properties": {
     "decision": {
@@ -534,6 +535,15 @@
           }
         }
       }
+    },
+    "correctionScope": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "STATIC_ASSET",
+        "FINAL_VIDEO",
+        "MIXED"
+      ]
     }
   }
 }

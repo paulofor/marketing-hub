@@ -180,3 +180,59 @@ a eles (56 execuções). A regressão ampliada executou 651 testes sem falhas, i
 exportação. O replay relevante foi executado separadamente com o arquivo exportado.
 Bundle de revisão: 516 arquivos e 111 manifestos válidos. A atestação v21 mantém
 a experiência v3 e seus limites privados; relatórios v1/v2 permanecem imutáveis.
+
+
+## Parecer independente #727 e sequência demonstrável
+
+Em 11/10, Psique inspecionou 26 frames dos MP4s #59/#60 e solicitou ADJUST por categoria
+ambígua, primeira ação pouco concreta e encerramento repetitivo. A prova recebeu 3/5 em
+legibilidade; clareza, primeira ação e progressão ficaram em 2/5. A imagem #569 continuou
+adequada. O backend criou indevidamente Íris #728 para produção estática; a tarefa terminou
+e foi preservada, com custo estimado US$ 0,614282, antes da pausa das próximas passagens.
+
+A mudança reutilizável acrescenta sequência de capturas homologadas por trecho narrado,
+com resolução no backend, conferência de tenant/versão/hash no executor e retorno tipado
+`correctionScope`. Contratos antigos mantêm o encaminhamento conservador; parecer novo
+exclusivamente audiovisual não reabre produção de imagem. Não se altera o parecer histórico.
+
+Matriz definida antes da rodada: entrada → resultado → continuidade em capturas do mesmo
+produto; recusa de outro tenant/experimento, hash e recorte inválidos; trechos fora de ordem,
+sobrepostos ou sem tempo de leitura; repetição idempotente da mesma finalização; revisão
+vinculada ao hash final; retorno exclusivo de vídeo versus imagem/misto/legado; Chromium
+em desktop/iPhone/Pixel, integridade audiovisual e separação entre frames e audição.
+Provas de teste não são evidência de mercado. Nenhuma meta comercial ou orçamento é ampliado.
+
+
+A revisão ponta a ponta também confirmou que a proteção de recuperação bloqueava qualquer
+nova copy. A finalização distingue agora recuperação idêntica e revisão de locução confirmada:
+a segunda exige fonte rejeitada/falha, financeiro aprovado do mesmo ciclo e custo conhecido
+inferior ao teto vigente. O monitor bloqueado impede nova síntese; custos pendentes seguem
+pendentes. Falhas de enquadramento/relógio após TTS reutilizam os recibos íntegros, evitando
+cobrar novamente pelo ajuste visual. Testes incluem texto igual, texto alterado sem confirmação,
+financeiro pendente, teto atingido, custo desconhecido e recuperação das duas falhas de prova.
+
+
+Validação desta iteração: 791 testes backend declarados (788 executados; três replays
+opcionais não aplicáveis), incluindo 92 regras de arquitetura; todos os executados passaram.
+A primeira rodada detectou a incompatibilidade entre DTO legado e record canônico da operação;
+a regra agora admite somente records no subpacote de pós-produção, mantendo a proibição de
+serviços executáveis. A rodada direcionada posterior passou integralmente.
+Psique: 182 declarados, 172 executados e dez opcionais de outros harnesses. Apolo: suíte
+completa sem falhas; FFmpeg real e integração da sequência foram executados adicionalmente
+com fontes recebidas e TTS simulado em servidor local. Frontend: 26 testes, typecheck e build;
+editor e reprodução conferidos em desktop/iPhone/Pixel, sem transbordamento horizontal.
+A voz simulada valida sincronização e recuperação, não naturalidade ou efeito comercial.
+
+A fila exige `PDE_VIDEO_POST_PRODUCTION_V2` para a sequência: filtro SQL antes da paginação
+e checagem de claim impedem que um executor antigo ignore os trechos durante o rollout.
+O contrato dos recibos de voz permanece V1; a capacidade nova continua aceitando-o.
+
+
+Na inspeção da peça incidental #728/658, o cabeçalho continuava vazando “APLICAÇÃO WEB
+PRIVADA”: era imposto pelo renderizador e por seu contrato versionado. A correção remove
+o rótulo interno, valida os seis campos visíveis e preserva fontes, limites e identificação
+de dados de teste. Antes da mudança, sete regressões falharam: duas sobre o cabeçalho e
+cinco sobre textos operacionais, em diferentes identidades. Não se reescreve #728 nem se
+aprova essa imagem; qualquer produção sucessora terá hash e revisão próprios.
+
+Íris: 84 testes declarados; 82 executados sem falhas após a correção, incluindo replay real dos pixels de #523. Dois harnesses opcionais sem entrada permaneceram fora da rodada. A referência de teste não foi enviada como artefato de produção.

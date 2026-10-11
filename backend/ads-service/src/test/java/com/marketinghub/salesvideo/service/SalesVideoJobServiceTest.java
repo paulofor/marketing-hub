@@ -158,6 +158,88 @@ class SalesVideoJobServiceTest {
     verify(jobRepository, never()).save(any());
   }
 
+  /** Preserva o contrato resolvido da sequência e impede troca concorrente das provas. */
+  @Test
+  void persistsResolvedProofSequence() throws Exception {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.setMetadataJson(
+        "{\"videoProjectId\":91004,\"post_production\":{\"product_proof\":{\"sha256\":\"abc\"}}}");
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.save(any()))
+        .willAnswer(
+            i -> {
+              SalesVideoJob j = i.getArgument(0);
+              j.setId(91011L);
+              return j;
+            });
+    var proof = org.mockito.Mockito.mock(VideoProductProofService.class);
+    service.setProductProofService(proof);
+    var shots =
+        List.of(
+            new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+                "internal://agent-tasks/627/visual-evidence/523#crop=0,0,300,400", 0, 4));
+    given(proof.sequence(91004L, shots, "Entrada. | Resultado."))
+        .willReturn(List.of(java.util.Map.of("sha256", "abc", "captionCueIndex", 0)));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("fixture@sandbox.local");
+    request.setCaptionText("Entrada. | Resultado.");
+    request.setProofShots(shots);
+    var result = service.requestPostProduction(source.getId(), request);
+    var metadata = new ObjectMapper().readTree(result.getMetadataJson());
+    assertThat(metadata.at("/post_production/proofShots/0/sha256").asText()).isEqualTo("abc");
+    assertThat(metadata.path("requestedProofShots").get(0).path("reference").asText())
+        .isEqualTo(shots.getFirst().reference());
+    verify(proof).sequence(91004L, shots, request.getCaptionText());
+  }
+
+  /** A revisão da voz usa o limite da própria fonte, nunca uma aprovação de outro produto. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"APPROVED", "PENDING", "EXHAUSTED", "UNKNOWN_COST", "BLOCKED"})
+  void gatesNarrationRevisionByExistingFinancialContext(String scenario) {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.setMetadataJson(
+        "{\"videoProductionCycleId\":91022,\"videoProjectId\":91004,\"experimentId\":91001}");
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    var cycles =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
+    service.setProductionCycleRepository(cycles);
+    var cycle = new com.marketinghub.salesvideo.VideoProductionCycle();
+    cycle.setId(91022L);
+    cycle.setVideoProjectId(91004L);
+    cycle.setExperimentId(91001L);
+    cycle.setSalesVideoJobId(source.getId());
+    cycle.setFinancialDecision(scenario.equals("PENDING") ? "PENDING" : "APPROVED");
+    cycle.setBudgetLimitUsd(new BigDecimal("2.5"));
+    cycle.setKnownCostUsd(new BigDecimal("2.4"));
+    if (scenario.equals("EXHAUSTED")) cycle.setKnownCostUsd(new BigDecimal("2.5"));
+    if (scenario.equals("UNKNOWN_COST")) cycle.setKnownCostUsd(null);
+    if (scenario.equals("BLOCKED")) cycle.setBudgetMonitorStatus("BLOCKED");
+    given(cycles.findById(91022L)).willReturn(Optional.of(cycle));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("fixture@sandbox.local");
+    request.setCaptionText("Texto revisado.");
+    request.setVoiceOverScript("Texto revisado.");
+    request.setNarrationRevisionConfirmed(true);
+    if (scenario.equals("APPROVED")) {
+      given(jobRepository.save(any()))
+          .willAnswer(
+              i -> {
+                SalesVideoJob j = i.getArgument(0);
+                j.setId(91011L);
+                return j;
+              });
+      assertThat(service.requestPostProduction(source.getId(), request).getId()).isEqualTo(91011L);
+    } else {
+      assertThrows(
+          VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
+      verify(jobRepository, never()).save(any());
+    }
+  }
+
   /** Expõe disponibilidade e bloqueia nova preparação quando já existe filho em execução. */
   @Test
   void shouldExposeBackendDeliveryAvailability() {

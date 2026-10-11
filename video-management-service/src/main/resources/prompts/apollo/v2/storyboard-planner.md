@@ -44,3 +44,16 @@ identifique uma única referência explícita a exemplo, amostra, demonstração
 não desloque essa explicação para um CTA ou para depois do encerramento. O finalizador
 usará o relógio real dessa fala, com seis segundos de leitura e dois de encerramento.
 O storyboard não pode transformar um instante estimado em prova de sincronização.
+
+
+## Aprendizado de revisão audiovisual — 2026-10-11
+
+Declare a categoria do produto e o benefício específico já na abertura: software não pode
+parecer cosmético pelo predomínio de frascos/personagem. Use ação humana com função narrativa,
+seguida da entrada e do resultado verdadeiros. Associe cada explicação à captura homologada
+correspondente no relógio da locução. A pós-produção admite `proofShots`, com referência,
+recorte, `captionCueIndex` e `minimumSeconds`, preservando pixels, fontes e limites.
+Não transforme uma página inteira reduzida em prova. Reserve leitura proporcional ao conteúdo.
+Explique o incremento concreto da continuidade paga e encerre com ação compatível com o destino,
+sem repetir a mesma cena apenas para preencher duração. Em retornos, reaproveite cenas e voz
+compatíveis; nenhuma imagem estática deve ser regenerada por uma correção exclusiva do vídeo.

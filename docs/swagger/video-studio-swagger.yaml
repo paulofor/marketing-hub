@@ -29,6 +29,22 @@ paths:
               schema: { type: string, format: binary }
         '404': { description: Projeto ou captura indisponível para o tenant }
         '409': { description: Contexto, versão ou homologação da captura inválidos }
+  /api/sales-videos/projects/{projectId}/product-proof/{taskId}/{evidenceId}:
+    get:
+      summary: Ler captura homologada da sequência de demonstração
+      description: Valida tenant, produto, experimento, versão, homologação e hash antes de entregar os pixels. Não aceita URL externa nem cria prova.
+      parameters:
+        - { in: path, name: projectId, required: true, schema: { type: integer, format: int64 } }
+        - { in: path, name: taskId, required: true, schema: { type: integer, format: int64 } }
+        - { in: path, name: evidenceId, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: PNG íntegro, Cache-Control no-store
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        '404': { description: Projeto fora do tenant ou captura inexistente }
+        '409': { description: Captura sem homologação compatível }
   /api/research-intelligence/v1/catalog:
     get:
       tags: [ResearchIntelligence]

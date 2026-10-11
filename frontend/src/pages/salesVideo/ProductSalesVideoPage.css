@@ -530,6 +530,8 @@
 }
 
 .product-video-page__post-production-status {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   gap: 0.45rem;
   border: 1px solid #dbeafe;

@@ -62,3 +62,24 @@ Impacto em conversão e margem ainda não medido.
   conversão. O áudio foi preservado; Psique e a seleção humana continuam vinculados ao
   hash novo. A oferta permanece em preparação, sem autorização comercial decorrente
   desta correção.
+
+## Largura do formulário na conferência publicada
+
+A conferência detectou expansão da página de 1440 para 2983 px. A hipótese inicial
+sobre descrições das artes foi descartada: o problema vinha do evento carregado
+assincronamente, com JSON e identificadores extensos sem quebra no estado da
+pós-produção. A correção permite quebra de texto e reduz o tamanho mínimo do bloco,
+preservando a auditoria completa. Truncar os dados perderia evidência; refazer o
+formulário seria desproporcional.
+
+O teste existente `frontend/e2e/product-video-authoring-responsive.mjs` passa a
+incluir pós-produção anterior e evento com URL/hash extensos, imagens carregadas,
+seleção de artes e envio sem repetir locução. Mede overflow em desktop, iPhone e
+Pixel com IDs segregados e nenhuma requisição externa. O cenário anterior não
+fornecia eventos ao formulário e por isso não reproduzia a falha. Executar com
+`FRONTEND_TEST_URL` apontando ao Vite local.
+
+Regressão comprovada: sem a correção, o caso local expandiu 1440 para 6334 px;
+com ela, passou nos três dispositivos, preservando também roteiro e importação.
+A conferência visual publicada com o mesmo ajuste apenas no navegador retornou
+1440 px, sem alterar dados ou enviar geração. Typecheck e build foram executados.

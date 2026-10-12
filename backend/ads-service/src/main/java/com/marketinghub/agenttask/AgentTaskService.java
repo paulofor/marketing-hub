@@ -1467,10 +1467,17 @@ public class AgentTaskService {
                 reference, processId));
   }
 
-  /**
-   * Valida atividade publicada ou congelada na ficha/execução independente e preserva seus gates.
-   */
+  /** Valida atividade publicada, isola captura complementar e preserva os gates da execução. */
   private ProcessBinding validateProcessBinding(CreateAgentTaskRequest request, Agent assignee) {
+    if (request.sourceReference() != null
+        && request.sourceReference().endsWith("@video-proof-v1")
+        && (!request.sourceReference().matches("experiment:[1-9][0-9]*@video-proof-v1")
+            || request.exceptional()
+            || !"technicalHomologation".equals(request.processActivityId())
+            || !"customer-agent".equals(request.assignedAgentKey())))
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Captura complementar exige experimento, Psique e homologação técnica.");
     if (request.exceptional()) {
       String reason = trimToNull(request.exceptionReason());
       if (reason == null) {
@@ -1495,6 +1502,11 @@ public class AgentTaskService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Processo não encontrado."));
+    if (request.sourceReference() != null
+        && request.sourceReference().endsWith("@video-proof-v1")
+        && !"pde-construction-approval".equals(definition.getProcessCode()))
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Captura complementar exige o processo de construção do PDE.");
     if (!"PUBLISHED".equals(definition.getStatus())
         && !("RETIRED".equals(definition.getStatus())
             && pinsExistingExecution(request.sourceReference(), definition.getId()))) {

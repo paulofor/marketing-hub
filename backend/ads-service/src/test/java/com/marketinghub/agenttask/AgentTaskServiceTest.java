@@ -43,6 +43,37 @@ import org.springframework.web.server.ResponseStatusException;
 class AgentTaskServiceTest {
 
   /**
+   * A finalidade complementar não permite atividade paga, referência livre ou tarefa excepcional.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"activity", "reference", "exception"})
+  void rejectsSupplementalCaptureOutsideDeterministicBinding(String failure) {
+    var tasks = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    when(agents.findByAgentKey("customer-agent"))
+        .thenReturn(Optional.of(agent(2L, "customer-agent", "Psique")));
+    var service = service(tasks, agents, Clock.systemUTC());
+    var request =
+        new CreateAgentTaskRequest(
+            "customer-agent",
+            "Fixture",
+            "Captura",
+            "Contrato isolado",
+            "NORMAL",
+            "reference".equals(failure)
+                ? "product:7@video-proof-v1"
+                : "experiment:90105@video-proof-v1",
+            117L,
+            "activity".equals(failure) ? "psiqueAdherent" : "technicalHomologation",
+            "exception".equals(failure),
+            null);
+    assertThatThrownBy(() -> service.createByHuman(request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("complementar");
+    verify(tasks, never()).save(any());
+  }
+
+  /**
    * Entrega a curadoria real do cadastro no contrato consumido pelo executor e preserva o destino
    * BPM.
    */

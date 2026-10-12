@@ -69,6 +69,7 @@ export default function AgentWorkspacePage() {
   const selectedPlanId = commercialPlanId ?? plans.data?.[0]?.id ?? null;
   const planVersions = useCommercialPlanVersions(selectedPlanId);
   const currentPlanVersion = planVersions.data?.[0]?.versionNumber;
+  const [supplementalCapture, setSupplementalCapture] = useState(false);
   const taskSourceReference =
     taskContextType === "EXPERIMENT"
       ? experimentContextId
@@ -94,6 +95,12 @@ export default function AgentWorkspacePage() {
   const selectedProcess = publishedProcesses.find(
     (process) => process.id === Number(form.processDefinitionId),
   );
+  const canCaptureSupplement =
+    taskContextType === "EXPERIMENT" &&
+    agent?.agentKey === "customer-agent" &&
+    selectedProcess?.processCode === "pde-construction-approval" &&
+    form.processActivityId === "technicalHomologation" &&
+    !form.exceptional;
   const agentOwnerAliases = [agent?.nickname, agent?.agentKey, agent?.name]
     .filter((value): value is string => Boolean(value?.trim()))
     .map((value) => value.toLowerCase());
@@ -139,7 +146,10 @@ export default function AgentWorkspacePage() {
           ? undefined
           : form.processActivityId,
         exceptionReason: form.exceptional ? form.exceptionReason : undefined,
-        sourceReference: taskSourceReference,
+        sourceReference:
+          supplementalCapture && canCaptureSupplement
+            ? `${taskSourceReference}@video-proof-v1`
+            : taskSourceReference,
         assignedAgentKey: agent.agentKey!,
       },
       {
@@ -527,6 +537,30 @@ export default function AgentWorkspacePage() {
                     </small>
                   ) : null}
                 </div>
+                {canCaptureSupplement ? (
+                  <div className="form-check">
+                    <input
+                      id="task-supplemental-capture"
+                      type="checkbox"
+                      className="form-check-input"
+                      checked={supplementalCapture}
+                      onChange={(event) =>
+                        setSupplementalCapture(event.target.checked)
+                      }
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor="task-supplemental-capture"
+                    >
+                      Captura complementar para vídeo, preservando a homologação
+                      aceita
+                    </label>
+                    <small className="d-block text-body-secondary">
+                      Registra telas adicionais do kit funcionando, sem reabrir
+                      os pareceres do produto e sem chamada de IA.
+                    </small>
+                  </div>
+                ) : null}
                 <div className="form-check">
                   <input
                     id="task-exceptional"

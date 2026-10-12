@@ -10019,3 +10019,10 @@ prova correspondente. Correção: composição V4 com ambas, momentos reais do h
 proveniência separada e margem de entrada sem corte. Regressões de backend, executor,
 frontend e captura usam dois produtos e preservam recuperação sem nova voz. Referência:
 `docs/homologacao/capella-video-quality-v2.md`. Impacto comercial ainda não medido.
+
+Complemento de prevenção do LOOP-VIDEO-USA-FIXTURE-COMO-ARTE-COMERCIAL (12/10/2026):
+a captura de momentos ausentes não deve criar nova homologação no contexto do
+produto já aprovado. O consumidor de Íris invalida corretamente uma tentativa
+posterior; foi criado o escopo complementar versionado `@video-proof-v1`, reutilizando
+o mesmo harness. Regressões de JPA, consumidor e vídeo preservam o gate original e
+exigem sua validade antes de consumir a captura. Nenhuma tarefa incorreta foi criada.

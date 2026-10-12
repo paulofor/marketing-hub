@@ -71,6 +71,42 @@ public class AgentTaskVideoProductProofSource implements VideoProductProofSource
         .isPresent();
   }
 
+  /**
+   * Usa capturas complementares apenas enquanto o gate original da mesma versão permanece válido.
+   */
+  @Override
+  public boolean isSupplementalAuthorizedFor(
+      Proof proof, String reference, Long productId, String prototypeVersion) {
+    if (proof == null
+        || reference == null
+        || productId == null
+        || prototypeVersion == null
+        || !reference.matches("experiment:[1-9][0-9]*")
+        || !(reference + "@video-proof-v1").equals(proof.sourceReference())) return false;
+    return context
+        .resolve(reference)
+        .<JsonNode>map(json::valueToTree)
+        .filter(input -> "READY".equals(input.path("inputReadiness").asText()))
+        .filter(
+            input -> {
+              var authorization = input.path("visualProofAuthorization");
+              return "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1"
+                      .equals(authorization.path("contractVersion").asText())
+                  && reference.equals(authorization.path("targetSourceReference").asText())
+                  && productId == authorization.path("productId").asLong()
+                  && productId == input.path("product").path("id").asLong()
+                  && prototypeVersion.equals(authorization.path("prototypeVersion").asText())
+                  && authorization.path("gateInstanceId").asLong() > 0
+                  && !input.path("approvedDestination").path("url").asText().isBlank()
+                  && input
+                      .path("approvedDestination")
+                      .path("url")
+                      .asText()
+                      .equals(authorization.path("publicUrl").asText());
+            })
+        .isPresent();
+  }
+
   /** Valida identidade, gate, destino e arquivo sem autorizar por aproximação histórica. */
   private boolean validAuthorization(
       JsonNode input,

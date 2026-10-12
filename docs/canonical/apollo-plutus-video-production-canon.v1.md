@@ -521,3 +521,13 @@ usa CTA do produto e a captura não pode vazar linguagem operacional. O harness 
 preserva os momentos de entrada e conteúdo real sem alterar o runtime comercial.
 A melhoria é adotada somente após testes locais e revisão independente do novo MP4;
 não substitui os aceites humanos, não autoriza gasto adicional e não comprova conversão.
+
+### Captura complementar sem reabrir produto — 2026-10-12
+
+Quando o ajuste for somente audiovisual e faltarem momentos da interface já homologada,
+reutilizar o harness técnico em `experiment:<id>@video-proof-v1`. Essa finalidade não
+substitui a tarefa técnica na referência canônica nem renova os pareceres do produto.
+Somente kits suportados e modo TECHNICAL podem executá-la, sem modelo ou efeitos
+comerciais. A montagem exige o mesmo produto/versão/experimento e o gate original
+ainda válido, além do resultado e dos hashes da nova captura. A revisão do MP4 e a
+seleção humana continuam obrigatórias. Matriz: `docs/homologacao/capella-captura-complementar-v1.md`.

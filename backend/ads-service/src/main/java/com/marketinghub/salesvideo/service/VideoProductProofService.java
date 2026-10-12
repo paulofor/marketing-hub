@@ -153,9 +153,7 @@ public class VideoProductProofService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
-  /**
-   * Exige resultado técnico aprovado da mesma versão e produto, com origem ou reautorização exata.
-   */
+  /** Exige prova da mesma versão; captura complementar depende também do gate original vigente. */
   private void validateOwnership(VideoProject project, VideoProductProofSource.Proof evidence) {
     try {
       JsonNode result =
@@ -175,12 +173,24 @@ public class VideoProductProofService {
                   "experiment:" + project.getExperimentId(),
                   project.getProductId(),
                   project.getCampaignKey());
+      boolean supplemental =
+          project.getExperimentId() != null
+              && ("experiment:" + project.getExperimentId() + "@video-proof-v1")
+                  .equals(evidence.sourceReference())
+              && evidence.sourceReference().equals(result.path("sourceReference").asText())
+              && "TECHNICAL".equals(result.path("mode").asText())
+              && "PDE_KIT_CAPTURE_MOMENTS_V1".equals(result.path("captureMomentsContract").asText())
+              && source.isSupplementalAuthorizedFor(
+                  evidence,
+                  "experiment:" + project.getExperimentId(),
+                  project.getProductId(),
+                  project.getCampaignKey());
       if (!"COMPLETED".equals(evidence.status())
           || !"PDE_AGENT_TECHNICAL_HOMOLOGATION_V1".equals(result.path("contractVersion").asText())
           || !"APPROVED".equals(result.path("decision").asText())
           || project.getProductId() == null
           || result.path("productId").asLong() != project.getProductId()
-          || (!sameSource && !reauthorized)
+          || (!sameSource && !reauthorized && !supplemental)
           || project.getCampaignKey() == null
           || !project.getCampaignKey().equals(result.path("prototypeVersion").asText())
           || !"AGENT_VALIDATION".equals(result.path("trafficClass").asText())

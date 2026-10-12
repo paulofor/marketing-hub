@@ -25,6 +25,31 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private AgentTaskRepository repository;
   @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
 
+  /** Capturas adicionais não substituem a prova aprovada nem reabrem o contexto do produto. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {90105, 90218})
+  void isolatesSupplementalVideoCaptures(long experiment) {
+    var agent = agent();
+    var process = process("pde-construction-approval", 1);
+    String reference = "experiment:" + experiment;
+    var approved = task(agent, process, "technicalHomologation", 600, "2026-10-11T08:00:00Z");
+    approved.setSourceReference(reference);
+    approved.setStatus("COMPLETED");
+    var extra = task(agent, process, "technicalHomologation", 601, "2026-10-11T09:00:00Z");
+    extra.setSourceReference(reference + "@video-proof-v1");
+    extra.setStatus("IN_PROGRESS");
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(repository.findPdeValidationTaskSnapshots(reference, "pde-construction-approval"))
+        .extracting(com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot::id)
+        .containsExactly(approved.getId());
+    assertThat(
+            repository.findPdeValidationTaskSnapshots(
+                reference + "@video-proof-v1", "pde-construction-approval"))
+        .extracting(com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot::id)
+        .containsExactly(extra.getId());
+  }
+
   /** A última tentativa em aberto impede reutilizar aprovação anterior sem hidratar prompts. */
   @Test
   void loadsOnlyLatestReviewOfExactActivityIncludingUnfinishedAttempt() {

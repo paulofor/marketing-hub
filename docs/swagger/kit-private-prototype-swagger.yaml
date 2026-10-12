@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Kit privado — sessão e apresentação por estado
-  version: 1.1.0
+  version: 1.2.0
   description: Prova sintética governada pelo backend; não autoriza compra, publicação ou gasto.
 servers:
   - url: http://191.252.181.168
@@ -9,6 +9,11 @@ paths:
   /api/pde/kit/private/v1/internal/sessions:
     post:
       summary: Emite acesso privado para a fixture do mesmo produto, ciclo e versão
+      description: >-
+        Exige ciclo OPEN não baseline em ADJUSTMENT, VALIDATION ou nas etapas audiovisuais
+        VIDEO_BRIEF, CAMPAIGN_VIDEO, PDE_ENTRY_VIDEO e VIDEO_APPROVAL. Preserva os contratos
+        aprovados da mesma versão e recusa tentativa posterior bloqueada. Não abre capacidade
+        durante planejamento, fases comerciais ou após encerramento do ciclo.
       parameters:
         - in: header
           name: X-PDE-Internal-Token
@@ -31,7 +36,7 @@ paths:
                   sessionToken: { type: string }
                   session: { $ref: '#/components/schemas/SessionView' }
         '400': { description: Entrada inválida ou condição de segurança desconhecida }
-        '409': { description: Identidade divergente ou condição SAFETY usada em outro cenário }
+        '409': { description: 'Ciclo ou contrato sem capacidade privada, identidade divergente ou condição SAFETY usada em outro cenário' }
   /api/pde/kit/private/v1/admin/sessions:
     post:
       summary: Emite o mesmo acesso sintético pela administração

@@ -30,3 +30,18 @@ databaseChangeLog:
                        (7029,8029,8026,'private-kit-local',8125,9029,'00000000-0000-0000-0000-000000007029','{}','{}','{}','ADJUSTMENT','OPEN','v1',0,1,0,0,NOW(6),NOW(6),NOW(6));
   - include:
       file: db/changelog/changesets/2026-10-08-private-kit-value-flow-v1.yaml
+
+  - changeSet:
+      id: private-kit-local-video-stage-fixtures
+      author: local-test
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE learning_sales_cycle_v1
+              SET stage = CASE id WHEN 7007 THEN 'VIDEO_APPROVAL' ELSE 'CAMPAIGN_VIDEO' END
+              WHERE id IN (7007,7018);

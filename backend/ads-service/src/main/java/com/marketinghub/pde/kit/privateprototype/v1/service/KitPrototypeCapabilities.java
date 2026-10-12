@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules;
 import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract.Capability;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
@@ -28,13 +29,14 @@ public class KitPrototypeCapabilities {
       "${pde.kit.private-prototype-url:https://pagamentopalf.site/mh-api/pde/kit/private/v1/prototype}")
   private String prototypeUrl;
 
-  /** Confere contratos do mesmo ciclo e reconhece perfil explícito nos campos canônicos aceitos. */
+  /** Mantém a capacidade nas etapas privadas, incluindo vídeo, com contratos do mesmo ciclo. */
   public Capability resolve(LearningSalesCycle cycle) {
     if (cycle.isBaseline()
         || !"OPEN".equals(cycle.getStatus())
-        || !Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage()))
+        || !(Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+            || LearningCycleRules.VIDEO_STAGES.contains(cycle.getStage())))
       return unavailable(
-          "A implementação privada exige o mesmo ciclo aberto em ajuste ou validação.");
+          "A implementação privada exige o mesmo ciclo aberto em ajuste, produção audiovisual ou validação.");
     try {
       var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
       var planning =

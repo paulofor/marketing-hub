@@ -531,3 +531,10 @@ Somente kits suportados e modo TECHNICAL podem executá-la, sem modelo ou efeito
 comerciais. A montagem exige o mesmo produto/versão/experimento e o gate original
 ainda válido, além do resultado e dos hashes da nova captura. A revisão do MP4 e a
 seleção humana continuam obrigatórias. Matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
+
+
+O acesso ao kit privado deve reconhecer também `LearningCycleRules.VIDEO_STAGES`
+no mesmo ciclo aberto. Avançar à produção/revisão audiovisual não torna a versão
+homologada indisponível para captura determinística. Baseline, ciclo encerrado,
+planejamento, etapas comerciais e contrato posterior bloqueado permanecem recusados.
+As fixtures de homologação devem representar a etapa atual, além da construção inicial.

@@ -46,3 +46,50 @@ A atestação sucessora Mira v23 preserva v22 e atualiza somente o hash do runne
 compartilhado. Captura complementar continua limitada ao kit privado; os percursos
 anteriores de Mira/Vega/Alcyone permanecem cobertos pela suíte do executor.
 `automaticDeployOnMerge=false` e nenhuma versão do produto muda neste ajuste.
+
+
+## Continuidade do kit na aprovação audiovisual — 2026-10-12
+
+A tarefa complementar #732 foi recusada em `/internal/sessions` (HTTP 409), antes
+de abrir o navegador ou executar IA. O ciclo #12 permanece OPEN/VIDEO_APPROVAL,
+com os contratos da versão v3 preservados; a tarefa #685 havia homologado a mesma
+versão antes da etapa audiovisual. `KitPrototypeCapabilities` ainda permitia
+somente ADJUSTMENT/VALIDATION, divergindo da política já corrigida no contexto de
+Íris (LOOP-APROVACAO-VIDEO-REJEITA-PROVA-DO-CICLO).
+
+Recuar o ciclo reescreveria sua posição; usar somente as capturas antigas deixaria
+as ações narradas sem prova; reconhecer as quatro etapas audiovisuais canônicas
+na capacidade privada mantém a versão verificável. Escolhida a terceira opção,
+sem mudar contratos, pareceres, limites ou autorização comercial.
+
+Matriz antes da validação:
+
+- Capella e outro perfil: seis etapas privadas, incluindo VIDEO_APPROVAL e o
+  percurso anteriormente válido, mantêm capacidade e consulta do contexto exato.
+- Tentativa posterior bloqueada, baseline, ciclo encerrado, planejamento e etapas
+  comerciais continuam recusados antes de expor a sessão.
+- Backend e compositor reais sobre MySQL 5.7 local, com o primeiro produto em
+  VIDEO_APPROVAL e outro em CAMPAIGN_VIDEO; terceiro controle em ADJUSTMENT.
+- Capturas de entrada/conteúdo/resultado em desktop, iPhone e Pixel; recuperação,
+  isolamento, callback e ausência de efeitos externos conferidos pelo harness.
+- Spotless deve realmente selecionar os arquivos: o filtro do runner local usa
+  uma expressão regular, não uma lista separada por vírgulas.
+
+Adoção: somente após os testes e a captura publicada da mesma versão. Reversão se
+alguma etapa comercial ou contrato rejeitado passar a abrir a capacidade privada.
+Impacto em conversão permanece desconhecido; o ganho verificável é manter a prova
+executável quando o produto avança à preparação dos vídeos.
+
+### Resultado da validação da etapa
+
+A regressão inicial falhou nas quatro fases audiovisuais; com a lista canônica,
+os 25 casos da capacidade passaram. A rodada relevante do backend totalizou
+144 testes, incluindo 92 de arquitetura, sem falhas. O fluxo real local passou
+18 percursos, seis callbacks de Psique, dois fluxos Têmis/gate e nove grupos de
+controles; cada produto conservou quinze capturas. MySQL 5.7 aplicou a fixture
+incremental; nenhum changelog anterior foi alterado. Topologia temporária removida.
+
+Spotless do conjunto selecionado, bash -n, ShellCheck e diff passaram. Os 38 testes
+do pacote/seleção e os 520 arquivos/113 manifestos permaneceram íntegros, sem nova
+atestação ou mudança da versão do produto. Pareceres por modelo foram simulados
+somente nessa validação local; não representam aprovação dos novos vídeos.

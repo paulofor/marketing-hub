@@ -10026,3 +10026,19 @@ produto já aprovado. O consumidor de Íris invalida corretamente uma tentativa
 posterior; foi criado o escopo complementar versionado `@video-proof-v1`, reutilizando
 o mesmo harness. Regressões de JPA, consumidor e vídeo preservam o gate original e
 exigem sua validade antes de consumir a captura. Nenhuma tarefa incorreta foi criada.
+
+
+### Recorrência no acesso ao kit — 12/10/2026
+
+Relacionada a `LOOP-APROVACAO-VIDEO-REJEITA-PROVA-DO-CICLO`: Capella #732 não
+abriu `/internal/sessions` (409), no mesmo ciclo #12 OPEN/VIDEO_APPROVAL. A prova
+#685 e os pareceres da v3 permaneciam aceitos. A correção do contexto de Íris não
+havia alcançado `KitPrototypeCapabilities`, que repetia a restrição antiga.
+
+A capacidade passa a reconhecer a lista canônica de etapas audiovisuais, sem
+recuar o ciclo nem alterar o gate. Testes de dois perfis cobrem todas as etapas
+privadas e rejeitam estados comerciais, histórico fechado/baseline e bloqueio
+posterior. As fixtures MySQL do fluxo real agora usam VIDEO_APPROVAL e
+CAMPAIGN_VIDEO; o controle anterior continua em ADJUSTMENT. O filtro Spotless do
+runner também usa alternância regex para verificar de fato os arquivos selecionados.
+Matriz e resultados: `docs/homologacao/capella-captura-complementar-v1.md`.

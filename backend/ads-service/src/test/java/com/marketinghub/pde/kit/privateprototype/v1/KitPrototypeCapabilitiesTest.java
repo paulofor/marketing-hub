@@ -14,6 +14,8 @@ import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChain
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Responsabilidade: impedir implementação por nome/ID ou reaproveitamento de contrato bloqueado.
@@ -80,6 +82,65 @@ class KitPrototypeCapabilitiesTest {
         .isEqualTo("nails-v1");
   }
 
+  /** Mantém a versão executável durante todas as etapas privadas de produção audiovisual. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "ADJUSTMENT",
+        "VALIDATION",
+        "VIDEO_BRIEF",
+        "CAMPAIGN_VIDEO",
+        "PDE_ENTRY_VIDEO",
+        "VIDEO_APPROVAL"
+      })
+  void preservesPrivateCapabilityDuringVideoPreparation(String stage) {
+    assertThat(resolve(7, 12, "nails-v1", "", "", false, stage, "OPEN", false).profileCode())
+        .isEqualTo("nails-v1");
+    assertThat(resolve(775, 512, "barber-v1", "", "", false, stage, "OPEN", false).profileCode())
+        .isEqualTo("barber-v1");
+  }
+
+  /** A fase audiovisual não recupera contrato de Dédalo bloqueado por tentativa posterior. */
+  @ParameterizedTest
+  @ValueSource(strings = {"VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "VIDEO_APPROVAL"})
+  void preservesLatestBlockDuringVideoPreparation(String stage) {
+    assertThat(resolve(7, 12, "nails-v1", "", "", true, stage, "OPEN", false).available())
+        .isFalse();
+    assertThat(resolve(775, 512, "barber-v1", "", "", true, stage, "OPEN", false).available())
+        .isFalse();
+  }
+
+  /** Não estende a capacidade privada a planejamento, fases comerciais ou etapa desconhecida. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "LEARNING",
+        "PLANNING",
+        "AUTHORIZATION",
+        "PUBLICATION",
+        "MEASUREMENT",
+        "DECISION",
+        "SCALE_AUTHORIZATION",
+        "UNKNOWN"
+      })
+  void refusesStagesOutsidePrivatePreparation(String stage) {
+    assertThat(resolve(7, 12, "nails-v1", "", "", false, stage, "OPEN", false).available())
+        .isFalse();
+  }
+
+  /** Ciclo encerrado ou baseline continua recusado mesmo com contratos anteriormente aceitos. */
+  @Test
+  void refusesClosedOrBaselineVideoCycle() {
+    assertThat(
+            resolve(7, 12, "nails-v1", "", "", false, "VIDEO_APPROVAL", "CLOSED", false)
+                .available())
+        .isFalse();
+    assertThat(
+            resolve(775, 512, "barber-v1", "", "", false, "VIDEO_APPROVAL", "OPEN", true)
+                .available())
+        .isFalse();
+  }
+
   /** Preserva as fixtures anteriores que identificavam o perfil somente pela referência. */
   private com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract
           .Capability
@@ -100,6 +161,23 @@ class KitPrototypeCapabilitiesTest {
           String format,
           String explicit,
           boolean blocked) {
+    return resolve(
+        productId, cycleId, profile, format, explicit, blocked, "ADJUSTMENT", "OPEN", false);
+  }
+
+  /** Monta o estado corrente sem alterar os contratos históricos e verifica o escopo consultado. */
+  private com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract
+          .Capability
+      resolve(
+          long productId,
+          long cycleId,
+          String profile,
+          String format,
+          String explicit,
+          boolean blocked,
+          String stage,
+          String status,
+          boolean baseline) {
     var tasks = mock(AgentTaskRepository.class);
     var chains = mock(BusinessProcessChainDefinitionRepository.class);
     var cycle = new LearningSalesCycle();
@@ -108,8 +186,9 @@ class KitPrototypeCapabilitiesTest {
     cycle.setExperimentId(900L + cycleId);
     cycle.setChainDefinitionId(26L);
     cycle.setCreatedAt(Instant.EPOCH);
-    cycle.setStage("ADJUSTMENT");
-    cycle.setStatus("OPEN");
+    cycle.setStage(stage);
+    cycle.setStatus(status);
+    cycle.setBaseline(baseline);
     var plan = new BusinessProcessDefinition();
     plan.setId(116L);
     plan.setProcessCode("pde-commercial-plan-offer");
@@ -124,13 +203,13 @@ class KitPrototypeCapabilitiesTest {
     chain.setItems(List.of(first, second));
     when(chains.findById(26L)).thenReturn(Optional.of(chain));
     var designed = new ArrayList<AgentTaskFunctionalSnapshot>();
-    for (String stage : List.of("journey", "deliverables", "access"))
+    for (String activity : List.of("journey", "deliverables", "access"))
       designed.add(
           new AgentTaskFunctionalSnapshot(
               (long) designed.size() + 1,
               117L,
               "pde-construction-approval",
-              stage,
+              activity,
               "landing-generator",
               "COMPLETED",
               Instant.EPOCH,
@@ -175,7 +254,23 @@ class KitPrototypeCapabilitiesTest {
                                 .put("kitProfileCode", explicit))
                         .toString())));
     var result = new KitPrototypeCapabilities(tasks, chains, new ObjectMapper()).resolve(cycle);
-    verify(tasks).findFunctionalSnapshotsByProcessSince(117L, ref, Instant.EPOCH);
+    if (result.available() || blocked) {
+      verify(tasks).findFunctionalSnapshotsByProcessSince(117L, ref, Instant.EPOCH);
+    }
+    if (baseline
+        || !"OPEN".equals(status)
+        || Set.of(
+                "LEARNING",
+                "PLANNING",
+                "AUTHORIZATION",
+                "PUBLICATION",
+                "MEASUREMENT",
+                "DECISION",
+                "SCALE_AUTHORIZATION",
+                "UNKNOWN")
+            .contains(stage)) {
+      verifyNoInteractions(tasks, chains);
+    }
     return result;
   }
 }

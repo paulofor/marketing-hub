@@ -93,3 +93,47 @@ Spotless do conjunto selecionado, bash -n, ShellCheck e diff passaram. Os 38 tes
 do pacote/seleção e os 520 arquivos/113 manifestos permaneceram íntegros, sem nova
 atestação ou mudança da versão do produto. Pareceres por modelo foram simulados
 somente nessa validação local; não representam aprovação dos novos vídeos.
+
+
+## Autorização da prova produzida pelo ciclo — 2026-10-12
+
+A captura #733 concluiu nove cenários, quinze capturas e zero chamadas de provedor.
+Os oito resultados canônicos permaneceram com os mesmos hashes. A pós-produção
+recusou a captura (HTTP 409): o adaptador exigia `visualProofAuthorization`, mas
+`IrisLearningCycleContext` só entregava o gate e o destino; o produtor do primeiro
+experimento já emitia a autorização. Os testes anteriores simulavam esse campo e
+não ligavam o produtor real ao consumidor.
+
+Retirar a validação enfraqueceria o isolamento; consultar persistência de outro
+módulo criaria um segundo caminho; emitir o contrato existente no produtor do ciclo
+preserva a mesma autoridade. Escolhida a terceira alternativa, após as verificações
+de gate, identidade e fase que já existem. Nenhum parecer é renovado por essa mudança.
+
+Matriz da correção, antes da validação:
+
+- Produtor real do ciclo → adaptador real de agentes → serviço real de prova do vídeo
+  → leitura dos bytes por storage substituto local. Capella e outra identidade,
+  em ADJUSTMENT e VIDEO_APPROVAL; nenhuma autorização simulada entre os módulos.
+- Produto, versão ou experimento divergente, gate reprovado e ciclo encerrado
+  recusam a montagem; nenhuma escrita ou consumo de IA no teste.
+- Preservar contratos do experimento inicial, captura comum, recuperação da voz,
+  montagem híbrida e arquitetura. Reutilizar os MP4 locais já renderizados com
+  capturas reais #721/#722, sem repetir a matriz de navegador sem motivo.
+
+Critério de adoção: sequência e leitura privadas aprovadas pelos contratos reais,
+seguidas de nova revisão independente dos MP4 finais. Impacto comercial desconhecido.
+
+
+### Resultado da validação do contrato visual
+
+As quatro regressões de passagem falharam com HTTP 409 antes da correção.
+Após emitir autorização e a lista de capturas do gate, os 218 testes relevantes
+do backend passaram, incluindo arquitetura, leitura visual existente, contexto
+inicial, contexto de ciclos e recuperação da voz. O teste atravessa os módulos
+sem simular o campo antes omitido; não há escrita produtiva nem chamada de IA.
+
+A atestação sucessora Mira v24 conserva v23 e atualiza somente os dois hashes de
+código/teste compartilhados. A experiência de Mira permanece na mesma versão e
+`automaticDeployOnMerge=false`. Os 38 testes de pacote e seleção passaram; o pacote
+de revisão foi gerado sem divergência. A aprovação dos novos vídeos continua
+dependente dos pareceres próprios sobre os MP4.

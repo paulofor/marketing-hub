@@ -10042,3 +10042,15 @@ posterior. As fixtures MySQL do fluxo real agora usam VIDEO_APPROVAL e
 CAMPAIGN_VIDEO; o controle anterior continua em ADJUSTMENT. O filtro Spotless do
 runner também usa alternância regex para verificar de fato os arquivos selecionados.
 Matriz e resultados: `docs/homologacao/capella-captura-complementar-v1.md`.
+
+
+### Complemento — LOOP-APROVACAO-VIDEO-REJEITA-PROVA-DO-CICLO — 2026-10-12
+
+Capella: captura complementar #733 aprovada, mas pós-produção HTTP 409.
+`IrisLearningCycleContext` não emitia a autorização visual que o consumidor já
+exigia e que existia no contexto do primeiro experimento. Os mocks anteriores
+omitiram essa divergência. A correção emite o contrato após o gate canônico e
+conecta produtor/adaptador/consumidor reais na regressão, com Capella e outra
+identidade, fase anterior válida e recusas por contexto/gate inválidos. Nenhum
+registro aprovado é reescrito; captura e áudio permanecem reutilizáveis.
+Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.

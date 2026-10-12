@@ -538,3 +538,13 @@ no mesmo ciclo aberto. Avançar à produção/revisão audiovisual não torna a 
 homologada indisponível para captura determinística. Baseline, ciclo encerrado,
 planejamento, etapas comerciais e contrato posterior bloqueado permanecem recusados.
 As fixtures de homologação devem representar a etapa atual, além da construção inicial.
+
+
+### Autorização visual consistente nos ciclos — 2026-10-12
+
+O contexto de um ciclo privado com gate aceito deve emitir o mesmo
+`COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1` do primeiro experimento: origem e
+destino exatos, produto, versão, gate e URL já validados. A captura complementar
+ainda exige seu resultado técnico, finalidade, hash e tenant corretos. Os testes
+devem ligar produtor, adaptador e consumidor reais; simular a autorização no
+consumidor isolado não comprova a passagem entre agentes.

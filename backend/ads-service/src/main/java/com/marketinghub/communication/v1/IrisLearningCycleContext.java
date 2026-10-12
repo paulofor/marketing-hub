@@ -92,7 +92,7 @@ public class IrisLearningCycleContext {
 
   /**
    * Conserva estratégia, economia e gate durante toda a preparação privada, incluindo a revisão
-   * audiovisual da mesma versão antes da autorização comercial.
+   * audiovisual e a autorização de leitura da prova da mesma versão, antes da liberação comercial.
    */
   private Map<String, Object> context(String reference, LearningSalesCycle cycle) throws Exception {
     require(
@@ -263,11 +263,33 @@ public class IrisLearningCycleContext {
             "requiresLandingGeneration",
             false));
     result.put("approvedUpstreamArtifacts", List.copyOf(artifacts));
+    result.put(
+        "approvedVisualArtifacts",
+        artifacts.stream()
+            .filter(artifact -> "technicalHomologation".equals(artifact.get("activityId")))
+            .toList());
     result.put("communicationArtifacts", communicationArtifacts(reference, cycle));
     result.put("approvedLandingAssets", List.of());
     result.put("missingRequiredPredecessors", List.of());
     result.put("gateInstanceId", gate.getId());
     result.put("validationGate", proof);
+    result.put(
+        "visualProofAuthorization",
+        Map.of(
+            "contractVersion",
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "proofSourceReference",
+            reference,
+            "targetSourceReference",
+            reference,
+            "productId",
+            target.productId(),
+            "prototypeVersion",
+            target.experienceVersion(),
+            "gateInstanceId",
+            gate.getId(),
+            "publicUrl",
+            target.publicUrl()));
     if (proof.has("evidenceCorrectionResolution"))
       result.put("operationalControlEvidence", pde.path("operationalControlEvidence"));
     result.put("inheritedLearning", pde.path("inheritedLearning"));

@@ -225,6 +225,104 @@ class IrisLearningCycleContextTest {
     verify(instances, never()).save(any());
   }
 
+  /** Liga produtor, adaptador e consumidor reais sem simular a autorização visual do ciclo. */
+  @ParameterizedTest
+  @CsvSource({
+    "7,12,105,26,ADJUSTMENT",
+    "7,12,105,26,VIDEO_APPROVAL",
+    "91007,91012,91105,91026,ADJUSTMENT",
+    "91007,91012,91105,91026,VIDEO_APPROVAL"
+  })
+  void passesSupplementalCaptureFromCycleThroughVideoContract(
+      long productId, long cycleId, long experimentId, long chainId, String stage)
+      throws Exception {
+    fixture(productId, cycleId, experimentId, chainId);
+    cycle.setStage(stage);
+    String reference = "experiment:" + experimentId;
+    var captured =
+        json.createObjectNode()
+            .put("contractVersion", "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1")
+            .put("captureMomentsContract", "PDE_KIT_CAPTURE_MOMENTS_V1")
+            .put("mode", "TECHNICAL")
+            .put("decision", "APPROVED")
+            .put("sourceReference", reference + "@video-proof-v1")
+            .put("productId", productId)
+            .put("prototypeVersion", VERSION)
+            .put("trafficClass", "AGENT_VALIDATION")
+            .put("commercialEvidenceClaimed", false);
+    captured
+        .putArray("artifacts")
+        .addObject()
+        .put("artifactId", 91722L)
+        .put("sha256", "d".repeat(64));
+    var evidence = image(91733L, 91722L, "FULL_PAGE", "d".repeat(64));
+    evidence.getTask().setStatus("COMPLETED");
+    evidence.getTask().setSourceReference(reference + "@video-proof-v1");
+    evidence.getTask().setResultJson(captured.toString());
+    var images = mock(AgentTaskVisualEvidenceRepository.class);
+    when(images.findByIdAndTaskId(91722L, 91733L)).thenReturn(Optional.of(evidence));
+    var storage = mock(AgentTaskVisualEvidenceService.class);
+    when(storage.read(91733L, 91722L))
+        .thenReturn(
+            new AgentTaskVisualEvidenceService.EvidenceContent("image/png", new byte[] {1, 2, 3}));
+    var bridge =
+        new com.marketinghub.agenttask.AgentTaskVideoProductProofSource(
+            images, storage, provider::resolve, json);
+    var projects = mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class);
+    var project =
+        com.marketinghub.salesvideo.VideoProject.builder()
+            .id(91011L)
+            .tenantId("cycle-proof-fixture")
+            .productId(productId)
+            .experimentId(experimentId)
+            .campaignKey(VERSION)
+            .build();
+    when(projects.findById(91011L)).thenReturn(Optional.of(project));
+    var reader =
+        new com.marketinghub.salesvideo.service.VideoProductProofService(bridge, projects, json);
+    var shot =
+        new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+            "internal://agent-tasks/91733/visual-evidence/91722#crop=72,5020,1035,580", 0, 2);
+    try {
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.set(
+          new com.marketinghub.salesvideo.tenant.TenantContext(
+              "cycle-proof-fixture", "fixture", false));
+      var sequence = reader.sequence(91011L, List.of(shot), "Veja a legenda.");
+      assertThat(sequence.getFirst())
+          .containsEntry("taskId", 91733L)
+          .containsEntry("sha256", "d".repeat(64))
+          .containsEntry("productId", productId)
+          .containsEntry("experimentId", experimentId)
+          .containsEntry(
+              "contentPath", "/api/sales-videos/projects/91011/product-proof/91733/91722")
+          .containsEntry("commercialEvidenceClaimed", false);
+      assertThat(reader.read(91011L, 91733L, 91722L)).containsExactly(1, 2, 3);
+      project.setProductId(productId + 1);
+      assertThatThrownBy(() -> reader.sequence(91011L, List.of(shot), "Veja."))
+          .hasMessageContaining("mesma versão");
+      project.setProductId(productId);
+      project.setCampaignKey("outra-versao");
+      assertThatThrownBy(() -> reader.sequence(91011L, List.of(shot), "Veja."))
+          .hasMessageContaining("mesma versão");
+      project.setCampaignKey(VERSION);
+      project.setExperimentId(experimentId + 1);
+      assertThatThrownBy(() -> reader.sequence(91011L, List.of(shot), "Veja."))
+          .hasMessageContaining("mesma versão");
+      project.setExperimentId(experimentId);
+      gate.setObjectiveAchieved(false);
+      assertThatThrownBy(() -> reader.sequence(91011L, List.of(shot), "Veja."))
+          .hasMessageContaining("mesma versão");
+      gate.setObjectiveAchieved(true);
+      cycle.setStatus("CLOSED");
+      assertThatThrownBy(() -> reader.sequence(91011L, List.of(shot), "Veja."))
+          .hasMessageContaining("mesma versão");
+    } finally {
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
+    }
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+  }
+
   /** Reproduz produtor de contexto e leitura real dos pixels antes e depois da etapa de vídeo. */
   @ParameterizedTest
   @CsvSource({
@@ -241,6 +339,12 @@ class IrisLearningCycleContextTest {
     String technical =
         json.writeValueAsString(
             Map.of(
+                "contractVersion",
+                "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+                "productId",
+                productId,
+                "publicUrl",
+                "https://local.example/vega-private",
                 "decision",
                 "APPROVED",
                 "prototypeVersion",

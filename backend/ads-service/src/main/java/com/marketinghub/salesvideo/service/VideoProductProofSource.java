@@ -18,6 +18,12 @@ public interface VideoProductProofSource {
     return false;
   }
 
+  /** Confirma o gate original antes de usar capturas complementares isoladas da homologação. */
+  default boolean isSupplementalAuthorizedFor(
+      Proof proof, String targetSourceReference, Long productId, String prototypeVersion) {
+    return false;
+  }
+
   /**
    * Transporta identidade e resultado persistidos sem depender das entidades do módulo de agentes.
    */

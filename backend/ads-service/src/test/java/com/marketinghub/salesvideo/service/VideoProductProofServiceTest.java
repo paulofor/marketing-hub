@@ -88,6 +88,32 @@ class VideoProductProofServiceTest {
     assertThat(service.resolve(project)).containsEntry("sha256", "abc");
   }
 
+  /** A captura isolada exige contrato completo e gate original válido antes de compor o vídeo. */
+  @ParameterizedTest
+  @ValueSource(longs = {91003, 92018})
+  void acceptsSupplementalOnlyWithCurrentOriginalGate(long experiment) throws Exception {
+    project.setExperimentId(experiment);
+    String reference = "experiment:" + experiment;
+    task.setSourceReference(reference + "@video-proof-v1");
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            new ObjectMapper().readTree(task.getResultJson());
+    result
+        .put("sourceReference", task.getSourceReference())
+        .put("mode", "TECHNICAL")
+        .put("captureMomentsContract", "PDE_KIT_CAPTURE_MOMENTS_V1");
+    task.setResultJson(result.toString());
+    assertThatThrownBy(() -> service.resolve(project))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    when(repository.isSupplementalAuthorizedFor(any(), eq(reference), eq(91002L), eq("pde-v12")))
+        .thenReturn(true);
+    assertThat(service.resolve(project)).containsEntry("sha256", "abc");
+    result.remove("captureMomentsContract");
+    task.setResultJson(result.toString());
+    assertThatThrownBy(() -> service.resolve(project))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
+
   /** Bloqueia mistura de versão, produto, experimento, status e resultado reprovado. */
   @ParameterizedTest
   @ValueSource(

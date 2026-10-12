@@ -308,6 +308,84 @@ describe("AgentWorkspacePage", () => {
     );
   });
 
+  it.each([90105, 90218])(
+    "isola captura complementar do experimento %s e preserva a solicitação comum",
+    (experiment) => {
+      testState.agentKey = "customer-agent";
+      testState.nickname = "Psique";
+      testState.experiments = [{ id: experiment, name: "Kit sintético" }];
+      testState.processes = [
+        {
+          id: 117,
+          processCode: "pde-construction-approval",
+          status: "PUBLISHED",
+          name: "Construção",
+          versionNumber: 1,
+          diagram: {
+            nodes: [
+              {
+                id: "technicalHomologation",
+                type: "TASK",
+                owner: "Psique",
+                label: "Homologar",
+              },
+            ],
+          },
+        },
+      ];
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter initialEntries={["/agents/7"]}>
+            <Routes>
+              <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      fireEvent.change(screen.getByLabelText("Contexto da execução *"), {
+        target: { value: "EXPERIMENT" },
+      });
+      fireEvent.change(screen.getByLabelText("Experimento *"), {
+        target: { value: String(experiment) },
+      });
+      fireEvent.change(screen.getByLabelText("Processo publicado *"), {
+        target: { value: "117" },
+      });
+      fireEvent.change(screen.getByLabelText("Atividade do processo *"), {
+        target: { value: "technicalHomologation" },
+      });
+      fireEvent.change(screen.getByLabelText("Tarefa *"), {
+        target: { value: "Captura complementar" },
+      });
+      fireEvent.change(screen.getByLabelText("Resultado esperado *"), {
+        target: { value: "Provas sem reabrir gate" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Enviar para Psique" }),
+      );
+      expect(testState.createMutate).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          sourceReference: `experiment:${experiment}`,
+        }),
+        expect.any(Object),
+      );
+      fireEvent.click(
+        screen.getByLabelText(
+          "Captura complementar para vídeo, preservando a homologação aceita",
+        ),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Enviar para Psique" }),
+      );
+      expect(testState.createMutate).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          sourceReference: `experiment:${experiment}@video-proof-v1`,
+        }),
+        expect.any(Object),
+      );
+    },
+  );
+
   it("mostra motivo e contagem Meta antes de retomar Têmis", () => {
     testState.agentKey = "meta-ad-approver";
     testState.nickname = "Têmis";

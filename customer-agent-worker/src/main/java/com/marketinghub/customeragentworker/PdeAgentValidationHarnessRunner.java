@@ -80,7 +80,9 @@ public class PdeAgentValidationHarnessRunner {
     this.allowLocalUrls = allowLocalUrls;
   }
 
-  /** Valida a família executável e a identidade versionada antes de executar cenários isolados. */
+  /**
+   * Valida identidade e finalidade; capturas complementares usam somente o harness técnico do kit.
+   */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
       throws Exception {
@@ -97,8 +99,12 @@ public class PdeAgentValidationHarnessRunner {
     }
     validateUrl(sourceUrl);
     String sourceReference = String.valueOf(task.get("sourceReference"));
-    if (!sourceReference.matches(
-        "product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*")) {
+    boolean supplementary = sourceReference.matches("experiment:[1-9][0-9]*@video-proof-v1");
+    String identityReference =
+        supplementary ? sourceReference.replace("@video-proof-v1", "") : sourceReference;
+    if ((supplementary && !"TECHNICAL".equals(mode))
+        || !identityReference.matches(
+            "product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*")) {
       throw new HarnessException("A tarefa não pertence à referência multiagente canônica.");
     }
     long productId = target.path("productId").asLong();
@@ -115,7 +121,7 @@ public class PdeAgentValidationHarnessRunner {
             && prototypeVersion.equals(acceptance.path("prototypeVersion").asText())
             && List.of("/mh-api/pde/kit/private/v1/prototype", "/api/pde/kit/private/v1/prototype")
                 .contains(URI.create(sourceUrl).getPath())
-            && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
+            && identityReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
             && lineage.path("productId").asLong() == productId;
@@ -125,7 +131,7 @@ public class PdeAgentValidationHarnessRunner {
                 "musa-pde-entry-v(?:9|[1-9][0-9]+)-primeiro-ajuste-aplicavel")
             && List.of("/vega-private", "/agent-validation")
                 .contains(URI.create(sourceUrl).getPath())
-            && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
+            && identityReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
             && lineage.path("productId").asLong() == productId;
@@ -137,7 +143,7 @@ public class PdeAgentValidationHarnessRunner {
         "pde-planejado-36".equals(productSlug)
             && miraCandidateVersion(prototypeVersion)
             && "/mira-candidate".equals(URI.create(sourceUrl).getPath())
-            && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
+            && identityReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
             && lineage.path("productId").asLong() == productId;
@@ -145,6 +151,9 @@ public class PdeAgentValidationHarnessRunner {
         "pde-planejado-46".equals(productSlug)
             && prototypeVersion.matches("alcyone-private-v(?:[2-9]|[1-9][0-9]+)")
             && List.of("", "/").contains(URI.create(sourceUrl).getPath());
+    if (supplementary && !privateKit)
+      throw new HarnessException(
+          "Captura complementar exige o contrato executável do kit privado.");
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)
         && !vega
         && !miraCandidate

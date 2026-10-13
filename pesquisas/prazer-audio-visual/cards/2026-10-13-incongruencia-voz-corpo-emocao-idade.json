@@ -1,0 +1,18 @@
+{
+  "cardKey": "incongruencia-voz-corpo-emocao-idade",
+  "title": "Divergência entre emoção vocal e corporal varia com idade",
+  "finding": "Em 164 participantes, crianças tenderam a classificar cenas emotivas incongruentes pela voz; adultos frequentemente ficaram entre voz e corpo, com preferência visual em apenas uma combinação.",
+  "mechanism": "Pesos relativos das pistas auditivas e corporais, desenvolvimento da atenção e competição entre respostas podem alterar julgamentos emocionais; causas não isoladas.",
+  "commercialApplication": "Em vídeos com narração, personagens e avatares, revisar coerência entre vocalização e movimento corporal e testar clareza emocional na audiência de interesse, sem exploração persuasiva de menores.",
+  "evidenceStrength": "Média para a tarefa de reconhecimento: n=164 e condições congruentes/incongruentes; não demonstra prazer ou resultado comercial.",
+  "experimentHypothesis": "Com mesmo conteúdo e ritmo, versões com prosódia e movimento corporal emocionalmente coerentes gerarão menos erros de reconhecimento de emoção que versões incongruentes.",
+  "risks": "Generalizar a dominância auditiva infantil a todos os grupos, presumir dominância visual universal adulta ou usar o achado para influência manipulativa sobre crianças.",
+  "limits": "Tarefa de escolha forçada, uma população regional britânica, vocalizações não verbais e movimentos corporais estilizados, sem medidas de compra.",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-13-incongruencia-voz-corpo-emocao-idade.md",
+  "sourceTitle": "Fonte revisada v1 — divergência emocional entre voz e corpo por idade",
+  "sourceSha256": "c0f11fff2e360a407d231cc36ea74f028492d3a55933c48b69995d077eabe256",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-10-13",
+  "validUntil": "2026-11-27",
+  "sourceKind": "MARKDOWN"
+}

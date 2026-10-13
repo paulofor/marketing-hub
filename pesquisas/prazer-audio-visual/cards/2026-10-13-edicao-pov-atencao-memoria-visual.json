@@ -1,0 +1,18 @@
+{
+  "cardKey": "edicao-pov-atencao-memoria-visual",
+  "title": "Edição POV pode orientar atenção e memória visual",
+  "finding": "Em 39 adultos e oito filmes, montagem que ligava olhar do personagem ao objeto observado aumentou fixações em rostos e reconhecimento posterior de detalhes, em comparação com controles.",
+  "mechanism": "A continuidade do olhar do personagem ao alvo pode estabelecer atenção conjunta e facilitar a codificação visual. As correlações neurais em fMRI não comprovam empatia sentida.",
+  "commercialApplication": "Comparar cenas equivalentes de demonstração com corte POV e corte-controle, medindo reconhecimento correto de detalhes e falsas lembranças antes de qualquer métrica comercial.",
+  "evidenceStrength": "Média: experimento controlado com fMRI e comportamento, n=39, estímulos narrativos específicos; sem teste de vendas ou prazer.",
+  "experimentHypothesis": "Em um mesmo vídeo, cortes POV para detalhes relevantes aumentarão reconhecimento correto após a exposição sem elevar falsos reconhecimentos ou piorar compreensão.",
+  "risks": "Confundir atenção guiada com manipulação, satisfação, prazer, persuasão, dopamina ou conversão; edição artificial pode causar estranhamento.",
+  "limits": "Generalização restrita por 39 adultos e oito filmes, dependência de contexto; resultados neurais são indiretos.",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-13-edicao-pov-atencao-memoria-visual.md",
+  "sourceTitle": "Fonte revisada v1 — edição POV, atenção compartilhada e reconhecimento visual",
+  "sourceSha256": "32de972c16704f45343a91ee83b860841f7620c85d9bb2a25100d6e18bc24588",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-10-13",
+  "validUntil": "2026-11-27",
+  "sourceKind": "MARKDOWN"
+}

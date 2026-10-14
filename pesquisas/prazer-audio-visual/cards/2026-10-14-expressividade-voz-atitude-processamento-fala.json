@@ -1,0 +1,18 @@
+{
+  "cardKey": "expressividade-voz-atitude-processamento-fala",
+  "collection": "prazer-audio-visual",
+  "title": "Expressividade e atitude modulam processamento compartilhado da fala",
+  "finding": "Dois experimentos de MEG mostraram correlações mais elevadas entre ouvintes no beta para a entrega expressiva e mudanças alfa/teta conforme atitude prévia sobre o locutor, sem efeito detectável para uma pista visual mínima de plateia.",
+  "mechanism": "Prosódia e gestual, associados a expectativas sobre a pessoa que fala, podem alterar a atividade cerebral compartilhada, não sendo prova de compreensão ou persuasão.",
+  "commercialApplication": "Comparar narrações expressivas e neutras do mesmo roteiro, medindo compreensão, credibilidade, lembrança e conforto.",
+  "evidenceStrength": "Média para diferenças de MEG com 40 participantes no primeiro estudo e 58 analisados para atitude no segundo; baixa para conversão.",
+  "publishedOn": "2026-10-14",
+  "validUntil": "2026-11-28",
+  "experimentHypothesis": "A narração expressiva coerente poderá melhorar compreensão e memória sem reduzir confiança frente à versão neutra.",
+  "risks": "Não inferir persuasão inconsciente de correlação neural nem criar biografias falsas do locutor.",
+  "limits": "Estudos em discursos específicos, sem medida direta de prazer ou dopamina; generalização a avatares de IA não comprovada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-14-expressividade-voz-atitude-processamento-fala.md",
+  "sourceTitle": "Fonte revisada: Expressividade e atitude modulam processamento compartilhado da fala",
+  "sourceSha256": "d6d8864560d7f6beb322a8ca4b068390e216557d600a754ca3360529baac4083"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-luz-valencia-musical-interacao",
+  "collection": "prazer-audio-visual",
+  "title": "Modulação emocional por cor da luz e valência musical",
+  "finding": "Em experimento aleatorizado com 210 pessoas, cor da iluminação LED e valência da música apresentaram interação nas avaliações emocionais imediatas. Ciano com música positiva teve a maior média de valência dentre as combinações estudadas.",
+  "mechanism": "Uma interação afetiva entre propriedades de luz e música pode modificar avaliações subjetivas; o estudo não isola um mecanismo neural causal.",
+  "commercialApplication": "Avaliar paletas visuais e valência musical em experimento fatorial, com controles de brilho e volume, medindo coerência, conforto e compreensão.",
+  "evidenceStrength": "Média para efeito imediato em população clínica; baixa para vídeo e publicidade.",
+  "publishedOn": "2026-10-14",
+  "validUntil": "2026-11-28",
+  "experimentHypothesis": "A coerência audiovisual percebida dependerá da combinação entre paleta e valência musical, sem pressupor uma cor ideal universal.",
+  "risks": "Não transportar intervenções clínicas para publicidade nem afirmar que ciano causa mais prazer ou vendas.",
+  "limits": "210 pacientes com ansiedade, música de tradição específica, luz LED física e resposta imediata; não equivale a pixels ou compra.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-14-cor-luz-valencia-musical-interacao.md",
+  "sourceTitle": "Fonte revisada: Modulação emocional por cor da luz e valência musical",
+  "sourceSha256": "94489b980fb281c02a9b0d7615ba0c2efa49bdb259e1652a6ba4e0db04626c6b"
+}

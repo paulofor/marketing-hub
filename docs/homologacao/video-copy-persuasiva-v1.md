@@ -66,3 +66,34 @@ São 576 testes executados com sucesso, além de 23 opcionais não executados. A
 persuasivas dos testes são simuladas e claramente identificadas. A publicação ainda deve
 comprovar os mesmos recursos nos executores; o desempenho de redação do modelo e o impacto em
 vendas dependerão das próximas produções e dos experimentos autorizados, não destes números.
+
+## Dependência de publicação identificada após o merge
+
+O PR #5596 integrou os contratos na main `25815b9002b1909d91fc65475c4e5c64573444af`.
+O run `38679076144` classificou `backend=false`: os executores recebem os prompts, mas o
+catálogo empacotado no backend permanece antigo. A reprodução local usando o SHA anterior
+`c4d3ef5` confirmou a omissão. O backend já declara esses arquivos como recursos no Maven.
+
+Entre acrescentar globs por agente, reconstruir o backend para qualquer arquivo de worker ou
+reutilizar a lista Maven, adotada a terceira opção: preserva uma única fonte e evita deploys por
+testes isolados. O detector usa a lista da revisão analisada e inclui remoções; o verificador do
+JAR e o monitor de atualização compartilham a mesma classificação. Regressões cobrem Íris,
+Psique, Apolo, outro agente, remoção, teste isolado e os caminhos de recuperação anteriores.
+Esta correção não produz vídeos, não reinicia tarefas nem consome IA paga.
+
+Validação local complementar: sintaxe Bash e ShellCheck sem achados; teste integrado de
+detecção/retomada aprovado; 12 testes de recursos, 35 do monitor de atualização e 14 do contrato
+de CI aprovados. O contrato transacional e seus cinco testes também passaram, usando `rsync`
+extraído somente no workspace, pois a imagem não o fornece. O JAR reconstruído preserva as
+4.324 classes compiladas e os 770 recursos externos, e inicializa o catálogo de comportamento e
+os 531 cartões de pesquisa. A mesma comparação antes classificada `backend=false` passou a
+`backend=true`, sem alteração de frontend. Isso valida a correção antes de outro commit/PR.
+
+O primeiro check do PR #5597 recusou uma alteração adicional em gatilhos de workflows porque
+essas fontes também compõem atestações históricas de produtos. Os gatilhos foram preservados:
+o CI existente já executa os testes de recursos e de detecção necessários. A validação local
+compartilhada de evidências passou (16 testes e pacote com 521 arquivos/114 manifestos), sem
+renovar pareceres ou modificar provas de produtos alheios ao pedido.
+O teste de coordenação por evento também monta um repositório temporário; sua fixture passou a
+incluir o leitor de recursos e o POM real que o detector agora usa. Os 21 testes desse consumidor
+passaram localmente, incluindo a retomada manual sem acesso externo.

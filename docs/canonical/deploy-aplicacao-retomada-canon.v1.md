@@ -320,3 +320,13 @@ Na homologação local, confira também que `/app/app.jar` dentro da imagem é e
 verificado. Tag, revisão declarada, saúde e digest de transporte não substituem essa correspondência.
 A matriz `infra/testing/vega-process-recovery/run-round.sh` incorpora essa conferência sem iniciar
 containers de produção e sem usar publicação para descobrir omissões de empacotamento.
+
+### Prompts dos executores e catálogo do backend — 15/10/2026
+
+Os recursos externos declarados no `pom.xml` do backend também são dependências de publicação.
+Uma alteração ou remoção de prompt/schema empacotado deve reconstruir o backend, além do executor
+aplicável, para que o catálogo dos agentes exiba os mesmos contratos. O detector de mudanças e o
+monitor de atualização reutilizam a lista Maven da revisão analisada pelo verificador de recursos;
+não mantenha uma segunda lista manual de agentes. Testes isolados e documentação fora desses
+recursos não exigem reconstrução do backend. A conferência final compara o conteúdo/hash do
+catálogo publicado com os arquivos da revisão, além da saúde dos executores.

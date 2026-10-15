@@ -60,6 +60,42 @@ class PackagedResourcesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "divergente no JAR"):
             module.verify(self.repo, self.jar)
 
+    def test_changed_resource_does_not_need_to_exist_after_deletion(self):
+        self.source.unlink()
+        self.assertTrue(module.resources_changed(self.repo, ["pesquisas/video/artigo.md"]))
+        self.assertFalse(module.resources_changed(self.repo, ["docs/artigo.md", "README.md"]))
+
+    def test_resource_list_comes_from_requested_revision(self):
+        subprocess.run([
+            "git", "-C", str(self.repo), "-c", "user.name=Fixture",
+            "-c", "user.email=fixture@sandbox.local", "commit", "-qm", "base"
+        ], check=True)
+        pom = self.repo / "backend/ads-service/pom.xml"
+        pom.write_text(pom.read_text().replace("pesquisas/**/*.md", "new-worker/prompts/**/*.json"))
+        path = "new-worker/prompts/v2/contract.json"
+        self.assertTrue(module.resources_changed(self.repo, [path]))
+        self.assertFalse(module.resources_changed(self.repo, [path], "HEAD"))
+        self.assertTrue(module.resources_changed(self.repo, ["pesquisas/video/artigo.md"], "HEAD"))
+
+    def test_current_pom_includes_all_affected_agents_without_module_wildcards(self):
+        repo = Path(__file__).resolve().parents[1]
+        for path in (
+            "communication-agent-worker/src/main/resources/prompts/iris/v1/communication-package.md",
+            "customer-agent-worker/src/main/resources/prompts/bpm/v3/creative-customer-review-schema.json",
+            "video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner.md",
+            "financial-agent-worker/src/main/resources/prompts/another-product.json",
+            "product-discovery-worker/prompts/v2/instructions.md",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(module.resources_changed(repo, [path]))
+        for path in (
+            "docs/canonical/iris-communication-agent-canon.v1.md",
+            "communication-agent-worker/src/test/java/BriefTest.java",
+            "video-management-service/src/main/java/Renderer.java",
+        ):
+            with self.subTest(path=path):
+                self.assertFalse(module.resources_changed(repo, [path]))
+
 
 class CompiledBackendPackageTest(unittest.TestCase):
     def setUp(self):

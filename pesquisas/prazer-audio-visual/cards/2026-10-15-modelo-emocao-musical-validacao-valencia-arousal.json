@@ -1,0 +1,18 @@
+{
+  "cardKey": "modelo-emocao-musical-validacao-valencia-arousal",
+  "collection": "prazer-audio-visual",
+  "title": "Calibrar valência e arousal ao selecionar música com IA",
+  "finding": "Meta-análise de 34 estudos e 290 modelos apontou correlações mais fortes para arousal (r≈0,81) do que valência (r≈0,67); validações e gêneros heterogêneos limitam transferência.",
+  "mechanism": "Propriedades acústicas predizem parcialmente emoções percebidas na música, mas valência requer interpretação contextual; score do modelo não equivale ao sentimento individual.",
+  "commercialApplication": "Criar benchmark de seleção musical com avaliações humanas por gênero e público, controle de faixas e artistas inéditos, valência e arousal separados e registro de incerteza.",
+  "evidenceStrength": "Média-alta para síntese de resultados de modelos publicados (34 estudos); baixa para prever prazer real de um espectador ou venda.",
+  "publishedOn": "2026-10-15",
+  "validUntil": "2026-11-29",
+  "experimentHypothesis": "Validação humana por público e gênero detectará falhas relevantes de generalização em classificadores de emoção musical e reduzirá escolhas incongruentes sem piorar compreensão ou preferência.",
+  "risks": "Sobreajuste a repertório ocidental, vazamento artista/faixa entre treino e teste, assumir emoção sentida a partir da percebida, tratar score como promessa comercial.",
+  "limits": "Meta-análise de métricas heterogêneas e melhores modelos publicados; domínio principal de música ocidental; não mede dopamina, conversão ou satisfação individual.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-15-modelo-emocao-musical-validacao-valencia-arousal.md",
+  "sourceTitle": "Fonte revisada v1 — validação de modelos de emoção musical",
+  "sourceSha256": "63b20e7d4510c434d13ed8ff056b7b1f4bc1a50d74745fc60638ff3fabc1e77a"
+}

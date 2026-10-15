@@ -1,0 +1,18 @@
+{
+  "cardKey": "performance-musical-ao-vivo-prazer-acoplamento",
+  "collection": "prazer-audio-visual",
+  "title": "Música ao vivo pode elevar prazer e engajamento",
+  "finding": "Em 21 ouvintes num salão, execução musical ao vivo recebeu avaliações mais altas de prazer/engajamento e maior acoplamento neural-acústico do que reprodução gravada, sem demonstrar mediação causal.",
+  "mechanism": "Características temporais e contextuais de performance humana podem facilitar acompanhamento rítmico e envolvimento; phase-locking é correlato, não prova de prazer ou dopamina.",
+  "commercialApplication": "Testar eventos musicais genuinamente em tempo real contra versões gravadas com áudio de qualidade comparável; medir prazer e envolvimento declarados, permanência e conforto, sem simular falsamente liveness.",
+  "evidenceStrength": "Média no contexto de concerto (n=21, EEG e autorrelato); baixa para extrapolação a vídeos e IA.",
+  "publishedOn": "2026-10-15",
+  "validUntil": "2026-11-29",
+  "experimentHypothesis": "Com volume, repertório e qualidade controlados, uma sessão genuinamente ao vivo obterá maior prazer-engajamento subjetivo do que versão gravada, sem piorar compreensão ou conforto.",
+  "risks": "Rotular gravação como ao vivo, confundir acoplamento neural com causalidade, fabricar alegações de dopamina ou prometer vendas.",
+  "limits": "Amostra pequena; Bach/violino; olhos fechados; performances não acusticamente idênticas; sem vídeos comerciais ou resultados de funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-15-performance-musical-ao-vivo-prazer-acoplamento.md",
+  "sourceTitle": "Fonte revisada v1 — música ao vivo, prazer e acoplamento acústico",
+  "sourceSha256": "766207c5a47e8dc6b6e473a544e8cb1b8532f6ccc9ffb9644576e4b21804a662"
+}

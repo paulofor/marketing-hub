@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-15-psique-audio-review-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE agent_audio_review (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                task_id BIGINT NOT NULL,
+                asset_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                video_sha256 VARCHAR(64) NOT NULL,
+                audio_sha256 VARCHAR(64) NOT NULL,
+                request_hash VARCHAR(64) NOT NULL,
+                request_json LONGTEXT NOT NULL,
+                response_json LONGTEXT NULL,
+                result_json LONGTEXT NULL,
+                status VARCHAR(32) NOT NULL,
+                error_message VARCHAR(1000) NULL,
+                reserved_usd DECIMAL(14,6) NOT NULL,
+                estimated_usd DECIMAL(14,6) NULL,
+                started_at DATETIME NOT NULL,
+                finished_at DATETIME NULL,
+                UNIQUE KEY uk_agent_audio_task_asset (task_id, asset_id),
+                KEY idx_agent_audio_context (product_id, experiment_id),
+                CONSTRAINT fk_agent_audio_task FOREIGN KEY (task_id) REFERENCES agent_task(id)
+              ) ENGINE=InnoDB;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;

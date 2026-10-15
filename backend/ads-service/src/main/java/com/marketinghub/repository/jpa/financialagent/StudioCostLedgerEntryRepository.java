@@ -14,6 +14,9 @@ public interface StudioCostLedgerEntryRepository
   /** Busca a tentativa pela identidade idempotente da origem. */
   Optional<StudioCostLedgerEntry> findBySourceTypeAndSourceId(String sourceType, String sourceId);
 
+  /** Lista somente custos do experimento que autoriza a ferramenta auditiva. */
+  List<StudioCostLedgerEntry> findByExperimentIdOrderByCreatedAtAsc(Long experimentId);
+
   /** Lista as tentativas atribuídas a um plano comercial. */
   List<StudioCostLedgerEntry> findByCommercialPlanIdOrderByCreatedAtAsc(Long commercialPlanId);
 

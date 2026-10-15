@@ -5,6 +5,7 @@ services:
     init: true
     restart: unless-stopped
     environment:
+      OPENAI_API_KEY_FILE: /run/secrets/psique_openai_api_key
       BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal}
       CUSTOMER_AGENT_MODEL: ${CUSTOMER_AGENT_MODEL:-gpt-6.1-sol}
       CUSTOMER_AGENT_REASONING_EFFORT: ${CUSTOMER_AGENT_REASONING_EFFORT:-max}
@@ -26,6 +27,7 @@ services:
     ports:
       - "${CUSTOMER_AGENT_WORKER_PORT:-8099}:8099"
     volumes:
+      - ${CUSTOMER_AGENT_AUDIO_KEY_FILE:-/opt/growth-operator/agents/customer-agent/secrets/openai_api_key}:/run/secrets/psique_openai_api_key:ro
       - ${CUSTOMER_AGENT_CODEX_HOME:?Defina a sessão Codex individual da Psique}:/home/operator/.codex
       - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro
       - psique-bpm-state:/var/lib/psique

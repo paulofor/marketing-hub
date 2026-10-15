@@ -38,12 +38,50 @@ export async function downloadVideo(media, fetcher = fetch) {
   return bytes;
 }
 
+// Extrai o mix completo dos bytes verificados, preservando pausas e sem normalizar volume.
+export async function extractAudio(page, bytes, media, directory) {
+  const decoded = await page.evaluate(async encoded => {
+    const data = Uint8Array.from(atob(encoded), value => value.charCodeAt(0));
+    const context = new AudioContext();
+    try {
+      const original = await context.decodeAudioData(data.buffer);
+      if (original.duration < 3 || original.duration > 121) throw new Error("Duração de áudio inválida");
+      const rate = 24000;
+      const offline = new OfflineAudioContext(1, Math.ceil(original.duration * rate), rate);
+      const source = offline.createBufferSource(); source.buffer = original;
+      source.connect(offline.destination); source.start();
+      const rendered = await offline.startRendering();
+      const samples = rendered.getChannelData(0);
+      const wav = new ArrayBuffer(44 + samples.length * 2), view = new DataView(wav);
+      const label = (offset, value) => [...value].forEach((c,i) => view.setUint8(offset+i,c.charCodeAt(0)));
+      label(0,"RIFF");view.setUint32(4,wav.byteLength-8,true);label(8,"WAVE");label(12,"fmt ");
+      view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);
+      view.setUint32(24,rate,true);view.setUint32(28,rate*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);
+      label(36,"data");view.setUint32(40,samples.length*2,true);
+      let peak=0, energy=0;
+      for(let i=0;i<samples.length;i++) { const v=Math.max(-1,Math.min(1,samples[i])); peak=Math.max(peak,Math.abs(v));energy+=v*v; view.setInt16(44+i*2,Math.round(v*(v<0?32768:32767)),true); }
+      const buffer=new Uint8Array(wav);let binary="";
+      for(let i=0;i<buffer.length;i+=16384) binary+=String.fromCharCode(...buffer.subarray(i,i+16384));
+      return { data:btoa(binary), durationSeconds:original.duration, sampleRate:rate,channels:1,peak,rms:Math.sqrt(energy/samples.length) };
+    } finally { await context.close(); }
+  }, bytes.toString("base64"));
+  assert.ok(Math.abs(decoded.durationSeconds-media.durationSeconds)<=1,"Duração do mix divergente do vídeo");
+  assert.ok(decoded.peak>0.00001 && decoded.rms>0.000001,"Áudio ausente ou silencioso; escuta bloqueada");
+  const audio=Buffer.from(decoded.data,"base64");
+  const audioSha256=createHash("sha256").update(audio).digest("hex");
+  const localPath=path.resolve(directory,`audio-${media.assetId}-${media.sha256}.wav`);
+  await writeFile(localPath,audio,{mode:0o600});
+  const {data,...metrics}=decoded;
+  return {assetId:media.assetId,videoSha256:media.sha256,audioSha256,localPath,...metrics};
+}
+
 // Captura o mesmo arquivo no tamanho de celular, mantendo instante, identidade e bytes auditáveis.
 export async function captureVideos(inputs, directory, options = videoBrowserOptions(), fetcher = fetch) {
   assert.ok(Array.isArray(inputs) && inputs.length > 0 && inputs.length <= 2);
   await mkdir(directory, { recursive: true });
   const browser = await chromium.launch(options);
   const artifacts = [];
+  const audioManifest = [];
   const captureSessionId = randomUUID();
   try {
     for (const media of inputs) {
@@ -62,6 +100,7 @@ export async function captureVideos(inputs, directory, options = videoBrowserOpt
           video.load();
         }, bytes.toString("base64"));
         await page.waitForFunction(() => document.querySelector("video").readyState >= 2);
+        if (media.audioReviewRequired) audioManifest.push(await extractAudio(page,bytes,media,directory));
         const duration = await page.locator("video").evaluate(v => v.duration);
         assert.ok(Math.abs(duration - media.durationSeconds) <= 1, "Duração divergente do contrato");
         for (const second of times) {
@@ -83,6 +122,7 @@ export async function captureVideos(inputs, directory, options = videoBrowserOpt
       } finally { await context.close(); }
     }
   } finally { await browser.close(); }
+  await writeFile(path.resolve(directory,"audio-manifest.json"),JSON.stringify(audioManifest),{mode:0o600});
   return artifacts;
 }
 

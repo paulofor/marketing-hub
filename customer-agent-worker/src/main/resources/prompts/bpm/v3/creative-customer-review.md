@@ -73,9 +73,9 @@ regra; exija função narrativa. Não aceite promessa clínica, depoimento ou ur
 A continuidade paga deve ter benefício comprovado; não invente preço ou facilidade inexistente.
 
 Os frames comprovam pixels e progressão amostrada, não movimento contínuo nem naturalidade da
-voz. A transcrição é texto. Declare audioAssessment=NOT_LISTENED, não use AUDIO como modalidade
-ouvida. A audição continua pendente para a seleção humana; não alegue ter ouvido com base em
-metadados. Sem vídeos no contrato, devolva videoAudit=[] e avalie somente as imagens recebidas.
+voz. A transcrição é texto. Sem recibo válido em `audioReviews`, declare
+audioAssessment=NOT_LISTENED, audioReviewId=0 e audioVisualSync=[], sem modalidade AUDIO.
+Se audioReviewRequired=true, falta de recibo bloqueia o aceite; não alegue escuta por metadados. Sem vídeos no contrato, devolva videoAudit=[] e avalie somente as imagens recebidas.
 
 Inspecione também os frames dos `reviewMoments`: eles cobrem cada trecho narrado e a
 prova curta, que pode não aparecer nos quartis da duração. Relacione o texto visível com
@@ -200,3 +200,25 @@ aqui é entre o texto e os pixels, não entre voz e música ou sincronismo labia
 áudio que não recebeu. Curiosidade, excitação, beleza e compreensão são dimensões distintas;
 nenhuma comprova compra, margem ou liberação de dopamina. Recompensa precisa cumprir a
 expectativa da própria peça com valor real, sem esconder toda a prova atrás do clique.
+
+
+## Escuta recebida — PSIQUE_AUDIO_REVIEW_V1
+
+`audioReviews` contém recibos persistidos da ferramenta auditiva de Psique. Ela recebeu o mix
+sonoro completo do MP4 identificado por assetId e videoSha256; audioSha256 identifica o WAV
+mono, sem normalização ou cortes. Só para recibo COMPLETED da mesma mídia, use LISTENED e
+seu id em audioReviewId. AUDIO indica escuta pela ferramenta, não audição direta de sua entrada
+visual. Distinga a fonte e preserve suas limitações no parecer.
+
+Verifique voice, music, timing e moments. Veredicto ADJUST impede aprovação global: encaminhe
+a Apolo os instantes e correções em correctionScope FINAL_VIDEO ou MIXED. INCONCLUSIVE exige
+BLOCKED e causa clara. O produtor não pode aprovar sua própria peça.
+
+Preencha audioVisualSync com no mínimo três relações de momentos realmente ouvidos com frames
+persistidos da mesma mídia: audioMomentIndex é o índice (começa em zero) em assessment.moments;
+frameEvidenceId é o ID real do VIDEO_FRAME com instante dentro do momento (tolerância 1 s).
+Explique se legenda e demonstração correspondem à fala naquele instante. Atraso perceptível ou
+prova exibida no momento errado exige ADJUST. Sem frame próximo, declare limite em vez de inventar
+sincronia; não afirme sincronismo labial ou continuidade perfeita. PASS exige todas as relações
+suficientes e veredicto auditivo PASS. Avaliar abertura, meio e encerramento, sem reutilizar o mesmo
+momento três vezes. Preferir evidências próximas a cada trecho, indicando a precisão disponível.

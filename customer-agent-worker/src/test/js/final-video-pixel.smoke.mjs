@@ -45,3 +45,26 @@ test("captura pixels do instante correto com mídia local íntegra", { timeout: 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+// Confere extração AAC do MP4 real no Chrome publicado, com os mesmos bytes e frames da revisão.
+test("extrai mix AAC íntegro junto aos frames da mesma mídia", { timeout: 45000 }, async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "audio-video-review-fixture-"));
+  try {
+    const fixtureDirectory = path.dirname(process.env.CUSTOMER_AGENT_VIDEO_FIXTURE
+      || path.resolve("src/test/fixtures/final-video-red-blue.mp4.b64"));
+    const bytes = Buffer.from(await readFile(path.join(fixtureDirectory, "final-video-audio.mp4.b64"), "utf8"), "base64");
+    const media = { assetId: 94001, durationSeconds: 6, url: "https://fixtures.invalid/audio-video.mp4",
+      sha256: createHash("sha256").update(bytes).digest("hex"), audioReviewRequired: true };
+    const frames = await captureVideos([media], directory, videoBrowserOptions(),
+      async () => new Response(bytes, { status: 200 }));
+    const [audio] = JSON.parse(await readFile(path.join(directory, "audio-manifest.json"), "utf8"));
+    assert.equal(audio.videoSha256, media.sha256);
+    assert.equal(audio.assetId, media.assetId);
+    assert.equal(audio.sampleRate, 24000);
+    assert.ok(Math.abs(audio.durationSeconds - 6) < .1);
+    assert.ok(audio.peak > .01 && audio.rms > .01);
+    assert.equal(createHash("sha256").update(await readFile(audio.localPath)).digest("hex"), audio.audioSha256);
+    assert.ok(frames.length >= 6);
+    assert.ok(frames.every(frame => frame.evidenceKey.startsWith(`video-${media.assetId}-${media.sha256}-`)));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

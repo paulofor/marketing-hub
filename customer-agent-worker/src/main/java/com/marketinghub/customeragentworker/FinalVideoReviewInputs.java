@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/** Entrega a Psique frames temporais do MP4 final e exige parecer vinculado à mesma mídia. */
+/** Entrega frames e mix sonoro do MP4 final e exige parecer vinculado à mesma mídia. */
 @Component
 public class FinalVideoReviewInputs {
   private final ObjectMapper json;
@@ -35,7 +35,7 @@ public class FinalVideoReviewInputs {
     return json.valueToTree(task.get("taskTarget")).at("/pdeContext/finalVideoReview");
   }
 
-  /** Captura antes da inferência e preserva logs quando não for possível inspecionar os vídeos. */
+  /** Captura frames e áudio antes da inferência, preservando diagnóstico de mídia inacessível. */
   List<BpmVisualEvidenceRunner.VisualArtifact> capture(Map<String, Object> task, Path directory)
       throws Exception {
     JsonNode inputs = inputs(json, task);
@@ -46,6 +46,12 @@ public class FinalVideoReviewInputs {
       BpmVisualEvidenceRunner.validatePublicUrl(media.path("url").asText());
     Path input = directory.resolve("video-input.json"),
         output = directory.resolve("video-frames.json");
+    if (json.valueToTree(task.get("taskTarget"))
+        .at("/pdeContext/audioReviewRequired")
+        .asBoolean()) {
+      for (JsonNode media : inputs)
+        ((com.fasterxml.jackson.databind.node.ObjectNode) media).put("audioReviewRequired", true);
+    }
     Files.writeString(input, inputs.toString());
     Path log = directory.resolve("video-capture.log");
     Process process =
@@ -95,7 +101,8 @@ public class FinalVideoReviewInputs {
     }
     for (JsonNode modality :
         result.at("/behavioralResponse/sensoryExperience/availableModalities")) {
-      if ("AUDIO".equals(modality.asText()))
+      if ("AUDIO".equals(modality.asText())
+          && !json.valueToTree(task.get("audioReviews")).isArray())
         throw new IllegalArgumentException("Frames e transcrição não comprovam audição de áudio.");
     }
     JsonNode audit = result.path("videoAudit");
@@ -109,10 +116,10 @@ public class FinalVideoReviewInputs {
       if (item == null
           || !seen.add(item.path("assetId").asLong())
           || !media.path("sha256").asText().equals(item.path("sha256").asText())
-          || item.path("evidence").asText().isBlank()
-          || !"NOT_LISTENED".equals(item.path("audioAssessment").asText()))
+          || item.path("evidence").asText().isBlank())
         throw new IllegalArgumentException(
             "Parecer audiovisual sem identidade, evidência ou limite de áudio correto.");
+      VideoAudioReviewContract.validate(json.valueToTree(task), media, item, approved, evidence);
       VideoCopyReviewContract.validate(media, item.path("copyReview"), approved);
       VideoNarrativeReviewContract.validate(
           media, item.path("narrativeReview"), approved, evidence);

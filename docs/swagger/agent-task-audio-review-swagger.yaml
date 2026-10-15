@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Ferramenta auditiva de Psique
+  version: v1
+paths:
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/audio-reviews:
+    parameters:
+      - {name: agentKey, in: path, required: true, schema: {type: string, enum: [customer-agent]}}
+      - {name: taskId, in: path, required: true, schema: {type: integer, format: int64}}
+    get:
+      summary: Recupera recibos, identidade, diagnóstico, reserva e estimativa sem consumo.
+      responses:
+        '200': {description: Lista de recibos auditivos da tarefa.}
+    post:
+      summary: Persiste request integral e reserva conservadora antes da chamada única.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assetId, videoSha256, audioSha256, request]
+              properties:
+                assetId: {type: integer, format: int64}
+                videoSha256: {type: string}
+                audioSha256: {type: string}
+                request: {type: object, description: Request Chat Completions integral com áudio WAV.}
+      responses:
+        '200': {description: mayInvoke true somente na primeira reserva; replays nunca autorizam repetição.}
+        '409': {description: Contexto, pausa, custo desconhecido ou saldo impedem consumo; motivo explícito.}
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/audio-reviews/{assetId}/result:
+    parameters:
+      - {name: agentKey, in: path, required: true, schema: {type: string}}
+      - {name: taskId, in: path, required: true, schema: {type: integer, format: int64}}
+      - {name: assetId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Preserva response bruto antes da validação e concilia estimativa por modalidade.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rawResponse]
+              properties:
+                rawResponse: {type: string, description: Exceção explícita de auditoria bruta; não é saída funcional.}
+      responses:
+        '200': {description: COMPLETED, INVALID ou COST_PENDING; repetir o mesmo callback é idempotente.}

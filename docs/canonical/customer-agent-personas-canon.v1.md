@@ -391,3 +391,27 @@ campos de fluidez, congruência e sobrecarga. A política editorial e o escopo e
 Não compensar compreensão insuficiente com beleza ou prazer presumido. Vincular o
 diagnóstico aos momentos recebidos; manter NOT_LISTENED sem evidência auditiva. O teste
 previne decisões contraditórias, não demonstra preferência de clientes nem conversão.
+
+## Escuta do vídeo final — decisão de 15/10/2026
+
+A revisão de vídeos finais inclui `PSIQUE_AUDIO_REVIEW_V1`: áudio real extraído do mesmo MP4
+verificado, sem cortar silêncio, acelerar, normalizar ou separar a música. A ferramenta da própria
+Psique usa GPT-Audio-1.5 por Chat Completions; o parecer principal combina os achados temporais
+com os frames persistidos. Transcrição não equivale a audição. Voz, música e relação temporal
+recebem critérios independentes e ações de correção; sincronismo labial permanece não aferido.
+
+A nova chamada exige reserva financeira no backend sobre o teto audiovisual próprio do ciclo,
+com custos anteriores e desconhecidos preservados. Histórico não é reaberto automaticamente.
+O request e response brutos, mídia/hash, tokens por modalidade, custo estimado e erros ficam
+persistidos. Resultado já recebido deve ser recuperado; envio incerto nunca autoriza nova cobrança.
+A ferramenta não produz mídia nem decide a próxima atividade; o backend mantém o avanço e Apolo
+recebe a correção pelo parecer existente. Ausência de escuta impede afirmar aprovação sonora.
+
+Exceção funcional ao Flex: GPT-Audio-1.5 não tem suporte Flex documentado; usa `default`,
+registrado como STANDARD, sem desconto presumido. Preços por milhão: áudio de entrada USD 32,
+texto de entrada USD 2,50 e texto de saída USD 10. A reserva usa o limite superior do contexto
+(128.000 tokens todos na modalidade mais cara) mais 2.000 tokens de saída: USD 4,116 por chamada.
+É uma reserva temporária conservadora, não previsão de cobrança; o uso reportado libera a diferença.
+Não usar a taxa de texto para tokens de áudio nem zerar uso ausente. Sem saldo comprovado, bloquear.
+
+Matriz, alternativas, fontes e limites: `docs/homologacao/psique-escuta-audiovisual-v1.md`.

@@ -186,6 +186,27 @@
       "agentKey": "customer-agent",
       "sections": [
         {
+          "code": "final-audio-review",
+          "title": "Escuta do vídeo final",
+          "description": "Ferramenta auditiva da própria Psique, combinada com os frames da mesma mídia.",
+          "items": [
+            {
+              "key": "audio-model",
+              "label": "Escuta real",
+              "value": "gpt-audio-1.5 · voz, música e tempo",
+              "description": "Áudio completo verificado; achados por trecho com limites explícitos. Não comprova sincronismo labial nem comportamento comercial.",
+              "sourceReference": "customer-agent-worker/src/main/resources/prompts/audio-review/v1/review.md"
+            },
+            {
+              "key": "audio-governance",
+              "label": "Consumo e recuperação",
+              "value": "Teto próprio · reserva anterior ao consumo · replay sem nova inferência",
+              "description": "Custos desconhecidos e escuta reprovada bloqueiam o aceite. Não amplia autorizações existentes.",
+              "sourceReference": "docs/canonical/customer-agent-personas-canon.v1.md"
+            }
+          ]
+        },
+        {
           "code": "responsibility-boundary",
           "title": "Responsabilidade exclusiva",
           "description": "Psique avalia a experiência humana sem criar estratégia, produto ou comunicação.",
@@ -281,6 +302,8 @@
         }
       ],
       "artifacts": [
+        {"artifactType": "PROMPT", "name": "Escuta do áudio final", "version": "audio-v1", "path": "customer-agent-worker/src/main/resources/prompts/audio-review/v1/review.md", "description": "Avaliação sonora temporal com voz, música, pausas e limites da evidência."},
+        {"artifactType": "OUTPUT_SCHEMA", "name": "Contrato do parecer auditivo", "version": "audio-v1", "path": "customer-agent-worker/src/main/resources/prompts/audio-review/v1/review-schema.json", "description": "Avaliação sonora temporal com voz, música, pausas e limites da evidência."},
         {"artifactType": "PROMPT", "name": "Revisão comercial Safira", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/safira-commercial/v1/customer-review.md", "description": "Homologa valor, esforço, segurança e continuidade paga do AI Product público usando identidade e evidências comerciais congeladas pelo backend."},
         {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v1/customer-review.md", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
         {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo com checkout e fatos visuais", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v2/customer-review.md", "description": "Preserva identidade, fatos e hashes da landing e do checkout sem confundir captura com pagamento ou entrega."},

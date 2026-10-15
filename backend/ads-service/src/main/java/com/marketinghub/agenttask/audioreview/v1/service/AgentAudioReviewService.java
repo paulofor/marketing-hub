@@ -1,0 +1,310 @@
+package com.marketinghub.agenttask.audioreview.v1.service;
+
+import static com.marketinghub.agenttask.audioreview.v1.service.AudioReviewContract.*;
+
+import com.fasterxml.jackson.databind.*;
+import com.marketinghub.agenttask.*;
+import com.marketinghub.agenttask.audioreview.v1.AgentAudioReview;
+import com.marketinghub.agenttask.audioreview.v1.service.receipt.AudioReviewReceipt;
+import com.marketinghub.agenttask.audioreview.v1.service.reserve.AudioReviewReserveRequest;
+import com.marketinghub.agenttask.audioreview.v1.service.result.AudioReviewResultRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBudget;
+import com.marketinghub.financialagent.StudioCostLedgerEntry;
+import com.marketinghub.repository.jpa.agentaudioreview.AgentAudioReviewRepository;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Governa reserva, auditoria e recuperação da ferramenta auditiva da própria Psique. */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AgentAudioReviewService {
+  private final AgentAudioReviewRepository reviews;
+  private final AgentTaskRepository tasks;
+  private final AgentTaskTargetContextProvider targets;
+  private final CreativeFinalVideoEvidence videos;
+  private final LearningSalesCycleRepository cycles;
+  private final LearningCycleVideoBudget budgets;
+  private final StudioCostLedgerEntryRepository ledger;
+  private final ProductRepository products;
+  private final ObjectMapper json;
+
+  /** Reserva uma única chamada sob o lock do ciclo, sem reenviar operações de estado incerto. */
+  @Transactional
+  public AudioReviewReceipt reserve(String agent, long taskId, AudioReviewReserveRequest input) {
+    var task = owned(agent, taskId);
+    require(input.assetId() != null && input.request() != null, "Entrada auditiva incompleta.");
+    request(input.request(), input.audioSha256());
+    String requestText = input.request().toString();
+    String requestHash = hash(requestText.getBytes(StandardCharsets.UTF_8));
+    var previous = reviews.findByTaskIdAndAssetId(taskId, input.assetId());
+    if (previous.isPresent()) {
+      var old = previous.get();
+      require(
+          old.getRequestHash().equals(requestHash)
+              && old.getVideoSha256().equals(input.videoSha256())
+              && old.getAudioSha256().equals(input.audioSha256()),
+          "A chamada auditiva já identifica outra entrada.");
+      return receipt(old, false);
+    }
+    require("IN_PROGRESS".equals(task.getStatus()), "Tarefa auditiva não está reservada.");
+    require(
+        Boolean.TRUE.equals(task.getAssignedAgent().getAutomaticExecutionEnabled()),
+        "Psique está em STOP.");
+    var target = target(task);
+    var media = media(task, input.assetId());
+    require(
+        media.path("sha256").asText().equals(input.videoSha256()),
+        "Vídeo alterado antes da escuta.");
+    var cycle =
+        cycles
+            .findByExperimentId(target.experimentId())
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Escuta exige ciclo e teto audiovisual próprios."));
+    cycle = cycles.findLockedById(cycle.getId()).orElseThrow();
+    require(
+        "OPEN".equals(cycle.getStatus())
+            && Objects.equals(cycle.getProductId(), target.productId())
+            && Objects.equals(cycle.getProductVersion(), target.experienceVersion()),
+        "Ciclo/versão incompatível para escuta.");
+    var product = products.findById(target.productId()).orElseThrow();
+    require(Boolean.TRUE.equals(product.getAutomaticExecutionEnabled()), "Produto está em STOP.");
+    var authority = budgets.current(cycle);
+    require(authority != null, "Não há teto audiovisual autorizado para esta escuta.");
+    var entries = ledger.findByExperimentIdOrderByCreatedAtAsc(target.experimentId());
+    BigDecimal used = BigDecimal.ZERO;
+    for (var entry : entries) {
+      if (!Set.of("VIDEO", "AUDIO", "AUDIO_REVIEW").contains(entry.getAssetType())) continue;
+      require(
+          !Set.of("RESERVED", "COST_PENDING").contains(entry.getStatus()),
+          "Há chamada audiovisual pendente de resposta ou conciliação.");
+      BigDecimal cost =
+          entry.getProviderCostUsd() != null
+              ? entry.getProviderCostUsd()
+              : entry.getEstimatedCostUsd();
+      require(cost != null, "Há custo audiovisual desconhecido. Concilie antes da escuta.");
+      used = used.add(cost);
+    }
+    for (var old : tasks.findMeasurementSnapshotsBySourceReference(task.getSourceReference())) {
+      if (old.id().equals(taskId)
+          || !"creative-production-approval".equals(old.processCode())
+          || !"customer".equals(old.processActivityId())) continue;
+      var result = read(old.resultJson());
+      if (!result.path("videoAudit").isArray() || result.path("videoAudit").isEmpty()) continue;
+      require(
+          old.estimatedCostUsd() != null,
+          "Custo de revisão audiovisual anterior ainda desconhecido.");
+      used = used.add(old.estimatedCostUsd());
+    }
+    require(
+        used.add(RESERVATION).compareTo(authority.budgetLimitUsd()) <= 0,
+        "Saldo audiovisual insuficiente para a reserva conservadora da escuta (USD 4,116); nenhum consumo foi iniciado.");
+    var entry = new AgentAudioReview();
+    entry.setTaskId(taskId);
+    entry.setAssetId(input.assetId());
+    entry.setProductId(target.productId());
+    entry.setExperimentId(target.experimentId());
+    entry.setVideoSha256(input.videoSha256());
+    entry.setAudioSha256(input.audioSha256());
+    entry.setRequestHash(requestHash);
+    entry.setRequestJson(requestText);
+    entry.setStatus("RESERVED");
+    entry.setReservedUsd(RESERVATION);
+    entry.setStartedAt(Instant.now());
+    entry = reviews.saveAndFlush(entry);
+    saveLedger(entry);
+    log.info(
+        "Escuta reservada. taskId={} assetId={} reviewId={} experimentId={}",
+        taskId,
+        input.assetId(),
+        entry.getId(),
+        target.experimentId());
+    return receipt(entry, true);
+  }
+
+  /** Preserva inclusive resposta inválida e custo desconhecido antes de expor o resultado. */
+  @Transactional
+  public AudioReviewReceipt complete(
+      String agent, long taskId, long assetId, AudioReviewResultRequest input) {
+    var task = owned(agent, taskId);
+    var entry = reviews.findByTaskIdAndAssetId(taskId, assetId).orElseThrow();
+    require(
+        input.rawResponse() != null && input.rawResponse().length() <= 200000,
+        "Resposta auditiva inválida ou excessiva.");
+    if (entry.getResponseJson() != null) {
+      require(
+          entry.getResponseJson().equals(input.rawResponse()),
+          "A resposta desta chamada já foi preservada.");
+      return receipt(entry, false);
+    }
+    entry.setResponseJson(input.rawResponse());
+    entry.setFinishedAt(Instant.now());
+    entry.setStatus("COST_PENDING");
+    try {
+      JsonNode raw = json.readTree(input.rawResponse());
+      entry.setEstimatedUsd(cost(raw));
+      if (entry.getEstimatedUsd() != null) entry.setStatus("INVALID");
+      require(raw.path("model").asText().startsWith(MODEL), "Resposta de modelo incompatível.");
+      require(
+          "stop".equals(raw.at("/choices/0/finish_reason").asText()),
+          "Resposta auditiva incompleta ou recusada.");
+      var result = json.readTree(raw.at("/choices/0/message/content").asText());
+      assessment(result, media(task, assetId).path("durationSeconds").asDouble());
+      entry.setResultJson(result.toString());
+      if (entry.getEstimatedUsd() != null) entry.setStatus("COMPLETED");
+      else
+        entry.setErrorMessage(
+            "Uso por modalidade ausente ou fora dos limites; conciliação pendente.");
+    } catch (Exception ex) {
+      String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+      entry.setErrorMessage(message.substring(0, Math.min(1000, message.length())));
+      log.error(
+          "Falha ao validar resposta auditiva preservada. taskId={} assetId={} reviewId={}",
+          taskId,
+          assetId,
+          entry.getId(),
+          ex);
+    }
+    reviews.saveAndFlush(entry);
+    saveLedger(entry);
+    return receipt(entry, false);
+  }
+
+  /** Expõe recibos existentes sem reservar trabalho nem repetir chamadas de modelo. */
+  @Transactional
+  public List<AudioReviewReceipt> list(String agent, long taskId) {
+    owned(agent, taskId);
+    return reviews.findByTaskIdOrderByIdAsc(taskId).stream().map(e -> receipt(e, false)).toList();
+  }
+
+  /** Impede que o modelo principal aprove uma escuta inexistente, trocada ou reprovada. */
+  public void validateCompletion(AgentTask task, String resultJson) {
+    if (!supports(task)) return;
+    JsonNode result = read(resultJson);
+    if (!"APPROVED".equals(result.path("decision").asText())) return;
+    for (var media : videos.inputs(target(task))) {
+      var entry =
+          reviews
+              .findByTaskIdAndAssetId(task.getId(), media.path("assetId").asLong())
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          "Aprovação de vídeo exige escuta persistida da própria tarefa."));
+      require(
+          "COMPLETED".equals(entry.getStatus())
+              && entry.getVideoSha256().equals(media.path("sha256").asText())
+              && "PASS".equals(read(entry.getResultJson()).path("verdict").asText()),
+          "Escuta pendente ou reprovada impede aprovação audiovisual.");
+      boolean matched = false;
+      for (var item : result.path("videoAudit"))
+        if (item.path("assetId").asLong() == entry.getAssetId()) {
+          matched =
+              entry.getVideoSha256().equals(item.path("sha256").asText())
+                  && item.path("audioReviewId").asLong() == entry.getId()
+                  && "LISTENED".equals(item.path("audioAssessment").asText());
+        }
+      require(matched, "Parecer final não cita a escuta da mesma mídia.");
+    }
+  }
+
+  /** Mantém consumo no ledger existente, sem misturá-lo a tokens textuais do parecer principal. */
+  private void saveLedger(AgentAudioReview review) {
+    var entry =
+        ledger
+            .findBySourceTypeAndSourceId("AGENT_AUDIO_REVIEW", review.getId().toString())
+            .orElseGet(StudioCostLedgerEntry::new);
+    entry.setSourceType("AGENT_AUDIO_REVIEW");
+    entry.setSourceId(review.getId().toString());
+    entry.setAssetType("AUDIO_REVIEW");
+    entry.setProductId(review.getProductId());
+    entry.setExperimentId(review.getExperimentId());
+    entry.setProvider("OPENAI");
+    entry.setModel(MODEL);
+    entry.setCurrency("USD");
+    entry.setStatus(review.getStatus());
+    entry.setEstimatedCostUsd(
+        review.getEstimatedUsd() != null ? review.getEstimatedUsd() : review.getReservedUsd());
+    entry.setCostEvidence(
+        review.getEstimatedUsd() != null
+            ? "MODALITY_TOKEN_RATE_ESTIMATE"
+            : "RESERVATION_NOT_BILLED_COST");
+    entry.setStartedAt(review.getStartedAt());
+    entry.setFinishedAt(review.getFinishedAt());
+    ledger.saveAndFlush(entry);
+  }
+
+  /** Confirma identidade e contrato da tarefa sem confiar em IDs enviados pelo executor. */
+  private AgentTask owned(String agent, long taskId) {
+    var task = tasks.findLockedById(taskId).orElseThrow();
+    require(
+        "customer-agent".equals(agent) && supports(task),
+        "A escuta pertence somente à tarefa criativa de Psique.");
+    return task;
+  }
+
+  /** Restringe a capacidade à atividade criativa independente. */
+  private boolean supports(AgentTask task) {
+    return task.getAssignedAgent() != null
+        && "customer-agent".equals(task.getAssignedAgent().getAgentKey())
+        && task.getProcessDefinition() != null
+        && "creative-production-approval".equals(task.getProcessDefinition().getProcessCode())
+        && "customer".equals(task.getProcessActivityId());
+  }
+
+  /** Resolve o contexto pela fonte canônica do backend. */
+  private AgentTaskTargetResponse target(AgentTask task) {
+    return targets
+        .resolve(task.getSourceReference(), task.getProcessDefinition().getProcessCode())
+        .orElseThrow();
+  }
+
+  /** Confirma mídia atual do mesmo produto, experimento e versão. */
+  private JsonNode media(AgentTask task, long assetId) {
+    for (var item : videos.inputs(target(task)))
+      if (item.path("assetId").asLong() == assetId) return item;
+    throw new IllegalArgumentException("Mídia não pertence ao contexto atual da tarefa.");
+  }
+
+  /** Retorna diagnóstico recuperável sem expor o áudio bruto em respostas administrativas. */
+  private AudioReviewReceipt receipt(AgentAudioReview entry, boolean mayInvoke) {
+    return new AudioReviewReceipt(
+        entry.getId(),
+        entry.getAssetId(),
+        entry.getVideoSha256(),
+        entry.getAudioSha256(),
+        entry.getStatus(),
+        mayInvoke,
+        entry.getReservedUsd(),
+        entry.getEstimatedUsd(),
+        read(entry.getResultJson()),
+        "COMPLETED".equals(entry.getStatus())
+            ? null
+            : entry.getErrorMessage() != null
+                ? entry.getErrorMessage()
+                : "Escuta "
+                    + entry.getStatus()
+                    + "; preservar resposta e conciliar sem repetir inferência.");
+  }
+
+  /** Lê JSON persistido e mantém diagnóstico de conteúdo inválido. */
+  private JsonNode read(String value) {
+    try {
+      return value == null ? json.createObjectNode() : json.readTree(value);
+    } catch (Exception ex) {
+      log.error("JSON de auditoria sonora inválido", ex);
+      throw new IllegalArgumentException("Auditoria sonora inválida", ex);
+    }
+  }
+}

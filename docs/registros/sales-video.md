@@ -498,3 +498,29 @@ reincidência de quadros fora do instante ou miniaturizados apesar da resoluçã
   de mercado posterior, com limite e autorização. Nenhum ganho comercial foi medido.
 - Matriz, fontes, limites e critério de reversão:
   [prazer e compreensão v1](../homologacao/video-prazer-compreensao-v1.md).
+
+## 2026-10-15 — Psique ouve o áudio final com auditoria e recuperação
+
+- Evidência anterior: tarefas #731 (bloqueada) e #736 (aceita), experimento #105,
+  continham `NOT_LISTENED`. O executor entregava frames e texto; melhorar o prompt não
+  permitiria ouvir interpretação, música ou o instante real da fala.
+- Mudança reutilizável `PSIQUE_AUDIO_REVIEW_V1`: a própria Psique usa uma ferramenta
+  sonora antes do parecer visual. Extrai o mix do mesmo MP4 verificado, recebe achados
+  por trecho e combina-os com frames persistidos. Não cria agente nem etapa paralela.
+- Backend preserva request/response, hashes, reserva e custo por modalidade no ledger
+  existente. Callback perdido reutiliza a resposta; envio incerto permanece reservado.
+  Sem teto, saldo ou custo anterior conhecido não há nova chamada. Nenhuma autorização
+  financeira é criada pelo deploy; histórico aprovado não é reavaliado automaticamente.
+- O gate impede aprovação com escuta ausente, inconclusiva ou reprovada, e o executor
+  exige correspondência temporal da abertura, meio e encerramento. Áudio isolado não
+  comprova sincronismo labial, reação da cliente nem desempenho comercial.
+- Regressões: MP4/AAC real no Chrome, silêncio, arquivo inválido, outra identidade,
+  modelo/backend locais, recuperação após callback 503 sem nova inferência, custos
+  incompletos, STOP, saldo insuficiente, conflito de evidência e caminho antes válido.
+- Hipótese: ouvir a versão final reduz rejeições por monotonia, mixagem e desencontro
+  entre fala e demonstração. Medir aceites/retrabalho/custo por peça; vendas e margem
+  dependem do mercado. O teste determinístico não calibra a percepção do modelo real.
+- Adoção: usar nas novas revisões de vídeos com orçamento próprio suficiente. Se a
+  avaliação real não distinguir controles bons/ruins, preservar provas e bloquear aceite
+  até corrigir o avaliador; nunca voltar silenciosamente a aprovar áudio não ouvido.
+- Matriz e limites: [homologação da escuta v1](../homologacao/psique-escuta-audiovisual-v1.md).

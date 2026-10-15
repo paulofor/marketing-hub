@@ -3,6 +3,7 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "infra/testing/psique-audio-review/**"
       - "infra/testing/agent-runtime/**"
       - "infra/testing/mira-report/**"
       - "infra/testing/pde-commercial-principles/**"
@@ -106,6 +107,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-psique-audio-review:
+    name: Escuta de Psique com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar persistência, isolamento e custo desconhecido
+        env:
+          PSIQUE_AUDIO_COMPOSE_PROJECT: aihub-audio-${{ github.run_id }}-${{ github.run_attempt }}
+        run: python3 infra/testing/psique-audio-review/validate-mysql.py
+
   validate-agent-execution-cost-precision:
     name: Precisão de custos dos agentes com MySQL 5.7
     runs-on: ubuntu-latest

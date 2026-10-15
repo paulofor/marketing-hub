@@ -32,6 +32,12 @@ import org.springframework.web.bind.annotation.*;
 public class FinancialPlanNativePlanningFixture {
   private final Map<Long, AgentTask> tasks = new ConcurrentHashMap<>();
 
+  /** Mantém a ferramenta de áudio simulada; esta fixture valida somente planejamento financeiro. */
+  @Bean
+  com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService audioReviewFixture() {
+    return mock(com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService.class);
+  }
+
   /** Monta o alvo real com identidades sintéticas, sem substituir o serviço financeiro. */
   private ExperimentAgentTaskTargetContextProvider planningTarget(
       ProductRepository products,

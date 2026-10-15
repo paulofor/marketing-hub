@@ -75,3 +75,22 @@ comprovação de que o fornecedor já reconhece cada defeito. A calibração rea
 controles bons/ruins sob autorização própria e registrar resultados/custos, sem recrutamento.
 A melhoria está apta ao fluxo governado; não autoriza produção de vídeo, campanha ou gasto
 novo por si só e não mede conversão, compras ou margem.
+
+## Ajustes após os checks do primeiro HEAD
+
+O run de contratos `38752076916` identificou um falso bloqueio no validador SSH:
+aceitava apenas expansão textual, recusando o array derivado do mesmo preflight.
+O teste agora aceita a derivação comprovada e recusa origem arbitrária, reatribuição
+ou remoção do array. Os nove publicadores e 92 testes relacionados passaram localmente.
+
+A fixture financeira do run `38752075954` encerrava na inicialização porque instanciava
+o controller de tarefas sem declarar sua nova dependência. Foi acrescentado um test
+double somente nessa fixture; o serviço financeiro e o MySQL continuam reais.
+A rodada local `--persistence-only` passou em API, reserva nativa, concorrência,
+reinício e migração (67 segundos), com limpeza do projeto Compose exclusivo.
+
+O mesmo run teve falha isolada de resolução do plugin Maven na imagem das fronteiras;
+não houve erro de compilação Java nessa etapa. Os outros builds do HEAD passaram.
+A causa externa não foi presumida como resolvida: o check continua obrigatório no
+HEAD atualizado. O build e smoke de Psique no primeiro PR passaram, suprindo a
+limitação de disco do build integral local sem iniciar uma publicação de produção.

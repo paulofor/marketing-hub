@@ -5,6 +5,21 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const workflows = path.join(root, ".github/workflows");
+
+// Aceita a forma legada e o array seguro somente quando deriva do preflight sem reatribuição.
+function validatedSshArguments(args, before) {
+  if (args.startsWith("${SSH_COMMON_ARGS}")) return true;
+  if (!args.startsWith('"${ssh_args[@]}"')) return false;
+  const declaration = 'read -r -a ssh_args <<< "$SSH_COMMON_ARGS"';
+  const at = before.lastIndexOf(declaration);
+  if (at < 0) return false;
+  return !/\b(?:ssh_args(?:\[[^\]]*\])?\s*=|unset\s+ssh_args)/.test(before.slice(at + declaration.length));
+}
+
+assert.ok(validatedSshArguments('"${ssh_args[@]}" host', 'read -r -a ssh_args <<< "$SSH_COMMON_ARGS"\n'));
+assert.ok(!validatedSshArguments('"${ssh_args[@]}" host', 'read -r -a ssh_args <<< "$UNTRUSTED"\n'));
+assert.ok(!validatedSshArguments('"${ssh_args[@]}" host', 'read -r -a ssh_args <<< "$SSH_COMMON_ARGS"\nssh_args=(-o StrictHostKeyChecking=no)\n'));
+assert.ok(!validatedSshArguments('"${ssh_args[@]}" host', 'read -r -a ssh_args <<< "$SSH_COMMON_ARGS"\nunset ssh_args\n'));
 let checked = 0;
 for (const file of readdirSync(workflows).filter((name) => name.endsWith(".yml"))) {
   const source = readFileSync(path.join(workflows, file), "utf8");
@@ -28,7 +43,7 @@ for (const file of readdirSync(workflows).filter((name) => name.endsWith(".yml")
       if (command === "rsync") {
         assert.ok(args.includes('-e "ssh ${SSH_COMMON_ARGS}"'), `rsync sem configuração validada: ${file}`);
       } else {
-        assert.ok(args.startsWith("${SSH_COMMON_ARGS}"), `${command} sem configuração validada: ${file}`);
+        assert.ok(validatedSshArguments(args, commands.slice(0, operation.index)), `${command} sem configuração validada: ${file}`);
       }
     }
   }

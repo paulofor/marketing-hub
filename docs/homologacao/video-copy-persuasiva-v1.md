@@ -88,3 +88,9 @@ extraído somente no workspace, pois a imagem não o fornece. O JAR reconstruíd
 4.324 classes compiladas e os 770 recursos externos, e inicializa o catálogo de comportamento e
 os 531 cartões de pesquisa. A mesma comparação antes classificada `backend=false` passou a
 `backend=true`, sem alteração de frontend. Isso valida a correção antes de outro commit/PR.
+
+O primeiro check do PR #5597 recusou uma alteração adicional em gatilhos de workflows porque
+essas fontes também compõem atestações históricas de produtos. Os gatilhos foram preservados:
+o CI existente já executa os testes de recursos e de detecção necessários. A validação local
+compartilhada de evidências passou (16 testes e pacote com 521 arquivos/114 manifestos), sem
+renovar pareceres ou modificar provas de produtos alheios ao pedido.

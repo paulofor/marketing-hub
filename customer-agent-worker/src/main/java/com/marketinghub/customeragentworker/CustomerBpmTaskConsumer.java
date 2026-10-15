@@ -215,7 +215,7 @@ public class CustomerBpmTaskConsumer {
     }
   }
 
-  /** Valida o parecer recuperado ou recém-produzido com os mesmos gates funcionais. */
+  /** Valida parecer novo ou recuperado com os mesmos gates e frames persistidos da tentativa. */
   private void validateExecution(Map<String, Object> task, BpmExecution execution) {
     JsonNode result = execution.result();
     if (isAgentValidationTask(task)) {
@@ -231,7 +231,7 @@ public class CustomerBpmTaskConsumer {
         !"BLOCKED".equals(result.path("decision").asText()));
     if ("creative-production-approval".equals(processCode(task))) {
       validateCreativeAudit(result, execution.visualEvidence());
-      FinalVideoReviewInputs.validate(json, task, result);
+      FinalVideoReviewInputs.validate(json, task, result, execution.visualEvidence());
     } else validateVisualAudit(result, execution.visualEvidence());
   }
 

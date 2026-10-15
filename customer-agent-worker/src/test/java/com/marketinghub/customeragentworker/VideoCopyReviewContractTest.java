@@ -160,13 +160,18 @@ class VideoCopyReviewContractTest {
     assertThat(prompt)
         .contains(
             "VIDEO_COPY_REVIEW_V1",
+            "VIDEO_NARRATIVE_REVIEW_V1",
+            "evidenceId",
+            "Mais cortes não significam mais interesse",
             "Visual bonito não compensa texto frio",
             "DESCRIPTIVE exige ADJUST",
             "O atendimento ficou lindo");
     try (var input =
         getClass().getResourceAsStream("/prompts/bpm/v3/creative-customer-review-schema.json")) {
       var schema = json.readTree(input).at("/properties/videoAudit/items");
-      assertThat(schema.path("required").toString()).contains("copyReview");
+      assertThat(schema.path("required").toString()).contains("copyReview", "narrativeReview");
+      assertThat(schema.at("/properties/narrativeReview/required").toString())
+          .contains("moments", "causalProgression", "payoff");
       assertThat(schema.at("/properties/copyReview/additionalProperties").asBoolean(true))
           .isFalse();
       for (String key :

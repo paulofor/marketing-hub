@@ -40,7 +40,7 @@ class ApolloStoryboardPlannerTest {
         planner = new ApolloStoryboardPlanner(new VideoManagementProperties(), objectMapper, aiClient);
     }
 
-    /** Exige raciocínio máximo no request efetivo e na evidência preservada pelo fluxo completo. */
+    /** Exige direção narrativa e raciocínio máximo no request real e na auditoria do planejamento. */
     @Test
     void shouldPlanWithMaximumReasoningAndPreserveRequestInResult() throws Exception {
         var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
@@ -60,6 +60,7 @@ class ApolloStoryboardPlannerTest {
             JsonNode request = invocation.getArgument(1);
             assertThat(request.at("/reasoning/effort").asText()).isEqualTo("max");
             assertThat(request.path("service_tier").asText()).isEqualTo("flex");
+            assertThat(request.path("input").asText()).contains("VIDEO_NARRATIVE_REVIEW_V1", "informação nova", "expectativa → desenvolvimento → recompensa");
             var response = objectMapper.createObjectNode();
             response.putArray("output").addObject().putArray("content").addObject()
                     .put("type", "output_text").put("text", approvedPlan.toString());

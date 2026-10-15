@@ -21,11 +21,9 @@ class FinalVideoReviewInputsTest {
   void acceptsOnlyTheExactReviewedVideo(long id) {
     var task = task(id);
     var result = result(id);
-    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task, result))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> validate(task, result)).doesNotThrowAnyException();
     ((ObjectNode) result.path("videoAudit").get(0)).put("sha256", "b".repeat(64));
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task, result))
-        .hasMessageContaining("identidade");
+    assertThatThrownBy(() -> validate(task, result)).hasMessageContaining("identidade");
   }
 
   /** Os déficits apontados pelo usuário impedem aprovação, mesmo com vídeo reproduzível. */
@@ -35,25 +33,20 @@ class FinalVideoReviewInputsTest {
   void refusesLowQualityApproval(String criterion) {
     var result = result(53);
     ((ObjectNode) result.path("videoAudit").get(0)).put(criterion, 1);
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(53), result))
-        .hasMessageContaining(criterion);
+    assertThatThrownBy(() -> validate(task(53), result)).hasMessageContaining(criterion);
     result.put("decision", "ADJUST");
-    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(53), result))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> validate(task(53), result)).doesNotThrowAnyException();
   }
 
   /** Não aceita um relatório do PNG como se tivesse analisado vídeo nem audição inexistente. */
   @Test
   void refusesAbsentVideoAuditAndFalseListening() {
-    assertThatThrownBy(
-            () -> FinalVideoReviewInputs.validate(json, task(53), json.createObjectNode()))
+    assertThatThrownBy(() -> validate(task(53), json.createObjectNode()))
         .hasMessageContaining("cada vídeo");
     var result = result(53);
     ((ObjectNode) result.path("videoAudit").get(0)).put("audioAssessment", "LISTENED");
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(53), result))
-        .hasMessageContaining("áudio");
-    assertThatCode(() -> FinalVideoReviewInputs.validate(json, Map.of(), json.createObjectNode()))
-        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> validate(task(53), result)).hasMessageContaining("áudio");
+    assertThatCode(() -> validate(Map.of(), json.createObjectNode())).doesNotThrowAnyException();
   }
 
   /** O retorno exclusivo de vídeo requer inspeção e não pode coexistir com uma aprovação. */
@@ -61,13 +54,10 @@ class FinalVideoReviewInputsTest {
   void preservesCorrectionScopeWithoutInventingReview() {
     var result = result(53);
     result.put("correctionScope", "FINAL_VIDEO");
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(53), result))
-        .hasMessageContaining("escopo");
+    assertThatThrownBy(() -> validate(task(53), result)).hasMessageContaining("escopo");
     result.put("decision", "ADJUST");
-    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(53), result))
-        .doesNotThrowAnyException();
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, Map.of(), result))
-        .hasMessageContaining("inspecionados");
+    assertThatCode(() -> validate(task(53), result)).doesNotThrowAnyException();
+    assertThatThrownBy(() -> validate(Map.of(), result)).hasMessageContaining("inspecionados");
   }
 
   /** Reproduz o aceite apenas visual de Capella: novas revisões não podem omitir a copy. */
@@ -76,14 +66,27 @@ class FinalVideoReviewInputsTest {
     var result = result(69);
     var item = (ObjectNode) result.path("videoAudit").get(0);
     item.remove("copyReview");
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(69), result))
-        .hasMessageContaining("contrato de copy");
+    assertThatThrownBy(() -> validate(task(69), result)).hasMessageContaining("contrato de copy");
     item.set("copyReview", VideoCopyReviewContractTest.review(json).put("mode", "DESCRIPTIVE"));
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(69), result))
-        .hasMessageContaining("descritiva");
+    assertThatThrownBy(() -> validate(task(69), result)).hasMessageContaining("descritiva");
     result.put("decision", "ADJUST");
-    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(69), result))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> validate(task(69), result)).doesNotThrowAnyException();
+  }
+
+  /** Valida a entrada com os frames persistidos que a mesma tentativa teria recebido. */
+  private void validate(Map<String, Object> task, com.fasterxml.jackson.databind.JsonNode result) {
+    long id = FinalVideoReviewInputs.inputs(json, task).path(0).path("assetId").asLong();
+    FinalVideoReviewInputs.validate(
+        json, task, result, VideoNarrativeReviewContractTest.evidence(id));
+  }
+
+  /** Uma nota alta de progressão sem os momentos comprovados não basta para aprovar. */
+  @Test
+  void refusesNarrativeWithoutTemporalEvidence() {
+    var result = result(69);
+    ((ObjectNode) result.path("videoAudit").get(0)).remove("narrativeReview");
+    assertThatThrownBy(() -> validate(task(69), result))
+        .hasMessageContaining("contrato de narrativa");
   }
 
   /** Monta uma entrada isolada de inspeção, sem autorização de mídia ou prova de mercado. */
@@ -100,6 +103,8 @@ class FinalVideoReviewInputsTest {
                         id,
                         "sha256",
                         "a".repeat(64),
+                        "durationSeconds",
+                        20,
                         "narration",
                         VideoCopyReviewContractTest.NARRATION)))));
   }
@@ -123,6 +128,7 @@ class FinalVideoReviewInputsTest {
             "clarity", "desire", "firstAction", "proofLegibility", "visualProgression"))
       audit.put(key, 4);
     audit.set("copyReview", VideoCopyReviewContractTest.review(json));
+    audit.set("narrativeReview", VideoNarrativeReviewContractTest.review(json));
     return result;
   }
 }

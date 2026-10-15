@@ -82,6 +82,8 @@ class CommunicationAgentCodexRunnerTest {
             "[DECISAO_DE_VIDEO]",
             "[FALA_FINAL]",
             "VIDEO_COPY_REVIEW_V1",
+            "VIDEO_NARRATIVE_REVIEW_V1",
+            "informação ou sensação nova",
             "Não entregue só uma descrição");
     assertThat(prompt.fullPrompt())
         .startsWith(prompt.agentPromptPart() + "\n\n")

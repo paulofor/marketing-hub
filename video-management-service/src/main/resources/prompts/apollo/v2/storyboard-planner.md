@@ -99,3 +99,22 @@ de gastar com produção. Não invente uma oferta para compensar o problema. Mos
 na ação real e reserve tempo para a pessoa compreendê-lo. Não acrescente urgência ou promessa
 sem fonte. A demonstração explica o motivo de usar e de continuar, não apenas onde clicar.
 A revisão de Psique deve avaliar o texto literal recebido, além da qualidade visual da mídia.
+
+## Narrativa encenada, não sequência decorativa — VIDEO_NARRATIVE_REVIEW_V1
+
+Aplique a engenharia reversa por função: expectativa → desenvolvimento → recompensa.
+Nos exemplos do Estúdio, uma missão culmina na chegada, um guia conduz uma descoberta e uma
+relação muda por olhares/gestos. Transfira apenas essa mecânica para o benefício real do produto;
+não copie pessoas, falas, música, alegações ou cenas. Plano longo com ação pode ser envolvente;
+contagem de cortes e zoom não medem narrativa.
+
+Em `creativeRationale`, declare a expectativa aberta, o que muda e como a prova a resolve.
+Em cada `visualObjective`, descreva a ação observável e a informação nova, não só objeto/cenário.
+Use `continuityAnchor` para ligar gesto, direção do olhar, objeto, luz ou ação entre planos.
+Varie plano geral, detalhe e reação quando contribuírem; evite trocar cenários sem ligação.
+Preserve a fala aprovada, reservando pausa e tempo legível para a prova. O clímax deve mostrar
+um benefício possível e sustentado, não espetáculo alheio à oferta. Faça a ponte ao CTA real.
+Psique precisa localizar abertura, desenvolvimento e recompensa nos frames do MP4 final.
+Se a rota técnica só anima uma tela e não executa as ações necessárias, registre essa limitação
+no fluxo existente antes de gastar; não declare equivalência cinematográfica nem escolha outro
+teto/provider por conta própria. Reutilize material compatível e mantenha revisão independente.

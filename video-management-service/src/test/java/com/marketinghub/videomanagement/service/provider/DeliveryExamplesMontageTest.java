@@ -59,7 +59,7 @@ class DeliveryExamplesMontageTest {
         }
     }
 
-    /** Confere dois produtos com FFmpeg real: variedade, movimento, duração e manifesto final. */
+    /** Confere dois produtos: entrada animada, leitura estável, mudança de cena e duração reais. */
     @ParameterizedTest @ValueSource(longs = {9007, 9010})
     @EnabledIfSystemProperty(named = "video.delivery.real-ffmpeg", matches = "true")
     void composesRealFramesForIndependentProducts(long product) throws Exception {
@@ -77,11 +77,35 @@ class DeliveryExamplesMontageTest {
                             .containsEntry("runtimeCaptureClaimed", false).containsEntry("status", "APPLIED");
                     byte[] early = frame(result.videoFile(), .1), later = frame(result.videoFile(), 1.2);
                     assertThat(early).isNotEqualTo(later);
+                    assertStableReading(result.videoFile(), Color.PINK, 1.0, 1.8, 2.7);
+                    assertStableReading(result.videoFile(), Color.CYAN, 4.0, 4.8, 5.7);
                     assertThat(frame(result.videoFile(), 4)).isNotEqualTo(later);
                     assertThat(duration(result.videoFile())).isBetween(5.95, 6.05);
                 } finally { Files.deleteIfExists(result.videoFile()); }
             }
         }
+    }
+
+    /** Mede a posição dos pixels da arte durante a leitura, sem aceitar oscilação como dinamismo. */
+    private void assertStableReading(Path video, Color color, double... times) throws Exception {
+        double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+        for (double time : times) {
+            byte[] pixels = frame(video, time);
+            long count = 0, x = 0, y = 0;
+            for (int i = 0; i < pixels.length; i += 3) {
+                if (Math.abs(Byte.toUnsignedInt(pixels[i]) - color.getRed()) > 18
+                        || Math.abs(Byte.toUnsignedInt(pixels[i + 1]) - color.getGreen()) > 18
+                        || Math.abs(Byte.toUnsignedInt(pixels[i + 2]) - color.getBlue()) > 18) continue;
+                count++; x += (i / 3) % 108; y += (i / 3) / 108;
+            }
+            assertThat(count).as("A arte precisa permanecer visível no instante %s", time).isGreaterThan(3000);
+            double centerX = (double) x / count, centerY = (double) y / count;
+            minX = Math.min(minX, centerX); maxX = Math.max(maxX, centerX);
+            minY = Math.min(minY, centerY); maxY = Math.max(maxY, centerY);
+        }
+        assertThat(maxX - minX).as("Leitura sem balanço horizontal após a entrada").isLessThanOrEqualTo(.5);
+        assertThat(maxY - minY).as("Leitura sem balanço vertical após a entrada").isLessThanOrEqualTo(.5);
     }
 
     /** A camada real aparece na fala certa sem cobrir título nem herdar prova comercial. */

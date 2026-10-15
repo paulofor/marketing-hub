@@ -194,3 +194,55 @@ violações de formatação preexistentes em FinalVideoReviewInputs, fora deste 
 check global do backend também aponta arquivos preexistentes fora desta alteração;
 o check restrito aos arquivos alterados é a evidência usada. O build do frontend passou. O
 executor audiovisual não configura Spotless e manteve seu estilo local.
+
+## Rejeição humana e estabilidade de leitura — 15/10/2026
+
+O banco confirmou a rejeição de #71 às 03:19:21Z e #69 às 03:20:05Z: encerramento
+descritivo e artes tremendo. Os MP4s e seus metadados confirmam a frase narrada;
+`DeliveryExamplesMontage.render` aplicava seno horizontal/vertical durante cada cena.
+O parecer #736 havia aprovado os frames, declarando ausência de escuta. A escuta
+publicada no PR #5600 não revisa retroativamente esses arquivos.
+
+Foram comparadas três soluções: zoom contínuo lento (baixo esforço, mas altera a
+escala do texto durante a leitura); novos planos da experiência real (boa prova,
+mas exigem novas capturas e sincronização); entrada breve seguida de leitura
+estável (reutiliza as artes e preserva a progressão entre cenas). A terceira foi
+adotada para corrigir a causa compartilhada com menor esforço e risco de leitura.
+O aviso de amostra continua explícito, sem repetir promessa negativa em toda cena.
+
+Matriz: reproduzir deslocamento com FFmpeg real, medir estabilidade após 450 ms,
+preservar entrada e troca de arte, verificar duas identidades, prova sincronizada,
+narração recuperada, duração e reprodução desktop/iPhone/Pixel. Fontes e custos
+históricos permanecem auditáveis; nenhum teste se mistura com métricas comerciais.
+
+A regressão falhou antes da correção nos dois produtos: deslocamento horizontal
+de 1,037 pixel na redução 108×192, superior à tolerância de 0,5 pixel. Depois da
+correção, 290 testes do módulo executados sem falhas/erros, com sete testes opcionais
+não habilitados; os quatro casos de renderização real foram habilitados e passaram.
+A preparação de novos roteiros é distinta do aceite independente e da publicação.
+
+A montagem completa com as fontes reais de Capella passou nos 14 testes da suíte
+específica, incluindo a recuperação local das vozes e as capturas vinculadas por
+hash. Os arquivos de 27/45 segundos dessa homologação conservam deliberadamente a
+narração antiga: comprovam a correção visual, não são os novos vídeos comerciais.
+A reprodução passou em Chromium desktop, iPhone 15 Pro e Pixel 7 emulados, com
+controles, seek, encerramento e ausência de overflow horizontal. Não houve escuta
+perceptual nesta conferência técnica. O workflow de publicação passou a habilitar
+também os testes reais de estabilidade da entrega; sua execução equivalente local
+passou com 292 testes, zero falhas/erros e quatro opcionais não habilitados.
+O comando de CI passou em `bash -n` e ShellCheck, os 14 contratos de workflow
+passaram e o Actionlint da revisão canônica do repositório validou o workflow.
+
+Pelo Estúdio, os projetos #11 e #12 receberam os roteiros corrigidos (71 e 111
+palavras), direção por cena, voz e critérios de revisão, em estado `DRAFT`.
+São propostas operacionais para a correção pedida, sem parecer fabricado em nome
+de Íris ou Psique. A oferta, o contexto e os limites permanecem os mesmos; os
+arquivos #69/#71 e sua rejeição continuam preservados. Novas locuções, MP4s,
+revisões com escuta, seleção humana e homologação comercial permanecem pendentes.
+
+O ledger audiovisual de Capella mantém custos originais de locução desconhecidos
+e recibos de reutilização com custo incremental zero. Isso não autoriza considerar
+o custo original gratuito. A leitura do faturamento OpenAI retornou HTTP 403 por
+ausência de `api.usage.read`, tanto com o acesso da sandbox quanto com o acesso do
+executor audiovisual; não se altera o gate para contornar essa limitação.
+Fonte: [API oficial de custos](https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs).

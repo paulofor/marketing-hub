@@ -157,6 +157,7 @@ final class DeliveryExamplesMontage {
                     "-c", "copy", "-t", number(duration), "-movflags", "+faststart", output.toString()), prepared.jobId());
             return new ProductUgcReferenceOverlay.OverlayResult(output, Map.of("contractVersion", CONTRACT,
                     "status", "APPLIED", "compositionMode", "NARRATED_DELIVERY_MONTAGE_V1", "shots", audits,
+                    "motionPolicy", "ENTRY_SETTLE_READING_V1",
                     "runtimeCaptureClaimed", false, "commercialEvidenceClaimed", false,
                     "reviewMoments", audits.stream().map(value -> value.get("reviewMoment")).toList()));
         } catch (Exception ex) {
@@ -169,7 +170,7 @@ final class DeliveryExamplesMontage {
         }
     }
 
-    /** Cria tipografia e composição editorial legíveis, deixando a área inferior para legendas. */
+    /** Compõe títulos legíveis e identifica as amostras discretamente, reservando espaço às legendas. */
     private void drawBackground(Path path, String copy, int position, int count, int layout) throws IOException {
         var image = new BufferedImage(1080, 1920, BufferedImage.TYPE_INT_RGB);
         var g = image.createGraphics();
@@ -190,7 +191,7 @@ final class DeliveryExamplesMontage {
             if (lines.size() > 5) throw invalid("Texto longo demais para abertura legível da cena.");
             for (int i = 0; i < lines.size(); i++) g.drawString(lines.get(i), 80, 270 + i * (size + 14));
             g.setFont(new Font("DejaVu Sans", Font.PLAIN, 26));
-            g.drawString("Amostras ilustrativas • sem promessa de clientes", 80, 1510);
+            g.drawString("Amostras ilustrativas do kit", 80, 1510);
             g.setColor(new Color(0xbb8093)); g.fillRoundRect(80, 1460, 920, 5, 5, 5);
             g.setColor(new Color(0xffd4ba)); g.fillRoundRect(80, 1460, 920 * position / count, 5, 5, 5);
             ImageIO.write(image, "png", path.toFile());
@@ -210,17 +211,18 @@ final class DeliveryExamplesMontage {
         return lines;
     }
 
-    /** Anima as camadas dentro da margem segura, sem cortar os textos da arte principal. */
+    /** Faz uma entrada suave e estabiliza as artes para leitura; a progressão vem das cenas. */
     private void render(Path background, Path image, Path companion, Path output, double seconds, int layout, Long jobId) {
         int size = layout == 1 ? 810 : 900;
         String slide = layout == 2 ? "-" : "+";
+        String entrance = "pow(max(0,1-t/0.45),3)";
         String loop = "loop=loop=-1:size=1:start=0,setpts=N/(30*TB)";
         String filter = "[0:v]format=yuv420p," + loop + "[background];"
                 + "[1:v]scale=" + size + ":850:force_original_aspect_ratio=decrease,format=rgba," + loop + "[art];"
                 + (layout == 1 ? "[2:v]scale=630:720:force_original_aspect_ratio=decrease,format=rgba,rotate=-0.10:fillcolor=none," + loop + "[other];"
-                    + "[background][other]overlay=x='-75+25*sin(t)':y='610-18*sin(t)'[base];" : "[background]null[base];")
-                + "[base][art]overlay=x='(W-w)/2" + slide + "if(lt(t,0.45),60*pow(1-t/0.45,3),28*sin(t*0.9))'"
-                + ":y='575+18*sin(t*0.8)'[out]";
+                    + "[background][other]overlay=x='-75-25*" + entrance + "':y=610[base];" : "[background]null[base];")
+                + "[base][art]overlay=x='(W-w)/2" + slide + "60*" + entrance + "'"
+                + ":y=575[out]";
         run(List.of(ffmpeg(), "-v", "error", "-y", "-threads", "1", "-i", background.toString(),
                 "-threads", "1", "-i", image.toString(), "-threads", "1", "-i", companion.toString(),
                 "-filter_complex_threads", "1", "-filter_complex", filter, "-map", "[out]", "-an", "-t", number(seconds),

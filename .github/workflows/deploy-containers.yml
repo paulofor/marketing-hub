@@ -493,7 +493,7 @@ jobs:
 
       - name: Run unit tests and real product proof composition
         working-directory: video-management-service
-        run: mvn -B -Dvideo.proof.real-ffmpeg=true test
+        run: mvn -B -Dvideo.proof.real-ffmpeg=true -Dvideo.delivery.real-ffmpeg=true test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

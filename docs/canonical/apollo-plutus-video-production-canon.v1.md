@@ -639,3 +639,21 @@ Medir primeiro recorrência de retrabalho por incompreensão e coerência do par
 Retenção é sinal intermediário; adoção comercial depende de compras líquidas conciliadas,
 entrega, reembolsos, custo e contribuição em experimento posterior autorizado. Nenhum novo
 vídeo, gasto, campanha ou migração de ciclo é disparado por esta melhoria do harness.
+
+## Estabilidade durante a leitura das artes — 15/10/2026
+
+A rejeição humana de Capella #69/#71 identificou balanço lateral das amostras.
+O compositor aplicava seno continuamente e o teste verificava apenas diferença entre
+frames. O contrato `ENTRY_SETTLE_READING_V1` usa entrada breve com desaceleração e
+mantém a arte estável durante a leitura. A progressão vem da informação, das ações
+e dos cortes; oscilar uma peça não comprova dinamismo ou compreensão.
+
+Identificar as fontes como amostras ilustrativas. Condições e limites reais continuam
+na comunicação, sem transformar metadados ou ressalvas repetidas no benefício ou no
+convite final. O roteiro deve encerrar com a próxima ação útil, coerente com a oferta.
+A revisão independente continua vinculada ao MP4 novo, incluindo a escuta. A mudança
+do compositor não concede aceite, não concilia custos anteriores e não gera mídia.
+
+Regressão: medir a posição dos pixels após a entrada em dois produtos, além da
+mudança de cena, duração, prova sincronizada e recuperação sem novas chamadas.
+Evidências em [qualidade de Capella](../homologacao/capella-video-quality-v2.md).

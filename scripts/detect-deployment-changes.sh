@@ -84,6 +84,16 @@ while IFS= read -r file; do
   esac
 done <<< "${changed_files}"
 
+# O catálogo do backend incorpora prompts dos executores; use a própria lista Maven
+# para que painel e worker não sejam publicados com versões diferentes do contrato.
+script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+packaged_resources_changed="$(python3 "${script_directory}/verify-backend-packaged-resources.py" \
+  --repo "$(git rev-parse --show-toplevel)" --revision "${HEAD_REVISION}" \
+  --changed-paths-stdin <<< "${changed_files}")"
+if [[ "${packaged_resources_changed}" == "true" ]]; then
+  backend=true
+fi
+
 if [[ "${video_revision_known}" != "true" ]]; then
   video=true
 else

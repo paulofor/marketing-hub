@@ -10,6 +10,7 @@ git -C "${TEST_REPO}" init -q
 git -C "${TEST_REPO}" config user.email test@sandbox.local
 git -C "${TEST_REPO}" config user.name "Deploy Contract Test"
 mkdir -p "${TEST_REPO}/backend/ads-service" "${TEST_REPO}/frontend" "${TEST_REPO}/pesquisas/video" "${TEST_REPO}/video-management-service"
+cp "${REPO_ROOT}/backend/ads-service/pom.xml" "${TEST_REPO}/backend/ads-service/pom.xml"
 printf 'base\n' > "${TEST_REPO}/backend/ads-service/app.txt"
 printf 'base\n' > "${TEST_REPO}/frontend/app.txt"
 printf 'base\n' > "${TEST_REPO}/video-management-service/app.txt"
@@ -225,3 +226,45 @@ contract_head="$(git -C "$TEST_REPO" rev-parse HEAD)"
 )
 grep -Fxq 'customer_agent=true' "$TEST_REPO/contract-output"
 printf 'Documentação isolada não publica agentes; contrato versionado preserva o gatilho.\n'
+
+# Cada prompt ou schema empacotado atualiza também o backend; remoção conta como mudança.
+for behavior_path in \
+  communication-agent-worker/src/main/resources/prompts/iris/v1/communication-package.md \
+  customer-agent-worker/src/main/resources/prompts/bpm/v3/creative-customer-review-schema.json \
+  video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner.md \
+  financial-agent-worker/src/main/resources/prompts/plutus/another-product.md; do
+  behavior_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+  mkdir -p "$(dirname "$TEST_REPO/$behavior_path")"
+  printf 'Contrato atualizado na fixture.\n' > "$TEST_REPO/$behavior_path"
+  git -C "$TEST_REPO" add "$behavior_path"
+  git -C "$TEST_REPO" commit -qm 'recurso de comportamento isolado'
+  (
+    cd "$TEST_REPO"
+    bash "$DETECT_SCRIPT" "$behavior_base" HEAD "$TEST_REPO/behavior-output"
+  )
+  grep -Fxq 'backend=true' "$TEST_REPO/behavior-output"
+  grep -Fxq 'app_deploy=true' "$TEST_REPO/behavior-output"
+  rm "$TEST_REPO/behavior-output"
+done
+
+removed_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+git -C "$TEST_REPO" rm -q "$behavior_path"
+git -C "$TEST_REPO" commit -qm 'remove recurso obsoleto'
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$removed_base" HEAD "$TEST_REPO/removed-output"
+)
+grep -Fxq 'backend=true' "$TEST_REPO/removed-output"
+
+# Um teste Java do executor não altera o catálogo empacotado do backend.
+worker_test_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+mkdir -p "$TEST_REPO/communication-agent-worker/src/test/java"
+printf 'fixture de teste\n' > "$TEST_REPO/communication-agent-worker/src/test/java/BriefTest.java"
+git -C "$TEST_REPO" add communication-agent-worker/src/test
+git -C "$TEST_REPO" commit -qm 'teste isolado de executor'
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$worker_test_base" HEAD "$TEST_REPO/worker-test-output"
+)
+grep -Fxq 'backend=false' "$TEST_REPO/worker-test-output"
+printf 'Prompts, schemas e remoções recompilam o catálogo; testes isolados não.\n'

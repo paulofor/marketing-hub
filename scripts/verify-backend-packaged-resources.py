@@ -4,6 +4,7 @@
 import argparse
 import re
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -18,19 +19,39 @@ def matches(path, pattern):
     return re.fullmatch(expression, path) is not None
 
 
+def external_resources(repo, revision=None):
+    """Lê a mesma lista Maven para empacotamento, deploy e monitor de atualização."""
+    pom_path = "backend/ads-service/pom.xml"
+    if revision:
+        content = subprocess.check_output(
+            ["git", "-C", str(repo), "show", f"{revision}:{pom_path}"]
+        )
+        pom = ET.fromstring(content)
+    else:
+        pom = ET.parse(repo / pom_path).getroot()
+    resources = []
+    for resource in pom.findall("m:build/m:resources/m:resource", NS):
+        target = resource.findtext("m:targetPath", namespaces=NS)
+        if target:
+            patterns = [node.text for node in resource.findall("m:includes/m:include", NS)]
+            resources.append((target, patterns))
+    return resources
+
+
+def resources_changed(repo, paths, revision=None):
+    """Detecta inclusive remoções, sem depender da existência atual do arquivo."""
+    patterns = [pattern for _, includes in external_resources(repo, revision) for pattern in includes]
+    return any(matches(path, pattern) for path in paths for pattern in patterns)
+
+
 def verify(repo, jar):
-    pom = ET.parse(repo / "backend/ads-service/pom.xml")
     tracked = subprocess.check_output(
         ["git", "-C", str(repo), "ls-files", "-z"], text=True
     ).split("\0")
     checked = 0
     with ZipFile(jar) as archive:
         entries = set(archive.namelist())
-        for resource in pom.findall("m:build/m:resources/m:resource", NS):
-            target = resource.findtext("m:targetPath", namespaces=NS)
-            if not target:
-                continue
-            patterns = [node.text for node in resource.findall("m:includes/m:include", NS)]
+        for target, patterns in external_resources(repo):
             expected = [path for path in tracked if any(matches(path, p) for p in patterns)]
             if not expected:
                 raise ValueError(f"Nenhum recurso versionado para {target}")
@@ -90,8 +111,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--jar", type=Path)
+    parser.add_argument("--changed-paths-stdin", action="store_true")
+    parser.add_argument("--revision", help="Revisão cuja lista Maven deve classificar as mudanças.")
     args = parser.parse_args()
     repo = args.repo.resolve()
+    if args.changed_paths_stdin:
+        changed = resources_changed(repo, sys.stdin.read().splitlines(), args.revision)
+        print("true" if changed else "false")
+        return
     jar = (args.jar or repo / "backend/ads-service/target/app-exec.jar").resolve()
     print(f"Classes testadas e empacotadas idênticas: {verify_compiled_backend(repo, jar)}", flush=True)
     print(f"Recursos externos íntegros: {verify(repo, jar)}", flush=True)

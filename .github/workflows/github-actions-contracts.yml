@@ -47,6 +47,8 @@ on:
       - "scripts/test-publisher-recovery.py"
       - "scripts/deploy-control-known-hosts"
       - "scripts/detect-deployment-changes.sh"
+      - "scripts/verify-backend-packaged-resources.py"
+      - "scripts/test-backend-packaged-resources.py"
       - "scripts/test-deploy-transactional-contract.sh"
       - "scripts/test-deployment-change-resume.sh"
       - "scripts/read-frontend-build-revision.sh"
@@ -150,6 +152,8 @@ on:
       - "scripts/test-publisher-recovery.py"
       - "scripts/deploy-control-known-hosts"
       - "scripts/detect-deployment-changes.sh"
+      - "scripts/verify-backend-packaged-resources.py"
+      - "scripts/test-backend-packaged-resources.py"
       - "scripts/test-deploy-transactional-contract.sh"
       - "scripts/test-deployment-change-resume.sh"
       - "scripts/read-frontend-build-revision.sh"
@@ -353,6 +357,7 @@ jobs:
         run: |
           bash scripts/test-deploy-transactional-contract.sh
           bash scripts/test-deployment-change-resume.sh
+          python3 scripts/test-backend-packaged-resources.py
 
       - name: Validar resiliência do host compartilhado
         run: bash scripts/test-shared-vps-deploy-resilience.sh

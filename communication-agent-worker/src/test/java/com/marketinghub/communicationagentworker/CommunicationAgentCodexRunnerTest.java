@@ -79,7 +79,10 @@ class CommunicationAgentCodexRunnerTest {
             "checkout canônico posterior",
             "[DESEJO_RECONHECIDO]",
             "[REPETICAO_COM_MARGEM]",
-            "[DECISAO_DE_VIDEO]");
+            "[DECISAO_DE_VIDEO]",
+            "[FALA_FINAL]",
+            "VIDEO_COPY_REVIEW_V1",
+            "Não entregue só uma descrição");
     assertThat(prompt.fullPrompt())
         .startsWith(prompt.agentPromptPart() + "\n\n")
         .contains(json.writeValueAsString(input));
@@ -550,6 +553,29 @@ class CommunicationAgentCodexRunnerTest {
         }
         """
         .formatted(STRATEGY_HASH, checkout, instrumentation);
+  }
+
+  /** O caminho real de Íris não entrega um briefing descritivo como comunicação concluída. */
+  @Test
+  void refusesAudiovisualDescriptionThroughActivityValidator() throws Exception {
+    var input =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", false));
+    var response = result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED");
+    var output = (com.fasterxml.jackson.databind.node.ObjectNode) response.path("functionalOutput");
+    output.put("audiovisualBrief", "Mostrar posts bonitos, copiar legenda e baixar arquivos.");
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validate(
+                    response, input, CommunicationAgentCodexRunner.contractFor(input)))
+        .hasMessageContaining("Briefing audiovisual");
+    output.put(
+        "audiovisualBrief",
+        "[ABERTURAS] Situação, desejo e prova; escolher situação. "
+            + "[FALA_FINAL] O atendimento ficou lindo. E o post? Veja a amostra do kit. "
+            + "[PROVA_E_LIMITES] Arte ilustrativa autorizada; sem promessa de clientes. "
+            + "[DIRECAO_VISUAL] Mostrar arte e legenda, preservando a fonte.");
+    CommunicationAgentCodexRunner.validate(
+        response, input, CommunicationAgentCodexRunner.contractFor(input));
   }
 
   /** Cria uma resposta mínima completa conforme o schema único de Íris. */

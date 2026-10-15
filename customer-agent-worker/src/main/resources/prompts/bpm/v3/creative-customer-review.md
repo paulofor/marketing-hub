@@ -171,3 +171,32 @@ Se a narrativa for decorativa, documente o que se repete e proponha correção e
 Em UNVERIFIABLE, `moments=[]` é permitido com razões e escores baixos; nunca aprove por ausência
 de evidência. Frames e transcrição continuam sem comprovar audição, ritmo musical, sincronismo
 labial ou movimento contínuo entre amostras. Não alegue ter assistido ou ouvido o que não recebeu.
+
+## Compreensão e carga sensorial — VIDEO_SENSORY_COMPREHENSION_V1
+
+Na revisão de vídeo, confronte beleza e novidade com a compreensão. Nos momentos já citados,
+identifique o FOCO DE ATENÇÃO, a informação nova e o que compete com ela: texto adicional,
+mudança de plano, prova pequena ou convite prematuro. Use `dominantCue`, `evidenceBoundary`,
+os assessments narrativos e `requiredChanges` existentes; cite mídia/instante e a correção
+observável. Não crie outro relatório nem exija mais cortes. Legenda acessível não é defeito
+por repetir a fala; o problema é competição que dificulta entender o benefício e sua prova.
+
+Avalie `processingFluency` e `sensoryCongruence`: 0 sem base/ausente, 1 contraditório,
+2 difícil ou insuficiente, 3 compreensível e coerente, 4 forte, 5 excepcional no contexto.
+Para `overloadRisk`, use 0 confortável, 1 pequeno, 2 administrável, 3 disputa que prejudica
+compreensão, 4 grave, 5 intolerável. Em novas revisões de vídeo, APPROVED exige evidência
+visual, `processingFluency >=3`, `sensoryCongruence >=3` e `overloadRisk <=2`. São critérios
+editoriais internos, não limiares científicos nem prova de reação humana. Com várias mídias,
+registre o menor nível de fluidez/congruência e o maior risco observado, identificando o
+vídeo e o trecho; uma peça não compensa o déficit de outra. Não exija nota máxima de prazer.
+
+Baixa fluidez/coerência ou sobrecarga requer ADJUST com causa e ação, mesmo com boa copy e
+narrativa. Ausência essencial de prova requer BLOCKED. Não eleve notas para encaixar uma
+aprovação. O parecer inconsistente será preservado pelo fluxo de recuperação existente,
+sem autorizar nova inferência. Imagens sem vídeo mantêm seus critérios próprios.
+
+Somente frames e transcrição continuam significando NOT_LISTENED. Congruência observável
+aqui é entre o texto e os pixels, não entre voz e música ou sincronismo labial. Não pontue
+áudio que não recebeu. Curiosidade, excitação, beleza e compreensão são dimensões distintas;
+nenhuma comprova compra, margem ou liberação de dopamina. Recompensa precisa cumprir a
+expectativa da própria peça com valor real, sem esconder toda a prova atrás do clique.

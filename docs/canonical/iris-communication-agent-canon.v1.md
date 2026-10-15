@@ -636,3 +636,13 @@ para a cena seguinte e função do som/pausa. Não transferir roteiro, identidad
 alegações da referência. Não exigir drama, medo, rosto ou cortes rápidos em toda peça.
 Apolo preserva a fala aprovada e Psique revisa a mídia final pelo contrato narrativo descrito
 em `apollo-plutus-video-production-canon.v1.md`. Aprendizado editorial não comprova vendas.
+
+## Atenção e compreensão audiovisual — 15/10/2026
+
+A direção de Íris identifica um foco principal por momento e protege a leitura da prova.
+Fala, imagem e intenção sonora devem contribuir para a mesma descoberta, com contexto
+reconhecível, novidade dosada e recompensa ligada ao valor real. Não somar ideias, efeitos
+ou palavras só para aumentar intensidade. Legenda acessível permanece; pausas favorecem
+compreensão e não significam abandonar dinâmica. Aplicar no briefing existente, conforme
+`VIDEO_SENSORY_COMPREHENSION_V1` no cânone audiovisual, sem outro agente ou geração paga.
+Pesquisa orienta hipóteses editoriais; não comprova emoção, dopamina, demanda ou venda.

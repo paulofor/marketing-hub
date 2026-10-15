@@ -173,3 +173,28 @@ Em cada passagem pergunte: o que a pessoa agora entende, deseja ver ou consegue 
 não estava claro? Se nada muda, corte ou reescreva o momento. A recompensa precisa corresponder à
 expectativa inicial e ao benefício real; não esconder todo o valor para depois do clique.
 Mecanismos das referências são hipóteses editoriais, não evidência de retenção ou vendas.
+
+## Prazer que ajuda a compreender — VIDEO_SENSORY_COMPREHENSION_V1
+
+Use o acervo de prazer audiovisual como hipótese editorial: expectativa compreensível,
+novidade dosada, coerência entre sentidos e pouca disputa pela atenção. Não há cor, batida,
+quantidade de cortes ou “gatilho de dopamina” que garanta desejo ou compra.
+
+Dentro da direção temporal existente, indique o FOCO DE ATENÇÃO de cada momento: o que a
+pessoa deve olhar e entender enquanto ouve aquela frase. Prepare o contexto antes do termo
+novo, introduza uma ideia principal por momento e faça a imagem ajudar a compreendê-la.
+Uma legenda acessível pode repetir a fala; evite acrescentar outro parágrafo, outra ação
+e uma promessa diferente ao mesmo tempo. Nos instantes da prova e do CTA, preserve leitura
+e respiro. A surpresa deve revelar um valor do produto, com resolução dentro da peça.
+
+Descreva a trajetória emocional como intenção, não reação comprovada: reconhecimento de
+uma situação → curiosidade → descoberta útil → alívio ou possibilidade → convite claro.
+Adapte a ordem ao público e à função da peça, sem fabricar dor, suspense ou resultado.
+Mostre por que aquela pequena mudança importa para a vida da pessoa. Escolha palavras,
+cores e atmosfera coerentes com o contexto; não prescreva emoções universais por paleta.
+
+Oriente voz próxima e pausas com função; trilha, quando prevista e autorizada, deve apoiar
+a fala e a revelação. Evite mudança musical intensa na frase mais difícil ou durante a
+leitura da prova. Isso é direção de produção, não instrução para narrar esses termos.
+Use as seções já existentes, sem criar nova etapa, campos ou chamadas pagas. Preserve as
+fontes e limites dos cartões recebidos; pesquisa não comprova persuasão nem vendas.

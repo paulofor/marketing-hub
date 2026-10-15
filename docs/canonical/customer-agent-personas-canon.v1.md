@@ -382,3 +382,12 @@ autorizado não podem ser apresentadas como consultadas. O backend vincula essas
 rejeita esquemas inseguros e a tela administrativa as abre em nova aba. Todo parecer bloqueado também
 deve informar ajuste recomendado e links seguros para o artefato ou tela onde a correção pode ser
 realizada.
+
+## Coerência do parecer sensorial de vídeo — 15/10/2026
+
+Em novas revisões finais de vídeo, a aprovação deve respeitar as notas já emitidas nos
+campos de fluidez, congruência e sobrecarga. A política editorial e o escopo estão em
+[`VIDEO_SENSORY_COMPREHENSION_V1`](apollo-plutus-video-production-canon.v1.md#prazer-a-serviço-da-compreensão--15102026).
+Não compensar compreensão insuficiente com beleza ou prazer presumido. Vincular o
+diagnóstico aos momentos recebidos; manter NOT_LISTENED sem evidência auditiva. O teste
+previne decisões contraditórias, não demonstra preferência de clientes nem conversão.

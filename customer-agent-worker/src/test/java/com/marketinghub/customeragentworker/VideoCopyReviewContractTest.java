@@ -161,6 +161,10 @@ class VideoCopyReviewContractTest {
         .contains(
             "VIDEO_COPY_REVIEW_V1",
             "VIDEO_NARRATIVE_REVIEW_V1",
+            "VIDEO_SENSORY_COMPREHENSION_V1",
+            "FOCO DE ATENÇÃO",
+            "overloadRisk <=2",
+            "critérios\neditoriais internos",
             "evidenceId",
             "Mais cortes não significam mais interesse",
             "Visual bonito não compensa texto frio",

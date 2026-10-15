@@ -74,8 +74,7 @@ public class FinalVideoReviewInputs {
   }
 
   /**
-   * Exige mídia, copy e progressão apoiadas nos frames recebidos, sem substituir narrativa por
-   * estética.
+   * Exige mídia, copy, progressão e compreensão coerentes com a evidência recebida antes do aceite.
    */
   static void validate(
       ObjectMapper json,
@@ -125,6 +124,10 @@ public class FinalVideoReviewInputs {
           if (item.path(criterion).asInt(-1) < 3 || item.path(criterion).asInt() > 5)
             throw new IllegalArgumentException("Critério audiovisual insuficiente: " + criterion);
       }
+    }
+    if (approved) {
+      PsiqueSensoryContract.requireVideoApprovalThreshold(
+          result.at("/behavioralResponse/sensoryExperience"));
     }
   }
 }

@@ -198,6 +198,9 @@ public class AgentTaskService {
   @Autowired(required = false)
   private CreativeFinalVideoEvidence creativeFinalVideoEvidence;
 
+  @Autowired(required = false)
+  private com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService audioReviews;
+
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
   public AgentTaskService(
@@ -3125,7 +3128,7 @@ public class AgentTaskService {
     }
   }
 
-  /** Conclui trabalho reservado ou confirma reenvio idêntico sem repetir efeitos e consumo. */
+  /** Conclui trabalho após o gate auditivo ou confirma replay sem repetir efeitos e consumo. */
   @Transactional
   public void completeClaimedProcessTask(
       String agentKey, Long taskId, CompleteAgentTaskRequest request) {
@@ -3139,6 +3142,7 @@ public class AgentTaskService {
         null,
         request.executionAudit())) return;
     requireClaimed(task);
+    if (audioReviews != null) audioReviews.validateCompletion(task, request.resultJson());
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());

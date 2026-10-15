@@ -31,6 +31,7 @@ public class CreativeFinalVideoEvidence {
     ObjectNode context =
         target.pdeContext() instanceof ObjectNode node ? node.deepCopy() : json.createObjectNode();
     context.set("finalVideoReview", inputs(target));
+    context.put("audioReviewRequired", !context.path("finalVideoReview").isEmpty());
     return new AgentTaskTargetResponse(
         target.sourceReference(),
         target.experimentId(),

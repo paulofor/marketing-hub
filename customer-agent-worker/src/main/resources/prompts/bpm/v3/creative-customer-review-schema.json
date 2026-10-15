@@ -486,7 +486,9 @@
           "proofLegibility",
           "visualProgression",
           "copyReview",
-          "narrativeReview"
+          "narrativeReview",
+          "audioReviewId",
+          "audioVisualSync"
         ],
         "properties": {
           "assetId": {
@@ -503,7 +505,8 @@
           "audioAssessment": {
             "type": "string",
             "enum": [
-              "NOT_LISTENED"
+              "NOT_LISTENED",
+              "LISTENED"
             ]
           },
           "evidence": {
@@ -888,6 +891,46 @@
                       "minLength": 1
                     }
                   }
+                }
+              }
+            }
+          },
+          "audioReviewId": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "audioVisualSync": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "audioMomentIndex",
+                "frameEvidenceId",
+                "status",
+                "reason"
+              ],
+              "properties": {
+                "audioMomentIndex": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "frameEvidenceId": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "ADJUST",
+                    "INCONCLUSIVE"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 15
                 }
               }
             }

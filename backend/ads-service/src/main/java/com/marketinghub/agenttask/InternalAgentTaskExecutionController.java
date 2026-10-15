@@ -16,6 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/internal/agent-tasks/{agentKey}/stage-executions")
 public class InternalAgentTaskExecutionController {
+  @Autowired
+  private com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService audioReviews;
+
   private final AgentTaskService service;
   private final AgentTaskVisualEvidenceService visualEvidenceService;
   private final AgentTaskOperatorGuidance operatorGuidance;
@@ -138,5 +141,35 @@ public class InternalAgentTaskExecutionController {
       @Valid @RequestBody FailAgentTaskRequest request) {
     service.failClaimedProcessTask(agentKey, taskId, request);
     return ResponseEntity.noContent().build();
+  }
+
+  /** Reserva e audita a ferramenta sonora antes de qualquer consumo externo. */
+  @PostMapping("/{taskId}/audio-reviews")
+  public com.marketinghub.agenttask.audioreview.v1.service.receipt.AudioReviewReceipt reserveAudio(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @RequestBody
+          com.marketinghub.agenttask.audioreview.v1.service.reserve.AudioReviewReserveRequest
+              request) {
+    return audioReviews.reserve(agentKey, taskId, request);
+  }
+
+  /** Persiste o retorno bruto e o consumo auditivo da chamada reservada. */
+  @PostMapping("/{taskId}/audio-reviews/{assetId}/result")
+  public com.marketinghub.agenttask.audioreview.v1.service.receipt.AudioReviewReceipt completeAudio(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @PathVariable Long assetId,
+      @RequestBody
+          com.marketinghub.agenttask.audioreview.v1.service.result.AudioReviewResultRequest
+              request) {
+    return audioReviews.complete(agentKey, taskId, assetId, request);
+  }
+
+  /** Recupera recibos auditivos sem provocar nova inferência. */
+  @GetMapping("/{taskId}/audio-reviews")
+  public List<com.marketinghub.agenttask.audioreview.v1.service.receipt.AudioReviewReceipt>
+      listAudio(@PathVariable String agentKey, @PathVariable Long taskId) {
+    return audioReviews.list(agentKey, taskId);
   }
 }

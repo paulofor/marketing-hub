@@ -34,6 +34,9 @@ public class CustomerBpmTaskConsumer {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private FinalVideoReviewInputs finalVideoReviewInputs;
 
+  @Autowired(required = false)
+  private FinalVideoAudioReview finalVideoAudioReview;
+
   private static final String AGENT_KEY = "customer-agent";
   private static final int RESULT_CALLBACK_ATTEMPT_LIMIT = 3;
   private static final String REQUESTED_SERVICE_TIER = "default";
@@ -163,7 +166,7 @@ public class CustomerBpmTaskConsumer {
   }
 
   /**
-   * Reserva em PLAY e avalia a atividade com prova original, prévia mobile e pesquisa rastreável.
+   * Reserva em PLAY e avalia prova visual e áudio auditado, recuperando callbacks sem nova escuta.
    */
   @Scheduled(fixedDelay = 60000)
   public synchronized void processOne() {
@@ -192,12 +195,20 @@ public class CustomerBpmTaskConsumer {
       visualEvidence = prepareVisualEvidence(task);
       task = withCaptureFacts(task, visualEvidence.bundle(), visualEvidence.uploaded());
       task = CreativeMobileReviewInputs.enrich(task, visualEvidence.uploaded());
+      if (json.valueToTree(task.get("taskTarget"))
+          .at("/pdeContext/audioReviewRequired")
+          .asBoolean()) {
+        if (finalVideoAudioReview == null)
+          throw new IllegalStateException("Ferramenta auditiva de Psique indisponível.");
+        task = finalVideoAudioReview.enrich(task, visualEvidence.directory());
+      }
       execution = execute(task, visualEvidence.uploaded());
       validateExecution(task, execution);
       enqueueDecision(task, execution);
     } catch (Exception ex) {
       log.error("Falha na atividade BPM de Psique. taskId={}", taskId(task), ex);
-      if (!callbackPreserved(taskId(task))) fail(task, ex, execution, visualEvidence);
+      if (!(ex instanceof FinalVideoAudioReview.CallbackPendingException)
+          && !callbackPreserved(taskId(task))) fail(task, ex, execution, visualEvidence);
     } finally {
       deleteVisualWorkDirectory(visualEvidence, taskId(task));
     }

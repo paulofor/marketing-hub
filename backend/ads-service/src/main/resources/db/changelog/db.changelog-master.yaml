@@ -2213,3 +2213,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-08-private-kit-value-flow-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-15-psique-audio-review-v1.yaml
+      relativeToChangelogFile: true

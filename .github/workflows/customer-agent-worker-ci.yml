@@ -258,8 +258,13 @@ jobs:
       - name: Start and validate tested worker
         run: |
           set -euo pipefail
-          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
-            install -d -o 10001 -g 10001 /opt/growth-operator/agents/customer-agent/codex-home \
+          read -r -a ssh_args <<< "$SSH_COMMON_ARGS"
+          # Caminhos e referência do pipeline precisam ser expandidos no cliente antes do SSH.
+          # shellcheck disable=SC2029
+          ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_IP}" "\
+            install -d -o 10001 -g 10001 /opt/growth-operator/agents/customer-agent/codex-home /opt/growth-operator/agents/customer-agent/secrets \
+            && test -s /root/infra/openai-token/openai_api_key \
+            && install -o 10001 -g 10001 -m 0400 /root/infra/openai-token/openai_api_key /opt/growth-operator/agents/customer-agent/secrets/openai_api_key \
             && \
             export BACKEND_URL=http://191.252.181.168 \
                    CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home \
@@ -285,6 +290,7 @@ jobs:
                    \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
                  if [ \"\${status}\" = running ] \
                    && docker exec customer-agent-worker-customer-agent-worker-1 sh -lc 'test -s /app/commercial-evidence/commercial-review-bundle-index-v1.json' \
+                   && docker exec customer-agent-worker-customer-agent-worker-1 sh -lc 'test -r /run/secrets/psique_openai_api_key && test -s /run/secrets/psique_openai_api_key' \
                    && docker exec customer-agent-worker-customer-agent-worker-1 node /app/agent-health-report.mjs \
                    && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then exit 0; fi; \
                  sleep 5; \

@@ -94,3 +94,6 @@ essas fontes também compõem atestações históricas de produtos. Os gatilhos 
 o CI existente já executa os testes de recursos e de detecção necessários. A validação local
 compartilhada de evidências passou (16 testes e pacote com 521 arquivos/114 manifestos), sem
 renovar pareceres ou modificar provas de produtos alheios ao pedido.
+O teste de coordenação por evento também monta um repositório temporário; sua fixture passou a
+incluir o leitor de recursos e o POM real que o detector agora usa. Os 21 testes desse consumidor
+passaram localmente, incluindo a retomada manual sem acesso externo.

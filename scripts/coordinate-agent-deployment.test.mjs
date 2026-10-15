@@ -399,12 +399,17 @@ test("detecção central recupera módulos pendentes em uma retomada manual", as
     for (const directory of ["scripts", "bin", "backend/ads-service", "frontend", "video-management-service"]) {
       await mkdir(path.join(fixture, directory), { recursive: true });
     }
-    for (const name of ["detect-deployment-changes.sh", "read-frontend-build-revision.sh"]) {
+    for (const name of ["detect-deployment-changes.sh", "read-frontend-build-revision.sh", "verify-backend-packaged-resources.py"]) {
       await writeFile(
         path.join(fixture, "scripts", name),
         await readFile(path.join(repositoryRoot, "scripts", name)),
       );
     }
+    // A fixture inclui a dependência real usada para classificar recursos dos agentes.
+    await writeFile(
+      path.join(fixture, "backend/ads-service/pom.xml"),
+      await readFile(path.join(repositoryRoot, "backend/ads-service/pom.xml")),
+    );
     await writeFile(path.join(fixture, "backend/ads-service/fixture.txt"), "base\n");
     await writeFile(path.join(fixture, "frontend/fixture.txt"), "base\n");
     await writeFile(path.join(fixture, "video-management-service/fixture.txt"), "base\n");

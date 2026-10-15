@@ -83,6 +83,10 @@ class CommunicationAgentCodexRunnerTest {
             "[FALA_FINAL]",
             "VIDEO_COPY_REVIEW_V1",
             "VIDEO_NARRATIVE_REVIEW_V1",
+            "VIDEO_SENSORY_COMPREHENSION_V1",
+            "FOCO DE ATENÇÃO",
+            "preserve leitura",
+            "pesquisa não comprova persuasão nem vendas",
             "informação ou sensação nova",
             "Não entregue só uma descrição");
     assertThat(prompt.fullPrompt())

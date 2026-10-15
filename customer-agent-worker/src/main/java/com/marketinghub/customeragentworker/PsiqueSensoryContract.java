@@ -72,6 +72,28 @@ final class PsiqueSensoryContract {
     }
   }
 
+  /** Confere coerência do aceite de vídeo com a compreensão e a carga já avaliadas por Psique. */
+  static void requireVideoApprovalThreshold(JsonNode experience) {
+    validate(experience);
+    boolean visual = false;
+    for (JsonNode modality : experience.path("availableModalities")) {
+      if ("VISUAL".equals(modality.asText())) visual = true;
+    }
+    if (!experience.path("evidenceAvailable").asBoolean() || !visual) {
+      throw new IllegalArgumentException("Aprovação de vídeo exige evidência sensorial visual.");
+    }
+    for (String criterion : java.util.List.of("processingFluency", "sensoryCongruence")) {
+      if (experience.path(criterion).asInt() < 3) {
+        throw new IllegalArgumentException(
+            "Parecer de vídeo aprovou com compreensão sensorial insuficiente: " + criterion);
+      }
+    }
+    if (experience.path("overloadRisk").asInt() > 2) {
+      throw new IllegalArgumentException(
+          "Parecer de vídeo aprovou com sobrecarga sensorial: overloadRisk");
+    }
+  }
+
   /** Confirma que uma nota inteira pertence à escala explícita de zero a cinco. */
   private static boolean score(JsonNode value) {
     return value.isIntegralNumber() && value.asInt() >= 0 && value.asInt() <= 5;

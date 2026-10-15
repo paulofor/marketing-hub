@@ -477,3 +477,24 @@ zero. Matriz e regressões: `docs/homologacao/video-customer-quality-v1.md`.
 Na mesma regressão, o harness de Psique foi corrigido para buscar quadros em Blob íntegro,
 confirmar o tempo efetivo e usar viewport mobile. O teste de pixels vermelho/azul impede
 reincidência de quadros fora do instante ou miniaturizados apesar da resolução declarada.
+
+## 2026-10-15 — Pesquisa audiovisual aplicada à compreensão
+
+- Pedido: ler o acervo de prazer audiovisual e melhorar a capacidade dos agentes de criar
+  comunicação persuasiva. A melhoria narrativa #5598 já estava integrada e publicada;
+  esta entrega a complementa, sem repetir vídeos ou tarefas históricas.
+- Evidência: 39 relatórios triados; quatro fontes primárias conferidas. Psique #731
+  registrou congruência 2 e ADJUST; #736 registrou fluidez/congruência 3, sobrecarga 2 e
+  APPROVED. Esses pareceres não comprovam aprovação histórica com sobrecarga alta.
+- Lacuna demonstrada localmente: o validador de vídeo permitia APPROVED com notas
+  sensoriais insuficientes ou sem evidência visual. Quatro regressões falharam antes da
+  implementação por ausência de recusa, mesmo com os demais contratos íntegros.
+- Mudança reutilizável `VIDEO_SENSORY_COMPREHENSION_V1`: Íris explicita foco, expectativa,
+  descoberta e leitura; Apolo coordena ação, fala e intenção sonora; Psique confronta
+  compreensão e sobrecarga no mesmo parecer. O aceite verifica os campos existentes,
+  sem novo agente, etapa, schema ou inferência. ADJUST/BLOCKED preservam diagnóstico.
+- Hipótese comercial: menos retrabalho por incompreensão e maior clareza do benefício.
+  Medir rejeições/tempo/custo até aceite; retenção, compras e contribuição exigem teste
+  de mercado posterior, com limite e autorização. Nenhum ganho comercial foi medido.
+- Matriz, fontes, limites e critério de reversão:
+  [prazer e compreensão v1](../homologacao/video-prazer-compreensao-v1.md).

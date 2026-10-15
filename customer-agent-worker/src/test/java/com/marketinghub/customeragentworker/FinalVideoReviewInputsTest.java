@@ -89,6 +89,50 @@ class FinalVideoReviewInputsTest {
         .hasMessageContaining("contrato de narrativa");
   }
 
+  /** Não compensa incompreensão ou sobrecarga com beleza, copy ou narrativa bem pontuadas. */
+  @ParameterizedTest
+  @ValueSource(strings = {"processingFluency", "sensoryCongruence", "overloadRisk"})
+  void refusesContradictorySensoryApprovalAcrossProducts(String criterion) throws Exception {
+    for (long id : new long[] {69, 910069}) {
+      var result = result(id);
+      var sensory = (ObjectNode) result.at("/behavioralResponse/sensoryExperience");
+      sensory.put(criterion, "overloadRisk".equals(criterion) ? 3 : 2);
+      assertThatThrownBy(() -> validate(task(id), result)).hasMessageContaining(criterion);
+      result.put("decision", "ADJUST");
+      assertThatCode(() -> validate(task(id), result)).doesNotThrowAnyException();
+      var replay = json.readTree(result.toString());
+      assertThatCode(() -> validate(task(id), replay)).doesNotThrowAnyException();
+      result.put("decision", "BLOCKED");
+      assertThatCode(() -> validate(task(id), result)).doesNotThrowAnyException();
+    }
+  }
+
+  /** Preserva o patamar sensorial histórico aceito, sem impor prazer máximo ou exigir pessoas. */
+  @Test
+  void preservesHistoricalSensoryBoundaryAndStaticReviews() {
+    var result = result(69);
+    var sensory = (ObjectNode) result.at("/behavioralResponse/sensoryExperience");
+    sensory.put("processingFluency", 3).put("sensoryCongruence", 3).put("overloadRisk", 2);
+    ((ObjectNode) sensory.path("pleasureByModality").get(0)).put("pleasureScore", 3);
+    assertThatCode(() -> validate(task(69), result)).doesNotThrowAnyException();
+    sensory.put("overloadRisk", 5);
+    assertThatCode(() -> validate(Map.of(), result)).doesNotThrowAnyException();
+  }
+
+  /** Aprovação exige modalidade visual comprovada, sem converter ausência em nota favorável. */
+  @Test
+  void refusesSensoryApprovalWithoutEvidence() {
+    var result = result(69);
+    var sensory = (ObjectNode) result.at("/behavioralResponse/sensoryExperience");
+    sensory.put("evidenceAvailable", false);
+    sensory.putArray("availableModalities");
+    sensory.putArray("pleasureByModality");
+    sensory.put("processingFluency", 0).put("sensoryCongruence", 0).put("overloadRisk", 0);
+    assertThatThrownBy(() -> validate(task(69), result)).hasMessageContaining("visual");
+    result.put("decision", "BLOCKED");
+    assertThatCode(() -> validate(task(69), result)).doesNotThrowAnyException();
+  }
+
   /** Monta uma entrada isolada de inspeção, sem autorização de mídia ou prova de mercado. */
   private Map<String, Object> task(long id) {
     return Map.of(
@@ -112,6 +156,22 @@ class FinalVideoReviewInputsTest {
   /** Produz um parecer simulado exclusivamente para testar a validação determinística. */
   private ObjectNode result(long id) {
     var result = json.createObjectNode().put("decision", "APPROVED");
+    var sensory = result.putObject("behavioralResponse").putObject("sensoryExperience");
+    sensory.put("evidenceAvailable", true);
+    sensory.putArray("availableModalities").add("VISUAL");
+    sensory
+        .putArray("pleasureByModality")
+        .addObject()
+        .put("modality", "VISUAL")
+        .put("pleasureScore", 4)
+        .put("evidence", "Fixture sintética: prova com hierarquia legível.");
+    sensory
+        .put("processingFluency", 3)
+        .put("sensoryCongruence", 3)
+        .put("overloadRisk", 2)
+        .put("embodiedAnticipation", "Hipótese de consultar o kit, sem cliente real.")
+        .put("dominantCue", "Prova central no frame da recompensa.")
+        .put("evidenceBoundary", "Frames e texto, sem audição ou continuidade comprovada.");
     var audit =
         result
             .putArray("videoAudit")

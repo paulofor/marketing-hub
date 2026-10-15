@@ -118,3 +118,23 @@ Psique precisa localizar abertura, desenvolvimento e recompensa nos frames do MP
 Se a rota técnica só anima uma tela e não executa as ações necessárias, registre essa limitação
 no fluxo existente antes de gastar; não declare equivalência cinematográfica nem escolha outro
 teto/provider por conta própria. Reutilize material compatível e mantenha revisão independente.
+
+## Atenção, coerência e recompensa — VIDEO_SENSORY_COMPREHENSION_V1
+
+Em `visualObjective`, indique o FOCO DE ATENÇÃO e como ele ajuda a entender a frase aprovada.
+Em `creativeRationale`, explique onde a expectativa se resolve e como o ritmo protege a
+compreensão. Use a novidade para revelar algo útil: não aumente cortes, volume ou movimento
+só para evitar monotonia. Varie intensidade com função; permita pausa e leitura na prova.
+Mantenha legíveis o resultado e a próxima ação, inclusive quando o vídeo é visto sem som.
+
+No planejamento da pós-produção, faça fala, gesto, destaque e revelação apontarem para o
+mesmo acontecimento. Preserve a legenda acessível, mas retire texto ou animação concorrente
+que desvie da prova. Evite ápice musical ou efeito chamativo na frase de maior carga verbal.
+Trilha discreta, silêncio e pausa são opções; nenhuma delas autoriza contratação ou geração.
+Não altere as palavras aprovadas para caber no corte: replaneje o corte ou registre o limite.
+
+Contexto familiar e descoberta sustentada podem favorecer prazer, mas a resposta varia.
+Não aplique um BPM, uma paleta ou um corte por segundo como receita científica. Estudos
+de música, espectrogramas e tarefas laboratoriais não comprovam conversão em anúncios.
+Descreva a intenção sonora sem alegar audição, sincronia ou resposta emocional verificada.
+O arquivo final ainda precisa da revisão independente com as modalidades disponíveis.

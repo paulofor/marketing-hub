@@ -61,6 +61,7 @@ class ApolloStoryboardPlannerTest {
             assertThat(request.at("/reasoning/effort").asText()).isEqualTo("max");
             assertThat(request.path("service_tier").asText()).isEqualTo("flex");
             assertThat(request.path("input").asText()).contains("VIDEO_NARRATIVE_REVIEW_V1", "informação nova", "expectativa → desenvolvimento → recompensa");
+            assertThat(request.path("input").asText()).contains("VIDEO_SENSORY_COMPREHENSION_V1", "FOCO DE ATENÇÃO", "pausa e leitura", "não comprovam conversão");
             var response = objectMapper.createObjectNode();
             response.putArray("output").addObject().putArray("content").addObject()
                     .put("type", "output_text").put("text", approvedPlan.toString());

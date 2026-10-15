@@ -604,3 +604,38 @@ comprovam audição, continuidade entre todos os frames ou sincronismo labial.
 Não criar agente, atividade, aprovação humana adicional ou regenerar produtos históricos por
 esta regra. Usar o fluxo e a recuperação existentes. Evidências, alternativas e matriz em
 `docs/homologacao/video-narrativa-referencias-v1.md`.
+
+## Prazer a serviço da compreensão — 15/10/2026
+
+A leitura de `pesquisas/prazer-audio-visual` complementa a narrativa já existente.
+Íris define uma situação reconhecível, expectativa e descoberta útil; Apolo coordena
+fala, imagem, ação, pausa e intenção sonora em torno de um foco por momento. A prova
+e o CTA recebem tempo de leitura, sem competir com textos, efeitos ou mudanças musicais
+gratuitas. Preservar legendas acessíveis, contexto familiar, continuidade e benefício
+comprovado. Novidade e intensidade não são objetivos isolados; não existe receita universal
+de cor, BPM ou corte, nem demonstração de dopamina ou aumento de vendas nesses ativos.
+
+`VIDEO_SENSORY_COMPREHENSION_V1` identifica essa orientação nos prompts operacionais.
+Reutilizar `[DIRECAO_VISUAL]`, `visualObjective`, `creativeRationale`, `sensoryExperience`
+e a revisão narrativa; não acrescentar agente, atividade, schema ou chamada de modelo.
+Cards DRAFT não são ativados por esta decisão. Fontes primárias, limites e matriz estão em
+[prazer e compreensão audiovisual](../homologacao/video-prazer-compreensao-v1.md).
+
+Nas **novas revisões finais de vídeo**, o aceite precisa ser coerente com as notas já
+emitidas por Psique: evidência VISUAL disponível, `processingFluency >=3`,
+`sensoryCongruence >=3` e `overloadRisk <=2`. Sobrecarga 3 significa competição que já
+prejudica compreender; 4 é grave e 5 intolerável. Os limiares são política editorial
+interna, não números derivados dos artigos. Não exigir prazer máximo nem compensar
+incompreensão com beleza. Em várias mídias, declarar o menor nível de fluidez/congruência
+e o maior risco observado, com identificação do trecho; não tirar média entre peças.
+
+ADJUST/BLOCKED preservam o diagnóstico. Um resultado contraditório segue a recuperação
+existente com payload e custos, sem nova inferência automática. Pareceres históricos e
+critérios das imagens sem vídeo permanecem preservados. Frames permitem avaliar pixels
+e relação com a transcrição, não audição, movimento contínuo ou sincronia musical.
+Sem áudio efetivamente inspecionado, manter NOT_LISTENED e registrar o limite.
+
+Medir primeiro recorrência de retrabalho por incompreensão e coerência do parecer.
+Retenção é sinal intermediário; adoção comercial depende de compras líquidas conciliadas,
+entrega, reembolsos, custo e contribuição em experimento posterior autorizado. Nenhum novo
+vídeo, gasto, campanha ou migração de ciclo é disparado por esta melhoria do harness.

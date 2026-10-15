@@ -484,7 +484,8 @@
           "clarity",
           "firstAction",
           "proofLegibility",
-          "visualProgression"
+          "visualProgression",
+          "copyReview"
         ],
         "properties": {
           "assetId": {
@@ -532,6 +533,202 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 5
+          },
+          "copyReview": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contractVersion",
+              "mode",
+              "recognition",
+              "humanConnection",
+              "benefit",
+              "simplicity",
+              "proofBridge",
+              "cta",
+              "paidContinuity"
+            ],
+            "properties": {
+              "contractVersion": {
+                "type": "string",
+                "enum": [
+                  "VIDEO_COPY_REVIEW_V1"
+                ]
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "PERSUASIVE",
+                  "DESCRIPTIVE",
+                  "UNVERIFIABLE"
+                ]
+              },
+              "recognition": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "humanConnection": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "benefit": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "simplicity": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "proofBridge": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "cta": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "paidContinuity": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "quote",
+                  "assessment",
+                  "applicable"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "applicable": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
           }
         }
       }

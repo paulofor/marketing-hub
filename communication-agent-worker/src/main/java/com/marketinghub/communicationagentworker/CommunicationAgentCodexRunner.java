@@ -382,7 +382,7 @@ public class CommunicationAgentCodexRunner {
     return String.join("; ", missing);
   }
 
-  /** Valida a materialização mínima específica de cada atividade. */
+  /** Valida a entrega de cada atividade, incluindo fala utilizável quando há briefing de vídeo. */
   private static void validateActivityOutput(
       JsonNode output, String outputType, Map<String, Object> task) {
     if ("COMMUNICATION_PACKAGE".equals(outputType)
@@ -393,6 +393,7 @@ public class CommunicationAgentCodexRunner {
     if ("COMMUNICATION_PACKAGE".equals(outputType)) {
       validateCommercialCoverage(output.path("messageStrategy").asText());
       validateInitialProductVersion(output, task);
+      AudiovisualBriefContract.validate(output.path("audiovisualBrief"));
     }
     if ("NON_AUDIOVISUAL_PACKAGE".equals(outputType)
         && (output.path("copy").path("headline").asText().isBlank()

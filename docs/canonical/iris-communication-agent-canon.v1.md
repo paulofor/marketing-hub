@@ -617,3 +617,12 @@ Não transformar `privateValidation` em autorização comercial nem remover font
 Peças históricas e seus pareceres continuam imutáveis. A próxima produção usa o contrato
 corrigido e requer seus próprios pareceres; sete regressões inicialmente falhas comprovam
 a mudança de comportamento, com outras identidades e template comercial preservados.
+
+## Roteiro comercial com identificação — 15/10/2026
+
+Íris entrega a fala audiovisual pronta, com situação reconhecível, desejo concreto, explicação
+simples, prova disponível e ação clara. Usa o campo `audiovisualBrief` existente com alternativas
+de abertura, fala final por papel, provas/limites e direção visual separados. Descrição de recursos
+não substitui copy: cada recurso deve explicar o ganho para a cliente, sem promessa inventada.
+Apolo preserva a mensagem e encena; Psique avalia também a persuasão da narração com citações reais.
+Contrato e critérios em [produção audiovisual](apollo-plutus-video-production-canon.v1.md#roteiro-persuasivo-antes-da-montagem--decisão-de-15102026).

@@ -59,11 +59,31 @@ class FinalVideoReviewInputsTest {
   /** O retorno exclusivo de vídeo requer inspeção e não pode coexistir com uma aprovação. */
   @Test
   void preservesCorrectionScopeWithoutInventingReview() {
-    var result = result(53); result.put("correctionScope", "FINAL_VIDEO");
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(53), result)).hasMessageContaining("escopo");
+    var result = result(53);
+    result.put("correctionScope", "FINAL_VIDEO");
+    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(53), result))
+        .hasMessageContaining("escopo");
     result.put("decision", "ADJUST");
-    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(53), result)).doesNotThrowAnyException();
-    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, Map.of(), result)).hasMessageContaining("inspecionados");
+    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(53), result))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, Map.of(), result))
+        .hasMessageContaining("inspecionados");
+  }
+
+  /** Reproduz o aceite apenas visual de Capella: novas revisões não podem omitir a copy. */
+  @Test
+  void refusesVisualOnlyReviewEvenWithHighScores() {
+    var result = result(69);
+    var item = (ObjectNode) result.path("videoAudit").get(0);
+    item.remove("copyReview");
+    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(69), result))
+        .hasMessageContaining("contrato de copy");
+    item.set("copyReview", VideoCopyReviewContractTest.review(json).put("mode", "DESCRIPTIVE"));
+    assertThatThrownBy(() -> FinalVideoReviewInputs.validate(json, task(69), result))
+        .hasMessageContaining("descritiva");
+    result.put("decision", "ADJUST");
+    assertThatCode(() -> FinalVideoReviewInputs.validate(json, task(69), result))
+        .doesNotThrowAnyException();
   }
 
   /** Monta uma entrada isolada de inspeção, sem autorização de mídia ou prova de mercado. */
@@ -74,7 +94,14 @@ class FinalVideoReviewInputsTest {
             "pdeContext",
             Map.of(
                 "finalVideoReview",
-                java.util.List.of(Map.of("assetId", id, "sha256", "a".repeat(64))))));
+                java.util.List.of(
+                    Map.of(
+                        "assetId",
+                        id,
+                        "sha256",
+                        "a".repeat(64),
+                        "narration",
+                        VideoCopyReviewContractTest.NARRATION)))));
   }
 
   /** Produz um parecer simulado exclusivamente para testar a validação determinística. */
@@ -95,6 +122,7 @@ class FinalVideoReviewInputsTest {
         java.util.List.of(
             "clarity", "desire", "firstAction", "proofLegibility", "visualProgression"))
       audit.put(key, 4);
+    audit.set("copyReview", VideoCopyReviewContractTest.review(json));
     return result;
   }
 }

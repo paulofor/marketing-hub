@@ -87,3 +87,15 @@ A abertura precisa dizer o que está à venda e para quem. No caso de um kit per
 a aplicação é meio de acesso e consulta, não licença de software ou serviço do negócio
 retratado na amostra. Encerre com CTA próprio do produto, distinto do CTA ilustrativo de
 uma peça do kit. Verifique frames de entrada e saída para não cortar textos essenciais.
+
+## Persuasão da fala e função de cada cena — VIDEO_COPY_REVIEW_V1
+
+O roteiro falado vem de Íris e do texto aprovado no projeto. Preserve suas palavras; não use
+metadados, instruções ou lista de funcionalidades como locução. Uma cena deve ajudar a pessoa
+a reconhecer uma situação, desejar um ganho, entender como acontece, conferir a prova ou agir.
+Associe o enquadramento a essa função; beleza e movimento sozinhos não tornam a mensagem convincente.
+Quando a fala for apenas descritiva, registre a necessidade de reescrita no fluxo existente antes
+de gastar com produção. Não invente uma oferta para compensar o problema. Mostre o benefício
+na ação real e reserve tempo para a pessoa compreendê-lo. Não acrescente urgência ou promessa
+sem fonte. A demonstração explica o motivo de usar e de continuar, não apenas onde clicar.
+A revisão de Psique deve avaliar o texto literal recebido, além da qualidade visual da mídia.

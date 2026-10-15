@@ -106,3 +106,43 @@ Uma aplicação digital deve ser reconhecível na abertura. Cenas de pessoas ou 
 podem sugerir que se vende cosmético quando a entrega é software. A primeira ação descrita
 deve corresponder à entrada real; a continuidade paga deve mostrar seu incremento concreto.
 Movimento deve conduzir contexto → ação → resultado, e não apenas decorar a narração.
+
+## Copy persuasiva, avaliada separadamente — VIDEO_COPY_REVIEW_V1
+
+Em cada `videoAudit`, preencha `copyReview` a partir de `finalVideoReview[].narration` da mesma
+mídia. Visual bonito não compensa texto frio. O parecer anterior de imagem ou de ritmo não
+comprova identificação nem desejo. Compare o feedback do operador também com as palavras.
+
+Use `mode=PERSUASIVE` somente quando a fala estabelecer situação/desejo, benefício compreensível,
+mecanismo/prova e próximo passo como conversa. `DESCRIPTIVE` indica catálogo de funções,
+especificações ou instruções sem conectar o ganho à vida da pessoa; `UNVERIFIABLE` indica
+narração ausente ou sem evidência. DESCRIPTIVE exige ADJUST; UNVERIFIABLE exige BLOCKED ou ADJUST.
+Não dê nota pelo uso de “você”, interrogação, adjetivo ou gatilho isolado. Não exija rosto,
+testemunho, medo ou urgência para criar conexão. Copy clara pode ser declarativa e respeitosa.
+
+Avalie 0–5 cada dimensão com `score`, `quote` literal e `assessment` explicando o efeito:
+- `recognition`: momento concreto em que o público se reconhece, além do nome do produto;
+- `humanConnection`: conversa próxima e respeitosa com a pessoa, sem voz corporativa fria;
+- `benefit`: ganho desejado explicado, sem se limitar à lista do que o produto contém;
+- `simplicity`: mensagem direta, palavras comuns, poucas ideias por frase, sem jargão;
+- `proofBridge`: fala conecta o ganho à prova real recebida, sem resultado fabricado;
+- `cta`: uma próxima ação compreensível e compatível com o destino, além de “saiba mais” vazio;
+- `paidContinuity`: quando aplicável, por que pagar/continuar com base na entrega real.
+  Um anúncio curto pode apenas convidar à prova; use `applicable=false`, `score=0`, `quote=""`
+  e justifique quando o incremento pago não pertence ao papel da peça. Não dispense esse critério
+  numa demonstração que oferece continuidade paga sem explicar seu valor.
+
+Âncoras: 0=ausente/sem fonte; 1=contraditório; 2=genérico ou apenas descritivo;
+3=claro e concreto; 4=conectado à situação e sustentado pela prova; 5=especialmente simples,
+específico e coerente. Nota >=3 exige citação não vazia que exista literalmente na narração.
+Não escreva uma frase melhor em `quote` para aprovar o texto recebido. Quando falta o elemento,
+use quote vazia e nota baixa, com motivo. Sugestões de reescrita ficam em `requiredChanges`.
+Todos os critérios aplicáveis precisam de pelo menos 3 para APPROVED; não compense déficit de
+copy com escore visual alto. Preserve a separação entre persuasão avaliada, audição não realizada
+e conversão comercial desconhecida. Uma citação correta comprova a fonte, não que a copy vende.
+
+Contraste observado: “Arte e texto combinam. Copie a legenda. Baixe seus arquivos” pode ser
+funcional e ainda exigir ADJUST por enumerar comandos. Procure por que esses passos importam
+para quem deseja divulgar o próprio trabalho. “Organiza informações, com fontes e limites”
+precisa tornar o ganho cotidiano compreensível. Não copie essas frases entre produtos nem
+transforme os exemplos em veto automático: avalie o contexto completo e registre a evidência.

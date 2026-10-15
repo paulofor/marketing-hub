@@ -10054,3 +10054,19 @@ conecta produtor/adaptador/consumidor reais na regressão, com Capella e outra
 identidade, fase anterior válida e recusas por contexto/gate inválidos. Nenhum
 registro aprovado é reescrito; captura e áudio permanecem reutilizáveis.
 Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
+
+## LOOP-VIDEO-APROVA-VISUAL-E-IGNORA-COPY — 15/10/2026
+
+- Evidência: projetos Mira #10/#13 e Capella #11/#12 preservam falas descritivas; parecer
+  Psique #736 aprovou #69/#71 pelos critérios visuais. O operador rejeitou roteiro frio,
+  pouco simples e sem conexão. #731 confirma que a revisão anterior corrigiu a imagem/ação,
+  preservando a narração; não houve comprovação de melhora comercial.
+- Causa: briefing aceitava descrição sem fala pronta; revisão estruturada exigia visual,
+  clareza e prova, mas nenhuma avaliação textual com citações da narração.
+- Correção: Íris entrega fala separada de produção e três alternativas de abertura; Apolo
+  preserva e encena; Psique usa `VIDEO_COPY_REVIEW_V1`, sem aprovar DESCRIPTIVE, critério
+  insuficiente ou citação ausente/inventada. Sem novo agente, atividade ou orçamento.
+- Prevenção: validadores e testes reais de composição do prompt, completude, citações,
+  ajuste, identidade e recuperação. Fixtures simuladas não comprovam conversão ou aprendizado
+  comercial. Registros antigos não são reescritos. Nova mídia conserva revisão independente.
+- Matriz, limites e resultados: `docs/homologacao/video-copy-persuasiva-v1.md`.

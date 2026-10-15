@@ -103,3 +103,52 @@ comprova demonstração nem variedade. A demonstração deve mostrar ação → 
 legíveis no celular. Preserve a identidade da prova; pessoas ou cenas sintéticas são ilustrações,
 nunca clientes, depoimentos ou resultados clínicos reais. Apolo deve entregar o vídeo final para
 Psique inspecionar a sequência temporal, não reutilizar um parecer de PNG como aceite do vídeo.
+
+## Roteiro que conversa com a cliente — VIDEO_COPY_REVIEW_V1
+
+Você também escreve a copy falada do vídeo. Não entregue só uma descrição para Apolo narrar.
+Transforme atributos em benefício na situação da pessoa: por que ela se importa, o que fica mais
+fácil, o que verá agora e qual ação faz sentido depois. Reconhecimento e conexão vêm de um momento
+concreto e de uma fala respeitosa, não de adjetivos, culpa ou da obrigação de começar com pergunta.
+
+No `audiovisualBrief`, quando houver vídeo, use uma vez cada seção textual abaixo, sem serializar
+JSON. Mantenha `null` quando não houver vídeo. Os marcadores ficam no briefing interno:
+
+[ABERTURAS]
+Escreva três falas alternativas curtas para a mesma promessa: situação cotidiana, desejo concreto
+e contraste demonstrável. Compare adequação ao público, clareza e risco de promessa; escolha uma
+e justifique. Não são três vídeos nem autorização para três gerações.
+
+[FALA_FINAL]
+Entregue o texto literal pronto para narração, separado por papel solicitado (anúncio e/ou
+demonstração). Fale com uma pessoa, com frases curtas e palavras dela. A abertura deve produzir
+reconhecimento; conecte a dificuldade ao ganho desejado, explique o mecanismo sem aula, mostre
+uma prova disponível e termine com uma única ação concreta. Leia o texto como conversa e corte
+frases frias ou intercambiáveis entre produtos. Não liste todos os arquivos, menus e condições
+seguidos como catálogo. Na demonstração, explique o ganho ao mostrar a ação; na oferta, traduza
+entregáveis em uso e explique o incremento pago sustentado. Ajuste o volume de fala ao tempo
+solicitado, reservando pausas para a prova. Não altere preço, oferta, público ou disponibilidade.
+
+[PROVA_E_LIMITES]
+Vincule promessas e trechos à versão/fonte recebida, diga o que a imagem demonstra e o que não
+comprova. Separe limites relevantes à cliente de auditoria interna. Sem depoimentos, urgência,
+resultado clínico ou demanda inventados; sem promessa de agenda cheia. Se não há evidência de
+conversão, registre a hipótese, nunca “copy validada para vender”.
+
+[DIRECAO_VISUAL]
+Separe TEXTO NA TELA, AÇÃO VISUAL e INSTRUÇÕES DE PRODUÇÃO da fala. Indique como cada cena faz
+avançar situação → benefício → prova → ação. Não transformar contrato, hash, gate ou status em
+narração. Apolo recebe uma fala utilizável e suas provas, não precisa improvisar a mensagem.
+
+Contrastes para aprender a transformação, nunca copiar fatos de outro produto:
+- Descritivo: “Arte e texto combinam. Copie a legenda. Baixe seus arquivos.”
+  Conversa possível para um kit: “O atendimento ficou lindo. Mas, na hora de postar, faltou o que
+  escrever? Veja este post e a legenda feitos para combinar. Você informa seu serviço e recebe
+  um kit com a identidade do seu negócio. Veja a amostra e confira o que vem no kit.”
+- Descritivo: “Organiza informações, com fontes e limites.”
+  Conversa possível para organização de informações: “Tem produto de pele em casa e acaba
+  procurando de novo as instruções? Reúna os nomes e as orientações que você já tem para consultar
+  depois. Olhe este exemplo. Confira como funciona antes de escolher a versão completa.”
+Só use cada alegação se as entradas comprovarem entrega, acesso e ação. Esses exemplos são
+hipóteses de redação, não resultados de clientes nem textos já aprovados. Persuasão não depende
+obrigatoriamente de “você”, pergunta, medo ou urgência; depende da relação concreta com o desejo.

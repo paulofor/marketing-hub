@@ -548,3 +548,37 @@ destino exatos, produto, versão, gate e URL já validados. A captura complement
 ainda exige seu resultado técnico, finalidade, hash e tenant corretos. Os testes
 devem ligar produtor, adaptador e consumidor reais; simular a autorização no
 consumidor isolado não comprova a passagem entre agentes.
+
+## Roteiro persuasivo antes da montagem — decisão de 15/10/2026
+
+A cliente pediu linguagem simples, direta, humana e capaz de criar identificação e desejo.
+Beleza das imagens, enumeração de funcionalidades e conformidade técnica não bastam para aprovar
+comunicação. A produção reutiliza os responsáveis existentes: Íris escreve a fala comercial,
+Apolo a encena e Psique revisa independentemente o texto e o arquivo final. Não se cria outro
+agente nem uma nova atividade para corrigir essa lacuna.
+
+Íris deve entregar no briefing uma fala pronta para cada papel solicitado, separada das instruções
+visuais: situação reconhecível → desejo/benefício concreto → mecanismo simples → prova disponível
+→ próximo passo. Comparar três aberturas dentro da mesma resposta, escolher com justificativa e
+reescrever frases que apenas listem recursos. A demonstração deve explicar por que a ação importa,
+sem virar leitura de menus ou catálogo. Anúncio e demonstração têm extensões e funções diferentes;
+não é obrigatório recitar toda a oferta num anúncio curto. Condições relevantes continuam claras
+no destino e na demonstração, sem esconder preço, limitações ou esforço real.
+
+O briefing usa as seções textuais `[ABERTURAS]`, `[FALA_FINAL]`, `[PROVA_E_LIMITES]` e
+`[DIRECAO_VISUAL]` no campo existente `audiovisualBrief`, sem JSON dentro de texto. A ausência de
+fala final impede entregar uma especificação como roteiro pronto. Os marcadores não integram
+narração/legenda. A validação estrutural comprova completude, não poder persuasivo.
+
+Psique registra `VIDEO_COPY_REVIEW_V1` em cada item de `videoAudit`, citando literalmente a
+narração recebida. Avalia identificação, conexão humana, benefício, simplicidade, ligação com a
+prova, CTA e motivo da continuidade paga quando aplicável. Uma lista descritiva, texto sem fonte,
+critério insuficiente ou citação inventada não pode receber APPROVED por causa de imagens bonitas.
+ADJUST indica trecho, problema e correção observável. Transcrição não comprova escuta. Pareceres
+históricos permanecem históricos; nova edição precisa de nova revisão e seleção da mesma mídia.
+
+Não se inventam resultados, urgência, depoimentos, cura ou garantias de venda. Conversa direta não
+significa explorar insegurança. Escrita e revisão preservam estratégia, evidências, orçamento e
+papel dos agentes. Mudança de fala invalida recuperação de áudio incompatível; não gera voz paga,
+revisão nova ou campanha sem saldo e autorização. Aprendizado e matriz local:
+[roteiro persuasivo v1](../homologacao/video-copy-persuasiva-v1.md).

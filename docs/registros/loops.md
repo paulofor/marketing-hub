@@ -10070,3 +10070,18 @@ Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
   ajuste, identidade e recuperação. Fixtures simuladas não comprovam conversão ou aprendizado
   comercial. Registros antigos não são reescritos. Nova mídia conserva revisão independente.
 - Matriz, limites e resultados: `docs/homologacao/video-copy-persuasiva-v1.md`.
+
+## LOOP-VIDEO-NOTA-DE-RITMO-SEM-NARRATIVA — 15/10/2026
+
+- Evidência: arquivos #1/#2/#3, hashes conferidos novamente, análises #4/#5/#6 preservadas e
+  feedback do operador. A progressão é missão/revelação, guia/descoberta ou aproximação/recompensa;
+  corte rápido não explica sozinho a dinâmica. O terceiro exemplo sustenta ação em planos longos.
+- Lacuna confirmada: a nova revisão textual estava publicada, mas `visualProgression` ainda
+  aceitava nota alta sem localizar abertura, desenvolvimento e recompensa em frames recebidos.
+- Correção: Íris explicita a informação nova por momento; Apolo encena e liga as ações; Psique
+  usa `VIDEO_NARRATIVE_REVIEW_V1`, com momentos vinculados aos IDs reais e ao hash/tempo da mídia.
+  Diagnóstico decorativo, fonte alheia ou insuficiência não aprovam. Sem agente ou fila adicional.
+- Prevenção: regressões com outra identidade, frame inventado, hash trocado, ordem, duração,
+  repetição, recuperação e revisão estática preservada. Casos sintéticos não comprovam qualidade
+  artística, audição ou conversão. História e custos permanecem intactos.
+- Evidências, alternativas, matriz e limites: `docs/homologacao/video-narrativa-referencias-v1.md`.

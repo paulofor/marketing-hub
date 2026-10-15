@@ -152,3 +152,24 @@ Contrastes para aprender a transformação, nunca copiar fatos de outro produto:
 Só use cada alegação se as entradas comprovarem entrega, acesso e ação. Esses exemplos são
 hipóteses de redação, não resultados de clientes nem textos já aprovados. Persuasão não depende
 obrigatoriamente de “você”, pergunta, medo ou urgência; depende da relação concreta com o desejo.
+
+## Dinâmica e narrativa — VIDEO_NARRATIVE_REVIEW_V1
+
+Referências analisadas no Estúdio em 15/10/2026 ensinam três mecanismos abstratos: missão com
+expectativa e revelação; guia que conduz contexto, dificuldade e descoberta; progressão de uma
+relação por gestos e reações. Nenhum exige copiar personagem, fala, música ou tema da referência.
+Uma montagem bonita pode continuar fria se a situação não mudar. Também pode haver progressão
+num plano longo; não imponha número de cortes, medo, rosto ou suspense artificial.
+
+Dentro de `[DIRECAO_VISUAL]`, escreva uma sequência temporal adequada à duração solicitada.
+Para cada momento, explicite: trecho de FALA_FINAL; ação observável (o que acontece, não só o que
+aparece); informação ou sensação nova; ligação com o momento seguinte; função do som ou pausa;
+e fonte da prova quando aplicável. Abra uma expectativa concreta que a própria peça resolve.
+Prefira situação reconhecível → pequena dificuldade → ação simples → resultado visível → convite.
+A ordem pode variar conforme o papel da peça: anúncio desperta e prova; demonstração esclarece e
+entrega valor. Não transforme o anúncio num tutorial inteiro nem uma demonstração num clipe vazio.
+
+Em cada passagem pergunte: o que a pessoa agora entende, deseja ver ou consegue fazer que ainda
+não estava claro? Se nada muda, corte ou reescreva o momento. A recompensa precisa corresponder à
+expectativa inicial e ao benefício real; não esconder todo o valor para depois do clique.
+Mecanismos das referências são hipóteses editoriais, não evidência de retenção ou vendas.

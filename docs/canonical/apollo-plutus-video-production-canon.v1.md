@@ -582,3 +582,25 @@ significa explorar insegurança. Escrita e revisão preservam estratégia, evid�
 papel dos agentes. Mudança de fala invalida recuperação de áudio incompatível; não gera voz paga,
 revisão nova ou campanha sem saldo e autorização. Aprendizado e matriz local:
 [roteiro persuasivo v1](../homologacao/video-copy-persuasiva-v1.md).
+
+## Progressão narrativa verificável — decisão de 15/10/2026
+
+As referências do Estúdio orientam mecanismos, não a cópia de roteiro, pessoa, música ou
+promessa. Íris escreve a expectativa inicial, o desenvolvimento e a recompensa sustentada pelo
+produto; Apolo encena a progressão com ação, reação, variação de escala e continuidade, sem
+substituir história por zoom, transição ou contagem de cortes. Plano longo com ação pode funcionar.
+A duração e o esforço devem caber no papel da peça e no teto vigente; aprender uma técnica não
+concede autorização de produção. Para conversão, a recompensa conecta-se à prova e à próxima ação
+real, sem adiar todo o benefício para outro vídeo.
+
+Em novas revisões finais, Psique entrega `VIDEO_NARRATIVE_REVIEW_V1` em `videoAudit[].narrativeReview`:
+expectativa, causalidade, recompensa, ligação com o produto e ritmo avaliados separadamente;
+três momentos (abertura, desenvolvimento e recompensa) vinculados a IDs de frames efetivamente
+recebidos da mesma mídia/hash, em ordem temporal. Modo `DECORATIVE` ou `UNVERIFIABLE` não aprova.
+Uma falha de evidência permite diagnóstico e ajuste, sem fabricação de frames ou repetição paga.
+Os scores são pareceres editoriais, não prova de retenção, preferência ou venda. Capturas não
+comprovam audição, continuidade entre todos os frames ou sincronismo labial.
+
+Não criar agente, atividade, aprovação humana adicional ou regenerar produtos históricos por
+esta regra. Usar o fluxo e a recuperação existentes. Evidências, alternativas e matriz em
+`docs/homologacao/video-narrativa-referencias-v1.md`.

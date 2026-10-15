@@ -74,9 +74,14 @@ public class FinalVideoReviewInputs {
   }
 
   /**
-   * Exige parecer da mídia exata e da copy recebida, sem substituir persuasão por aprovação visual.
+   * Exige mídia, copy e progressão apoiadas nos frames recebidos, sem substituir narrativa por
+   * estética.
    */
-  static void validate(ObjectMapper json, Map<String, Object> task, JsonNode result) {
+  static void validate(
+      ObjectMapper json,
+      Map<String, Object> task,
+      JsonNode result,
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> evidence) {
     JsonNode inputs = inputs(json, task);
     String scope = result.path("correctionScope").asText();
     boolean approved = "APPROVED".equals(result.path("decision").asText());
@@ -110,6 +115,8 @@ public class FinalVideoReviewInputs {
         throw new IllegalArgumentException(
             "Parecer audiovisual sem identidade, evidência ou limite de áudio correto.");
       VideoCopyReviewContract.validate(media, item.path("copyReview"), approved);
+      VideoNarrativeReviewContract.validate(
+          media, item.path("narrativeReview"), approved, evidence);
       if ("APPROVED".equals(result.path("decision").asText())) {
         if (item.path("criticalDeficit").asBoolean(true))
           throw new IllegalArgumentException("Déficit audiovisual crítico impede aprovação.");

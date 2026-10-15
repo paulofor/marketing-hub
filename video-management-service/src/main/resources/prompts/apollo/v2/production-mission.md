@@ -65,3 +65,14 @@ catálogo. Uma edição de fala exige narração/legenda compatíveis e novas re
 recupere áudio apenas quando as palavras preservadas realmente coincidirem. Psique precisa
 avaliar a narração real por `VIDEO_COPY_REVIEW_V1`, além dos frames finais. Não consuma nova voz,
 não eleve teto e não atribua aprovação ao próprio roteiro.
+
+## Progressão verificável — VIDEO_NARRATIVE_REVIEW_V1
+
+Execute a expectativa, o desenvolvimento e a recompensa definidos na direção de Íris. Cada
+momento precisa de ação ou informação nova e conexão com o seguinte; zoom, transição e uma
+imagem bonita não bastam. Preserve identidade, gesto, objeto e luz; faça a prova responder à
+expectativa e conduzir ao CTA. Uma cena longa pode funcionar quando a ação progride. Não copie
+material, voz ou personagens das referências nem imponha um número universal de cortes.
+Entregue o MP4 final para Psique citar os frames da abertura, desenvolvimento e recompensa.
+Se a capacidade da rota não permite a ação planejada, registre a lacuna antes do render pago;
+não converta silenciosamente a narrativa em slideshow nem atribua qualidade não demonstrada.

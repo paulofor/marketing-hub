@@ -626,3 +626,13 @@ de abertura, fala final por papel, provas/limites e direção visual separados. 
 não substitui copy: cada recurso deve explicar o ganho para a cliente, sem promessa inventada.
 Apolo preserva a mensagem e encena; Psique avalia também a persuasão da narração com citações reais.
 Contrato e critérios em [produção audiovisual](apollo-plutus-video-production-canon.v1.md#roteiro-persuasivo-antes-da-montagem--decisão-de-15102026).
+
+## Direção narrativa a partir de referências — 15/10/2026
+
+O briefing audiovisual deve tornar explícitos a expectativa da abertura, a mudança concreta
+em cada momento e a recompensa final ligada à prova do produto. Usar a seção existente
+`[DIRECAO_VISUAL]` para uma sequência temporal com fala, ação visível, nova informação, ponte
+para a cena seguinte e função do som/pausa. Não transferir roteiro, identidade, música ou
+alegações da referência. Não exigir drama, medo, rosto ou cortes rápidos em toda peça.
+Apolo preserva a fala aprovada e Psique revisa a mídia final pelo contrato narrativo descrito
+em `apollo-plutus-video-production-canon.v1.md`. Aprendizado editorial não comprova vendas.

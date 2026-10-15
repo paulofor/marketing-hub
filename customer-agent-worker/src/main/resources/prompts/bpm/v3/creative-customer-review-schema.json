@@ -485,7 +485,8 @@
           "firstAction",
           "proofLegibility",
           "visualProgression",
-          "copyReview"
+          "copyReview",
+          "narrativeReview"
         ],
         "properties": {
           "assetId": {
@@ -725,6 +726,167 @@
                   },
                   "applicable": {
                     "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "narrativeReview": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contractVersion",
+              "mode",
+              "expectation",
+              "causalProgression",
+              "payoff",
+              "productBridge",
+              "pacing",
+              "moments"
+            ],
+            "properties": {
+              "contractVersion": {
+                "type": "string",
+                "enum": [
+                  "VIDEO_NARRATIVE_REVIEW_V1"
+                ]
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "PROGRESSION",
+                  "DECORATIVE",
+                  "UNVERIFIABLE"
+                ]
+              },
+              "expectation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "causalProgression": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "payoff": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "productBridge": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "pacing": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "score",
+                  "assessment"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "assessment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "moments": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "role",
+                    "evidenceId",
+                    "visibleAction",
+                    "newInformation"
+                  ],
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "OPENING",
+                        "DEVELOPMENT",
+                        "PAYOFF"
+                      ]
+                    },
+                    "evidenceId": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "visibleAction": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "newInformation": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   }
                 }
               }

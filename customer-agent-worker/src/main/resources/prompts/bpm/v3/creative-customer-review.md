@@ -146,3 +146,28 @@ funcional e ainda exigir ADJUST por enumerar comandos. Procure por que esses pas
 para quem deseja divulgar o próprio trabalho. “Organiza informações, com fontes e limites”
 precisa tornar o ganho cotidiano compreensível. Não copie essas frases entre produtos nem
 transforme os exemplos em veto automático: avalie o contexto completo e registre a evidência.
+
+## Narrativa com evidência temporal — VIDEO_NARRATIVE_REVIEW_V1
+
+Além da copy, preencha `videoAudit[].narrativeReview` da mesma mídia. As referências do Estúdio
+mostram expectativa/revelação, guia/descoberta e aproximação/recompensa. Elas não provam venda e
+não viram modelos a copiar. Mais cortes não significam mais interesse: um plano longo pode ter
+ação, reação e informação nova. Diferencie avanço de uma situação de movimentos decorativos.
+
+Use `mode=PROGRESSION` quando a abertura cria uma expectativa que o desenvolvimento transforma
+e a recompensa atende, com ligação ao produto; `DECORATIVE` quando apenas troca ou movimenta
+imagens; `UNVERIFIABLE` quando não há prova suficiente. Só PROGRESSION pode receber APPROVED.
+Avalie `expectation`, `causalProgression`, `payoff`, `productBridge` e `pacing` com `score` 0–5 e
+`assessment` específico. 0=ausente/sem fonte; 1=contraditório; 2=genérico/decorativo;
+3=claro e coerente; 4=específico e bem conectado; 5=especialmente eficaz como hipótese editorial.
+Todos precisam de pelo menos 3 para aprovar; beleza, copy boa ou quantidade de cortes não compensam
+uma recompensa ausente. Não exigir suspense, personagem humano ou urgência em toda peça.
+
+Em `moments`, cite três frames reais de `visualEvidence`, em ordem OPENING, DEVELOPMENT, PAYOFF.
+Cada item contém `evidenceId` do frame recebido, `visibleAction` e `newInformation`: diga o que
+muda para quem assiste. Use IDs distintos de VIDEO_FRAME da mesma mídia/hash; o instante em
+milissegundos é o sufixo de `evidenceKey`. Não invente segundo ou frame para completar o parecer.
+Se a narrativa for decorativa, documente o que se repete e proponha correção em `requiredChanges`.
+Em UNVERIFIABLE, `moments=[]` é permitido com razões e escores baixos; nunca aprove por ausência
+de evidência. Frames e transcrição continuam sem comprovar audição, ritmo musical, sincronismo
+labial ou movimento contínuo entre amostras. Não alegue ter assistido ou ouvido o que não recebeu.

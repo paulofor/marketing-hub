@@ -10196,3 +10196,21 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   A projeção inclui o parecer criativo na última entrega e no tempo de espera.
 - Limite: seleção privada não libera campanha, consumo ou homologação comercial. Evidências em
   `docs/homologacao/capella-retomada-psique-v1.md`.
+
+### Complemento — seleção integrada no gate de liberação — 16/10/2026
+
+- Após o aceite humano de #76/#75, o evento #77 integrou as mídias no ciclo #12.
+  A homologação #745 aprovou nove cenários, mas `/api/experiments/105/readiness`
+  ainda retornou `VIDEO_ASSET`: os doze ativos anteriores continuavam obrigatórios.
+- Causa confirmada no banco e no código: a integração resolvia as peças atuais,
+  enquanto a liberação consultava todos os registros históricos com
+  `required_for_release=true`, sem consumir o recibo canônico da seleção.
+- Correção: a política de liberação revalida o recibo vigente e exige as mídias
+  exatas de anúncio e demonstração, preservando os requisitos dos demais slots.
+  Sem recibo, mantém a regra anterior. Recibo alterado ou inacessível bloqueia.
+  Nenhuma rejeição, custo, arquivo ou flag histórica é apagada ou reescrita.
+- Regressões: caso original, outra identidade, mídia ausente/cruzada/alterada,
+  aprovação revogada, slot adicional obrigatório, falha de revalidação e caminho
+  legado. A correção trata apenas o requisito audiovisual, sem conceder gates
+  financeiros, página, checkout, publicação ou campanha.
+- Matriz e limites: `docs/homologacao/capella-videos-selecao-liberacao-v1.md`.

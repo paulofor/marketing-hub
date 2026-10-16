@@ -674,3 +674,15 @@ não amplia limite e não substitui a autorização comercial. Não alterar camp
 Regressões conectam parecer, fonte atual, criação da montagem e recuperação real de cinco
 segmentos em duas identidades, além dos caminhos anteriores de falha e rejeição humana.
 Registro: [revisão sonora e retomada](../homologacao/capella-revisao-audio-tempos-v1.md).
+
+## Seleção integrada e prontidão comercial — 16/10/2026
+
+Quando existir recibo canônico vigente de integração no ciclo, o requisito audiovisual
+de liberação deve consumir os mesmos IDs, papéis e arquivos selecionados e aprovados.
+Versões anteriores de AD e LANDING_HERO continuam históricas, com rejeições, custos e
+flags preservados; não são exigidas simultaneamente com os substitutos integrados.
+Não selecionar por data nem dispensar slots adicionais obrigatórios. Sem recibo,
+preservar a política anterior; alteração ou falha de revalidação mantém o bloqueio.
+
+Essa correção de consistência não aprova página, checkout, economia, publicação ou
+campanha. Testes e evidências: [seleção e liberação](../homologacao/capella-videos-selecao-liberacao-v1.md).

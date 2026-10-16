@@ -10151,3 +10151,11 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   mantendo seleção PENDING e experimento fora de operação. Testes integrados de
   `SalesVideoJobServiceTest` recuperam a voz em duas identidades sem inventar decisão humana;
   revisões aprovadas, outra mídia e campanhas em execução não recebem essa permissão.
+- **Recuperação parcial:** #740 recebeu escuta válida da demonstração #75, mas o provedor
+  respondeu uma recusa genérica para #74. Ambos os custos foram preservados. A retomada
+  existente cria outra tarefa e repetiria também a escuta válida, pois a reserva buscava
+  somente taskId. Agora a identidade completa permite reutilização entre tarefas do mesmo
+  contexto, sem duplicar o ledger. Recusa é distinguida de custo incerto e nunca vira PASS.
+  A causa interna da recusa não foi informada pelo provedor: não atribuí-la ao roteiro ou
+  mudar prompts por hipótese. Testes de serviço e HTTP local verificam duas identidades,
+  request alterado, contexto incompatível, custo desconhecido e ausência de nova chamada.

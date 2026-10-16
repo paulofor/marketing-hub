@@ -47,6 +47,103 @@ class AgentAudioReviewServiceTest {
   private LearningSalesCycle cycle;
   private final Map<Long, AgentAudioReview> saved = new HashMap<>();
 
+  /** Uma nova tarefa reutiliza a escuta exata, sem duplicar reserva, resposta ou custo. */
+  @ParameterizedTest
+  @ValueSource(longs = {9005, 93005})
+  void reusesExactCompletedReceiptAcrossTasks(long productId) throws Exception {
+    var input = prepare(productId);
+    var source = new AgentAudioReview();
+    source.setId(8800L);
+    source.setTaskId(8801L);
+    source.setProductId(productId);
+    source.setExperimentId(9002L);
+    source.setAssetId(9003L);
+    source.setVideoSha256(input.videoSha256());
+    source.setAudioSha256(input.audioSha256());
+    source.setStatus("COMPLETED");
+    source.setEstimatedUsd(new BigDecimal("0.03"));
+    source.setResultJson(AudioReviewContractTest.assessment(json).toString());
+    String requestHash =
+        AudioReviewContract.hash(
+            input.request().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    when(reviews
+            .findFirstByProductIdAndExperimentIdAndAssetIdAndVideoSha256AndAudioSha256AndRequestHashAndStatusAndEstimatedUsdIsNotNullOrderByIdDesc(
+                productId,
+                9002L,
+                9003L,
+                input.videoSha256(),
+                input.audioSha256(),
+                requestHash,
+                "COMPLETED"))
+        .thenReturn(Optional.of(source));
+    var reused = service.reserve("customer-agent", 9001, input);
+    assertThat(reused.id()).isEqualTo(8800L);
+    assertThat(reused.mayInvoke()).isFalse();
+    verify(reviews, never()).saveAndFlush(any());
+    verify(ledger, never()).saveAndFlush(any());
+    when(reviews.findById(8800L)).thenReturn(Optional.of(source));
+    String result =
+        "{\"decision\":\"APPROVED\",\"videoAudit\":[{\"assetId\":9003,\"sha256\":\""
+            + input.videoSha256()
+            + "\",\"audioReviewId\":8800,\"audioAssessment\":\"LISTENED\"}]}";
+    assertThatCode(() -> service.validateCompletion(task, result)).doesNotThrowAnyException();
+    source.setExperimentId(9999L);
+    assertThatThrownBy(() -> service.validateCompletion(task, result))
+        .hasMessageContaining("impede aprovação");
+    source.setExperimentId(9002L);
+    source.setProductId(productId + 1);
+    assertThatThrownBy(() -> service.validateCompletion(task, result))
+        .hasMessageContaining("impede aprovação");
+    source.setProductId(productId);
+    source.setEstimatedUsd(null);
+    assertThatThrownBy(() -> service.validateCompletion(task, result))
+        .hasMessageContaining("impede aprovação");
+    source.setEstimatedUsd(new BigDecimal("0.03"));
+    var changed = input.request().deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) changed).put("store", false);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) changed.at("/messages/0/content/0"))
+        .put("text", "Contrato atualizado");
+    assertThat(
+            service
+                .reserve(
+                    "customer-agent",
+                    9001,
+                    new AudioReviewReserveRequest(
+                        input.assetId(), input.videoSha256(), input.audioSha256(), changed))
+                .mayInvoke())
+        .isTrue();
+  }
+
+  /** Recusa real do provedor conserva custo e não vira aprovação ou autorização de repetição. */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void preservesRefusalAndDistinguishesUnknownCost(boolean knownCost) throws Exception {
+    var input = prepare(9005);
+    service.reserve("customer-agent", 9001, input);
+    var raw = json.createObjectNode().put("model", "gpt-audio-1.5");
+    raw.putArray("choices")
+        .addObject()
+        .put("finish_reason", "stop")
+        .putObject("message")
+        .put("content", "I'm sorry, but I can't comply with that request.");
+    if (knownCost)
+      raw.set(
+          "usage",
+          json.readTree(
+              "{\"prompt_tokens\":2006,\"completion_tokens\":11,\"prompt_tokens_details\":{\"audio_tokens\":350,\"text_tokens\":1656}}"));
+    var response = new AudioReviewResultRequest(raw.toString());
+    var failed = service.complete("customer-agent", 9001, 9003, response);
+    assertThat(failed.status()).isEqualTo(knownCost ? "REFUSED" : "COST_PENDING");
+    assertThat(failed.error()).contains("recusou", "sem repetição automática");
+    if (knownCost) assertThat(failed.estimatedUsd()).isEqualByComparingTo("0.015450");
+    else assertThat(failed.estimatedUsd()).isNull();
+    assertThat(saved.get(9003L).getResponseJson()).isEqualTo(raw.toString());
+    assertThat(service.complete("customer-agent", 9001, 9003, response)).isEqualTo(failed);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+    assertThatThrownBy(() -> service.validateCompletion(task, "{\"decision\":\"APPROVED\"}"))
+        .hasMessageContaining("impede aprovação");
+  }
+
   /** Preserva custo e resposta contraditória sem permitir aprovação por recibo antigo. */
   @Test
   void preservesContradictoryAudioWithoutApprovingIt() throws Exception {

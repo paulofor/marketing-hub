@@ -113,3 +113,28 @@ Validação complementar: 198 testes Java aprovados, incluindo 92 de arquitetura
 de montagem, 37 de recuperação e dez de evidência/seleção. As duas integrações recuperaram
 cinco vozes e acompanharam o novo job, sem mudar READY/PENDING do arquivo anterior.
 Spotless, diff e bundle canônico (523 arquivos, 115 manifestos) também passaram.
+
+## Escuta parcial preservada
+
+Os novos vídeos #74/#75 foram produzidos recuperando 15 segmentos de voz, com custo
+incremental de síntese zero. Hash, integridade e seis reproduções em desktop/iPhone/Pixel
+foram conferidos. Na tarefa #740, o mesmo contrato produziu PASS para a demonstração e uma
+recusa genérica, sem justificativa, para o anúncio. Os recibos #3/#4 registram USD 0,028973
+e USD 0,015450 estimados. A causa interna da recusa é desconhecida; sucesso no outro vídeo
+contradiz a hipótese de incompatibilidade geral do modelo ou contrato.
+
+Três caminhos avaliados: repetir a tarefa inteira duplicaria uma escuta paga; permitir
+aprovação sem escuta reduziria o aceite; reutilizar a avaliação idêntica mantém a revisão
+independente e o gasto menor. Foi escolhido o terceiro, no serviço de reserva existente.
+Não existe retry automático da recusa; uma retomada conserva resposta e custo anteriores.
+
+Matriz complementar: duas identidades, mesmo request/mídia/contexto, alteração do request,
+outra origem, custo desconhecido, retorno REFUSED e replay do callback. O worker usa HTTP
+local com respostas simuladas para demonstrar zero chamadas ao receber um recibo reutilizado.
+A aprovação revalida ID/hash/contexto e exige PASS, inclusive para recibos antigos.
+
+A documentação oficial descreve [entrada de áudio por Chat Completions](https://developers.openai.com/api/docs/guides/audio-chat-completions)
+e [tratamento de recusas fora do JSON esperado](https://developers.openai.com/api/docs/guides/structured-outputs).
+Não se deduz a causa da recusa a partir dessas referências. Não houve mudança do modelo,
+do prompt ou das salvaguardas para contorná-la. A melhoria resolve a cobrança repetida da
+escuta válida; não garante que o provedor aceitará uma nova análise nem comprova vendas.

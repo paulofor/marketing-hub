@@ -2,6 +2,7 @@ package com.marketinghub.financialagent.service;
 
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.financialagent.StudioProviderTaskConsumption;
+import com.marketinghub.financialagent.service.narrationCost.NarrationCostView;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderEfficiencyProjection;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository;
@@ -33,6 +34,46 @@ public class StudioCostLedgerService {
       StudioProviderTaskConsumptionRepository taskConsumptionRepository) {
     this.repository = repository;
     this.taskConsumptionRepository = taskConsumptionRepository;
+  }
+
+  /** Consulta o lançamento de uma locução pelo contrato financeiro, sem expor a entidade. */
+  @Transactional(readOnly = true)
+  public java.util.Optional<NarrationCostView> narrationCost(Long jobId) {
+    return repository
+        .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
+        .map(
+            entry ->
+                new NarrationCostView(
+                    entry.getProductId(),
+                    entry.getExperimentId(),
+                    entry.getAssetType(),
+                    entry.getProviderCostUsd(),
+                    entry.getEstimatedCostUsd(),
+                    entry.getCostEvidence()));
+  }
+
+  /**
+   * Persiste estimativa de locução sem substituir cobrança ou alterar a atribuição da tentativa.
+   */
+  @Transactional
+  public void reconcileNarrationCost(
+      Long jobId, Long productId, Long experimentId, BigDecimal costUsd, String evidence) {
+    var entry =
+        repository
+            .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
+            .orElseThrow(
+                () -> new IllegalArgumentException("Tentativa sem lançamento financeiro."));
+    if (!java.util.Objects.equals(productId, entry.getProductId())
+        || !java.util.Objects.equals(experimentId, entry.getExperimentId())
+        || !"AUDIO".equals(entry.getAssetType())
+        || entry.getProviderCostUsd() != null
+        || costUsd == null
+        || costUsd.signum() < 0) {
+      throw new IllegalArgumentException("Conciliação incompatível com o lançamento de locução.");
+    }
+    entry.setEstimatedCostUsd(costUsd);
+    entry.setCostEvidence(evidence);
+    repository.save(entry);
   }
 
   /** Registra uma task aceita e reconcilia seu custo no job mesmo se a montagem final falhar. */
@@ -244,7 +285,7 @@ public class StudioCostLedgerService {
             });
   }
 
-  /** Registra ou atualiza uma tentativa de vídeo atribuída ao projeto comercial do Estúdio. */
+  /** Atualiza a tentativa de vídeo sem apagar conciliação ou cobrança por callback incompleto. */
   @Transactional
   public void recordVideo(
       Long jobId,
@@ -276,8 +317,14 @@ public class StudioCostLedgerService {
     entry.setStatus(status);
     boolean taskCostAlreadyReconciled =
         costUsd == null
-            && "PROVIDER_TASK_RATE_CARD_ESTIMATE".equals(entry.getCostEvidence())
-            && entry.getEstimatedCostUsd() != null;
+            && (entry.getProviderCostUsd() != null
+                || (java.util.Set.of(
+                            "PROVIDER_TASK_RATE_CARD_ESTIMATE",
+                            "OPENAI_USAGE_COHORT_ESTIMATE",
+                            "PRESERVED_NARRATION_NO_NEW_CALL",
+                            "FAILED_BEFORE_TTS_AUDITED")
+                        .contains(java.util.Objects.toString(entry.getCostEvidence(), ""))
+                    && entry.getEstimatedCostUsd() != null));
     if (!taskCostAlreadyReconciled) {
       entry.setProviderCostUsd(providerReported ? costUsd : null);
       entry.setEstimatedCostUsd(providerReported ? null : costUsd);

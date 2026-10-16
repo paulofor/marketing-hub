@@ -48,6 +48,9 @@ import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.dto.storyboard.CommercialSceneEvaluationRequest;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
+import com.marketinghub.salesvideo.service.reconcileNarrationCosts.NarrationCostReconciliation;
+import com.marketinghub.salesvideo.service.reconcileNarrationCosts.ReconcileNarrationCostsRequest;
+import com.marketinghub.salesvideo.service.reconcileNarrationCosts.ReconcileNarrationCostsResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -89,6 +92,20 @@ public class SalesVideoService {
     this.videoReferenceService = videoReferenceService;
     this.videoStoryboardService = videoStoryboardService;
     this.providerCatalogService = new SalesVideoProviderCatalogService(providerModelRepository);
+  }
+
+  private NarrationCostReconciliation narrationCosts;
+
+  /** Conecta a conciliação de uso real e recibos ao contrato canônico do módulo. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setNarrationCostReconciliation(NarrationCostReconciliation service) {
+    this.narrationCosts = service;
+  }
+
+  /** Importa custos estimados sem inferência, aprovação ou alteração do orçamento. */
+  public ReconcileNarrationCostsResponse reconcileNarrationCosts(
+      Long experimentId, ReconcileNarrationCostsRequest request) {
+    return narrationCosts.reconcile(experimentId, request);
   }
 
   private VideoProductProofService productProofService;

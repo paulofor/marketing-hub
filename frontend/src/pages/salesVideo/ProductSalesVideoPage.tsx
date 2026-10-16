@@ -1,3 +1,4 @@
+import NarrationCostReconciliationPanel from "./NarrationCostReconciliationPanel";
 import {
   ProductProofSequenceEditor,
   validateProofSequence,
@@ -183,17 +184,18 @@ export default function ProductSalesVideoPage() {
     }
     return postProductionSourceJobs[0];
   }, [postProductionSourceJobs, selectedJobId]);
-  const videoProjectId = useMemo(() => {
+  const videoContext = useMemo(() => {
     try {
-      return (
-        Number(
-          JSON.parse(selectedVideoJob?.metadataJson || "{}").videoProjectId,
-        ) || undefined
-      );
+      const metadata = JSON.parse(selectedVideoJob?.metadataJson || "{}");
+      return {
+        projectId: Number(metadata.videoProjectId) || undefined,
+        experimentId: Number(metadata.experimentId) || undefined,
+      };
     } catch {
-      return undefined;
+      return {};
     }
   }, [selectedVideoJob]);
+  const videoProjectId = videoContext.projectId;
   const deliveryLibrary = useDeliveryExamples(videoProjectId);
   const { data: selectedVideoAsset } = useAsset(
     selectedVideoJob?.assetId ?? undefined,
@@ -1508,6 +1510,10 @@ export default function ProductSalesVideoPage() {
                 </tbody>
               </table>
             </div>
+            <NarrationCostReconciliationPanel
+              key={videoContext.experimentId}
+              experimentId={videoContext.experimentId}
+            />
           </section>
         </main>
       </section>

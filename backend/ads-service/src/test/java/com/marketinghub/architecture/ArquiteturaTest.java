@@ -3860,8 +3860,8 @@ class ArquiteturaTest {
   }
 
   /**
-   * Garante que controllers SalesVideo dependam apenas da fachada, DTOs, domínio e contratos de
-   * mídia liberados.
+   * Garante que controllers SalesVideo usem a fachada, DTOs e records da operação, sem acessar
+   * implementações de conciliação ou persistência.
    */
   private static ArchCondition<JavaClass>
       onlyDependOnAllowedSalesVideoControllerMarketingHubClasses() {
@@ -3883,6 +3883,9 @@ class ArquiteturaTest {
                       targetPackage.equals(SALES_VIDEO_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_CONTROLLER_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
+                          || (targetPackage.equals(
+                                  "com.marketinghub.salesvideo.service.reconcileNarrationCosts")
+                              && targetClass.reflect().isRecord())
                           || targetName.equals(
                               "com.marketinghub.salesvideo.service.SalesVideoService")
                           || targetPackage.equals("com.marketinghub.media")
@@ -3907,8 +3910,8 @@ class ArquiteturaTest {
   }
 
   /**
-   * Garante que services SalesVideo usem somente domínio próprio e repositories centralizados
-   * permitidos.
+   * Garante que services SalesVideo usem domínio próprio, repositories permitidos e a fachada
+   * financeira com seu record de custo, sem acessar entidade ou repository financeiro.
    */
   private static ArchCondition<JavaClass>
       onlyDependOnAllowedSalesVideoServiceMarketingHubClasses() {
@@ -3943,6 +3946,8 @@ class ArquiteturaTest {
                           || targetPackage.startsWith("com.marketinghub.repository.jpa.product")
                           || targetName.equals(
                               "com.marketinghub.financialagent.service.StudioCostLedgerService")
+                          || targetName.equals(
+                              "com.marketinghub.financialagent.service.narrationCost.NarrationCostView")
                           || targetName.equals(
                               "com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService")
                           || targetName.equals(

@@ -50,6 +50,8 @@ import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.dto.storyboard.CommercialSceneEvaluationRequest;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import com.marketinghub.salesvideo.service.SalesVideoService;
+import com.marketinghub.salesvideo.service.reconcileNarrationCosts.ReconcileNarrationCostsRequest;
+import com.marketinghub.salesvideo.service.reconcileNarrationCosts.ReconcileNarrationCostsResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.time.Instant;
@@ -112,6 +114,15 @@ public class SalesVideoController {
   public java.util.List<com.marketinghub.salesvideo.dto.DeliveryExampleDto> deliveryExamples(
       @PathVariable Long projectId) {
     return salesVideoService.deliveryExamples(projectId);
+  }
+
+  /** Concilia recibos e consumo agregado, preservando custos desconhecidos quando não há prova. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Conciliar locução por consumo oficial e recibos auditados")
+  @PostMapping("/api/sales-videos/experiments/{experimentId}/narration-costs/reconcile")
+  public ReconcileNarrationCostsResponse reconcileNarrationCosts(
+      @PathVariable Long experimentId, @Valid @RequestBody ReconcileNarrationCostsRequest request) {
+    return salesVideoService.reconcileNarrationCosts(experimentId, request);
   }
 
   /** Consulta o catalogo operacional do estudio de audio e video. */

@@ -65,6 +65,30 @@ class NarrationCostReconciliationTest {
     assertThat(first.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
   }
 
+  /** Recupera recibos de falha posterior à voz, misturados a mensagens históricas em texto. */
+  @ParameterizedTest
+  @ValueSource(longs = {9007, 9010})
+  void readsSpeechAuditAlongsideLegacyProgressText(long productId) throws Exception {
+    var job = job(91001, productId, 99001);
+    String receipts = job.getMetadataJson();
+    var metadata = (ObjectNode) json.readTree(receipts);
+    metadata.remove("tts_interactions");
+    job.setMetadataJson(metadata.toString());
+    job.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    job.setFailureCode("APOLLO_NARRATION_DURATION_EXCEEDED");
+    job.getEvents()
+        .add(
+            SalesVideoJobEvent.builder()
+                .detailsJson(
+                    "retryable=false;code=APOLLO_NARRATION_DURATION_EXCEEDED;message=Fala excedente")
+                .build());
+    job.getEvents().add(SalesVideoJobEvent.builder().detailsJson(receipts).build());
+    var result = service.reconcile(99001L, request(List.of(91001L), usage(1), true));
+    assertThat(result.newProviderRequests()).isEqualTo(1);
+    assertThat(result.estimatedCostUsd()).isEqualByComparingTo("0.001260");
+    assertThat(job.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+  }
+
   /** Reaproveitar voz conhecida não gera cobrança, inferência ou segunda alocação do consumo. */
   @Test
   void separatesReuseFromOriginalPaidSpeech() throws Exception {
@@ -134,7 +158,8 @@ class NarrationCostReconciliationTest {
         "duplicate",
         "partial",
         "period",
-        "receipt"
+        "receipt",
+        "malformed-audit-event"
       })
   void rejectsUnsupportedReconciliation(String scenario) throws Exception {
     var job = job(91001, 9007, 99001);
@@ -158,6 +183,9 @@ class NarrationCostReconciliationTest {
       case "partial" -> usage.put("has_more", true);
       case "period" -> ((ObjectNode) usage.at("/data/0")).put("start_time", 10).put("end_time", 20);
       case "receipt" -> ((ObjectNode) row.path("raw_response")).remove("request_id");
+      case "malformed-audit-event" ->
+          job.getEvents()
+              .add(SalesVideoJobEvent.builder().detailsJson("{\"tts_interactions\": [").build());
     }
     job.setMetadataJson(metadata.toString());
     assertThatThrownBy(
@@ -210,7 +238,7 @@ class NarrationCostReconciliationTest {
                 .value(false));
   }
 
-  /** Monta uma tentativa encerrada com tarifa, recibo e lançamento desconhecido auditáveis. */
+  /** Monta tentativa com recibos, mensagem legada de claim e lançamento ainda desconhecido. */
   private SalesVideoJob job(long id, long productId, long experimentId) {
     var product = new Product();
     product.setId(productId);
@@ -251,7 +279,12 @@ class NarrationCostReconciliationTest {
             .jobType(SalesVideoJobType.POST_PRODUCTION)
             .status(SalesVideoStatus.VIDEO_READY)
             .metadataJson(metadata.toString())
-            .events(new ArrayList<>())
+            .events(
+                new ArrayList<>(
+                    List.of(
+                        SalesVideoJobEvent.builder()
+                            .detailsJson("Claim automático pelo video-management-service")
+                            .build())))
             .build();
     when(jobs.findByIdForUpdate(id)).thenReturn(Optional.of(job));
     var entry = new StudioCostLedgerEntry();

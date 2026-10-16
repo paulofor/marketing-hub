@@ -10100,3 +10100,18 @@ Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
 - **Prevenção:** testes com dois produtos, endpoint real, dados cruzados, recibos inválidos,
   duplicidade, replay, callback sem custo e fluxo já válido. O bloqueio de custo desconhecido da
   escuta permanece. Matriz: docs/homologacao/capella-conciliacao-locucao-v1.md.
+
+## LOOP-AUDIO-TRAILING-SILENCE — decoder não representa o encerramento visual
+
+- **Evidência:** a captura local de Capella #72/#73 falhou antes de chamar modelo. O MP4 #73
+  tem 55 s de imagem e cerca de 47,9 s de AAC, ambos iniciando em zero. A fixture anterior
+  possuía áudio/imagem terminando juntos; a reprodução real permanecia válida.
+- **Causa:** confundir duração do buffer de áudio decodificado com a linha do tempo completa
+  do vídeo. A pausa final era tratada como divergência técnica, impedindo Psique de julgá-la.
+- **Correção compartilhada:** completar somente o silêncio final no OfflineAudioContext,
+  sem esticar fala, alterar volume ou regenerar a mídia. Preservar durações, pausa e hashes.
+- **Prevenção:** smoke real do navegador cobre duas identidades, posição e volume da onda,
+  fim silencioso, caminho alinhado, faixa excedente e silêncio integral. Excesso de áudio,
+  mídia trocada e duração visual incorreta continuam bloqueados; não afrouxar esses gates.
+- **Limite:** mix do produtor atual com início em zero; extração não comprova percepção nem
+  sincronismo labial. Registro: `docs/homologacao/psique-escuta-audiovisual-v1.md`.

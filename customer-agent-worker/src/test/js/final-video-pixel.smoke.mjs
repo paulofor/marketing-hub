@@ -8,7 +8,7 @@ import os from "node:os";
 import path from "node:path";
 const script = process.env.CUSTOMER_AGENT_FINAL_VIDEO_SCRIPT
   || path.resolve("src/main/resources/browser/final-video-review.mjs");
-const { captureVideos } = await import(pathToFileURL(script));
+const { captureVideos, extractAudio } = await import(pathToFileURL(script));
 const { videoBrowserOptions } = await import(pathToFileURL(path.join(path.dirname(script), "learning-cycle-video-checks.mjs")));
 const { chromium } = createRequire(import.meta.url)("playwright-core");
 
@@ -67,4 +67,51 @@ test("extrai mix AAC íntegro junto aos frames da mesma mídia", { timeout: 4500
     assert.ok(frames.length >= 6);
     assert.ok(frames.every(frame => frame.evidenceKey.startsWith(`video-${media.assetId}-${media.sha256}-`)));
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+// Gera somente uma onda sintética local; nenhuma voz, inferência ou dado comercial é produzido.
+function audioFixture(seconds, amplitude = .3) {
+  const rate = 24000, samples = Math.round(seconds * rate);
+  const bytes = Buffer.alloc(44 + samples * 2);
+  bytes.write("RIFF", 0); bytes.writeUInt32LE(bytes.length - 8, 4); bytes.write("WAVEfmt ", 8);
+  bytes.writeUInt32LE(16, 16); bytes.writeUInt16LE(1, 20); bytes.writeUInt16LE(1, 22);
+  bytes.writeUInt32LE(rate, 24); bytes.writeUInt32LE(rate * 2, 28);
+  bytes.writeUInt16LE(2, 32); bytes.writeUInt16LE(16, 34);
+  bytes.write("data", 36); bytes.writeUInt32LE(samples * 2, 40);
+  for (let i = 0; i < samples; i++)
+    bytes.writeInt16LE(Math.round(amplitude * 32767 * Math.sin(2 * Math.PI * 440 * i / rate)), 44 + i * 2);
+  return bytes;
+}
+
+// Mantém voz e pausa final na linha do tempo de dois produtos, sem alongar ou normalizar a voz.
+test("preserva silêncio final e caminho válido, recusando voz além do vídeo e mix silencioso", { timeout: 45000 }, async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "audio-timeline-fixture-"));
+  const browser = await chromium.launch(videoBrowserOptions());
+  try {
+    const page = await browser.newPage();
+    for (const [assetId, voiceSeconds, videoSeconds] of [[97117, 3.5, 5.8], [98223, 4.2, 7.4], [99331, 4, 4]]) {
+      const audio = await extractAudio(page, audioFixture(voiceSeconds), {
+        assetId, durationSeconds: videoSeconds, sha256: "b".repeat(64),
+      }, directory);
+      const bytes = await readFile(audio.localPath);
+      assert.ok(Math.abs(audio.durationSeconds - videoSeconds) < .01);
+      assert.ok(Math.abs(audio.peak - .3) < .002, "Não normaliza o volume da voz");
+      assert.ok(Math.abs(bytes.readInt16LE(44 + 12007 * 2) / 32768 - .3 * Math.sin(2 * Math.PI * 440 * 12007 / 24000)) < .003,
+        "A voz mantém sua posição e velocidade");
+      if (videoSeconds > voiceSeconds) {
+        assert.ok(Math.abs(audio.decodedDurationSeconds - voiceSeconds) < .001);
+        assert.ok(Math.abs(audio.trailingSilenceSeconds - (videoSeconds - voiceSeconds)) < .01);
+        assert.equal(bytes.readInt16LE(bytes.length - 2), 0, "A pausa final continua silenciosa");
+      }
+    }
+    await assert.rejects(extractAudio(page, audioFixture(7), {
+      assetId: 99441, durationSeconds: 4, sha256: "c".repeat(64),
+    }, directory), /Áudio ultrapassa a duração/);
+    await assert.rejects(extractAudio(page, audioFixture(4, 0), {
+      assetId: 99551, durationSeconds: 6, sha256: "d".repeat(64),
+    }, directory), /silencioso/);
+  } finally {
+    await browser.close();
+    await rm(directory, { recursive: true, force: true });
+  }
 });

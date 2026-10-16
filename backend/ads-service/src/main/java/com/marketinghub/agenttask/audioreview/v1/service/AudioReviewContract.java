@@ -1,6 +1,7 @@
 package com.marketinghub.agenttask.audioreview.v1.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -16,6 +17,42 @@ public final class AudioReviewContract {
 
   /** Impede instanciação de regras sem estado. */
   private AudioReviewContract() {}
+
+  /** Lê um único objeto sem descartar campos duplicados nem texto posterior ao JSON. */
+  public static JsonNode object(ObjectMapper json, String value) throws JsonProcessingException {
+    JsonNode result =
+        json.reader()
+            .with(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+            .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+            .readTree(value);
+    require(result != null && result.isObject(), "Resposta auditiva não é objeto JSON.");
+    return result;
+  }
+
+  /**
+   * Confirma o envelope de uma resposta textual antes de interpretar o parecer orientado por
+   * prompt.
+   */
+  public static String content(JsonNode response) {
+    model(response);
+    require(
+        response.path("choices").isArray() && response.path("choices").size() == 1,
+        "Resposta auditiva exige uma única alternativa.");
+    var message = response.at("/choices/0/message");
+    require(message.isObject(), "Mensagem auditiva ausente.");
+    require(
+        message.path("content").isTextual() && !message.path("content").asText().isBlank(),
+        "Resposta auditiva sem conteúdo textual; nenhuma escuta foi comprovada.");
+    return message.path("content").asText().trim();
+  }
+
+  /** Confirma a família exata antes de aplicar suas tarifas ou aceitar seu parecer. */
+  public static void model(JsonNode response) {
+    String model = response.path("model").asText();
+    require(
+        MODEL.equals(model) || model.matches("gpt-audio-1\\.5-\\d{4}-\\d{2}-\\d{2}"),
+        "Resposta de modelo incompatível.");
+  }
 
   /** Calcula identidade estável do payload integral. */
   public static String hash(byte[] bytes) {
@@ -101,7 +138,7 @@ public final class AudioReviewContract {
         result.path("limitations").isArray() && !result.path("limitations").isEmpty(),
         "Declare limitações da escuta.");
     for (var limit : result.path("limitations"))
-      require(limit.isTextual() && limit.asText().length() >= 10, "Limitação auditiva inválida.");
+      require(text(limit, 10), "Limitação auditiva inválida.");
     for (String key : List.of("voice", "music", "timing")) {
       JsonNode item = result.path(key);
       fields(item, Set.of("status", "summary"));
@@ -109,9 +146,7 @@ public final class AudioReviewContract {
           Set.of("PASS", "ADJUST", "INCONCLUSIVE", "NOT_PRESENT")
               .contains(item.path("status").asText()),
           "Dimensão auditiva inválida: " + key);
-      require(
-          item.path("summary").asText().length() >= 15,
-          "Dimensão auditiva sem justificativa: " + key);
+      require(text(item.path("summary"), 15), "Dimensão auditiva sem justificativa: " + key);
       if ("PASS".equals(result.path("verdict").asText()))
         require(
             Set.of("PASS", "NOT_PRESENT").contains(item.path("status").asText()),
@@ -141,8 +176,7 @@ public final class AudioReviewContract {
               && to <= duration + .1,
           "Instante auditivo fora da mídia.");
       require(
-          moment.path("heard").asText().length() >= 10
-              && moment.path("action").asText().length() >= 5,
+          text(moment.path("heard"), 10) && text(moment.path("action"), 5),
           "Achado sem evidência ou ação.");
       beginning |= from <= duration * .25;
       middle |= from < duration * .65 && to > duration * .35;
@@ -186,6 +220,13 @@ public final class AudioReviewContract {
     value.fieldNames().forEachRemaining(actual::add);
     require(
         value.isObject() && actual.equals(expected), "Campos do parecer auditivo incompatíveis.");
+  }
+
+  /** Exige texto real e conta caracteres Unicode sem coerção de números ou valores vazios. */
+  private static boolean text(JsonNode value, int minimum) {
+    if (!value.isTextual()) return false;
+    String content = value.asText().strip();
+    return content.codePointCount(0, content.length()) >= minimum;
   }
 
   /** Usa contadores separados de áudio/texto; ausência mantém custo desconhecido. */

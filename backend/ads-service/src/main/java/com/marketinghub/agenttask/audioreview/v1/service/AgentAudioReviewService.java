@@ -158,7 +158,7 @@ public class AgentAudioReviewService {
     return receipt(entry, true);
   }
 
-  /** Preserva inclusive resposta inválida e custo desconhecido antes de expor o resultado. */
+  /** Preserva resposta/custo e valida JSON estrito: o modelo auditivo não garante o schema. */
   @Transactional
   public AudioReviewReceipt complete(
       String agent, long taskId, long assetId, AudioReviewResultRequest input) {
@@ -177,10 +177,10 @@ public class AgentAudioReviewService {
     entry.setFinishedAt(Instant.now());
     entry.setStatus("COST_PENDING");
     try {
-      JsonNode raw = json.readTree(input.rawResponse());
+      JsonNode raw = object(json, input.rawResponse());
+      model(raw);
       entry.setEstimatedUsd(cost(raw));
       if (entry.getEstimatedUsd() != null) entry.setStatus("INVALID");
-      require(raw.path("model").asText().startsWith(MODEL), "Resposta de modelo incompatível.");
       String content = raw.at("/choices/0/message/content").asText().trim();
       if (!raw.at("/choices/0/message/refusal").asText("").isBlank()
           || "content_filter".equals(raw.at("/choices/0/finish_reason").asText())
@@ -192,7 +192,12 @@ public class AgentAudioReviewService {
       require(
           "stop".equals(raw.at("/choices/0/finish_reason").asText()),
           "Resposta auditiva incompleta ou recusada.");
-      var result = json.readTree(content);
+      content = content(raw);
+      require(
+          content.startsWith("{"),
+          "Resposta textual sem avaliação JSON; o schema no prompt não é Structured Outputs. "
+              + "Áudio recebido não comprova escuta; preservar resposta/custo e diagnosticar, sem repetição automática.");
+      var result = object(json, content);
       groundedAssessment(result, media(task, assetId));
       entry.setResultJson(result.toString());
       if (entry.getEstimatedUsd() != null) entry.setStatus("COMPLETED");
@@ -200,7 +205,11 @@ public class AgentAudioReviewService {
         entry.setErrorMessage(
             "Uso por modalidade ausente ou fora dos limites; conciliação pendente.");
     } catch (Exception ex) {
-      String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+      String message =
+          ex instanceof com.fasterxml.jackson.core.JsonProcessingException
+              ? "Resposta fora do contrato JSON: conteúdo incompleto, duplicado ou posterior ao objeto. "
+                  + "Preservar resposta/custo e diagnosticar, sem repetição automática."
+              : ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
       entry.setErrorMessage(message.substring(0, Math.min(1000, message.length())));
       log.error(
           "Falha ao validar resposta auditiva preservada. taskId={} assetId={} reviewId={}",
@@ -347,7 +356,7 @@ public class AgentAudioReviewService {
   /** Lê JSON persistido e mantém diagnóstico de conteúdo inválido. */
   private JsonNode read(String value) {
     try {
-      return value == null ? json.createObjectNode() : json.readTree(value);
+      return value == null ? json.createObjectNode() : object(json, value);
     } catch (Exception ex) {
       log.error("JSON de auditoria sonora inválido", ex);
       throw new IllegalArgumentException("Auditoria sonora inválida", ex);

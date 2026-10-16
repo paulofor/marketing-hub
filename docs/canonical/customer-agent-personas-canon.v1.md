@@ -438,6 +438,29 @@ Essa compatibilidade preserva a publicação gradual e não reabre pareceres fun
 
 Registro, testes entre identidades e limites: `docs/homologacao/capella-revisao-audio-tempos-v1.md`.
 
+### Contrato sem Structured Outputs — conferência de 16/10/2026
+
+GPT-Audio-1.5 não suporta Structured Outputs. O schema versionado no prompt orienta a
+resposta textual; não é garantia de conformidade. Preservar Chat Completions com `input_audio`
+WAV e saída `modalities: ["text"]`, sem `response_format`, troca silenciosa de modelo ou
+segunda chamada para fabricar estrutura quando não houve escuta. Function calling não
+equivale a suporte ao schema estrito. A exceção documentada ao Flex continua aplicável.
+
+O backend valida envelope único, modelo, término, conteúdo textual, JSON completo sem
+chaves duplicadas ou conteúdo posterior, tipos e campos exatos, evidências e coerência
+temporal. Texto fora do JSON significa resposta inválida; não comprova áudio ausente,
+política específica nem rejeição comercial. Recusa explícita, resposta incompleta ou
+inválida preservam custo e auditoria, sem nova inferência automática. Schema válido
+também não comprova qualidade perceptual: as validações semânticas continuam obrigatórias.
+
+O executor preserva `X-Client-Request-Id` antes do envio e, quando recebido, `x-request-id`
+com status HTTP em `transport.json` no volume persistente da tentativa. Não armazenar
+segredos nem demais cabeçalhos. Ausência do ID do provedor não autoriza inventá-lo ou
+reenviar. O corpo original e os contratos de reserva/callback permanecem imutáveis;
+o replay não cobra novamente. Não migrar recibos históricos por implantação.
+
+Fontes oficiais, alternativas, matriz e limites: [escuta audiovisual](../homologacao/psique-escuta-audiovisual-v1.md#contrato-openai-sem-structured-outputs--16102026).
+
 ### Recuperação parcial da escuta — 16/10/2026
 
 Uma nova revisão pode reutilizar o recibo COMPLETED e custeado da mesma mídia, produto,

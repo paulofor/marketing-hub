@@ -47,6 +47,133 @@ class AgentAudioReviewServiceTest {
   private LearningSalesCycle cycle;
   private final Map<Long, AgentAudioReview> saved = new HashMap<>();
 
+  /** O modelo auditivo não recebe response_format; o bloqueio antecede a reserva de consumo. */
+  @ParameterizedTest
+  @ValueSource(strings = {"json_schema", "json_object"})
+  void rejectsUnsupportedStructuredOutputParametersBeforeSpending(String type) {
+    var input = prepare(93005);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) input.request())
+        .putObject("response_format")
+        .put("type", type);
+    assertThatThrownBy(() -> service.reserve("customer-agent", 9001, input))
+        .hasMessageContaining("Campos inesperados");
+    verify(reviews, never()).saveAndFlush(any());
+    verify(ledger, never()).saveAndFlush(any());
+  }
+
+  /**
+   * Reprocessa os corpos históricos sem rede, conservando sucesso, recusas, custo e imutabilidade.
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {3, 4, 5})
+  void validatesHistoricalCapellaResponsesWithoutNewInference(int id) throws Exception {
+    var input = prepare(93005);
+    var media =
+        json.createObjectNode()
+            .put("assetId", 9003)
+            .put("sha256", input.videoSha256())
+            .put("durationSeconds", id == 3 ? 55 : 35);
+    media.putObject("audioProductionEvidence").put("mix", "VOICE_ONLY").put("music", "none");
+    when(videos.inputs(any())).thenReturn(json.createArrayNode().add(media));
+    service.reserve("customer-agent", 9001, input);
+    String raw =
+        java.nio.file.Files.readString(
+            java.nio.file.Path.of(
+                "../../docs/diagnosticos/capella-openai-escuta-74/respostas/recibo-"
+                    + id
+                    + ".json"));
+    var response = new AudioReviewResultRequest(raw);
+    var result = service.complete("customer-agent", 9001, 9003, response);
+    assertThat(result.status()).isEqualTo(id == 3 ? "COMPLETED" : id == 4 ? "REFUSED" : "INVALID");
+    assertThat(result.estimatedUsd()).isNotNull();
+    if (id == 5)
+      assertThat(result.error()).contains("sem avaliação JSON", "sem repetição automática");
+    assertThat(saved.get(9003L).getResponseJson()).isEqualTo(raw);
+    assertThat(service.complete("customer-agent", 9001, 9003, response)).isEqualTo(result);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+  }
+
+  /** Falhas explícitas, truncamento e falta de texto bloqueiam mesmo com uso contabilizado. */
+  @ParameterizedTest
+  @ValueSource(strings = {"REFUSAL", "FILTER", "LENGTH", "NULL", "EMPTY", "MODEL", "RAW_DUPLICATE"})
+  void rejectsProviderFailuresWithoutInventingAssessment(String variant) throws Exception {
+    var input = prepare(93005);
+    service.reserve("customer-agent", 9001, input);
+    var raw = json.createObjectNode().put("model", "gpt-audio-1.5");
+    var choice = raw.putArray("choices").addObject().put("finish_reason", "stop");
+    var message =
+        choice
+            .putObject("message")
+            .put("content", AudioReviewContractTest.assessment(json).toString());
+    switch (variant) {
+      case "REFUSAL" -> message.put("refusal", "Recusa explícita do provedor");
+      case "FILTER" -> choice.put("finish_reason", "content_filter");
+      case "LENGTH" -> choice.put("finish_reason", "length");
+      case "NULL" -> message.putNull("content");
+      case "EMPTY" -> message.put("content", " ");
+      case "MODEL" -> raw.put("model", "gpt-audio-1.50");
+      default -> {
+        /* O caso de JSON bruto duplicado é construído após a serialização. */
+      }
+    }
+    raw.set(
+        "usage",
+        json.readTree(
+            "{\"prompt_tokens\":1100,\"prompt_tokens_details\":{\"audio_tokens\":1000},\"completion_tokens\":500}"));
+    String body = raw.toString();
+    if (variant.equals("RAW_DUPLICATE")) body = "{\"usage\":{}," + body.substring(1);
+    var response = new AudioReviewResultRequest(body);
+    var result = service.complete("customer-agent", 9001, 9003, response);
+    assertThat(result.status())
+        .isEqualTo(
+            Set.of("RAW_DUPLICATE", "MODEL").contains(variant)
+                ? "COST_PENDING"
+                : Set.of("REFUSAL", "FILTER").contains(variant) ? "REFUSED" : "INVALID");
+    if (Set.of("RAW_DUPLICATE", "MODEL").contains(variant))
+      assertThat(result.estimatedUsd()).isNull();
+    assertThat(saved.get(9003L).getResultJson()).isNull();
+    assertThat(saved.get(9003L).getResponseJson()).isEqualTo(body);
+    assertThat(service.complete("customer-agent", 9001, 9003, response)).isEqualTo(result);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+  }
+
+  /** JSON ambíguo não pode descartar uma recusa nem escolher silenciosamente o último campo. */
+  @ParameterizedTest
+  @ValueSource(strings = {"TRAILING", "DUPLICATE", "NUMERIC_SUMMARY", "MULTIPLE_CHOICES"})
+  void rejectsAmbiguousOrNonConformingResponses(String variant) throws Exception {
+    var input = prepare(93005);
+    service.reserve("customer-agent", 9001, input);
+    var assessment = AudioReviewContractTest.assessment(json);
+    if (variant.equals("NUMERIC_SUMMARY"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) assessment.path("voice"))
+          .put("summary", new BigDecimal("12345678901234567890"));
+    String content = assessment.toString();
+    if (variant.equals("TRAILING")) content += " {\"listened\":false}";
+    if (variant.equals("DUPLICATE"))
+      content = content.replace("\"listened\":true", "\"listened\":false,\"listened\":true");
+    var raw = json.createObjectNode().put("model", "gpt-audio-1.5");
+    var choices = raw.putArray("choices");
+    choices.addObject().put("finish_reason", "stop").putObject("message").put("content", content);
+    if (variant.equals("MULTIPLE_CHOICES"))
+      choices
+          .addObject()
+          .put("finish_reason", "content_filter")
+          .putObject("message")
+          .put("refusal", "Revisão recusada");
+    raw.set(
+        "usage",
+        json.readTree(
+            "{\"prompt_tokens\":1100,\"prompt_tokens_details\":{\"audio_tokens\":1000},\"completion_tokens\":500}"));
+    var response = new AudioReviewResultRequest(raw.toString());
+    var receipt = service.complete("customer-agent", 9001, 9003, response);
+    assertThat(receipt.status()).isEqualTo("INVALID");
+    assertThat(receipt.estimatedUsd()).isEqualByComparingTo("0.037250");
+    assertThat(saved.get(9003L).getResponseJson()).isEqualTo(raw.toString());
+    assertThat(saved.get(9003L).getResultJson()).isNull();
+    assertThat(service.complete("customer-agent", 9001, 9003, response)).isEqualTo(receipt);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+  }
+
   /** Uma nova tarefa reutiliza a escuta exata, sem duplicar reserva, resposta ou custo. */
   @ParameterizedTest
   @ValueSource(longs = {9005, 93005})

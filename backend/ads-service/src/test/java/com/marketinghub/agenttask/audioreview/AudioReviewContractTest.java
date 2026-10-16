@@ -13,6 +13,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 class AudioReviewContractTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Campos textuais do schema não admitem números, espaços ou coerção silenciosa. */
+  @ParameterizedTest
+  @ValueSource(strings = {"summary", "heard", "action", "limitations"})
+  void enforcesTextTypesAndContent(String field) {
+    var result = assessment(json);
+    if (field.equals("summary"))
+      ((ObjectNode) result.path("voice"))
+          .put(field, new java.math.BigDecimal("12345678901234567890"));
+    else if (field.equals("limitations")) result.putArray(field).add("                    ");
+    else ((ObjectNode) result.path("moments").get(0)).put(field, 123456789012345L);
+    assertThatThrownBy(() -> AudioReviewContract.assessment(result, 30))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
+
   /** Reproduz música inventada e tempos estimados do caso observado em duas identidades. */
   @ParameterizedTest
   @ValueSource(longs = {72, 910072})

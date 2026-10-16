@@ -1,5 +1,76 @@
 # Escuta audiovisual de Psique — v1
 
+## Contrato OpenAI sem Structured Outputs — 16/10/2026
+
+Pedido: pesquisar a documentação oficial e ajustar o uso em Psique. A página do
+[GPT-Audio-1.5](https://developers.openai.com/api/docs/models/gpt-audio-1.5) declara
+Structured Outputs não suportado. O guia de [áudio em Chat Completions](https://developers.openai.com/api/docs/guides/audio-chat-completions)
+documenta `input_audio` em base64 WAV/MP3; `modalities` define a saída. Mantemos saída
+textual, sem gerar áudio adicional. Schema no prompt é orientação, não garantia do provedor.
+O guia de [saídas estruturadas](https://developers.openai.com/api/docs/guides/structured-outputs)
+recomenda validação local quando não há suporte ao recurso. Não habilitar `json_schema`
+nem presumir suporte a JSON mode a partir de documentação de outros modelos.
+
+Histórico conferido no MCP: recibo #3 da demonstração #75 válido; #4/#5 do anúncio #74
+sem avaliação, com tokens de áudio registrados. O pedido funcionou no outro arquivo;
+a limitação de Structured Outputs não demonstra a causa da recusa específica. Os
+[originais preservados](../diagnosticos/capella-openai-escuta-74/README.md) serão usados
+como regressão. Nenhuma chamada paga integra esta homologação.
+
+Alternativas comparadas:
+
+| Caminho | Benefício | Custo/risco | Decisão |
+| --- | --- | --- | --- |
+| Mesmo pedido e validação estrita | Conserva recibos, modelo e custo | Não garante percepção nem conformidade futura | Adotado |
+| Áudio livre seguido de segundo modelo estruturador | Separa percepção e formato | Mais custo; pode transformar ausência de escuta em parecer aparente | Não necessário |
+| Troca para function calling | Outra forma de transportar dados | Suporte a função não garante schema estrito; muda hashes e exige calibração | Não adotado |
+
+Lacuna observada no leitor Jackson: leitura de árvore sem rejeitar chaves duplicadas
+ou conteúdo posterior; coerção de números para textos do parecer. Esses comportamentos
+podem transformar resposta ambígua em avaliação aceita. Diagnóstico de texto sem JSON
+também precisa distinguir contrato inválido de ausência física de áudio. A causa interna
+da resposta de Capella continua desconhecida.
+
+Matriz de aceite definida antes dos testes:
+
+| Área | Prova local exigida |
+| --- | --- |
+| Caminho válido | Recibo #3 e fixture de outra identidade mantêm o aceite |
+| Resposta | Recusa explícita, texto livre, truncamento, duplicatas, conteúdo posterior e tipos incorretos bloqueiam |
+| Integração | Reserva → HTTP local → resposta bruta → callback → recibo, sem modelo externo |
+| Recuperação/custo | Repetir callback não cobra; falha conserva resposta, custo ou reserva e motivo |
+| Observabilidade | Identificador do cliente e `x-request-id` preservados sem credenciais |
+| Compatibilidade | Pedido/schema originais permanecem idênticos; nenhum recibo histórico é migrado |
+| Segregação | Fixtures identificadas como teste; nenhuma campanha, tarefa ou gasto produtivo iniciado |
+| Navegação | Consulta das telas da cadeia, agentes e vídeos; sem mudança de interface ou mídia |
+
+Métrica técnica: zero aceite de JSON ambíguo e zero inferência adicional na recuperação.
+Benefício esperado: revisões confiáveis e diagnóstico mais rápido. Conversão, compras,
+qualidade perceptual e margem não são resultados destes testes. Adoção depende dos testes
+e deploy; reversão pelo fluxo de PR se houver regressão de recibos antes válidos.
+
+Resultado local desta revisão:
+
+- Os quatro casos novos reproduziram aceite indevido antes da correção e bloqueio depois:
+  JSON posterior, chave duplicada, justificativa numérica e múltiplas alternativas.
+- Backend: rodada relacionada de 375 testes sem falhas/erros (três condicionais não
+  habilitados); após o ajuste final da validação de modelo/custo, 37 testes do contrato
+  passaram novamente. Inclui arquitetura, orçamento, catálogo e recuperação.
+- Psique: 228 testes sem falhas/erros (11 condicionais não habilitados); a validação final
+  focada passou nos 57 casos de escuta, captura e recuperação. O WAV histórico íntegro foi
+  enviado somente ao servidor HTTP local, com respostas simuladas, em duas identidades.
+- O recibo válido #3 permanece aceito; #4/#5 permanecem bloqueados. Callback repetido
+  não duplica custo/inferência; os pedidos históricos permanecem idênticos.
+- Spotless, revisão do diff, 16 testes do empacotador e geração do pacote existente de
+  evidências passaram. Os condicionais dependem de fixtures externas de jornada/publicação;
+  nenhum teste da ferramenta auditiva ficou sem execução.
+
+Os identificadores de transporte seguem a [referência oficial da API](https://developers.openai.com/api/reference/overview):
+UUID em `X-Client-Request-Id`, `x-request-id` retornado quando disponível. A regressão
+confirma persistência no reinício e exclui autenticação/cookies. IDs novos não recuperam
+retroativamente os cabeçalhos das chamadas antigas. A recusa específica do anúncio #74
+continua sem explicação comprovada; esta entrega não declara o experimento desbloqueado.
+
 ## Aceite e alternativas
 
 A solicitação de 15/10/2026 acrescenta escuta real à Psique existente. O histórico MCP

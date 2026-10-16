@@ -35,6 +35,10 @@ paths:
       - {name: assetId, in: path, required: true, schema: {type: integer, format: int64}}
     post:
       summary: Preserva response bruto antes da validação e concilia estimativa por modalidade.
+      description: >-
+        Confronta o parecer com o mix e os segmentos medidos da mídia exata. Música declarada
+        em mix somente de voz ou intervalos incompatíveis com SEGMENT_AUDIO_DURATION geram
+        INVALID, preservando resposta, custo e motivo. A aprovação final revalida o recibo.
       requestBody:
         required: true
         content:

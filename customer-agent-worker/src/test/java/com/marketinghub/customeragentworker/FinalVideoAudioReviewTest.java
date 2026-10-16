@@ -18,6 +18,35 @@ class FinalVideoAudioReviewTest {
   @TempDir Path dir;
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Não envia briefing persuasivo à escuta e conserva os limites físicos recebidos do backend. */
+  @Test
+  void sendsMeasuredEvidenceWithoutMarketingBrief() throws Exception {
+    var worker =
+        new FinalVideoAudioReview(
+            json, "http://127.0.0.1:1", "http://127.0.0.1:1/model", "", "", dir.toString());
+    var media =
+        json.createObjectNode()
+            .put("assetId", 91001)
+            .put("durationSeconds", 35)
+            .put("narration", "ROTEIRO_NAO_DEVE_INDUZIR")
+            .put("rejectionReason", "FEEDBACK_NAO_E_AUDIO");
+    media.putObject("deliveryExamples").put("headline", "ANUNCIO_NAO_E_AUDIO");
+    media
+        .putObject("audioProductionEvidence")
+        .put("mix", "VOICE_ONLY")
+        .put("timingSource", "SEGMENT_AUDIO_DURATION")
+        .putArray("segments")
+        .addObject()
+        .put("startSeconds", 0)
+        .put("endSeconds", 6.312)
+        .put("expectedText", "Comparação segmentada");
+    var request = worker.request(media, new byte[64]);
+    String prompt = request.at("/messages/0/content/0/text").asText();
+    assertThat(prompt)
+        .contains("6.312", "VOICE_ONLY", "Comparação segmentada")
+        .doesNotContain("ROTEIRO_NAO_DEVE_INDUZIR", "FEEDBACK_NAO_E_AUDIO", "ANUNCIO_NAO_E_AUDIO");
+  }
+
   /** Outro produto recebe recibo próprio; falha de callback reutiliza exatamente a resposta. */
   @Test
   void recoversAcrossWorkerRestartAndKeepsProductsIsolated() throws Exception {

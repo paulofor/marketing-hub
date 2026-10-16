@@ -635,7 +635,7 @@ public class PostProductionVideoProvider implements VideoProvider {
         }
     }
 
-    /** Compõe o MP4 com legenda e preserva áudio real quando a fonte o possuir. */
+    /** Compõe legenda e áudio real com folga de pico para a codificação AAC. */
     private void runFfmpegCaptionOnly(
             Path source, Path caption, Path output, boolean sourceHasAudio) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
@@ -653,7 +653,7 @@ public class PostProductionVideoProvider implements VideoProvider {
         if (sourceHasAudio) {
             command.addAll(List.of(
                     "-map", "0:a:0",
-                    "-af", "loudnorm=I=-17:TP=-2:LRA=7",
+                    "-af", "loudnorm=I=-17:TP=-3:LRA=7",
                     "-c:a", "aac"));
         } else {
             command.add("-an");
@@ -665,7 +665,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "ffmpeg falhou ao aplicar legenda no vídeo");
     }
 
-    /** Compõe o MP4 com voz e reduz o áudio real da fonte sem fabricar trilha. */
+    /** Compõe voz com folga para AAC e reduz o áudio real da fonte sem fabricar trilha. */
     private void runFfmpegWithVoice(Path source,
                                     Path voice,
                                     Path caption,
@@ -684,9 +684,9 @@ public class PostProductionVideoProvider implements VideoProvider {
             audioFilter = "[0:a]volume=0.30[bed];[1:a]volume=1.0,asplit=2[voice_sc][voice_mix];"
                     + "[bed][voice_sc]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=400[ducked];"
                     + "[ducked][voice_mix]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
-                    + "[mixed]loudnorm=I=-17:TP=-2:LRA=7[aout];";
+                    + "[mixed]loudnorm=I=-17:TP=-3:LRA=7[aout];";
         } else {
-            audioFilter = "[1:a]volume=1.0,loudnorm=I=-17:TP=-2:LRA=7[aout];";
+            audioFilter = "[1:a]volume=1.0,loudnorm=I=-17:TP=-3:LRA=7[aout];";
         }
         String filter = audioFilter + "[0:v]" + videoFilter + "[vout]";
         command.addAll(List.of(

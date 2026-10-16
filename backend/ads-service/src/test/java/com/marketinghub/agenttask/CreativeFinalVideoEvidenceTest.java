@@ -28,6 +28,35 @@ class CreativeFinalVideoEvidenceTest {
   private final CreativeFinalVideoEvidence service =
       new CreativeFinalVideoEvidence(videos, projects, tasks, json);
 
+  /**
+   * Preserva limites medidos e rejeita linhas do tempo parciais, sem inventar música ou duração.
+   */
+  @Test
+  void exposesOnlyCompleteMeasuredNarration() throws Exception {
+    var result =
+        json.readTree(
+            """
+        {"audio":{"mix":"VOICE_ONLY","music":"none"},
+         "captions":{"text":"Abertura | Benefício | Convite"},
+         "caption_narration_sync":{"timing_status":"APPROVED",
+           "timing_method":"SEGMENT_AUDIO_DURATION","segment_durations_seconds":[6.312,3.408,6.048],
+           "narration_duration_seconds":15.768}}
+        """);
+    com.fasterxml.jackson.databind.JsonNode evidence =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "audioProductionEvidence", result, 20);
+    assertThat(evidence.path("mix").asText()).isEqualTo("VOICE_ONLY");
+    assertThat(evidence.at("/segments/1/startSeconds").asDouble()).isEqualTo(6.312);
+    assertThat(evidence.at("/segments/2/endSeconds").asDouble()).isCloseTo(15.768, within(.0001));
+    assertThat(evidence.at("/segments/2/expectedText").asText()).isEqualTo("Convite");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("captions"))
+        .put("text", "Uma frase");
+    evidence =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "audioProductionEvidence", result, 20);
+    assertThat(evidence.has("segments")).isFalse();
+  }
+
   /** Montagens combinadas preservam momentos das duas fontes dentro do limite de amostragem. */
   @Test
   void preservesHybridReviewMoments() {

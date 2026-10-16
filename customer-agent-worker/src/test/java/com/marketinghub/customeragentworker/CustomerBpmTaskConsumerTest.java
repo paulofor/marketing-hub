@@ -27,13 +27,26 @@ class CustomerBpmTaskConsumerTest {
         .hasMessageContaining("deve ser max em toda execução de Psique");
   }
 
-  /** Identifica a retomada que deve reutilizar a resposta aprovada sem nova chamada ao modelo. */
+  /** Identifica decisões preservadas sem repetir inferência nem converter ajustes em aprovação. */
   @Test
-  void recognizesStoredApprovedCallbackForRetry() throws Exception {
+  void recognizesStoredDecisionForRetry() throws Exception {
     assertThat(
-            CustomerBpmTaskConsumer.hasApprovedRetryPayload(
+            CustomerBpmTaskConsumer.hasStoredRetryPayload(
                 json, "{\"decision\":\"APPROVED\"}", "{\"proof\":true}"))
         .isTrue();
+    for (String decision : List.of("ADJUST", "BLOCKED")) {
+      assertThat(
+              CustomerBpmTaskConsumer.hasStoredRetryPayload(
+                  json, "{\"decision\":\"" + decision + "\"}", "{\"proof\":true}"))
+          .isTrue();
+    }
+    assertThat(
+            CustomerBpmTaskConsumer.hasStoredRetryPayload(
+                json, "{\"decision\":\"UNKNOWN\"}", "{\"proof\":true}"))
+        .isFalse();
+    assertThat(
+            CustomerBpmTaskConsumer.hasStoredRetryPayload(json, "{\"decision\":\"ADJUST\"}", null))
+        .isFalse();
   }
 
   /** Preserva o parecer e distingue conflito de evidência sem repetir a inferência paga. */

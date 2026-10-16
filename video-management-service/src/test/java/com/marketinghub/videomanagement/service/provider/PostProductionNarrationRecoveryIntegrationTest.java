@@ -18,7 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /** Reproduz localmente a recuperação com binários preservados, FFmpeg real e rede segregada. */
 class PostProductionNarrationRecoveryIntegrationTest {
-  /** Recupera a fonte auditada sem TTS e sincroniza os pixels da prova com a locução preservada. */
+  /** Recupera voz, artes e capturas locais e comprova sincronia e nível sonoro após codificação. */
   @Test
   @EnabledIfSystemProperty(named = "video.recovery.media-dir", matches = ".+")
   void recoversFiveReceivedSegmentsWithRealFfmpeg() throws Exception {
@@ -48,6 +48,12 @@ class PostProductionNarrationRecoveryIntegrationTest {
       for (var segment : metadata.at("/preservedNarration/segments")) {
         ((ObjectNode) segment).put("url", server.url("/" + segment.path("assetId").asLong() + ".mp3").toString());
       }
+      var deliveryAssets = new java.util.HashSet<Long>();
+      for (var shot : metadata.at("/post_production/deliveryExamples/shots")) {
+        long id = shot.path("visualAssetId").asLong();
+        deliveryAssets.add(id);
+        ((ObjectNode) shot).put("url", server.url("/visual-" + id + ".png").toString());
+      }
       var settings = new VideoManagementProperties();
       settings.setBackendBaseUrl(server.url("/").uri());
       settings.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
@@ -65,13 +71,16 @@ class PostProductionNarrationRecoveryIntegrationTest {
       assertThat(synthesisRequests.get()).isZero();
       int shots = metadata.at("/post_production/proofShots").isArray()
           ? metadata.at("/post_production/proofShots").size() : 1;
-      assertThat(requests.get()).isEqualTo(metadata.at("/preservedNarration/segments").size() + 1 + 2 * shots);
+      assertThat(requests.get()).isEqualTo(metadata.at("/preservedNarration/segments").size() + 1 + 2 * shots + deliveryAssets.size());
       double expectedDuration = metadata.path("postProductionDurationSeconds").asDouble(metadata.path("targetDurationSeconds").asDouble());
       assertThat(artifacts.metadata()).containsEntry("duration_seconds", expectedDuration)
           .containsEntry("tts_cost_reconciliation_status", "PENDING_PROVIDER_RECONCILIATION");
       assertThat(artifacts.metadata().get("tts_interactions").toString()).contains("TEXT_TO_SPEECH_REUSE", "source_job_id=" + metadata.at("/preservedNarration/sourceJobId").asLong());
       assertThat(artifacts.captionFile().content()).asString().contains("WEBVTT");
       assertThat(artifacts.metadata().get("product_reference_overlay").toString()).contains("NARRATION_CUE_V1");
+      var audio = mapper.valueToTree(artifacts.metadata().get("audio"));
+      assertThat(audio.at("/review/status").asText()).isEqualTo("APPROVED_FOR_TEST");
+      assertThat(audio.at("/review/metrics/true_peak_dbfs").asDouble()).isLessThanOrEqualTo(-1.0);
       Path output = Path.of("target/mira-narration-recovered.mp4");
       Files.write(output, artifacts.videoFile().content());
       Files.writeString(Path.of("target/mira-narration-recovered-metadata.json"), mapper.writerWithDefaultPrettyPrinter().writeValueAsString(artifacts.metadata()));

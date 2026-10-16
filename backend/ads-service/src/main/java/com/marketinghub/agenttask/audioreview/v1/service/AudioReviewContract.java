@@ -153,6 +153,33 @@ public final class AudioReviewContract {
         "A escuta precisa cobrir abertura, desenvolvimento e encerramento.");
   }
 
+  /** Confronta a escuta com o mix e os intervalos medidos, preservando respostas contraditórias. */
+  public static void groundedAssessment(JsonNode result, JsonNode media) {
+    assessment(result, media.path("durationSeconds").asDouble());
+    var production = media.path("audioProductionEvidence");
+    if ("VOICE_ONLY".equals(production.path("mix").asText())
+        && "none".equals(production.path("music").asText()))
+      require(
+          "NOT_PRESENT".equals(result.at("/music/status").asText()),
+          "O parecer descreve música, mas o mix auditado contém somente voz.");
+    if (!"SEGMENT_AUDIO_DURATION".equals(production.path("timingSource").asText())) return;
+    var segments = production.path("segments");
+    require(
+        result.path("moments").size() == segments.size(),
+        "A escuta deve avaliar cada segmento medido, sem inventar intervalos.");
+    for (int i = 0; i < segments.size(); i++) {
+      var moment = result.path("moments").get(i);
+      var segment = segments.get(i);
+      require(
+          Math.abs(moment.path("startSeconds").asDouble() - segment.path("startSeconds").asDouble())
+                  <= .1
+              && Math.abs(
+                      moment.path("endSeconds").asDouble() - segment.path("endSeconds").asDouble())
+                  <= .1,
+          "O instante auditivo diverge do segmento medido da locução.");
+    }
+  }
+
   /** Recusa campos omitidos ou extras em respostas sem Structured Outputs do provedor. */
   private static void fields(JsonNode value, Set<String> expected) {
     var actual = new HashSet<String>();

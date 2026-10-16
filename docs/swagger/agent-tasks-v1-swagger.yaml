@@ -128,6 +128,14 @@ paths:
           in: query
           schema: { type: string }
           description: Obrigatório no executor próprio de atividade especializada; ausente seleciona apenas atividades comuns.
+        - name: workerContract
+          in: query
+          schema: { type: string }
+          description: >-
+            Handshake versionado do executor. PSIQUE_CALLBACK_DECISIONS_V2 permite ao
+            customer-agent recuperar APPROVED, ADJUST e BLOCKED preservados sem inferência.
+            O consumidor legado recebe apenas aprovações recuperáveis. Retomada explícita
+            de tarefa tecnicamente bloqueada preserva parecer, evidência e custo.
       responses:
         "200":
           description: Lista vazia ou uma única atividade reservada com o recurso exigido e orientação persistida do próprio produto quando disponível

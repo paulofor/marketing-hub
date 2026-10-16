@@ -9,4 +9,7 @@ public interface SalesVideoExperimentAssetApprovalChecker {
 
   /** Informa se todos os ativos do acabamento foram reprovados e permitem substituição. */
   boolean isRejectedForReplacement(Long salesVideoJobId);
+
+  /** Informa se Psique pediu correção do arquivo atual, sem registrar decisão humana. */
+  boolean isCorrectionRequested(Long salesVideoJobId);
 }

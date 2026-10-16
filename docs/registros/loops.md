@@ -10145,3 +10145,9 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   Inclui outra identidade, legado válido, custo preservado e recuperação sem nova inferência.
 - **Registro:** `docs/homologacao/capella-revisao-audio-tempos-v1.md`. Impacto em vendas ainda
   não medido; aprovações técnicas não substituem seleção humana nem homologação comercial.
+- **Continuação comprovada:** o replay concluiu #739 sem nova inferência, mas a montagem
+  seguinte respondeu 400: só aceitava filho falho ou rejeitado pelo humano. A regressão local
+  reproduziu a recusa. O contrato agora reconhece ADJUST/FINAL_VIDEO para o ID/hash exatos,
+  mantendo seleção PENDING e experimento fora de operação. Testes integrados de
+  `SalesVideoJobServiceTest` recuperam a voz em duas identidades sem inventar decisão humana;
+  revisões aprovadas, outra mídia e campanhas em execução não recebem essa permissão.

@@ -33,7 +33,12 @@ paths:
     post:
       tags: [VideoStudio]
       summary: Solicita acabamento com recuperação de voz e montagem opcional
-      description: Amostras e capturas são alternativas. O backend resolve fontes; o executor V3 verifica bytes antes de TTS. Novo MP4 não herda parecer nem aceite humano.
+      description: |
+        O backend resolve fontes; o executor V4 combina amostras e capturas e verifica bytes antes de TTS.
+        Um acabamento pendente pode ser corrigido a partir da mesma fonte quando Psique concluiu
+        ADJUST/FINAL_VIDEO para seu ID e hash, com déficit crítico, em experimento PLANNED, PAUSED
+        ou USER_STOPPED. A voz compatível é recuperada. O histórico e a seleção humana são
+        preservados; novo MP4 não herda parecer nem aceite e não amplia o orçamento.
       parameters:
         - { in: path, name: jobId, required: true, schema: { type: integer, format: int64 } }
       requestBody:
@@ -55,7 +60,7 @@ paths:
                   type: array
                   minItems: 2
                   maxItems: 12
-                  description: Índices crescentes começando em zero, ao menos dois hashes distintos; não combinar com proofShots
+                  description: Índices crescentes começando em zero, ao menos dois hashes distintos; pode combinar com proofShots no compositor V4
                   items:
                     type: object
                     required: [visualAssetId, captionCueIndex]

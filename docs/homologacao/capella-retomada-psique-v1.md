@@ -57,3 +57,23 @@ Métrica técnica: entregar decisões criativas na primeira tentativa, sem a seq
 retomada → replay. Adoção depende dos testes e da passagem observada; reverter o roteamento se
 houver perda de auditoria ou aceitação de resultado inválido. Não há medição nova de vendas,
 lucro ou qualidade percebida por clientes reais.
+
+## Recuperação após cancelamento durante captura
+
+A retomada geral criou #743 em vez de recuperar #742. O operador cancelou #743 antes da
+inferência; os logs confirmam interrupção no upload de frames, sem execução do modelo. O
+retorno de falha passou a receber 409 repetidamente e a ocupar o outbox único. Retomar #742
+pela mesa do agente adicionou o marcador canônico de replay, mas a fila ainda estava ocupada.
+
+Foram comparadas três opções: apagar o outbox perderia evidência; reabrir a tarefa cancelada
+violaria sua decisão terminal; arquivar seu retorno tardio no backend preserva ambos. A terceira
+foi implementada no contrato `/failure` existente. Mantém CANCELLED, não chama hooks de
+conclusão nem avança atividade, registra auditoria/tokens quando presentes e confirma reenvios
+idênticos uma única vez. Outra autoria e retorno divergente continuam recusados.
+
+O teste reproduziu três erros 409 antes da correção (caso original, outra identidade e retorno
+após uso de modelo). A matriz inclui reenvio sem duplicar tokens, falha pré-modelo NOT_STARTED,
+cancelamento preservado, saída não aceita como produto e compatibilidade dos callbacks ativos.
+Passaram os 144 testes locais de tarefas, callbacks, conclusão assíncrona e seleção de vídeo,
+além da geração do pacote de evidências comerciais. A recuperação em produção ainda precisa ser
+conferida após o deploy; este registro não concede aceite dos vídeos nem autorização comercial.

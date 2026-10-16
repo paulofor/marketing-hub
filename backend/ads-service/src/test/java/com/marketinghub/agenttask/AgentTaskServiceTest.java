@@ -42,6 +42,64 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /** Preserva o retorno tardio sem reabrir tarefa cancelada nem duplicar seu consumo. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "743,105,false,false",
+    "1743,905,false,true",
+    "1744,906,true,true"
+  })
+  void acknowledgesCancelledFailureWithoutReopening(
+      long taskId, long experimentId, boolean model, boolean usageReported) {
+    var repository = mock(AgentTaskRepository.class);
+    var task =
+        processTask(
+            taskId,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "CANCELLED");
+    task.setSourceReference("experiment:" + experimentId);
+    when(repository.findLockedById(taskId)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var request =
+        new FailAgentTaskRequest(
+            "Tarefa cancelada durante preparação",
+            model ? "{\"decision\":\"ADJUST\"}" : null,
+            "{\"experimentId\":" + experimentId + "}",
+            model
+                ? List.of(new AgentTaskModelUsageRequest("gpt-test", "FLEX", 500L, 100L, 80L))
+                : usageReported ? List.of() : null,
+            model ? modelExecutionAudit() : null,
+            null);
+
+    service.failClaimedProcessTask("customer-agent", taskId, request);
+    service.failClaimedProcessTask("customer-agent", taskId, request);
+
+    assertThat(task.getStatus()).isEqualTo("CANCELLED");
+    assertThat(task.getDeliveredAt()).isNull();
+    assertThat(task.getResultJson()).isEqualTo(request.resultJson());
+    assertThat(task.getEvidenceJson()).isEqualTo(request.evidenceJson());
+    assertThat(task.getExecutionError()).isEqualTo(request.error());
+    assertThat(task.getExecutionMode()).isEqualTo(model ? "MODEL" : "NOT_STARTED");
+    assertThat(task.getInputTokens())
+        .isEqualTo(model ? Long.valueOf(500L) : usageReported ? Long.valueOf(0L) : null);
+    assertThat(task.getBlockerCategory()).isNull();
+    verify(repository).save(task);
+    assertThatThrownBy(
+            () ->
+                service.failClaimedProcessTask(
+                    "customer-agent",
+                    taskId,
+                    new FailAgentTaskRequest("Outro retorno", null, "{}")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("cancelada");
+    assertThatThrownBy(() -> service.failClaimedProcessTask("outro-agente", taskId, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("outro agente");
+  }
+
   /**
    * A finalidade complementar não permite atividade paga, referência livre ou tarefa excepcional.
    */

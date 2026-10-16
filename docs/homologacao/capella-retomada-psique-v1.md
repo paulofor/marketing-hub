@@ -117,3 +117,11 @@ aprovados. A atestação Mira v26 mantém a v25 imutável e revalida as duas ref
 o seletor retornou `frontend-version=none` e `has-deployment=false` para os PDEs. O pacote
 comercial real foi construído com 527 arquivos e 116 manifestos. Isso não substitui a instalação
 do backend pelo pipeline nem o aceite humano das peças em produção.
+
+A primeira rodada de CI do PR #5612 detectou ausência do novo verificador no contexto Spring
+isolado de homologação. A fixture passa a importar o verificador real e simula somente o
+repositório externo de projetos; não substitui o gate por uma aprovação artificial. A rodada
+local `homologate-learning-cycles-local.sh --persistence-only` passou com MySQL 5.7, incluindo
+inicialização, decisões REST, persistência, contexto entre ciclos, rollback, reaplicação e
+idempotência das migrações. O projeto Compose temporário foi removido. Alterações de dependência
+nessa passagem devem incluir a inicialização da fixture, além das regressões unitárias já listadas.

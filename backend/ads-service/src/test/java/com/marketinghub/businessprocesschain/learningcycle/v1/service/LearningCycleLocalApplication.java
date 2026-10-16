@@ -84,6 +84,7 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleEvidence.class,
   LearningCycleCommercialAuthorization.class,
   LearningCyclePublicationHistory.class,
+  com.marketinghub.agenttask.CreativeFinalVideoEvidence.class,
   LearningCycleVideoEvidence.class,
   LearningCycleVideoBudget.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunService.class,

@@ -77,3 +77,51 @@ cancelamento preservado, saída não aceita como produto e compatibilidade dos c
 Passaram os 144 testes locais de tarefas, callbacks, conclusão assíncrona e seleção de vídeo,
 além da geração do pacote de evidências comerciais. A recuperação em produção ainda precisa ser
 conferida após o deploy; este registro não concede aceite dos vídeos nem autorização comercial.
+
+## Correção revisada e seleção do ciclo
+
+Depois do replay sem nova inferência, #742 ficou COMPLETED/ADJUST. O anúncio foi corrigido no
+job #21294, reutilizando as sete locuções sem síntese nova. Psique #744 aprovou os arquivos
+#76 (anúncio, 35 s) e #75 (demonstração, 55 s), com escuta #7 válida e escuta #3 reutilizada.
+O consumo audiovisual conhecido acumulado chegou a US$ 3,7118458 estimados, dentro de US$ 10.
+Isso não representa fatura conciliada nem aceite humano de uso. O experimento segue PLANNED.
+
+A conferência final encontrou outra causa na passagem: os eventos 75/76 do ciclo ainda referiam
+as peças #55/#56 rejeitadas em 10/10. A biblioteca oferecia #76/#75, mas a projeção do ciclo dizia
+que não havia decisão humana e a integração continuaria presa às peças antigas. O histórico de
+sucesso com seleções originais aprovadas explica por que os testes anteriores não detectavam
+uma correção posterior a rejeição.
+
+Alternativas consideradas: trocar somente o texto esconderia o bloqueio da integração; sobrescrever
+os eventos destruiria a prova histórica; resolver a candidata revisada da mesma versão e congelar
+sua identidade no recibo preserva a seleção humana e a auditoria. Foi adotada a terceira opção.
+A leitura reutiliza o seletor de mídias de Psique (produto, experimento, versão, tenant e hash),
+aceita somente candidata necessária e posterior com parecer válido, e não grava nem aprova peças.
+A integração exige os dois aceites e registra seus IDs, hashes, responsáveis e horários. Depois
+ela permanece vinculada ao recibo; uma candidata posterior não substitui a peça integrada. Uma
+seleção original já aprovada também permanece estável. Falta de revisão, versão/tenant divergentes,
+candidata opcional ou anterior não escondem a rejeição. O relógio da tela inclui a revisão criativa
+recente, em vez de contar espera desde a produção antiga.
+
+Matriz adicional local: rejeição → correção → parecer → espera humana → dois aceites simulados →
+recibo privado; Capella e outra identidade; parecer incompleto/hash divergente; versão/tenant/data
+incorretos; candidata opcional; aprovações anteriores; alteração de mídia após integração; projeção
+do resumo e relógio. A regressão falhou em dois casos antes da correção. Todo aceite nesses testes
+é uma fixture local, sem gravação ou aprovação em produção. Nenhuma nova chamada paga é necessária
+para corrigir essa passagem. A adoção exige a tela refletir a seleção atual e a integração consumir
+as mídias explicitamente aceitas; reverter se houver troca silenciosa de peça já aprovada.
+
+Resultado local da correção da seleção: 199 testes Java aprovados, incluindo 92 regras de
+arquitetura, mais 38 verificações do empacotador e do seletor de publicação. Spotless e diff
+aprovados. A atestação Mira v26 mantém a v25 imutável e revalida as duas referências afetadas;
+o seletor retornou `frontend-version=none` e `has-deployment=false` para os PDEs. O pacote
+comercial real foi construído com 527 arquivos e 116 manifestos. Isso não substitui a instalação
+do backend pelo pipeline nem o aceite humano das peças em produção.
+
+A primeira rodada de CI do PR #5612 detectou ausência do novo verificador no contexto Spring
+isolado de homologação. A fixture passa a importar o verificador real e simula somente o
+repositório externo de projetos; não substitui o gate por uma aprovação artificial. A rodada
+local `homologate-learning-cycles-local.sh --persistence-only` passou com MySQL 5.7, incluindo
+inicialização, decisões REST, persistência, contexto entre ciclos, rollback, reaplicação e
+idempotência das migrações. O projeto Compose temporário foi removido. Alterações de dependência
+nessa passagem devem incluir a inicialização da fixture, além das regressões unitárias já listadas.

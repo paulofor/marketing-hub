@@ -10180,3 +10180,19 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   A causa interna da recusa não foi informada pelo provedor: não atribuí-la ao roteiro ou
   mudar prompts por hipótese. Testes de serviço e HTTP local verificam duas identidades,
   request alterado, contexto incompatível, custo desconhecido e ausência de nova chamada.
+
+## LOOP-CICLO-PRESO-EM-VIDEO-REJEITADO — 16/10/2026
+
+- Evidência: Capella #12/#105; os eventos de produção 75/76 guardavam #55/#56 rejeitados,
+  enquanto a biblioteca já oferecia #76/#75 com parecer Psique #744 APPROVED. A tela negava
+  a decisão humana e a integração leria os IDs antigos mesmo depois do novo aceite.
+- Causa: o consumidor do ciclo tratava a seleção inicial como única mídia possível, sem
+  resolver a correção revisada pela mesma identidade do seletor de Psique.
+- Correção: resolver candidata necessária, posterior e da mesma versão/tenant com parecer
+  válido; exigir aceite humano explícito para integrar; congelar a mídia no recibo e manter
+  eventos/rejeições anteriores. Aprovação anterior não é trocada por candidata posterior.
+- Prevenção: regressão ponta a ponta local para Capella e outra identidade, hash/versão/tenant,
+  revisão ausente, opcional, data anterior, aprovações válidas e integridade após integração.
+  A projeção inclui o parecer criativo na última entrega e no tempo de espera.
+- Limite: seleção privada não libera campanha, consumo ou homologação comercial. Evidências em
+  `docs/homologacao/capella-retomada-psique-v1.md`.

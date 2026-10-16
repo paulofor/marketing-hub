@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.CreativeFinalVideoEvidence;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.creative.*;
 import com.marketinghub.experiment.*;
@@ -31,8 +32,14 @@ class LearningCycleVideoEvidenceTest {
   final CreativeRepository creatives = mock(CreativeRepository.class);
   final PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
   final LearningSalesCycleEventRepository events = mock(LearningSalesCycleEventRepository.class);
+  private final CreativeFinalVideoEvidence finalReview =
+      new CreativeFinalVideoEvidence(
+          videos,
+          mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class),
+          mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class),
+          mapper);
   final LearningCycleVideoEvidence service =
-      new LearningCycleVideoEvidence(videos, creatives, slots, events, json);
+      new LearningCycleVideoEvidence(videos, creatives, slots, events, json, finalReview);
   final LearningSalesCycle cycle = new LearningSalesCycle();
   final List<LearningSalesCycleEvent> history = new ArrayList<>();
   Experiment experiment;

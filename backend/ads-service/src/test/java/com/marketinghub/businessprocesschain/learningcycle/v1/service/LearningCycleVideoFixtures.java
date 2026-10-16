@@ -10,6 +10,7 @@ import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -26,6 +27,12 @@ public class LearningCycleVideoFixtures {
   static final Map<Long, ExperimentVideoAsset> VIDEOS = new ConcurrentHashMap<>();
   static final Map<Long, Creative> CREATIVES = new ConcurrentHashMap<>();
   static final Map<Long, PdeProductionSlot> SLOTS = new ConcurrentHashMap<>();
+
+  /** Mantém projetos externos ausentes sem substituir a validação real da identidade dos vídeos. */
+  @Bean
+  VideoProjectRepository videoProjects() {
+    return mock(VideoProjectRepository.class);
+  }
 
   /** Simula consulta de mídia; o ciclo e sua auditoria continuam em MySQL real. */
   @Bean

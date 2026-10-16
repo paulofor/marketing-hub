@@ -38,16 +38,21 @@ export async function downloadVideo(media, fetcher = fetch) {
   return bytes;
 }
 
-// Extrai o mix completo dos bytes verificados, preservando pausas e sem normalizar volume.
+// Extrai o mix na linha do tempo do vídeo, preservando também a pausa após o fim da faixa AAC.
 export async function extractAudio(page, bytes, media, directory) {
-  const decoded = await page.evaluate(async encoded => {
+  assert.ok(Number.isFinite(media.durationSeconds) && media.durationSeconds >= 3 && media.durationSeconds <= 120);
+  const decoded = await page.evaluate(async ({encoded, videoDuration}) => {
     const data = Uint8Array.from(atob(encoded), value => value.charCodeAt(0));
     const context = new AudioContext();
     try {
       const original = await context.decodeAudioData(data.buffer);
       if (original.duration < 3 || original.duration > 121) throw new Error("Duração de áudio inválida");
+      if (original.duration > videoDuration + 1) throw new Error("Áudio ultrapassa a duração do vídeo");
+      // A faixa pode acabar antes da imagem. Completa somente o silêncio real do encerramento,
+      // sem esticar fala, cortar palavras ou tratar a pausa como erro de sincronização.
+      const timelineDuration = Math.max(videoDuration, original.duration);
       const rate = 24000;
-      const offline = new OfflineAudioContext(1, Math.ceil(original.duration * rate), rate);
+      const offline = new OfflineAudioContext(1, Math.ceil(timelineDuration * rate), rate);
       const source = offline.createBufferSource(); source.buffer = original;
       source.connect(offline.destination); source.start();
       const rendered = await offline.startRendering();
@@ -62,9 +67,11 @@ export async function extractAudio(page, bytes, media, directory) {
       for(let i=0;i<samples.length;i++) { const v=Math.max(-1,Math.min(1,samples[i])); peak=Math.max(peak,Math.abs(v));energy+=v*v; view.setInt16(44+i*2,Math.round(v*(v<0?32768:32767)),true); }
       const buffer=new Uint8Array(wav);let binary="";
       for(let i=0;i<buffer.length;i+=16384) binary+=String.fromCharCode(...buffer.subarray(i,i+16384));
-      return { data:btoa(binary), durationSeconds:original.duration, sampleRate:rate,channels:1,peak,rms:Math.sqrt(energy/samples.length) };
+      return { data:btoa(binary), durationSeconds:timelineDuration,
+        decodedDurationSeconds:original.duration, trailingSilenceSeconds:Math.max(0,videoDuration-original.duration),
+        sampleRate:rate,channels:1,peak,rms:Math.sqrt(energy/samples.length) };
     } finally { await context.close(); }
-  }, bytes.toString("base64"));
+  }, {encoded:bytes.toString("base64"),videoDuration:media.durationSeconds});
   assert.ok(Math.abs(decoded.durationSeconds-media.durationSeconds)<=1,"Duração do mix divergente do vídeo");
   assert.ok(decoded.peak>0.00001 && decoded.rms>0.000001,"Áudio ausente ou silencioso; escuta bloqueada");
   const audio=Buffer.from(decoded.data,"base64");

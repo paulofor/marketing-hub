@@ -94,3 +94,36 @@ não houve erro de compilação Java nessa etapa. Os outros builds do HEAD passa
 A causa externa não foi presumida como resolvida: o check continua obrigatório no
 HEAD atualizado. O build e smoke de Psique no primeiro PR passaram, suprindo a
 limitação de disco do build integral local sem iniciar uma publicação de produção.
+
+## Pausa final na linha do tempo — 16/10/2026
+
+A tentativa local com os MP4 reais de Capella #72/#73 reproduziu um bloqueio antes da
+inferência: o vídeo de 55 s possui faixa AAC de aproximadamente 47,9 s; os segundos finais
+são imagem com silêncio. O decoder retorna apenas a faixa sonora. O capturador comparava essa
+duração com a do vídeo e rejeitava o arquivo. A fixture anterior terminava áudio e imagem
+juntos e não detectava essa classe de falha. O roteiro da revisão continua vindo da narração
+final, não do campo histórico do primeiro render.
+
+Foram comparadas três soluções: remuxar todas as entregas, extrair com FFmpeg e completar a
+linha do tempo no OfflineAudioContext existente. A última preserva os MP4, os hashes e o
+histórico, dispensa nova dependência e representa o mesmo silêncio ouvido na reprodução.
+Não alonga fala, normaliza volume ou corta palavras. Áudio mais de um segundo além do vídeo
+continua inválido; silêncio integral, arquivo trocado e duração visual divergente continuam
+bloqueados. A folga de até um segundo para padding do codec preserva o comportamento anterior.
+
+O manifesto passa a preservar duração decodificada e silêncio final, além de pico/RMS e hash.
+A alteração aplica-se ao mix com início em zero entregue pelo produtor atual. Trilhas com
+offset inicial externo exigem sua própria prova; não se presume sincronização labial.
+
+Matriz da correção: dois IDs independentes com voz mais curta que o vídeo, alinhamento
+anteriormente válido, sinal/volume preservados, pausa silenciosa, faixa excedente e silêncio
+integral. O teste falhou antes da correção e usa Chromium real, sem rede ou modelo pago.
+A captura real dos mesmos MP4 produziu 24 quadros e WAVs de 35/55 s; as pausas decodificadas
+foram aproximadamente 2,34/7,17 s. Isso comprova extração e preservação temporal, não qualidade
+persuasiva, naturalidade ou demanda: esses aceites continuam independentes.
+
+Validação desta correção: 44 testes Node e os três smokes do navegador passaram;
+221 testes Java do executor terminaram com 0 falhas e 0 erros
+(11 condicionais existentes). O empacotamento das 115 experiências vigentes passou.
+Os testes de browser foram executados em sequência para respeitar o limite local de processos.
+Nenhuma inferência paga foi usada na validação local.

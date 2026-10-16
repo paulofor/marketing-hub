@@ -138,3 +138,11 @@ e [tratamento de recusas fora do JSON esperado](https://developers.openai.com/ap
 Não se deduz a causa da recusa a partir dessas referências. Não houve mudança do modelo,
 do prompt ou das salvaguardas para contorná-la. A melhoria resolve a cobrança repetida da
 escuta válida; não garante que o provedor aceitará uma nova análise nem comprova vendas.
+
+## Material permanente para o suporte
+
+O [diagnóstico da escuta do anúncio #74](../diagnosticos/capella-openai-escuta-74/README.md)
+contém a mensagem pronta para o suporte, os recibos #3/#4/#5, os pedidos e respostas originais,
+os áudios enviados e um ZIP para download. Foi reconstituído dos registros persistidos e
+conferido em 16/10/2026, sem nova chamada paga. O link do repositório substitui os caminhos
+temporários da sandbox citados na conversa; não é uma cópia binária do ZIP antigo.

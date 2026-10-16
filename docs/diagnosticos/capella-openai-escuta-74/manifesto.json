@@ -1,0 +1,203 @@
+{
+  "packageVersion": "CAPELLA_OPENAI_AUDIO_DIAGNOSTIC_V1",
+  "evidenceDate": "2026-10-16",
+  "status": "HISTORICO",
+  "productId": 7,
+  "chainId": 26,
+  "learningCycleId": 12,
+  "experimentId": 105,
+  "endpoint": "https://api.openai.com/v1/chat/completions",
+  "requestOptions": {
+    "model": "gpt-audio-1.5",
+    "service_tier": "default",
+    "modalities": [
+      "text"
+    ],
+    "store": false,
+    "max_completion_tokens": 2000
+  },
+  "provenance": {
+    "reconstructedFromPersistedRecords": true,
+    "oldTemporaryZipRecovered": false,
+    "databaseTable": "agent_audio_review",
+    "databaseReadVia": "MCP db_query SELECT",
+    "executorFilesReadOnly": true,
+    "newPaidCalls": 0,
+    "previousInvestigation": "https://github.com/paulofor/marketing-hub/pull/5607#issuecomment-6210489486"
+  },
+  "limitations": [
+    "A causa interna das respostas da OpenAI continua desconhecida.",
+    "Contabilização de tokens não comprova percepção nem aprovação.",
+    "x-request-id não foi preservado; os IDs de resposta não são IDs do cabeçalho HTTP.",
+    "Horários do banco foram preservados sem inferir fuso e diferem do relógio do provedor.",
+    "Custos são estimativas por chamada; não são fatura conciliada ou custo total da preparação.",
+    "Este pacote não altera estado, orçamento, gate ou aprovação do experimento."
+  ],
+  "receipts": [
+    {
+      "receiptId": 3,
+      "taskId": 740,
+      "assetId": 75,
+      "productId": 7,
+      "experimentId": 105,
+      "status": "COMPLETED",
+      "errorMessage": null,
+      "videoSha256": "2cadd990c4477077b699063cca5530a36e1b413a3b0618f3842a3c628bc77665",
+      "audioSha256": "4e1e6bcb1eec56dce90942c7e8238c867c6f1206bc767b8ec7d9a48a94687ea5",
+      "requestSha256": "ac7e7bdd196aa7d8069381ecc143069b9014625585cc87e3c48ac5349b360e9c",
+      "responseSha256": "d4da7886d50dc03dc9a68bdfc4dfb36b290772f2f22c1c79d785867ae125a3ed",
+      "requestFileInZip": "demonstracao-75/request-original.json",
+      "audioFileInZip": "demonstracao-75/audio.wav",
+      "responseFile": "respostas/recibo-3.json",
+      "requestBytes": 3527802,
+      "audioBytes": 2640044,
+      "audioFormat": {
+        "codec": "pcm_s16le",
+        "channels": 1,
+        "sampleRateHz": 24000,
+        "sampleWidthBytes": 2,
+        "samples": 1320000,
+        "durationSeconds": 55.0
+      },
+      "model": "gpt-audio-1.5",
+      "completionId": "chatcmpl-EZVhEHa3Jp8EdGnTuqq4qnyNbkOr9",
+      "httpRequestId": null,
+      "providerCreatedUnix": 1792132028,
+      "providerCreatedUtc": "2026-10-16T06:27:08+00:00",
+      "databaseStartedAtAsStored": "2026-10-16T06:25:31",
+      "databaseFinishedAtAsStored": "2026-10-16T06:25:43",
+      "usage": {
+        "prompt_tokens": 2267,
+        "completion_tokens": 708,
+        "total_tokens": 2975,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 550,
+          "text_tokens": 1717,
+          "image_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0,
+          "text_tokens": 708
+        }
+      },
+      "estimatedUsd": 0.028973,
+      "reservedUsd": 4.116,
+      "invoiceReconciled": false,
+      "matchesPersistedRequestAndResponse": true
+    },
+    {
+      "receiptId": 4,
+      "taskId": 740,
+      "assetId": 74,
+      "productId": 7,
+      "experimentId": 105,
+      "status": "INVALID",
+      "errorMessage": "Unrecognized token 'I': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (String)\"I'm sorry, but I can't comply with that request.\"; line: 1, column: 2]",
+      "videoSha256": "c50cb600a7d92f19d55ed1c20163a7c71ff55a5104685c19158017bf78fd6ccb",
+      "audioSha256": "a2bcfc8d81eace67e3e1942d99c6d7ad7c1a1f54abd5ee37cf83bbcf9fc18071",
+      "requestSha256": "378f5d9f18d03d72df9c4ca66c98af804363b18bb6b7adf4a1320fe1d158f006",
+      "responseSha256": "3dcebc17015697f4aefb9a84d9f1e431023157b3cc437bcd34e55c8a738fa337",
+      "requestFileInZip": "anuncio-74/request-original.json",
+      "audioFileInZip": "anuncio-74/audio.wav",
+      "responseFile": "respostas/recibo-4.json",
+      "requestBytes": 2247514,
+      "audioBytes": 1680044,
+      "audioFormat": {
+        "codec": "pcm_s16le",
+        "channels": 1,
+        "sampleRateHz": 24000,
+        "sampleWidthBytes": 2,
+        "samples": 840000,
+        "durationSeconds": 35.0
+      },
+      "model": "gpt-audio-1.5",
+      "completionId": "chatcmpl-EZVhVItMG6MajhDRlwJFw23S3tZym",
+      "httpRequestId": null,
+      "providerCreatedUnix": 1792132045,
+      "providerCreatedUtc": "2026-10-16T06:27:25+00:00",
+      "databaseStartedAtAsStored": "2026-10-16T06:25:50",
+      "databaseFinishedAtAsStored": "2026-10-16T06:25:53",
+      "usage": {
+        "prompt_tokens": 2006,
+        "completion_tokens": 11,
+        "total_tokens": 2017,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 350,
+          "text_tokens": 1656,
+          "image_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0,
+          "text_tokens": 11
+        }
+      },
+      "estimatedUsd": 0.01545,
+      "reservedUsd": 4.116,
+      "invoiceReconciled": false,
+      "matchesPersistedRequestAndResponse": true
+    },
+    {
+      "receiptId": 5,
+      "taskId": 741,
+      "assetId": 74,
+      "productId": 7,
+      "experimentId": 105,
+      "status": "INVALID",
+      "errorMessage": "Unrecognized token 'Eu': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (String)\"Eu não consigo executar a tarefa solicitada. Não tenho acesso ao áudio real para ouvir e analisar o conteúdo conforme descrito.\"; line: 1, column: 3]",
+      "videoSha256": "c50cb600a7d92f19d55ed1c20163a7c71ff55a5104685c19158017bf78fd6ccb",
+      "audioSha256": "a2bcfc8d81eace67e3e1942d99c6d7ad7c1a1f54abd5ee37cf83bbcf9fc18071",
+      "requestSha256": "378f5d9f18d03d72df9c4ca66c98af804363b18bb6b7adf4a1320fe1d158f006",
+      "responseSha256": "0a75c50d41c0fca832d150a4782f44059d9b9bf6318d8127e9533a448baebdc8",
+      "requestFileInZip": "anuncio-74/request-original.json",
+      "audioFileInZip": "anuncio-74/audio.wav",
+      "responseFile": "respostas/recibo-5.json",
+      "requestBytes": 2247514,
+      "audioBytes": 1680044,
+      "audioFormat": {
+        "codec": "pcm_s16le",
+        "channels": 1,
+        "sampleRateHz": 24000,
+        "sampleWidthBytes": 2,
+        "samples": 840000,
+        "durationSeconds": 35.0
+      },
+      "model": "gpt-audio-1.5",
+      "completionId": "chatcmpl-EZWarUXvRz0k7yk0UWsXtnGx1TUGA",
+      "httpRequestId": null,
+      "providerCreatedUnix": 1792135477,
+      "providerCreatedUtc": "2026-10-16T07:24:37+00:00",
+      "databaseStartedAtAsStored": "2026-10-16T07:22:58",
+      "databaseFinishedAtAsStored": "2026-10-16T07:23:05",
+      "usage": {
+        "prompt_tokens": 2006,
+        "completion_tokens": 25,
+        "total_tokens": 2031,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 350,
+          "text_tokens": 1656,
+          "image_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0,
+          "text_tokens": 25
+        }
+      },
+      "estimatedUsd": 0.01559,
+      "reservedUsd": 4.116,
+      "invoiceReconciled": false,
+      "matchesPersistedRequestAndResponse": true
+    }
+  ]
+}

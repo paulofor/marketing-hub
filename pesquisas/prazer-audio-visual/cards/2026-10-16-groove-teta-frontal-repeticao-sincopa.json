@@ -1,0 +1,18 @@
+{
+  "cardKey": "groove-teta-frontal-repeticao-sincopa",
+  "collection": "prazer-audio-visual",
+  "title": "Groove evolui com repetição e síncope moderada",
+  "finding": "Em estudo de EEG publicado em 15/10/2026, padrões de síncope moderada provocaram maior prazer, desejo de mover e potência teta médio-frontal, sobretudo após repetições; teta na terceira repetição correlacionou-se com desejo de movimento.",
+  "mechanism": "Repetições podem refinar expectativas métricas e ajuste preditivo; potência teta pode sinalizar atenção/controle, mas não foi demonstrado mecanismo causal de prazer.",
+  "commercialApplication": "Comparar trilhas de mesmo roteiro com três níveis de síncope ao longo de várias repetições, medindo comportamento e prazer no público real.",
+  "evidenceStrength": "Média no paradigma EEG/autorrelato; baixa para eficácia de vídeos comerciais.",
+  "publishedOn": "2026-10-16",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "Síncope moderada elevará prazer e vontade de acompanhar o ritmo após repetições em relação a síncope alta, sem perda de compreensão.",
+  "risks": "Interpretar teta como dopamina medida, prazer garantido ou eficácia comercial; não impor frequências EEG a conteúdo audiovisual.",
+  "limits": "Resumo disponível não confirma N; artigo completo restrito; localização de fontes exploratória, sem compra nem medida de dopamina.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-16-groove-teta-frontal-repeticao-sincopa.md",
+  "sourceTitle": "Fonte revisada — groove, teta frontal e repetição",
+  "sourceSha256": "482a155cbf7018112527a762fd0021d59cc13a27c27b27aec49d2280359bee23"
+}

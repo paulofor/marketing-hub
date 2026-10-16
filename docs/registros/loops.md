@@ -2777,6 +2777,16 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 ## LOOP-OPENAI-SCHEMA-CONTRACT — Prompts, schemas e Structured Outputs
 
+- **Recorrência local em Psique, 16/10/2026:** GPT-Audio-1.5 não garante Structured Outputs.
+  O leitor aceitava conteúdo posterior ao JSON, chaves duplicadas, justificativa numérica
+  e múltiplas alternativas; quatro testes reproduziram `COMPLETED` indevido antes da correção.
+  A validação exige um único objeto sem ambiguidades e tipos reais. Texto sem parecer recebe
+  diagnóstico de contrato, preservando corpo/custo; não significa que o áudio estava ausente.
+  Recibos históricos #3/#4/#5, outra identidade e replay compõem a regressão. O executor
+  preserva IDs de requisição para diagnóstico; o prompt e schema permanecem iguais para
+  reutilizar escutas válidas. A recusa específica de #74 continua sem causa confirmada.
+  Fontes e matriz: `docs/homologacao/psique-escuta-audiovisual-v1.md`.
+
 - **Severidade**: ALTO.
 - **Status**: recorrente.
 - **Sintomas recorrentes**:

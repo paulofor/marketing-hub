@@ -102,26 +102,46 @@ public class FinalVideoAudioReview {
                 .body(JsonNode.class);
         if (receipt != null && receipt.path("mayInvoke").asBoolean()) {
           // A reserva remota persiste antes do envio. Qualquer envio incerto bloqueia repetição.
+          String clientRequestId = UUID.randomUUID().toString();
+          var transport =
+              json.createObjectNode()
+                  .put("taskId", taskId)
+                  .put("assetId", assetId)
+                  .put("reviewId", receipt.path("id").asLong())
+                  .put("endpoint", endpoint)
+                  .put("clientRequestId", clientRequestId);
+          persist(folder.resolve("transport.json"), transport.toString());
           log.info(
-              "Enviando escuta. taskId={} assetId={} endpoint={} reviewId={}",
+              "Enviando escuta. taskId={} assetId={} endpoint={} reviewId={} clientRequestId={}",
               taskId,
               assetId,
               endpoint,
-              receipt.path("id").asLong());
+              receipt.path("id").asLong(),
+              clientRequestId);
           HttpRequest http =
               HttpRequest.newBuilder(URI.create(endpoint))
                   .timeout(Duration.ofMinutes(3))
                   .header("Authorization", "Bearer " + secret)
                   .header("Content-Type", "application/json")
+                  .header("X-Client-Request-Id", clientRequestId)
                   .POST(HttpRequest.BodyPublishers.ofString(request.toString()))
                   .build();
           var reply = provider.send(http, HttpResponse.BodyHandlers.ofString());
           persist(response, reply.body());
+          // Somente identificadores permitidos: nunca persistir cabeçalhos de autenticação.
+          transport.put("httpStatus", reply.statusCode());
+          reply
+              .headers()
+              .firstValue("x-request-id")
+              .ifPresent(value -> transport.put("providerRequestId", value));
+          persist(folder.resolve("transport.json"), transport.toString());
           log.info(
-              "Resposta auditiva preservada. taskId={} assetId={} httpStatus={}",
+              "Resposta auditiva preservada. taskId={} assetId={} httpStatus={} clientRequestId={} providerRequestId={}",
               taskId,
               assetId,
-              reply.statusCode());
+              reply.statusCode(),
+              clientRequestId,
+              transport.path("providerRequestId").asText("ausente"));
         }
       }
       if (Files.isRegularFile(response)
@@ -174,7 +194,7 @@ public class FinalVideoAudioReview {
 
   /**
    * Monta escuta sem briefing de venda e usa limites medidos, sem induzir uma avaliação pelo
-   * roteiro.
+   * roteiro. O schema orienta o texto; GPT-Audio-1.5 não oferece Structured Outputs.
    */
   JsonNode request(JsonNode media, byte[] wav) throws Exception {
     var context = json.createObjectNode();

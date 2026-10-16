@@ -37,6 +37,13 @@ Os três pedidos usaram `gpt-audio-1.5`, `POST https://api.openai.com/v1/chat/co
 `modalities: ["text"]`, entrada `input_audio` em WAV e `service_tier: "default"`.
 Esse é o contrato histórico efetivamente enviado; não foi trocado durante a coleta.
 
+A [documentação do GPT-Audio-1.5](https://developers.openai.com/api/docs/models/gpt-audio-1.5)
+confirma que **Structured Outputs não é suportado**. O schema dentro do prompt orienta o
+modelo, sem garantir conformidade. Isso exige validação local; não explica por si só a
+recusa específica, pois o mesmo contrato funcionou para a demonstração. A
+[revisão do consumidor e sua matriz](../../homologacao/psique-escuta-audiovisual-v1.md#contrato-openai-sem-structured-outputs--16102026)
+documenta essa distinção e preserva os anexos históricos sem alterações.
+
 O provedor informou **350 tokens de áudio em cada tentativa do anúncio** e 550 na
 demonstração. Os dois pedidos do anúncio são idênticos byte a byte. O áudio do anúncio
 tem 35 segundos, 840.000 amostras, PCM de 16 bits, mono, 24 kHz, e decodifica sem erros.

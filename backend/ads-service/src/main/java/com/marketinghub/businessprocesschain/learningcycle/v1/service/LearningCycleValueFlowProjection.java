@@ -61,7 +61,8 @@ public class LearningCycleValueFlowProjection {
             Set.of(
                 "pde-commercial-plan-offer",
                 "pde-construction-approval",
-                "pde-communication-sales-journey"),
+                "pde-communication-sales-journey",
+                "creative-production-approval"),
             cycle.getCreatedAt());
     var latest =
         new LinkedHashMap<String, com.marketinghub.agenttask.AgentTaskFunctionalSnapshot>();

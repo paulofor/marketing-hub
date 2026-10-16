@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
+import com.marketinghub.agenttask.CreativeFinalVideoEvidence;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleProcessContext.Work;
@@ -40,13 +41,20 @@ class LearningCycleValueFlowProjectionTest {
   private final LearningCyclePrototypeContext prototype = mock(LearningCyclePrototypeContext.class);
   private final ProcessRunRepository runs = mock(ProcessRunRepository.class);
   private final ExperimentVideoAssetRepository videos = mock(ExperimentVideoAssetRepository.class);
+  private final CreativeFinalVideoEvidence finalReview =
+      new CreativeFinalVideoEvidence(
+          videos,
+          mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class),
+          mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class),
+          mapper);
   private final LearningCycleVideoEvidence videoEvidence =
       new LearningCycleVideoEvidence(
           videos,
           mock(CreativeRepository.class),
           mock(PdeProductionSlotRepository.class),
           events,
-          new LearningCycleJson(mapper));
+          new LearningCycleJson(mapper),
+          finalReview);
   private final LearningCycleValueFlowProjection projection =
       new LearningCycleValueFlowProjection(
           capabilities,
@@ -134,6 +142,35 @@ class LearningCycleValueFlowProjectionTest {
     var flow = projection.resolve(cycle, null);
     assertThat(flow.stalledSince()).isAfter(Instant.now().minusSeconds(60));
     assertThat(flow.stalledSeconds()).isBetween(0L, 60L);
+  }
+
+  /** Uma revisão audiovisual recente substitui o tempo parado calculado da produção rejeitada. */
+  @Test
+  void videoReviewDeliveryUpdatesWaitClock() {
+    var cycle = videoFixture(7, 12, 105, "capella-private-v3");
+    cycle.setStage("VIDEO_APPROVAL");
+    producedVideos(cycle);
+    var completed = Instant.now();
+    when(tasks.findFunctionalSnapshots(
+            eq("experiment:105"),
+            argThat(codes -> codes.contains("creative-production-approval")),
+            any()))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    744L,
+                    121L,
+                    "creative-production-approval",
+                    "customer",
+                    "customer-agent",
+                    "COMPLETED",
+                    Instant.now(),
+                    completed,
+                    "{\"decision\":\"APPROVED\"}")));
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.stalledSince()).isEqualTo(completed);
+    assertThat(flow.deliverables()).extracting(d -> d.taskId()).contains(744L);
+    assertThat(flow.decisionNeeded()).isTrue();
   }
 
   /** O histórico encerrado não solicita outra seleção nem consulta as peças para execução. */

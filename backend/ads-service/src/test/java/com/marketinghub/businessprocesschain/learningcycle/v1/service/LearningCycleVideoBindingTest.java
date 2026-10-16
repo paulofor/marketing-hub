@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.CreativeFinalVideoEvidence;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
@@ -39,8 +40,15 @@ class LearningCycleVideoBindingTest {
   final ExperimentVideoAssetRepository videos = mock(ExperimentVideoAssetRepository.class);
   final CreativeRepository creatives = mock(CreativeRepository.class);
   final PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
+  private final CreativeFinalVideoEvidence finalReview =
+      new CreativeFinalVideoEvidence(
+          videos,
+          mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class),
+          mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class),
+          json);
   final LearningCycleVideoEvidence evidence =
-      new LearningCycleVideoEvidence(videos, creatives, slots, events, new LearningCycleJson(json));
+      new LearningCycleVideoEvidence(
+          videos, creatives, slots, events, new LearningCycleJson(json), finalReview);
   final LearningCyclePrototypeContext prototypes = new LearningCyclePrototypeContext(events, json);
   final LearningCycleVideoBinding binding =
       new LearningCycleVideoBinding(cycles, events, evidence, prototypes, json);

@@ -4,6 +4,8 @@ import static com.marketinghub.businessprocesschain.learningcycle.v1.service.Lea
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTaskTargetResponse;
+import com.marketinghub.agenttask.CreativeFinalVideoEvidence;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse.ApprovalOption;
 import com.marketinghub.creative.*;
@@ -33,6 +35,7 @@ public class LearningCycleVideoEvidence {
   private final PdeProductionSlotRepository slots;
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
+  private final CreativeFinalVideoEvidence finalReview;
 
   /** Valida o briefing comercial sem convertê-lo em autorização financeira ou job. */
   public void brief(JsonNode data) {
@@ -379,7 +382,10 @@ public class LearningCycleVideoEvidence {
     return contract;
   }
 
-  /** Exige a mesma mídia registrada nesta revisão, sem reaproveitar seleção anterior à correção. */
+  /**
+   * Preserva a prova original e resolve sua correção revisada, exigindo aceite explícito ao
+   * integrar.
+   */
   private ExperimentVideoAsset selected(
       LearningSalesCycle cycle,
       String stage,
@@ -387,11 +393,65 @@ public class LearningCycleVideoEvidence {
       ExperimentVideoSlot role,
       boolean approved) {
     JsonNode proof = completed(cycle, stage);
-    var value = video(cycle, id(proof, field), role, approved);
+    var value = video(cycle, id(proof, field), role, false);
     require(
         proof.path("assetFingerprint").asText().equals(fingerprint(value)),
         "A mídia selecionada mudou. Registre novamente os vídeos após devolver o ciclo para correção.");
+    value = reviewedReplacement(cycle, value, role);
+    require(
+        !approved || value.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED,
+        "O vídeo #" + value.getId() + " aguarda aprovação de uso.");
     return value;
+  }
+
+  /**
+   * Usa a candidata da mesma versão que Psique revisou; uma leitura nunca aprova ou grava a
+   * seleção.
+   */
+  private ExperimentVideoAsset reviewedReplacement(
+      LearningSalesCycle cycle, ExperimentVideoAsset original, ExperimentVideoSlot role) {
+    if (original.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) return original;
+    if (automaticBinding != null) {
+      var integrated = automaticBinding.receipt(cycle);
+      if (integrated.isPresent()) {
+        var media =
+            json.read(integrated.get().getEvidenceJson())
+                .path(role == ExperimentVideoSlot.AD ? "campaignVideo" : "heroVideo");
+        return video(cycle, id(media, "assetId"), role, false);
+      }
+    }
+    var target =
+        new AgentTaskTargetResponse(
+            "experiment:" + cycle.getExperimentId(),
+            cycle.getExperimentId(),
+            cycle.getProductId(),
+            null,
+            null,
+            null,
+            cycle.getProductVersion(),
+            null,
+            null,
+            null,
+            null,
+            null);
+    for (var input : finalReview.inputs(target)) {
+      if (!role.name().equals(input.path("role").asText())
+          || original.getId().equals(input.path("assetId").asLong())) continue;
+      var candidate = video(cycle, id(input, "assetId"), role, false);
+      if (!candidate.isRequiredForRelease()
+          || candidate.getCreatedAt() == null
+          || cycle.getVersionChangedAt() == null
+          || candidate.getCreatedAt().isBefore(cycle.getVersionChangedAt())
+          || original.getCreatedAt() != null
+              && !candidate.getCreatedAt().isAfter(original.getCreatedAt())
+          || !"CUSTOMER_VIDEO_QUALITY_V1"
+              .equals(
+                  json.read(candidate.getResponseJson()).path("customerQualityContract").asText()))
+        continue;
+      if (candidate.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
+          || finalReview.approvalBlockReason(candidate) == null) return candidate;
+    }
+    return original;
   }
 
   /** Valida a fonte oficial com finalidade, áudio, URLs e aprovação independente quando exigida. */

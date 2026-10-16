@@ -84,3 +84,24 @@ Essa fixture operacional não é versionada e nenhum teste escreve em produção
 Os 35 testes do módulo frontend, TypeScript/build, 16 testes das atestações e parse do Swagger
 também passaram. A seleção humana e as revisões dos arquivos finais não são simuladas como
 aprovação comercial.
+
+## Compatibilidade do histórico completo — 16/10/2026
+
+A aplicação pela tela retornou 409 antes de escrever: `details_json` contém também mensagens
+legadas como `Claim automático pelo video-management-service` e diagnósticos de falha em texto.
+O teste operacional anterior tinha selecionado somente eventos com recibos e não cobria esse
+formato. A hipótese foi confirmada no banco e reproduzida localmente com todos os 212 eventos
+das 15 tentativas, incluindo as mensagens sem JSON.
+
+A correção trata como auditoria apenas metadados e eventos que declaram `tts_interactions`.
+Não transforma mensagens em recibos, modifica histórico ou afrouxa custo desconhecido.
+Metadados inválidos e eventos que declaram recibos malformados continuam bloqueados.
+Foi preferida a leitura compatível a reescrever eventos antigos ou ignorar indiscriminadamente
+qualquer erro de JSON. A responsabilidade do leitor é distinguir mensagens de andamento dos
+recibos financeiros que realmente precisa validar.
+
+A fixture comum agora inclui claim em texto; duas identidades cobrem recibos de falha posterior
+à síntese entre mensagens legadas, e uma regressão recusa auditoria declarada porém truncada.
+O lote real completo passou localmente, com os mesmos custos e sem acesso de escrita remoto.
+A rodada relevante terminou com 188 testes sem falha/erro, incluindo arquitetura, ledger,
+reserva auditiva, lifecycle dos jobs e o teste operacional descartável do lote completo.

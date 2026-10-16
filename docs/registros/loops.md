@@ -10115,3 +10115,16 @@ Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
   mídia trocada e duração visual incorreta continuam bloqueados; não afrouxar esses gates.
 - **Limite:** mix do produtor atual com início em zero; extração não comprova percepção nem
   sincronismo labial. Registro: `docs/homologacao/psique-escuta-audiovisual-v1.md`.
+
+### Complemento de LOOP-LOCUCAO-CONCILIADA-FORA-DO-LEDGER — histórico em texto
+
+A aplicação pela tela revelou 409 na mensagem legada de claim. `details_json` é LONGTEXT e
+não garante que todos os eventos sejam JSON: o histórico preserva também diagnósticos em
+texto. O leitor financeiro novo fazia essa suposição; a primeira fixture operacional tinha
+filtrado eventos sem recibos e omitiu a reprodução completa.
+
+A correção lê metadados e eventos que declaram `tts_interactions`; claim e diagnóstico sem
+recibos não são fontes de preço. Auditoria declarada porém inválida continua impedindo o lote.
+A prevenção inclui mensagens legadas na fixture comum, duas identidades com recibos preservados
+após falha e evento de auditoria truncado que não pode passar. Todos os 212 eventos reais do
+lote foram reproduzidos localmente antes da atualização. Não reescrever história para conciliar.

@@ -18,11 +18,13 @@ final class NarrationUsageEvidence {
   /** Impede instâncias do validador sem estado. */
   private NarrationUsageEvidence() {}
 
-  /** Lê a auditoria mais completa, preservada também nas falhas posteriores à síntese. */
+  /** Lê recibos estruturados sem interpretar mensagens legadas de andamento como auditoria. */
   static JsonNode audit(SalesVideoJob job, ObjectMapper json) {
     JsonNode selected = read(job.getMetadataJson(), job.getId(), json);
     for (var event : job.getEvents()) {
-      JsonNode candidate = read(event.getDetailsJson(), job.getId(), json);
+      String details = event.getDetailsJson();
+      if (details == null || !details.contains("tts_interactions")) continue;
+      JsonNode candidate = read(details, job.getId(), json);
       if (candidate.path("tts_interactions").size() > selected.path("tts_interactions").size())
         selected = candidate;
     }

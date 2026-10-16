@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-EZVhEHa3Jp8EdGnTuqq4qnyNbkOr9",
+  "object": "chat.completion",
+  "created": 1792132028,
+  "model": "gpt-audio-1.5",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"contractVersion\": \"PSIQUE_AUDIO_REVIEW_V1\",\n  \"listened\": true,\n  \"verdict\": \"PASS\",\n  \"voice\": {\n    \"status\": \"PASS\",\n    \"summary\": \"A narração é clara, natural e bem articulada, com ritmo moderado e pausas adequadas entre as mensagens. O locutor enfatiza corretamente os benefícios apresentados, mantendo variedade na entonação sem soar monótono.\"\n  },\n  \"music\": {\n    \"status\": \"NOT_PRESENT\",\n    \"summary\": \"Não se ouve qualquer tipo de música ou trilha sonora ao longo do áudio, tornando a mensagem centrada exclusivamente na voz do narrador. Essa ausência não prejudica a compreensão nem cria interferências.\"\n  },\n  \"timing\": {\n    \"status\": \"PASS\",\n    \"summary\": \"As falas iniciam e terminam dentro dos segmentos definidos, com pausas coerentes e sem cortes abruptos. O tempo entre cada segmento permite que a audiência assimile a informação sem pressa.\"\n  },\n  \"moments\": [\n    {\n      \"startSeconds\": 0.0,\n      \"endSeconds\": 5.304,\n      \"heard\": \"Apresentação da situação de precisar criar tudo de novo para divulgação de unhas.\",\n      \"action\": \"manter a introdução clara e direta\"\n    },\n    {\n      \"startSeconds\": 5.304,\n      \"endSeconds\": 10.752,\n      \"heard\": \"Explicação sobre o kit pronto para usar do Agenda Cheia Nail Design.\",\n      \"action\": \"manter a explicação do produto\"\n    },\n    {\n      \"startSeconds\": 10.752,\n      \"endSeconds\": 17.112,\n      \"heard\": \"Descrição de arte acompanhada de legenda e instruções de uso.\",\n      \"action\": \"manter a clareza da instrução\"\n    },\n    {\n      \"startSeconds\": 17.112,\n      \"endSeconds\": 25.464,\n      \"heard\": \"Enumerando posts, stories, legendas, mensagens e calendário incluídos.\",\n      \"action\": \"manter a enumeração pausada\"\n    },\n    {\n      \"startSeconds\": 25.464,\n      \"endSeconds\": 31.464,\n      \"heard\": \"Explicando que o conjunto recebe identidade do usuário.\",\n      \"action\": \"manter a ênfase nas personalizações\"\n    },\n    {\n      \"startSeconds\": 31.464,\n      \"endSeconds\": 35.976,\n      \"heard\": \"Informando o preço de sessenta e sete reais em pagamento único.\",\n      \"action\": \"manter a clareza do valor\"\n    },\n    {\n      \"startSeconds\": 35.976,\n      \"endSeconds\": 44.376,\n      \"heard\": \"Detalhando a entrega em até três dias úteis e suporte de sete dias.\",\n      \"action\": \"manter o destaque no prazo e suporte\"\n    },\n    {\n      \"startSeconds\": 44.376,\n      \"endSeconds\": 47.832,\n      \"heard\": \"Convidando a conferir amostras e conhecer o kit.\",\n      \"action\": \"manter o encerramento convidativo\"\n    }\n  ],\n  \"limitations\": [\n    \"Não houve acesso a imagens ou referências visuais, avaliação baseada exclusivamente no áudio narrado.\"\n  ]\n}",
+        "refusal": null,
+        "annotations": []
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 2267,
+    "completion_tokens": 708,
+    "total_tokens": 2975,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 550,
+      "text_tokens": 1717,
+      "image_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "text_tokens": 708
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_fff6ac57dd"
+}

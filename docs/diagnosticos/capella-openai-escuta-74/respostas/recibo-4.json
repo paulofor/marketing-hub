@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-EZVhVItMG6MajhDRlwJFw23S3tZym",
+  "object": "chat.completion",
+  "created": 1792132045,
+  "model": "gpt-audio-1.5",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I'm sorry, but I can't comply with that request.",
+        "refusal": null,
+        "annotations": []
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 2006,
+    "completion_tokens": 11,
+    "total_tokens": 2017,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 350,
+      "text_tokens": 1656,
+      "image_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "text_tokens": 11
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_fff6ac57dd"
+}

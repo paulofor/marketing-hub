@@ -41,6 +41,7 @@ O cabeçalho recomendado é:
 - Geração de imagens e seleção do modelo visual: `docs/canonical/image-generation-model-canon.v1.md`.
 - Banco e Liquibase: `docs/database/liquibase-mysql57.md` e `docs/canonical/liquibase-mysql57-temporal-fields-canon.v1.md`.
 - Evidências e incidentes: `docs/registros/`, `docs/diagnostics/`, `docs/diagnosticos/` e `relatorios/`.
+- Suporte OpenAI de Capella: [diagnóstico da escuta do anúncio #74, com mensagem e ZIP para download](diagnosticos/capella-openai-escuta-74/README.md).
 
 ## Regras de manutenção
 

@@ -674,6 +674,12 @@
 
 ## LOOP-PSIQUE-CALLBACK-DE-FALHA-INVALIDO-REPETIDO — retry técnico nunca termina
 
+- **Recorrência em 16/10/2026 — Capella #742:** um ADJUST criativo válido ainda era enviado
+  inicialmente a `/failure`. O recuperador de montagem exigia parecer concluído e recusou a
+  correção, apesar de o replay de #739 já comprovar `/result`. A primeira entrega agora usa
+  `/result` para decisões criativas validadas, preservando o gate funcional e os demais contextos.
+  Regressão HTTP reproduziu o caso e outra identidade antes da correção; APPROVED e recuperação
+  continuam cobertos. Evidências e matriz em `docs/homologacao/capella-retomada-psique-v1.md`.
 - **Data:** 2026-09-18. Vega, experimento #92, tarefa #450.
 - **Evidência histórica:** após três rejeições do callback de resultado, Psique converteu a tentativa
   preservada em callback de falha. O backend rejeitou cada reenvio com HTTP 400 porque

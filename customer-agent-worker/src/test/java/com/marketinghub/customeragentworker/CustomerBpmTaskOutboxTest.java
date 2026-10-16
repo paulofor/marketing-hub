@@ -25,6 +25,67 @@ class CustomerBpmTaskOutboxTest {
   @TempDir Path directory;
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
+  /** Entrega decisões criativas na primeira tentativa, preservando custo e gate do backend. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "742,105,ADJUST",
+    "1742,905,ADJUST",
+    "1743,906,BLOCKED",
+    "1744,907,APPROVED"
+  })
+  void deliversFirstCreativeDecisionAsResult(long taskId, long experimentId, String decision)
+      throws Exception {
+    AtomicInteger attempts = new AtomicInteger();
+    AtomicReference<String> received = new AtomicReference<>();
+    List<String> paths = new CopyOnWriteArrayList<>();
+    HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/api/internal/agent-tasks/",
+        exchange -> {
+          attempts.incrementAndGet();
+          paths.add(exchange.getRequestURI().getPath());
+          received.set(
+              new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+          exchange.sendResponseHeaders(204, -1);
+          exchange.close();
+        });
+    server.start();
+    Path state = directory.resolve("first-creative-decision-" + taskId);
+    var task = new java.util.HashMap<>(task(taskId));
+    task.put("processCode", "creative-production-approval");
+    task.put("activityId", "customer");
+    task.put("sourceReference", "experiment:" + experimentId);
+    String raw =
+        "{\"decision\":\"" + decision + "\",\"customerPerspective\":\"Revisão independente\"}";
+    var execution =
+        new CustomerBpmTaskConsumer.BpmExecution(
+            json.readTree(raw),
+            new CustomerBpmTaskConsumer.TokenUsage(2500L, 500L, 400L),
+            "Prompt auditado",
+            "Contrato de Psique",
+            "Contrato da atividade",
+            List.of(),
+            List.of(),
+            raw);
+    try {
+      org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+          consumer(server, state), "enqueueDecision", task, execution);
+      JsonNode callback = json.readTree(received.get());
+      assertThat(paths)
+          .containsExactly(
+              "/api/internal/agent-tasks/customer-agent/stage-executions/" + taskId + "/result");
+      assertThat(attempts).hasValue(1);
+      assertThat(callback.path("resultJson").asText()).isEqualTo(raw);
+      assertThat(callback.path("modelUsages").path(0).path("outputTokens").asLong())
+          .isEqualTo(400L);
+      assertThat(callback.path("executionAudit").path("promptSent").asText())
+          .isEqualTo("Prompt auditado");
+      assertThat(new CustomerBpmTaskOutbox(state, json).read()).isNull();
+    } finally {
+      server.stop(0);
+    }
+  }
+
   /** O consumidor real reaplica ajustes e bloqueios já pagos, sem iniciar captura ou modelo. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(strings = {"APPROVED", "ADJUST", "BLOCKED"})

@@ -818,17 +818,20 @@ public class CustomerBpmTaskConsumer {
         + " minutos.";
   }
 
-  /** Encaminha aprovação ou bloqueio funcional sem alterar o parecer produzido. */
+  /**
+   * Entrega parecer criativo válido ao backend, que decide aprovação ou necessidade de correção.
+   */
   private void enqueueDecision(Map<String, Object> task, BpmExecution execution)
       throws IOException {
-    if ("APPROVED".equals(execution.result().path("decision").asText())) {
+    if ("APPROVED".equals(execution.result().path("decision").asText())
+        || "creative-production-approval".equals(processCode(task))) {
       report(task, execution);
     } else {
       block(task, execution);
     }
   }
 
-  /** Preserva e entrega o parecer aprovado na própria atividade BPM. */
+  /** Preserva decisão, auditoria e consumo do parecer validado, sem conceder aceite ao artefato. */
   private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
     body.put("resultJson", execution.rawResponse());

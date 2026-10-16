@@ -133,7 +133,7 @@ public class InternalAgentTaskExecutionController {
     return ResponseEntity.noContent().build();
   }
 
-  /** Bloqueia a atividade com causa persistida sem avançar o processo. */
+  /** Persiste a falha sem avançar o processo e preserva cancelamentos anteriores ao retorno. */
   @PostMapping("/{taskId}/failure")
   public ResponseEntity<Void> fail(
       @PathVariable String agentKey,

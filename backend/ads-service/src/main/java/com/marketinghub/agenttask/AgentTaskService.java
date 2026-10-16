@@ -3303,11 +3303,13 @@ public class AgentTaskService {
   }
 
   /**
-   * Bloqueia trabalho reservado e confirma reenvio já persistido sem acumular consumo novamente.
+   * Bloqueia trabalho reservado ou arquiva falha após cancelamento, sem reabrir nem duplicar
+   * consumo.
    */
   @Transactional
   public void failClaimedProcessTask(String agentKey, Long taskId, FailAgentTaskRequest request) {
     AgentTask task = lockedForCallback(agentKey, taskId);
+    if (recordCancelledFailure(task, request)) return;
     if (terminalCallbackRecorded(
         task,
         "BLOCKED",
@@ -3329,6 +3331,41 @@ public class AgentTaskService {
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
     synchronizeActivityInstance(saved, now);
+  }
+
+  /** Confirma falha tardia auditada mantendo o cancelamento e sem executar efeitos do processo. */
+  private boolean recordCancelledFailure(AgentTask task, FailAgentTaskRequest request) {
+    if (!"CANCELLED".equals(task.getStatus())) return false;
+    boolean samePayload =
+        Objects.equals(task.getExecutionError(), request.error())
+            && Objects.equals(task.getResultJson(), request.resultJson())
+            && Objects.equals(task.getEvidenceJson(), request.evidenceJson());
+    if (samePayload
+        && ((request.executionAudit() == null && "NOT_STARTED".equals(task.getExecutionMode()))
+            || terminalCallbackRecorded(
+                task,
+                "CANCELLED",
+                request.resultJson(),
+                request.evidenceJson(),
+                request.error(),
+                request.executionAudit()))) return true;
+    if (trimToNull(task.getExecutionError()) != null
+        || trimToNull(task.getResultJson()) != null
+        || trimToNull(task.getEvidenceJson()) != null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Tarefa cancelada já preserva outro retorno; sua auditoria não pode ser substituída.");
+    }
+    task.setExecutionError(request.error());
+    task.setResultJson(request.resultJson());
+    task.setEvidenceJson(request.evidenceJson());
+    applyExecutionAudit(task, request.executionAudit());
+    applyModelUsage(task, request.modelUsages());
+    ensurePreModelFailureAudit(task, request.resultJson(), request.modelUsages());
+    requireTerminalExecutionAudit(task, false);
+    task.setUpdatedAt(Instant.now(clock));
+    repository.save(task);
+    return true;
   }
 
   /** Acumula tokens reais e custo estimado sem permitir que o executor escolha as tarifas. */

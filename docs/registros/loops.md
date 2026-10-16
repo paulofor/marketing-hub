@@ -674,6 +674,11 @@
 
 ## LOOP-PSIQUE-CALLBACK-DE-FALHA-INVALIDO-REPETIDO — retry técnico nunca termina
 
+- **Cancelamento durante captura em 16/10/2026 — Capella #743:** o cancelamento ocorreu antes
+  do modelo, mas `/failure` recusava o retorno com 409 e o outbox único impedia a recuperação
+  da tarefa #742. O backend agora arquiva a falha tardia do próprio agente, mantendo CANCELLED,
+  sem hooks ou avanço. Reenvio idêntico não acumula consumo; retorno divergente não sobrescreve
+  auditoria. Testes reproduzem o 409 original, outra identidade e retorno com tokens já usados.
 - **Recorrência em 16/10/2026 — Capella #742:** um ADJUST criativo válido ainda era enviado
   inicialmente a `/failure`. O recuperador de montagem exigia parecer concluído e recusou a
   correção, apesar de o replay de #739 já comprovar `/result`. A primeira entrega agora usa

@@ -153,6 +153,48 @@ class CreativeFinalVideoEvidenceTest {
     assertThat(service.approvalBlockReason(video)).isNull();
   }
 
+  /** Ajustes de dois contextos exigem mídia exata, atividade independente e saída concluída. */
+  @ParameterizedTest
+  @ValueSource(longs = {72, 93072})
+  void correctionRequiresExactIndependentVideoDecision(long id) {
+    var video = video(id);
+    var review = task();
+    review.setStatus("COMPLETED");
+    String valid =
+        "{\"decision\":\"ADJUST\",\"correctionScope\":\"FINAL_VIDEO\",\"videoAudit\":[{\"assetId\":"
+            + id
+            + ",\"sha256\":\""
+            + "a".repeat(64)
+            + "\",\"criticalDeficit\":true}]}";
+    review.setResultJson(valid);
+    when(tasks.findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+            "customer-agent", "experiment:102"))
+        .thenReturn(Optional.of(review));
+    assertThat(service.correctionRequested(video)).isTrue();
+    assertThat(service.approvalBlockReason(video)).isNotNull();
+    for (String invalid :
+        List.of(
+            valid.replace("ADJUST", "APPROVED"),
+            valid.replace("FINAL_VIDEO", "STATIC_ASSET"),
+            valid.replace("FINAL_VIDEO", "MIXED"),
+            valid.replace("a".repeat(64), "b".repeat(64)),
+            valid.replace("\"assetId\":" + id, "\"assetId\":" + (id + 1)),
+            valid.replace("true", "false"))) {
+      review.setResultJson(invalid);
+      assertThat(service.correctionRequested(video)).isFalse();
+    }
+    review.setResultJson(valid);
+    review.setStatus("BLOCKED");
+    assertThat(service.correctionRequested(video)).isFalse();
+    review.setStatus("COMPLETED");
+    review.setProcessActivityId("nonAudiovisual");
+    assertThat(service.correctionRequested(video)).isFalse();
+    when(tasks.findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+            "customer-agent", "experiment:102"))
+        .thenReturn(Optional.empty());
+    assertThat(service.correctionRequested(video)).isFalse();
+  }
+
   /** Monta mídia sintética com identidade e duração, sem autorização comercial. */
   private ExperimentVideoAsset video(Long id) {
     var video = new ExperimentVideoAsset();

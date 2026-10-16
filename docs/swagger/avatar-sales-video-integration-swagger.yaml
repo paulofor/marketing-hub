@@ -347,8 +347,12 @@ paths:
         textos e URL é reutilizado; entradas diferentes aguardam sua conclusão.
         Após falha de acabamento, o bruto pronto pode originar novo filho, mantendo
         o histórico e atualizando o ciclo somente quando este ainda acompanha a
-        fonte ou seu filho falho correspondente. Fonte de tentativa anterior não
-        sobrescreve trabalho posterior nem um acabamento pronto.
+        fonte ou seu filho falho correspondente. Um filho pronto também admite nova montagem
+        após reprovação humana ou pedido independente de Psique ADJUST/FINAL_VIDEO sobre o ID
+        e hash exatos, com déficit crítico. Este último exige seleção PENDING e experimento
+        PLANNED, PAUSED ou USER_STOPPED. Recupera voz compatível, conserva os arquivos anteriores
+        e não concede aceite, orçamento ou publicação. Fonte de outra tentativa não sobrescreve
+        trabalho posterior. A nova candidata exige seus próprios pareceres e seleção.
       parameters:
         - $ref: '#/components/parameters/JobId'
       requestBody:

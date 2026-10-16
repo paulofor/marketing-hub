@@ -745,7 +745,7 @@ public class SalesVideoJobService {
     this.productionCycleRepository = repository;
   }
 
-  /** Conecta as decisões humanas dos ativos comerciais ao controle de nova finalização. */
+  /** Conecta decisões humanas e pedidos independentes de correção à nova finalização. */
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   public void setExperimentAssetApprovalChecker(
       SalesVideoExperimentAssetApprovalChecker approvalChecker) {
@@ -753,7 +753,7 @@ public class SalesVideoJobService {
   }
 
   /**
-   * Acompanha acabamento inicial ou correção do filho falho da mesma fonte, preservando tentativas
+   * Acompanha acabamento inicial ou correção autorizada da mesma fonte, preservando tentativas
    * posteriores.
    */
   private void trackGovernedFinalization(SalesVideoJob source, SalesVideoJob child) {
@@ -781,7 +781,7 @@ public class SalesVideoJobService {
             });
   }
 
-  /** Só substitui o filho falho ou humanamente reprovado da mesma fonte bruta. */
+  /** Só substitui o filho da mesma fonte quando existe falha ou parecer permitindo correção. */
   private boolean canTrackFinalization(Long currentJobId, SalesVideoJob source) {
     if (java.util.Objects.equals(currentJobId, source.getId())) return true;
     if (currentJobId == null) return false;
@@ -795,12 +795,13 @@ public class SalesVideoJobService {
         .isPresent();
   }
 
-  /** Permite nova finalização somente após falha técnica ou reprovação humana persistida. */
+  /** Permite corrigir falha, reprovação humana ou ajuste independente da mídia exata. */
   private boolean isReplaceableFinalization(SalesVideoJob current) {
     if (current.getStatus() == SalesVideoStatus.VIDEO_FAILED) return true;
     if (current.getStatus() != SalesVideoStatus.VIDEO_READY
         || experimentAssetApprovalChecker == null) return false;
-    return experimentAssetApprovalChecker.isRejectedForReplacement(current.getId());
+    return experimentAssetApprovalChecker.isRejectedForReplacement(current.getId())
+        || experimentAssetApprovalChecker.isCorrectionRequested(current.getId());
   }
 
   /**

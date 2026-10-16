@@ -17,11 +17,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExperimentVideoAssetApprovalCheckerTest {
   @Mock private ExperimentVideoAssetRepository repository;
+  @Mock private com.marketinghub.agenttask.CreativeFinalVideoEvidence finalReview;
 
   /** Candidata opcional deixa de notificar, mas permanece impedida de publicação sem aprovação. */
   @Test
   void optionalCandidateStillRequiresApprovalBeforePublication() {
-    var checker = new ExperimentVideoAssetApprovalChecker(repository);
+    var checker = new ExperimentVideoAssetApprovalChecker(repository, finalReview);
     var optional =
         ExperimentVideoAsset.builder()
             .id(831L)
@@ -40,7 +41,7 @@ class ExperimentVideoAssetApprovalCheckerTest {
   /** Libera substituição somente quando existe ativo e todos foram explicitamente reprovados. */
   @Test
   void shouldRequireAllJobAssetsRejectedForReplacement() {
-    var checker = new ExperimentVideoAssetApprovalChecker(repository);
+    var checker = new ExperimentVideoAssetApprovalChecker(repository, finalReview);
     var rejected =
         ExperimentVideoAsset.builder()
             .id(46L)
@@ -58,5 +59,45 @@ class ExperimentVideoAssetApprovalCheckerTest {
     assertThat(checker.isRejectedForReplacement(21248L)).isFalse();
     assertThat(checker.isRejectedForReplacement(21248L)).isFalse();
     assertThat(checker.isRejectedForReplacement(null)).isFalse();
+  }
+
+  /** Correção técnica não muda seleção humana nem libera campanha ou arquivo sem parecer. */
+  @Test
+  void permitsOnlyPendingCandidateWithIndependentCorrection() {
+    var checker = new ExperimentVideoAssetApprovalChecker(repository, finalReview);
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var video =
+        ExperimentVideoAsset.builder()
+            .id(93072L)
+            .experiment(experiment)
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .build();
+    given(repository.findBySalesVideoJobId(93090L)).willReturn(List.of(video));
+    given(finalReview.correctionRequested(video)).willReturn(true);
+    assertThat(checker.isCorrectionRequested(93090L)).isTrue();
+    assertThat(video.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    for (var status :
+        List.of(ExperimentVideoReviewStatus.APPROVED, ExperimentVideoReviewStatus.REJECTED)) {
+      video.setReviewStatus(status);
+      assertThat(checker.isCorrectionRequested(93090L)).isFalse();
+    }
+    video.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+    for (var status :
+        List.of(
+            com.marketinghub.experiment.ExperimentStatus.RUNNING,
+            com.marketinghub.experiment.ExperimentStatus.FINISHED)) {
+      experiment.setStatus(status);
+      assertThat(checker.isCorrectionRequested(93090L)).isFalse();
+    }
+    experiment.setStatus(null);
+    assertThat(checker.isCorrectionRequested(93090L)).isFalse();
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    given(finalReview.correctionRequested(video)).willReturn(false);
+    assertThat(checker.isCorrectionRequested(93090L)).isFalse();
+    given(repository.findBySalesVideoJobId(93090L)).willReturn(List.of());
+    assertThat(checker.isCorrectionRequested(93090L)).isFalse();
+    assertThat(checker.isCorrectionRequested(null)).isFalse();
   }
 }

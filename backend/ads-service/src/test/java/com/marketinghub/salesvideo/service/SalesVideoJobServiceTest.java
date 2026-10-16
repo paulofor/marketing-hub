@@ -48,10 +48,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
-  /** Retoma filho falho ou reprovado da fonte atual e rejeita trabalho ainda válido. */
+  /** Retoma falha, reprovação ou ajuste independente da fonte atual sem trocar trabalho válido. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
-      strings = {"FAILED_SAME", "FAILED_OTHER", "READY_SAME", "READY_REJECTED"})
+      strings = {
+        "FAILED_SAME",
+        "FAILED_OTHER",
+        "READY_SAME",
+        "READY_REJECTED",
+        "READY_AGENT_ADJUST"
+      })
   void shouldCorrelateFinalizationRecoveryWithoutOverwritingNewerWork(String scenario) {
     var source = VideoFinalDeliveryContractTest.source();
     source.setJobType(SalesVideoJobType.RENDER);
@@ -89,6 +95,8 @@ class SalesVideoJobServiceTest {
       service.setExperimentAssetApprovalChecker(approvalChecker);
       given(approvalChecker.isRejectedForReplacement(current.getId()))
           .willReturn(scenario.equals("READY_REJECTED"));
+      if (scenario.equals("READY_AGENT_ADJUST"))
+        given(approvalChecker.isCorrectionRequested(current.getId())).willReturn(true);
     }
     given(cycles.findById(91022L)).willReturn(Optional.of(cycle));
     given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
@@ -98,7 +106,9 @@ class SalesVideoJobServiceTest {
     request.setRequestedBy("fixture@sandbox.local");
     request.setCaptionText("Copy menor");
     request.setVoiceOverScript("Copy menor");
-    if (scenario.equals("FAILED_SAME") || scenario.equals("READY_REJECTED")) {
+    if (scenario.equals("FAILED_SAME")
+        || scenario.equals("READY_REJECTED")
+        || scenario.equals("READY_AGENT_ADJUST")) {
       given(jobRepository.save(any()))
           .willAnswer(
               i -> {
@@ -525,6 +535,121 @@ class SalesVideoJobServiceTest {
     assertThat(metadata.path("experimentId").asLong()).isEqualTo(91003L);
     assertThat(f.previous().getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
     assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
+  }
+
+  /** Conecta parecer, fonte atual e recuperação real da voz em duas identidades independentes. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {91009, 92009})
+  void shouldRecoverNarrationAfterPeerAdjustmentWithoutHumanRejection(long id) throws Exception {
+    var mapper = new ObjectMapper();
+    var f = VideoNarrationRecoveryTest.fixture(id, mapper);
+    long experimentId = id + 200;
+    f.source().getProfile().setId(id + 300);
+    f.source()
+        .setMetadataJson(
+            "{\"tenantId\":\"default\",\"productId\":"
+                + (id + 400)
+                + ",\"experimentId\":"
+                + experimentId
+                + ",\"videoProjectId\":"
+                + (id + 500)
+                + ",\"videoProductionCycleId\":"
+                + (id + 600)
+                + "}");
+    var metadata =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            mapper.readTree(f.previous().getMetadataJson());
+    metadata.setAll(f.audit());
+    f.previous().setMetadataJson(metadata.toString());
+    f.previous().setStatus(SalesVideoStatus.VIDEO_READY);
+    f.previous().setFailureCode(null);
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(experimentId);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var video =
+        com.marketinghub.experiment.video.ExperimentVideoAsset.builder()
+            .id(id + 100)
+            .experiment(experiment)
+            .status(com.marketinghub.experiment.video.ExperimentVideoStatus.READY)
+            .reviewStatus(com.marketinghub.experiment.video.ExperimentVideoReviewStatus.PENDING)
+            .responseJson(
+                "{\"customerQualityContract\":\"CUSTOMER_VIDEO_QUALITY_V1\",\"hls_delivery\":{\"sourceSha256\":\""
+                    + "a".repeat(64)
+                    + "\"}}")
+            .build();
+    var review = new com.marketinghub.agenttask.AgentTask();
+    var agent = new com.marketinghub.agent.Agent();
+    agent.setAgentKey("customer-agent");
+    review.setAssignedAgent(agent);
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("creative-production-approval");
+    review.setProcessDefinition(process);
+    review.setProcessActivityId("customer");
+    review.setStatus("COMPLETED");
+    review.setResultJson(
+        "{\"decision\":\"ADJUST\",\"correctionScope\":\"FINAL_VIDEO\",\"videoAudit\":[{\"assetId\":"
+            + video.getId()
+            + ",\"sha256\":\""
+            + "a".repeat(64)
+            + "\",\"criticalDeficit\":true}]}");
+    var videos =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository.class);
+    var tasks =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+    given(videos.findBySalesVideoJobId(f.previous().getId())).willReturn(List.of(video));
+    given(
+            tasks.findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+                "customer-agent", "experiment:" + experimentId))
+        .willReturn(Optional.of(review));
+    var evidence =
+        new com.marketinghub.agenttask.CreativeFinalVideoEvidence(
+            videos,
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class),
+            tasks,
+            mapper);
+    service.setExperimentAssetApprovalChecker(
+        new com.marketinghub.experiment.video.service.ExperimentVideoAssetApprovalChecker(
+            videos, evidence));
+    var cycles =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
+    var cycle = new com.marketinghub.salesvideo.VideoProductionCycle();
+    cycle.setId(id + 600);
+    cycle.setVideoProjectId(id + 500);
+    cycle.setExperimentId(experimentId);
+    cycle.setSalesVideoJobId(f.previous().getId());
+    given(cycles.findById(cycle.getId())).willReturn(Optional.of(cycle));
+    service.setProductionCycleRepository(cycles);
+    given(jobRepository.findById(f.source().getId())).willReturn(Optional.of(f.source()));
+    given(jobRepository.findByIdForUpdate(f.source().getId())).willReturn(Optional.of(f.source()));
+    given(jobRepository.findById(f.previous().getId())).willReturn(Optional.of(f.previous()));
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(f.source().getId()))
+        .willReturn(Optional.of(f.previous()));
+    for (long audioId = id + 10; audioId <= id + 14; audioId++) {
+      var audio = f.assets().findById(audioId);
+      given(assetRepository.findById(audioId)).willReturn(audio);
+    }
+    given(jobRepository.save(any()))
+        .willAnswer(
+            invocation -> {
+              SalesVideoJob job = invocation.getArgument(0);
+              if (job.getId() == null) job.setId(id + 700);
+              return job;
+            });
+    var result = service.requestPostProduction(f.source().getId(), f.request());
+    var payload = mapper.readTree(result.getMetadataJson());
+    assertThat(payload.at("/preservedNarration/segments")).hasSize(5);
+    assertThat(payload.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
+    assertThat(payload.at("/preservedNarration/sourceJobId").asLong())
+        .isEqualTo(f.previous().getId());
+    assertThat(cycle.getSalesVideoJobId()).isEqualTo(result.getId());
+    assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
+    assertThat(video.getReviewStatus())
+        .isEqualTo(com.marketinghub.experiment.video.ExperimentVideoReviewStatus.PENDING);
+    assertThat(f.previous().getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
   }
 
   /** Inicializa o service com dependencias simuladas para cada teste. */

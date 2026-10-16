@@ -657,3 +657,20 @@ do compositor não concede aceite, não concilia custos anteriores e não gera m
 Regressão: medir a posição dos pixels após a entrada em dois produtos, além da
 mudança de cena, duração, prova sincronizada e recuperação sem novas chamadas.
 Evidências em [qualidade de Capella](../homologacao/capella-video-quality-v2.md).
+
+## Recuperação após ajuste independente — 16/10/2026
+
+Um parecer concluído de Psique `ADJUST`, escopo `FINAL_VIDEO`, com déficit crítico sobre
+o ID e hash exatos da candidata permite corrigir a montagem pela mesma fonte bruta do ciclo.
+Esta passagem só atende candidatas READY/PENDING de experimento PLANNED, PAUSED ou
+USER_STOPPED. Não exige que o operador invente uma rejeição humana para executar um ajuste
+independente. Uma decisão posterior ou referente a outra mídia não autoriza essa recuperação.
+
+Preservar arquivo, parecer, seleção e custos anteriores. Recuperar segmentos de locução
+compatíveis; mudança de fala continua sujeita ao contrato e saldo próprios. O novo arquivo
+precisa de revisão independente e seleção humana próprias. A passagem não aprova vídeo,
+não amplia limite e não substitui a autorização comercial. Não alterar campanha ativa.
+
+Regressões conectam parecer, fonte atual, criação da montagem e recuperação real de cinco
+segmentos em duas identidades, além dos caminhos anteriores de falha e rejeição humana.
+Registro: [revisão sonora e retomada](../homologacao/capella-revisao-audio-tempos-v1.md).

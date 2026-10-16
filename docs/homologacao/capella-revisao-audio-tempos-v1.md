@@ -81,3 +81,35 @@ funcional sem erro de contrato. Aumento de conversão, compras e contribuição 
 
 A publicação e a revisão dos novos arquivos são etapas seguintes; este registro local não
 atribui aprovação a Psique/Têmis nem altera o aceite humano ou o estado comercial do experimento.
+
+## Continuação após recuperação do parecer
+
+O PR #5605 foi integrado em `2867c806b9d6c54fb6f7adc0dbe39de8f59d8c8c`. Os 14 workflows
+da main e encadeados passaram; backend e executores publicados foram conferidos. A retomada
+suportada concluiu #739 com ADJUST, mantendo US$ 0,2347328 e sem nova inferência. A inbox de
+agentes esgotou o tempo em duas tentativas; o callback foi recuperado pelo endpoint oficial.
+
+A solicitação de nova montagem pela tela recusou a fonte com HTTP 400. A guarda só permitia
+filho falho ou rejeitado pelo humano; não reconhecia o ajuste independente recém-aceito.
+O teste `READY_AGENT_ADJUST` reproduziu a mesma recusa antes da correção. Não havia nova
+montagem criada nem cobrança decorrente dessa tentativa.
+
+Alternativas comparadas: pedir uma nova rejeição humana criaria um repasse desnecessário;
+usar o MP4 final como nova fonte perderia a recuperação da voz; reconhecer o parecer
+independente da mídia exata conserva custo e autoridade. A terceira foi implementada na
+guarda compartilhada, sem alterar a seleção humana ou criar outro fluxo.
+
+A matriz complementar cobre ID/hash, decisão, escopo e status; bloqueio em campanha ativa;
+preservação de aprovação/rejeição humanas; fonte antiga e tentativa concorrente; e integração
+real entre parecer, montagem e recuperação de cinco segmentos em duas identidades. Os renders
+integrais e testes de dispositivo da rodada anterior continuam aplicáveis: esta correção muda
+somente a autorização de recuperação no backend, sem modificar mídia ou compositor.
+
+Métrica esperada: eliminar o HTTP 400 indevido e permitir correção sem novas sínteses.
+Teste técnico não comprova qualidade percebida, vendas ou contribuição. O saldo audiovisual
+continua cumulativo; os novos arquivos ainda precisam de parecer e seleção próprios.
+
+Validação complementar: 198 testes Java aprovados, incluindo 92 de arquitetura, 59 do serviço
+de montagem, 37 de recuperação e dez de evidência/seleção. As duas integrações recuperaram
+cinco vozes e acompanharam o novo job, sem mudar READY/PENDING do arquivo anterior.
+Spotless, diff e bundle canônico (523 arquivos, 115 manifestos) também passaram.

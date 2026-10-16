@@ -211,6 +211,31 @@ public class CreativeFinalVideoEvidence {
     return "Psique precisa revisar o vídeo final, sua clareza e progressão visual antes da seleção de uso. Abra a atividade de revisão da comunicação.";
   }
 
+  /** Reconhece ajuste independente da mídia exata sem conceder aprovação ou decisão humana. */
+  public boolean correctionRequested(ExperimentVideoAsset video) {
+    var result = read(video.getResponseJson(), video.getId());
+    if (video.getExperiment() == null
+        || !"CUSTOMER_VIDEO_QUALITY_V1".equals(result.path("customerQualityContract").asText()))
+      return false;
+    String sha = result.at("/hls_delivery/sourceSha256").asText();
+    if (!sha.matches("[a-f0-9]{64}")) return false;
+    var latest =
+        tasks
+            .findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+                "customer-agent", "experiment:" + video.getExperiment().getId())
+            .orElse(null);
+    if (latest == null || !"COMPLETED".equals(latest.getStatus()) || !supports(latest))
+      return false;
+    var review = read(latest.getResultJson(), video.getId());
+    if (!"ADJUST".equals(review.path("decision").asText())
+        || !"FINAL_VIDEO".equals(review.path("correctionScope").asText())) return false;
+    for (var audit : review.path("videoAudit"))
+      if (audit.path("assetId").asLong() == video.getId()
+          && sha.equals(audit.path("sha256").asText())
+          && audit.path("criticalDeficit").asBoolean(false)) return true;
+    return false;
+  }
+
   /** Restringe o contrato à revisão criativa independente, nunca à produção do próprio ativo. */
   private boolean supports(AgentTask task) {
     return task != null

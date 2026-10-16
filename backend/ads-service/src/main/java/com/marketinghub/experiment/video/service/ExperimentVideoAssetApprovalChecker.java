@@ -13,10 +13,14 @@ import org.springframework.stereotype.Service;
 public class ExperimentVideoAssetApprovalChecker
     implements SalesVideoExperimentAssetApprovalChecker {
   private final ExperimentVideoAssetRepository repository;
+  private final com.marketinghub.agenttask.CreativeFinalVideoEvidence finalReview;
 
-  /** Inicializa a verificação usando a fonte canônica dos vídeos de experimento. */
-  public ExperimentVideoAssetApprovalChecker(ExperimentVideoAssetRepository repository) {
+  /** Consulta a fonte canônica de vídeos e a revisão independente dos mesmos arquivos. */
+  public ExperimentVideoAssetApprovalChecker(
+      ExperimentVideoAssetRepository repository,
+      com.marketinghub.agenttask.CreativeFinalVideoEvidence finalReview) {
     this.repository = repository;
+    this.finalReview = finalReview;
   }
 
   /** Retorna verdadeiro quando não existe vínculo pendente/reprovado para o asset informado. */
@@ -44,5 +48,26 @@ public class ExperimentVideoAssetApprovalChecker
         && videoAssets.stream()
             .allMatch(
                 videoAsset -> videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.REJECTED);
+  }
+
+  /** Autoriza somente correção de candidatas pendentes fora de uma campanha em operação. */
+  @Override
+  public boolean isCorrectionRequested(Long salesVideoJobId) {
+    if (salesVideoJobId == null) return false;
+    var assets = repository.findBySalesVideoJobId(salesVideoJobId);
+    return !assets.isEmpty()
+        && assets.stream()
+            .allMatch(
+                video ->
+                    video.getStatus() == ExperimentVideoStatus.READY
+                        && video.getReviewStatus() == ExperimentVideoReviewStatus.PENDING
+                        && video.getExperiment() != null
+                        && video.getExperiment().getStatus() != null
+                        && java.util.Set.of(
+                                com.marketinghub.experiment.ExperimentStatus.PLANNED,
+                                com.marketinghub.experiment.ExperimentStatus.PAUSED,
+                                com.marketinghub.experiment.ExperimentStatus.USER_STOPPED)
+                            .contains(video.getExperiment().getStatus())
+                        && finalReview.correctionRequested(video));
   }
 }

@@ -659,3 +659,18 @@ Uma candidata adicional pode ser anexada como opcional pelo contrato
 `requiredForRelease=false`, mantendo a revisão pendente e sem tornar a peça
 requisito de um experimento já homologado. O padrão obrigatório permanece
 explícito para peças destinadas à liberação; opção não autoriza campanha.
+
+## Conciliação da locução no ledger — 16/10/2026
+
+Custos consultados ou descritos no projeto só podem liberar nova escuta após registro na fonte
+financeira usada pelo gate. A importação NARRATION_COST_RECONCILIATION_V1 confronta consumo oficial
+usage/completions, período exclusivo, recibos únicos e tarifa preservada. Mantém rateio estimado
+separado de fatura confirmada, reutilizações sem nova inferência e falhas anteriores à síntese
+comprovadas pelo contrato do executor. Ausência de consumo em audio_speeches não prova custo zero
+para modelos TTS que aparecem em usage/completions.
+
+A tela de vídeos do produto oferece a conciliação sob divulgação progressiva. O endpoint do módulo
+não recebe credenciais, chama provedor, modifica tetos, aprova vídeo ou ativa campanha. Contexto
+cruzado, recibo incompleto, contagem/período divergente ou uso parcial impedem gravação. Repetição
+igual é idempotente e callback sem custo não apaga conciliação existente. Detalhes e limites em
+[homologação da locução](../homologacao/capella-conciliacao-locucao-v1.md).

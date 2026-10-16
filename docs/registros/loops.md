@@ -10085,3 +10085,18 @@ Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
   repetição, recuperação e revisão estática preservada. Casos sintéticos não comprovam qualidade
   artística, audição ou conversão. História e custos permanecem intactos.
 - Evidências, alternativas, matriz e limites: `docs/homologacao/video-narrativa-referencias-v1.md`.
+
+## LOOP-LOCUCAO-CONCILIADA-FORA-DO-LEDGER — 16/10/2026
+
+- **Evidência:** Capella tinha a consulta das 16 sínteses originais nos projetos #11/#12, enquanto o
+  ledger conservava custos nulos em falhas e nove reutilizações. O gate auditivo consulta o ledger,
+  não o texto do projeto, e bloquearia a revisão dos arquivos novos mesmo após a consulta financeira.
+- **Causa:** faltava uma passagem suportada entre consumo agregado conferido, recibos persistidos e
+  lançamento financeiro. Reutilizar voz gerava outro registro incompleto em vez de custo incremental
+  conhecido, preservando uma pendência que já tinha evidência disponível.
+- **Correção:** importação canônica pela tela, sem chave de API, validando coorte, contagem,
+  identidade, tarifa e período. Rateio conservador permanece estimado; não representa fatura por
+  request. Reutilização exige fonte conhecida e recibos; falha posterior sem prova não recebe zero.
+- **Prevenção:** testes com dois produtos, endpoint real, dados cruzados, recibos inválidos,
+  duplicidade, replay, callback sem custo e fluxo já válido. O bloqueio de custo desconhecido da
+  escuta permanece. Matriz: docs/homologacao/capella-conciliacao-locucao-v1.md.

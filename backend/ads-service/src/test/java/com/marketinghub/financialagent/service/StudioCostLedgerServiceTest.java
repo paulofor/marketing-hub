@@ -168,6 +168,44 @@ class StudioCostLedgerServiceTest {
     org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(3)).save(entry);
   }
 
+  /** Callbacks sem valor não apagam custo conciliado de voz nem sua fonte. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "OPENAI_USAGE_COHORT_ESTIMATE",
+        "PRESERVED_NARRATION_NO_NEW_CALL",
+        "FAILED_BEFORE_TTS_AUDITED",
+        "PROVIDER_REPORTED"
+      })
+  void preservesNarrationCostAfterIncompleteCallback(String source) {
+    var repository = mock(StudioCostLedgerEntryRepository.class);
+    var entry = new StudioCostLedgerEntry();
+    entry.setCostEvidence(source);
+    if ("PROVIDER_REPORTED".equals(source)) entry.setProviderCostUsd(new BigDecimal("0.02"));
+    else entry.setEstimatedCostUsd(new BigDecimal("0.01"));
+    when(repository.findBySourceTypeAndSourceId("SALES_VIDEO_JOB", "91001"))
+        .thenReturn(java.util.Optional.of(entry));
+    new StudioCostLedgerService(repository)
+        .recordVideo(
+            91001L,
+            91002L,
+            91003L,
+            91004L,
+            91005L,
+            "AUDIO",
+            "MUSA_POST_PRODUCTION",
+            "tts-fixture",
+            "VIDEO_READY",
+            null,
+            false,
+            null,
+            null);
+    assertThat(entry.getCostEvidence()).isEqualTo(source);
+    if ("PROVIDER_REPORTED".equals(source))
+      assertThat(entry.getProviderCostUsd()).isEqualByComparingTo("0.02");
+    else assertThat(entry.getEstimatedCostUsd()).isEqualByComparingTo("0.01");
+  }
+
   /** Confirma que custo-beneficio usa somente aprovacoes comerciais e explicita lacunas. */
   @Test
   void deveCalcularEficienciaPorProvedorSemInventarCobertura() {

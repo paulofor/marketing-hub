@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: Conciliação de custos de locução
+  version: 1.0.0
+paths:
+  /api/sales-videos/experiments/{experimentId}/narration-costs/reconcile:
+    post:
+      summary: Confronta consumo oficial e recibos e persiste estimativa incremental sem nova síntese
+      description: Exige tenant e tentativas encerradas do mesmo produto/experimento. O extrato completo de usage/completions deve corresponder a uma coorte exclusiva e à contagem de recibos. Rateio conservador por request é estimativa, não fatura individual. Reutilizações exigem fonte conhecida. Não recebe chave, chama provedor, aprova mídia ou altera orçamento.
+      parameters:
+        - {in: path, name: experimentId, required: true, schema: {type: integer, format: int64}}
+        - {in: header, name: X-Tenant-ID, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobIds, evidenceReference]
+              properties:
+                jobIds: {type: array, minItems: 1, maxItems: 50, uniqueItems: true, items: {type: integer, format: int64}}
+                usage: {type: object, nullable: true, description: JSON estruturado do consumo; vazio somente para reutilizações ou falhas pré-síntese comprovadas.}
+                exclusiveUsageConfirmed: {type: boolean}
+                evidenceReference: {type: string, maxLength: 1000}
+      responses:
+        '200':
+          description: Estimativas e auditoria persistidas, ou replay sem duplicação
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  experimentId: {type: integer, format: int64}
+                  estimatedCostUsd: {type: number}
+                  newProviderRequests: {type: integer}
+                  reconciledJobIds: {type: array, items: {type: integer, format: int64}}
+                  evidenceHash: {type: string}
+                  providerInvoiceConfirmed: {type: boolean, enum: [false]}
+        '400': {description: Payload inválido}
+        '409': {description: Contexto ou evidência incompatível. Nenhum lançamento parcial.}

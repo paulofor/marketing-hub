@@ -1,0 +1,18 @@
+{
+  "cardKey": "timbre-vocal-naturalidade-tempo-subjetivo",
+  "collection": "prazer-audio-visual",
+  "title": "Naturalidade de timbre vocal, prazer e passagem do tempo",
+  "finding": "Dois experimentos online (76 e 37 pessoas) encontraram mais prazer e passagem subjetiva do tempo mais rápida com timbres vocais percebidos como naturais do que com timbres artificialmente processados; não houve alteração robusta na estimativa da duração.",
+  "mechanism": "Características espectrais e aspereza do timbre podem modificar prazer e julgamento da passagem do tempo; a mediação pelo prazer não foi causalmente estabelecida.",
+  "commercialApplication": "Comparar timbres de voz humana, voz gerada ou processada para o mesmo trecho, controlando roteiro, volume, duração e inteligibilidade.",
+  "evidenceStrength": "Média para duas tarefas experimentais curtas; transferência a síntese de IA moderna não estudada.",
+  "publishedOn": "2026-10-16",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "Timbre percebido como mais natural aumentará prazer e rapidez subjetiva do tempo sem reduzir compreensão e sem mudar a duração estimada.",
+  "risks": "Generalizar vocoder para toda voz sintética; usar prazer relatado como proxy de vendas.",
+  "limits": "Amostras pequenas, música com voz humana processada por efeitos, autorrelatos; nenhuma medida de dopamina ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-16-timbre-vocal-naturalidade-tempo-subjetivo.md",
+  "sourceTitle": "Fonte revisada — timbre vocal, prazer e passagem do tempo",
+  "sourceSha256": "bb1c1fb5e538e4be3bfa671404f99cf85c445d4cc353e20c5033092d49eaa5ca"
+}

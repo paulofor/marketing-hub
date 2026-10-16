@@ -161,7 +161,7 @@ public class AgentAudioReviewService {
           "stop".equals(raw.at("/choices/0/finish_reason").asText()),
           "Resposta auditiva incompleta ou recusada.");
       var result = json.readTree(raw.at("/choices/0/message/content").asText());
-      assessment(result, media(task, assetId).path("durationSeconds").asDouble());
+      groundedAssessment(result, media(task, assetId));
       entry.setResultJson(result.toString());
       if (entry.getEstimatedUsd() != null) entry.setStatus("COMPLETED");
       else
@@ -207,6 +207,7 @@ public class AgentAudioReviewService {
               && entry.getVideoSha256().equals(media.path("sha256").asText())
               && "PASS".equals(read(entry.getResultJson()).path("verdict").asText()),
           "Escuta pendente ou reprovada impede aprovação audiovisual.");
+      groundedAssessment(read(entry.getResultJson()), media);
       boolean matched = false;
       for (var item : result.path("videoAudit"))
         if (item.path("assetId").asLong() == entry.getAssetId()) {

@@ -85,7 +85,7 @@ class PostProductionVideoProviderTest {
                         "-t\n24\n",
                         "-preset\nveryfast\n",
                         "-movflags\n+faststart\n",
-                        "loudnorm=I=-17:TP=-2:LRA=7",
+                        "loudnorm=I=-17:TP=-3:LRA=7",
                         "asplit=2[voice_sc][voice_mix]",
                         "sidechaincompress")
                 .doesNotContain("sine=frequency=220", "apad");

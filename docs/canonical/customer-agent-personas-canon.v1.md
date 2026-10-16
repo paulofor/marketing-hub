@@ -415,3 +415,19 @@ texto de entrada USD 2,50 e texto de saída USD 10. A reserva usa o limite super
 Não usar a taxa de texto para tokens de áudio nem zerar uso ausente. Sem saldo comprovado, bloquear.
 
 Matriz, alternativas, fontes e limites: `docs/homologacao/psique-escuta-audiovisual-v1.md`.
+
+### Escuta confrontada com a montagem — 16/10/2026
+
+O caso Capella #739 demonstrou que um modelo auditivo pode descrever música inexistente e
+atribuir fala a tempos aproximados. O contexto da ferramenta deve conter a mídia exata e a
+evidência sonora, sem o briefing persuasivo ou pareceres anteriores induzindo a avaliação.
+Quando a montagem fornece `SEGMENT_AUDIO_DURATION`, cada segmento medido deve receber um
+momento auditivo com os mesmos limites; o texto esperado serve para comparação com a escuta,
+nunca como comprovação de audição. Pausas finais não são preenchidas com fala inventada.
+
+Um mix `VOICE_ONLY` com `music=none` não pode receber aprovação que afirme trilha. Contradições
+mantêm resposta bruta, custo e motivo, mas impedem aceite. A aprovação final revalida o recibo.
+Um mesmo momento pode ser associado a frames distintos para avaliar uma transição; apenas o
+par momento/frame duplicado é inválido. Isso não dispensa cobertura de abertura, meio e fim.
+
+Registro, testes entre identidades e limites: `docs/homologacao/capella-revisao-audio-tempos-v1.md`.

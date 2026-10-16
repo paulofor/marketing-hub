@@ -8,7 +8,9 @@ final class VideoAudioReviewContract {
   /** Impede instanciação do contrato sem estado. */
   private VideoAudioReviewContract() {}
 
-  /** Confere o recibo do backend e o vínculo dos momentos sonoros com a revisão visual. */
+  /**
+   * Confere recibo e pares momento/frame; um trecho pode sustentar mais de uma observação distinta.
+   */
   static void validate(
       JsonNode task,
       JsonNode media,
@@ -35,7 +37,7 @@ final class VideoAudioReviewContract {
     var sync = item.path("audioVisualSync");
     if (!sync.isArray() || sync.size() < 3)
       throw new IllegalArgumentException("Sincronização sem abertura, meio e encerramento.");
-    var seen = new HashSet<Integer>();
+    var seen = new HashSet<String>();
     boolean beginning = false, middle = false, end = false;
     double duration = media.path("durationSeconds").asDouble();
     for (var relation : sync) {
@@ -43,7 +45,7 @@ final class VideoAudioReviewContract {
       var moment = assessment.path("moments").path(index);
       if (index < 0
           || moment.isMissingNode()
-          || !seen.add(index)
+          || !seen.add(index + ":" + relation.path("frameEvidenceId").asLong())
           || relation.path("reason").asText().length() < 15)
         throw new IllegalArgumentException("Momento auditivo ausente ou repetido.");
       if (approved && !"PASS".equals(relation.path("status").asText()))

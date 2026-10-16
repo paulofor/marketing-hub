@@ -85,11 +85,52 @@ public class CreativeFinalVideoEvidence {
               result.path("voice_over_script").asText(result.at("/captions/text").asText()))
           .put("rejectionReason", Objects.toString(video.getRejectionReason(), ""))
           .set("reviewMoments", reviewMoments(result, video.getDurationSeconds()));
+      input.set(
+          "audioProductionEvidence", audioProductionEvidence(result, video.getDurationSeconds()));
       var examples = metadata.at("/post_production/deliveryExamples");
       if ("APPROVED_DELIVERY_EXAMPLES_V1".equals(examples.path("contractVersion").asText()))
         input.set("deliveryExamples", examples.deepCopy());
     }
     return inputs;
+  }
+
+  /** Expõe mix e limites medidos da locução, sem transformar roteiro em percepção auditiva. */
+  private ObjectNode audioProductionEvidence(JsonNode result, Integer duration) {
+    var output = json.createObjectNode();
+    output.put("contractVersion", "NARRATED_AUDIO_EVIDENCE_V1");
+    output.put("mix", result.at("/audio/mix").asText("UNKNOWN"));
+    output.put("music", result.at("/audio/music").asText("unknown"));
+    var sync = result.path("caption_narration_sync");
+    var segments = sync.path("segment_durations_seconds");
+    String[] captions = result.at("/captions/text").asText().split("\\|", -1);
+    if (duration == null
+        || !"APPROVED".equals(sync.path("timing_status").asText())
+        || !"SEGMENT_AUDIO_DURATION".equals(sync.path("timing_method").asText())
+        || !segments.isArray()
+        || segments.size() < 3
+        || segments.size() > 12
+        || segments.size() != captions.length) return output;
+    var timeline = json.createArrayNode();
+    double cursor = 0;
+    for (int i = 0; i < segments.size(); i++) {
+      double seconds = segments.get(i).asDouble(-1);
+      if (!segments.get(i).isNumber()
+          || !Double.isFinite(seconds)
+          || seconds <= 0
+          || cursor + seconds > duration + .1
+          || captions[i].isBlank()) return output;
+      timeline
+          .addObject()
+          .put("startSeconds", cursor)
+          .put("endSeconds", cursor + seconds)
+          .put("expectedText", captions[i].trim());
+      cursor += seconds;
+    }
+    if (Math.abs(cursor - sync.path("narration_duration_seconds").asDouble(-1)) > .1) return output;
+    output.put("timingSource", "SEGMENT_AUDIO_DURATION");
+    output.put("narrationDurationSeconds", cursor);
+    output.set("segments", timeline);
+    return output;
   }
 
   /** Inclui trechos narrados, artes e capturas da montagem combinada na amostragem visual. */

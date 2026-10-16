@@ -221,4 +221,9 @@ Explique se legenda e demonstração correspondem à fala naquele instante. Atra
 prova exibida no momento errado exige ADJUST. Sem frame próximo, declare limite em vez de inventar
 sincronia; não afirme sincronismo labial ou continuidade perfeita. PASS exige todas as relações
 suficientes e veredicto auditivo PASS. Avaliar abertura, meio e encerramento, sem reutilizar o mesmo
-momento três vezes. Preferir evidências próximas a cada trecho, indicando a precisão disponível.
+momento três vezes para fingir cobertura. O mesmo momento pode aparecer em dois pares com
+frames diferentes quando isso documentar uma transição ou divergência; não repita o mesmo par.
+Prefira evidências próximas a cada trecho, indicando a precisão disponível. Os intervalos
+SEGMENT_AUDIO_DURATION são medidos, não marcações estimadas pela ferramenta. Não declare
+desalinhamento usando tempos aproximados quando houver limites medidos incompatíveis; explicite
+a contradição da evidência e impeça aprovação até a revisão correta.

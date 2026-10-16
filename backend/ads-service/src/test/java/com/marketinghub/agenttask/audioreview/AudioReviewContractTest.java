@@ -13,6 +13,34 @@ import org.junit.jupiter.params.provider.ValueSource;
 class AudioReviewContractTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Reproduz música inventada e tempos estimados do caso observado em duas identidades. */
+  @ParameterizedTest
+  @ValueSource(longs = {72, 910072})
+  void rejectsInventedMusicAndTimingAgainstMeasuredEvidence(long assetId) {
+    var media = json.createObjectNode().put("assetId", assetId).put("durationSeconds", 30);
+    var production =
+        media
+            .putObject("audioProductionEvidence")
+            .put("mix", "VOICE_ONLY")
+            .put("music", "none")
+            .put("timingSource", "SEGMENT_AUDIO_DURATION");
+    var segments = production.putArray("segments");
+    for (double start : new double[] {0, 14, 27})
+      segments.addObject().put("startSeconds", start).put("endSeconds", start + 3);
+    var result = assessment(json);
+    assertThatThrownBy(() -> AudioReviewContract.groundedAssessment(result, media))
+        .hasMessageContaining("somente voz");
+    ((ObjectNode) result.path("music")).put("status", "NOT_PRESENT");
+    assertThatCode(() -> AudioReviewContract.groundedAssessment(result, media))
+        .doesNotThrowAnyException();
+    ((ObjectNode) result.path("moments").get(1)).put("startSeconds", 12).put("endSeconds", 20);
+    assertThatThrownBy(() -> AudioReviewContract.groundedAssessment(result, media))
+        .hasMessageContaining("segmento medido");
+    media.remove("audioProductionEvidence");
+    assertThatCode(() -> AudioReviewContract.groundedAssessment(result, media))
+        .doesNotThrowAnyException();
+  }
+
   /** Aprovação de contrato não permite ignorar déficit sonoro em nenhuma dimensão. */
   @ParameterizedTest
   @ValueSource(strings = {"voice", "music", "timing"})

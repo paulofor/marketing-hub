@@ -47,6 +47,42 @@ class VideoAudioReviewContractTest {
     var frames = VideoNarrativeReviewContractTest.evidence(id);
     assertThatCode(() -> VideoAudioReviewContract.validate(task, media, item, true, frames))
         .doesNotThrowAnyException();
+    // O caso observado tinha dois frames distintos dentro do mesmo momento auditivo.
+    var extended = new java.util.ArrayList<>(frames);
+    var original = frames.get(1);
+    extended.add(
+        new BpmVisualEvidenceBackendClient.UploadedVisualEvidence(
+            1004L,
+            original.captureSessionId(),
+            "video-" + id + "-" + "a".repeat(64) + "-6500",
+            original.evidenceType(),
+            original.label(),
+            original.deviceProfile(),
+            original.pageNumber(),
+            original.foldNumber(),
+            original.viewportWidth(),
+            original.viewportHeight(),
+            original.pageHeightPx(),
+            original.scrollY(),
+            original.sourceUrl(),
+            original.finalUrl(),
+            original.contentUrl(),
+            original.sizeBytes(),
+            original.sha256(),
+            original.capturedAt(),
+            original.localPath()));
+    sync.addObject()
+        .put("audioMomentIndex", 1)
+        .put("frameEvidenceId", 1004)
+        .put("status", "INCONCLUSIVE")
+        .put("reason", "Segundo frame do mesmo trecho documenta uma transição a conferir.");
+    assertThatCode(() -> VideoAudioReviewContract.validate(task, media, item, false, extended))
+        .doesNotThrowAnyException();
+    sync.add(sync.get(3).deepCopy());
+    assertThatThrownBy(() -> VideoAudioReviewContract.validate(task, media, item, false, extended))
+        .hasMessageContaining("repetido");
+    sync.remove(4);
+    sync.remove(3);
     assessment.put("verdict", "ADJUST");
     assertThatThrownBy(() -> VideoAudioReviewContract.validate(task, media, item, true, frames))
         .hasMessageContaining("auditiva");

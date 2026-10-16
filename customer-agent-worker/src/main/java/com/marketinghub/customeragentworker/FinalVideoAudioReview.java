@@ -170,11 +170,17 @@ public class FinalVideoAudioReview {
     }
   }
 
-  /** Monta request sem imagens, lendo prompt e schema versionados do próprio executor. */
+  /**
+   * Monta escuta sem briefing de venda e usa limites medidos, sem induzir uma avaliação pelo
+   * roteiro.
+   */
   JsonNode request(JsonNode media, byte[] wav) throws Exception {
+    var context = json.createObjectNode();
+    for (String field : List.of("assetId", "sha256", "durationSeconds", "audioProductionEvidence"))
+      if (media.has(field)) context.set(field, media.get(field));
     String prompt =
         read("prompts/audio-review/v1/review.md")
-            .replace("{{MEDIA}}", media.toString())
+            .replace("{{MEDIA}}", context.toString())
             .replace("{{SCHEMA}}", read("prompts/audio-review/v1/review-schema.json"));
     var request = json.createObjectNode();
     request.put("model", "gpt-audio-1.5");

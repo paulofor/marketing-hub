@@ -10128,3 +10128,20 @@ recibos não são fontes de preço. Auditoria declarada porém inválida continu
 A prevenção inclui mensagens legadas na fixture comum, duas identidades com recibos preservados
 após falha e evento de auditoria truncado que não pode passar. Todos os 212 eventos reais do
 lote foram reproduzidos localmente antes da atualização. Não reescrever história para conciliar.
+## LOOP-VIDEO-ESCU-SEM-ANCORA — música e tempos inventados bloqueiam a continuação
+
+- **Observado em 16/10/2026:** Capella, Psique #739, vídeos #72/#73. O parecer auditivo
+  descreveu música em mix `VOICE_ONLY/music=none` e usou intervalos diferentes dos segmentos
+  medidos. A revisão visual derivou uma hipótese incorreta de dessincronia. Havia também
+  defeitos visuais reais, preservados como ADJUST; o callback falhou por repetir o momento
+  sonoro em dois frames distintos de uma transição.
+- **Causa compartilhada:** contexto excessivo na escuta, ausência de confronto com mix/tempos
+  persistidos e unicidade aplicada ao momento em vez do par momento/frame.
+- **Correção:** evidência sonora enxuta, limites medidos, rejeição auditável de contradições e
+  múltiplos frames permitidos sem duplicar o par. Não deslocar cenas para obedecer timestamps
+  inventados. Recuperar respostas já pagas pelo callback suportado.
+- **Prevenção:** `CreativeFinalVideoEvidenceTest`, `AudioReviewContractTest`,
+  `AgentAudioReviewServiceTest`, `FinalVideoAudioReviewTest`, `VideoAudioReviewContractTest`.
+  Inclui outra identidade, legado válido, custo preservado e recuperação sem nova inferência.
+- **Registro:** `docs/homologacao/capella-revisao-audio-tempos-v1.md`. Impacto em vendas ainda
+  não medido; aprovações técnicas não substituem seleção humana nem homologação comercial.

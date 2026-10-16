@@ -47,6 +47,42 @@ class AgentAudioReviewServiceTest {
   private LearningSalesCycle cycle;
   private final Map<Long, AgentAudioReview> saved = new HashMap<>();
 
+  /** Preserva custo e resposta contraditória sem permitir aprovação por recibo antigo. */
+  @Test
+  void preservesContradictoryAudioWithoutApprovingIt() throws Exception {
+    var input = prepare(9005);
+    var media =
+        json.createObjectNode()
+            .put("assetId", 9003)
+            .put("sha256", "a".repeat(64))
+            .put("durationSeconds", 30);
+    media.putObject("audioProductionEvidence").put("mix", "VOICE_ONLY").put("music", "none");
+    when(videos.inputs(any())).thenReturn(json.createArrayNode().add(media));
+    service.reserve("customer-agent", 9001, input);
+    var raw = json.createObjectNode().put("model", "gpt-audio-1.5");
+    raw.putArray("choices")
+        .addObject()
+        .put("finish_reason", "stop")
+        .putObject("message")
+        .put("content", AudioReviewContractTest.assessment(json).toString());
+    raw.set(
+        "usage",
+        json.readTree(
+            "{\"prompt_tokens\":1100,\"prompt_tokens_details\":{\"audio_tokens\":1000},\"completion_tokens\":500}"));
+    var receipt =
+        service.complete(
+            "customer-agent", 9001, 9003, new AudioReviewResultRequest(raw.toString()));
+    assertThat(receipt.status()).isEqualTo("INVALID");
+    assertThat(receipt.estimatedUsd()).isEqualByComparingTo("0.037250");
+    assertThat(saved.get(9003L).getResponseJson()).isEqualTo(raw.toString());
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+    // Recibo histórico aparentemente concluído precisa passar pelas mesmas regras no aceite final.
+    saved.get(9003L).setStatus("COMPLETED");
+    saved.get(9003L).setResultJson(AudioReviewContractTest.assessment(json).toString());
+    assertThatThrownBy(() -> service.validateCompletion(task, "{\"decision\":\"APPROVED\"}"))
+        .hasMessageContaining("somente voz");
+  }
+
   /** Monta duas identidades sem usar nenhum produto ou orçamento produtivo. */
   private AudioReviewReserveRequest prepare(long productId) {
     task = new AgentTask();

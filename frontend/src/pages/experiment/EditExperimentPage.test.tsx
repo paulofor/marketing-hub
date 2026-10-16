@@ -11,6 +11,7 @@ import EditExperimentPage from "./EditExperimentPage";
 const fixture = vi.hoisted(() => ({
   save: vi.fn(),
   navigate: vi.fn(),
+  checkout: { isError: false, error: undefined as unknown },
   experiment: {
     id: 301,
     name: "Oferta de teste",
@@ -50,7 +51,7 @@ vi.mock("../../api/experiment/useUpdateExperiment", () => ({
   useUpdateExperiment: () => ({ mutateAsync: fixture.save }),
 }));
 vi.mock("../../api/experiment/useCommercialCheckout", () => ({
-  useCommercialCheckout: () => ({}),
+  useCommercialCheckout: () => fixture.checkout,
 }));
 vi.mock("./ExperimentFacebookSuccessorAdoptionPanel", () => ({
   default: () => <div>Vínculo de sucessor isolado neste teste</div>,
@@ -89,6 +90,37 @@ describe("correção da promessa preservando o planejamento pendente", () => {
     fixture.experiment.mediaSpendLimit = 0;
     fixture.experiment.zeroPurchaseSpendLimit = 0;
     fixture.experiment.purchaseStopCount = null;
+    fixture.checkout.isError = false;
+    fixture.checkout.error = undefined;
+  });
+
+  it("orienta o checkout do kit sem pedir slot de assinatura nem aprovar anúncio", () => {
+    render(<EditExperimentPage />);
+    expect(
+      screen.getByPlaceholderText(/pós-compra do kit/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Preparar o link não aprova a venda nem libera anúncios/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("mostra a pendência concreta do backend na preparação de checkout", () => {
+    fixture.checkout.isError = true;
+    fixture.checkout.error = {
+      isAxiosError: true,
+      response: {
+        data: {
+          message:
+            "Registre commercialCheckout explícito no contrato de validação do kit.",
+        },
+      },
+    };
+    render(<EditExperimentPage />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Registre commercialCheckout explícito",
+    );
   });
 
   it("não oferece abordagem individual para uma nova divulgação", () => {

@@ -117,6 +117,23 @@ Cadastro, página gerada, pós-compra e pareceres devem ser conferidos separadam
 Este documento registra a decisão; não comprova publicação, aprovação dos agentes,
 atendimento realizado, venda ou lucro.
 
+### Preparação de checkout para kit — 16/10/2026
+
+Kits `LOW_TICKET_PRODUCT` não exigem slot de assinatura PDE para preparar uma preferência.
+O comando administrativo existente resolve `checkoutIdentity.externalReference` e o objeto
+`commercialCheckout` da definição de validação do produto. Esse objeto precisa declarar
+`contractVersion: LOW_TICKET_COMMERCIAL_CHECKOUT_V1`, `productVersion` igual à versão
+vigente, `provider: MERCADO_PAGO`, `currency: BRL`, `billingModel: ONE_TIME`, `priceBrl`
+igual ao produto e experimento, e `deliveryPageUrl` HTTPS explícita do pós-compra.
+
+Slug do produto e referência de pagamento são identidades distintas; não trocar uma pela outra.
+A preferência conserva produto/experimento nos metadados e a idempotência existente. O backend
+confere a URL de retorno completa, não apenas seu domínio. Preparar o link não publica oferta,
+não altera o endereço público do produto, não cobra e não satisfaz gates de página, economia,
+pareceres, preflight ou autorização de mídia. Para Capella, preservar a identidade comercial
+`agenda-cheia-nail-design`, o pós-compra oficial e o preço de R$67. Não reutilizar preferência
+de experimento encerrado para mascarar a ausência do vínculo no experimento atual.
+
 ## Publicação efetiva do pós-compra
 
 Em 21/09/2026, `pagamentopalf.site` ainda resolve para `191.252.102.54`, enquanto

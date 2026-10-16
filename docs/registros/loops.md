@@ -10214,3 +10214,20 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   legado. A correção trata apenas o requisito audiovisual, sem conceder gates
   financeiros, página, checkout, publicação ou campanha.
 - Matriz e limites: `docs/homologacao/capella-videos-selecao-liberacao-v1.md`.
+
+## LOOP-CHECKOUT-KIT-EXIGE-SLOT-ASSINATURA — 16/10/2026
+
+- **Evidência:** Capella #105 ficou sem checkout após homologação privada e seleção dos
+  vídeos #75/#76. O comando administrativo retornou 409 exigindo slot PDE; a preparação
+  Quartzo e os experimentos históricos #88/#94 trabalham com pós-compra de kit e
+  publicação GeraSalesPage, sem aquele slot. A causa está no serviço compartilhado,
+  que resolvia entrega PDE antes de distinguir o tipo do experimento.
+- **Alternativas:** reutilizar preferência antiga perde a correlação do experimento;
+  cadastrar slot fictício mistura tipos; resolver o contrato de compra única no comando
+  existente preserva identidade, auditoria e os gates posteriores. Adotada a terceira.
+- **Prevenção:** contrato explícito e versionado de pós-compra, preço e tipo conferidos;
+  referência de pagamento distinta do slug; retorno com URL completa; contexto divergente
+  bloqueado antes da persistência. Testes cobrem Capella, outro kit, fluxo PDE antes válido,
+  ausência de fonte, contrato alterado, retorno incorreto e integração HTTP administrativa.
+- **Limites:** preparar checkout não aprova oferta, margem, página, publicação ou campanha;
+  nenhuma taxa desconhecida vira zero. Matriz em `docs/homologacao/capella-checkout-compra-unica-v1.md`.

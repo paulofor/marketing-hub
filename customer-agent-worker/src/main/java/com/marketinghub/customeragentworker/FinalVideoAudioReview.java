@@ -50,9 +50,7 @@ public class FinalVideoAudioReview {
             .build();
   }
 
-  /**
-   * Analisa somente novas tarefas com contrato explícito; imagens mantêm comportamento anterior.
-   */
+  /** Analisa novas tarefas com contrato explícito e preserva recibos reutilizados pelo backend. */
   Map<String, Object> enrich(Map<String, Object> task, Path directory) throws Exception {
     if (!json.valueToTree(task.get("taskTarget")).at("/pdeContext/audioReviewRequired").asBoolean())
       return task;
@@ -148,7 +146,11 @@ public class FinalVideoAudioReview {
       }
       if (receipt == null || !"COMPLETED".equals(receipt.path("status").asText()))
         throw new IllegalStateException(
-            "Escuta pendente ou incerta; recuperar/conferir custos sem nova inferência. taskId="
+            "Escuta sem avaliação válida; preservar recibo e diagnosticar antes de nova tentativa. status="
+                + (receipt == null ? "MISSING" : receipt.path("status").asText())
+                + " motivo="
+                + (receipt == null ? "Recibo ausente" : receipt.path("error").asText())
+                + " taskId="
                 + taskId
                 + " assetId="
                 + assetId);

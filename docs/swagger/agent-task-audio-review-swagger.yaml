@@ -13,6 +13,11 @@ paths:
         '200': {description: Lista de recibos auditivos da tarefa.}
     post:
       summary: Persiste request integral e reserva conservadora antes da chamada única.
+      description: >-
+        Uma nova tarefa pode receber o recibo COMPLETED de outra tarefa do mesmo produto,
+        experimento, asset e hashes de vídeo, áudio e request. mayInvoke=false: o custo e o
+        ID continuam na origem, sem novo lançamento. O parecer final deve citar esse ID e
+        revalidar mídia, contexto e resultado. STOP e autorização do ciclo são preservados.
       requestBody:
         required: true
         content:
@@ -49,4 +54,4 @@ paths:
               properties:
                 rawResponse: {type: string, description: Exceção explícita de auditoria bruta; não é saída funcional.}
       responses:
-        '200': {description: COMPLETED, INVALID ou COST_PENDING; repetir o mesmo callback é idempotente.}
+        '200': {description: COMPLETED, INVALID, REFUSED ou COST_PENDING; recusa não é avaliação. Repetir o mesmo callback é idempotente e não autoriza nova inferência.}

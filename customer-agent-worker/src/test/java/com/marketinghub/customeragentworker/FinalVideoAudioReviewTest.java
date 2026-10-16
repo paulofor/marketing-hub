@@ -18,6 +18,106 @@ class FinalVideoAudioReviewTest {
   @TempDir Path dir;
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Duas identidades reaproveitam o recibo anterior sem chamada paga ou novo callback. */
+  @Test
+  void acceptsBackendReuseAndReportsRefusalWithoutRetrying() throws Exception {
+    var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    var calls = new AtomicInteger();
+    var refusal = new AtomicBoolean();
+    server.createContext(
+        "/",
+        exchange -> {
+          try {
+            JsonNode response;
+            if (exchange.getRequestMethod().equals("GET")) response = json.createArrayNode();
+            else if (exchange.getRequestURI().getPath().endsWith("/audio-reviews")) {
+              var body = json.readTree(exchange.getRequestBody());
+              response =
+                  json.createObjectNode()
+                      .put("id", 8888)
+                      .put("assetId", body.path("assetId").asLong())
+                      .put("videoSha256", body.path("videoSha256").asText())
+                      .put("audioSha256", body.path("audioSha256").asText())
+                      .put("status", refusal.get() ? "REFUSED" : "COMPLETED")
+                      .put("mayInvoke", false)
+                      .put("estimatedUsd", 0.03)
+                      .put(
+                          "error",
+                          refusal.get() ? "Provedor recusou a escuta; custo conhecido." : "");
+            } else {
+              calls.incrementAndGet();
+              response = json.createObjectNode();
+            }
+            byte[] bytes = json.writeValueAsBytes(response);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+          } catch (Exception ex) {
+            org.slf4j.LoggerFactory.getLogger(FinalVideoAudioReviewTest.class)
+                .error(
+                    "Falha na recuperação local da escuta. endpoint={}",
+                    exchange.getRequestURI(),
+                    ex);
+            throw new IllegalStateException(ex);
+          } finally {
+            exchange.close();
+          }
+        });
+    server.start();
+    String base = "http://127.0.0.1:" + server.getAddress().getPort();
+    try {
+      for (long id : new long[] {31001, 32001}) {
+        Path work = Files.createDirectory(dir.resolve("reuse-" + id));
+        byte[] bytes = new byte[128];
+        Files.write(work.resolve("mix.wav"), bytes);
+        String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        Files.writeString(
+            work.resolve("audio-manifest.json"),
+            json.writeValueAsString(
+                List.of(
+                    Map.of(
+                        "assetId",
+                        id,
+                        "videoSha256",
+                        "a".repeat(64),
+                        "audioSha256",
+                        hash,
+                        "localPath",
+                        work.resolve("mix.wav").toString()))));
+        var task =
+            Map.<String, Object>of(
+                "taskId",
+                id + 1,
+                "taskTarget",
+                Map.of(
+                    "productId",
+                    id + 2,
+                    "pdeContext",
+                    Map.of(
+                        "audioReviewRequired",
+                        true,
+                        "finalVideoReview",
+                        List.of(
+                            Map.of(
+                                "assetId", id, "sha256", "a".repeat(64), "durationSeconds", 30)))));
+        var worker =
+            new FinalVideoAudioReview(
+                json, base, base + "/model", "", "synthetic-key", dir.resolve("state").toString());
+        refusal.set(false);
+        var result = worker.enrich(task, work);
+        assertThat(json.valueToTree(result.get("audioReviews")).path(0).path("id").asLong())
+            .isEqualTo(8888);
+        refusal.set(true);
+        assertThatThrownBy(() -> worker.enrich(task, work))
+            .hasMessageContaining("REFUSED")
+            .hasMessageContaining("custo conhecido");
+      }
+      assertThat(calls.get()).isZero();
+    } finally {
+      server.stop(0);
+    }
+  }
+
   /** Não envia briefing persuasivo à escuta e conserva os limites físicos recebidos do backend. */
   @Test
   void sendsMeasuredEvidenceWithoutMarketingBrief() throws Exception {

@@ -39,7 +39,10 @@ public class AgentAudioReviewService {
   private final ProductRepository products;
   private final ObjectMapper json;
 
-  /** Reserva uma única chamada sob o lock do ciclo, sem reenviar operações de estado incerto. */
+  /**
+   * Reutiliza a escuta idêntica ou reserva uma chamada sob o lock do ciclo, sem repetir envio
+   * incerto.
+   */
   @Transactional
   public AudioReviewReceipt reserve(String agent, long taskId, AudioReviewReserveRequest input) {
     var task = owned(agent, taskId);
@@ -83,6 +86,27 @@ public class AgentAudioReviewService {
     require(Boolean.TRUE.equals(product.getAutomaticExecutionEnabled()), "Produto está em STOP.");
     var authority = budgets.current(cycle);
     require(authority != null, "Não há teto audiovisual autorizado para esta escuta.");
+    var reusable =
+        reviews
+            .findFirstByProductIdAndExperimentIdAndAssetIdAndVideoSha256AndAudioSha256AndRequestHashAndStatusAndEstimatedUsdIsNotNullOrderByIdDesc(
+                target.productId(),
+                target.experimentId(),
+                input.assetId(),
+                input.videoSha256(),
+                input.audioSha256(),
+                requestHash,
+                "COMPLETED");
+    if (reusable.isPresent()) {
+      var source = reusable.get();
+      groundedAssessment(read(source.getResultJson()), media);
+      log.info(
+          "Escuta reutilizada sem inferência nem novo lançamento de custo. taskId={} sourceTaskId={} assetId={} reviewId={}",
+          taskId,
+          source.getTaskId(),
+          input.assetId(),
+          source.getId());
+      return receipt(source, false);
+    }
     var entries = ledger.findByExperimentIdOrderByCreatedAtAsc(target.experimentId());
     BigDecimal used = BigDecimal.ZERO;
     for (var entry : entries) {
@@ -157,10 +181,18 @@ public class AgentAudioReviewService {
       entry.setEstimatedUsd(cost(raw));
       if (entry.getEstimatedUsd() != null) entry.setStatus("INVALID");
       require(raw.path("model").asText().startsWith(MODEL), "Resposta de modelo incompatível.");
+      String content = raw.at("/choices/0/message/content").asText().trim();
+      if (!raw.at("/choices/0/message/refusal").asText("").isBlank()
+          || "content_filter".equals(raw.at("/choices/0/finish_reason").asText())
+          || "I'm sorry, but I can't comply with that request.".equals(content)) {
+        if (entry.getEstimatedUsd() != null) entry.setStatus("REFUSED");
+        throw new IllegalArgumentException(
+            "O provedor recusou a escuta; não existe avaliação sonora válida. Preservar resposta e custo; sem repetição automática.");
+      }
       require(
           "stop".equals(raw.at("/choices/0/finish_reason").asText()),
           "Resposta auditiva incompleta ou recusada.");
-      var result = json.readTree(raw.at("/choices/0/message/content").asText());
+      var result = json.readTree(content);
       groundedAssessment(result, media(task, assetId));
       entry.setResultJson(result.toString());
       if (entry.getEstimatedUsd() != null) entry.setStatus("COMPLETED");
@@ -189,21 +221,34 @@ public class AgentAudioReviewService {
     return reviews.findByTaskIdOrderByIdAsc(taskId).stream().map(e -> receipt(e, false)).toList();
   }
 
-  /** Impede que o modelo principal aprove uma escuta inexistente, trocada ou reprovada. */
+  /** Revalida a escuta citada, inclusive reutilizada, sem aceitar outra mídia ou contexto. */
   public void validateCompletion(AgentTask task, String resultJson) {
     if (!supports(task)) return;
     JsonNode result = read(resultJson);
     if (!"APPROVED".equals(result.path("decision").asText())) return;
-    for (var media : videos.inputs(target(task))) {
+    var target = target(task);
+    for (var media : videos.inputs(target)) {
+      Long citedId = null;
+      for (var item : result.path("videoAudit"))
+        if (item.path("assetId").asLong() == media.path("assetId").asLong())
+          citedId = item.path("audioReviewId").asLong();
+      var own = reviews.findByTaskIdAndAssetId(task.getId(), media.path("assetId").asLong());
       var entry =
-          reviews
-              .findByTaskIdAndAssetId(task.getId(), media.path("assetId").asLong())
+          (own.isPresent()
+                  ? own
+                  : citedId == null
+                      ? Optional.<AgentAudioReview>empty()
+                      : reviews.findById(citedId))
               .orElseThrow(
                   () ->
                       new IllegalArgumentException(
-                          "Aprovação de vídeo exige escuta persistida da própria tarefa."));
+                          "Aprovação de vídeo exige escuta persistida e vinculada ao parecer."));
       require(
           "COMPLETED".equals(entry.getStatus())
+              && Objects.equals(entry.getProductId(), target.productId())
+              && Objects.equals(entry.getExperimentId(), target.experimentId())
+              && entry.getAssetId() == media.path("assetId").asLong()
+              && entry.getEstimatedUsd() != null
               && entry.getVideoSha256().equals(media.path("sha256").asText())
               && "PASS".equals(read(entry.getResultJson()).path("verdict").asText()),
           "Escuta pendente ou reprovada impede aprovação audiovisual.");

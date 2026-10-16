@@ -437,3 +437,17 @@ somente a recuperação de `APPROVED`. O backend revalida o resultado pelo callb
 Essa compatibilidade preserva a publicação gradual e não reabre pareceres funcionais concluídos.
 
 Registro, testes entre identidades e limites: `docs/homologacao/capella-revisao-audio-tempos-v1.md`.
+
+### Recuperação parcial da escuta — 16/10/2026
+
+Uma nova revisão pode reutilizar o recibo COMPLETED e custeado da mesma mídia, produto,
+experimento e request integral (incluindo prompt, schema, modelo e áudio). O backend verifica
+os hashes antes de autorizar consumo; o ID e o custo continuam na tarefa original. O novo
+parecer cita o mesmo recibo, revalidado contra a mídia atual, sem duplicar custo no ledger.
+Resultado ADJUST ou INCONCLUSIVE nunca se transforma em PASS por reutilização.
+
+Recusa do provedor é preservada como REFUSED quando o custo é conhecido; sem uso suficiente,
+continua COST_PENDING. Ela não comprova audição nem rejeição comercial do produto. Não há
+repetição automática, supressão da recusa ou troca oculta de modelo. A retomada governada
+mantém a tentativa anterior e pode abrir nova tarefa; reusar a escuta válida do outro vídeo
+evita uma cobrança desnecessária. Envios incertos não recebem essa autorização.

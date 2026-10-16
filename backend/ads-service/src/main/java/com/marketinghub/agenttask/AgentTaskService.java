@@ -110,6 +110,7 @@ public class AgentTaskService {
   static final String APOLLO_AUDIOVISUAL_WORKER_CONTRACT = "APOLLO_AUDIOVISUAL_V1";
   static final String TEMIS_BPM_WORKER_CONTRACT = "TEMIS_BPM_LEASE_V1";
   static final String IRIS_RENDER_WORKER_CONTRACT = "IRIS_RENDER_PLAN_V1";
+  static final String PSIQUE_DECISION_REPLAY_CONTRACT = "PSIQUE_CALLBACK_DECISIONS_V2";
   private static final Set<String> APOLLO_AUDIOVISUAL_PROCESS_CODES =
       Set.of("pde-construction-approval", "creative-production-approval");
   private static final Set<String> TEMIS_BPM_QUEUE_CONTRACTS =
@@ -1023,7 +1024,9 @@ public class AgentTaskService {
         task.getDeliveredAt());
   }
 
-  /** Atualiza o estado sem permitir saltos que eliminem a rastreabilidade do trabalho. */
+  /**
+   * Atualiza o estado e retoma callbacks preservados sem apagar auditoria ou repetir inferência.
+   */
   @Transactional
   public AgentTaskResponse updateStatus(Long taskId, UpdateAgentTaskStatusRequest request) {
     AgentTask task = task(taskId);
@@ -1058,6 +1061,12 @@ public class AgentTaskService {
       requireTerminalExecutionAudit(task, false);
     }
     Instant now = Instant.now(clock);
+    if ("BLOCKED".equals(task.getStatus())
+        && "IN_PROGRESS".equals(next)
+        && trimToNull(task.getExecutionError()) != null
+        && callbackCanReplayWithoutInference(task, false, true)
+        && !task.getExecutionError().startsWith("AUTO_RETRY_ONCE|"))
+      task.setExecutionError("AUTO_RETRY_ONCE|" + task.getExecutionError());
     task.setStatus(next);
     if ("IN_PROGRESS".equals(next) && task.getReceivedAt() == null) {
       task.setReceivedAt(now);
@@ -1668,12 +1677,16 @@ public class AgentTaskService {
             && COMMUNICATION_AGENT_KEY.equals(agentKey.trim())
             && "creative-production-approval".equals(trimToNull(processCode))
             && "nonAudiovisual".equals(trimToNull(activityId));
+    boolean psiqueDecisionReplay =
+        CUSTOMER_AGENT_KEY.equals(agentKey.trim())
+            && PSIQUE_DECISION_REPLAY_CONTRACT.equals(trimToNull(workerContract));
     rejectWorkerContractOutsideItsQueue(
         workerContract,
         apolloAudiovisualContract,
         temisBpmContract,
         irisRenderContract,
-        atenaBpmContract);
+        atenaBpmContract,
+        psiqueDecisionReplay);
     if ((apolloAudiovisualQueue && !apolloAudiovisualContract)
         || (temisBpmQueue && !temisBpmContract)
         || (atenaBpmQueue && !atenaBpmContract)) {
@@ -1681,7 +1694,12 @@ public class AgentTaskService {
     }
     Optional<AgentTask> replayable =
         replayInterruptedCallback(
-            agentKey, processCode, activityId, executionResourceCode, irisRenderContract);
+            agentKey,
+            processCode,
+            activityId,
+            executionResourceCode,
+            irisRenderContract,
+            psiqueDecisionReplay);
     if (replayable.isPresent())
       return Optional.of(pendingResponse(replayable.get(), apolloAudiovisualContract));
     Optional<AgentTask> orphaned =
@@ -1705,7 +1723,12 @@ public class AgentTaskService {
           pendingResponse(deterministicResourceOrphan.get(), apolloAudiovisualContract));
     Optional<AgentTask> recovered =
         recoverInterruptedCallbackOnce(
-            agentKey, processCode, activityId, executionResourceCode, irisRenderContract);
+            agentKey,
+            processCode,
+            activityId,
+            executionResourceCode,
+            irisRenderContract,
+            psiqueDecisionReplay);
     if (recovered.isPresent())
       return Optional.of(pendingResponse(recovered.get(), apolloAudiovisualContract));
     for (AgentTask task :
@@ -1790,12 +1813,14 @@ public class AgentTaskService {
       boolean apolloAudiovisualContract,
       boolean temisBpmContract,
       boolean irisRenderContract,
-      boolean atenaBpmContract) {
+      boolean atenaBpmContract,
+      boolean psiqueDecisionReplay) {
     if (trimToNull(workerContract) != null
         && !apolloAudiovisualContract
         && !temisBpmContract
         && !irisRenderContract
-        && !atenaBpmContract) {
+        && !atenaBpmContract
+        && !psiqueDecisionReplay) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "Contrato versionado do worker incompatível com a fila solicitada.");
@@ -1896,11 +1921,14 @@ public class AgentTaskService {
       String processCode,
       String activityId,
       String executionResourceCode,
-      boolean irisRenderContract) {
+      boolean irisRenderContract,
+      boolean psiqueDecisionReplay) {
     if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
     return repository.findReplayableClaimedCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
-        .filter(task -> callbackCanReplayWithoutInference(task, irisRenderContract))
+        .filter(
+            task ->
+                callbackCanReplayWithoutInference(task, irisRenderContract, psiqueDecisionReplay))
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .findFirst();
@@ -2473,11 +2501,14 @@ public class AgentTaskService {
       String processCode,
       String activityId,
       String executionResourceCode,
-      boolean irisRenderContract) {
+      boolean irisRenderContract,
+      boolean psiqueDecisionReplay) {
     if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
     return repository.findRetryableCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
-        .filter(task -> callbackCanReplayWithoutInference(task, irisRenderContract))
+        .filter(
+            task ->
+                callbackCanReplayWithoutInference(task, irisRenderContract, psiqueDecisionReplay))
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .filter(
@@ -2591,11 +2622,12 @@ public class AgentTaskService {
 
   /**
    * Autoriza retomada automática somente quando o executor sabe reaplicar a saída preservada sem
-   * chamar o modelo; Psique mantém o contrato legado restrito a aprovações e Íris somente refaz a
+   * chamar o modelo; Psique V2 também recupera ajustes/bloqueios e Íris somente refaz a
    * materialização não audiovisual. Especificações prontas exigem o worker compatível para permitir
    * publicação gradual sem expor o estado novo ao executor anterior.
    */
-  private boolean callbackCanReplayWithoutInference(AgentTask task, boolean irisRenderContract) {
+  private boolean callbackCanReplayWithoutInference(
+      AgentTask task, boolean irisRenderContract, boolean psiqueDecisionReplay) {
     if (trimToNull(task.getResultJson()) == null || trimToNull(task.getEvidenceJson()) == null) {
       return false;
     }
@@ -2631,8 +2663,9 @@ public class AgentTaskService {
     }
     if (!CUSTOMER_AGENT_KEY.equals(agentKey)) return false;
     try {
-      return "APPROVED"
-          .equals(objectMapper.readTree(task.getResultJson()).path("decision").asText());
+      String decision = objectMapper.readTree(task.getResultJson()).path("decision").asText();
+      return "APPROVED".equals(decision)
+          || (psiqueDecisionReplay && Set.of("ADJUST", "BLOCKED").contains(decision));
     } catch (Exception ex) {
       log.error(
           "Callback preservado ilegível; retomada automática recusada. taskId={} agentKey={}",

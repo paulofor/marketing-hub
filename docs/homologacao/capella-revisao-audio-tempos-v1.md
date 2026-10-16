@@ -18,6 +18,13 @@ arte de inspiração imediatamente antes de legenda de agenda aberta. Sua copy f
 persuasiva. O resultado ADJUST ficou BLOCKED tecnicamente porque um mesmo momento sonoro foi
 associado a dois frames diferentes; essa relação é válida para examinar uma transição.
 
+A investigação da retomada mostrou outra causa: backend e worker só reaplicavam resultados
+`APPROVED`. Um `ADJUST` já pago poderia cair novamente no modelo ao retomar. A regressão do
+consumidor falhou antes da correção. A retomada explícita agora marca o callback preservado;
+somente o worker que anuncia `PSIQUE_CALLBACK_DECISIONS_V2` recebe ajustes/bloqueios. O caminho
+legado, os gates, as provas e o custo continuam preservados. O consumidor real foi exercitado
+com servidor local e as três decisões, sem captura nem modelo.
+
 Foram comparadas: confiar nos tempos estimados; realinhar vídeo às estimativas; ou fornecer os
 limites medidos e validar a escuta contra a composição real. A terceira preserva o áudio,
 evita ajustes falsos e reduz novas inferências. A demonstração visual será corrigida usando
@@ -53,8 +60,8 @@ funcional sem erro de contrato. Aumento de conversão, compras e contribuição 
 
 ## Validação executada na sandbox
 
-- Backend: 110 testes, incluindo contrato auditivo, recuperação e arquitetura; zero falhas.
-- Psique: 222 testes Java, zero falhas (11 testes condicionais não aplicáveis nesta rodada);
+- Backend: 237 testes, incluindo contrato auditivo, recuperação e arquitetura; zero falhas.
+- Psique: 225 testes Java, zero falhas (11 testes condicionais não aplicáveis nesta rodada);
   sete verificações JavaScript de áudio, frames e reprodução também passaram.
 - Executor audiovisual: 290 testes, zero falhas; seis testes condicionais separados da rodada.
   O flag de FFmpeg real cobriu composição, identidade alternativa e caminho legado.

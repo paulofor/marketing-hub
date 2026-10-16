@@ -25,6 +25,30 @@ class CustomerBpmTaskOutboxTest {
   @TempDir Path directory;
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
+  /** O consumidor real reaplica ajustes e bloqueios já pagos, sem iniciar captura ou modelo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"APPROVED", "ADJUST", "BLOCKED"})
+  void replaysStoredDecisionBeforeAnyModelWork(String decision) throws Exception {
+    AtomicInteger attempts = new AtomicInteger();
+    AtomicReference<String> received = new AtomicReference<>();
+    HttpServer server = callbackServer(attempts, received, false);
+    Path state = directory.resolve("stored-decision-" + decision);
+    var task = new java.util.HashMap<>(task(448L));
+    String result = "{\"decision\":\"" + decision + "\"}";
+    task.put("retryResultJson", result);
+    task.put("retryEvidenceJson", "{\"proof\":true}");
+    var outbox = new CustomerBpmTaskOutbox(state, json);
+    outbox.save(new CustomerBpmTaskOutbox.Pending(task, null, List.of(), false, null, null));
+    try {
+      consumer(server, state).processOne();
+      assertThat(attempts).hasValue(1);
+      assertThat(json.readTree(received.get()).path("resultJson").asText()).isEqualTo(result);
+      assertThat(outbox.read()).isNull();
+    } finally {
+      server.stop(0);
+    }
+  }
+
   /** Reenvia o mesmo callback depois de reinício e só o remove após confirmação do backend. */
   @Test
   void preservesCallbackAcrossRestartWithoutStartingAnotherModel() throws Exception {

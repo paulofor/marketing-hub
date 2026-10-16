@@ -2198,9 +2198,10 @@ class AgentTaskServiceTest {
     verify(repository).save(exhausted);
   }
 
-  /** Reexpõe o callback preservado que perdeu o worker sem executar o modelo novamente. */
-  @Test
-  void replaysOrphanedClaimedCallbackBeforeNewWork() {
+  /** Reexpõe decisões preservadas, inclusive ajustes, sem executar o modelo novamente. */
+  @ParameterizedTest
+  @ValueSource(strings = {"APPROVED", "ADJUST", "BLOCKED"})
+  void replaysOrphanedClaimedCallbackBeforeNewWork(String decision) {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     Agent psique = agent(8L, "customer-agent", "Psique");
@@ -2208,21 +2209,59 @@ class AgentTaskServiceTest {
         processTask(
             447L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
     orphan.setExecutionError("AUTO_RETRY_ONCE|500 Internal Server Error");
-    orphan.setResultJson("{\"decision\":\"APPROVED\"}");
+    orphan.setResultJson("{\"decision\":\"" + decision + "\"}");
     orphan.setEvidenceJson("{\"opalaScope\":{}}");
     when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
     when(repository.findReplayableClaimedCallbackCandidates("customer-agent"))
         .thenReturn(List.of(orphan));
 
+    if (!"APPROVED".equals(decision))
+      assertThat(
+              service(repository, agents, Clock.systemUTC())
+                  .claimEligibleProcessTask("customer-agent"))
+          .isEmpty();
+
     AgentTaskPendingResponse replay =
         service(repository, agents, Clock.systemUTC())
-            .claimEligibleProcessTask("customer-agent")
+            .claimEligibleProcessTask(
+                "customer-agent", null, null, null, "PSIQUE_CALLBACK_DECISIONS_V2")
             .orElseThrow();
 
     assertThat(replay.taskId()).isEqualTo(447L);
     assertThat(replay.retryResultJson()).isEqualTo(orphan.getResultJson());
     assertThat(replay.retryEvidenceJson()).isEqualTo(orphan.getEvidenceJson());
     verify(repository, never()).save(any());
+  }
+
+  /** Retomar uma falha técnica com parecer preservado agenda callback, nunca nova inferência. */
+  @ParameterizedTest
+  @ValueSource(longs = {739, 910739})
+  void resumesStoredAdjustmentWithoutRepeatingInference(long id) {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var psique = agent(8L, "customer-agent", "Psique");
+    var task = processTask(id, psique, process("PUBLISHED", "Psique"), "customer", "BLOCKED");
+    task.setExecutionError(
+        "java.lang.IllegalArgumentException: Momento auditivo ausente ou repetido.");
+    task.setResultJson("{\"decision\":\"ADJUST\"}");
+    task.setEvidenceJson("{\"proof\":true}");
+    task.setEstimatedCostUsd(new java.math.BigDecimal("0.2347328"));
+    when(repository.findById(id)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, agents, Clock.systemUTC());
+    service.updateStatus(id, new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    assertThat(task.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.2347328");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findReplayableClaimedCallbackCandidates("customer-agent"))
+        .thenReturn(List.of(task));
+    var replay =
+        service
+            .claimEligibleProcessTask(
+                "customer-agent", null, null, null, "PSIQUE_CALLBACK_DECISIONS_V2")
+            .orElseThrow();
+    assertThat(replay.retryResultJson()).isEqualTo(task.getResultJson());
+    assertThat(replay.retryEvidenceJson()).isEqualTo(task.getEvidenceJson());
   }
 
   /** Recupera uma única reserva sem processo, saída ou consumo após o reinício da Psique. */

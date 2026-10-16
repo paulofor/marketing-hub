@@ -430,4 +430,10 @@ mantêm resposta bruta, custo e motivo, mas impedem aceite. A aprovação final 
 Um mesmo momento pode ser associado a frames distintos para avaliar uma transição; apenas o
 par momento/frame duplicado é inválido. Isso não dispensa cobertura de abertura, meio e fim.
 
+Retomar uma falha técnica com parecer e evidência completos deve reaplicar a decisão preservada,
+inclusive `ADJUST` e `BLOCKED`, sem convertê-la em aprovação nem iniciar outra inferência.
+O worker anuncia `PSIQUE_CALLBACK_DECISIONS_V2` no pending; executores anteriores conservam
+somente a recuperação de `APPROVED`. O backend revalida o resultado pelo callback habitual.
+Essa compatibilidade preserva a publicação gradual e não reabre pareceres funcionais concluídos.
+
 Registro, testes entre identidades e limites: `docs/homologacao/capella-revisao-audio-tempos-v1.md`.

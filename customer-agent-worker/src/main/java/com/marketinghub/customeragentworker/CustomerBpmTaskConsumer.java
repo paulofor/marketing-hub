@@ -191,7 +191,7 @@ public class CustomerBpmTaskConsumer {
       if (pending == null) {
         outbox.save(new CustomerBpmTaskOutbox.Pending(task, null, List.of(), false, null, null));
       }
-      if (replayApprovedCallback(task)) return;
+      if (replayStoredCallback(task)) return;
       visualEvidence = prepareVisualEvidence(task);
       task = withCaptureFacts(task, visualEvidence.bundle(), visualEvidence.uploaded());
       task = CreativeMobileReviewInputs.enrich(task, visualEvidence.uploaded());
@@ -260,7 +260,7 @@ public class CustomerBpmTaskConsumer {
           backend
               .get()
               .uri(
-                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
+                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}&workerContract=PSIQUE_CALLBACK_DECISIONS_V2",
                   AGENT_KEY,
                   contract.processCode(),
                   contract.activityId())
@@ -271,13 +271,13 @@ public class CustomerBpmTaskConsumer {
     return null;
   }
 
-  /** Reenvia uma aprovação já auditada após erro transitório, sem cobrar nova análise de Psique. */
-  private boolean replayApprovedCallback(Map<String, Object> task) throws IOException {
+  /** Reenvia a decisão auditada, inclusive ajustes e bloqueios, sem cobrar outra análise. */
+  private boolean replayStoredCallback(Map<String, Object> task) throws IOException {
     String resultJson = text(task.get("retryResultJson"));
     String evidenceJson = text(task.get("retryEvidenceJson"));
-    if (!hasApprovedRetryPayload(json, resultJson, evidenceJson)) return false;
+    if (!hasStoredRetryPayload(json, resultJson, evidenceJson)) return false;
     log.info(
-        "Reenviando callback aprovado de Psique sem nova chamada ao modelo. taskId={}",
+        "Reenviando callback preservado de Psique sem nova chamada ao modelo. taskId={}",
         taskId(task));
     enqueue(
         task,
@@ -288,12 +288,15 @@ public class CustomerBpmTaskConsumer {
     return true;
   }
 
-  /** Confirma que o callback preservado é uma aprovação com evidência antes de reutilizá-lo. */
-  static boolean hasApprovedRetryPayload(ObjectMapper json, String resultJson, String evidenceJson)
+  /**
+   * Confere decisão conhecida e evidência; o backend mantém a validação e o aceite do resultado.
+   */
+  static boolean hasStoredRetryPayload(ObjectMapper json, String resultJson, String evidenceJson)
       throws IOException {
     return resultJson != null
         && evidenceJson != null
-        && "APPROVED".equals(json.readTree(resultJson).path("decision").asText());
+        && Set.of("APPROVED", "ADJUST", "BLOCKED")
+            .contains(json.readTree(resultJson).path("decision").asText());
   }
 
   /** Normaliza um campo opcional vindo do contrato interno sem transformar ausência em texto. */

@@ -109,8 +109,9 @@ public class ExperimentVideoAssetService {
   private final SalesVideoJobService salesVideoJobService;
   private final SalesVideoProductionCostCalculator costCalculator;
   private final CreativeRepository creativeRepository;
+  private final ExperimentVideoReleaseSelection releaseSelection;
 
-  /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
+  /** Inicializa os vínculos de experimento e vídeo e o gate canônico da seleção integrada. */
   public ExperimentVideoAssetService(
       ExperimentVideoAssetRepository repository,
       ExperimentRepository experimentRepository,
@@ -123,7 +124,8 @@ public class ExperimentVideoAssetService {
       SalesVideoService salesVideoService,
       SalesVideoJobService salesVideoJobService,
       SalesVideoProductionCostCalculator costCalculator,
-      CreativeRepository creativeRepository) {
+      CreativeRepository creativeRepository,
+      ExperimentVideoReleaseSelection releaseSelection) {
     this.repository = repository;
     this.experimentRepository = experimentRepository;
     this.profileRepository = profileRepository;
@@ -136,6 +138,7 @@ public class ExperimentVideoAssetService {
     this.salesVideoJobService = salesVideoJobService;
     this.costCalculator = costCalculator;
     this.creativeRepository = creativeRepository;
+    this.releaseSelection = releaseSelection;
   }
 
   /** Lista todos os vídeos registrados para um experimento. */
@@ -386,14 +389,20 @@ public class ExperimentVideoAssetService {
     return toDto(repository.save(videoAsset));
   }
 
-  /** Verifica se existe vídeo obrigatório ainda sem status READY e revisão APPROVED. */
+  /** Usa a seleção vigente do ciclo; sem integração, confere todos os vídeos obrigatórios. */
   @Transactional(readOnly = true)
   public boolean hasRequiredVideoBlockingRelease(Long experimentId) {
     if (experimentId == null) {
       return false;
     }
-    return repository.existsRequiredReleaseBlocker(
-        experimentId, ExperimentVideoStatus.READY, ExperimentVideoReviewStatus.APPROVED);
+    return releaseSelection
+        .blocksRelease(experimentId)
+        .orElseGet(
+            () ->
+                repository.existsRequiredReleaseBlocker(
+                    experimentId,
+                    ExperimentVideoStatus.READY,
+                    ExperimentVideoReviewStatus.APPROVED));
   }
 
   /** Verifica se existe vídeo pronto e aprovado para uma pagina/funil que depende de vídeo. */
@@ -542,7 +551,9 @@ public class ExperimentVideoAssetService {
         .toList();
   }
 
-  /** Confirma aprovação e oferta das fontes, sem exigir adoção da campanha para reutilizar pixels. */
+  /**
+   * Confirma aprovação e oferta das fontes, sem exigir adoção da campanha para reutilizar pixels.
+   */
   private List<Map<String, Object>> resolveApprovedVideoSources(
       Experiment target, List<Long> videoAssetIds) {
     Experiment permittedSource =
@@ -604,7 +615,9 @@ public class ExperimentVideoAssetService {
         .toList();
   }
 
-  /** Confere os termos conhecidos da oferta para reutilização visual entre experimentos separados. */
+  /**
+   * Confere os termos conhecidos da oferta para reutilização visual entre experimentos separados.
+   */
   private boolean sameVideoReuseOffer(Experiment source, Experiment target) {
     return source.getUnitPrice() != null
         && source.getUnitPrice().signum() > 0

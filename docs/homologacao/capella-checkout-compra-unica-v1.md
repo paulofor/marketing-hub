@@ -55,3 +55,30 @@ A melhoria reutilizável reduz a mistura entre tipos de produto. Testes comprova
 executável e segregação; não comprovam demanda nem capacidade de manter a margem no mercado.
 Adoção limitada a kits com contrato explícito; fonte ausente bloqueia. Reversão pelo PR
 restaura o caminho anterior sem apagar preferências, custos, pareceres ou aceites humanos.
+
+## Continuação audiovisual — matriz adicional
+
+A conferência do consumidor seguinte mostrou `publishedPrivateIntegration` exigindo
+slot PDE também para o kit; o GeraSalesPage não recebia o vídeo selecionado. A correção
+no mesmo lote resolve publicação auditada por tipo e transporta somente mídia/legenda
+aprovadas. O executor conserva esse vídeo nas etapas HTML e publicação, com controles
+opcionais, transcrição escapada e CTA anterior preservado, sem outra inferência.
+
+Validar fonte e identidade antes do modelo; ausência mantém legado; fonte parcial
+bloqueia sem chamada; outra identidade conserva outro arquivo; aplicação idempotente;
+resposta bruta e custo preservados; versão rejeitada, autoplay, URL divergente ou
+anúncio sem revisão continuam bloqueantes. No navegador, exercitar reprodução real,
+CTA, leitura e ausência de overflow em desktop/iPhone/Pixel com tráfego e dados de QA
+locais. Não trocar aprovação privada por comercial nem inserir controles internos.
+
+Resultado: 217 casos backend relevantes no conjunto das rodadas, todos aprovados; o
+executor passou nos 259 casos (256 executados, três opcionais não aplicáveis). O modelo
+foi simulado; bruto, custo e identidade foram preservados, sem outra chamada na montagem.
+O vídeo #75 foi baixado para QA por acesso operacional de leitura e seu SHA-256 coincidiu
+com o registro. ffprobe confirmou H.264/AAC, 1080×1920 e 55 segundos. O HTML renderizado
+pelo código real reproduziu o arquivo, mostrou a transcrição, manteve CTA independente
+e não apresentou overflow nos três perfis. Safari/iOS nativos não foram executados.
+
+A leitura Python da sandbox recebeu Cloudflare 1010; curl no host operacional e clientes
+Chromium desktop/Pixel receberam a mídia (200/206). Essa comparação descarta a hipótese
+de arquivo indisponível; o replay local usou os mesmos bytes, sem alterar a mídia aprovada.

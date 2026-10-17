@@ -9,6 +9,8 @@ import com.marketinghub.agenttask.CreativeFinalVideoEvidence;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse.ApprovalOption;
 import com.marketinghub.creative.*;
+import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.video.*;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
@@ -36,6 +38,10 @@ public class LearningCycleVideoEvidence {
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
   private final CreativeFinalVideoEvidence finalReview;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  @org.springframework.context.annotation.Lazy
+  private ExperimentCampaignDestinationPolicy salesPageDestinations;
 
   /** Valida o briefing comercial sem convertê-lo em autorização financeira ou job. */
   public void brief(JsonNode data) {
@@ -135,8 +141,8 @@ public class LearningCycleVideoEvidence {
   }
 
   /**
-   * Confere que a promoção comercial preservou as duas mídias privadas aprovadas e materializou o
-   * contrato público exato, sem transformar a integração privada em autorização de publicação.
+   * Confere as mídias privadas na publicação do tipo: página auditada do kit ou contrato do slot
+   * PDE, sem transformar a integração privada em autorização comercial.
    */
   private void publishedPrivateIntegration(LearningSalesCycle cycle, JsonNode privateProof) {
     var ad = approved(cycle, ExperimentVideoSlot.AD);
@@ -146,6 +152,34 @@ public class LearningCycleVideoEvidence {
             && sameMedia(privateProof.path("heroVideo"), hero),
         "A publicação precisa preservar os mesmos vídeos aprovados na integração privada.");
     var experiment = ad.getExperiment();
+    if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
+      var publication = salesPageDestinations.auditedSalesPagePublication(experiment).orElse(null);
+      require(
+          publication != null
+              && salesPageDestinations.hasCompletedGeraSalesPagePipeline(experiment)
+              && publication.getPublishedAt() != null
+              && https(publication.getSalesPageUrl())
+              && Objects.equals(publication.getSalesPageUrl(), experiment.getFollowUpActionUrl()),
+          "Publique pelo GeraSalesPage a página auditada deste experimento low-ticket.");
+      var document = org.jsoup.Jsoup.parse(Objects.toString(publication.getHtml(), ""));
+      boolean matchingHero =
+          document.select("[data-mh-reviewed-video=v1] video").stream()
+              .anyMatch(
+                  video ->
+                      Long.toString(hero.getId()).equals(video.attr("data-video-asset-id"))
+                          && video.hasAttr("controls")
+                          && !video.hasAttr("autoplay")
+                          && (Objects.equals(video.attr("src"), hero.getAssetUrl())
+                              || video.select("source").stream()
+                                  .anyMatch(
+                                      source ->
+                                          Objects.equals(source.attr("src"), hero.getAssetUrl()))));
+      require(
+          matchingHero,
+          "A página auditada precisa preservar a demonstração aprovada, com reprodução opcional.");
+      requireApprovedCampaignCreative(cycle, ad, publication.getSalesPageUrl());
+      return;
+    }
     String productSlug =
         experiment == null || experiment.getProduct() == null
             ? null
@@ -176,13 +210,19 @@ public class LearningCycleVideoEvidence {
     require(
         containsReviewedHero(contract, hero),
         "O contrato publicado ainda não contém o vídeo de entrada aprovado.");
+    requireApprovedCampaignCreative(cycle, ad, slot.getPublicUrl());
+  }
+
+  /** Confere o mesmo anúncio aprovado e o destino público, sem aprovar mídia ou economia. */
+  private void requireApprovedCampaignCreative(
+      LearningSalesCycle cycle, ExperimentVideoAsset ad, String destination) {
     boolean approvedCampaignVideo =
         creatives.findByExperimentIdAndVideoUrl(cycle.getExperimentId(), ad.getAssetUrl()).stream()
             .anyMatch(
                 creative ->
                     creative.getStatus() == CreativeStatus.READY
                         && creative.getAgentReviewStatus() == CreativeAgentReviewStatus.APPROVED
-                        && Objects.equals(slot.getPublicUrl(), creative.getDestinationUrl()));
+                        && Objects.equals(destination, creative.getDestinationUrl()));
     require(
         approvedCampaignVideo,
         "O vídeo de campanha publicado precisa permanecer em um criativo aprovado com o destino atual.");

@@ -10231,3 +10231,13 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   ausência de fonte, contrato alterado, retorno incorreto e integração HTTP administrativa.
 - **Limites:** preparar checkout não aprova oferta, margem, página, publicação ou campanha;
   nenhuma taxa desconhecida vira zero. Matriz em `docs/homologacao/capella-checkout-compra-unica-v1.md`.
+
+### Mesmo defeito no consumidor audiovisual — 17/10/2026
+
+A validação local do percurso posterior encontrou o gate da integração privada exigindo
+slot PDE também para a página do kit, e o GeraSalesPage não recebia a demonstração escolhida.
+O mesmo lote resolve a publicação auditada por tipo, filtra campos públicos do recibo e
+preserva deterministicamente a peça no HTML revisado e publicado, com reprodução opcional.
+Teste com Capella e outra identidade, legado PDE, divergência de mídia e autoplay; replay
+do arquivo real em desktop/iPhone/Pixel, sem inferência nem eventos comerciais. Não usar
+um novo deploy para descobrir essas dependências já comprovadas no código.

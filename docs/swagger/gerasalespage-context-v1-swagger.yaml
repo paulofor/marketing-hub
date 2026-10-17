@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GeraSalesPage v1 — contexto comercial do produto
-  version: 1.1.0
+  version: 1.2.0
 paths:
   /api/internal/gerasalespage/v1/{stageCode}/stage-executions/pending:
     get:
@@ -31,8 +31,22 @@ paths:
                       properties:
                         product:
                           $ref: '#/components/schemas/ProductCommercialContext'
+                        approvedLandingVideo:
+                          $ref: '#/components/schemas/ApprovedLandingVideo'
 components:
   schemas:
+    ApprovedLandingVideo:
+      type: object
+      description: Demonstração revalidada do recibo do ciclo; ausente no legado, sem acesso privado ou autorizações.
+      required: [assetId, assetUrl, sha256, captions, captionsBurnedIn, role, reviewStatus]
+      properties:
+        assetId: {type: integer, format: int64}
+        assetUrl: {type: string, format: uri}
+        sha256: {type: string, pattern: '^[a-fA-F0-9]{64}$'}
+        captions: {type: string}
+        captionsBurnedIn: {type: boolean, enum: [true]}
+        role: {type: string, enum: [LANDING_HERO]}
+        reviewStatus: {type: string, enum: [APPROVED]}
     ProductCommercialContext:
       type: object
       description: Fontes atuais do cadastro; contratos JSON são objetos, sem dupla serialização.

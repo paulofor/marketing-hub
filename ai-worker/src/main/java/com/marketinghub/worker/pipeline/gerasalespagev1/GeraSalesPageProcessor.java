@@ -50,9 +50,10 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
         this.promptTemplateResolver = new PromptTemplateResolver(path -> "", this::toJsonOrText);
     }
 
-    /** Processa a etapa renderizando template do banco, chamando OpenAI e retornando JSON validado. */
+    /** Revalida a demonstração antes do modelo e retorna JSON com mídia e condições preservadas. */
     @Override
     public StageResult<GeraSalesPageOutput> process(StageContext<GeraSalesPageInput> context) {
+        GeraSalesPageReviewedVideo.validate(context.input().promptData(), objectMapper);
         OpenAiRequest request = buildOpenAiRequest(context);
         backendClient.saveOpenAiRequest(context.execution(), request);
         log.info(
@@ -96,7 +97,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                         effectiveRawResult.outputTokens() == null ? 0 : effectiveRawResult.outputTokens()));
     }
 
-    /** Preserva condições comerciais no HTML revisado e publicado; acrescenta analytics só na publicação. */
+    /** Preserva condições e demonstração no HTML revisado e publicado; instrumenta a publicação. */
     private OpenAiResult<String> enrichFinalSalesPageResponse(
             StageContext<GeraSalesPageInput> context,
             OpenAiResult<String> rawResult,
@@ -111,6 +112,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
         }
         Map<String, Object> enrichedPayload = new LinkedHashMap<>(output.payload());
         String htmlWithTerms = GeraSalesPageCommercialTerms.render(html, context.input().promptData(), objectMapper);
+        htmlWithTerms = GeraSalesPageReviewedVideo.render(htmlWithTerms, context.input().promptData(), objectMapper);
         String finalHtml = publication ? ensureTransformationVisualMarkers(htmlWithTerms) : htmlWithTerms;
         enrichedPayload.put("html", !publication || finalHtml.contains("data-mh-sales-page-analytics")
                 ? finalHtml : injectSalesPageAnalyticsTracking(finalHtml));

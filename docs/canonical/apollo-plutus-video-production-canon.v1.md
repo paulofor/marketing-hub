@@ -686,3 +686,10 @@ preservar a política anterior; alteração ou falha de revalidação mantém o 
 
 Essa correção de consistência não aprova página, checkout, economia, publicação ou
 campanha. Testes e evidências: [seleção e liberação](../homologacao/capella-videos-selecao-liberacao-v1.md).
+
+Complemento de 17/10: a promoção comercial resolve o destino pelo tipo. Kits low-ticket
+usam publicação GeraSalesPage auditada, demonstração exata com reprodução opcional e
+anúncio aprovado no mesmo destino; PDEs preservam seu slot ativo e contrato público.
+Os vídeos selecionados não são regenerados ou substituídos nesta passagem. O executor
+preserva o vídeo e suas legendas também quando o modelo omite a demonstração do HTML.
+Matriz: [checkout e continuação comercial](../homologacao/capella-checkout-compra-unica-v1.md).

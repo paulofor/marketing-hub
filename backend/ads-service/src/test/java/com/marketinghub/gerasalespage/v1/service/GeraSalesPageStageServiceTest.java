@@ -37,7 +37,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/** Valida controle de fila e rebuild do GeraSalesPage v1. */
+/** Responsabilidade: validar fila, contexto auditável e recuperação do GeraSalesPage v1. */
 @ExtendWith(MockitoExtension.class)
 class GeraSalesPageStageServiceTest {
 
@@ -52,6 +52,46 @@ class GeraSalesPageStageServiceTest {
   private ObjectMapper objectMapper = new ObjectMapper();
 
   private GeraSalesPageStageService service;
+
+  /**
+   * Transporta a peça selecionada sem enviar credenciais, acesso privado ou autorização como copy.
+   */
+  @ParameterizedTest
+  @CsvSource({"7,105,75", "207,9105,975"})
+  void transportsOnlyReviewedPublicVideoFields(long productId, long experimentId, long assetId) {
+    var binding =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+                .class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "reviewedVideos", binding);
+    var experiment = new Experiment();
+    experiment.setId(experimentId);
+    experiment.setExperimentType(com.marketinghub.experiment.ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setProduct(Product.builder().id(productId).build());
+    var proof =
+        objectMapper
+            .createObjectNode()
+            .put("destinationUrl", "https://private.invalid/#secret")
+            .put("publicationAuthorized", false);
+    proof
+        .putObject("heroVideo")
+        .put("assetId", assetId)
+        .put("assetUrl", "https://media.invalid/" + assetId + ".mp4")
+        .put("role", "LANDING_HERO")
+        .put("sha256", "f".repeat(64))
+        .put("reviewStatus", "APPROVED")
+        .put("captionsBurnedIn", true)
+        .put("captions", "Demonstração útil")
+        .put("reviewedBy", "internal@example.invalid");
+    when(binding.forReference("experiment:" + experimentId)).thenReturn(Optional.of(proof));
+    Map<?, ?> payload =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "experimentPayload", experiment);
+    var publicData = objectMapper.valueToTree(payload).path("approvedLandingVideo");
+    assertThat(publicData.path("assetId").asLong()).isEqualTo(assetId);
+    assertThat(publicData.toString())
+        .doesNotContain("secret", "publicationAuthorized", "reviewedBy", "internal@");
+  }
 
   /**
    * Preserva condições distintas de produtos e as serializa no contexto consumido pelo executor.

@@ -309,7 +309,7 @@ public class CommercialPlanApprovedProcessAssetService {
                         instance.getObjectiveEvidenceJson(), sourceReference, selection));
     requireApproval(
         approved,
-        "Registre primeiro a decisão humana sobre esta mesma peça e estes mesmos pareceres.");
+        "Registre a decisão humana de uso comercial sobre esta mesma peça e estes mesmos pareceres. A seleção de uso privado permanece preservada e não concede aprovação comercial.");
   }
 
   /** Confirma a seleção comercial exata, sem ampliar o escopo de uma decisão privada. */

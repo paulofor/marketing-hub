@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAgents } from "../../api/agent/useAgents";
 import { Agent } from "../../api/agent/types";
@@ -271,8 +272,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
           )}
           {importApprovedProcess.isError && (
             <div className="alert alert-danger mt-3 mb-0" role="alert">
-              O processo ainda não possui peça, Psique, Têmis e decisão humana
-              aprovados sobre o mesmo arquivo.
+              {axios.isAxiosError(importApprovedProcess.error)
+                ? (importApprovedProcess.error.response?.data?.detail ??
+                  importApprovedProcess.error.response?.data?.message ??
+                  "Não foi possível vincular a seleção aprovada.")
+                : "O processo ainda não possui peça, Psique, Têmis e decisão humana aprovados sobre o mesmo arquivo."}
             </div>
           )}
         </div>

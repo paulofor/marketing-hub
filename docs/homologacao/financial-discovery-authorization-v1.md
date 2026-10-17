@@ -30,7 +30,7 @@ comprovam comportamento e segregação, sem demonstrar demanda ou aumento de ven
 
 - 217 casos Java relevantes/arquitetura no backend: zero falhas/erros; uma verificação opcional
   não executada nessa suíte. A persistência essencial foi executada separadamente em MySQL 5.7.
-- Executor financeiro: 64 testes, zero falhas/erros. Frontend: 17 testes, typecheck e build aprovados.
+- Executor financeiro: 64 testes, zero falhas/erros. Frontend: 43 testes (financeiro e planejamento), typecheck e build aprovados.
 - API/JPA/MySQL reais e Plutus simulado: 84 verificações em Chromium desktop, iPhone 15 Pro e
   Pixel 7. Aceite gravado e relido, meta de 30% e cenários negativos preservados, contexto
   estruturado no parecer, replay sem nova execução e rejeição de identidade/teto/duração indevidos.
@@ -61,3 +61,9 @@ Resultado da passagem adicional: 13 testes do transporte visual aprovados, inclu
 O banco confirmou que o aceite real #619 é `PRIVATE_PREPARATION`; ele permanece privado e
 não será usado como licença comercial. As 20 artes de entrega já aprovadas do plano continuam
 referências disponíveis para a preparação comercial própria.
+
+
+A orientação da importação também passou a exibir o motivo devolvido pelo backend em vez
+de afirmar genericamente que faltam pareceres. Navegação com HTTP 409 simulado confirmou
+12 verificações em desktop, iPhone e Pixel, sem origens externas ou inferência. Os 43 testes
+da interface e o novo typecheck/build passaram; backend reempacotado depois do ajuste.

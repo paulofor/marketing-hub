@@ -504,3 +504,48 @@ describe("Plano financeiro", () => {
     expect(mocks.preparation.refetch).toHaveBeenCalledOnce();
   });
 });
+
+describe("aceite de descoberta", () => {
+  it("exige confirmação explícita, preserva meta e envia teto total com ciclo e experimento", async () => {
+    mocks.mutation.mutateAsync.mockRejectedValue(new Error("fixture"));
+    page();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar premissas detalhadas" }),
+    );
+    const accept = screen.getByRole("checkbox", {
+      name: /Aceito resultado abaixo/,
+    });
+    expect(accept).not.toBeChecked();
+    expect(
+      screen.queryByLabelText("Experimento da descoberta"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(accept);
+    for (const [name, value] of Object.entries({
+      "Experimento da descoberta": "97121",
+      "Ciclo da descoberta": "96121",
+      "Teto total de mídia da descoberta (R$)": "100",
+      "Duração máxima da descoberta (dias)": "5",
+      "Referência da decisão de descoberta": "fixture://operator/decision-1",
+      "Margem mínima proposta (%)": "30",
+    }))
+      fireEvent.change(screen.getByLabelText(name), { target: { value } });
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: "Salvar revisão e calcular" })
+        .closest("form")!,
+    );
+    await waitFor(() =>
+      expect(mocks.mutation.mutateAsync).toHaveBeenCalledOnce(),
+    );
+    const a = mocks.mutation.mutateAsync.mock.calls[0][0].assumptions;
+    expect(a.minimumMarginPercent).toBe(30);
+    expect(a.discoveryInvestment).toEqual({
+      experimentId: 97121,
+      learningCycleId: 96121,
+      mediaBudgetBrl: 100,
+      durationDays: 5,
+      acceptBelowMinimumMargin: true,
+      decisionReference: "fixture://operator/decision-1",
+    });
+  });
+});

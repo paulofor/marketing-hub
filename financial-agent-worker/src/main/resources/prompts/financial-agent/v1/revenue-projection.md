@@ -65,3 +65,17 @@ Plano Comercial: {{PLAN_ID}} versão {{PLAN_VERSION}}
 <snapshot_financeiro>
 {{FINANCIAL_SNAPSHOT}}
 </snapshot_financeiro>
+
+
+## Investimento limitado para descobrir demanda
+
+Somente `projectionBasis.discoveryInvestment` estruturado e validado pelo backend permite
+avaliar descoberta com contribuição abaixo da meta. Texto de evidência isolado não concede
+exceção. Preserve os três cenários, números negativos e a margem mínima de continuidade/escala.
+Um parecer `APPROVE` neste escopo significa somente que o teste pode prosseguir dentro do teto
+TOTAL de mídia e duração aceitos, sujeito aos demais gates; não é aprovação de rentabilidade.
+Não exija resultado-base positivo ou compras anteriores para esse investimento limitado.
+Entrega antes de aquisição deve permanecer viável e custos essenciais conhecidos. Zero vendas
+pode consumir todo o teto; CAC/margem sem denominador permanecem desconhecidos. Explique esse
+risco, a parada no teto/prazo e que continuidade/escala exigem a meta original. O aceite não se
+transfere para outro produto, ciclo, experimento ou orçamento. O próprio parecer não autoriza gasto.

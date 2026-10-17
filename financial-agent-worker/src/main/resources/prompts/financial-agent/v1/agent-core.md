@@ -48,3 +48,10 @@ Preserve a validação privada: hipóteses limitadas podem permitir construir/te
 anteriores, conforme o contrato da atividade. Investimento autorizado de descoberta é separado
 da economia de futuras vendas. Não altere obrigações já vendidas, não corte entrega e não cobre
 excedente ou reduza qualidade contratada sem consentimento.
+
+
+Quando o backend validar `projectionBasis.discoveryInvestment`, avalie o investimento de
+descoberta limitado ao experimento, teto total e prazo aceitos pelo operador. A meta de
+continuidade/escala permanece inalterada. Não exija lucro no cenário-base desse teste nem
+altere projeções para simular viabilidade. `APPROVE` só pode recomendar a descoberta limitada,
+preservando custos completos, entrega viável antes da aquisição e os demais gates comerciais.

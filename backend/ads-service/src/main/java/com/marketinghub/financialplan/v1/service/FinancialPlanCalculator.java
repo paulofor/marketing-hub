@@ -16,7 +16,7 @@ public final class FinancialPlanCalculator {
   private FinancialPlanCalculator() {}
 
   /**
-   * Calcula cenários e estresse, preservando lacunas e coerência com a personalização escolhida.
+   * Calcula cenários e estresse e separa descoberta limitada de rentabilidade, preservando lacunas.
    */
   public static PlanEvaluation evaluate(PlanAssumptions p) {
     if (p.variableCostEnvelope() != null) return evaluateAggregate(p);
@@ -58,12 +58,47 @@ public final class FinancialPlanCalculator {
                 conservative.cacBrl()),
             "INTENSIVE",
             "Uso intenso (limite contratado)"));
+    boolean safeDiscovery = blockers.isEmpty() && discoverySafe(p, results);
     for (var r : results) for (var issue : r.blockers()) blockers.add(r.label() + ": " + issue);
+    if (safeDiscovery)
+      return new PlanEvaluation(
+          "DISCOVERY_REVIEW",
+          "Descoberta autorizada · requer parecer e gates",
+          List.copyOf(blockers),
+          List.copyOf(results));
     return new PlanEvaluation(
         blockers.isEmpty() ? "PROJECTED_VIABLE" : "REVIEW_REQUIRED",
         blockers.isEmpty() ? "Viável em projeção · requer parecer e gates" : "Revisar viabilidade",
         List.copyOf(blockers),
         List.copyOf(results));
+  }
+
+  /** Aceita perda de aquisição limitada sem tolerar entrega inviável ou contrato de IA inválido. */
+  private static boolean discoverySafe(PlanAssumptions p, List<ScenarioResult> results) {
+    var d = p.discoveryInvestment();
+    if (d == null
+        || !Boolean.TRUE.equals(d.acceptBelowMinimumMargin())
+        || d.mediaBudgetBrl() == null
+        || d.mediaBudgetBrl().signum() <= 0
+        || d.durationDays() == null
+        || d.durationDays() < 1
+        || d.durationDays() > 30
+        || p.variableCostEnvelope() != null) return false;
+    return results.stream()
+        .allMatch(
+            r ->
+                r.contributionBeforeCacBrl().signum() > 0
+                    && r.netRevenueBrl().signum() > 0
+                    && r.attemptsPerCustomer() <= p.ai().maximumAttempts()
+                    && (p.ai().perAttempt().signum() > 0
+                        ? r.attemptsPerCustomer() >= p.ai().includedUnits()
+                        : r.attemptsPerCustomer() == 0)
+                    && r.aiCostPerCustomerBrl().compareTo(p.ai().maximumCostPerCustomerBrl()) <= 0
+                    && r.contributionBeforeCacBrl()
+                            .subtract(r.contributionAfterCacBrl())
+                            .multiply(BigDecimal.valueOf(r.customers()))
+                            .compareTo(d.mediaBudgetBrl())
+                        <= 0);
   }
 
   /** Qualifica o envelope agregado para Plutus sem inventar sua decomposição ou uma política. */

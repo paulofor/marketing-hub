@@ -507,6 +507,21 @@ function PlanWorkspace({
                   preservada.
                 </p>
               )}
+              {selected.assumptions.discoveryInvestment && (
+                <p className="alert alert-info">
+                  Descoberta limitada ao experimento #
+                  {selected.assumptions.discoveryInvestment.experimentId}:{" "}
+                  {money(
+                    selected.assumptions.discoveryInvestment.mediaBudgetBrl,
+                  )}{" "}
+                  no total por até{" "}
+                  {selected.assumptions.discoveryInvestment.durationDays} dias.{" "}
+                  A margem de{" "}
+                  {percent(selected.assumptions.minimumMarginPercent)} permanece
+                  para continuidade e escala. Referência:{" "}
+                  {selected.assumptions.discoveryInvestment.decisionReference}.
+                </p>
+              )}
               <details>
                 <summary>Premissas e fontes registradas</summary>
                 <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
@@ -765,6 +780,7 @@ function PlanEditor({
 }) {
   const a = source?.assumptions;
   const copyingType = scope === "products" && source?.scope === "TYPE";
+  const [discovery, setDiscovery] = useState(false);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -779,6 +795,17 @@ function PlanEditor({
         scope === "products" ? number("commercialPlanId") : null,
       templateId: copyingType ? source!.id : (source?.templateId ?? null),
       assumptions: {
+        discoveryInvestment:
+          discovery && scope === "products" && !copyingType
+            ? {
+                experimentId: number("discoveryExperimentId")!,
+                learningCycleId: number("discoveryCycleId")!,
+                mediaBudgetBrl: number("discoveryBudgetBrl")!,
+                durationDays: number("discoveryDurationDays")!,
+                acceptBelowMinimumMargin: true,
+                decisionReference: text("discoveryDecisionReference"),
+              }
+            : null,
         preparation:
           !copyingType && a?.preparation
             ? {
@@ -1107,6 +1134,68 @@ function PlanEditor({
             },
           )}
         </section>
+        {scope === "products" && !copyingType && (
+          <section className="border rounded p-3 d-grid gap-3">
+            <h3 className="h6">
+              Teste de descoberta com investimento limitado
+            </h3>
+            <p className="mb-0">
+              A meta de margem continua valendo para continuidade e escala. O
+              primeiro teste pode consumir toda a mídia sem vendas. O aceite
+              abaixo permite somente o parecer independente de Plutus;
+              publicação e gasto dependem dos demais gates.
+            </p>
+            <label>
+              <input
+                type="checkbox"
+                className="form-check-input me-2"
+                checked={discovery}
+                onChange={(e) => setDiscovery(e.target.checked)}
+              />
+              Aceito resultado abaixo da margem durante este teste limitado
+            </label>
+            {discovery && (
+              <div className="row g-3">
+                {field(
+                  "discoveryExperimentId",
+                  "Experimento da descoberta",
+                  null,
+                  "number",
+                  true,
+                )}
+                {field(
+                  "discoveryCycleId",
+                  "Ciclo da descoberta",
+                  null,
+                  "number",
+                  true,
+                )}
+                {field(
+                  "discoveryBudgetBrl",
+                  "Teto total de mídia da descoberta (R$)",
+                  null,
+                  "number",
+                  true,
+                )}
+                {field(
+                  "discoveryDurationDays",
+                  "Duração máxima da descoberta (dias)",
+                  null,
+                  "number",
+                  true,
+                  30,
+                )}
+                {field(
+                  "discoveryDecisionReference",
+                  "Referência da decisão de descoberta",
+                  null,
+                  "text",
+                  true,
+                )}
+              </div>
+            )}
+          </section>
+        )}
         <label>
           Premissas, fontes e justificativa dos valores zero *
           <textarea

@@ -28,7 +28,7 @@ public class QuartzoCommercialChecks {
     this.readiness = readiness;
   }
 
-  /** Confirma fontes e identifica a revisão financeira bloqueante, sem autorizar gasto. */
+  /** Confirma fontes, revisão e limites da descoberta no próprio ciclo, sem autorizar gasto. */
   public void check(String activity, QuartzoCommercialContext.Scope scope, JsonNode snapshot) {
     var experiment = scope.experiment();
     require(
@@ -98,7 +98,7 @@ public class QuartzoCommercialChecks {
             "Cadastre o plano financeiro LIVE desta versão e do plano comercial do experimento.");
         require(!plan.path("stale").asBoolean(true), staleFinancialPlanReason(plan));
         require(
-            List.of("READY_FOR_ANALYSIS", "PROJECTED_VIABLE")
+            List.of("READY_FOR_ANALYSIS", "PROJECTED_VIABLE", "DISCOVERY_REVIEW")
                 .contains(plan.path("evaluation").path("status").asText()),
             "Corrija custos ausentes ou margem inviável no plano financeiro.");
         require(
@@ -120,6 +120,39 @@ public class QuartzoCommercialChecks {
             List.of("COMPLETE_AGGREGATE", "COMPLETE_DETAILED")
                 .contains(result.path("costCoverageAssessment").path("status").asText()),
             "Plutus não comprovou cobertura suficiente dos custos desta revisão.");
+        var discovery = plan.path("assumptions").path("discoveryInvestment");
+        boolean limitedDiscovery =
+            "DISCOVERY_REVIEW".equals(plan.path("evaluation").path("status").asText());
+        if (limitedDiscovery) {
+          require(
+              discovery.path("experimentId").isIntegralNumber()
+                  && discovery.path("experimentId").canConvertToLong()
+                  && discovery.path("experimentId").longValue() == experiment.getId()
+                  && scope.cycleId() != null
+                  && discovery.path("learningCycleId").isIntegralNumber()
+                  && discovery.path("learningCycleId").canConvertToLong()
+                  && discovery.path("learningCycleId").longValue() == scope.cycleId()
+                  && discovery.path("acceptBelowMinimumMargin").isBoolean()
+                  && discovery.path("acceptBelowMinimumMargin").booleanValue(),
+              "O aceite de descoberta não pertence ao experimento e ciclo atuais.");
+          require(
+              experiment.getMediaSpendLimit() == null
+                  || experiment
+                          .getMediaSpendLimit()
+                          .compareTo(discovery.path("mediaBudgetBrl").decimalValue())
+                      <= 0,
+              "O teto de mídia excede o aceite de descoberta.");
+          if (experiment.getStartDate() != null || experiment.getEndDate() != null)
+            require(
+                experiment.getStartDate() != null
+                    && experiment.getEndDate() != null
+                    && !experiment.getEndDate().isBefore(experiment.getStartDate())
+                    && java.time.temporal.ChronoUnit.DAYS.between(
+                                experiment.getStartDate(), experiment.getEndDate())
+                            + 1
+                        <= discovery.path("durationDays").asInt(),
+                "A janela do experimento excede o aceite de descoberta.");
+        }
         var scenarios = result.path("scenarios");
         require(
             scenarios.isArray() && scenarios.size() == 3,
@@ -130,7 +163,7 @@ public class QuartzoCommercialChecks {
         require(
             base != null
                 && base.path("profitBrl").isNumber()
-                && base.path("profitBrl").decimalValue().signum() > 0
+                && (limitedDiscovery || base.path("profitBrl").decimalValue().signum() > 0)
                 && base.path("averagePriceBrl").isNumber()
                 && base.path("averagePriceBrl").decimalValue().compareTo(experiment.getUnitPrice())
                     == 0,

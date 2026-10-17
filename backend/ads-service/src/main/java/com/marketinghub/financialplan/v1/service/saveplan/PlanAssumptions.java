@@ -22,7 +22,54 @@ public record PlanAssumptions(
     @Valid Preparation preparation,
     @Valid VariableCostEnvelope variableCostEnvelope,
     @Valid FixedCostEnvelope fixedCostEnvelope,
-    @Valid RealizedCostBaseline realizedCostBaseline) {
+    @Valid RealizedCostBaseline realizedCostBaseline,
+    @Valid DiscoveryInvestment discoveryInvestment) {
+  /** Preserva a construção legada sem herdar autorização de descoberta. */
+  public PlanAssumptions(
+      String productVersion,
+      Integer periodDays,
+      LocalDate validUntil,
+      String evidence,
+      AiCost ai,
+      Costs costs,
+      BigDecimal priceBrl,
+      BigDecimal minimumMarginPercent,
+      BigDecimal maximumCacBrl,
+      List<Scenario> scenarios,
+      Preparation preparation,
+      VariableCostEnvelope variableCostEnvelope,
+      FixedCostEnvelope fixedCostEnvelope,
+      RealizedCostBaseline realizedCostBaseline) {
+    this(
+        productVersion,
+        periodDays,
+        validUntil,
+        evidence,
+        ai,
+        costs,
+        priceBrl,
+        minimumMarginPercent,
+        maximumCacBrl,
+        scenarios,
+        preparation,
+        variableCostEnvelope,
+        fixedCostEnvelope,
+        realizedCostBaseline,
+        null);
+  }
+
+  /** Registra o risco limitado aceito pelo operador sem reduzir a meta de continuidade. */
+  public record DiscoveryInvestment(
+      @NotNull @Positive @JsonDeserialize(using = WholeIdentifierDeserializer.class)
+          Long experimentId,
+      @NotNull @Positive @JsonDeserialize(using = WholeIdentifierDeserializer.class)
+          Long learningCycleId,
+      @NotNull @DecimalMin("0.01") @Digits(integer = 9, fraction = 2) BigDecimal mediaBudgetBrl,
+      @NotNull @Min(1) @Max(30) @JsonDeserialize(using = WholeNumberDeserializer.class)
+          Integer durationDays,
+      @NotNull @AssertTrue Boolean acceptBelowMinimumMargin,
+      @NotBlank @Size(max = 1000) String decisionReference) {}
+
   /** Escolhas operacionais; suporte não equivale ao período econômico ou ao acesso vendido. */
   public record Preparation(
       @NotNull @Min(1) @Max(3660) @JsonDeserialize(using = WholeNumberDeserializer.class)

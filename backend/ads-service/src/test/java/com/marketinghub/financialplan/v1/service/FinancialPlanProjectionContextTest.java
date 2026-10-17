@@ -211,4 +211,43 @@ class FinancialPlanProjectionContextTest {
           .isNotEmpty();
     }
   }
+
+  /** Encaminha o aceite e números negativos sem dispensar a análise independente. */
+  @Test
+  void contextoDeDescobertaNaoExigeLucroFicticio() throws Exception {
+    var json = new ObjectMapper().findAndRegisterModules();
+    var a =
+        json.treeToValue(FinancialPlanCalculatorTest.discoveryInput(95121), PlanAssumptions.class);
+    var evaluation = FinancialPlanCalculator.evaluate(a);
+    var product = new com.marketinghub.product.Product();
+    product.setId(95121L);
+    product.setValidationDefinitionJson(
+        "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit\"},\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true}}");
+    var plan = new CommercialPlan();
+    plan.setId(95121L);
+    var view =
+        new com.marketinghub.financialplan.v1.service.getplan.PlanView(
+            1L,
+            "PRODUCT",
+            95121L,
+            com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
+            "Fixture",
+            1,
+            null,
+            95121L,
+            1,
+            "Operador",
+            java.time.Instant.now(),
+            a,
+            evaluation,
+            false,
+            java.util.List.of(),
+            true,
+            null);
+    var context = FinancialProjectionContext.build(product, plan, 1, view, json);
+    assertThat(context.blockers()).isEmpty();
+    var node = json.valueToTree(context.context());
+    assertThat(node.path("discoveryInvestment").path("mediaBudgetBrl").asInt()).isEqualTo(100);
+    assertThat(json.writeValueAsString(context.context())).contains("-151.9");
+  }
 }

@@ -19,7 +19,16 @@ export const costLabels = {
   fixedPerPeriodBrl: "Custos fixos por período (R$)",
 } as const;
 export type CostKey = keyof typeof costLabels;
+export interface DiscoveryInvestment {
+  experimentId: number;
+  learningCycleId: number;
+  mediaBudgetBrl: number;
+  durationDays: number;
+  acceptBelowMinimumMargin: boolean;
+  decisionReference: string;
+}
 export interface PlanAssumptions {
+  discoveryInvestment?: DiscoveryInvestment | null;
   preparation?: { supportDays: number; personalizedAi: boolean } | null;
   variableCostEnvelope?: {
     amountPerCustomerBrl: number;

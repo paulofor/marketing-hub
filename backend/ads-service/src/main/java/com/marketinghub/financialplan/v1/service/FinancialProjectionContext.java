@@ -28,7 +28,7 @@ final class FinancialProjectionContext {
   private FinancialProjectionContext() {}
 
   /**
-   * Consolida meta, contrato de entrega, envelopes e cenários de sensibilidade sem prever vendas.
+   * Consolida meta, contrato, cenários e aceite de descoberta sem prever vendas ou lucro fictício.
    */
   static Result build(
       Product product,
@@ -128,7 +128,10 @@ final class FinancialProjectionContext {
                     .subtract(fixedAmount)
                     .setScale(2, RoundingMode.HALF_UP)
             : baseScenario == null ? null : baseScenario.resultAfterInvestmentBrl();
-    if (baseProfit == null || baseProfit.signum() <= 0)
+    boolean discovery =
+        "DISCOVERY_REVIEW".equals(financialPlan.evaluation().status())
+            && assumptions.discoveryInvestment() != null;
+    if (!discovery && (baseProfit == null || baseProfit.signum() <= 0))
       blockers.add("Plutus / Atena: a meta comercial vigente não produz resultado-base positivo.");
 
     BigDecimal historicalTotal = plan.getActualTotalCost();
@@ -167,6 +170,7 @@ final class FinancialProjectionContext {
             : add(assumptions.costs().initialAiBrl(), assumptions.costs().initialOtherBrl());
 
     var context = new LinkedHashMap<String, Object>();
+    if (discovery) context.put("discoveryInvestment", assumptions.discoveryInvestment());
     context.put(
         "analysisScope",
         map(

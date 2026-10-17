@@ -71,8 +71,13 @@ public class FinancialPlanNativePlanningFixture {
         .thenAnswer(
             invocation -> {
               Long id = invocation.getArgument(0);
-              var plan = plans.findById(id).orElseThrow();
-              plan.setExperiment(experiments.findById(id).orElseThrow());
+              // A descoberta usa deslocamento sintético de 2000 para não compartilhar a identidade
+              // do produto.
+              long owner = id >= 97101 && id <= 97123 ? id - 2000 : id;
+              var plan = plans.findById(owner).orElseThrow();
+              var experiment = experiments.findById(owner).orElseThrow();
+              experiment.setId(id);
+              plan.setExperiment(experiment);
               return List.of(plan);
             });
     var target =

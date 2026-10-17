@@ -47,6 +47,7 @@ public class FinancialPlanService {
   private final Validator validator;
   private final CommercialPlanExecutionSyncService executionSyncService;
   private final CommercialPlanMilestoneRepository milestoneRepository;
+  private final FinancialDiscoveryPolicy discoveryPolicy;
 
   /** Entrega referências canônicas para cadastro, incluindo o tipo real de cada produto. */
   @Transactional(readOnly = true)
@@ -242,6 +243,7 @@ public class FinancialPlanService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "Revise os campos do plano: " + violations.iterator().next().getPropertyPath());
+    discoveryPolicy.validate(scope, scopeId, request.commercialPlanId(), request.assumptions());
     Long typeId = requireOwner(scope, scopeId, true);
     var history =
         revisions.findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
@@ -329,12 +331,13 @@ public class FinancialPlanService {
     return view(saved);
   }
 
-  /** Enfileira no máximo um parecer por revisão e reutiliza a mesma execução após retentativa. */
+  /** Confere o escopo e enfileira no máximo um parecer por revisão, reutilizando a execução. */
   @Transactional
   public PlanView requestAnalysis(Long productId, Environment environment, Long id) {
     var p = required("PRODUCT", productId, environment, id, true);
     if (p.getFinancialExecutionId() != null) return view(p);
     var current = view(p);
+    discoveryPolicy.validate("PRODUCT", productId, p.getCommercialPlanId(), current.assumptions());
     if (!current.canRequestAnalysis())
       throw conflict(
           "Resolva as pendências antes de solicitar Plutus: "
@@ -545,7 +548,8 @@ public class FinancialPlanService {
         assumptions.preparation(),
         assumptions.variableCostEnvelope(),
         assumptions.fixedCostEnvelope(),
-        baseline);
+        baseline,
+        assumptions.discoveryInvestment());
   }
 
   /** Normaliza ausência de custo realizado como zero calculado, sem inferir custo futuro. */

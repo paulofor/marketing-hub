@@ -10248,3 +10248,21 @@ reproduziram a classificação excessiva da candidata antes de sua publicação.
 O classificador compartilhado agora exige também `LOW_TICKET_DIGITAL_PRODUCT`
 no catálogo; os percursos legados mantêm slots/contratos. Os cinco casos passaram
 após o ajuste. Atestação v28 preserva v27/v26 sem publicar Mira.
+
+
+## LOOP-DESCOBERTA-MARGEM-DE-ESCALA — 17/10/2026
+
+- Evidência: Capella/ciclo #12/experimento #105, revisão financeira #17: cinco compras com
+  R$100 de mídia projetam contribuição de 15,81%, meta de continuidade 30%. O operador
+  aceitou explicitamente o risco do primeiro teste na decisão #3517; o calculador e o gate
+  Quartzo exigiam rentabilidade antes mesmo do parecer de Plutus.
+- Causa: ausência de contrato estruturado para investimento de descoberta separado da
+  política de continuidade/escala. Texto em evidência não podia substituir um aceite verificável.
+- Mudança reutilizável: `discoveryInvestment` vincula produto, plano, ciclo, experimento,
+  teto e duração; `DISCOVERY_REVIEW` libera só o parecer independente, mantém cenários e
+  exige entrega viável antes do CAC. Não herda autorização nem altera os 30%.
+- Prevenção: regressões do calculador, contexto Plutus, política de identidade, gate Quartzo,
+  persistência MySQL e formulário em desktop/iPhone/Pixel. Custos ausentes, mídia acima
+  do limite, janela maior, outro produto/ciclo, parecer ADJUST e caminho rentável preservados.
+- Limite: teste local comprova contrato e isolamento. Parecer não ativa campanha nem prova
+  demanda, compras, contribuição realizada ou lucro; os demais gates permanecem obrigatórios.

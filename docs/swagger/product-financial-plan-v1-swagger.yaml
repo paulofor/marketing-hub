@@ -214,6 +214,18 @@ components:
         commercialPlanId: {type: integer, format: int64, nullable: true, description: Obrigatório no produto; nulo no modelo}
         templateId: {type: integer, format: int64, nullable: true, description: Modelo imutável do mesmo tipo e ambiente}
         assumptions: {$ref: '#/components/schemas/Assumptions'}
+    DiscoveryInvestment:
+      type: object
+      nullable: true
+      description: Aceite explícito de perda limitada na descoberta; preserva meta de continuidade e não autoriza publicação.
+      required: [experimentId, learningCycleId, mediaBudgetBrl, durationDays, acceptBelowMinimumMargin, decisionReference]
+      properties:
+        experimentId: {type: integer, format: int64, minimum: 1}
+        learningCycleId: {type: integer, format: int64, minimum: 1}
+        mediaBudgetBrl: {type: number, minimum: 0.01}
+        durationDays: {type: integer, minimum: 1, maximum: 30}
+        acceptBelowMinimumMargin: {type: boolean, enum: [true]}
+        decisionReference: {type: string, minLength: 1, maxLength: 1000}
     Assumptions:
       type: object
       required: [validUntil, evidence, ai, costs, scenarios]
@@ -230,6 +242,7 @@ components:
         periodDays: {type: integer, minimum: 1, maximum: 3660, nullable: true}
         validUntil: {type: string, format: date}
         evidence: {type: string, minLength: 1, maxLength: 6000}
+        discoveryInvestment: {$ref: '#/components/schemas/DiscoveryInvestment'}
         priceBrl: {type: number, minimum: 0.01, nullable: true}
         minimumMarginPercent: {type: number, minimum: 0.01, maximum: 99.99, nullable: true}
         maximumCacBrl: {$ref: '#/components/schemas/Amount'}

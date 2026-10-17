@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.*;
 @EnableTransactionManagement
 @Import({
   FinancialPlanService.class,
+  FinancialDiscoveryPolicy.class,
   FinancialContributionTargetService.class,
   FinancialPlanController.class,
   FinancialPlanNativePlanningFixture.class,
@@ -262,6 +263,45 @@ public class FinancialPlanLocalApplication {
     when(repo.findIdsByProductId(anyLong())).thenAnswer(i -> List.of((Long) i.getArgument(0)));
     when(repo.findByProductId(anyLong())).thenAnswer(i -> List.of(plan(i.getArgument(0))));
     when(repo.findById(anyLong())).thenAnswer(i -> Optional.of(plan(i.getArgument(0))));
+    return repo;
+  }
+
+  /** Fornece ciclos sintéticos independentes e mantém a política de descoberta real. */
+  @Bean
+  com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository discoveryCycles() {
+    var repo =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    when(repo.findById(anyLong()))
+        .thenAnswer(
+            i -> {
+              long id = i.getArgument(0);
+              var c =
+                  new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+              c.setId(id);
+              c.setProductId(id - 1000);
+              c.setExperimentId(id + 1000);
+              c.setStatus("OPEN");
+              c.setBudgetLimitBrl(new BigDecimal("100"));
+              return Optional.of(c);
+            });
+    return repo;
+  }
+
+  /** Fornece experimentos sem campanha ou chamadas externas para testar o isolamento. */
+  @Bean
+  com.marketinghub.repository.jpa.experiment.ExperimentRepository discoveryExperiments() {
+    var repo = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    when(repo.findById(anyLong()))
+        .thenAnswer(
+            i -> {
+              long id = i.getArgument(0);
+              var e = new com.marketinghub.experiment.Experiment();
+              e.setId(id);
+              e.setProduct(product(id - 2000));
+              e.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+              e.setMediaSpendLimit(new BigDecimal("100"));
+              return Optional.of(e);
+            });
     return repo;
   }
 

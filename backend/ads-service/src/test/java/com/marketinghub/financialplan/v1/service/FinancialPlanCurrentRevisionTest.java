@@ -133,7 +133,8 @@ class FinancialPlanCurrentRevisionTest {
             json,
             mock(Validator.class),
             mock(CommercialPlanExecutionSyncService.class),
-            mock(CommercialPlanMilestoneRepository.class));
+            mock(CommercialPlanMilestoneRepository.class),
+            mock(FinancialDiscoveryPolicy.class));
     return new Fixture(service, revisions, revision);
   }
 

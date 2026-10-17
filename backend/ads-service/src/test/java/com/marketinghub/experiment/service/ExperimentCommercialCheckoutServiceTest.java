@@ -14,12 +14,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.web.ExperimentCommercialCheckoutController;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -30,6 +32,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -178,6 +182,49 @@ class ExperimentCommercialCheckoutServiceTest {
             jsonPath("$.message")
                 .value("Registre commercialCheckout explícito no contrato de validação do kit."));
     verifyNoInteractions(paymentsClient, pdeProductionSlotRepository, productRepository);
+  }
+
+  /** Preserva checkouts legados de Kit WhatsApp e Mira pelo tipo estável do catálogo. */
+  @ParameterizedTest
+  @CsvSource({"9,89,PDE,349", "10,93,AI_PRODUCT,49"})
+  void keepsLegacyLowTicketPdeCheckout(
+      long productId, long experimentId, String type, String price) {
+    var product =
+        Product.builder()
+            .id(productId)
+            .slug("legacy-product-" + productId)
+            .name("PDE existente")
+            .productTypeDefinition(ProductTypeDefinition.builder().code(type).build())
+            .build();
+    var experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+            .unitPrice(new BigDecimal(price))
+            .build();
+    var slot = activeSlot("v1", "https://legacy-product.example/v1", experimentId);
+    slot.setProductSlug(product.getSlug());
+    when(experimentRepository.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(slot));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                product.getSlug(),
+                productId,
+                experimentId,
+                "legacy-preference",
+                "https://www.mercadopago.com.br/checkout/legacy",
+                experiment.getUnitPrice(),
+                "BRL",
+                slot.getPublicUrl()));
+    var response = service.create(experimentId);
+    assertThat(response.amount()).isEqualByComparingTo(price);
+    assertThat(experiment.getCommercialCheckoutUrl()).isEqualTo(response.checkoutUrl());
+    verify(experimentRepository).save(experiment);
+    verify(productRepository).save(product);
   }
 
   /** Deve reconciliar o checkout versionado sem criar uma preferência concorrente. */

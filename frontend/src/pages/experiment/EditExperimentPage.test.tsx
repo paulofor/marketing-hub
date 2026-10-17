@@ -97,7 +97,7 @@ describe("correção da promessa preservando o planejamento pendente", () => {
   it("orienta o checkout do kit sem pedir slot de assinatura nem aprovar anúncio", () => {
     render(<EditExperimentPage />);
     expect(
-      screen.getByPlaceholderText(/pós-compra do kit/),
+      screen.getByPlaceholderText(/contrato de entrega do produto/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(

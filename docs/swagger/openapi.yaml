@@ -27,11 +27,12 @@ paths:
       tags: [Experiments]
       summary: Preparar checkout a partir do contrato comercial persistido
       description: |
-        Exige experimento PLANNED e preço válido. LOW_TICKET_PRODUCT usa tipo
-        LOW_TICKET_DIGITAL_PRODUCT, checkoutIdentity.externalReference e commercialCheckout
+        Exige experimento PLANNED e preço válido. O catálogo LOW_TICKET_DIGITAL_PRODUCT
+        combinado ao experimento LOW_TICKET_PRODUCT usa checkoutIdentity.externalReference e commercialCheckout
         explícito em validationDefinitionJson, com contrato LOW_TICKET_COMMERCIAL_CHECKOUT_V1,
         productVersion vigente, provider MERCADO_PAGO, currency BRL, billingModel ONE_TIME,
-        priceBrl coerente e deliveryPageUrl HTTPS. Outros percursos mantêm o slot PDE elegível.
+        priceBrl coerente e deliveryPageUrl HTTPS. Outros catálogos mantêm o slot PDE elegível,
+        inclusive quando seus experimentos conservam o enum legado LOW_TICKET_PRODUCT.
         Não recebe preço/URL do navegador, não cobra nem libera anúncio, página ou campanha.
       parameters:
         - in: path

@@ -399,8 +399,7 @@ public class GeraSalesPageStageService {
     payload.put("unitPrice", experiment.getUnitPrice());
     payload.put("product", productPayload(experiment.getProduct()));
     if (reviewedVideos != null
-        && experiment.getExperimentType()
-            == com.marketinghub.experiment.ExperimentType.LOW_TICKET_PRODUCT) {
+        && com.marketinghub.experiment.service.LowTicketCheckoutContract.applies(experiment)) {
       reviewedVideos
           .forReference("experiment:" + experiment.getId())
           .ifPresent(

@@ -10241,3 +10241,10 @@ preserva deterministicamente a peça no HTML revisado e publicado, com reproduç
 Teste com Capella e outra identidade, legado PDE, divergência de mídia e autoplay; replay
 do arquivo real em desktop/iPhone/Pixel, sem inferência nem eventos comerciais. Não usar
 um novo deploy para descobrir essas dependências já comprovadas no código.
+
+A conferência de histórico identificou #89/Kit WhatsApp (`PDE`) e #93/Mira
+(`AI_PRODUCT`) usando `LOW_TICKET_PRODUCT` no experimento. Cinco regressões
+reproduziram a classificação excessiva da candidata antes de sua publicação.
+O classificador compartilhado agora exige também `LOW_TICKET_DIGITAL_PRODUCT`
+no catálogo; os percursos legados mantêm slots/contratos. Os cinco casos passaram
+após o ajuste. Atestação v28 preserva v27/v26 sem publicar Mira.

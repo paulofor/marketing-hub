@@ -2,7 +2,6 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
@@ -75,7 +74,7 @@ public class ExperimentCommercialCheckoutService {
           HttpStatus.CONFLICT, "Experimento sem preço comercial válido");
     }
     var product = experiment.getProduct();
-    if (experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
+    if (LowTicketCheckoutContract.applies(experiment)) {
       var delivery = lowTicketContract.resolve(experiment);
       var response =
           paymentsClient.createCommercialProductCheckout(

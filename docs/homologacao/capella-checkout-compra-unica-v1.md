@@ -82,3 +82,17 @@ e não apresentou overflow nos três perfis. Safari/iOS nativos não foram execu
 A leitura Python da sandbox recebeu Cloudflare 1010; curl no host operacional e clientes
 Chromium desktop/Pixel receberam a mídia (200/206). Essa comparação descarta a hipótese
 de arquivo indisponível; o replay local usou os mesmos bytes, sem alterar a mídia aprovada.
+
+## Compatibilidade real de tipos legados — 17/10/2026
+
+A comparação de histórico confirmou #89/Kit WhatsApp como `LOW_TICKET_PRODUCT` com
+catálogo `PDE`, e #93/Mira com o mesmo enum e catálogo `AI_PRODUCT`. O enum do
+experimento sozinho não identifica Quartzo. A primeira candidata do PR encaminhava
+esses contextos indevidamente para o contrato do kit. Cinco casos novos reproduziram
+a regressão: checkout, publicação e transporte de contexto. A classificação agora
+exige também o código estável `LOW_TICKET_DIGITAL_PRODUCT`; os cinco casos e os
+caminhos atuais passaram, totalizando 222 testes backend relevantes no conjunto.
+
+A interface usa orientação comum de entrega e deixa o motivo concreto no backend.
+O código foi ajustado na sandbox antes de qualquer merge/publicação desta candidata.
+A atestação v28 preserva v27/v26 e revalida a fonte e o classificador compartilhados.

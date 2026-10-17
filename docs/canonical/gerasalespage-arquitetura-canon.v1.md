@@ -138,7 +138,7 @@ contrato atende novas páginas e a preparação Quartzo, sem regra por produto o
 
 ### Demonstração selecionada no ciclo — 17/10/2026
 
-Para kits low-ticket com recibo audiovisual vigente, o contexto do `pending` transporta
+Para kits do catálogo `LOW_TICKET_DIGITAL_PRODUCT` com recibo audiovisual vigente, o contexto do `pending` transporta
 `approvedLandingVideo` com ID, URL, hash e legendas da demonstração já aprovada.
 O backend revalida o recibo e não envia acesso privado, identidade do revisor ou flags
 de autorização ao modelo. Ausência de recibo mantém o percurso legado.
@@ -153,3 +153,5 @@ Na homologação comercial, um kit usa publicação GeraSalesPage auditada e o a
 aprovado com o mesmo destino. Não exigir slot de assinatura Opala para comprovar a
 integração de Quartzo. A existência do vídeo na página não aprova economia, direitos,
 entrega, pagamento, aquisição ou campanha.
+Produtos `PDE` e `AI_PRODUCT` com enum legado `LOW_TICKET_PRODUCT` não recebem o
+contrato do kit automaticamente; preservar seu percurso identificado pelo catálogo.

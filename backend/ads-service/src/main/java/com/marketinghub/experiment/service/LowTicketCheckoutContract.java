@@ -20,15 +20,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class LowTicketCheckoutContract {
   private final ObjectMapper json;
 
+  /** Reconhece Quartzo pelo catálogo, preservando o low-ticket legado de outros tipos PDE. */
+  public static boolean applies(Experiment experiment) {
+    return experiment != null
+        && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+        && experiment.getProduct() != null
+        && experiment.getProduct().getProductTypeDefinition() != null
+        && "LOW_TICKET_DIGITAL_PRODUCT"
+            .equals(experiment.getProduct().getProductTypeDefinition().getCode());
+  }
+
   /** Valida o contrato administrativo vigente sem inferir URLs ou exigir um slot de assinatura. */
   public Delivery resolve(Experiment experiment) {
     var product = experiment.getProduct();
-    require(
-        experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
-            && product != null
-            && product.getProductTypeDefinition() != null
-            && "LOW_TICKET_DIGITAL_PRODUCT".equals(product.getProductTypeDefinition().getCode()),
-        "O tipo do produto e do experimento precisa ser low-ticket.");
+    require(applies(experiment), "O tipo do produto e do experimento precisa ser low-ticket.");
     require(
         experiment.getUnitPrice() != null
             && experiment.getUnitPrice().signum() > 0

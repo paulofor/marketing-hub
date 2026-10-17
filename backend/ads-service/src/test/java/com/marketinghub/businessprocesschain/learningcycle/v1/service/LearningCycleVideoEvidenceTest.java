@@ -284,6 +284,12 @@ class LearningCycleVideoEvidenceTest {
   @org.junit.jupiter.params.provider.CsvSource({"7,105,76,75", "207,9105,976,975"})
   void validatesPublishedLowTicketVideoWithoutMembershipSlot(
       long productId, long experimentId, long adId, long heroId) {
+    experiment
+        .getProduct()
+        .setProductTypeDefinition(
+            com.marketinghub.producttype.ProductTypeDefinition.builder()
+                .code("LOW_TICKET_DIGITAL_PRODUCT")
+                .build());
     experiment.getProduct().setId(productId);
     experiment.setId(experimentId);
     cycle.setProductId(productId);
@@ -341,6 +347,40 @@ class LearningCycleVideoEvidenceTest {
         () ->
             org.springframework.test.util.ReflectionTestUtils.invokeMethod(
                 service, "publishedPrivateIntegration", cycle, proof));
+  }
+
+  /** PDE e Produto IA legados não viram kits por usarem o enum antigo do experimento. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"PDE", "AI_PRODUCT"})
+  void legacyLowTicketPdePublicationDoesNotRequireSalesPage(String type) {
+    produced();
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment
+        .getProduct()
+        .setProductTypeDefinition(
+            com.marketinghub.producttype.ProductTypeDefinition.builder().code(type).build());
+    var policy =
+        mock(com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "salesPageDestinations", policy);
+    slot.setStatus(com.marketinghub.pde.PdeProductionSlotStatus.ACTIVE);
+    slot.setPublishedAt(Instant.now());
+    when(slots.findByProductSlugOrderBySlotCodeAsc("musa")).thenReturn(List.of(slot));
+    when(creatives.findByExperimentIdAndVideoUrl(cycle.getExperimentId(), ad.getAssetUrl()))
+        .thenReturn(List.of(creative));
+    var proof = mapper.createObjectNode();
+    for (var asset : List.of(ad, hero))
+      proof
+          .putObject(asset == ad ? "campaignVideo" : "heroVideo")
+          .put("assetId", asset.getId())
+          .put("assetUrl", asset.getAssetUrl())
+          .put("hlsPlaybackUrl", asset.getHlsPlaybackUrl())
+          .put("reviewStatus", "APPROVED");
+    assertDoesNotThrow(
+        () ->
+            org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                service, "publishedPrivateIntegration", cycle, proof));
+    verifyNoInteractions(policy);
   }
 
   /** Mantém a sequência antiga e acrescenta os vídeos somente ao BPM v2. */

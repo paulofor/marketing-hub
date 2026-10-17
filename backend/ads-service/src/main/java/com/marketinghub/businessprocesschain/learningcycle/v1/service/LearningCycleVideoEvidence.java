@@ -9,8 +9,8 @@ import com.marketinghub.agenttask.CreativeFinalVideoEvidence;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse.ApprovalOption;
 import com.marketinghub.creative.*;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
+import com.marketinghub.experiment.service.LowTicketCheckoutContract;
 import com.marketinghub.experiment.video.*;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
@@ -152,7 +152,7 @@ public class LearningCycleVideoEvidence {
             && sameMedia(privateProof.path("heroVideo"), hero),
         "A publicação precisa preservar os mesmos vídeos aprovados na integração privada.");
     var experiment = ad.getExperiment();
-    if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
+    if (LowTicketCheckoutContract.applies(experiment)) {
       var publication = salesPageDestinations.auditedSalesPagePublication(experiment).orElse(null);
       require(
           publication != null

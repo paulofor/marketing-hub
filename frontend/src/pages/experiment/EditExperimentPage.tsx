@@ -1252,11 +1252,7 @@ export default function EditExperimentPage() {
                       type="url"
                       readOnly
                       value={data.commercialCheckoutUrl || ""}
-                      placeholder={
-                        isLowTicketProduct
-                          ? "Disponível após conferir o contrato de pós-compra do kit"
-                          : "Disponível após publicar e validar a área PDE"
-                      }
+                      placeholder="Disponível após conferir o contrato de entrega do produto"
                     />
                     <div className="d-flex flex-wrap gap-2 mt-2">
                       <button
@@ -1286,9 +1282,10 @@ export default function EditExperimentPage() {
                       ) : null}
                     </div>
                     <div className="form-text">
-                      {isLowTicketProduct
-                        ? "O checkout usa o preço e o pós-compra do contrato vigente do kit. Preparar o link não aprova a venda nem libera anúncios; os demais pareceres e gates continuam obrigatórios."
-                        : "O checkout usa o preço persistido no experimento e só é liberado após a entrega PDE passar na validação pública."}
+                      O checkout usa o preço e a entrega do contrato vigente do
+                      produto. Preparar o link não aprova a venda nem libera
+                      anúncios; os demais pareceres e gates continuam
+                      obrigatórios.
                     </div>
                     {commercialCheckout.isError ? (
                       <div className="text-danger small mt-1" role="alert">

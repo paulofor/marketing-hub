@@ -119,7 +119,8 @@ atendimento realizado, venda ou lucro.
 
 ### Preparação de checkout para kit — 16/10/2026
 
-Kits `LOW_TICKET_PRODUCT` não exigem slot de assinatura PDE para preparar uma preferência.
+Kits do catálogo `LOW_TICKET_DIGITAL_PRODUCT`, em experimentos `LOW_TICKET_PRODUCT`,
+não exigem slot de assinatura PDE para preparar uma preferência.
 O comando administrativo existente resolve `checkoutIdentity.externalReference` e o objeto
 `commercialCheckout` da definição de validação do produto. Esse objeto precisa declarar
 `contractVersion: LOW_TICKET_COMMERCIAL_CHECKOUT_V1`, `productVersion` igual à versão
@@ -133,6 +134,9 @@ não altera o endereço público do produto, não cobra e não satisfaz gates de
 pareceres, preflight ou autorização de mídia. Para Capella, preservar a identidade comercial
 `agenda-cheia-nail-design`, o pós-compra oficial e o preço de R$67. Não reutilizar preferência
 de experimento encerrado para mascarar a ausência do vínculo no experimento atual.
+O enum legado `LOW_TICKET_PRODUCT` também existe em produtos dos catálogos `PDE` e
+`AI_PRODUCT`: nesses casos, preservar os contratos e slots existentes. O código estável
+do catálogo governa a seleção; nunca deduzir o tipo do produto somente pelo enum do teste.
 
 ## Publicação efetiva do pós-compra
 

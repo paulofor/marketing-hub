@@ -67,7 +67,14 @@ class GeraSalesPageStageServiceTest {
     var experiment = new Experiment();
     experiment.setId(experimentId);
     experiment.setExperimentType(com.marketinghub.experiment.ExperimentType.LOW_TICKET_PRODUCT);
-    experiment.setProduct(Product.builder().id(productId).build());
+    experiment.setProduct(
+        Product.builder()
+            .id(productId)
+            .productTypeDefinition(
+                com.marketinghub.producttype.ProductTypeDefinition.builder()
+                    .code("LOW_TICKET_DIGITAL_PRODUCT")
+                    .build())
+            .build());
     var proof =
         objectMapper
             .createObjectNode()
@@ -91,6 +98,34 @@ class GeraSalesPageStageServiceTest {
     assertThat(publicData.path("assetId").asLong()).isEqualTo(assetId);
     assertThat(publicData.toString())
         .doesNotContain("secret", "publicationAuthorized", "reviewedBy", "internal@");
+  }
+
+  /** Mantém o contexto legado PDE sem aplicar o contrato comercial de Quartzo. */
+  @Test
+  void legacyPdeDoesNotReceiveKitVideoContract() {
+    var binding =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+                .class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "reviewedVideos", binding);
+    var experiment =
+        Experiment.builder()
+            .id(93L)
+            .experimentType(com.marketinghub.experiment.ExperimentType.LOW_TICKET_PRODUCT)
+            .product(
+                Product.builder()
+                    .id(10L)
+                    .productTypeDefinition(
+                        com.marketinghub.producttype.ProductTypeDefinition.builder()
+                            .code("AI_PRODUCT")
+                            .build())
+                    .build())
+            .build();
+    Map<?, ?> payload =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "experimentPayload", experiment);
+    assertThat(payload.containsKey("approvedLandingVideo")).isFalse();
+    org.mockito.Mockito.verifyNoInteractions(binding);
   }
 
   /**

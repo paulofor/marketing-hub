@@ -5,28 +5,39 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.experiment.web.ExperimentCommercialCheckoutController;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.web.ApiExceptionHandler;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -50,7 +61,170 @@ class ExperimentCommercialCheckoutServiceTest {
             productRepository,
             pdeProductionSlotRepository,
             paymentsClient,
-            new PdeCommercialCheckoutContractResolver(new ObjectMapper()));
+            new PdeCommercialCheckoutContractResolver(new ObjectMapper()),
+            new LowTicketCheckoutContract(new ObjectMapper()));
+  }
+
+  /** Prepara a compra única de dois kits sem inventar slot, alterar oferta ou liberar mídia. */
+  @Test
+  void createsLowTicketCheckoutWithoutPdeSlotAndPreservesPublicationGates() {
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenAnswer(
+            invocation -> {
+              var input =
+                  invocation.getArgument(
+                      0, LeadPortalPaymentsClient.CommercialProductCheckoutRequest.class);
+              return new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                  input.productKey(),
+                  input.productId(),
+                  input.experimentId(),
+                  "pref-" + input.experimentId(),
+                  "https://www.mercadopago.com.br/checkout/" + input.experimentId(),
+                  input.amount(),
+                  "BRL",
+                  input.deliveryPageUrl());
+            });
+
+    for (long id : new long[] {105L, 9105L}) {
+      var experiment = LowTicketCheckoutContractTest.experiment(id + 100, id, "kit-" + id);
+      experiment.getProduct().setPublicUrl("https://offers.example/kit-" + id);
+      when(experimentRepository.findById(id)).thenReturn(Optional.of(experiment));
+      var response = service.create(id);
+      assertThat(response.productKey()).isEqualTo("kit-" + id);
+      assertThat(response.deliveryPageUrl())
+          .isEqualTo("https://payments.example/kit-" + id + "/briefing");
+      assertThat(experiment.getCommercialCheckoutUrl()).isEqualTo(response.checkoutUrl());
+      assertThat(experiment.getProduct().getPublicUrl())
+          .isEqualTo("https://offers.example/kit-" + id);
+      assertThat(experiment.getFollowUpActionUrl()).isNull();
+      assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+      assertThat(experiment.getFacebookReleaseRequestedAt()).isNull();
+      verify(experimentRepository).save(experiment);
+    }
+    verifyNoInteractions(pdeProductionSlotRepository, productRepository);
+  }
+
+  /** Percorre o endpoint da tela e os serviços reais com a integração de pagamento simulada. */
+  @Test
+  void preparesLowTicketThroughAdministrativeEndpoint() throws Exception {
+    var experiment = LowTicketCheckoutContractTest.experiment(7, 105, "nails-kit");
+    when(experimentRepository.findById(105L)).thenReturn(Optional.of(experiment));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                "nails-kit",
+                7L,
+                105L,
+                "pref-105",
+                "https://www.mercadopago.com.br/checkout/105",
+                new BigDecimal("67"),
+                "BRL",
+                "https://payments.example/nails-kit/briefing"));
+    var mvc =
+        MockMvcBuilders.standaloneSetup(new ExperimentCommercialCheckoutController(service))
+            .build();
+    mvc.perform(post("/api/experiments/105/commercial-checkout"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.experimentId").value(105))
+        .andExpect(jsonPath("$.productKey").value("nails-kit"))
+        .andExpect(jsonPath("$.amount").value(67))
+        .andExpect(
+            jsonPath("$.deliveryPageUrl").value("https://payments.example/nails-kit/briefing"));
+    verify(experimentRepository).save(experiment);
+    verifyNoInteractions(pdeProductionSlotRepository, productRepository);
+  }
+
+  /** Recusa pós-compra de outro kit no mesmo domínio antes de persistir o checkout. */
+  @Test
+  void rejectsLowTicketResponseFromAnotherPathOfSameHost() {
+    var experiment = LowTicketCheckoutContractTest.experiment(7, 105, "kit-105");
+    when(experimentRepository.findById(105L)).thenReturn(Optional.of(experiment));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                "kit-105",
+                7L,
+                105L,
+                "pref-105",
+                "https://www.mercadopago.com.br/checkout/105",
+                new BigDecimal("67"),
+                "BRL",
+                "https://payments.example/another-kit/briefing"));
+    assertThatThrownBy(() -> service.create(105L)).hasMessageContaining("divergente");
+    verify(experimentRepository, never()).save(any());
+  }
+
+  /** Não chama integração externa quando falta contrato explícito ou a execução já encerrou. */
+  @Test
+  void blocksInvalidLowTicketBeforeProviderCall() {
+    var experiment = LowTicketCheckoutContractTest.experiment(7, 105, "kit-105");
+    experiment.getProduct().setValidationDefinitionJson("{}");
+    when(experimentRepository.findById(105L)).thenReturn(Optional.of(experiment));
+    assertThatThrownBy(() -> service.create(105L)).hasMessageContaining("commercialCheckout");
+    experiment.setStatus(ExperimentStatus.FINISHED);
+    assertThatThrownBy(() -> service.create(105L)).hasMessageContaining("PLANNED");
+    verifyNoInteractions(paymentsClient, pdeProductionSlotRepository, productRepository);
+  }
+
+  /** Expõe a pendência funcional como conflito legível, sem erro genérico ou chamada paga. */
+  @Test
+  void exposesMissingLowTicketContractAsConflict() throws Exception {
+    var experiment = LowTicketCheckoutContractTest.experiment(7, 105, "nails-kit");
+    experiment.getProduct().setValidationDefinitionJson("{}");
+    when(experimentRepository.findById(105L)).thenReturn(Optional.of(experiment));
+    var mvc =
+        MockMvcBuilders.standaloneSetup(new ExperimentCommercialCheckoutController(service))
+            .setControllerAdvice(new ApiExceptionHandler())
+            .build();
+    mvc.perform(post("/api/experiments/105/commercial-checkout"))
+        .andExpect(status().isConflict())
+        .andExpect(
+            jsonPath("$.message")
+                .value("Registre commercialCheckout explícito no contrato de validação do kit."));
+    verifyNoInteractions(paymentsClient, pdeProductionSlotRepository, productRepository);
+  }
+
+  /** Preserva checkouts legados de Kit WhatsApp e Mira pelo tipo estável do catálogo. */
+  @ParameterizedTest
+  @CsvSource({"9,89,PDE,349", "10,93,AI_PRODUCT,49"})
+  void keepsLegacyLowTicketPdeCheckout(
+      long productId, long experimentId, String type, String price) {
+    var product =
+        Product.builder()
+            .id(productId)
+            .slug("legacy-product-" + productId)
+            .name("PDE existente")
+            .productTypeDefinition(ProductTypeDefinition.builder().code(type).build())
+            .build();
+    var experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+            .unitPrice(new BigDecimal(price))
+            .build();
+    var slot = activeSlot("v1", "https://legacy-product.example/v1", experimentId);
+    slot.setProductSlug(product.getSlug());
+    when(experimentRepository.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(slot));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                product.getSlug(),
+                productId,
+                experimentId,
+                "legacy-preference",
+                "https://www.mercadopago.com.br/checkout/legacy",
+                experiment.getUnitPrice(),
+                "BRL",
+                slot.getPublicUrl()));
+    var response = service.create(experimentId);
+    assertThat(response.amount()).isEqualByComparingTo(price);
+    assertThat(experiment.getCommercialCheckoutUrl()).isEqualTo(response.checkoutUrl());
+    verify(experimentRepository).save(experiment);
+    verify(productRepository).save(product);
   }
 
   /** Deve reconciliar o checkout versionado sem criar uma preferência concorrente. */

@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -1251,7 +1252,7 @@ export default function EditExperimentPage() {
                       type="url"
                       readOnly
                       value={data.commercialCheckoutUrl || ""}
-                      placeholder="Disponível após publicar e validar a área PDE"
+                      placeholder="Disponível após conferir o contrato de entrega do produto"
                     />
                     <div className="d-flex flex-wrap gap-2 mt-2">
                       <button
@@ -1281,13 +1282,18 @@ export default function EditExperimentPage() {
                       ) : null}
                     </div>
                     <div className="form-text">
-                      O checkout usa o preço persistido no experimento e só é
-                      liberado após a entrega PDE passar na validação pública.
+                      O checkout usa o preço e a entrega do contrato vigente do
+                      produto. Preparar o link não aprova a venda nem libera
+                      anúncios; os demais pareceres e gates continuam
+                      obrigatórios.
                     </div>
                     {commercialCheckout.isError ? (
                       <div className="text-danger small mt-1" role="alert">
-                        Não foi possível criar o checkout. Confirme que a área
-                        PDE está ativa e validada.
+                        {axios.isAxiosError(commercialCheckout.error)
+                          ? commercialCheckout.error.response?.data?.message ||
+                            commercialCheckout.error.response?.data?.detail ||
+                            "Não foi possível preparar o checkout. Confira o contrato comercial do produto."
+                          : "Não foi possível preparar o checkout. Confira o contrato comercial do produto."}
                       </div>
                     ) : null}
                     {data.platform === "FACEBOOK" &&

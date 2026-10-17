@@ -22,6 +22,44 @@ tags:
   - name: AI
     description: Observabilidade das execuções do worker de inteligência artificial.
 paths:
+  /api/experiments/{experimentId}/commercial-checkout:
+    post:
+      tags: [Experiments]
+      summary: Preparar checkout a partir do contrato comercial persistido
+      description: |
+        Exige experimento PLANNED e preço válido. O catálogo LOW_TICKET_DIGITAL_PRODUCT
+        combinado ao experimento LOW_TICKET_PRODUCT usa checkoutIdentity.externalReference e commercialCheckout
+        explícito em validationDefinitionJson, com contrato LOW_TICKET_COMMERCIAL_CHECKOUT_V1,
+        productVersion vigente, provider MERCADO_PAGO, currency BRL, billingModel ONE_TIME,
+        priceBrl coerente e deliveryPageUrl HTTPS. Outros catálogos mantêm o slot PDE elegível,
+        inclusive quando seus experimentos conservam o enum legado LOW_TICKET_PRODUCT.
+        Não recebe preço/URL do navegador, não cobra nem libera anúncio, página ou campanha.
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: Checkout preparado e vinculado ao mesmo experimento
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [productKey, productId, experimentId, checkoutUrl, amount, currency, deliveryPageUrl]
+                properties:
+                  productKey: {type: string}
+                  productId: {type: integer, format: int64}
+                  experimentId: {type: integer, format: int64}
+                  preferenceId: {type: string}
+                  checkoutUrl: {type: string, format: uri}
+                  amount: {type: number}
+                  currency: {type: string, enum: [BRL]}
+                  deliveryPageUrl: {type: string, format: uri}
+        '409':
+          description: Experimento, tipo, contrato, preço ou entrega incompatível
+        '404':
+          description: Experimento inexistente
   /api/ai/generations:
     get:
       tags: [AI]

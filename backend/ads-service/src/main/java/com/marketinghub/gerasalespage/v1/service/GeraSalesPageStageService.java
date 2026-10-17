@@ -42,6 +42,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class GeraSalesPageStageService {
   private static final Logger log = LoggerFactory.getLogger(GeraSalesPageStageService.class);
   private static final String PIPELINE_CODE = "gera-sales-page-v1";
+
+  @org.springframework.beans.factory.annotation.Autowired
+  @org.springframework.context.annotation.Lazy
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+      reviewedVideos;
+
   private static final String RETRY_PREFIX = "Retomada técnica da execução: ";
   private static final String STATUS_STARTED = "INICIADO";
   private static final String STATUS_PROCESSING = "EM_PROCESSAMENTO";
@@ -369,7 +375,10 @@ public class GeraSalesPageStageService {
         previousStageOutputs(execution.getExperimentId()));
   }
 
-  /** Entrega experimento e contrato atual do produto sem inferir condições ausentes da oferta. */
+  /**
+   * Transporta contrato e demonstração selecionada sem expor controles ou acessos privados ao
+   * modelo.
+   */
   private Map<String, Object> experimentPayload(Experiment experiment) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("id", experiment.getId());
@@ -389,6 +398,26 @@ public class GeraSalesPageStageService {
     payload.put("salesPageDestination", salesPageDestination(experiment));
     payload.put("unitPrice", experiment.getUnitPrice());
     payload.put("product", productPayload(experiment.getProduct()));
+    if (reviewedVideos != null
+        && com.marketinghub.experiment.service.LowTicketCheckoutContract.applies(experiment)) {
+      reviewedVideos
+          .forReference("experiment:" + experiment.getId())
+          .ifPresent(
+              proof -> {
+                var hero = proof.path("heroVideo");
+                var publicVideo = objectMapper.createObjectNode();
+                for (String field :
+                    List.of(
+                        "assetId",
+                        "assetUrl",
+                        "sha256",
+                        "captions",
+                        "captionsBurnedIn",
+                        "role",
+                        "reviewStatus")) publicVideo.set(field, hero.path(field).deepCopy());
+                payload.put("approvedLandingVideo", publicVideo);
+              });
+    }
     payload.put(
         "hypothesisFramework", parseJsonOrText(experiment.getHypothesisFrameworkJsonForPending()));
     payload.put("feoDeliverablePackage", latestFeoDeliverablePackage(experiment.getId()));

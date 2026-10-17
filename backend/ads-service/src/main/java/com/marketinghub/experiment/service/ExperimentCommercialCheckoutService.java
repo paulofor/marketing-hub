@@ -30,22 +30,27 @@ public class ExperimentCommercialCheckoutService {
   private final PdeProductionSlotRepository pdeProductionSlotRepository;
   private final LeadPortalPaymentsClient paymentsClient;
   private final PdeCommercialCheckoutContractResolver checkoutResolver;
+  private final LowTicketCheckoutContract lowTicketContract;
 
-  /** Inicializa a operação com as fontes canônicas de experimento, produto, PDE e pagamento. */
+  /**
+   * Inicializa a operação com contratos de entrega por tipo e a integração oficial de pagamento.
+   */
   public ExperimentCommercialCheckoutService(
       ExperimentRepository experimentRepository,
       ProductRepository productRepository,
       PdeProductionSlotRepository pdeProductionSlotRepository,
       LeadPortalPaymentsClient paymentsClient,
-      PdeCommercialCheckoutContractResolver checkoutResolver) {
+      PdeCommercialCheckoutContractResolver checkoutResolver,
+      LowTicketCheckoutContract lowTicketContract) {
     this.experimentRepository = experimentRepository;
     this.productRepository = productRepository;
     this.pdeProductionSlotRepository = pdeProductionSlotRepository;
     this.paymentsClient = paymentsClient;
     this.checkoutResolver = checkoutResolver;
+    this.lowTicketContract = lowTicketContract;
   }
 
-  /** Reconcilia checkout versionado ou cria fallback após validar entrega, produto e preço. */
+  /** Prepara checkout pelo contrato do kit ou do PDE sem liberar campanha ou cobrar clientes. */
   @Transactional
   public LeadPortalPaymentsClient.CommercialProductCheckoutResponse create(Long experimentId) {
     Experiment experiment =
@@ -69,6 +74,23 @@ public class ExperimentCommercialCheckoutService {
           HttpStatus.CONFLICT, "Experimento sem preço comercial válido");
     }
     var product = experiment.getProduct();
+    if (LowTicketCheckoutContract.applies(experiment)) {
+      var delivery = lowTicketContract.resolve(experiment);
+      var response =
+          paymentsClient.createCommercialProductCheckout(
+              new LeadPortalPaymentsClient.CommercialProductCheckoutRequest(
+                  delivery.productKey(),
+                  product.getName(),
+                  product.getId(),
+                  experiment.getId(),
+                  experiment.getUnitPrice(),
+                  delivery.deliveryPageUrl()));
+      validateCheckoutContract(
+          experiment, delivery.productKey(), delivery.deliveryPageUrl(), response);
+      experiment.setCommercialCheckoutUrl(response.checkoutUrl());
+      experimentRepository.save(experiment);
+      return response;
+    }
     var activeSlot = resolveDeliverySlot(experiment, product.getSlug());
     var response =
         checkoutResolver
@@ -84,7 +106,7 @@ public class ExperimentCommercialCheckoutService {
                             experiment.getId(),
                             experiment.getUnitPrice(),
                             activeSlot.getPublicUrl())));
-    validateCheckoutContract(experiment, activeSlot, response);
+    validateCheckoutContract(experiment, product.getSlug(), activeSlot.getPublicUrl(), response);
     experiment.setCommercialCheckoutUrl(response.checkoutUrl());
     product.setPublicUrl(activeSlot.getPublicUrl());
     productRepository.save(product);
@@ -193,18 +215,18 @@ public class ExperimentCommercialCheckoutService {
   /** Confirma que o serviço de pagamentos devolveu o mesmo produto, preço e destino solicitados. */
   private void validateCheckoutContract(
       Experiment experiment,
-      PdeProductionSlot activeSlot,
+      String productKey,
+      String deliveryPageUrl,
       LeadPortalPaymentsClient.CommercialProductCheckoutResponse response) {
     boolean valid =
         response != null
-            && experiment.getProduct().getSlug().equals(response.productKey())
+            && productKey.equals(response.productKey())
             && experiment.getProduct().getId().equals(response.productId())
             && experiment.getId().equals(response.experimentId())
             && response.amount() != null
             && experiment.getUnitPrice().compareTo(response.amount()) == 0
             && "BRL".equals(response.currency())
-            && normalizeDomain(activeSlot.getPublicUrl())
-                .equals(normalizeDomain(response.deliveryPageUrl()))
+            && deliveryPageUrl.equals(response.deliveryPageUrl())
             && StringUtils.hasText(response.checkoutUrl());
     if (!valid) {
       throw new IllegalStateException(

@@ -135,3 +135,23 @@ uso comercial cadastradas, identidade da geração concluída, modelo, fonte de 
 e hash auditado quando disponíveis. Prompt e binário brutos não entram nesse resumo.
 Um campo ausente permanece ausente; revisão visual não atesta direitos. O mesmo
 contrato atende novas páginas e a preparação Quartzo, sem regra por produto ou ID.
+
+### Demonstração selecionada no ciclo — 17/10/2026
+
+Para kits do catálogo `LOW_TICKET_DIGITAL_PRODUCT` com recibo audiovisual vigente, o contexto do `pending` transporta
+`approvedLandingVideo` com ID, URL, hash e legendas da demonstração já aprovada.
+O backend revalida o recibo e não envia acesso privado, identidade do revisor ou flags
+de autorização ao modelo. Ausência de recibo mantém o percurso legado.
+
+O executor confere a fonte antes da inferência e conserva deterministicamente esse
+mesmo vídeo no HTML enviado à revisão e no pacote final publicado. A reprodução é
+opcional, com controles, transcrição textual escapada e sem autoplay; a CTA anterior
+permanece acessível. Resposta bruta e custo do modelo continuam separados da saída
+enriquecida. Não gerar, trocar ou aprovar vídeo nesta passagem.
+
+Na homologação comercial, um kit usa publicação GeraSalesPage auditada e o anúncio
+aprovado com o mesmo destino. Não exigir slot de assinatura Opala para comprovar a
+integração de Quartzo. A existência do vídeo na página não aprova economia, direitos,
+entrega, pagamento, aquisição ou campanha.
+Produtos `PDE` e `AI_PRODUCT` com enum legado `LOW_TICKET_PRODUCT` não recebem o
+contrato do kit automaticamente; preservar seu percurso identificado pelo catálogo.

@@ -10214,3 +10214,37 @@ lote foram reproduzidos localmente antes da atualização. Não reescrever hist�
   legado. A correção trata apenas o requisito audiovisual, sem conceder gates
   financeiros, página, checkout, publicação ou campanha.
 - Matriz e limites: `docs/homologacao/capella-videos-selecao-liberacao-v1.md`.
+
+## LOOP-CHECKOUT-KIT-EXIGE-SLOT-ASSINATURA — 16/10/2026
+
+- **Evidência:** Capella #105 ficou sem checkout após homologação privada e seleção dos
+  vídeos #75/#76. O comando administrativo retornou 409 exigindo slot PDE; a preparação
+  Quartzo e os experimentos históricos #88/#94 trabalham com pós-compra de kit e
+  publicação GeraSalesPage, sem aquele slot. A causa está no serviço compartilhado,
+  que resolvia entrega PDE antes de distinguir o tipo do experimento.
+- **Alternativas:** reutilizar preferência antiga perde a correlação do experimento;
+  cadastrar slot fictício mistura tipos; resolver o contrato de compra única no comando
+  existente preserva identidade, auditoria e os gates posteriores. Adotada a terceira.
+- **Prevenção:** contrato explícito e versionado de pós-compra, preço e tipo conferidos;
+  referência de pagamento distinta do slug; retorno com URL completa; contexto divergente
+  bloqueado antes da persistência. Testes cobrem Capella, outro kit, fluxo PDE antes válido,
+  ausência de fonte, contrato alterado, retorno incorreto e integração HTTP administrativa.
+- **Limites:** preparar checkout não aprova oferta, margem, página, publicação ou campanha;
+  nenhuma taxa desconhecida vira zero. Matriz em `docs/homologacao/capella-checkout-compra-unica-v1.md`.
+
+### Mesmo defeito no consumidor audiovisual — 17/10/2026
+
+A validação local do percurso posterior encontrou o gate da integração privada exigindo
+slot PDE também para a página do kit, e o GeraSalesPage não recebia a demonstração escolhida.
+O mesmo lote resolve a publicação auditada por tipo, filtra campos públicos do recibo e
+preserva deterministicamente a peça no HTML revisado e publicado, com reprodução opcional.
+Teste com Capella e outra identidade, legado PDE, divergência de mídia e autoplay; replay
+do arquivo real em desktop/iPhone/Pixel, sem inferência nem eventos comerciais. Não usar
+um novo deploy para descobrir essas dependências já comprovadas no código.
+
+A conferência de histórico identificou #89/Kit WhatsApp (`PDE`) e #93/Mira
+(`AI_PRODUCT`) usando `LOW_TICKET_PRODUCT` no experimento. Cinco regressões
+reproduziram a classificação excessiva da candidata antes de sua publicação.
+O classificador compartilhado agora exige também `LOW_TICKET_DIGITAL_PRODUCT`
+no catálogo; os percursos legados mantêm slots/contratos. Os cinco casos passaram
+após o ajuste. Atestação v28 preserva v27/v26 sem publicar Mira.

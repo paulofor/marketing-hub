@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-lugar-imaginacao-vinculo",
+  "collection": "prazer-audio-visual",
+  "title": "Canções de lugares associam imagens mentais, emoção e vínculo",
+  "finding": "Em estudo transversal sobre 15 canções de destinos, 57.228 comentários e 472 respostas, imagem do lugar associou-se mais à avaliação cognitiva e experiências pessoais à resposta emocional; apego correlacionou-se com intenção de visita.",
+  "mechanism": "Imagens mentais e associações autobiográficas podem contribuir para o vínculo com um lugar, hipótese ainda não estabelecida causalmente.",
+  "commercialApplication": "Testar em conteúdo regional uma trilha culturalmente pertinente versus trilha genérica com imagem e roteiro constantes, estratificando familiaridade prévia.",
+  "evidenceStrength": "Média-baixa: questionário observacional, modelagem estatística e intenção declarada; sem prova de efeito em vendas ou visitas.",
+  "publishedOn": "2026-10-17",
+  "validUntil": "2026-12-01",
+  "experimentHypothesis": "Uma trilha culturalmente pertinente aumentará relevância pessoal, lembrança e vínculo percebido em público familiar ao local, sem prejudicar compreensão; avaliar cliques e ações reais separadamente.",
+  "risks": "Estereótipos regionais, apropriação cultural, nostalgia desconfortável e alegação indevida de causalidade ou conversão.",
+  "limits": "Predomínio de visitantes anteriores, autorrelato, corte transversal e PLS-SEM; mediação estatística não é causal e intenção não é visita ou pagamento.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-17-musica-lugar-imaginacao-vinculo.md",
+  "sourceTitle": "Fonte revisada v1 — Música, imagens de lugares e vínculo afetivo",
+  "sourceSha256": "9ce4614da0c1a6a283181ac516227b01c47c9eb1f8bbd084d54a3d8cfe6d396d"
+}

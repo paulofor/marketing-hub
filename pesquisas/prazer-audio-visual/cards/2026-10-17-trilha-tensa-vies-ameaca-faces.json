@@ -1,0 +1,18 @@
+{
+  "cardKey": "trilha-tensa-vies-ameaca-faces",
+  "collection": "prazer-audio-visual",
+  "title": "Trilha tensa pode tornar rostos aparentemente mais ameaçadores",
+  "finding": "Em experimento intrassujeitos com 45 jovens, uma trilha de terror antes de rostos elevou ameaça percebida inclusive para faces felizes, em comparação a ruído branco; não houve efeito pupilar global.",
+  "mechanism": "Preparação afetiva auditiva é uma explicação plausível para o viés de interpretação social. Não foram medidos prazer nem intenção atribuída ao personagem.",
+  "commercialApplication": "Revisar trilhas de avatares e narrativas para evitar atribuir ameaça indevida a rostos; comparar trilha tensa versus neutra pareada e auditar coerência emocional e confiança.",
+  "evidenceStrength": "Média para efeito laboratorial imediato; generalização comercial não demonstrada.",
+  "publishedOn": "2026-10-17",
+  "validUntil": "2026-12-01",
+  "experimentHypothesis": "Em cenas idênticas com personagens fictícios, a trilha tensa aumentará ameaça percebida relativamente a trilha neutra pareada; medir também conforto, compreensão e confiança, sem presumir conversão.",
+  "risks": "Viés social e estigmatização: não manipular a avaliação de pessoas reais com trilhas ameaçadoras; cautela com grupos vulneráveis.",
+  "limits": "N=45, quase todas mulheres, uma trilha, ruído branco como controle, amostra e faces de origens distintas; sem vendas, dopamina ou prazer medidos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-17-trilha-tensa-vies-ameaca-faces.md",
+  "sourceTitle": "Fonte revisada v1 — Trilha tensa e interpretação de rostos",
+  "sourceSha256": "98ce7bd38820d9aad65f7c36b0aa56ceea28d5fcd9f12319d9c868f254e2a609"
+}

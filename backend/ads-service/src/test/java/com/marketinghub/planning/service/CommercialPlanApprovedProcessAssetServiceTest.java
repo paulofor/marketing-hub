@@ -377,4 +377,124 @@ class CommercialPlanApprovedProcessAssetServiceTest {
   private String sha256(byte[] bytes) throws Exception {
     return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
   }
+
+  /** Reproduz Capella e outra identidade sem trocar os pareceres da imagem por quadros do vídeo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "7,105,693,694,695,744,596",
+    "95141,97141,101,102,103,104,105"
+  })
+  void videoPosteriorNaoSubstituiParecerDaPecaEstatica(
+      long productId,
+      long experimentId,
+      long producerId,
+      long customerId,
+      long commercialId,
+      long videoReviewId,
+      long artifactId)
+      throws Exception {
+    org.mockito.Mockito.reset(tasks);
+    product.setId(productId);
+    plan.getExperiment().setId(experimentId);
+    producer.setId(producerId);
+    customer.setId(customerId);
+    commercial.setId(commercialId);
+    producer.setResultJson(producer.getResultJson().replace("407", Long.toString(artifactId)));
+    customer.setResultJson(approvedReview(contentHash).replace("407", Long.toString(artifactId)));
+    commercial.setResultJson(customer.getResultJson());
+    var mixed = new ObjectMapper().readTree(customer.getResultJson());
+    ((com.fasterxml.jackson.databind.node.ArrayNode) mixed.path("renderedAssetAudit"))
+        .addObject()
+        .put("artifactId", artifactId + 10000)
+        .put("sha256", "1".repeat(64));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) mixed)
+        .putObject("videoAudit")
+        .put("decision", "APPROVED");
+    var video = task(videoReviewId, "customer", "customer-agent", mixed.toString());
+    String reference = "experiment:" + experimentId;
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            reference, "creative-production-approval"))
+        .thenReturn(List.of(producer, customer, commercial, video));
+    when(plans.findByExperimentReference(experimentId)).thenReturn(List.of(plan));
+    assertThat(service.readiness(product, reference).ready()).isTrue();
+    verify(assetStorage, never()).storeBytes(any(), any(), any(), any());
+  }
+
+  /** Mantém bloqueio quando o parecer posterior realmente reprova os mesmos pixels. */
+  @Test
+  void reprovacaoPosteriorDaMesmaPecaContinuaBloqueante() {
+    var rejected =
+        task(
+            529,
+            "customer",
+            "customer-agent",
+            approvedReview(contentHash).replace("APPROVED", "ADJUST"));
+    rejected.setStatus("BLOCKED");
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:93", "creative-production-approval"))
+        .thenReturn(List.of(producer, customer, commercial, rejected));
+    when(plans.findByExperimentReference(93L)).thenReturn(List.of(plan));
+    assertThat(service.readiness(product, "experiment:93").ready()).isFalse();
+  }
+
+  /** Impede que o aceite privado seja promovido a autorização comercial pelo reuso. */
+  @Test
+  void decisaoPrivadaNaoAutorizaImportacaoComercial() throws Exception {
+    var human = approvedHumanInstance();
+    human.setObjectiveEvidenceJson(
+        human
+            .getObjectiveEvidenceJson()
+            .replace(
+                "\"decision\":\"APPROVE\"",
+                "\"decision\":\"APPROVE\",\"structuredEvidence\":{\"scope\":\"PRIVATE_PREPARATION\",\"evidenceType\":\"PDE_PRIVATE_CREATIVE_SELECTION_V1\"}"));
+    when(plans.findById(8L)).thenReturn(java.util.Optional.of(plan));
+    when(activityInstances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "creative-production-approval", "experiment:93"))
+        .thenReturn(List.of(human));
+    assertThatThrownBy(() -> service.importPreviouslyApproved(8L))
+        .hasMessageContaining("decisão humana");
+    verify(assetStorage, never()).storeBytes(any(), any(), any(), any());
+  }
+
+  /**
+   * Reprovação estática ou mista continua válida mesmo quando o parecer inclui quadros de vídeo.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"STATIC_ASSET", "MIXED"})
+  void reprovacaoMistaNaoPodeSerIgnoradaPeloSeletor(String scope) throws Exception {
+    var json = new ObjectMapper();
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(approvedReview(contentHash));
+    result.put("decision", "ADJUST").put("correctionScope", scope);
+    result
+        .withArray("renderedAssetAudit")
+        .addObject()
+        .put("artifactId", 999)
+        .put("sha256", "1".repeat(64));
+    var rejected = task(529, "customer", "customer-agent", result.toString());
+    rejected.setStatus("BLOCKED");
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:93", "creative-production-approval"))
+        .thenReturn(List.of(producer, customer, commercial, rejected));
+    when(plans.findByExperimentReference(93L)).thenReturn(List.of(plan));
+    assertThat(service.readiness(product, "experiment:93").ready()).isFalse();
+  }
+
+  /** Ajuste exclusivo do vídeo não revoga os pareceres estáticos da mesma imagem. */
+  @Test
+  void ajusteExclusivamenteAudiovisualPreservaSelecaoEstatica() throws Exception {
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            new ObjectMapper().readTree(approvedReview(contentHash));
+    result.put("decision", "ADJUST").put("correctionScope", "FINAL_VIDEO");
+    result.putArray("videoAudit").addObject().put("assetId", 75);
+    var video = task(529, "customer", "customer-agent", result.toString());
+    video.setStatus("BLOCKED");
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:93", "creative-production-approval"))
+        .thenReturn(List.of(producer, customer, commercial, video));
+    when(plans.findByExperimentReference(93L)).thenReturn(List.of(plan));
+    assertThat(service.readiness(product, "experiment:93").ready()).isTrue();
+  }
 }

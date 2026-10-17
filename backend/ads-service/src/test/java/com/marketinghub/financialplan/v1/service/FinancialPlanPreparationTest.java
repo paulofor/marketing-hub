@@ -73,7 +73,8 @@ class FinancialPlanPreparationTest {
             json,
             Validation.buildDefaultValidatorFactory().getValidator(),
             executionSyncService,
-            milestones);
+            milestones,
+            mock(FinancialDiscoveryPolicy.class));
     product.setId(95101L);
     product.setValidationDefinitionVersion("fixture-v1");
     product.setValidationDefinitionJson(

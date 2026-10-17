@@ -453,4 +453,42 @@ class QuartzoCommercialServiceTest {
     evidence.set("quartzoScope", snapshot.deepCopy());
     return new CompleteAgentTaskRequest(result.toString(), evidence.toString());
   }
+
+  /** Aceita somente a descoberta do ciclo exato, mantendo orçamento e janela como gates. */
+  @Test
+  void descobertaLimitadaPreservaPerdaERecusaTransferencia() {
+    var original = context.scope("experiment:88", product.getId(), false);
+    var scope =
+        new QuartzoCommercialContext.Scope(
+            experiment, product, "v1", 991L, 26L, original.publication());
+    snapshot.withObject("/financialPlan/evaluation").put("status", "DISCOVERY_REVIEW");
+    var d = snapshot.withObject("/financialPlan/assumptions/discoveryInvestment");
+    d.put("experimentId", 88)
+        .put("learningCycleId", 991)
+        .put("mediaBudgetBrl", 100)
+        .put("durationDays", 5)
+        .put("acceptBelowMinimumMargin", true);
+    ((ObjectNode) snapshot.at("/financialPlan/analysis/result/scenarios/1"))
+        .put("profitBrl", -151.9);
+    assertThatCode(() -> checks.check("economics", scope, snapshot)).doesNotThrowAnyException();
+    experiment.setMediaSpendLimit(new BigDecimal("100"));
+    experiment.setStartDate(java.time.LocalDate.of(2026, 10, 20));
+    experiment.setEndDate(java.time.LocalDate.of(2026, 10, 24));
+    assertThatCode(() -> checks.check("economics", scope, snapshot)).doesNotThrowAnyException();
+    d.put("experimentId", 89);
+    assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
+        .hasMessageContaining("aceite de descoberta");
+    d.put("experimentId", 88);
+    experiment.setMediaSpendLimit(new BigDecimal("101"));
+    assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
+        .hasMessageContaining("teto de mídia");
+    experiment.setMediaSpendLimit(new BigDecimal("100"));
+    experiment.setEndDate(java.time.LocalDate.of(2026, 10, 25));
+    assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
+        .hasMessageContaining("janela");
+    experiment.setEndDate(java.time.LocalDate.of(2026, 10, 24));
+    snapshot.withObject("/financialPlan/analysis/result").put("decision", "ADJUST");
+    assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
+        .hasMessageContaining("não aprovou");
+  }
 }

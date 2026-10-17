@@ -1,0 +1,10 @@
+{
+  "productVersion":"fixture-v1", "periodDays":30, "validUntil":"2026-12-31",
+  "evidence":"Fixture sintética: custo integral do kit e mídia total por cenário; não é previsão nem venda.",
+  "priceBrl":67, "minimumMarginPercent":30, "maximumCacBrl":12.58,
+  "ai":{"currency":"BRL","providerModel":"Compositor sem IA variável","perAttempt":0,"pricingSource":"fixture determinística","pricingCheckedOn":"2026-10-17","includedUnits":1,"maximumAttempts":0,"maximumCostPerCustomerBrl":0},
+  "costs":{"feePercent":6,"taxPercent":6,"commissionPercent":0,"refundPercent":10,"fixedFeeBrl":0,"supportBrl":4,"storageBrl":2,"deliveryBrl":18,"otherVariableBrl":0,"initialAiBrl":120,"initialOtherBrl":0,"fixedPerPeriodBrl":73.2},
+  "scenarios":[{"code":"CONSERVATIVE","customers":2,"attemptsPerCustomer":0,"cacBrl":50},{"code":"BASE","customers":5,"attemptsPerCustomer":0,"cacBrl":20},{"code":"OPTIMISTIC","customers":8,"attemptsPerCustomer":0,"cacBrl":12.5}],
+  "preparation":{"supportDays":7,"personalizedAi":false},
+  "discoveryInvestment":{"experimentId":97121,"learningCycleId":96121,"mediaBudgetBrl":100,"durationDays":5,"acceptBelowMinimumMargin":true,"decisionReference":"fixture://operator/decision-1"}
+}

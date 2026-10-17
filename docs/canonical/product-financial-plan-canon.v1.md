@@ -179,6 +179,25 @@ O plano registra as lacunas e quem deve atuar; não muda preço, cobrança, ofer
 
 ## Plutus e cadeia de valor
 
+### Descoberta com perda limitada — decisão de 17/10/2026
+
+Uma decisão explícita do operador pode aceitar contribuição abaixo da meta durante um
+experimento de descoberta. A autorização deve ser estruturada na revisão financeira, com
+produto, ciclo, experimento, teto total de mídia, duração e referência da decisão. Não reduzir
+a margem mínima de continuidade nem alterar os cenários para simular viabilidade.
+
+O aceite libera somente a avaliação independente do investimento limitado por Plutus. Custos
+ausentes, entrega deficitária antes da aquisição, contrato inválido, orçamento excedido ou
+identidade divergente continuam bloqueantes. A aprovação de descoberta não comprova
+rentabilidade nem dispensa homologação, autorização comercial, limites e critérios de parada.
+Não se transfere para outro experimento, sucessor, modelo de tipo, continuidade ou escala.
+
+Caso que motivou a regra: decisão #3517 de Capella, ciclo #12/experimento #105: aceitar
+resultado abaixo de 30% na descoberta, dentro de R$ 100 totais por cinco dias já autorizados;
+preservar 30% da receita líquida após custos variáveis e aquisição para continuidade e escala.
+Essa decisão não concede orçamento a outros produtos. A adoção operacional inicial desta
+exceção está no percurso Quartzo; os demais tipos preservam seus contratos e gates próprios.
+
 Plutus recebe a revisão exata, cenários calculados, premissas e fontes pelo contrato existente
 de projeção financeira. Uma solicitação por revisão é reutilizada após concorrência/retomada;
 falha ou parecer desfavorável não provoca repetição paga automática. Alterar premissas permite

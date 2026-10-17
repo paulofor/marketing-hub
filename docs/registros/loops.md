@@ -10248,3 +10248,37 @@ reproduziram a classificação excessiva da candidata antes de sua publicação.
 O classificador compartilhado agora exige também `LOW_TICKET_DIGITAL_PRODUCT`
 no catálogo; os percursos legados mantêm slots/contratos. Os cinco casos passaram
 após o ajuste. Atestação v28 preserva v27/v26 sem publicar Mira.
+
+
+## LOOP-DESCOBERTA-MARGEM-DE-ESCALA — 17/10/2026
+
+- Evidência: Capella/ciclo #12/experimento #105, revisão financeira #17: cinco compras com
+  R$100 de mídia projetam contribuição de 15,81%, meta de continuidade 30%. O operador
+  aceitou explicitamente o risco do primeiro teste na decisão #3517; o calculador e o gate
+  Quartzo exigiam rentabilidade antes mesmo do parecer de Plutus.
+- Causa: ausência de contrato estruturado para investimento de descoberta separado da
+  política de continuidade/escala. Texto em evidência não podia substituir um aceite verificável.
+- Mudança reutilizável: `discoveryInvestment` vincula produto, plano, ciclo, experimento,
+  teto e duração; `DISCOVERY_REVIEW` libera só o parecer independente, mantém cenários e
+  exige entrega viável antes do CAC. Não herda autorização nem altera os 30%.
+- Prevenção: regressões do calculador, contexto Plutus, política de identidade, gate Quartzo,
+  persistência MySQL e formulário em desktop/iPhone/Pixel. Custos ausentes, mídia acima
+  do limite, janela maior, outro produto/ciclo, parecer ADJUST e caminho rentável preservados.
+- Limite: teste local comprova contrato e isolamento. Parecer não ativa campanha nem prova
+  demanda, compras, contribuição realizada ou lucro; os demais gates permanecem obrigatórios.
+
+
+## LOOP-IMPORTACAO-IMAGEM-PEGA-PARECER-DE-VIDEO — 17/10/2026
+
+- Evidência: em Capella #105, o vínculo pelo frontend retornou HTTP 409, “Psique não auditou
+  os mesmos pixels”. A peça #693/artefato #596 possuía os pareceres #694/#695; o seletor usava
+  #744, que também audita quadros dos vídeos. O hash da imagem não havia mudado.
+- Causa: seleção por atividade/data sem considerar o conjunto de mídias. A auditoria ampliada
+  não tinha a identidade do pacote estático aceito, e os IDs de pareceres do aceite humano divergiam.
+- Correção: selecionar o último parecer do conjunto estático exato, validar hashes/status e
+  preservar reprovação posterior da mesma imagem. Não promover `PRIVATE_PREPARATION` a aprovação
+  comercial; isso é um limite legítimo distinto do defeito de seleção.
+- Testes: o caso Capella e outra identidade falharam antes do ajuste; a regressão de reprovação
+  posterior também demonstrou a brecha. Caminho comercial antes válido e idempotência preservados.
+- Limite: recuperar os pareceres privados não aprova anúncio, página, campanha ou gasto. A nova
+  preparação comercial continua dependendo das fontes, versões e revisões aplicáveis.

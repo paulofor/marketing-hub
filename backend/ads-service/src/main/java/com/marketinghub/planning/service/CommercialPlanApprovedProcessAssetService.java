@@ -159,7 +159,9 @@ public class CommercialPlanApprovedProcessAssetService {
     return selected;
   }
 
-  /** Resolve a última produção concluída e as revisões posteriores que aprovaram o mesmo hash. */
+  /**
+   * Resolve a produção e os pareceres do conjunto exato de imagens, sem misturar quadros de vídeo.
+   */
   private ApprovedSelection resolveSelection(CommercialPlan plan, String sourceReference) {
     List<AgentTask> history =
         tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
@@ -167,9 +169,11 @@ public class CommercialPlanApprovedProcessAssetService {
     AgentTask producer = latestCompleted(history, PRODUCER_ACTIVITY_ID, null);
     requireAgent(producer, "communication-director", "A produção final não pertence a Íris.");
     List<RenderedAsset> renderedAssets = renderedAssets(producer);
-    AgentTask customer = latestCompleted(history, CUSTOMER_ACTIVITY_ID, producer.getId());
+    AgentTask customer =
+        latestImageReview(history, CUSTOMER_ACTIVITY_ID, producer.getId(), renderedAssets);
     requireAgent(customer, "customer-agent", "A revisão de percepção não pertence a Psique.");
-    AgentTask commercial = latestCompleted(history, COMMERCIAL_ACTIVITY_ID, producer.getId());
+    AgentTask commercial =
+        latestImageReview(history, COMMERCIAL_ACTIVITY_ID, producer.getId(), renderedAssets);
     requireAgent(commercial, "meta-ad-approver", "A revisão de integridade não pertence a Têmis.");
     validateReview(customer, renderedAssets, "Psique");
     validateReview(commercial, renderedAssets, "Têmis");
@@ -305,16 +309,20 @@ public class CommercialPlanApprovedProcessAssetService {
                         instance.getObjectiveEvidenceJson(), sourceReference, selection));
     requireApproval(
         approved,
-        "Registre primeiro a decisão humana sobre esta mesma peça e estes mesmos pareceres.");
+        "Registre a decisão humana de uso comercial sobre esta mesma peça e estes mesmos pareceres. A seleção de uso privado permanece preservada e não concede aprovação comercial.");
   }
 
-  /** Confirma que a decisão persistida aprovou explicitamente esta seleção e não outra versão. */
+  /** Confirma a seleção comercial exata, sem ampliar o escopo de uma decisão privada. */
   private boolean approvedDecision(
       String evidenceJson, String sourceReference, ApprovedSelection selection) {
     if (!StringUtils.hasText(evidenceJson)) return false;
     try {
       JsonNode decision = json.readTree(evidenceJson);
       if (!"APPROVE".equals(decision.path("decision").asText())) return false;
+      var selectedScope = decision.path("structuredEvidence");
+      if ("PRIVATE_PREPARATION".equals(selectedScope.path("scope").asText())
+          || "PDE_PRIVATE_CREATIVE_SELECTION_V1"
+              .equals(selectedScope.path("evidenceType").asText())) return false;
       String expectedPackage = packageId(sourceReference, selection);
       if (expectedPackage.equals(
           decision.path("structuredEvidence").path("creativePackageId").asText())) {
@@ -364,13 +372,21 @@ public class CommercialPlanApprovedProcessAssetService {
       }
       return List.copyOf(output);
     } catch (JsonProcessingException ex) {
+      log.warn(
+          "Produção criativa com JSON inválido. taskId={} sourceReference={}",
+          producer.getId(),
+          producer.getSourceReference(),
+          ex);
       throw conflict("O resultado da produção criativa não é um JSON válido.", ex);
     }
   }
 
-  /** Confere decisão, ausência de ajustes e auditoria exata de cada artefato revisado. */
+  /** Confere status, decisão, ausência de ajustes e auditoria exata de cada imagem revisada. */
   private void validateReview(
       AgentTask review, List<RenderedAsset> renderedAssets, String reviewerName) {
+    requireApproval(
+        "COMPLETED".equals(review.getStatus()),
+        reviewerName + " não possui parecer vigente aprovado para esta peça.");
     try {
       JsonNode result = json.readTree(review.getResultJson());
       requireApproval(
@@ -389,7 +405,61 @@ public class CommercialPlanApprovedProcessAssetService {
                   .allMatch(render -> render.sha256().equals(audited.get(render.artifactId()))),
           reviewerName + " não auditou os mesmos pixels da produção final.");
     } catch (JsonProcessingException ex) {
+      log.warn(
+          "Revisão criativa com JSON inválido. taskId={} sourceReference={} reviewer={}",
+          review.getId(),
+          review.getSourceReference(),
+          reviewerName,
+          ex);
       throw conflict("O parecer de " + reviewerName + " não é um JSON válido.", ex);
+    }
+  }
+
+  /** Seleciona o parecer mais recente do escopo da imagem, inclusive uma reprovação posterior. */
+  private AgentTask latestImageReview(
+      List<AgentTask> history, String activityId, Long producerId, List<RenderedAsset> rendered) {
+    return history.stream()
+        .filter(task -> activityId.equals(task.getProcessActivityId()))
+        .filter(task -> List.of("COMPLETED", "BLOCKED").contains(task.getStatus()))
+        .filter(task -> task.getId() > producerId)
+        .filter(task -> auditsSameImageSet(task, rendered))
+        .max(Comparator.comparing(AgentTask::getId))
+        .orElseThrow(
+            () ->
+                conflict(
+                    "A atividade "
+                        + activityId
+                        + " não possui parecer dos mesmos pixels da produção final."));
+  }
+
+  /** Distingue o conjunto estático de auditorias ampliadas com quadros audiovisuais. */
+  private boolean auditsSameImageSet(AgentTask task, List<RenderedAsset> rendered) {
+    if (!StringUtils.hasText(task.getResultJson())) return false;
+    try {
+      var result = json.readTree(task.getResultJson());
+      var audit = result.path("renderedAssetAudit");
+      if (!audit.isArray()) return false;
+      boolean approved = "APPROVED".equals(result.path("decision").asText());
+      boolean videoOnly =
+          !approved
+              && "FINAL_VIDEO".equals(result.path("correctionScope").asText())
+              && result.path("videoAudit").isArray()
+              && !result.path("videoAudit").isEmpty();
+      if (videoOnly || (approved && audit.size() != rendered.size())) return false;
+      var ids = new java.util.HashSet<Long>();
+      for (var item : audit) {
+        var id = item.path("artifactId");
+        if (!id.isIntegralNumber() || !id.canConvertToLong() || !ids.add(id.longValue()))
+          return false;
+      }
+      return rendered.stream().allMatch(item -> ids.contains(item.artifactId()));
+    } catch (JsonProcessingException ex) {
+      log.warn(
+          "Parecer criativo sem escopo JSON válido. taskId={} sourceReference={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex);
+      return false;
     }
   }
 

@@ -189,4 +189,54 @@ class FinancialPlanCalculatorTest {
     ((ObjectNode) p.get("scenarios").get(1)).put("code", "CONSERVATIVE");
     assertThat(evaluate(p).status()).isEqualTo("MISSING_INPUTS");
   }
+
+  /** Reproduz o caso original e outro produto sem fingir que a descoberta é rentável. */
+  @Test
+  void descobertaPreservaMetaECenariosDesfavoraveis() throws Exception {
+    for (long owner : new long[] {95121, 95122}) {
+      var p = discoveryInput(owner);
+      var without = p.deepCopy();
+      without.remove("discoveryInvestment");
+      assertThat(evaluate(without).status()).isEqualTo("REVIEW_REQUIRED");
+      var result = evaluate(p);
+      assertThat(result.status()).isEqualTo("DISCOVERY_REVIEW");
+      assertThat(result.scenarios()).anyMatch(r -> r.marginPercent().signum() < 0);
+      assertThat(result.scenarios())
+          .filteredOn(r -> "BASE".equals(r.code()))
+          .allMatch(r -> r.marginPercent().compareTo(new java.math.BigDecimal("30")) < 0);
+      assertThat(p.path("minimumMarginPercent").asInt()).isEqualTo(30);
+      assertThat(result.blockers()).isNotEmpty();
+    }
+  }
+
+  /** Recusa custos ausentes, mídia excedida e perda da entrega antes de aquisição. */
+  @Test
+  void descobertaNaoDispensaCustosEntregaOuTeto() throws Exception {
+    var missing = discoveryInput(95121);
+    missing.withObject("/costs").putNull("supportBrl");
+    assertThat(evaluate(missing).status()).isEqualTo("MISSING_INPUTS");
+    var over = discoveryInput(95121);
+    over.withObject("/discoveryInvestment").put("mediaBudgetBrl", 99);
+    assertThat(evaluate(over).status()).isEqualTo("REVIEW_REQUIRED");
+    var delivery = discoveryInput(95121);
+    delivery.withObject("/costs").put("deliveryBrl", 60);
+    assertThat(evaluate(delivery).status()).isEqualTo("REVIEW_REQUIRED");
+    var quota = discoveryInput(95121);
+    ((ObjectNode) quota.withArray("scenarios").get(0)).put("attemptsPerCustomer", 1);
+    assertThat(evaluate(quota).status()).isEqualTo("REVIEW_REQUIRED");
+  }
+
+  /** Mantém valores sintéticos equivalentes ao caso financeiro, com identidades distintas. */
+  static ObjectNode discoveryInput(long owner) throws Exception {
+    var mapper = new ObjectMapper().findAndRegisterModules();
+    var p =
+        (ObjectNode)
+            mapper.readTree(
+                FinancialPlanCalculatorTest.class.getResourceAsStream(
+                    "/financial-plan/discovery.json"));
+    p.withObject("/discoveryInvestment")
+        .put("experimentId", owner + 2000)
+        .put("learningCycleId", owner + 1000);
+    return p;
+  }
 }

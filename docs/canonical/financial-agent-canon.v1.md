@@ -105,7 +105,12 @@ auditoria. Não repetir avaliação com as mesmas entradas e o mesmo impedimento
 
 Na projeção financeira de produto v2, as decisões são `APPROVE`, `ADJUST` e `BLOCKED`.
 `APPROVE` exige cobertura `COMPLETE_AGGREGATE` ou `COMPLETE_DETAILED`, cenário-base positivo e
-nenhuma fonte essencial ausente. `READY_FOR_ANALYSIS` autoriza apenas a avaliação de Plutus e
+nenhuma fonte essencial ausente. Exceção de 17/10/2026: `DISCOVERY_REVIEW`, com aceite estruturado
+validado do próprio experimento, permite `APPROVE` somente para investimento de descoberta
+limitado ao teto e prazo escolhidos, preservando cenários negativos e meta de continuidade/escala.
+Entrega antes da aquisição continua exigindo contribuição positiva; custos ausentes e demais
+gates continuam bloqueantes. Seguir `product-financial-plan-canon.v1.md`.
+`READY_FOR_ANALYSIS` autoriza apenas a avaliação de Plutus e
 nunca equivale a aprovação, venda comprovada ou autorização de gasto.
 
 Na projeção v3, o backend executa preflight antes do modelo e envia `projectionBasis` com meta

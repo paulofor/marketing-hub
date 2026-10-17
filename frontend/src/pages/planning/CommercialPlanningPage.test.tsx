@@ -192,6 +192,7 @@ const requestJourneyHomologationMutate = vi.fn();
 const createVisualAssetMutate = vi.fn();
 const importCreativePackageMutate = vi.fn();
 const importApprovedProcessMutate = vi.fn();
+let importApprovedProcessError: unknown = null;
 const createImageStudioJobMutate = vi.fn();
 let mockVisualAssets: unknown[] = [];
 
@@ -433,7 +434,8 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       mutate: importApprovedProcessMutate,
       isPending: false,
       isSuccess: false,
-      isError: false,
+      isError: Boolean(importApprovedProcessError),
+      error: importApprovedProcessError,
     }),
     useUpdateCommercialPlanVisualAssetStatus: () => ({
       mutate: vi.fn(),
@@ -521,6 +523,7 @@ afterEach(() => {
   createVisualAssetMutate.mockReset();
   importCreativePackageMutate.mockReset();
   importApprovedProcessMutate.mockReset();
+  importApprovedProcessError = null;
   createImageStudioJobMutate.mockReset();
   mockVisualAssets = [];
   mockPlans = defaultPlans;
@@ -816,6 +819,27 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getByText(/sem repetir agentes, publicar campanha/i),
     ).toBeTruthy();
+  });
+
+  it("mostra a causa do backend quando a seleção disponível autoriza somente uso privado", () => {
+    importApprovedProcessError = {
+      isAxiosError: true,
+      response: {
+        data: {
+          message:
+            "A seleção de uso privado permanece preservada e não concede aprovação comercial.",
+        },
+      },
+    };
+    renderPage();
+    expect(
+      screen.getByText(
+        "A seleção de uso privado permanece preservada e não concede aprovação comercial.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/O processo ainda não possui peça, Psique/),
+    ).not.toBeInTheDocument();
   });
 
   it("permite editar as decisoes comerciais do plano pela tela", async () => {

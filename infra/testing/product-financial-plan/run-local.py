@@ -98,6 +98,7 @@ for round in range(1,args.rounds+1):
             run(['node','infra/testing/product-financial-plan/browser-matrix.mjs'],folder/'browser-matrix.log',env=dict(os.environ,FINANCIAL_PLAN_ARTIFACTS=str(folder/'browser')))
             run(['node','infra/testing/product-financial-plan/preparation-matrix.mjs'],folder/'preparation-matrix.log',env=dict(os.environ,FINANCIAL_PLAN_ARTIFACTS=str(folder/'preparation-browser')))
             run(['node','infra/testing/product-financial-plan/contribution-target-matrix.mjs'],folder/'contribution-target-matrix.log',env=dict(os.environ,FINANCIAL_PLAN_ARTIFACTS=str(folder/'contribution-target-browser')))
+            run(['node','infra/testing/product-financial-plan/discovery-matrix.mjs'],folder/'discovery-matrix.log',env=dict(os.environ,FINANCIAL_PLAN_ARTIFACTS=str(folder/'discovery-browser')))
         before=read('/api/financial-plans/v1/products/95101')
         stop(api)
         api=subprocess.Popen(java,cwd=ROOT,stdout=api_log,stderr=subprocess.STDOUT)

@@ -646,3 +646,16 @@ ou palavras só para aumentar intensidade. Legenda acessível permanece; pausas 
 compreensão e não significam abandonar dinâmica. Aplicar no briefing existente, conforme
 `VIDEO_SENSORY_COMPREHENSION_V1` no cânone audiovisual, sem outro agente ou geração paga.
 Pesquisa orienta hipóteses editoriais; não comprova emoção, dopamina, demanda ou venda.
+
+
+### Importação conserva o escopo da revisão — 17/10/2026
+
+O histórico de `creative-production-approval` pode conter a peça estática e revisões
+posteriores dos vídeos. A importação da imagem deve resolver os pareceres do conjunto
+exato de IDs estáticos e validar seus hashes. Uma auditoria ampliada com quadros de vídeo
+não substitui esses pareceres. Reprovação posterior dos mesmos pixels permanece bloqueante.
+
+Uma seleção com `scope=PRIVATE_PREPARATION` ou evidência
+`PDE_PRIVATE_CREATIVE_SELECTION_V1` nunca autoriza a importação da peça como ativo comercial
+aprovado. Preservar a seleção privada, seus custos e arquivos; a preparação comercial usa
+seus próprios materiais e gates. Não remover avisos nem elevar aprovação privada por inferência.

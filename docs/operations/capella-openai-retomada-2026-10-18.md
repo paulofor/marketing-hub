@@ -100,7 +100,13 @@ não houver confirmação de que o saldo ou a chave com saldo foi atualizado.
 Resultado local: oito regressões falharam antes da correção, com três chamadas
 onde deveria existir uma. O cliente corrigido passou em 21 casos, incluindo
 outras identidades/cotas, corpo inválido, sucesso, HTTP 400, falhas temporárias
-e fallback anteriormente válido. A suíte completa do Worker IA passou: 275
+e fallback anteriormente válido. A suíte completa do Worker IA passou: 276
 casos, sem falhas/erros; três testes preexistentes não executados (replay visual
 opcional sem a propriedade de saída e duas instruções legadas desativadas com
 motivo no próprio teste). Nenhum dos casos novos ou alterados foi omitido.
+
+O pipeline também deve recriar explicitamente o serviço quando a imagem não
+mudou. O teste da configuração comprova leitura apenas na inicialização e o
+contrato do publicador exige a recriação; o contrato falhou antes desse ajuste.
+Isso permite uma futura rotação pelo mesmo SHA, sem publicar código só para
+provocar reinício. A operação real continua protegida pelo coordenador.

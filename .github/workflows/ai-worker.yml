@@ -222,7 +222,7 @@ jobs:
             && (docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
               || (sleep 10 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull) \
               || (sleep 20 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull)) \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
+            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate --remove-orphans \
             && docker image prune -af"
       - name: Clean build artifacts from repository
         if: always()

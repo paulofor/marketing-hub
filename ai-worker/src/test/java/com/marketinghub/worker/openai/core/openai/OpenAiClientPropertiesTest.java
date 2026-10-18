@@ -33,6 +33,24 @@ class OpenAiClientPropertiesTest {
         assertThat(properties.apiKey()).isEqualTo("sk-real-from-file");
     }
 
+    /** Comprova que a rotação do arquivo só chega ao cliente após criar uma nova configuração. */
+    @Test
+    void shouldLoadRotatedFileOnlyInANewConfiguration() throws Exception {
+        Path file = tempDir.resolve("rotation-key");
+        Files.writeString(file, "synthetic-before-rotation", StandardCharsets.UTF_8);
+        OpenAiClientProperties before = propertiesFromFile(file);
+        Files.writeString(file, "synthetic-after-rotation", StandardCharsets.UTF_8);
+
+        assertThat(before.apiKey()).isEqualTo("synthetic-before-rotation");
+        assertThat(propertiesFromFile(file).apiKey()).isEqualTo("synthetic-after-rotation");
+    }
+
+    /** Cria configuração de teste que lê somente o arquivo temporário, sem chamar a API. */
+    private OpenAiClientProperties propertiesFromFile(Path file) {
+        return new OpenAiClientProperties(null, file.toString(), "https://api.openai.com/v1",
+                "gpt-test", Duration.ofSeconds(5), "http://backend/catalog", false);
+    }
+
     /** Deve bloquear inicialização real quando só existe placeholder e não há arquivo seguro válido. */
     @Test
     void shouldRejectPlaceholderApiKeyForRealOpenAiBaseUrl() {

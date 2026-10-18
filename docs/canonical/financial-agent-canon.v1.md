@@ -121,6 +121,15 @@ acumulada; investimento incremental zero só vale ao reutilizar a versão existe
 ou gasto. Contrato de pacote fixo usa a entrega integral como limite `INTENSIVE`; uso aberto continua
 exigindo quota. Ausência ou contradição nesses campos bloqueia antes de consumir Plutus.
 
+Correção de 18/10/2026: o executor deve transportar esse escopo para o **template v3 efetivamente
+executado**, antes dos dados congelados. `LIMITED_DISCOVERY` só é selecionado com
+`DISCOVERY_REVIEW` e aceite estruturado válido; evidência textual não o substitui. Nesse escopo,
+resultado BASE negativo ou margem após CAC inferior à meta já aceita não são, isoladamente,
+motivo para `ADJUST`. Cobertura, entrega viável antes da aquisição e limites continuam obrigatórios.
+`ECONOMIC_VIABILITY` preserva a exigência de rentabilidade e margem. O executor não converte um
+parecer `ADJUST`/`BLOCKED` em aprovação. Teto acumulado e consumo passado não são investimento
+novo: a projeção separa somente a parcela ainda futura, sem duplicar reserva e realizado.
+
 Para revisões com baseline autoritativa de custo realizado, Plutus recebe a fotografia congelada e
 o eventual aumento posterior separadamente. Valor já capturado compõe recuperação histórica, sem
 nova dedução ou bloqueio temporal; somente aumento positivo posterior exige classificação. A

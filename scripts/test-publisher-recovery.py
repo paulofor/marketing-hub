@@ -567,6 +567,19 @@ class AutomaticRecoveryTest(unittest.TestCase):
         }]
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
 
+    def test_ai_worker_recovery_requires_actual_deploy_after_secret_rotation(self):
+        """Retoma pelo pipeline uma única vez e exige publicação real, preservando a aplicação."""
+        self.prepare(["ai-worker"])
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual([name for name, _ in self.github.dispatches], ["ai-worker.yml"])
+        run = self.github.completed_runs["ai-worker.yml"][0]
+        run.update(status="completed", conclusion="success")
+        self.github.jobs[run["id"]] = [{"name": "test", "conclusion": "success"}]
+        self.assertEqual(self.recovery.reconcile()["status"], "BLOCKED")
+        self.assertEqual(len(self.github.dispatches), 1)
+        self.github.jobs[run["id"]].append({"name": "deploy", "conclusion": "success"})
+        self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
+
     def test_alcyone_proxy_recovery_issues_only_its_certificate_and_requires_deploy_job(self):
         self.prepare(["alcyone-proxy"])
         self.assertEqual(self.recovery.reconcile()["status"], "WAITING")

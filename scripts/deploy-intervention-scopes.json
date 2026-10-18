@@ -44,6 +44,9 @@
   "facebook-ads": [
     "facebook-ads-worker.yml"
   ],
+  "ai-worker": [
+    "ai-worker.yml"
+  ],
   "controle-agentes": [
     "agent-executor-admin-controller-ci.yml"
   ],

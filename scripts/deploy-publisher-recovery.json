@@ -26,6 +26,7 @@
   "communication-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "growth-operator-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "facebook-ads-worker.yml": {"publication_job": "Deploy worker"},
+  "ai-worker.yml": {"publication_job": "deploy"},
   "agent-executor-admin-controller-ci.yml": {},
   "mois-clickbank-collector-ci.yml": {
     "inputs": {"operation": "retire"},

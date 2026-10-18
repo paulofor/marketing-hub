@@ -14,6 +14,13 @@ com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não 
 O Facebook Ads Worker usa o escopo dedicado `facebook-ads`, sem acoplá-lo ao publicador central
 da aplicação. Seu workflow deve aceitar a recuperação automática do SHA integrado e comprovar o
 job `Deploy worker`; teste ou build verde sem esse job não prova publicação.
+O Worker IA usa o escopo independente `ai-worker`, associado a `ai-worker.yml` e ao
+job produtivo `deploy`. Sua configuração resolve o token OpenAI na inicialização:
+atualizar o arquivo montado não comprova atualização da chave já carregada pela JVM.
+Após rotação, verificar autenticação sem imprimir credenciais, concluir a atualização
+pelo pipeline versionado e conferir o início do container e a execução funcional.
+O reconciliador deve exigir o job `deploy` aceito; teste e imagem aprovados sozinhos
+não comprovam que o processo carregou a nova configuração.
 O proxy público e o certificado de Alcyone usam o escopo dedicado `alcyone-proxy`. A retomada deve
 despachar `lead-portal-payments-ci.yml` na revisão integrada, somente para o destino PDE e somente
 com o certificado de Alcyone selecionado; build da imagem sem o job `deploy` não prova a troca do

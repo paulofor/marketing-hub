@@ -127,6 +127,15 @@ class LocalCoordinationTest(unittest.TestCase):
                          ["facebook-ads-worker.yml"])
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
 
+    def test_ai_worker_runtime_has_dedicated_reversible_scope(self):
+        """Protege a atualização do Worker IA sem pausar aplicação ou outros agentes."""
+        state = self.begin(["ai-worker"])
+        self.assertEqual(state["phase"], "ACTIVE")
+        self.assertEqual([workflow["file"] for workflow in state["workflows"]],
+                         ["ai-worker.yml"])
+        self.assertEqual(self.github.workflows["deploy-containers.yml"]["state"], "active")
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+
     def test_alcyone_proxy_has_dedicated_reversible_scope(self):
         state = self.begin(["alcyone-proxy"])
         self.assertEqual(state["phase"], "ACTIVE")

@@ -13,6 +13,11 @@ on:
       - '.github/workflows/ai-worker.yml'
       - 'scripts/test-ai-worker-image-contract.sh'
   workflow_dispatch:
+    inputs:
+      recovery_sha:
+        description: "Revisão esperada pelo reconciliador automático; vazio preserva a execução normal"
+        required: false
+        type: string
 
 jobs:
   test:
@@ -43,6 +48,13 @@ jobs:
         working-directory: ai-worker
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
@@ -85,6 +97,13 @@ jobs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Restore tested worker package
         uses: actions/download-artifact@v4
         with:
@@ -144,6 +163,13 @@ jobs:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Configure SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}

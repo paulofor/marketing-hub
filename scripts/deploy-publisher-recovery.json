@@ -30,5 +30,7 @@
   "mois-clickbank-collector-ci.yml": {
     "inputs": {"operation": "retire"},
     "publication_job": "Retire idle runtime (MOIS Clickbank Collector)"
-  }
+  },
+  "mds-ci.yml": {"publication_job": "deploy"},
+  "scientific-research-worker-ci.yml": {"publication_job": "deploy"}
 }

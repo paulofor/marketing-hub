@@ -49,5 +49,12 @@
   ],
   "mois-clickbank": [
     "mois-clickbank-collector-ci.yml"
-  ]
+  ],
+  "mds": [
+    "mds-ci.yml"
+  ],
+  "scientific-research": [
+    "scientific-research-worker-ci.yml"
+  ],
+  "feo-legado": []
 }

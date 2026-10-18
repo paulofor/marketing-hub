@@ -199,6 +199,31 @@ Dédalo, Atena, Plutus, Têmis e Hermes, além dos agentes de aplicação já pr
 substituída por retries longos de saúde: durante a troca transacional do backend, a indisponibilidade
 é esperada e o worker deve continuar na versão anterior até a aplicação estar saudável.
 
+## Parada temporária de executores ociosos — 18/10/2026
+
+A parada autorizada de um executor preserva container, imagem, volumes e histórico;
+utiliza `docker stop` e desabilita sua política de reinício automático. Não inclui
+limpeza de logs, imagens, cache ou dados. A reativação exige trabalho pendente ou
+homologação programada e a correção da falha que motivou a parada, quando existir.
+
+MDS e Scientific Research possuem os escopos dedicados `mds` e `scientific-research`.
+Quando a autorização inclui mantê-los desativados, desabilitar seus publicadores
+como decisão operacional explícita, registrar o estado anterior e somente então
+abrir a intervenção. O coordenador registra esse estado intencionalmente desativado;
+`resume` encerra a intervenção sem reativar esses workflows. Não manter o lock global
+ocupado indefinidamente para representar a suspensão de um módulo.
+
+O escopo `feo-legado` não possui publicador associado: identifica exclusivamente a
+cópia antiga de `feo` em `191.252.181.168`, que nenhum workflow atual publica. A FEO
+canônica em `191.252.120.96` e seu workflow ficam fora dessa intervenção. Esse escopo
+não autoriza qualquer alteração no runtime canônico. A confirmação do host, nome e
+identificador completo do container continua obrigatória antes da operação.
+
+Registrar filas, consumo, identidade, política anterior e posterior, comandos, saída
+e saúde dos consumidores que permanecem ativos. A retomada dos publicadores não
+significa reativação dos containers suspensos. Acesso negado pela sandbox é bloqueio
+operacional: não contornar allowlist nem desabilitar a verificação da identidade SSH.
+
 ## Validação do backend antes da integração
 
 O workflow `Backend CI` deve executar a suíte completa de `backend/ads-service` em Pull Requests

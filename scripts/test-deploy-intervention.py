@@ -134,6 +134,31 @@ class LocalCoordinationTest(unittest.TestCase):
                          ["lead-portal-payments-ci.yml"])
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
 
+    def test_idle_worker_scopes_preserve_intentional_shutdown_and_other_publishers(self):
+        for scope, workflow in (("mds", "mds-ci.yml"),
+                                ("scientific-research", "scientific-research-worker-ci.yml")):
+            with self.subTest(scope=scope):
+                self.github.workflows[workflow]["state"] = "disabled_manually"
+                state = self.begin([scope])
+                self.assertEqual(state["phase"], "ACTIVE")
+                self.assertEqual([item["file"] for item in state["workflows"]], [workflow])
+                self.assertEqual(self.github.workflows["deploy-containers.yml"]["state"], "active")
+                self.assertEqual(self.github.workflows["customer-agent-worker-ci.yml"]["state"], "active")
+                self.assertEqual(self.resume(state)["phase"], "RELEASED")
+                self.assertEqual(self.github.workflows[workflow]["state"], "disabled_manually")
+
+    def test_legacy_feo_without_publisher_preserves_canonical_feo_and_audit(self):
+        self.github.workflows["feo-ci.yml"] = {
+            "id": 999, "path": ".github/workflows/feo-ci.yml", "state": "active"}
+        state = self.begin(["mds", "scientific-research", "feo-legado"])
+        self.assertEqual(len(state["workflows"]), 2)
+        self.assertIn("feo-legado", state["scopes"])
+        self.assertEqual(module.SCOPES["feo-legado"], [])
+        self.assertEqual(self.github.workflows["feo-ci.yml"]["state"], "active")
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+        self.assertTrue(all(item["state"] == "active" for item in self.github.workflows.values()))
+        self.assertFalse(any(path.startswith("actions/workflows/999/") for _, path in self.github.calls))
+
     def test_in_progress_and_queued_runs_block_until_complete_without_cancellation(self):
         identifier = self.github.workflows["deploy-containers.yml"]["id"]
         for status in module.LIVE_STATUSES:

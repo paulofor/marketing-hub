@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-revisao-memoria-deltas-replay",
+  "collection": "video",
+  "title": "Revisar vídeos por mudanças rastreáveis e replay de evidências",
+  "finding": "DeltaStreamer combina deltas visuais, memória hierárquica e replay de trechos para responder perguntas sobre vídeo em fluxo; obteve 66,07 no OVO-Bench, versus 63,28 sem replay no experimento de ablação.",
+  "mechanism": "Registrar mudanças temporais e reexaminar quadros originais pode preservar evidências que sumiriam em resumos estáticos. Mecanismo técnico avaliado em benchmark, não mecanismo persuasivo comprovado.",
+  "commercialApplication": "Testar em Apolo e Têmis uma timeline de mudanças de personagem, produto, preço e CTA vinculada a timestamps, permitindo rever trechos antes de aprovar ou reprovar um vídeo.",
+  "evidenceStrength": "Pré-publicação técnica com benchmarks e ablações; evidência de melhoria na tarefa de compreensão audiovisual avaliada, sem estudo de usuários ou resultados comerciais.",
+  "publishedOn": "2026-10-18",
+  "validUntil": "2026-12-02",
+  "experimentHypothesis": "Comparada à revisão por amostragem fixa, a revisão com deltas e replay reduzirá alertas incorretos confirmados por humanos e/ou o retrabalho por vídeo aprovado, com custo e latência aceitáveis.",
+  "risks": "Reprodução e retenção de trechos podem expor dados pessoais e materiais licenciados; possíveis falsos positivos, sobrecarga de revisão e aumento de custo de processamento.",
+  "limits": "OVO-Bench e StreamingBench não demonstram melhora de retenção, prazer, CTR, conversão ou vendas; desempenho em vídeos publicitários brasileiros é desconhecido.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-18-video-revisao-memoria-deltas-replay.md",
+  "sourceTitle": "Fonte revisada: DeltaStreamer, deltas temporais e replay de evidências",
+  "sourceSha256": "6f6901f63026973a37badf670a26f7b49902ed6c45692d26cb31d816a4b0cca8"
+}

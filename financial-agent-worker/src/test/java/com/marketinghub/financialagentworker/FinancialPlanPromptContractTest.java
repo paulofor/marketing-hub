@@ -9,6 +9,39 @@ import org.junit.jupiter.api.Test;
  * Responsabilidade: proteger contexto financeiro versionado e compatibilidade da revisão de Plutus.
  */
 class FinancialPlanPromptContractTest {
+  /** Reproduz a descoberta aceita que a composição v3 ainda tratava como escala rentável. */
+  @Test
+  void encaminhaDescobertaLimitadaNoPromptRealmenteExecutado() throws Exception {
+    var runner = new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+    String context =
+        """
+        {"financialPlanId":95111,"productId":95102,
+         "deterministicEvaluation":{"status":"DISCOVERY_REVIEW"},
+         "projectionBasis":{"discoveryInvestment":{
+           "experimentId":95105,"learningCycleId":95112,"mediaBudgetBrl":100,
+           "durationDays":5,"acceptBelowMinimumMargin":true,"decisionReference":"fixture:decision"}}}
+        """;
+    var job =
+        new FinancialAgentJob(
+            91L,
+            95102L,
+            "RUNNING",
+            "READ_ONLY_REVENUE_PROJECTION",
+            3,
+            900L,
+            context,
+            "{\"approvedRevenueBrl\":0}");
+    String prompt = runner.buildPromptComposition(job).activityPromptPart();
+    assertThat(prompt)
+        .contains(
+            "Escopo selecionado pelo contrato: LIMITED_DISCOVERY",
+            "projectionBasis.discoveryInvestment")
+        .contains("não exija contribuição após CAC ou resultado BASE positivos")
+        .doesNotContain("{{FINANCIAL_DECISION_SCOPE}}");
+    assertThat(prompt.indexOf("Escopo selecionado pelo contrato: LIMITED_DISCOVERY"))
+        .isLessThan(prompt.indexOf(context));
+  }
+
   /** Garante que regras precedem dados e que a revisão mantém identidade, cobertura e decisão. */
   @Test
   void preservaRevisaoEContratoSemInventarFontes() throws Exception {

@@ -45,8 +45,9 @@ public class FinancialCodexRunner {
     this(properties, objectMapper, null, null);
   }
 
-  /** Executa uma conciliacao efemera sem permitir mutacoes financeiras ou no repositorio. */
+  /** Confere o escopo antes de executar uma conciliação efêmera somente leitura e auditável. */
   public Map<String, Object> run(FinancialAgentJob job) throws IOException, InterruptedException {
+    PromptComposition prompt = buildPromptComposition(job);
     Path output = Files.createTempFile("financial-agent-", ".json");
     Path processOutput = Files.createTempFile("financial-agent-process-", ".log");
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(job.authorityMode());
@@ -60,7 +61,6 @@ public class FinancialCodexRunner {
                     : "prompts/financial-agent/v1/report-schema.json",
             ".json");
     Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
-    PromptComposition prompt = buildPromptComposition(job);
     try {
       if (backend != null && job.agentTaskId() != null) {
         backend.recordTaskExecutionAudit(job.agentTaskId(), executionAudit(prompt));
@@ -479,7 +479,7 @@ public class FinancialCodexRunner {
     return buildPromptComposition(job).fullPrompt();
   }
 
-  /** Compõe o núcleo financeiro estável com o snapshot resolvido da atividade. */
+  /** Compõe regras, escopo declarado pelo backend e snapshot congelado sem conceder aprovação. */
   PromptComposition buildPromptComposition(FinancialAgentJob job) throws IOException {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(job.authorityMode());
     boolean projection = "READ_ONLY_REVENUE_PROJECTION".equals(job.authorityMode());
@@ -492,6 +492,12 @@ public class FinancialCodexRunner {
                     : "prompts/financial-agent/v1/report.md")
             .replace("{{PLAN_ID}}", String.valueOf(job.commercialPlanId()))
             .replace("{{PLAN_VERSION}}", String.valueOf(job.commercialPlanVersion()))
+            .replace(
+                "{{FINANCIAL_DECISION_SCOPE}}",
+                projection
+                    ? FinancialProjectionDecisionScope.resolve(
+                        job.projectionRequest(), objectMapper)
+                    : "ECONOMIC_VIABILITY")
             .replace("{{DECISION_CONTEXT}}", String.valueOf(job.projectionRequest()))
             .replace("{{FINANCIAL_SNAPSHOT}}", job.financialSnapshot());
     return new PromptComposition(

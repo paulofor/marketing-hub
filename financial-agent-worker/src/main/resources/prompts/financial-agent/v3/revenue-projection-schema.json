@@ -16,8 +16,15 @@
     "executiveSummary"
   ],
   "properties": {
-    "decision": { "type": "string", "enum": ["APPROVE", "ADJUST", "BLOCKED"] },
-    "decisionBasis": { "type": "string" },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVE", "ADJUST", "BLOCKED"],
+      "description": "APPROVE depende do escopo selecionado pelo contrato. ECONOMIC_VIABILITY exige rentabilidade e margem da política. LIMITED_DISCOVERY permite resultado BASE negativo e margem após CAC abaixo da meta somente com aceite estruturado válido, cobertura completa, entrega positiva antes do CAC e teto/prazo respeitados; não aprova continuidade, escala, publicação ou gasto. Lacuna essencial mantém BLOCKED e ajuste fora do risco aceito mantém ADJUST."
+    },
+    "decisionBasis": {
+      "type": "string",
+      "description": "Identifique o escopo e as fontes da decisão. Em descoberta limitada, preserve prejuízo e margem projetados, teto total, duração, meta de continuidade e demais gates; não converta perda aceita em rentabilidade."
+    },
     "costCoverageAssessment": {
       "type": "object",
       "additionalProperties": false,

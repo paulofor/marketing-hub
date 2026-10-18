@@ -10267,6 +10267,20 @@ após o ajuste. Atestação v28 preserva v27/v26 sem publicar Mira.
 - Limite: teste local comprova contrato e isolamento. Parecer não ativa campanha nem prova
   demanda, compras, contribuição realizada ou lucro; os demais gates permanecem obrigatórios.
 
+### Recorrência no template ativo de Plutus — 18/10/2026
+
+O parecer87 de Capella confirmou `COMPLETE_DETAILED` e a decisão #3517, mas retornou `ADJUST`
+por BASE negativo e margem de 15,81%. O histórico mostra a causa: a exceção anterior foi incluída
+no núcleo e no template v1, enquanto `FinancialCodexRunner` usa v3, cuja primeira regra ainda
+exigia rentabilidade sem distinguir escopo. O gate Quartzo preservou corretamente a revisão
+independente; não aceitar ADJUST como aprovação nem elevar vendas para contornar o problema.
+
+O resolvedor agora confere o contrato estruturado antes do modelo e identifica o escopo no prompt
+v3 e em sua auditoria. O schema mantém as mesmas decisões, com significado condicionado ao escopo.
+Custos ausentes, entrega inviável e limites inválidos continuam bloqueantes. A revisão20 também
+misturava teto acumulado e investimento novo; a entrada21 separou saldo futuro e consumo passado,
+sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-descoberta-projecao-v3-2026-10-18.md).
+
 
 ## LOOP-IMPORTACAO-IMAGEM-PEGA-PARECER-DE-VIDEO — 17/10/2026
 

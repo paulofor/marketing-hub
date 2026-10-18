@@ -13,8 +13,10 @@ import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -27,6 +29,9 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
 
     private static final Logger log = LoggerFactory.getLogger(ResponsesApiOpenAiClient.class);
     private static final int MAX_TRANSIENT_HTTP_ATTEMPTS = 3;
+    private static final Set<String> FINANCIAL_LIMIT_CODES = Set.of(
+            "credit_balance_exhausted", "insufficient_quota", "organization_spend_limit_exceeded",
+            "project_spend_limit_exceeded", "organization_usage_limit_exceeded", "billing_hard_limit_reached");
     private static final List<Duration> TRANSIENT_HTTP_RETRY_DELAYS = List.of(
             Duration.ofSeconds(5),
             Duration.ofSeconds(15));
@@ -138,7 +143,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         }
     }
 
-    /** Executa a chamada OpenAI com retry local e troca Flex por Standard somente na terceira tentativa. */
+    /** Repete apenas falhas transitórias e permite Standard na terceira tentativa sem contornar limites financeiros. */
     private OpenAiPostResponse postResponsesWithTransientRetry(
             String marketingHubJobId,
             String schemaName,
@@ -165,7 +170,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                         .block(properties.timeout());
                 return new OpenAiPostResponse(raw, requestBodyJson, effectiveServiceTier);
             } catch (WebClientResponseException error) {
-                if (shouldRetry(error) && attempt < MAX_TRANSIENT_HTTP_ATTEMPTS) {
+                if (shouldRetry(error, marketingHubJobId) && attempt < MAX_TRANSIENT_HTTP_ATTEMPTS) {
                     Duration delay = TRANSIENT_HTTP_RETRY_DELAYS.get(attempt - 1);
                     log.warn(
                             "Falha HTTP transitória na OpenAI Responses API; nova tentativa será feita [jobId={}, schemaName={}, status={}, attempt={}, nextDelayMs={}, responseBody={}]",
@@ -193,10 +198,31 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         throw new StageWorkerException("OpenAI Responses API retry loop finished without response");
     }
 
-    /** Identifica erros HTTP que representam indisponibilidade temporária ou limite de capacidade. */
-    private boolean shouldRetry(WebClientResponseException error) {
+    /** Distingue capacidade temporária de falta de saldo e cotas que exigem uma ação externa. */
+    private boolean shouldRetry(WebClientResponseException error, String marketingHubJobId) {
         int status = error.getStatusCode().value();
-        return status == 408 || status == 429 || (status >= 500 && status < 600);
+        if (status != 429) {
+            return status == 408 || (status >= 500 && status < 600);
+        }
+        try {
+            var body = objectMapper.readTree(error.getResponseBodyAsString());
+            if (body == null || !body.isObject()) {
+                return false;
+            }
+            var providerError = body.path("error");
+            if (!providerError.isObject()) {
+                return false;
+            }
+            String code = providerError.path("code").asText("").toLowerCase(Locale.ROOT);
+            String type = providerError.path("type").asText("").toLowerCase(Locale.ROOT);
+            return !FINANCIAL_LIMIT_CODES.contains(code) && !"insufficient_quota".equals(type);
+        } catch (JsonProcessingException ex) {
+            log.warn(
+                    "Contrato de erro OpenAI ilegível; HTTP 429 não será repetido [jobId={}, operation=classify-http-retry]",
+                    marketingHubJobId,
+                    ex);
+            return false;
+        }
     }
 
     /** Define o service tier efetivo: Flex nas duas primeiras tentativas e Standard na terceira. */

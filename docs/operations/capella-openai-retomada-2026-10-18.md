@@ -61,3 +61,52 @@ pode ficar abaixo de 30%; continuidade/escala conservam a meta de 30%.
 Consumo e saldo devem ser reconferidos antes da retomada; valores desconhecidos
 permanecem desconhecidos. O ganho esperado é reduzir a espera após rotação,
 medido pela retomada funcional; impacto em vendas depende de medição posterior.
+
+## Chamada real após a atualização
+
+PR #5619 integrado em `d8eaf61403c6a765fe4d31326e8e4f07f3b07ab0`.
+Os três workflows do PR e os 14 da main/encadeados concluíram com sucesso.
+O reconciliador registrou `COMPLETE`, com um único dispatch do Worker IA:
+run `39160410552`, jobs `test`, `docker` e `deploy` aprovados. O container
+iniciou depois da atualização da chave e respondeu saúde `UP`.
+
+Pela tela, a preparação criou o job `8b5a7379-f83e-4724-8ec8-f5f844482e7a`.
+A primeira etapa foi consumida, mas a OpenAI recusou a geração com HTTP 429,
+`type=insufficient_quota`, `code=credit_balance_exhausted` e mensagem de que
+não há créditos disponíveis. Não retornou resposta de modelo, tokens ou custo.
+Não confundir com credencial inválida nem com limite temporário de requisições.
+Capella permanece PLANNED; reposição de saldo é dependência externa.
+
+### Recorrência encontrada no cliente e matriz local
+
+O cliente compartilhado classificava todo HTTP 429 como temporário, repetindo
+a mesma recusa duas vezes e chegando ao fallback Standard. Isso não resolve
+saldo ausente. A correção classifica `error.code`/`error.type` antes de retentar.
+
+| Alternativa | Benefício | Risco/esforço e decisão |
+| --- | --- | --- |
+| Somente repor saldo | Destrava esta conta | Mantém tentativas inúteis na próxima falta; insuficiente |
+| Desativar todo retry 429 | Impede repetição financeira | Quebra recuperação de capacidade antes válida; descartada |
+| Separar limites financeiros e erros transitórios | Preserva Flex e recuperação legítima | Mudança localizada com contrato oficial e mocks; escolhida |
+
+Matriz definida antes da correção: reproduzir o erro real e outro job/limite,
+exigir uma chamada Flex, nenhuma espera e corpo de erro preservado; cobrir
+saldo, cotas de projeto/organização e resposta ilegível. Preservar sucesso,
+erro 400, retry 408/500/503 e o caminho 429 temporário Flex/Flex/Standard.
+Os testes HTTP são locais e não consomem a API. Nenhum teste comprova vendas
+ou disponibilidade futura de créditos. Não retentar a tarefa real enquanto
+não houver confirmação de que o saldo ou a chave com saldo foi atualizado.
+
+Resultado local: oito regressões falharam antes da correção, com três chamadas
+onde deveria existir uma. O cliente corrigido passou em 21 casos, incluindo
+outras identidades/cotas, corpo inválido, sucesso, HTTP 400, falhas temporárias
+e fallback anteriormente válido. A suíte completa do Worker IA passou: 276
+casos, sem falhas/erros; três testes preexistentes não executados (replay visual
+opcional sem a propriedade de saída e duas instruções legadas desativadas com
+motivo no próprio teste). Nenhum dos casos novos ou alterados foi omitido.
+
+O pipeline também deve recriar explicitamente o serviço quando a imagem não
+mudou. O teste da configuração comprova leitura apenas na inicialização e o
+contrato do publicador exige a recriação; o contrato falhou antes desse ajuste.
+Isso permite uma futura rotação pelo mesmo SHA, sem publicar código só para
+provocar reinício. A operação real continua protegida pelo coordenador.

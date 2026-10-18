@@ -14,12 +14,16 @@ import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -216,6 +220,89 @@ class ResponsesApiOpenAiClientTest {
                         .contains("jobId=job-retry")
                         .contains("status=429")
                         .contains("attempt=1"));
+    }
+
+    /** Bloqueia saldo e cotas financeiras sem repetir HTTP nem substituir Flex por Standard. */
+    @ParameterizedTest
+    @CsvSource({
+            "credit_balance_exhausted, insufficient_quota",
+            "insufficient_quota, insufficient_quota",
+            "organization_spend_limit_exceeded, rate_limit_error",
+            "project_spend_limit_exceeded, rate_limit_error",
+            "organization_usage_limit_exceeded, rate_limit_error",
+            "billing_hard_limit_reached, billing_error",
+            "unknown_code, insufficient_quota"
+    })
+    void dispatchShouldNotRetryFinancialLimits(String code, String type) throws Exception {
+        String responseBody = new ObjectMapper().writeValueAsString(Map.of("error", Map.of(
+                "message", "You have no credits remaining.", "code", code, "type", type)));
+        for (int i = 0; i < 3; i++) {
+            server.enqueue(new MockResponse().setResponseCode(429)
+                    .setHeader("Content-Type", "application/json").setBody(responseBody));
+        }
+        var delays = new ArrayList<Duration>();
+        var client = new ResponsesApiOpenAiClient(
+                WebClient.builder(), new ObjectMapper(), properties("gpt-test"), delays::add);
+        var request = new OpenAiRequest("gpt-test", "Prompt",
+                "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}", "schema-test",
+                "{\"type\":\"object\"}", "# Prompt", Map.of("idJob", "job-" + code));
+
+        Throwable thrown = catchThrowable(() -> client.dispatch(request));
+
+        assertThat(thrown).isInstanceOf(OpenAiHttpException.class);
+        assertThat(((OpenAiHttpException) thrown).responseBody()).isEqualTo(responseBody);
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(delays).isEmpty();
+        assertThat(server.takeRequest().getBody().readUtf8()).contains("\"service_tier\":\"flex\"");
+        assertThat(appender.list).noneSatisfy(event -> assertThat(event.getFormattedMessage())
+                .contains("nova tentativa será feita"));
+    }
+
+    /** Recusa repetir um 429 sem contrato de erro legível e preserva o diagnóstico da falha. */
+    @ParameterizedTest
+    @ValueSource(strings = {"invalid-json", "null", "[]", "{}", "{\"error\":null}", "{\"error\":\"busy\"}"})
+    void dispatchShouldNotRetryMalformed429Body(String responseBody) {
+        for (int i = 0; i < 3; i++) {
+            server.enqueue(new MockResponse().setResponseCode(429).setBody(responseBody));
+        }
+        var delays = new ArrayList<Duration>();
+        var client = new ResponsesApiOpenAiClient(
+                WebClient.builder(), new ObjectMapper(), properties("gpt-test"), delays::add);
+        var request = new OpenAiRequest("gpt-test", "Prompt",
+                "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}", "schema-test",
+                "{\"type\":\"object\"}", "# Prompt", Map.of("idJob", "job-unreadable"));
+
+        assertThat(catchThrowable(() -> client.dispatch(request))).isInstanceOf(OpenAiHttpException.class);
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(delays).isEmpty();
+        assertThat(appender.list).anySatisfy(event -> {
+            assertThat(event.getFormattedMessage()).contains("jobId=job-unreadable");
+            assertThat(event.getThrowableProxy()).isNotNull();
+        });
+    }
+
+    /** Preserva a recuperação de indisponibilidade temporária sem ampliar o tier antecipadamente. */
+    @ParameterizedTest
+    @ValueSource(ints = {408, 500, 503})
+    void dispatchShouldStillRetryTemporaryHttpFailures(int status) throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(status).setBody("temporary"));
+        server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("{\"id\":\"resp-capacity\",\"output_text\":\"ok\",\"usage\":{\"input_tokens\":10,\"output_tokens\":5}}"));
+        enqueuePricingCatalog("gpt-test", "2", "8", "1", "4");
+        var delays = new ArrayList<Duration>();
+        var client = new ResponsesApiOpenAiClient(
+                WebClient.builder(), new ObjectMapper(), properties("gpt-test"), delays::add);
+        var request = new OpenAiRequest("gpt-test", "Prompt",
+                "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}", "schema-test",
+                "{\"type\":\"object\"}", "# Prompt", Map.of("idJob", "job-capacity-" + status));
+
+        var dispatch = client.dispatch(request);
+
+        assertThat(client.awaitResult(dispatch).modelResponse()).isEqualTo("ok");
+        assertThat(delays).containsExactly(Duration.ofSeconds(5));
+        assertThat(server.getRequestCount()).isEqualTo(3);
+        assertThat(server.takeRequest().getBody().readUtf8()).contains("\"service_tier\":\"flex\"");
+        assertThat(server.takeRequest().getBody().readUtf8()).contains("\"service_tier\":\"flex\"");
     }
 
     /** Deve estimar custo em modo flex pelo modelo do request quando a configuração não informa tarifa explícita. */

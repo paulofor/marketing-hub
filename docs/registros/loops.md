@@ -10296,3 +10296,19 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
   posterior também demonstrou a brecha. Caminho comercial antes válido e idempotência preservados.
 - Limite: recuperar os pareceres privados não aprova anúncio, página, campanha ou gasto. A nova
   preparação comercial continua dependendo das fontes, versões e revisões aplicáveis.
+
+## LOOP-OPENAI-QUOTA-TRATADA-COMO-TRANSITORIA — 18/10/2026
+
+- Evidência: a retomada de Capella #105 após atualização da chave alcançou a OpenAI,
+  mas recebeu `credit_balance_exhausted`/`insufficient_quota`. O erro real está no
+  job `8b5a7379-f83e-4724-8ec8-f5f844482e7a`; não houve saída, tokens ou custo informados.
+- Causa: `ResponsesApiOpenAiClient` classificava todo HTTP 429 como temporário,
+  repetindo até três requisições e trocando Flex por Standard na última.
+- Correção: inspecionar o contrato `error.code`/`error.type`, bloquear limites financeiros
+  e 429 ilegível, preservando erro, contexto e recuperação dos HTTP temporários.
+- Prevenção: testes HTTP locais com o corpo original, outras cotas e identificadores,
+  uma chamada Flex sem espera; sucesso e 400 preservados, 408/500/503 e capacidade 429
+  continuam recuperáveis. Não tratar teste local como reposição de crédito ou venda.
+- Limite: créditos precisam ser disponibilizados pelo responsável da conta. Não ampliar
+  teto nem retentar o job real automaticamente. Matriz e fontes no registro operacional
+  `docs/operations/capella-openai-retomada-2026-10-18.md`.

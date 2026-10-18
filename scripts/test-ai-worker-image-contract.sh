@@ -13,6 +13,7 @@ grep -Fq 'path: ai-worker/target/app.jar' "${WORKFLOW}"
 grep -Fq 'path: ai-worker/target' "${WORKFLOW}"
 grep -Fq '!/target/app.jar' "${DOCKERIGNORE}"
 grep -Fq 'context: ai-worker' "${WORKFLOW}"
+grep -Fq 'up -d --force-recreate --remove-orphans' "${WORKFLOW}"
 
 PACKAGE_LINE="$(grep -nF 'run: mvn -B -s settings.xml package -DskipTests' "${WORKFLOW}" | cut -d: -f1)"
 UPLOAD_LINE="$(grep -nF 'name: Preserve tested worker package' "${WORKFLOW}" | cut -d: -f1)"

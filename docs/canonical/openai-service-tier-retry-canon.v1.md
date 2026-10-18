@@ -14,6 +14,16 @@ Quando uma chamada OpenAI usar Flex como padrão operacional, o executor deve ma
 
 Essa regra vale para todo o sistema em chamadas OpenAI síncronas ou assíncronas em que o executor controle a tentativa: geração textual, análise, classificação, extração, síntese e geração de imagens de criativos. Falhas transitórias (`408`, `429`, `5xx`, timeout, `rate_limit` ou indisponibilidade temporária`) não devem encerrar a chamada antes da terceira tentativa quando o fallback for suportado.
 
+HTTP 429 precisa ser classificado pelo contrato de erro, pois também representa
+bloqueios financeiros definitivos. `insufficient_quota`, `credit_balance_exhausted`,
+`organization_spend_limit_exceeded`, `project_spend_limit_exceeded`,
+`organization_usage_limit_exceeded` e `billing_hard_limit_reached` não autorizam
+retry nem fallback Standard. Preservar o erro e aguardar correção externa comprovada;
+nunca ampliar limites ou repetir inferência para contornar falta de saldo.
+Resposta 429 ilegível não comprova transitoriedade e deve parar com diagnóstico.
+O caminho temporário de capacidade conserva a sequência anterior.
+Fonte: [erros oficiais da OpenAI](https://developers.openai.com/api/docs/guides/error-codes#api-errors).
+
 ## Imagens de criativos
 
 Em geração de imagem de criativo:

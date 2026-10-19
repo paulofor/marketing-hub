@@ -1,5 +1,6 @@
 package com.marketinghub.agenttask;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -33,7 +34,7 @@ public class CreativeVisualEvidenceService {
   @Transactional(readOnly = true)
   public List<VisualInput> inputs(String agentKey, Long taskId) {
     AgentTask task = claimed(agentKey, taskId);
-    if ("nonAudiovisual".equals(task.getProcessActivityId())) return approvedSources(task);
+    if ("nonAudiovisual".equals(task.getProcessActivityId())) return approvedSources(task).inputs();
     var producer = latestProducer(task);
     require("COMPLETED".equals(producer.status()), "A produção criativa ainda não foi concluída.");
     return validatedRenders(producer.id(), task, result(producer.resultJson()));
@@ -45,6 +46,7 @@ public class CreativeVisualEvidenceService {
       String agentKey, Long taskId, Long sourceTaskId, Long evidenceId) {
     require(
         inputs(agentKey, taskId).stream()
+            .flatMap(input -> readableInputs(input).stream())
             .anyMatch(
                 i ->
                     Objects.equals(i.sourceTaskId(), sourceTaskId)
@@ -82,21 +84,11 @@ public class CreativeVisualEvidenceService {
     require(
         renders.isArray() && !renders.isEmpty() && renders.size() == briefs.size(),
         "O briefing ainda não possui todas as imagens finais renderizadas.");
-    var sources = approvedSources(task);
+    var approved = approvedSources(task);
     List<VisualInput> output = new ArrayList<>();
     Set<Long> ids = new java.util.HashSet<>();
     for (JsonNode render : renders) {
-      var source =
-          sources.stream()
-              .filter(
-                  i ->
-                      i.sourceTaskId() == render.path("sourceTaskId").asLong()
-                          && i.evidence().id() == render.path("sourceArtifactId").asLong()
-                          && i.evidence().sha256().equals(render.path("sourceSha256").asText())
-                          && i.prototypeVersion().equals(render.path("prototypeVersion").asText()))
-              .findFirst()
-              .orElseThrow(
-                  () -> blocked("A imagem usa prova de outra versão ou uma prova substituída."));
+      var source = renderSource(task, render, approved);
       long id = render.path("artifactId").asLong();
       require(ids.add(id), "O pacote repete a mesma imagem como peças distintas.");
       var stored =
@@ -113,7 +105,10 @@ public class CreativeVisualEvidenceService {
           new VisualInput(
               producerId,
               source.prototypeVersion(),
-              AgentTaskVisualEvidenceService.response(stored)));
+              AgentTaskVisualEvidenceService.response(stored),
+              "meta-ad-approver".equals(task.getAssignedAgent().getAgentKey())
+                  ? creativeProof(render, source, approved)
+                  : null));
     }
     return List.copyOf(output);
   }
@@ -122,7 +117,7 @@ public class CreativeVisualEvidenceService {
    * Extrai arquivos explicitamente aprovados pelo gate, sem aceitar tarefas históricas por
    * aproximação.
    */
-  private List<VisualInput> approvedSources(AgentTask task) {
+  private ApprovedSources approvedSources(AgentTask task) {
     JsonNode input =
         json.valueToTree(
             context
@@ -159,28 +154,48 @@ public class CreativeVisualEvidenceService {
             new VisualInput(sourceId, version, AgentTaskVisualEvidenceService.response(stored)));
       }
     }
-    output.addAll(supplementalSources(task, version, scope));
+    var captures = supplementalCaptures(task, scope);
+    var latest =
+        captures.stream()
+            .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id))
+            .orElse(null);
+    if (latest != null && "COMPLETED".equals(latest.status()))
+      output.addAll(supplementalInputs(task, version, scope, latest));
     require(
         !output.isEmpty(),
         "Não há captura aprovada e persistida da versão atual para produzir a imagem.");
-    return List.copyOf(output);
+    return new ApprovedSources(
+        version, scope, List.copyOf(output), captures, input.path("visualProofAuthorization"));
   }
 
   /**
-   * Acrescenta momentos funcionais da mesma versão sem modificar o gate ou os pareceres aceitos. A
-   * referência histórica video-proof também identifica provas usadas pela comunicação estática.
+   * Localiza as capturas funcionais sem modificar o gate ou os pareceres aceitos. A referência
+   * histórica video-proof também identifica provas usadas pela comunicação estática.
    */
-  private List<VisualInput> supplementalSources(AgentTask task, String version, VisualScope scope) {
+  private List<AgentTaskFunctionalSnapshot> supplementalCaptures(
+      AgentTask task, VisualScope scope) {
     if (!scope.reauthorized() || !task.getSourceReference().matches("experiment:[1-9][0-9]*"))
       return List.of();
+    return tasks
+        .findFunctionalSnapshots(
+            task.getSourceReference() + "@video-proof-v1",
+            Set.of("pde-construction-approval"),
+            null)
+        .stream()
+        .filter(t -> "technicalHomologation".equals(t.processActivityId()))
+        .filter(t -> "customer-agent".equals(t.agentKey()))
+        .toList();
+  }
+
+  /**
+   * Valida uma captura exata e seus arquivos, sem transformar captura histórica em autorização
+   * atual.
+   */
+  private List<VisualInput> supplementalInputs(
+      AgentTask task, String version, VisualScope scope, AgentTaskFunctionalSnapshot capture) {
     String reference = task.getSourceReference() + "@video-proof-v1";
-    var latest =
-        tasks.findFunctionalSnapshots(reference, Set.of("pde-construction-approval"), null).stream()
-            .filter(t -> "technicalHomologation".equals(t.processActivityId()))
-            .filter(t -> "customer-agent".equals(t.agentKey()))
-            .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id));
-    if (latest.isEmpty() || !"COMPLETED".equals(latest.get().status())) return List.of();
-    JsonNode proof = result(latest.get().resultJson());
+    require("COMPLETED".equals(capture.status()), "A captura complementar não está concluída.");
+    JsonNode proof = result(capture.resultJson());
     require(
         reference.equals(proof.path("sourceReference").asText())
             && scope.proofSourceReference().equals(proof.path("proofSourceReference").asText())
@@ -203,18 +218,97 @@ public class CreativeVisualEvidenceService {
     List<VisualInput> output = new ArrayList<>();
     for (JsonNode artifact : proof.path("artifacts")) {
       long id = artifact.path("artifactId").asLong();
-      var stored = evidence.findByIdAndTaskId(id, latest.get().id()).orElse(null);
+      var stored = evidence.findByIdAndTaskId(id, capture.id()).orElse(null);
       require(
           stored != null
               && Set.of("FULL_PAGE", "FOLD").contains(stored.getEvidenceType())
               && stored.getSha256().equals(artifact.path("sha256").asText()),
           "A captura complementar não está persistida com o hash aprovado.");
       output.add(
-          new VisualInput(
-              latest.get().id(), version, AgentTaskVisualEvidenceService.response(stored)));
+          new VisualInput(capture.id(), version, AgentTaskVisualEvidenceService.response(stored)));
     }
     require(!output.isEmpty(), "A captura complementar não contém imagens funcionais.");
     return List.copyOf(output);
+  }
+
+  /** Mantém a fonte imutável da peça quando uma captura aprovada renova o mesmo destino. */
+  private VisualInput renderSource(AgentTask task, JsonNode render, ApprovedSources approved) {
+    var current =
+        approved.inputs().stream().filter(input -> matchesSource(render, input)).findFirst();
+    if (current.isPresent()) return current.get();
+    require(
+        approved.scope().reauthorized() && !approved.captures().isEmpty(),
+        "A imagem usa prova de outra versão ou uma prova substituída.");
+    var latest =
+        approved.captures().stream()
+            .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id))
+            .orElse(null);
+    require(
+        latest != null
+            && "COMPLETED".equals(latest.status())
+            && approved.inputs().stream()
+                .anyMatch(input -> input.sourceTaskId().equals(latest.id())),
+        "A captura atual não autoriza a continuidade da origem histórica.");
+    var historical =
+        approved.captures().stream()
+            .filter(capture -> capture.id() == render.path("sourceTaskId").asLong())
+            .findFirst()
+            .orElseThrow(
+                () -> blocked("A imagem usa prova de outra versão ou uma prova substituída."));
+    return supplementalInputs(task, approved.version(), approved.scope(), historical).stream()
+        .filter(input -> matchesSource(render, input))
+        .findFirst()
+        .orElseThrow(() -> blocked("A imagem usa prova de outra versão ou uma prova substituída."));
+  }
+
+  /** Compara a identidade completa dos pixels, incluindo versão e tarefa de captura. */
+  private boolean matchesSource(JsonNode render, VisualInput input) {
+    return input.sourceTaskId() == render.path("sourceTaskId").asLong()
+        && input.evidence().id() == render.path("sourceArtifactId").asLong()
+        && input.evidence().sha256().equals(render.path("sourceSha256").asText())
+        && input.prototypeVersion().equals(render.path("prototypeVersion").asText());
+  }
+
+  /** Entrega ao revisor a fonte autorizada e o relatório mais recente, com horários explícitos. */
+  private CreativeProof creativeProof(
+      JsonNode render, VisualInput source, ApprovedSources approved) {
+    var latest =
+        approved.captures().stream()
+            .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id))
+            .orElse(null);
+    DestinationEvidence destination = null;
+    if (latest != null && "COMPLETED".equals(latest.status())) {
+      var captures =
+          approved.inputs().stream()
+              .filter(input -> input.sourceTaskId().equals(latest.id()))
+              .filter(
+                  input ->
+                      input.evidence().evidenceKey() != null
+                          && input.evidence().evidenceKey().endsWith("-CONTENT"))
+              .toList();
+      destination = new DestinationEvidence(latest.id(), result(latest.resultJson()), captures);
+    }
+    return new CreativeProof(
+        source,
+        render.path("crop"),
+        render.path("templateVersion").asText(),
+        approved.scope().proofSourceReference(),
+        approved.scope().reauthorized() ? approved.scope().productId() : null,
+        approved.scope().publicUrl(),
+        approved.authorization(),
+        destination);
+  }
+
+  /** Autoriza bytes somente da peça, da fonte exata e das capturas declaradas ao mesmo revisor. */
+  private List<VisualInput> readableInputs(VisualInput input) {
+    var result = new ArrayList<VisualInput>();
+    result.add(input);
+    if (input.creativeProof() != null) {
+      result.add(input.creativeProof().source());
+      if (input.creativeProof().currentDestination() != null)
+        result.addAll(input.creativeProof().currentDestination().captures());
+    }
+    return result;
   }
 
   /**
@@ -300,8 +394,43 @@ public class CreativeVisualEvidenceService {
    * Responsabilidade: transportar a identidade da origem e os metadados privados sem expor o
    * storage.
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   public record VisualInput(
-      Long sourceTaskId, String prototypeVersion, AgentTaskVisualEvidenceResponse evidence) {}
+      Long sourceTaskId,
+      String prototypeVersion,
+      AgentTaskVisualEvidenceResponse evidence,
+      CreativeProof creativeProof) {
+    /** Conserva o contrato anterior para produtores e revisores que recebem somente a peça. */
+    public VisualInput(
+        Long sourceTaskId, String prototypeVersion, AgentTaskVisualEvidenceResponse evidence) {
+      this(sourceTaskId, prototypeVersion, evidence, null);
+    }
+  }
+
+  /** Responsabilidade: relacionar a derivação exata e as provas do destino, sem aprovar seu uso. */
+  public record CreativeProof(
+      VisualInput source,
+      JsonNode crop,
+      String templateVersion,
+      String proofSourceReference,
+      Long productId,
+      String publicUrl,
+      JsonNode visualProofAuthorization,
+      DestinationEvidence currentDestination) {}
+
+  /**
+   * Responsabilidade: transportar o relatório determinístico e suas capturas funcionais datadas.
+   */
+  public record DestinationEvidence(
+      Long taskId, JsonNode technicalProof, List<VisualInput> captures) {}
+
+  /** Responsabilidade: conservar o contexto validado durante a projeção das origens e derivados. */
+  private record ApprovedSources(
+      String version,
+      VisualScope scope,
+      List<VisualInput> inputs,
+      List<AgentTaskFunctionalSnapshot> captures,
+      JsonNode authorization) {}
 
   /** Representa a origem autorizada dos pixels sem alterar o parecer histórico que os produziu. */
   private record VisualScope(

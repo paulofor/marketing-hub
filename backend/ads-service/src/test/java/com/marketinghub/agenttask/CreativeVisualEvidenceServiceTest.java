@@ -265,6 +265,116 @@ class CreativeVisualEvidenceServiceTest {
         .hasMessageContaining("outra referência");
   }
 
+  /** Conserva a fonte original quando outra captura válida atualiza a prova do mesmo destino. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {91010, 92010})
+  void deliversOriginalLineageAndRefreshedContinuityWithoutRematerializing(long product)
+      throws Exception {
+    task.setSourceReference("experiment:" + (product + 82));
+    when(context.resolve(task.getSourceReference()))
+        .thenReturn(Optional.of(authorizedInput(product)));
+    var oldProof = supplementalProof(product);
+    var currentProof = oldProof.deepCopy();
+    currentProof
+        .withArray("artifacts")
+        .removeAll()
+        .addObject()
+        .put("artifactId", 930118L)
+        .put("sha256", "d".repeat(64));
+    var oldCapture = capture(920001L, oldProof, "COMPLETED");
+    var currentCapture = capture(930001L, currentProof, "COMPLETED");
+    when(tasks.findFunctionalSnapshots(
+            task.getSourceReference() + "@video-proof-v1",
+            Set.of("pde-construction-approval"),
+            null))
+        .thenReturn(List.of(oldCapture, currentCapture));
+    var original = image(920001L, 920118L, "FULL_PAGE", "c".repeat(64));
+    original.setEvidenceKey("ADHERENT-IPHONE_15_PRO-CONTENT");
+    var current = image(930001L, 930118L, "FULL_PAGE", "d".repeat(64));
+    current.setEvidenceKey("ADHERENT-DESKTOP-CONTENT");
+    when(images.findByIdAndTaskId(920118L, 920001L)).thenReturn(Optional.of(original));
+    when(images.findByIdAndTaskId(930118L, 930001L)).thenReturn(Optional.of(current));
+    String packageJson =
+        result()
+            .replace("experiment:91092", task.getSourceReference())
+            .replace("910395", "920001")
+            .replace("910118", "920118")
+            .replace("a".repeat(64), "c".repeat(64));
+    when(tasks.findFunctionalSnapshotsByProcessSince(
+            task.getProcessDefinition().getId(), task.getSourceReference(), null))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    910403L,
+                    91064L,
+                    "creative-production-approval",
+                    "nonAudiovisual",
+                    "communication-director",
+                    "COMPLETED",
+                    null,
+                    null,
+                    packageJson)));
+    task.setId(910405L);
+    task.setAssignedAgent(Agent.builder().agentKey("meta-ad-approver").build());
+    task.setProcessActivityId("commercial");
+    when(tasks.findById(910405L)).thenReturn(Optional.of(task));
+
+    var inputs = service.inputs("meta-ad-approver", task.getId());
+    var proof = json.valueToTree(inputs.getFirst()).path("creativeProof");
+    assertThat(inputs).hasSize(1);
+    assertThat(proof.path("source").path("evidence").path("id").asLong()).isEqualTo(920118L);
+    assertThat(proof.path("currentDestination").path("taskId").asLong()).isEqualTo(930001L);
+    assertThat(proof.path("currentDestination").path("captures").size()).isEqualTo(1);
+    service.read("meta-ad-approver", task.getId(), 920001L, 920118L);
+    service.read("meta-ad-approver", task.getId(), 930001L, 930118L);
+    verify(storage).read(920001L, 920118L);
+    verify(storage).read(930001L, 930118L);
+    assertThatThrownBy(() -> service.read("meta-ad-approver", task.getId(), 999L, 920118L))
+        .hasMessageContaining("não pertence");
+    task.setAssignedAgent(Agent.builder().agentKey("customer-agent").build());
+    task.setProcessActivityId("customer");
+    assertThat(
+            json.valueToTree(service.inputs("customer-agent", task.getId()).getFirst())
+                .path("creativeProof")
+                .isMissingNode())
+        .isTrue();
+    assertThatThrownBy(() -> service.read("customer-agent", task.getId(), 920001L, 920118L))
+        .hasMessageContaining("não pertence");
+    task.setAssignedAgent(Agent.builder().agentKey("meta-ad-approver").build());
+    task.setProcessActivityId("commercial");
+    currentProof.put("productId", product + 1);
+    when(tasks.findFunctionalSnapshots(
+            task.getSourceReference() + "@video-proof-v1",
+            Set.of("pde-construction-approval"),
+            null))
+        .thenReturn(List.of(oldCapture, capture(930001L, currentProof, "COMPLETED")));
+    assertThatThrownBy(() -> service.inputs("meta-ad-approver", task.getId()))
+        .hasMessageContaining("captura complementar");
+    when(tasks.findFunctionalSnapshots(
+            task.getSourceReference() + "@video-proof-v1",
+            Set.of("pde-construction-approval"),
+            null))
+        .thenReturn(List.of(oldCapture, capture(930001L, currentProof, "BLOCKED")));
+    assertThatThrownBy(() -> service.inputs("meta-ad-approver", task.getId()))
+        .hasMessageContaining("captura atual");
+    verify(tasks, never()).save(any());
+  }
+
+  /** Representa uma captura determinística persistida sem criar gate ou parecer adicional. */
+  private AgentTaskFunctionalSnapshot capture(
+      long id, com.fasterxml.jackson.databind.JsonNode proof, String status) {
+    return new AgentTaskFunctionalSnapshot(
+        id,
+        91067L,
+        "pde-construction-approval",
+        "technicalHomologation",
+        "customer-agent",
+        status,
+        null,
+        null,
+        proof.toString());
+  }
+
   /** Simula o gate original vigente sem alterar seu resultado ou autorizar produção. */
   private Map<String, Object> authorizedInput(long product) {
     String proofReference = "product:" + product + "@agent-validation-v1";

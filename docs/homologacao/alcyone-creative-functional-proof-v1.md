@@ -65,3 +65,33 @@ pareceres independentes e a seleção humana prevista no processo.
 
 As dispensas não substituem a matriz local executada. Nenhum aceite humano, revisão
 independente ou resultado comercial é inferido destes testes.
+
+## Abertura da captura no painel
+
+A conferência operacional mostrou que a mesa carregava a caixa completa de tarefas
+(incluindo prompts e respostas) e a coleção completa de experimentos antes da criação.
+A seleção não se completou; houve conexão encerrada e um reinício do backend.
+O detalhe do experimento 97 e sua consulta resumida voltaram a responder. Isso confirma
+a dependência desnecessária de coleções completas; não comprova a causa do reinício.
+
+Foram comparados refatorar os contratos de todas as listas, criar um formulário paralelo
+e abrir o formulário existente sem carregar histórico. A terceira opção reduz o escopo:
+`/agents/<id>?newTask=1&experimentId=<id>` consulta a identidade escolhida no endpoint
+de detalhe existente. A caixa, o monitor e as listas não utilizadas não participam da
+criação; a mesa anterior continua disponível. A lista de agentes oferece esse acesso.
+O backend continua validando o pedido oficial, sem gravação direta ou aprovação simulada.
+
+Matriz adicional: dois experimentos sintéticos nos testes de componente; consulta ausente
+impede envio; criação preserva a referência exata; falha de gravação conserva o formulário;
+nenhuma coleção completa é chamada; sucesso usa o número retornado pelo backend.
+Navegação e envio devem passar em Chromium desktop, iPhone 15 Pro e Pixel 7,
+com dependências HTTP locais e sem eventos comerciais.
+
+Runner: `node infra/testing/alcyone-creative-proof/admin-form.cjs`.
+As fixtures de API interceptam somente caminhos iniciados por `/api/`; arquivos de
+módulos JavaScript como `/src/api/http.ts` continuam sendo entregues pelo Vite.
+
+Resultado da extensão: 19 testes frontend passaram, typecheck e build concluíram.
+O navegador confirmou três dispositivos, duas identidades adicionais, nenhum carregamento
+integral de tarefas/experimentos e recuperação da falha de envio com o mesmo pedido.
+As respostas e gravações da matriz são simuladas; nenhuma tarefa produtiva foi criada.

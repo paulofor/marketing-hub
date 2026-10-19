@@ -56,8 +56,9 @@ export interface AgentWorkMonitor {
 }
 
 /** Consulta o estado persistido das tarefas e pipelines de todos os agentes. */
-export function useAgentWorkMonitor() {
+export function useAgentWorkMonitor(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["agents", "work-monitor"],
     queryFn: async () =>
       (await axios.get<AgentWorkMonitor[]>("/api/agents/work-monitor")).data,

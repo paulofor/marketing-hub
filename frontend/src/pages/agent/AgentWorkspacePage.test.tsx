@@ -16,6 +16,8 @@ const testState = vi.hoisted(() => ({
   exceptionReason: undefined as string | undefined,
   createMutate: vi.fn(),
   processes: [] as Array<Record<string, unknown>>,
+  inboxEnabled: vi.fn(),
+  experimentsEnabled: vi.fn(),
 }));
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -34,32 +36,35 @@ vi.mock("../../api/agent/useAgents", () => ({
 }));
 
 vi.mock("../../api/agentTask/useAgentTasks", () => ({
-  useAgentTasks: () => ({
-    isLoading: false,
-    data: Array.from({ length: testState.taskCount }, (_, index) => ({
-      id: 41 - index,
-      assignedAgentId: 7,
-      assignedAgentKey: testState.agentKey,
-      assignedAgentNickname: testState.nickname,
-      requestedByType: "AGENT",
-      requestedByName: "Têmis",
-      title: index === 0 ? "Aprimorar hero" : `Tarefa histórica ${index}`,
-      description: "Melhorar a clareza da promessa no celular.",
-      priority: "HIGH",
-      status: testState.taskStatus,
-      sourceReference: testState.sourceReference,
-      exceptional: testState.exceptional,
-      exceptionReason: testState.exceptionReason,
-      inputTokens: 1500,
-      cachedInputTokens: 500,
-      outputTokens: 400,
-      estimatedCostUsd: 0.025,
-      costEstimationStatus: "ESTIMATED",
-      receivedAt: "2026-08-11T15:00:00Z",
-      createdAt: "2026-08-11T15:00:00Z",
-      updatedAt: "2026-08-11T15:00:00Z",
-    })),
-  }),
+  useAgentTasks: (_agentKey?: string, enabled = true) => {
+    testState.inboxEnabled(enabled);
+    return {
+      isLoading: false,
+      data: Array.from({ length: testState.taskCount }, (_, index) => ({
+        id: 41 - index,
+        assignedAgentId: 7,
+        assignedAgentKey: testState.agentKey,
+        assignedAgentNickname: testState.nickname,
+        requestedByType: "AGENT",
+        requestedByName: "Têmis",
+        title: index === 0 ? "Aprimorar hero" : `Tarefa histórica ${index}`,
+        description: "Melhorar a clareza da promessa no celular.",
+        priority: "HIGH",
+        status: testState.taskStatus,
+        sourceReference: testState.sourceReference,
+        exceptional: testState.exceptional,
+        exceptionReason: testState.exceptionReason,
+        inputTokens: 1500,
+        cachedInputTokens: 500,
+        outputTokens: 400,
+        estimatedCostUsd: 0.025,
+        costEstimationStatus: "ESTIMATED",
+        receivedAt: "2026-08-11T15:00:00Z",
+        createdAt: "2026-08-11T15:00:00Z",
+        updatedAt: "2026-08-11T15:00:00Z",
+      })),
+    };
+  },
   useCreateAgentTask: () => ({
     mutate: testState.createMutate,
     isPending: false,
@@ -116,7 +121,20 @@ vi.mock("../../api/planning/useCommercialPlans", () => ({
 }));
 
 vi.mock("../../api/experiment/useExperiments", () => ({
-  useExperiments: () => ({ data: testState.experiments, isLoading: false }),
+  useExperiments: (enabled = true) => {
+    testState.experimentsEnabled(enabled);
+    return { data: testState.experiments, isLoading: false };
+  },
+}));
+
+vi.mock("../../api/experiment/useExperiment", () => ({
+  useExperiment: (id?: string) => ({
+    data: testState.experiments.find((item) => String(item.id) === id),
+    isFetching: false,
+    isError:
+      Boolean(id) &&
+      !testState.experiments.some((item) => String(item.id) === id),
+  }),
 }));
 
 vi.mock("../../api/businessProcess/useBusinessProcesses", () => ({
@@ -140,7 +158,52 @@ describe("AgentWorkspacePage", () => {
     testState.exceptionReason = undefined;
     testState.createMutate.mockReset();
     testState.processes = [];
+    testState.inboxEnabled.mockReset();
+    testState.experimentsEnabled.mockReset();
   });
+
+  it.each([90105, 90218])(
+    "abre uma solicitação do experimento %s sem carregar coleções completas",
+    (experiment) => {
+      testState.experiments = [
+        { id: String(experiment), name: "Experimento sintético" },
+      ];
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter
+            initialEntries={[`/agents/7?newTask=1&experimentId=${experiment}`]}
+          >
+            <Routes>
+              <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      expect(testState.inboxEnabled).toHaveBeenLastCalledWith(false);
+      expect(testState.experimentsEnabled).toHaveBeenLastCalledWith(false);
+      expect(screen.getByLabelText("Número do experimento *")).toHaveValue(
+        experiment,
+      );
+      expect(
+        screen.getByText(`#${experiment} · Experimento sintético`),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Caixa de entrada")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Nenhuma tarefa registrada para este agente."),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/tarefas abertas/)).not.toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText("Número do experimento *"), {
+        target: { value: "99999" },
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Não foi possível consultar",
+      );
+      expect(
+        screen.getByRole("button", { name: "Enviar para Dédalo" }),
+      ).toBeDisabled();
+      expect(testState.createMutate).not.toHaveBeenCalled();
+    },
+  );
 
   it("quebra justificativa excepcional longa sem ampliar o card", () => {
     testState.exceptional = true;

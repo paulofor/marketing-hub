@@ -7640,3 +7640,17 @@ tratamentos distintos. A hipótese de aprendizado é reduzir busca manual e
 tempo parado antes da entrega comercial; não há medição de ganho de vendas.
 
 [Causa, matriz e limites](../homologacao/mira-narration-recovery-v1.md).
+
+
+## 2026-10-19 — Capella: retomada após conectar o Worker IA
+
+A confirmação do usuário foi conferida no painel e pelo executor: sessão ChatGPT
+própria conectada. Capella permanece no ciclo #12/experimento #105. A retomada
+pela tela expôs sete templates da página com `gpt-5.5`, ausente do catálogo da
+sessão, antes da inferência. A correção compartilhada cria contratos explícitos
+`gpt-6.1-sol` sem alterar prompts, schemas ou histórico. Não amplia os limites
+US$15 de preparação, US$10 audiovisuais ou R$100 por cinco dias após homologação,
+nem reduz a meta de 30% para continuidade/escala. Matriz e provas locais:
+[`capella-worker-retomada-codex-v1.md`](../homologacao/capella-worker-retomada-codex-v1.md).
+A entrega funcional depende da publicação, retomada e aceites seguintes; testes
+e conexão não significam experimento em execução nem evidência de demanda.

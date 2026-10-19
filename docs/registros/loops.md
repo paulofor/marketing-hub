@@ -10332,3 +10332,22 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
 - Limite: autenticação própria e disponibilidade do modelo precisam ser verificadas
   no runtime. Os testes não comprovam vendas, saldo Codex ou faturamento reconciliado.
   Matriz: `docs/homologacao/ai-worker-codex-app-server-v1.md`.
+
+## LOOP-WORKER-CODEX-MODELO-ANTERIOR — sessão conectada com contrato incompatível
+
+- **Observado em 19/10/2026:** conexão própria #3 confirmada, mas a página de Capella
+  #105 falhou no job `9811844f-879f-4c9d-996a-50e0b0f1a3cf` antes de `turn/start`.
+  Os sete templates ativos pediam `gpt-5.5`, ausente na sessão. Os erros anteriores
+  eram 401/créditos; a conexão corrigiu essa dependência, não a compatibilidade dos
+  modelos persistidos. Sem resposta de modelo a recuperar nessa tentativa.
+- **Causa:** a implantação do transporte preservou corretamente o modelo de cada etapa,
+  mas não preparou novas versões dos contratos para um modelo disponível na sessão.
+- **Correção:** migração incremental explícita para `gpt-6.1-sol`, verificado em
+  `model/list` e no catálogo de custos. Copiar integralmente prompt/schema; preservar
+  fontes, execuções, vídeos e pareceres; não introduzir substituição automática.
+- **Prevenção:** MySQL 5.7 real com sete templates históricos, duas identidades,
+  outro pipeline, fonte incompleta, colisão, preço ausente, reaplicação e rollback
+  protegido contra evolução posterior. Suítes de fila, contexto, resultado e replay
+  do executor continuam aplicáveis. Matriz: `capella-worker-retomada-codex-v1.md`.
+- **Limites:** conexão, configuração e testes não aprovam página, criativo, campanha
+  ou gasto. Retomar pelo frontend após publicação e conferir cada aceite persistido.

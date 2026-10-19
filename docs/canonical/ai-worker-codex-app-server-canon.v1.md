@@ -59,3 +59,21 @@ consumo duplicado na recuperação. Isso não comprova prontidão comercial ou a
 Matriz/evidências: `docs/homologacao/ai-worker-codex-app-server-v1.md`.
 
 Referência oficial: [Codex App Server](https://learn.chatgpt.com/docs/app-server).
+
+## Compatibilidade dos contratos ativos — retomada de 19/10/2026
+
+Autenticação confirma a conta, mas não comprova disponibilidade do modelo pedido por
+uma etapa. A primeira retomada de Capella expôs sete contratos do GeraSalesPage ainda
+em `gpt-5.5`, ausente de `model/list`. O transporte deve continuar recusando esse caso
+antes de inferir, sem alias ou fallback silencioso. A correção versiona os sete
+contratos para `gpt-6.1-sol`, disponível na sessão própria e no catálogo de custos,
+copiando literalmente prompts/schemas e conservando contratos e execuções anteriores.
+Outros pipelines não são alterados por consequência. Migração com fonte incompleta,
+colisão ou modelo sem preço falha antes de ativar parcialmente as novas versões.
+A regressão MySQL 5.7 aplica as definições históricas reais, confere preservação de
+conteúdo e snapshots de duas identidades, idempotência e rollback sem apagar auditoria.
+Matriz: `docs/homologacao/capella-worker-retomada-codex-v1.md`.
+
+Instalação nova deve preparar o registro de preços antes dos templates: a migração
+semeia somente o modelo ausente, com fonte oficial, e não sobrescreve valores já
+cadastrados. O rollback preserva essa referência para a auditoria das execuções.

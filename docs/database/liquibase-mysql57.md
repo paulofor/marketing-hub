@@ -281,3 +281,16 @@ em `finally`. Na sandbox, use o projeto exclusivo fornecido no contexto em
 `MIRA_COMPOSE_PROJECT`; em GitHub Actions, o workflow `liquibase-mysql57.yml` cria um projeto
 isolado por run e preserva evidências. `MIRA_TEST_DB_HOST` diferencia `sandbox-docker` de
 `127.0.0.1` no runner.
+
+## Contratos da página no Codex — 19/10/2026
+
+`GeraSalesPageCodexMysql57Test` integra o job físico existente de custos/conexão.
+Aplica os seis changelogs históricos de templates e a migração explícita dos sete
+contratos de `gpt-5.5` para `gpt-6.1-sol`, preservando conteúdo, snapshots de duas
+identidades e outro pipeline. Valida fonte/preço ausentes, colisão, reaplicação,
+rollback sem apagar contratos e proteção de evolução posterior. Usa
+`WORKER_CONNECTION_MYSQL=true` e o mesmo banco efêmero `AGENT_COST_DB_HOST:33343`;
+não utiliza conta, credencial ou inferência produtiva.
+
+A fixture também aplica o seed de catálogo anterior aos templates em uma instalação
+sem o modelo, preservando preços existentes e a referência após rollback.

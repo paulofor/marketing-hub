@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-19-codex-model-catalog-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: openai_model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO openai_model
+                (name,code,price_input_standard,price_input_cached_standard,price_output_standard,
+                 price_input_batch,price_input_cached_batch,price_output_batch,accepts_image_input,
+                 pricing_source,last_pricing_sync_at,created_at,updated_at)
+              SELECT 'GPT-6.1 Sol','gpt-6.1-sol',2.00000,0.10000,10.00000,
+                1.00000,0.05000,5.00000,0,'https://developers.openai.com/api/docs/pricing',
+                UTC_TIMESTAMP(),UTC_TIMESTAMP(),UTC_TIMESTAMP()
+              FROM (SELECT 1) seed
+              LEFT JOIN openai_model existing ON existing.code='gpt-6.1-sol'
+              WHERE existing.id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;

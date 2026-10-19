@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-19-sales-page-codex-model-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM openai_model WHERE code='gpt-6.1-sol' AND price_input_standard>0 AND price_output_standard>0
+        - sqlCheck:
+            expectedResult: 7
+            sql: |
+              SELECT COUNT(DISTINCT stage_code) FROM ai_prompt_schema_template
+              WHERE pipeline_code='gera-sales-page-v1' AND active=1 AND openai_model='gpt-5.5'
+                AND stage_code IN ('sales-page-offer-brief','sales-page-wireframe','sales-page-copy','sales-page-visual-plan','sales-page-html','sales-page-checkout-quality-review','sales-page-publication-package')
+                AND JSON_VALID(schema_json)=1 AND LENGTH(prompt_markdown_content)>0
+        - sqlCheck:
+            expectedResult: 7
+            sql: SELECT COUNT(*) FROM ai_prompt_schema_template WHERE pipeline_code='gera-sales-page-v1' AND active=1
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*) FROM ai_prompt_schema_template source
+              JOIN ai_prompt_schema_template target ON target.template_key=CONCAT(source.template_key,':codex1')
+              WHERE source.pipeline_code='gera-sales-page-v1' AND source.active=1
+                AND (target.pipeline_code<>source.pipeline_code OR target.stage_code<>source.stage_code
+                  OR target.version<>CONCAT(source.version,'-codex1') OR target.openai_model<>'gpt-6.1-sol'
+                  OR BINARY target.schema_name<>BINARY source.schema_name
+                  OR BINARY target.prompt_markdown_content<>BINARY source.prompt_markdown_content
+                  OR BINARY target.schema_json<>BINARY source.schema_json)
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ai_prompt_schema_template
+                (template_key,pipeline_code,stage_code,version,openai_model,schema_name,prompt_markdown_content,schema_json,active,created_at,updated_at)
+              SELECT CONCAT(source.template_key,':codex1'),source.pipeline_code,source.stage_code,
+                CONCAT(source.version,'-codex1'),'gpt-6.1-sol',source.schema_name,
+                source.prompt_markdown_content,source.schema_json,0,UTC_TIMESTAMP(),UTC_TIMESTAMP()
+              FROM ai_prompt_schema_template source
+              LEFT JOIN ai_prompt_schema_template target ON target.template_key=CONCAT(source.template_key,':codex1')
+              WHERE source.pipeline_code='gera-sales-page-v1' AND source.active=1 AND target.template_key IS NULL;
+
+              UPDATE ai_prompt_schema_template source
+              JOIN ai_prompt_schema_template target ON target.template_key=CONCAT(source.template_key,':codex1')
+              SET source.active=0,target.active=1,source.updated_at=UTC_TIMESTAMP(),target.updated_at=UTC_TIMESTAMP()
+              WHERE source.pipeline_code='gera-sales-page-v1' AND source.active=1
+                AND source.openai_model='gpt-5.5' AND target.openai_model='gpt-6.1-sol';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template source
+              JOIN ai_prompt_schema_template target ON target.template_key=CONCAT(source.template_key,':codex1')
+              SET source.active=1,target.active=0,source.updated_at=UTC_TIMESTAMP(),target.updated_at=UTC_TIMESTAMP()
+              WHERE source.pipeline_code='gera-sales-page-v1' AND source.active=0 AND target.active=1
+                AND source.openai_model='gpt-5.5' AND target.openai_model='gpt-6.1-sol'
+                AND BINARY target.prompt_markdown_content=BINARY source.prompt_markdown_content
+                AND BINARY target.schema_json=BINARY source.schema_json;

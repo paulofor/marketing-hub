@@ -21,6 +21,7 @@ import {
 import { useNiches, type MarketNiche } from "../../api/niche/useNiches";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import "./AiWorkerPendingRequestsPage.css";
+import AiWorkerConnectionPanel from "./AiWorkerConnectionPanel";
 
 type ExperimentPendingKey =
   | "creativesToGenerate"
@@ -182,6 +183,7 @@ export default function AiWorkerPendingRequestsPage() {
   return (
     <div>
       <PageTitle>Solicitações pendentes do Worker IA</PageTitle>
+      <AiWorkerConnectionPanel />
       <p className="text-body-secondary">
         Acompanhe tudo o que ainda precisa ser processado pelo worker de IA, com
         agrupamento por experimento e nicho. Use esta visão para priorizar quais

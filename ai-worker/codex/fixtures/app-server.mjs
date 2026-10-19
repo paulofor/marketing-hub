@@ -16,8 +16,8 @@ createInterface({ input: process.stdin }).on('line', line => {
   else if (m.method === 'model/list') reply({ data: [{ model: 'gpt-test' }] });
   else if (m.method === 'account/login/start') {
     config.auth = true;
-    reply({ loginId: 'login-fixture', verificationUrl: 'https://auth.openai.com/codex/device', userCode: 'SYNTHETIC' });
-    setTimeout(() => event('account/login/completed', { loginId: 'login-fixture', success: true }), 15);
+    reply({ loginId: 'login-fixture', verificationUrl: config.verificationUrl || 'https://auth.openai.com/codex/device', userCode: 'SYNTHETIC' });
+    setTimeout(() => event('account/login/completed', { loginId: 'login-fixture', success: config.loginSuccess !== false }), config.loginDelay || 15);
   }
   else if (m.method === 'thread/start') { threadId = `thread-${config.identity || 'a'}`; reply({ thread: { id: threadId } }); }
   else if (m.method === 'turn/start') {

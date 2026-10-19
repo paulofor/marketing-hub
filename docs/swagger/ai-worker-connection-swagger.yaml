@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Conexão administrativa do Worker IA
+  version: v1
+  description: Comandos persistidos; o Worker executa OAuth, o painel nunca recebe credenciais.
+paths:
+  /api/ai/worker-connection:
+    get:
+      summary: Consultar conexão e prova recente do executor
+      responses:
+        '200':
+          $ref: '#/components/responses/State'
+    post:
+      summary: Solicitar conexão ou reutilizar tentativa ativa
+      description: Não inicia inferência nem altera autorização comercial ou sessão dos agentes.
+      responses:
+        '200':
+          $ref: '#/components/responses/State'
+  /api/ai/worker-connection/internal/pending:
+    get:
+      summary: Reservar uma tentativa para o Worker IA
+      responses:
+        '200':
+          $ref: '#/components/responses/State'
+        '204':
+          description: Sem tentativa pendente
+  /api/ai/worker-connection/internal/{id}/device-code:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Registrar link oficial e código temporário, de forma idempotente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verificationUrl, userCode]
+              properties:
+                verificationUrl:
+                  type: string
+                  enum: [https://auth.openai.com/codex/device]
+                userCode:
+                  type: string
+                  pattern: '^[A-Z0-9][A-Z0-9-]{3,25}$'
+      responses:
+        '200':
+          $ref: '#/components/responses/State'
+        '400':
+          description: Código ou URL inválidos
+        '409':
+          description: Comando expirado, encerrado ou substituído
+  /api/ai/worker-connection/internal/{id}/completion:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Confirmar account/read ou registrar falha; replay idempotente
+      requestBody:
+        $ref: '#/components/requestBodies/Session'
+      responses:
+        '200':
+          $ref: '#/components/responses/State'
+        '409':
+          description: Comando expirado, não reservado ou substituído
+  /api/ai/worker-connection/internal/session:
+    post:
+      summary: Registrar prova independente de sessão sem iniciar turno
+      requestBody:
+        $ref: '#/components/requestBodies/Session'
+      responses:
+        '200':
+          $ref: '#/components/responses/State'
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  requestBodies:
+    Session:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [authenticated]
+            properties:
+              authenticated:
+                type: boolean
+  responses:
+    State:
+      description: Estado persistido, sem identidade da conta, tokens ou chave
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/State'
+  schemas:
+    State:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [DISCONNECTED, REQUESTED, STARTING, AWAITING_CONFIRMATION, AUTHENTICATED, FAILED, EXPIRED]
+        connected:
+          type: boolean
+          description: Verdadeiro somente com prova autenticada de menos de três minutos
+        workerAvailable:
+          type: boolean
+        checkedAt:
+          type: string
+          format: date-time
+          nullable: true
+        verificationUrl:
+          type: string
+          nullable: true
+        userCode:
+          type: string
+          nullable: true
+        requestedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time

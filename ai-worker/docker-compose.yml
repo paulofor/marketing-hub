@@ -8,9 +8,9 @@ services:
     image: marketinghub/ai-worker:latest
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-marketing_hub_user}
-      MYSQL_PASS: ${MYSQL_PASS:-Ab9!rG4wX8_tMq2Bz7#HpK5V}
+      OPENAI_TEXT_TRANSPORT: ${OPENAI_TEXT_TRANSPORT:-codex-app-server}
+      CODEX_HOME: /var/lib/ai-worker/codex-home
+      AI_WORKER_CODEX_RECEIPTS: /var/lib/ai-worker/codex-receipts
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.2}
@@ -26,5 +26,7 @@ services:
     ports:
       - "4567:4567"
     volumes:
+      - ${AI_WORKER_CODEX_HOME:-/opt/marketinghub/ai-worker/codex-home}:/var/lib/ai-worker/codex-home
+      - ${AI_WORKER_CODEX_RECEIPTS_DIR:-/opt/marketinghub/ai-worker/codex-receipts}:/var/lib/ai-worker/codex-receipts
       - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
       - ${AI_WORKER_LOG_DIR:-./logs}:/var/log/ai-worker

@@ -14,11 +14,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.validation.annotation.Validated;
 
-/** Responsabilidade: centralizar credenciais, modelo, catálogo de preços e URL efetiva dos clientes OpenAI. */
+/** Responsabilidade: validar transporte, credenciais opcionais, modelo e catálogo dos clientes de IA. */
 @Validated
 @ConfigurationProperties(prefix = "openai")
 public record OpenAiClientProperties(
-        @NotBlank
         String apiKey,
 
         String apiKeyFile,
@@ -35,7 +34,9 @@ public record OpenAiClientProperties(
         @NotBlank
         String pricingCatalogUrl,
 
-        boolean allowLocalBaseUrl
+        boolean allowLocalBaseUrl,
+
+        String textTransport
 ) {
     private static final Logger log = LoggerFactory.getLogger(OpenAiClientProperties.class);
     private static final Set<String> INVALID_PLACEHOLDER_KEYS = Set.of("test-key", "changeme", "change-me", "dummy", "placeholder");
@@ -48,7 +49,13 @@ public record OpenAiClientProperties(
             Duration timeout,
             String pricingCatalogUrl,
             boolean allowLocalBaseUrl) {
-        this(apiKey, null, baseUrl, model, timeout, pricingCatalogUrl, allowLocalBaseUrl);
+        this(apiKey, null, baseUrl, model, timeout, pricingCatalogUrl, allowLocalBaseUrl, "responses-api");
+    }
+
+    /** Preserva clientes existentes que ainda configuram somente o transporte de API. */
+    public OpenAiClientProperties(String apiKey, String apiKeyFile, String baseUrl, String model,
+            Duration timeout, String pricingCatalogUrl, boolean allowLocalBaseUrl) {
+        this(apiKey, apiKeyFile, baseUrl, model, timeout, pricingCatalogUrl, allowLocalBaseUrl, "responses-api");
     }
 
     /** Normaliza valores opcionais, resolve token por arquivo seguro e bloqueia placeholders em chamadas reais. */
@@ -62,7 +69,12 @@ public record OpenAiClientProperties(
             pricingCatalogUrl = "http://191.252.181.168/api/modelos/openai/catalogo/v1/modelos";
         }
         apiKeyFile = normalize(apiKeyFile);
-        apiKey = resolveApiKey(apiKey, apiKeyFile, allowLocalBaseUrl);
+        textTransport = normalize(textTransport) == null ? "responses-api" : textTransport.trim();
+        if (!Set.of("responses-api", "codex-app-server").contains(textTransport)) {
+            throw new IllegalArgumentException("Transporte de texto OpenAI inválido: " + textTransport);
+        }
+        apiKey = "codex-app-server".equals(textTransport)
+                ? normalize(apiKey) : resolveApiKey(apiKey, apiKeyFile, allowLocalBaseUrl);
     }
 
     /** Resolve o token priorizando valor real explícito e usando arquivo seguro quando o valor estiver ausente ou for placeholder. */

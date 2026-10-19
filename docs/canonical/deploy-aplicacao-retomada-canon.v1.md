@@ -24,6 +24,12 @@ não comprovam que o processo carregou a nova configuração.
 O comando versionado de publicação recria o serviço explicitamente, inclusive
 quando a imagem e o SHA são os mesmos. Assim, uma rotação posterior pode usar
 o pipeline vigente sem commit vazio ou troca de imagem para provocar a recarga.
+
+Desde 19/10/2026, `ai-worker-validation.yml` é a validação reutilizável sem publicação:
+executa no PR e é chamada pelo publicador. Ela não pertence aos escopos pausáveis.
+A pausa de `ai-worker.yml` protege o runtime sem impedir os testes do PR. O publicador
+continua dependendo do JAR aprovado nessa mesma validação; não duplicar os comandos de teste.
+
 O proxy público e o certificado de Alcyone usam o escopo dedicado `alcyone-proxy`. A retomada deve
 despachar `lead-portal-payments-ci.yml` na revisão integrada, somente para o destino PDE e somente
 com o certificado de Alcyone selecionado; build da imagem sem o job `deploy` não prova a troca do

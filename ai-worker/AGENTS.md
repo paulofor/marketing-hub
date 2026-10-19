@@ -23,6 +23,7 @@
 - Quando a geração depender de nicho, hipótese, experimento ou pipeline, use o contexto rico persistido e exposto pelo backend; o AI Worker não deve consultar banco diretamente nem reconstruir contexto a partir de atalhos.
 
 ## Regra obrigatória de auditoria e Flex em integrações com modelos de IA
+- Desde 19/10/2026, o transporte Responses de produção é Codex App Server local com sessão ChatGPT própria: seguir `docs/canonical/ai-worker-codex-app-server-canon.v1.md`. Não copiar sessão de outro agente nem usar API paga como fallback. Preservar recibos e correlação por job; falha de callback não autoriza nova inferência. A exceção de compatibilidade pede `default` e estima Standard, com motivo auditado; não inventar custo zero para uso desconhecido.
 - Sempre que o Worker AI executar uma requisição para qualquer modelo de IA, registrar de forma auditável o **request cru enviado ao modelo** e o **response bruto recebido do modelo**, sempre vinculados ao job/execução/entidade do Marketing Hub e incluindo modelo, status, erro, tokens/custo quando disponíveis.
 - Sempre que o provedor for OpenAI, a request deve usar modo Flex por padrão, enviando `service_tier: "flex"` no payload da Responses API/Chat Completions. Exceções só podem ocorrer quando houver justificativa funcional explícita e registrada no próprio fluxo.
 - Sempre que o Worker AI enviar resultado ao backend, registrar também o payload enviado ao backend com o jobId/identificador operacional correspondente.

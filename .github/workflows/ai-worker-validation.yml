@@ -1,0 +1,93 @@
+name: AI Worker validation
+
+on:
+  pull_request:
+    paths:
+      - 'ai-worker/**'
+      - '.github/workflows/ai-worker.yml'
+      - '.github/workflows/ai-worker-validation.yml'
+      - 'scripts/test-ai-worker-image-contract.sh'
+  workflow_call:
+    inputs:
+      recovery_sha:
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: marketinghub
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      TEST_DB_URL: jdbc:mysql://localhost:3306/marketinghub
+      TEST_DB_USERNAME: root
+      TEST_DB_PASSWORD: root
+      TEST_DB_DRIVER: com.mysql.cj.jdbc.Driver
+    defaults:
+      run:
+        working-directory: ai-worker
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Setup Node for Codex transport contracts
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ai-worker/codex/package-lock.json
+      - name: Validate Codex transport locally
+        working-directory: ai-worker/codex
+        run: |
+          npm ci --ignore-scripts
+          npm test
+      - name: Validate worker shell contracts
+        working-directory: .
+        run: |
+          bash -n ai-worker/docker-entrypoint.sh scripts/test-ai-worker-image-contract.sh
+          shellcheck ai-worker/docker-entrypoint.sh scripts/test-ai-worker-image-contract.sh
+      - name: Install backend contracts
+        working-directory: backend/ads-service
+        run: mvn -B -Dmaven.test.skip=true install
+      - name: Run architecture tests
+        run: mvn -B -s settings.xml -Dtest='*ArchitectureTest,*ArquiteturaTest' test
+      - name: Run tests
+        run: mvn -B -s settings.xml test
+      - name: Build
+        run: mvn -B -s settings.xml package -DskipTests
+      - name: Validate tested image contract
+        working-directory: .
+        run: scripts/test-ai-worker-image-contract.sh
+      - name: Preserve tested worker package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-worker-jar
+          path: ai-worker/target/app.jar
+          if-no-files-found: error
+          retention-days: 1

@@ -12,3 +12,6 @@
 
 # OS files
 .DS_Store
+codex/node_modules
+codex/*.test.mjs
+codex/fixtures

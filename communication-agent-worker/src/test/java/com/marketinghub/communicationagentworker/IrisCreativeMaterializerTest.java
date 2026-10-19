@@ -357,6 +357,35 @@ class IrisCreativeMaterializerTest {
     assertThat(saved.get()).isNotEmpty();
   }
 
+  /** Conserva a resposta bruta original quando a retomada materializa o plano sem nova IA. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"LEARNING_CYCLE_PRIVATE", "PRODUCT_PRIVATE"})
+  void preservesExactReadyModelResponseWhenOnlyResultWasStored(String privateMode)
+      throws Exception {
+    mode = privateMode;
+    var backend = mock(CommunicationAgentBackendClient.class);
+    var runner = mock(CommunicationAgentCodexRunner.class);
+    var control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(true);
+    var task = readyRenderTask();
+    String preserved = String.valueOf(task.get("retryResultJson"));
+    task.put("retryEvidenceJson", "{\"modelResponded\":true}");
+    when(backend.claim(anyString(), anyString())).thenReturn(task);
+
+    new CommunicationAgentTaskConsumer(backend, runner, properties(), control, json, materializer)
+        .processOne();
+
+    verifyNoInteractions(runner);
+    var payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).complete(eq(910403L), payload.capture());
+    var audit = json.readTree(String.valueOf(payload.getValue().get("evidenceJson")));
+    assertThat(audit.path("rawModelResponse").asText()).isEqualTo(preserved);
+    assertThat(audit.path("materializationReplay").path("previousResult"))
+        .isEqualTo(json.readTree(preserved));
+    assertThat(payload.getValue()).doesNotContainKeys("modelUsages", "estimatedCostUsd");
+  }
+
   /** Alteração de entrada ou falha de persistência não libera a atividade nem chama IA. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(

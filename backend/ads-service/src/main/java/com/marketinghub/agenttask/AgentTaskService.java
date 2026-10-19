@@ -1025,7 +1025,8 @@ public class AgentTaskService {
   }
 
   /**
-   * Atualiza o estado e retoma callbacks preservados sem apagar auditoria ou repetir inferência.
+   * Atualiza o estado e retoma callbacks ou planos de renderização preservados sem nova inferência.
+   * A fila continua exigindo o handshake do worker compatível antes de entregar um plano pronto.
    */
   @Transactional
   public AgentTaskResponse updateStatus(Long taskId, UpdateAgentTaskStatusRequest request) {
@@ -1064,7 +1065,7 @@ public class AgentTaskService {
     if ("BLOCKED".equals(task.getStatus())
         && "IN_PROGRESS".equals(next)
         && trimToNull(task.getExecutionError()) != null
-        && callbackCanReplayWithoutInference(task, false, true)
+        && callbackCanReplayWithoutInference(task, true, true)
         && !task.getExecutionError().startsWith("AUTO_RETRY_ONCE|"))
       task.setExecutionError("AUTO_RETRY_ONCE|" + task.getExecutionError());
     task.setStatus(next);

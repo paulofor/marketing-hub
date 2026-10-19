@@ -8355,6 +8355,12 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   antes do botão e conserva o rodapé factual depois, sem reduzir fonte ou área da prova.
   Dois produtos sintéticos reproduzem a falha antes da correção; replay de 758/1028
   e o ramo comercial protegem o caminho válido. Registro: `alcyone-creative-functional-proof-v1.md`.
+- **Tipografia confirmada em 19/10/2026:** a especificação 759 prometia 36 pixels nos
+  identificadores, mas o PNG 1041 conservava 25; Psique 760 aceitou recorte/aviso e pediu
+  legibilidade desses rótulos. A regressão de aviso não cobria essa divergência.
+  Marca, identificação fixa e rótulo privado passam a usar 36 no renderer. Dois casos
+  comparam os glifos ao CTA, falhando antes e passando depois; prova, ressalvas e ramo
+  comercial continuam protegidos. Não solicitar ao modelo que compense uma fonte fixa.
 - **Recorrência de transporte confirmada:** a peça #407 foi aprovada por Psique #527, Têmis #528 e
   pela decisão humana do processo #64, mas o subprocesso de landing continuou bloqueado porque o
   plano #8 só consultava sua biblioteca visual e nenhum contrato transportava a seleção aprovada.
@@ -10375,3 +10381,21 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
   do executor continuam aplicáveis. Matriz: `capella-worker-retomada-codex-v1.md`.
 - **Limites:** conexão, configuração e testes não aprovam página, criativo, campanha
   ou gasto. Retomar pelo frontend após publicação e conferir cada aceite persistido.
+
+## LOOP-IRIS-PLANO-PRONTO-RETOMADA-MANUAL — 19/10/2026
+
+- **Evidência:** Alcyone 762 preservou a resposta `READY_FOR_RENDER`, mas a materialização
+  repetiu os pixels rejeitados de 759. O renderer fixava identificadores menores que o
+  contrato; a correção de tipografia altera os pixels sem precisar de outra inferência.
+- **Causa:** a retomada manual não marcava planos prontos para replay, embora a fila e o
+  executor já possuíssem o contrato compatível. O detalhe do produto não expunha esse
+  comando. O resultado original também precisava continuar auditável após materializar.
+- **Correção:** reutilizar PATCH de status e handshake `IRIS_RENDER_PLAN_V1`, expor somente
+  a resposta bloqueada e auditada do mesmo escopo e conservar resposta bruta, resultado
+  anterior e custo. O executor reaplica com `modelInvoked=false`, sem nova inferência.
+- **Prevenção:** regressões negativas/positivas com duas identidades, worker anterior
+  impedido, dois modos privados com resposta exata, callback válido e UI restrita; envio
+  incerto relê o estado. Navegação local em desktop/iPhone/Pixel passou com HTTP simulado.
+- **Limite:** corrigir a causa antes de retomar. Não automatizar reprovação funcional,
+  fabricar parecer, herdar aceite humano ou promover preparação privada a mercado.
+  Matriz: `docs/homologacao/alcyone-creative-functional-proof-v1.md`.

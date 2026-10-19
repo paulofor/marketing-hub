@@ -583,6 +583,21 @@ desktop e mostra a entrega visual reconhecível quando ela compõe a promessa; u
 textual não a substitui. A candidata corrigida conserva os pixels aprovados e exige seus
 próprios pareceres, sem promover a preparação privada a publicação comercial.
 
+A revisão 760 da candidata 759/1041 confirmou recorte e ordem do aviso, mas pediu
+36 pixels nos identificadores que a especificação já declarava. O template privado
+passa a garantir esse mínimo na marca, identificação fixa e rótulo solicitado. A
+regressão compara a altura dos glifos desses três identificadores à ação em fonte 36,
+em duas identidades, sem depender da avaliação verbal de legibilidade do modelo.
+
+Depois de corrigir o impedimento técnico, uma resposta `READY_FOR_RENDER` preservada
+pode ser reaplicada pelo comando existente de retomada da tarefa. A fila só entrega
+esse plano a um executor que anuncia `IRIS_RENDER_PLAN_V1`; o executor não chama o
+modelo nem acrescenta custo de inferência. Preservar a resposta bruta original, o
+resultado anterior, a auditoria e o custo da mesma tarefa. A tela oferece o comando
+apenas no detalhe auditado de materialização não audiovisual bloqueada, no mesmo
+escopo. Uma reaplicação não substitui os novos pareceres sobre os pixels corrigidos
+nem o aceite humano. Falha incerta de envio exige reler o estado persistido.
+
 ### Autoria preservada na passagem ao destino — 09/10/2026
 
 Cada item de `communicationArtifacts` do ciclo privado preserva `agentKey` da tarefa

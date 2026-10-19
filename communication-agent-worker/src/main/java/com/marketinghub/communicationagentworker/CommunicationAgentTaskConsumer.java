@@ -168,7 +168,7 @@ public class CommunicationAgentTaskConsumer {
     return result;
   }
 
-  /** Reaplica a peça preservando auditoria e declarando custo incremental de modelo zero. */
+  /** Reaplica a peça preservando resposta bruta, auditoria e custo incremental de modelo zero. */
   private Map<String, Object> replayPayload(Map<String, Object> task, JsonNode materialized)
       throws Exception {
     String evidenceJson = retryText(task.get("retryEvidenceJson"));
@@ -181,6 +181,13 @@ public class CommunicationAgentTaskConsumer {
     replay.put("modelInvoked", false);
     replay.put("incrementalModelCostUsd", 0);
     replay.put("taskId", taskId(task));
+    String preserved = retryText(task.get("retryResultJson"));
+    JsonNode previousResult = json.readTree(preserved);
+    replay.set("previousResult", previousResult);
+    if ("READY_FOR_RENDER".equals(previousResult.path("executionStatus").asText())
+        && evidence.path("rawModelResponse").asText().isBlank()) {
+      evidence.put("rawModelResponse", preserved);
+    }
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("resultJson", json.writeValueAsString(materialized));
     payload.put("evidenceJson", json.writeValueAsString(evidence));

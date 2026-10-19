@@ -1,0 +1,18 @@
+{
+  "cardKey": "bayes-priores-emocao-musica-culturas",
+  "collection": "prazer-audio-visual",
+  "title": "Contexto cultural na interpretação emocional da música",
+  "finding": "Dois experimentos internacionais encontraram diferenças em emoção musical percebida; combinação de expectativas e pistas acústicas melhorou previsões.",
+  "mechanism": "Pistas sonoras são interpretadas conforme expectativas aprendidas.",
+  "commercialApplication": "Comparar classificador acústico com versão calibrada por avaliações voluntárias.",
+  "evidenceStrength": "Moderada para predição no repertório estudado.",
+  "experimentHypothesis": "Calibração por público reduzirá erro de emoção percebida em trilhas inéditas.",
+  "risks": "Estereótipos culturais; confundir emoção percebida com sentida.",
+  "limits": "Grupos e gêneros delimitados; sem efeito comercial observado.",
+  "sourceTitle": "Fonte revisada v1 — Expectativas culturais e emoção percebida na música",
+  "publishedOn": "2026-10-19",
+  "validUntil": "2026-12-03",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-19-bayes-priores-emocao-musica-culturas.md",
+  "sourceSha256": "7202d83d0c5722e0b3b3f72f72e864e26b7ad39b78788eb8dff704e304911f14"
+}

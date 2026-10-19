@@ -6,11 +6,7 @@ on:
     paths:
       - 'ai-worker/**'
       - '.github/workflows/ai-worker.yml'
-      - 'scripts/test-ai-worker-image-contract.sh'
-  pull_request:
-    paths:
-      - 'ai-worker/**'
-      - '.github/workflows/ai-worker.yml'
+      - '.github/workflows/ai-worker-validation.yml'
       - 'scripts/test-ai-worker-image-contract.sh'
   workflow_dispatch:
     inputs:
@@ -21,65 +17,10 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: marketinghub
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_ACTOR: ${{ github.actor }}
-      TEST_DB_URL: jdbc:mysql://localhost:3306/marketinghub
-      TEST_DB_USERNAME: root
-      TEST_DB_PASSWORD: root
-      TEST_DB_DRIVER: com.mysql.cj.jdbc.Driver
-    defaults:
-      run:
-        working-directory: ai-worker
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate automatic publisher recovery
-        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
-        working-directory: ${{ github.workspace }}
-        env:
-          RECOVERY_SHA: ${{ inputs.recovery_sha }}
-          GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/validate-publisher-recovery.py
-      - name: Setup Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
-      - name: Install backend contracts
-        working-directory: backend/ads-service
-        run: mvn -B -Dmaven.test.skip=true install
-      - name: Run architecture tests
-        run: mvn -B -s settings.xml -Dtest='*ArchitectureTest,*ArquiteturaTest' test
-      - name: Run tests
-        run: mvn -B -s settings.xml test
-      - name: Build
-        run: mvn -B -s settings.xml package -DskipTests
-      - name: Validate tested image contract
-        working-directory: .
-        run: scripts/test-ai-worker-image-contract.sh
-      - name: Preserve tested worker package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ai-worker-jar
-          path: ai-worker/target/app.jar
-          if-no-files-found: error
-          retention-days: 1
+    uses: ./.github/workflows/ai-worker-validation.yml
+    with:
+      recovery_sha: ${{ inputs.recovery_sha || '' }}
+    secrets: inherit
 
   docker:
     runs-on: ubuntu-latest
@@ -211,6 +152,10 @@ jobs:
             -e "ssh ${SSH_COMMON_ARGS}" \
             --exclude '.git/' \
             --exclude 'target/' \
+            --exclude '.env' \
+            --exclude '.deployed-*' \
+            --exclude 'logs/' \
+            --exclude 'codex/node_modules/' \
             ai-worker/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish service
         run: |
@@ -218,12 +163,32 @@ jobs:
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
             && export AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/ai-worker:${IMAGE_TAG}' \
+            && install -d -m 700 /opt/marketinghub/ai-worker/codex-home /opt/marketinghub/ai-worker/codex-receipts \
+            && export OPENAI_TEXT_TRANSPORT='codex-app-server' \
             && export OPENAI_TARGETING_REQUEST_MODEL='gpt-5.2' \
             && (docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
               || (sleep 10 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull) \
               || (sleep 20 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull)) \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate --remove-orphans \
             && docker image prune -af"
+      - name: Verify worker runtime
+        run: |
+          read -r -a worker_ssh_args <<< "${SSH_COMMON_ARGS}"
+          ssh "${worker_ssh_args[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' <<'VERIFY_WORKER'
+          set -euo pipefail
+          for attempt in $(seq 1 36); do
+            if curl -fsS http://127.0.0.1:4567/worker-observability/health > /dev/null; then
+              docker exec ai-worker node --version
+              docker exec ai-worker codex --version
+              docker exec ai-worker sh -c 'test "$OPENAI_TEXT_TRANSPORT" = codex-app-server && test -d "$CODEX_HOME"'
+              echo 'Worker IA saudável; transporte Codex configurado. Autenticação e resultado funcional são conferidos separadamente.'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Worker IA não ficou saudável após a publicação.' >&2
+          exit 1
+          VERIFY_WORKER
       - name: Clean build artifacts from repository
         if: always()
         run: |

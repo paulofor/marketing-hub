@@ -22,9 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * OpenAI client que suporta Function Calling + busca na web via Google Search API.
+ * Responsabilidade: enriquecer produtos com o transporte Responses configurado e pesquisa Google.
  */
 @Component
 public class OpenAiChatGptClient implements ChatGptClient {
@@ -39,9 +40,15 @@ public class OpenAiChatGptClient implements ChatGptClient {
     private final String googleKey;
     private final String searchId;
     private final AiGenerationRecorder generationRecorder;
+    private final WebClient responsesClient;
+    private final boolean textEnabled;
     private static final String DOMAIN = "SUCCESS_PRODUCT_ENRICHMENT";
 
+    /** Configura os clientes de pesquisa e geração, preservando o transporte comum do Worker IA. */
     public OpenAiChatGptClient(
+            WebClient.Builder builder,
+            @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
+            @Value("${openai.text-transport:responses-api}") String textTransport,
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.model:o3}") String model,
             @Value("${google.api-key:}") String googleKey,
@@ -55,11 +62,14 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
         this.generationRecorder = generationRecorder;
+        this.textEnabled = "codex-app-server".equals(textTransport) || (apiKey != null && !apiKey.isBlank());
+        this.responsesClient = builder.clone().baseUrl(baseUrl).build();
     }
 
+    /** Enriquece o produto quando a geração está configurada, sem contornar falhas do transporte. */
     @Override
     public SuccessProduct enrich(SuccessProduct product) {
-        if (apiKey == null || apiKey.isBlank()) {
+        if (!textEnabled) {
             log.warn("OpenAI API key not configured, returning product unchanged");
             return product;
         }
@@ -234,23 +244,18 @@ public class OpenAiChatGptClient implements ChatGptClient {
         return list;
     }
 
+    /** Envia a geração pelo WebClient compartilhado, sem manter um atalho direto para a API paga. */
     private OpenAiResponse executeResponseRequest(Map<String, Object> payload) throws Exception {
         String requestBody = MAPPER.writeValueAsString(payload);
         log.info("Sending OpenAI Responses request: {}", requestBody);
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.openai.com/v1/responses"))
-                .timeout(Duration.ofMinutes(2))
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json");
+        var request = responsesClient.post().uri("/responses").header("Content-Type", "application/json");
+        if (apiKey != null && !apiKey.isBlank()) request.header("Authorization", "Bearer " + apiKey);
         if (OpenAiRequestUtils.requiresReasoning(model)) {
-            builder.header("OpenAI-Beta", "reasoning=1");
+            request.header("OpenAI-Beta", "reasoning=1");
         }
-        HttpRequest request = builder
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .build();
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        log.info("OpenAI response body: {}", response.body());
-        return MAPPER.readValue(response.body(), OpenAiResponse.class);
+        String response = request.bodyValue(payload).retrieve().bodyToMono(String.class).block(Duration.ofMinutes(16));
+        log.info("OpenAI response body: {}", response);
+        return MAPPER.readValue(response, OpenAiResponse.class);
     }
 
     private String extractSearchQuery(OpenAiResponse.OpenAiToolCall toolCall) {

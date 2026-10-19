@@ -15,6 +15,24 @@ class OpenAiClientPropertiesTest {
     @TempDir
     Path tempDir;
 
+    /** Codex usa sessão própria sem exigir, ler ou criar uma chave da API paga. */
+    @Test
+    void shouldAllowCodexWithoutApiKey() throws Exception {
+        Path missingFile = tempDir.resolve("no-api-token");
+        var properties = new OpenAiClientProperties(null, missingFile.toString(), "https://api.openai.com/v1",
+                "gpt-test", Duration.ofSeconds(5), "http://backend/catalog", false, "codex-app-server");
+        assertThat(properties.apiKey()).isNull();
+        assertThat(properties.textTransport()).isEqualTo("codex-app-server");
+    }
+
+    /** Erro de configuração não pode reativar implicitamente a API paga. */
+    @Test
+    void shouldRejectUnknownTextTransport() {
+        assertThatThrownBy(() -> new OpenAiClientProperties(null, null, "https://api.openai.com/v1",
+                "gpt-test", Duration.ofSeconds(5), "http://backend/catalog", false, "codex-typo"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Transporte");
+    }
+
     /** Deve usar o arquivo seguro quando a variável explícita contém apenas placeholder de teste. */
     @Test
     void shouldResolveApiKeyFromSecureFileWhenConfiguredValueIsPlaceholder() throws Exception {

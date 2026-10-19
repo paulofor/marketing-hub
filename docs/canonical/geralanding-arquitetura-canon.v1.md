@@ -94,6 +94,11 @@ Regras arquiteturais refletidas (ArchUnit):
 
 ## 2) Worker AI — núcleo OpenAI (`ai-worker / com.marketinghub.worker.openai.core`)
 
+Desde 19/10/2026, o contrato Responses de texto/visão usa Codex App Server local em produção,
+conforme `ai-worker-codex-app-server-canon.v1.md`. O `OpenAiClientPort` permanece canônico;
+o transporte não altera filas, prompts, schemas, validadores ou autoridade do backend.
+Integrações especializadas de imagem permanecem explícitas e independentes.
+
 ```mermaid
 flowchart TD
     SCH[openai.core.<etapa>.<Etapa>ExecutionScheduler] --> WORKER[openai.core.StageWorker]

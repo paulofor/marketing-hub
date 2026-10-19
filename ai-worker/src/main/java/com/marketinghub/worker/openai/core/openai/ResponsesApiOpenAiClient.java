@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-/** Responsabilidade: executar chamadas síncronas para a OpenAI Responses API no core OpenAI. */
+/** Responsabilidade: executar o contrato Responses no transporte configurado e preservar auditoria e uso. */
 public class ResponsesApiOpenAiClient implements OpenAiClientPort {
 
     private static final Logger log = LoggerFactory.getLogger(ResponsesApiOpenAiClient.class);
@@ -79,6 +79,12 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         String finalServiceTier = request.serviceTier();
         try {
             Map<String, Object> requestBody = buildServiceTierRequestBody(originalRequestBodyJson, request.serviceTier());
+            if ("codex-app-server".equals(properties.textTransport())) {
+                // Correlaciona o recibo ao job para impedir reutilização entre produtos ou execuções.
+                Map<String, Object> metadata = new java.util.LinkedHashMap<>(request.metadata());
+                if (!"<unknown>".equals(marketingHubJobId)) metadata.put("marketingHubJobId", marketingHubJobId);
+                requestBody.put("metadata", metadata);
+            }
             OpenAiPostResponse response = postResponsesWithTransientRetry(
                     marketingHubJobId,
                     request.schemaName(),
@@ -86,7 +92,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     requestBody);
             Map<String, Object> raw = response.raw();
             requestBodyJson = response.requestBodyJson();
-            finalServiceTier = response.serviceTier();
+            finalServiceTier = raw != null && raw.containsKey("codex_app_server") ? "default" : response.serviceTier();
 
             if (raw == null) {
                 throw new StageWorkerException("OpenAI returned an empty response");
@@ -106,7 +112,8 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     modelResponse,
                     inputTokens,
                     outputTokens,
-                    costEstimator.estimate(request.model(), inputTokens, outputTokens, finalServiceTier)
+                    raw.containsKey("codex_app_server") && (inputTokens == null || outputTokens == null)
+                            ? null : costEstimator.estimate(request.model(), inputTokens, outputTokens, finalServiceTier)
             );
 
             if (openAiJobId != null) {

@@ -48,6 +48,10 @@ deve continuar persistido na auditoria da execução.
 
 ### Transporte Codex OAuth dos agentes
 
+A mesma exceção de compatibilidade aplica-se desde 19/10/2026 ao transporte Codex App Server
+do Worker IA: preferência Flex, request real default, estimativa Standard e justificativa
+no recibo. Isso não concede fallback automático para a API paga nem ampliação de orçamento.
+
 Enquanto o transporte Codex OAuth utilizado pelos agentes não aceitar Flex,
 Psique e o gate comercial de Têmis devem solicitar explicitamente `default`,
 como Atena, Plutus e Íris já fazem. Essa é uma exceção de compatibilidade do

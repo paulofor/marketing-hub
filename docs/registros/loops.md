@@ -10312,3 +10312,22 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
 - Limite: créditos precisam ser disponibilizados pelo responsável da conta. Não ampliar
   teto nem retentar o job real automaticamente. Matriz e fontes no registro operacional
   `docs/operations/capella-openai-retomada-2026-10-18.md`.
+
+### Transporte solicitado em 19/10/2026 — Worker IA sobre Codex
+
+- A consulta do MCP confirmou nova falha por créditos no job
+  `059a151a-60e1-4eb8-9282-d51c20a3b9fc`, sem geração ativa. O usuário decidiu
+  usar Codex App Server como os agentes. Não classificar essa mudança como
+  reposição de créditos na API nem remover sua proteção contra retentativas financeiras.
+- O transporte Responses agora pode executar localmente pelo App Server com sessão
+  ChatGPT própria e sem fallback pago. O modelo, schema e backend continuam canônicos.
+- Lacuna observada no harness anterior: resultado existia somente no `resultCache`
+  da JVM; não havia recibo durável do transporte para recuperar um callback depois
+  de reiniciar o processo. O transporte v1 guarda resultado e marcador de despacho
+  por job, com hash canônico independente da ordem das chaves JSON.
+- Prova local: reentrega após falha do callback preserva os mesmos bytes e conta
+  uma única inferência; outra identidade e outro job executam separadamente.
+  Despacho incerto e resposta inválida não geram nova inferência automática.
+- Limite: autenticação própria e disponibilidade do modelo precisam ser verificadas
+  no runtime. Os testes não comprovam vendas, saldo Codex ou faturamento reconciliado.
+  Matriz: `docs/homologacao/ai-worker-codex-app-server-v1.md`.

@@ -598,6 +598,21 @@ apenas no detalhe auditado de materialização não audiovisual bloqueada, no me
 escopo. Uma reaplicação não substitui os novos pareceres sobre os pixels corrigidos
 nem o aceite humano. Falha incerta de envio exige reler o estado persistido.
 
+A revisão de integridade recebe pelo mesmo contrato `visual-inputs` a peça final e
+`creativeProof`: fonte exata, recorte, autorização e relatório determinístico datado
+do destino. Têmis recalcula os hashes no executor e anexa fonte, prévia do recorte e
+capturas funcionais antes do modelo. `creativeEvidenceChecks` registra o que foi
+verificado; horário de recálculo não é horário de navegação. A análise continua
+independente, e capturas sintéticas não comprovam mercado ou personalização real.
+
+Renovar uma captura aprovada da mesma versão não exige refazer a peça nem descartar
+seu parecer perceptivo. A origem histórica continua utilizável somente quando sua
+identidade, autorização, versão e hashes passam e a captura atual permanece aprovada
+no mesmo contexto. Nova captura bloqueada, versão ou produto divergente impedem essa
+continuidade. Os pixels originais, custos e pareceres anteriores são preservados. Sem captura complementar,
+o contrato usa a homologação principal e suas capturas funcionais. Captura atual pendente
+ou bloqueada impede o uso da origem anterior para encobrir a pendência.
+
 ### Autoria preservada na passagem ao destino — 09/10/2026
 
 Cada item de `communicationArtifacts` do ciclo privado preserva `agentKey` da tarefa

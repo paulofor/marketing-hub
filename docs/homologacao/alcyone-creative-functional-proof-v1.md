@@ -182,3 +182,53 @@ Resultado: 4.871 testes na suíte integral do backend, sem falhas/erros e 44 dis
 passaram. As duas regressões de retomada no backend falharam antes da mudança e
 passaram depois, preservando custo e identidade. Esses resultados comprovam o
 comportamento local; o aceite produtivo depende dos pareceres da candidata final.
+
+## Origem e continuidade entregues à integridade — 19/10/2026
+
+O PR 5627 materializou 762/1042 com o mesmo SHA do replay local e preservou a resposta
+bruta e o custo de US$ 0,442742. Psique 763 aprovou a candidata. Têmis 764 confirmou
+a correção visual, mas bloqueou a falta de fonte verificável e de continuidade atual
+em desktop/mobile. O loader de Têmis anexava apenas `CREATIVE_RENDER`; não entregava
+os pixels da origem nem as capturas funcionais. Repetir copy ou render não resolve isso.
+
+| Alternativa | Benefício | Risco ou esforço | Decisão |
+| --- | --- | --- | --- |
+| Browser dedicado ao modelo com novas ferramentas | Navegação atual independente | Exige governar também as sessões e os arquivos privados; maior esforço | Reservada |
+| Fonte mais captura simples da página atual | Poucos arquivos e baixo custo | A primeira tela não comprova três combinações e escolha após o formulário | Insuficiente neste caso |
+| Renovar a captura determinística existente e entregar fonte, recorte e relatório | Reutiliza nove cenários e preserva a mesma candidata | Exige conservar linhagem ao atualizar a captura | Adotada |
+
+Não há endpoint ou fila nova. `visual-inputs` entrega `creativeProof` somente à Têmis,
+com acesso reservado aos arquivos listados. O executor recalcula os hashes, anexa a
+fonte original, a prévia do recorte e capturas CONTENT datadas, evitando duplicar pixels
+idênticos. `creativeEvidenceChecks` fica no prompt auditado e distingue a conferência
+dos arquivos da navegação que originou o relatório. Têmis mantém a decisão independente.
+
+A origem histórica de uma peça permanece válida após uma captura aprovada mais recente
+da mesma versão; nova captura bloqueada ou identidade/hash incompatível continua
+impedindo a passagem. Não alterar fonte, candidata, Psique ou custos para renovar o destino.
+
+Matriz definida para esta extensão: dois produtos/referências e duas tarefas sintéticas;
+fonte original e captura renovada pelo serviço real; acesso cruzado recusado; gate atual
+bloqueado e produto divergente recusados; loader HTTP real com hash adulterado, crop fora
+dos pixels e versão divergente; caminho anterior sem metadados adicionais preservado;
+arquivos temporários removidos; capturas desktop/mobile sem modelos ou tráfego comercial.
+
+A suíte integral do backend concluiu 4.874 testes, sem falhas/erros e 44 dispensas opcionais;
+a regressão focada também passou após acrescentar a segregação entre revisores.
+As duas regressões do backend falharam antes da correção por perder a fonte antiga ao
+renovar a captura e passaram depois. As duas do loader esperavam quatro anexos e recebiam
+apenas um antes da correção. A suíte completa de Têmis passou com 115 testes, zero falhas
+ou erros e uma dispensa opcional. O replay HTTP local com os PNGs reais 1042, 1028 e 1025
+passou: quatro anexos, duas capturas de continuidade, hashes conferidos e zero chamadas
+ao modelo. Os IDs da captura renovada desse replay são test doubles, sem alegação de
+navegação produtiva nova. O teste produtivo deve renovar a captura pelo painel após o deploy.
+
+Métrica de adoção: reavaliar o mesmo SHA com a origem e a continuidade disponíveis, sem
+nova materialização ou inferência de Íris. Reverter/bloquear se o gate atual ou qualquer
+identidade divergir. Ganho comercial permanece uma hipótese até compras e contribuição.
+
+O mesmo contrato também entrega a homologação principal quando não há captura
+complementar. Uma captura atual pendente ou bloqueada impede recorrer à origem anterior;
+a segregação conserva fontes adicionais somente para Têmis. A regressão do caminho
+principal passou junto à suíte integral. Falhas de hash/crop/versão anteriores ao modelo
+registram tarefa e causa no erro persistido, além do stack trace nos logs.

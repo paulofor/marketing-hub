@@ -10399,3 +10399,21 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
 - **Limite:** corrigir a causa antes de retomar. Não automatizar reprovação funcional,
   fabricar parecer, herdar aceite humano ou promover preparação privada a mercado.
   Matriz: `docs/homologacao/alcyone-creative-functional-proof-v1.md`.
+
+## LOOP-TEMIS-RECEBE-PECA-SEM-ORIGEM-CONTINUIDADE — 19/10/2026
+
+- **Evidência:** 762/1042 concluída sem nova IA e aprovada por Psique 763; Têmis 764
+  confirmou a adequação visual e bloqueou fonte do recorte e continuidade atual ausentes.
+- **Causa:** o loader anexava somente a peça final, embora o contrato exigisse conferir
+  origem e destino. A atualização da captura também retirava a origem histórica do conjunto
+  elegível, mesmo com versão imutável e candidata preservada.
+- **Correção:** ampliar o contrato existente com `creativeProof`, fonte, recorte, autorização
+  e relatório datado; Têmis recalcula hashes e recebe os pixels antes do modelo. Fonte anterior
+  só permanece válida com a captura atual aprovada no mesmo produto, contexto e versão.
+- **Prevenção:** regressões antes/depois em duas identidades, gate atual bloqueado, fonte
+  estrangeira, hash, crop e versão inválidos, contrato anterior e limpeza dos temporários.
+  Replay HTTP local com PNGs reais confirmou os anexos e zero chamadas ao modelo.
+- **Limite:** não renderizar novamente, não renovar Psique se os pixels não mudaram e não
+  confundir recálculo de hash com navegação nova. Captura atual é feita pelo fluxo existente;
+  revisão independente, seleção humana e limites comerciais permanecem obrigatórios.
+  Matriz: `docs/homologacao/alcyone-creative-functional-proof-v1.md`.

@@ -18,10 +18,13 @@ public class InternalCreativeVisualInputController {
   private final CreativeVisualEvidenceService service;
 
   /**
-   * Lista imagens aprovadas e sua versão para produção ou revisão, sem reservar trabalho adicional.
+   * Lista peças e fontes aprovadas, incluindo provas datadas do destino para a revisão de Têmis.
    */
   @GetMapping
-  @Operation(summary = "Lista entradas visuais da tarefa criativa já reservada")
+  @Operation(
+      summary = "Lista entradas visuais da tarefa criativa já reservada",
+      description =
+          "Têmis recebe creativeProof com fonte, recorte, autorização e relatório de continuidade datado. O endpoint de conteúdo permite somente esses arquivos da mesma tarefa e versão.")
   public List<CreativeVisualEvidenceService.VisualInput> inputs(
       @PathVariable String agentKey, @PathVariable Long taskId) {
     return service.inputs(agentKey, taskId);

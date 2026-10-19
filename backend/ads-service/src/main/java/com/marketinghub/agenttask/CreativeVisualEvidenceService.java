@@ -159,8 +159,11 @@ public class CreativeVisualEvidenceService {
         captures.stream()
             .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id))
             .orElse(null);
-    if (latest != null && "COMPLETED".equals(latest.status()))
+    if (latest != null) {
+      require(
+          "COMPLETED".equals(latest.status()), "A captura atual ainda não aprova a continuidade.");
       output.addAll(supplementalInputs(task, version, scope, latest));
+    }
     require(
         !output.isEmpty(),
         "Não há captura aprovada e persistida da versão atual para produzir a imagem.");
@@ -287,6 +290,25 @@ public class CreativeVisualEvidenceService {
                           && input.evidence().evidenceKey().endsWith("-CONTENT"))
               .toList();
       destination = new DestinationEvidence(latest.id(), result(latest.resultJson()), captures);
+    } else {
+      JsonNode primary = null;
+      for (JsonNode artifact : approved.scope().artifacts()) {
+        long id = artifact.path("taskId").asLong();
+        if (approved.inputs().stream().anyMatch(input -> input.sourceTaskId() == id)
+            && (primary == null || id > primary.path("taskId").asLong())) primary = artifact;
+      }
+      if (primary != null) {
+        long id = primary.path("taskId").asLong();
+        var captures =
+            approved.inputs().stream()
+                .filter(input -> input.sourceTaskId() == id)
+                .filter(
+                    input ->
+                        input.evidence().evidenceKey() != null
+                            && input.evidence().evidenceKey().endsWith("-CONTENT"))
+                .toList();
+        destination = new DestinationEvidence(id, primary.path("result"), captures);
+      }
     }
     return new CreativeProof(
         source,

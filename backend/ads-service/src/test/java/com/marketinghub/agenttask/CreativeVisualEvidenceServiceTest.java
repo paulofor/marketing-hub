@@ -360,6 +360,38 @@ class CreativeVisualEvidenceServiceTest {
     verify(tasks, never()).save(any());
   }
 
+  /** Entrega a homologação principal quando não existe captura complementar, sem inventar fonte. */
+  @Test
+  void deliversPrimaryDestinationEvidenceWithoutSupplement() throws Exception {
+    var source = image(910395L, 910118L, "FULL_PAGE", "a".repeat(64));
+    source.setEvidenceKey("ADHERENT-DESKTOP-CONTENT");
+    when(images.findByIdAndTaskId(910118L, 910395L)).thenReturn(Optional.of(source));
+    when(tasks.findFunctionalSnapshotsByProcessSince(91064L, task.getSourceReference(), null))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    910403L,
+                    91064L,
+                    "creative-production-approval",
+                    "nonAudiovisual",
+                    "communication-director",
+                    "COMPLETED",
+                    null,
+                    null,
+                    result())));
+    task.setId(910405L);
+    task.setProcessActivityId("commercial");
+    task.setAssignedAgent(Agent.builder().agentKey("meta-ad-approver").build());
+    when(tasks.findById(910405L)).thenReturn(Optional.of(task));
+    var proof =
+        json.valueToTree(service.inputs("meta-ad-approver", task.getId()).getFirst())
+            .path("creativeProof");
+    assertThat(proof.path("currentDestination").path("taskId").asLong()).isEqualTo(910395L);
+    assertThat(proof.path("currentDestination").path("captures").size()).isEqualTo(1);
+    service.read("meta-ad-approver", task.getId(), 910395L, 910118L);
+    verify(storage).read(910395L, 910118L);
+  }
+
   /** Representa uma captura determinística persistida sem criar gate ou parecer adicional. */
   private AgentTaskFunctionalSnapshot capture(
       long id, com.fasterxml.jackson.databind.JsonNode proof, String status) {

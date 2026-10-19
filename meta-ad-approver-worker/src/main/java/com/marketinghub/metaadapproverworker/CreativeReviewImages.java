@@ -91,7 +91,9 @@ final class CreativeReviewImages implements AutoCloseable {
       log.error(
           "Falha ao carregar imagens do gate comercial. taskId={} endpoint={}", id, endpoint, ex);
       result.close();
-      throw new IOException("Não foi possível carregar a peça real para Têmis.", ex);
+      throw new IOException(
+          "Não foi possível verificar as provas de Têmis. taskId=" + id + ": " + ex.getMessage(),
+          ex);
     }
   }
 

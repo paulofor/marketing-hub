@@ -163,7 +163,9 @@ class CreativeReviewImagesTest {
       }
       corrupt.set(true);
       assertThatThrownBy(() -> CreativeReviewImages.load(backend, new HashMap<>(task)))
-          .isInstanceOf(java.io.IOException.class);
+          .isInstanceOf(java.io.IOException.class)
+          .hasMessageContaining("hash")
+          .hasMessageContaining(String.valueOf(taskId));
       corrupt.set(false);
       ((com.fasterxml.jackson.databind.node.ObjectNode) proof.path("crop")).put("width", 500);
       assertThatThrownBy(() -> CreativeReviewImages.load(backend, new HashMap<>(task)))

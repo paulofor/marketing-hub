@@ -609,7 +609,9 @@ Renovar uma captura aprovada da mesma versão não exige refazer a peça nem des
 seu parecer perceptivo. A origem histórica continua utilizável somente quando sua
 identidade, autorização, versão e hashes passam e a captura atual permanece aprovada
 no mesmo contexto. Nova captura bloqueada, versão ou produto divergente impedem essa
-continuidade. Os pixels originais, custos e pareceres anteriores são preservados.
+continuidade. Os pixels originais, custos e pareceres anteriores são preservados. Sem captura complementar,
+o contrato usa a homologação principal e suas capturas funcionais. Captura atual pendente
+ou bloqueada impede o uso da origem anterior para encobrir a pendência.
 
 ### Autoria preservada na passagem ao destino — 09/10/2026
 

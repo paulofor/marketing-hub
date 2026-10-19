@@ -213,7 +213,7 @@ bloqueado e produto divergente recusados; loader HTTP real com hash adulterado, 
 dos pixels e versão divergente; caminho anterior sem metadados adicionais preservado;
 arquivos temporários removidos; capturas desktop/mobile sem modelos ou tráfego comercial.
 
-A suíte integral do backend concluiu 4.873 testes, sem falhas/erros e 44 dispensas opcionais;
+A suíte integral do backend concluiu 4.874 testes, sem falhas/erros e 44 dispensas opcionais;
 a regressão focada também passou após acrescentar a segregação entre revisores.
 As duas regressões do backend falharam antes da correção por perder a fonte antiga ao
 renovar a captura e passaram depois. As duas do loader esperavam quatro anexos e recebiam
@@ -226,3 +226,9 @@ navegação produtiva nova. O teste produtivo deve renovar a captura pelo painel
 Métrica de adoção: reavaliar o mesmo SHA com a origem e a continuidade disponíveis, sem
 nova materialização ou inferência de Íris. Reverter/bloquear se o gate atual ou qualquer
 identidade divergir. Ganho comercial permanece uma hipótese até compras e contribuição.
+
+O mesmo contrato também entrega a homologação principal quando não há captura
+complementar. Uma captura atual pendente ou bloqueada impede recorrer à origem anterior;
+a segregação conserva fontes adicionais somente para Têmis. A regressão do caminho
+principal passou junto à suíte integral. Falhas de hash/crop/versão anteriores ao modelo
+registram tarefa e causa no erro persistido, além do stack trace nos logs.

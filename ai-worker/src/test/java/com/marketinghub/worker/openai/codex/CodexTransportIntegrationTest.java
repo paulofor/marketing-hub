@@ -51,6 +51,7 @@ class CodexTransportIntegrationTest {
   private MockWebServer backend;
   private String jobId;
   private long experimentId;
+  private JsonNode savedRequest;
 
   /** Inicia apenas um backend local e isola todas as identidades e arquivos de teste. */
   @BeforeEach
@@ -75,6 +76,10 @@ class CodexTransportIntegrationTest {
                                 jobId,
                                 "replayOnly",
                                 replayOnly.get(),
+                                "auditedPrompt",
+                                savedRequest == null ? "Uma oferta útil e fiel ao produto." : savedRequest.path("prompt").asText(),
+                                "auditedRequestBodyJson",
+                                savedRequest == null ? "{\"model\":\"gpt-test\",\"input\":\"original\"}" : savedRequest.path("requestBodyJson").asText(),
                                 "experimentId",
                                 experimentId,
                                 "stageCode",
@@ -96,6 +101,7 @@ class CodexTransportIntegrationTest {
               if (path.equals("/pricing"))
                 return json(
                     "[{\"code\":\"gpt-test\",\"priceInputStandard\":10,\"priceOutputStandard\":20,\"priceInputBatch\":1,\"priceOutputBatch\":2}]");
+              if (path.endsWith("/recebe-prompt")) savedRequest = mapper.readTree(request.getBody().readUtf8());
               if (path.endsWith("/recebe-resposta")) {
                 JsonNode body = mapper.readTree(request.getBody().readUtf8());
                 callbacks.add(body);

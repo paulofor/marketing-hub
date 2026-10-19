@@ -260,12 +260,14 @@ public class GeraSalesPageStageService {
       boolean predecessorsComplete =
           index >= 0 && codes.subList(0, index).stream().allMatch(previous::containsKey);
       if (predecessorsComplete
-          && GeraSalesPageRetryPolicy.sameInputs(
-              execution,
-              loadTemplate(execution.getStageCode()),
-              experimentPayload(experiment),
-              previous,
-              objectMapper)) {
+          && (replayOnly
+              ? receiptPayload(execution, loadTemplate(execution.getStageCode()), previous) != null
+              : GeraSalesPageRetryPolicy.sameInputs(
+                  execution,
+                  loadTemplate(execution.getStageCode()),
+                  experimentPayload(experiment),
+                  previous,
+                  objectMapper))) {
         available = true;
         reason =
             replayOnly
@@ -294,12 +296,16 @@ public class GeraSalesPageStageService {
     if (execution.getErrorDetail() == null
         || (!execution.getErrorDetail().startsWith(RETRY_PREFIX)
             && !execution.getErrorDetail().startsWith(REPLAY_PREFIX))) return true;
-    if (GeraSalesPageRetryPolicy.sameInputs(
-        execution,
-        template,
-        experimentPayload(execution.getExperiment()),
-        previousStageOutputs(execution.getExperimentId()),
-        objectMapper)) return true;
+    var previous = previousStageOutputs(execution.getExperimentId());
+    boolean replay = execution.getErrorDetail().startsWith(REPLAY_PREFIX);
+    if (replay
+        ? receiptPayload(execution, template, previous) != null
+        : GeraSalesPageRetryPolicy.sameInputs(
+            execution,
+            template,
+            experimentPayload(execution.getExperiment()),
+            previous,
+            objectMapper)) return true;
     execution.setStatus(STATUS_FAILED);
     execution.setErrorMessage("Entrada alterada após solicitar retomada; chamada de IA bloqueada.");
     executionRepository.save(execution);
@@ -425,10 +431,32 @@ public class GeraSalesPageStageService {
         execution.getStageCode(),
         idJobText(execution),
         execution.getExecutionRequestedAt(),
-        experimentPayload(experiment),
+        Objects.toString(execution.getErrorDetail(), "").startsWith(REPLAY_PREFIX)
+            ? receiptPayload(execution, template, previousStageOutputs(execution.getExperimentId()))
+            : experimentPayload(experiment),
         templatePayload(template),
         previousStageOutputs(execution.getExperimentId()),
-        Objects.toString(execution.getErrorDetail(), "").startsWith(REPLAY_PREFIX));
+        Objects.toString(execution.getErrorDetail(), "").startsWith(REPLAY_PREFIX),
+        Objects.toString(execution.getErrorDetail(), "").startsWith(REPLAY_PREFIX)
+            ? execution.getPrompt()
+            : null,
+        Objects.toString(execution.getErrorDetail(), "").startsWith(REPLAY_PREFIX)
+            ? execution.getOpenAiRequestBody()
+            : null);
+  }
+
+  /** Recupera somente a representação auditada, inclusive antes de existir o adaptador de kits. */
+  private Map<String, Object> receiptPayload(
+      GeraSalesPageStageExecution execution,
+      AiPromptSchemaTemplate template,
+      Map<String, Object> previous) {
+    var current = experimentPayload(execution.getExperiment());
+    if (GeraSalesPageRetryPolicy.sameInputs(execution, template, current, previous, objectMapper))
+      return current;
+    var legacy = experimentPayload(execution.getExperiment(), false);
+    return GeraSalesPageRetryPolicy.sameInputs(execution, template, legacy, previous, objectMapper)
+        ? legacy
+        : null;
   }
 
   /**
@@ -436,6 +464,12 @@ public class GeraSalesPageStageService {
    * modelo.
    */
   private Map<String, Object> experimentPayload(Experiment experiment) {
+    return experimentPayload(experiment, true);
+  }
+
+  /** Preserva o nome legado do contrato e identifica a fonte real sem criar registros fictícios. */
+  private Map<String, Object> experimentPayload(
+      Experiment experiment, boolean productDeliverables) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("id", experiment.getId());
     payload.put("name", experiment.getName());
@@ -476,7 +510,11 @@ public class GeraSalesPageStageService {
     }
     payload.put(
         "hypothesisFramework", parseJsonOrText(experiment.getHypothesisFrameworkJsonForPending()));
-    payload.put("feoDeliverablePackage", latestFeoDeliverablePackage(experiment.getId()));
+    var deliverables = latestFeoDeliverablePackage(experiment.getId());
+    if (deliverables.isEmpty() && productDeliverables) {
+      deliverables = GeraSalesPageProductDeliverables.from(experiment, objectMapper);
+    }
+    payload.put("feoDeliverablePackage", deliverables);
     payload.put(
         "approvedLandingVisualAssets",
         landingAssetService.payloadForExperiment(experiment.getId()));

@@ -353,11 +353,22 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                 input.promptData(),
                 "database:" + input.stageCode());
         String requestBodyJson = buildResponsesApiRequest(input.model(), prompt, input.schemaJson(), input.schemaName());
+        boolean replayOnly = Boolean.TRUE.equals(context.execution().config().get("replayOnly"));
+        if (replayOnly) {
+            Object savedPrompt = context.execution().config().get("auditedPrompt");
+            Object savedBody = context.execution().config().get("auditedRequestBodyJson");
+            if (!(savedPrompt instanceof String originalPrompt) || originalPrompt.isBlank()
+                    || !(savedBody instanceof String originalBody) || originalBody.isBlank()) {
+                throw new StageWorkerException("Recuperação bloqueada: request original ausente; nenhuma inferência iniciada");
+            }
+            prompt = originalPrompt;
+            requestBodyJson = originalBody;
+        }
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("stageCode", context.execution().stageCode());
         metadata.put("idJob", context.execution().idJob());
         metadata.put("experimentId", context.execution().aggregateId());
-        if (Boolean.TRUE.equals(context.execution().config().get("replayOnly"))) {
+        if (replayOnly) {
             metadata.put("marketingHubReplayOnly", true);
         }
         return new OpenAiRequest(

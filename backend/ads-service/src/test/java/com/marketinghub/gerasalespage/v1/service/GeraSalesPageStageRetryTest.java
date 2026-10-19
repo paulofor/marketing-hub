@@ -254,6 +254,45 @@ class GeraSalesPageStageRetryTest {
     verify(publications).snapshotPublication(failed);
   }
 
+  /** O recibo antigo conserva seu prompt; novas pendências recebem os itens do contrato vigente. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9317})
+  void replaysHistoricalRepresentationWhileNewStagesReceiveDeclaredKit(long id) throws Exception {
+    configure(id);
+    var kit = GeraSalesPageProductDeliverablesTest.kit(id);
+    experiment.setProduct(kit.getProduct());
+    experiment.setExperimentType(kit.getExperimentType());
+    experiment.setUnitPrice(kit.getUnitPrice());
+    Map<String, Object> oldPayload =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "experimentPayload", experiment, false);
+    Map<String, Object> previous =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "previousStageOutputs", id);
+    failed.setPrompt(
+        template
+            .getPromptMarkdownContent()
+            .replace("{{experiment}}", mapper.writeValueAsString(oldPayload))
+            .replace("{{previousStageOutputs}}", mapper.writeValueAsString(previous)));
+    failed.setErrorMessage("OpenAI Responses API returned HTTP 200");
+    failed.setErrorDetail("OpenAiHttpException: HTTP 200");
+    failed.setOpenAiRequestBody("original");
+    assertThat(service.retryView(id).available()).isTrue();
+    service.retry(id, failed.getIdJob());
+    var pending = service.pending(failed.getStageCode()).getFirst();
+    assertThat(pending.replayOnly()).isTrue();
+    assertThat(pending.experiment().get("feoDeliverablePackage")).isEqualTo(Map.of());
+    Map<String, Object> current =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "experimentPayload", experiment);
+    assertThat(
+            mapper.valueToTree(current).path("feoDeliverablePackage").path("deliverables").size())
+        .isEqualTo(5);
+    experiment.getProduct().setCurrentPriceBrl(new BigDecimal("99.00"));
+    assertThat(service.pending(failed.getStageCode())).isEmpty();
+    assertThat(failed.getStatus()).isEqualTo("FALHA");
+  }
+
   /** Mudança após solicitar recuperação impede entregar a pendência ao executor. */
   @Test
   void blocksReceiptRecoveryWhenInputsChange() {

@@ -100,3 +100,19 @@ A publicação será seguida pela recuperação deste mesmo job pela tela. Teste
 - Worker: 37 testes finais do adaptador e cliente aprovados, incluindo limite finito, transporte indevido, recibo ausente e replay. Etapas comerciais existentes também passaram.
 - Node: 34 testes aprovados. Frontend: seis casos, TypeScript e build aprovados; navegação local em desktop, iPhone 15 Pro e Pixel 7 sem transbordamento ou duplicação, com identidades distintas.
 - Spotless e montagem das atestações comerciais vigentes aprovados. Nenhum modelo externo, pagamento ou envio real foi utilizado na validação local.
+
+## Passagem dos entregáveis reais para a página
+
+A inspeção do recibo, antes de publicar a correção de leitura, encontrou `offerStack: []`: o gerador exigia pacote FEO, mas a entrega atual está declarada em `validationDefinitionJson.delivery.formats` e `pdeExperienceJson.delivery.formats`. Ambas as fontes concordam.
+
+Foram comparados criar um pacote manual duplicado, alterar todos os prompts para outro formato e adaptar a fonte no contrato existente. O adaptador preserva compatibilidade, exige concordância e identifica a origem; foi escolhido para evitar cadastro duplicado e nova inferência da primeira etapa. O recibo antigo usa a mesma representação e o mesmo hash; as etapas seguintes recebem a lista completa da fonte persistida.
+
+Matriz adicional: cinco grupos copiados literalmente em dois produtos; omissão em caso de fonte ausente, divergência, preço incompatível, JSON inválido, tipo legado ou campo desconhecido; recuperação histórica sem mudança de hash; bloqueio se o produto mudar. Nenhum arquivo, ID FEO, parecer ou resultado comercial é inventado.
+
+O backend entrega o prompt e o corpo auditados literalmente no replay. Assim, mesmo uma representação JSON atual equivalente não altera a identidade do recibo. O código exige essa auditoria antes de procurar o recibo; ausência bloqueia sem inferir.
+
+### Aceite local consolidado
+
+- Backend: 65 testes funcionais aprovados, quatro fixtures MySQL de catálogo condicionadas e sem relação com a alteração; 92 regras de arquitetura aprovadas. Worker: 65 testes funcionais aprovados, um replay visual opcional condicionado; 28 regras de limite e oito regras anteriores do GeraLanding aprovadas. Node: 34; frontend: seis, TypeScript, build e três dispositivos aprovados.
+- O recibo REAL de 458.444 bytes também foi recuperado na sandbox. O pedido auditado gerou exatamente o hash `1a9d0f5fd71de65d4ffccbd740f8d433cf775cb4b8627dcf4f2d55ab031cf104`; conteúdo, 31.752 tokens de entrada, 863 de saída e schema foram preservados. O comando do provedor foi substituído por `/bin/false`, comprovando que o replay não o executa.
+- Nenhuma nova inferência, pagamento, e-mail real ou tráfego comercial foi usado nesses testes.

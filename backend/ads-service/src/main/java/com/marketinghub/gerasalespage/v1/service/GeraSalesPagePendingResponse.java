@@ -12,4 +12,6 @@ public record GeraSalesPagePendingResponse(
     Map<String, Object> experiment,
     Map<String, Object> promptTemplate,
     Map<String, Object> previousStageOutputs,
-    boolean replayOnly) {}
+    boolean replayOnly,
+    String auditedPrompt,
+    String auditedRequestBodyJson) {}

@@ -92,3 +92,11 @@ conectar à sessão ou iniciar turno. O controle não compõe o hash da inferên
 Transporte API paga não pode executar esse modo. O callback conserva saída, uso,
 custo e erro original, limpa apenas a mensagem de falha vigente no sucesso e
 devolve ao backend a decisão de avançar. Repetir o comando não cria outro job.
+
+### Fonte dos entregáveis no GeraSalesPage
+
+O campo legado `experiment.feoDeliverablePackage` aceita dois fornecedores documentados: pacote FEO persistido, que mantém prioridade, ou `source: PRODUCT_DELIVERY_CONTRACT` para kit low-ticket sem pacote FEO. O segundo copia somente `delivery.formats` textuais concordantes no contrato de validação e na experiência do produto, com preço vigente compatível. Não cria pacote, ID, arquivo ou prova de homologação fictícios. Ausência ou divergência permanece visível. Os gates de entrega e homologação comercial continuam independentes.
+
+Recibos anteriores ao adaptador podem ser recuperados com a representação antiga somente se o prompt, modelo, schema e todos os dados de negócio originais coincidirem. Essa compatibilidade aceita exclusivamente a ausência anterior do bloco derivado; não ignora alterações do produto. Novas etapas recebem os itens declarados, evitando que a comunicação interprete a ausência de pacote FEO como ausência da entrega.
+
+O replay entrega ao worker `auditedPrompt` e `auditedRequestBodyJson` literais da auditoria validada. Não reconstruir o prompt a partir da serialização atual: diferenças de espaços, ordem de propriedades ou representação numérica não podem transformar recuperação em outra identidade de recibo. Metadados de controle ficam fora do prompt e são removidos antes do cálculo do hash.

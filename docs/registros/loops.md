@@ -8355,6 +8355,12 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   antes do botão e conserva o rodapé factual depois, sem reduzir fonte ou área da prova.
   Dois produtos sintéticos reproduzem a falha antes da correção; replay de 758/1028
   e o ramo comercial protegem o caminho válido. Registro: `alcyone-creative-functional-proof-v1.md`.
+- **Tipografia confirmada em 19/10/2026:** a especificação 759 prometia 36 pixels nos
+  identificadores, mas o PNG 1041 conservava 25; Psique 760 aceitou recorte/aviso e pediu
+  legibilidade desses rótulos. A regressão de aviso não cobria essa divergência.
+  Marca, identificação fixa e rótulo privado passam a usar 36 no renderer. Dois casos
+  comparam os glifos ao CTA, falhando antes e passando depois; prova, ressalvas e ramo
+  comercial continuam protegidos. Não solicitar ao modelo que compense uma fonte fixa.
 - **Recorrência de transporte confirmada:** a peça #407 foi aprovada por Psique #527, Têmis #528 e
   pela decisão humana do processo #64, mas o subprocesso de landing continuou bloqueado porque o
   plano #8 só consultava sua biblioteca visual e nenhum contrato transportava a seleção aprovada.

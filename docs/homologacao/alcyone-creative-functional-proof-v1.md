@@ -130,3 +130,25 @@ casos opcionais mantiveram suas condições. O replay com a fonte real foi execu
 O PNG desse replay foi conferido em desktop, iPhone 15 Pro e Pixel 7: roupa inteira,
 orientação legível, aviso antes da ação e ressalva preservada, sem transbordamento.
 O novo arquivo produtivo ainda exige produção pelo executor e novos pareceres independentes.
+
+## Tipografia declarada e pixels — 19/10/2026
+
+A candidata 759/1041 reproduziu exatamente o SHA do replay local. Psique 760 confirmou a
+combinação completa, dica e aviso antes do CTA, mas apontou identificadores menores que os
+36 pixels prometidos em `visualComposition`. O renderer mantinha 25 pixels na identificação
+fixa e no rótulo solicitado, enquanto o teste anterior protegia somente aviso e rodapé.
+
+Foram comparados encurtar o rótulo, flexibilizar a revisão e garantir a tipografia no renderer.
+Encurtar não corrige tamanho; flexibilizar retiraria uma condição legítima de legibilidade.
+A terceira opção foi adotada: marca, identificação e rótulo usam 36 pixels no ramo privado;
+o topo é reorganizado mantendo prova 952 × 667, copy, aviso, CTA e ressalvas.
+O ramo comercial continua com suas métricas anteriores.
+
+Matriz adicional: medir os três blocos de identificadores pela tinta dos glifos e compará-los
+à mesma palavra no CTA de fonte 36, em duas identidades. O teste falhou no renderer anterior
+e passou na correção; a suíte completa executou 96 casos sem falhas/erros (quatro opcionais).
+O replay real mantém a mesma fonte, crop e especificação de Íris. A leitura em 393 pixels
+foi conferida localmente em desktop, iPhone 15 Pro e Pixel 7 antes de publicar, junto à
+ausência de transbordamento e à ordem visual.
+Pareceres anteriores e custos não são reescritos; a produção e a revisão da candidata corrigida
+continuam obrigatórias. Qualidade local não comprova conversão ou venda.

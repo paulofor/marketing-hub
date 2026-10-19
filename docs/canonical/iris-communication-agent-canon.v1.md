@@ -583,6 +583,12 @@ desktop e mostra a entrega visual reconhecível quando ela compõe a promessa; u
 textual não a substitui. A candidata corrigida conserva os pixels aprovados e exige seus
 próprios pareceres, sem promover a preparação privada a publicação comercial.
 
+A revisão 760 da candidata 759/1041 confirmou recorte e ordem do aviso, mas pediu
+36 pixels nos identificadores que a especificação já declarava. O template privado
+passa a garantir esse mínimo na marca, identificação fixa e rótulo solicitado. A
+regressão compara a altura dos glifos desses três identificadores à ação em fonte 36,
+em duas identidades, sem depender da avaliação verbal de legibilidade do modelo.
+
 ### Autoria preservada na passagem ao destino — 09/10/2026
 
 Cada item de `communicationArtifacts` do ciclo privado preserva `agentKey` da tarefa

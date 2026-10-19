@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProofCardRenderer {
-  /** Compõe prova fiel e qualifica a demonstração antes da ação, preservando a ressalva factual. */
+  /** Compõe prova fiel com identificadores legíveis e qualifica a demonstração antes da ação. */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
@@ -55,26 +55,26 @@ public class ProofCardRenderer {
           g,
           spec.path("brandLabel").asText(),
           64,
-          privateValidation ? 34 : 66,
+          privateValidation ? 18 : 66,
           952,
-          42,
-          28,
+          privateValidation ? 44 : 42,
+          privateValidation ? 36 : 28,
           Font.BOLD);
       text(
           g,
           eyebrow(spec, privateValidation),
           64,
-          privateValidation ? 82 : 123,
+          privateValidation ? 66 : 123,
           952,
-          40,
-          25,
+          privateValidation ? 44 : 40,
+          privateValidation ? 36 : 25,
           Font.PLAIN);
       g.setColor(new Color(35, 32, 34));
       text(
           g,
           spec.path("headline").asText(),
           64,
-          privateValidation ? 132 : 183,
+          privateValidation ? 116 : 183,
           952,
           privateValidation ? 134 : 152,
           privateValidation ? 56 : 64,
@@ -83,14 +83,14 @@ public class ProofCardRenderer {
           g,
           spec.path("body").asText(),
           64,
-          privateValidation ? 268 : 351,
+          privateValidation ? 252 : 351,
           952,
           privateValidation ? 80 : 115,
           33,
           Font.PLAIN);
       if (privateValidation) {
         g.setColor(accent);
-        text(g, spec.path("eyebrow").asText(), 64, 350, 952, 32, 25, Font.PLAIN);
+        text(g, spec.path("eyebrow").asText(), 64, 334, 952, 44, 36, Font.PLAIN);
       }
       int proofHeight = privateValidation ? 667 : 550;
       double scale = Math.min(952.0 / width, (double) proofHeight / height);

@@ -93,6 +93,9 @@ Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), hea
 Em validação privada o executor imprime “DEMONSTRAÇÃO DO SITE” junto à identificação e
 “Exemplo com dados de teste · sem cobrança” imediatamente **antes do CTA**. Preserve essa
 qualificação e o CTA congelado; não use a copy para contornar a ordem do template.
+Marca, identificação da demonstração e o rótulo solicitado usam fonte de 36 pixels no template
+privado, assim como CTA e ressalvas. Mantenha esses identificadores curtos e confira sua leitura
+na redução de 393 pixels; não aceite rótulos menores só porque o restante da peça está legível.
 Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
 
 O `footer` é um limite factual obrigatório e permanece impresso também na peça privada,

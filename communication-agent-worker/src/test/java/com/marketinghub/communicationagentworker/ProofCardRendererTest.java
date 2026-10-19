@@ -18,6 +18,64 @@ class ProofCardRendererTest {
   private final ObjectMapper json = new ObjectMapper();
   private final ProofCardRenderer renderer = new ProofCardRenderer();
 
+  /** Compara os identificadores privados ao texto da ação, ambos prometidos com fonte mínima 36. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {910118L, 910219L})
+  void privateIdentifiersRemainAsReadableAsTheAction(long artifactId) throws Exception {
+    var input =
+        spec()
+            .put("sourceArtifactId", artifactId)
+            .put("brandLabel", "EXEMPLO")
+            .put("eyebrow", "EXEMPLO")
+            .put("ctaText", "EXEMPLO");
+    var image = ImageIO.read(new ByteArrayInputStream(renderer.render(input, source(), true)));
+    var accent = Color.decode(input.path("accentColor").asText());
+    int top = actionTop(image, accent);
+    int actionInkHeight = colorHeight(image, Color.WHITE, top, top + 90);
+    var identifiers = textBandHeights(image, accent, top - 100);
+    assertThat(identifiers).hasSize(3);
+    assertThat(identifiers)
+        .allSatisfy(height -> assertThat(height).isGreaterThanOrEqualTo(actionInkHeight));
+  }
+
+  /** Mede a altura dos glifos coloridos, independentemente da posição exata no template. */
+  private static int colorHeight(BufferedImage image, Color color, int from, int to) {
+    int first = Integer.MAX_VALUE, last = -1;
+    for (int y = from; y < to; y++) {
+      for (int x = 64; x < 1016; x++) {
+        if (image.getRGB(x, y) == color.getRGB()) {
+          first = Math.min(first, y);
+          last = y;
+        }
+      }
+    }
+    return last < 0 ? 0 : last - first + 1;
+  }
+
+  /** Agrupa linhas próximas dos rótulos sem confundir prova, margens ou acentos das letras. */
+  private static java.util.List<Integer> textBandHeights(BufferedImage image, Color color, int to) {
+    var heights = new java.util.ArrayList<Integer>();
+    int first = -1, last = -1;
+    for (int y = 0; y < to; y++) {
+      boolean ink = false;
+      for (int x = 64; x < 1016; x++) {
+        if (image.getRGB(x, y) == color.getRGB()) {
+          ink = true;
+          break;
+        }
+      }
+      if (!ink) continue;
+      if (first >= 0 && y - last > 7) {
+        heights.add(last - first + 1);
+        first = -1;
+      }
+      if (first < 0) first = y;
+      last = y;
+    }
+    if (first >= 0) heights.add(last - first + 1);
+    return heights;
+  }
+
   /**
    * Garante que o limite da demonstração seja lido antes do convite à ação em produtos distintos.
    */

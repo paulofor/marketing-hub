@@ -58,6 +58,11 @@ atividade, provedor, gateway, sessão compartilhada ou fallback automático.
 - Versões de runtime: Atena 8, Plutus 7, Dédalo 7 e Íris 4. São distintas da versão
   editorial do cadastro. A disponibilidade do modelo não comprova qualidade de
   inferência real; o ganho depende das próximas entregas e de medição posterior.
+- Conferência adicional após o CI: 146 testes de tarefas e compatibilidade de
+  Mira, 16 do empacotador e 22 do seletor de publicação aprovados. A atestação
+  sucessora v30 preserva a v29 e não seleciona publicação de produto. O pacote
+  real com 536 arquivos e 120 manifestos foi revalidado. Corrigida somente a
+  formatação preexistente de um teste; o check específico dos ciclos passou.
 
 ## Aprendizado e adoção
 

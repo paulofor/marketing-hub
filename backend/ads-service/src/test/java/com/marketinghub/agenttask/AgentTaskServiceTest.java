@@ -2689,9 +2689,7 @@ class AgentTaskServiceTest {
     var task = processTask(id, iris, definition, "nonAudiovisual", "BLOCKED");
     task.setExecutionError("A correção repetiu a imagem reprovada.");
     task.setResultJson(
-        "{\"executionStatus\":\"READY_FOR_RENDER\",\"sourceReference\":\"experiment:"
-            + id
-            + "\"}");
+        "{\"executionStatus\":\"READY_FOR_RENDER\",\"sourceReference\":\"experiment:" + id + "\"}");
     task.setEvidenceJson("{\"modelResponded\":true}");
     task.setEstimatedCostUsd(new BigDecimal("0.442742"));
     when(repository.findById(id)).thenReturn(Optional.of(task));

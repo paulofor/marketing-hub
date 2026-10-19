@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-foley-regioes-visuais-criticas",
+  "collection": "video",
+  "title": "Gerar efeitos sonoros a partir de pontos visuais que produzem som",
+  "finding": "Em avaliação de SCR-V2A com 30 participantes, áudio condicionado a regiões visuais críticas teve média de alinhamento semântico 4,10/5 ante 3,87/5 de MMAudio, mas sincronização temporal inferior (3,50 vs 3,87).",
+  "mechanism": "Pistas de contato, movimento e partes de objetos complementam o contexto visual global e podem tornar a fonte sonora menos ambígua; ganho de adequação semântica não garante melhor sincronização.",
+  "commercialApplication": "Em vídeos demonstrativos do Apolo, comparar efeitos Foley convencionais a efeitos propostos com foco em regiões visualmente associadas ao som, com audição A/B e aprovação humana antes de publicar.",
+  "evidenceStrength": "Estudo técnico aceito em conferência (arXiv 16/10/2026) com benchmarks e avaliação subjetiva de 30 pessoas sobre 20 vídeos. Não há teste com anúncios ou conversões.",
+  "publishedOn": "2026-10-19",
+  "validUntil": "2026-12-03",
+  "experimentHypothesis": "Em clipes demonstrativos similares, usar pistas visuais locais reduzirá correções de efeitos Foley e elevará adequação semântica percebida, sem piorar a sincronização; medir também custo por ativo aprovado.",
+  "risks": "Falhas de detecção podem introduzir sons inexistentes; sons mal sincronizados podem prejudicar compreensão; verificar direitos dos clipes e efeitos; não usar métricas de áudio como prova de vendas.",
+  "limits": "Amostra pequena e vídeos curtos. MMAudio foi superior na pontuação de alinhamento temporal; não foram medidos retenção, CTA, checkout ou pagamentos do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-19-foley-regioes-visuais-criticas.md",
+  "sourceTitle": "Fonte revisada — regiões visuais críticas para geração de áudio a partir de vídeo",
+  "sourceSha256": "83e69294eb7bed63894eaaf619758dc7b44e6f299686be32e7272c45f400662c"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "vies-auditivo-atencao-visual-filmes",
+  "collection": "prazer-audio-visual",
+  "title": "Audição e atenção visual em filmes",
+  "finding": "Análises de fMRI e olhar durante filmes encontraram padrões compatíveis com influência auditiva sobre atenção visual.",
+  "mechanism": "Integração multissensorial e atenção são relacionadas; causalidade não comprovada.",
+  "commercialApplication": "Comparar áudio neutro com pista sonora congruente numa mesma cena.",
+  "evidenceStrength": "Moderada para associação neural; baixa para aplicação causal.",
+  "experimentHypothesis": "Pistas auditivas congruentes aumentarão reconhecimento do detalhe visual.",
+  "risks": "Som intrusivo; inferir prazer ou vendas a partir de fMRI.",
+  "limits": "Estudo observacional; sem medida de prazer ou conversão.",
+  "sourceTitle": "Fonte revisada v1 — Audição e atenção visual nos filmes",
+  "publishedOn": "2026-10-19",
+  "validUntil": "2026-12-03",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-19-vies-auditivo-atencao-visual-filmes.md",
+  "sourceSha256": "23d1a4d752aca7c46d2cd407c4a5276191eee32f04dbb555ba4749b26fd49796"
+}

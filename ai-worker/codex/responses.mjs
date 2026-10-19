@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
-import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename, appendFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import Ajv from 'ajv';
@@ -83,7 +83,11 @@ async function connect(options) {
     try { message = JSON.parse(line); } catch { fail(new Error('JSON-RPC inválido no App Server')); return; }
     if (message.id !== undefined && !message.method) {
       const p = pending.get(message.id);
-      if (p) { pending.delete(message.id); message.error ? p.reject(new Error(message.error.message)) : p.resolve(message.result); }
+      if (p) {
+        pending.delete(message.id);
+        if (['thread/start', 'turn/start'].includes(p.method)) events.push({ method: `rpc/${p.method}`, params: { response: message } });
+        message.error ? p.reject(new Error(message.error.message)) : p.resolve(message.result);
+      }
     } else if (message.method && message.id !== undefined) {
       // O worker não concede autorização de shell, arquivos, rede ou intervenção humana.
       child.stdin.write(`${JSON.stringify({ id: message.id, error: { code: -32601, message: 'Ferramenta não autorizada pelo Worker IA' } })}\n`);
@@ -95,7 +99,7 @@ async function connect(options) {
   });
   const request = (method, params = {}) => new Promise((resolve, reject) => {
     const id = ++sequence;
-    pending.set(id, { resolve, reject });
+    pending.set(id, { resolve, reject, method });
     child.stdin.write(`${JSON.stringify({ id, method, params })}\n`);
   });
   const send = (method, params = {}) => child.stdin.write(`${JSON.stringify({ method, params })}\n`);
@@ -125,22 +129,23 @@ export async function execute(body, options) {
     await mkdir(options.cacheDirectory, { recursive: true, mode: 0o700 });
   }
   const server = await connect(options);
+  let threadParams, turnParams, threadId, turnId, usage;
+  let inferenceStarted = false;
   try {
     const models = await server.request('model/list', { includeHidden: true });
     if (!models.data?.some(model => model.model === body.model || model.id === body.model))
       throw new Error(`Modelo ${body.model} indisponível nesta sessão Codex; configure um modelo autorizado, sem substituição automática`);
-    const threadParams = {
+    threadParams = {
       model: body.model, cwd: options.workspace, approvalPolicy: 'never', sandbox: 'read-only', ephemeral: true,
       config: { service_tier: 'default', web_search: 'disabled', features: { shell_tool: false, apply_patch_tool: false }, mcp_servers: {} },
     };
     if (translated.developerInstructions) threadParams.developerInstructions = translated.developerInstructions;
     const thread = await server.request('thread/start', threadParams);
-    const threadId = thread.thread.id;
-    const turnParams = { threadId, input: translated.input };
+    threadId = thread.thread.id;
+    turnParams = { threadId, input: translated.input };
     if (translated.schema) turnParams.outputSchema = translated.schema;
     if (body.reasoning?.effort) turnParams.effort = body.reasoning.effort;
     const messages = new Map();
-    let usage;
     const completed = new Promise((resolve, reject) => {
       server.listeners.add((event, error) => {
         if (error) { reject(error); return; }
@@ -155,7 +160,9 @@ export async function execute(body, options) {
     completed.catch(() => {});
     // Só registra despacho depois da prontidão. Uma falha de autenticação não consumiu inferência.
     if (receipt) await writeFile(`${receipt}.started`, JSON.stringify({ fingerprint, threadId, at: new Date().toISOString() }), { flag: 'wx', mode: 0o600 });
+    inferenceStarted = true;
     const started = await server.request('turn/start', turnParams);
+    turnId = started.turn.id;
     const turn = await completed;
     if (turn.id !== started.turn.id || turn.status !== 'completed')
       throw new Error(`Turno Codex não concluído: ${turn.status}`);
@@ -166,7 +173,7 @@ export async function execute(body, options) {
       id: `codex:${threadId}:${turn.id}`, status: 'completed', model: body.model, service_tier: 'default', output_text: text,
       output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
       usage: usage ? { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens, total_tokens: usage.totalTokens } : null,
-      codex_app_server: { version: 1, threadId, turnId: turn.id, metadata: body.metadata || {}, request: { thread: threadParams, turn: turnParams }, requestedServiceTier: body.service_tier || 'flex', effectiveServiceTier: 'default', compatibilityReason: COMPATIBILITY_REASON, events: server.events },
+      codex_app_server: { version: 1, threadId, turnId: turn.id, metadata: body.metadata || {}, request: { thread: threadParams, turn: turnParams }, requestedServiceTier: body.service_tier || 'flex', effectiveServiceTier: 'default', compatibilityReason: COMPATIBILITY_REASON, events: structuredClone(server.events) },
     };
     // Salva a saída crua antes da validação: resposta inválida também é recuperável e auditável.
     if (receipt) {
@@ -174,6 +181,18 @@ export async function execute(body, options) {
       await rename(`${receipt}.tmp`, receipt);
     }
     return response;
+  } catch (error) {
+    const failure = {
+      status: 'failed', model: body.model, at: new Date().toISOString(), inferenceStarted,
+      error: { message: error.message }, usage: usage || null,
+      codex_app_server: { version: 1, threadId, turnId, metadata: body.metadata || {}, request: { thread: threadParams, turn: turnParams }, events: structuredClone(server.events) },
+    };
+    error.receipt = failure;
+    if (receipt) {
+      try { await appendFile(`${receipt}.failures.jsonl`, `${JSON.stringify(failure)}\n`, { mode: 0o600 }); }
+      catch (persistenceError) { failure.auditPersistenceError = { code: persistenceError.code, message: persistenceError.message }; }
+    }
+    throw error;
   } finally { server.close(); }
 }
 
@@ -243,6 +262,7 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.
       validateResponse(body, response);
     }
   } catch (error) {
+    if (error.receipt) process.stdout.write(JSON.stringify(error.receipt));
     process.stderr.write(`${String(error.message).replace(/(?:sk-[\w-]+|gh[pousr]_[\w]+|github_pat_[\w]+)/g, '[REDACTED]')}\n`);
     process.exitCode = 1;
   } finally { clearTimeout(timeout); }

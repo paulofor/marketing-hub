@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execute, translate, validateResponse, codexEnvironment, health, login } from './responses.mjs';
@@ -77,6 +78,46 @@ test('bloqueia replay de despacho incerto após queda do processo', async t => {
   const options = await setup(t, { mode: 'disconnect' });
   await assert.rejects(execute(body(), options), /encerrou/);
   await assert.rejects(execute(body(), options), /EEXIST/);
+  assert.equal((await calls(options)).filter(c => c.method === 'turn/start').length, 1);
+});
+
+test('turno incompleto preserva entrada, saída bruta, uso e correlação do job', async t => {
+  const options = await setup(t, { status: 'failed' });
+  await assert.rejects(execute(body(), options), /não concluído/);
+  const file = (await readdir(options.cacheDirectory)).find(name => name.endsWith('.failures.jsonl'));
+  const receipt = JSON.parse((await readFile(join(options.cacheDirectory, file), 'utf8')).trim());
+  assert.equal(receipt.status, 'failed');
+  assert.equal(receipt.inferenceStarted, true);
+  assert.equal(receipt.usage.inputTokens, 80);
+  assert.equal(receipt.codex_app_server.metadata.idJob, 'capella-105-offer');
+  assert.ok(receipt.codex_app_server.events.some(e => e.params?.item?.text === '{"ready":true}'));
+});
+
+test('erro JSON-RPC conserva código e dados originais para diagnóstico', async t => {
+  const options = await setup(t, { mode: 'rpc-error' });
+  await assert.rejects(execute(body(), options), /Contrato recusado/);
+  const file = (await readdir(options.cacheDirectory)).find(name => name.endsWith('.failures.jsonl'));
+  const receipt = JSON.parse((await readFile(join(options.cacheDirectory, file), 'utf8')).trim());
+  const event = receipt.codex_app_server.events.find(e => e.method === 'rpc/turn/start');
+  assert.equal(event.params.response.error.code, -32602);
+  assert.equal(event.params.response.error.data.field, 'outputSchema');
+});
+
+test('entrypoint real entrega recibo de falha ao Java e encerra sem nova inferência', async t => {
+  const options = await setup(t, { status: 'failed' });
+  const bin = join(options.home, 'bin');
+  await mkdir(bin);
+  await symlink(resolve('fixtures/app-server.mjs'), join(bin, 'codex'));
+  const child = spawn(process.execPath, [resolve('responses.mjs')], { env: { ...process.env, CODEX_HOME: options.home, AI_WORKER_CODEX_WORKSPACE: options.workspace, AI_WORKER_CODEX_RECEIPTS: options.cacheDirectory, PATH: `${bin}:${process.env.PATH}` } });
+  let output = '', error = '';
+  child.stdout.on('data', chunk => output += chunk);
+  child.stderr.on('data', chunk => error += chunk);
+  child.stdin.end(JSON.stringify(body()));
+  const code = await new Promise(resolve => child.on('exit', resolve));
+  assert.equal(code, 1);
+  assert.equal(JSON.parse(output).status, 'failed');
+  assert.equal(JSON.parse(output).codex_app_server.metadata.idJob, 'capella-105-offer');
+  assert.match(error, /não concluído/);
   assert.equal((await calls(options)).filter(c => c.method === 'turn/start').length, 1);
 });
 

@@ -51,7 +51,7 @@ Fonte oficial consultada: [Codex App Server](https://learn.chatgpt.com/docs/app-
 
 - Java: 289 casos registrados, 286 executados sem falha e três exclusões preexistentes:
   um replay opcional de navegador e dois testes legados explicitamente desativados.
-- Node: 20 casos aprovados; `npm audit` sem vulnerabilidades nas dependências fixadas.
+- Node: 23 casos aprovados; `npm audit` sem vulnerabilidades nas dependências fixadas.
 - Integração: adapters produtivos do GeraSalesPage, fila `pending`, subprocesso do App
   Server simulado, schema, custo Standard e callbacks oficiais aprovados para três IDs.
   Replay após callback recusado executa uma única inferência; schema inválido e falta
@@ -70,3 +70,5 @@ Fonte oficial consultada: [Codex App Server](https://learn.chatgpt.com/docs/app-
 - A regressão adicional de 70 KB falhou antes da correção: a resposta bruta estava
   incorporada ao campo de erro. Agora o recibo integral e a correlação do job continuam
   preservados; a mensagem operacional é curta e o callback de falha consegue ser registrado.
+- Turnos incompletos e erros JSON-RPC também conservam entrada, eventos brutos, uso
+  disponível e IDs em auditoria durável, sem liberar nova inferência automática.

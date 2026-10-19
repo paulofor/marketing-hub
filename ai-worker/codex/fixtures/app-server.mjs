@@ -22,6 +22,10 @@ createInterface({ input: process.stdin }).on('line', line => {
   else if (m.method === 'thread/start') { threadId = `thread-${config.identity || 'a'}`; reply({ thread: { id: threadId } }); }
   else if (m.method === 'turn/start') {
     if (config.mode === 'disconnect') { process.exit(9); }
+    if (config.mode === 'rpc-error') {
+      process.stdout.write(`${JSON.stringify({ id: m.id, error: { code: -32602, message: 'Contrato recusado', data: { field: 'outputSchema' } } })}\n`);
+      return;
+    }
     reply({ turn: { id: 'turn-1' } });
     if (config.mode === 'tool') {
       process.stdout.write(`${JSON.stringify({ id: 'tool-1', method: 'item/commandExecution/requestApproval', params: { threadId } })}\n`);

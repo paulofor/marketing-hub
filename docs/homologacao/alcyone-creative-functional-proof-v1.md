@@ -152,3 +152,33 @@ foi conferida localmente em desktop, iPhone 15 Pro e Pixel 7 antes de publicar, 
 ausência de transbordamento e à ordem visual.
 Pareceres anteriores e custos não são reescritos; a produção e a revisão da candidata corrigida
 continuam obrigatórias. Qualidade local não comprova conversão ou venda.
+
+## Reaplicação sem nova inferência — 19/10/2026
+
+A tarefa 762 preservou um plano `READY_FOR_RENDER`, mas foi bloqueada por repetir
+os pixels da candidata rejeitada. A tipografia era fixa no renderer. Repetir a
+inferência não altera essa causa. O comando manual de retomada já existente
+reconhecia callbacks completos, mas não preparava o plano pronto para o executor
+compatível; a tela tampouco expunha essa recuperação no detalhe do produto.
+
+Foram comparados criar outra tarefa, automatizar qualquer bloqueio e ampliar a
+recuperação existente. Outra tarefa repete custo; automatizar rejeições funcionais
+criaria um loop. A terceira opção reaplica a mesma resposta após a correção técnica,
+por ação explícita no detalhe auditado, mantendo o handshake `IRIS_RENDER_PLAN_V1`.
+Não há novo endpoint, fila ou mecanismo paralelo. A resposta bruta e o resultado
+anterior são preservados antes da substituição pela saída materializada.
+
+Matriz adicional definida antes dos testes: caso original e outra identidade; worker
+antigo não recebe plano pronto; executor compatível reaplica sem chamar o modelo ou
+renovar o custo; resposta bruta exata preservada em dois modos privados; callbacks
+anteriores continuam válidos; tela recusa outro agente, atividade, escopo, tipo,
+estado, evidência inválida e ausência de erro. Envio incerto conserva a resposta e
+reconsulta o estado. Desktop, iPhone e Pixel exercitam o componente real com HTTP
+local simulado, incluindo falha 503 e nova tentativa manual, sem POST de criação.
+
+Resultado: 4.871 testes na suíte integral do backend, sem falhas/erros e 44 dispensas opcionais;
+98 testes na suíte de Íris, sem falhas/erros e quatro dispensas opcionais;
+28 testes de frontend, typecheck, build e navegação local nos três dispositivos
+passaram. As duas regressões de retomada no backend falharam antes da mudança e
+passaram depois, preservando custo e identidade. Esses resultados comprovam o
+comportamento local; o aceite produtivo depende dos pareceres da candidata final.

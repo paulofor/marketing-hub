@@ -9,6 +9,7 @@ import {
 } from "./BusinessProcessExecutionPresentation";
 import PsiqueTaskAudit from "./PsiqueTaskAudit";
 import type { TaskPromptAuditRequest } from "./DeferredTaskPromptAudit";
+import PreservedMaterializationRetry from "./PreservedMaterializationRetry";
 
 type BusinessProcessExecutionCardProps = {
   execution: BusinessProcessActivityExecution;
@@ -97,6 +98,14 @@ export default function BusinessProcessExecutionCard({
               value={execution.comments}
               emptyText="Nenhum comentário registrado."
             />
+            {expanded ? (
+              <PreservedMaterializationRetry
+                execution={execution}
+                onRefresh={() => {
+                  if (auditRequest) void audit.refetch();
+                }}
+              />
+            ) : null}
 
             {execution.executionError || guidance ? (
               <div

@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import axios from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BusinessProcessActivityExecution } from "../../api/businessProcess/types";
@@ -40,7 +46,60 @@ function view() {
 
 describe("BusinessProcessExecutionCard", () => {
   afterEach(() => {
+    cleanup();
     vi.resetAllMocks();
+  });
+
+  /** Reaplica a saída auditada pelo cartão do produto sem carregar a caixa completa do agente. */
+  it("offers deterministic materialization recovery after loading the scoped audit", async () => {
+    const ready = {
+      ...execution,
+      assignedAgentKey: "communication-director",
+      assignedAgentNickname: "Íris",
+      executionMode: "MODEL" as const,
+      comments: JSON.stringify({
+        executionStatus: "READY_FOR_RENDER",
+        activityId: "nonAudiovisual",
+        outputType: "NON_AUDIOVISUAL_PACKAGE",
+        sourceReference: execution.sourceReference,
+      }),
+      evidenceJson: '{"modelResponded":true}',
+    };
+    vi.mocked(axios.get).mockResolvedValue({ data: ready });
+    vi.mocked(axios.patch).mockResolvedValue({
+      data: { status: "IN_PROGRESS" },
+    });
+    view();
+    expect(
+      screen.queryByRole("button", { name: "Reaplicar resultado sem nova IA" }),
+    ).not.toBeInTheDocument();
+    const details = screen.getByText(execution.title).closest("details")!;
+    details.open = true;
+    fireEvent(details, new Event("toggle", { bubbles: true }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Reaplicar resultado sem nova IA",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "Retomada registrada, preservando resposta e custos anteriores.",
+      ),
+    ).toBeInTheDocument();
+    expect(axios.patch).toHaveBeenCalledTimes(1);
+    expect(axios.patch).toHaveBeenCalledWith(
+      "/api/agent-tasks/450/status",
+      {
+        status: "IN_PROGRESS",
+      },
+      { timeout: 45000 },
+    );
+    expect(
+      vi
+        .mocked(axios.get)
+        .mock.calls.every(([url]) => String(url).includes("/tasks/450/audit")),
+    ).toBe(true);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   /** Carrega provas extensas somente depois que a pessoa abre a tarefa resumida. */

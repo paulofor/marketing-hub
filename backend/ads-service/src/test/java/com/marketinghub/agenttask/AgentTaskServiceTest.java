@@ -2678,6 +2678,52 @@ class AgentTaskServiceTest {
   }
 
   /** Retoma a materialização de Íris sem repetir a inferência cuja saída já foi preservada. */
+  @ParameterizedTest
+  @ValueSource(longs = {762, 910762})
+  void manuallyReplaysReadyRenderOnlyWithCompatibleWorker(long id) {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var iris = agent(9L, "communication-director", "Íris");
+    var definition = process("PUBLISHED", "Íris");
+    definition.setProcessCode("creative-production-approval");
+    var task = processTask(id, iris, definition, "nonAudiovisual", "BLOCKED");
+    task.setExecutionError("A correção repetiu a imagem reprovada.");
+    task.setResultJson(
+        "{\"executionStatus\":\"READY_FOR_RENDER\",\"sourceReference\":\"experiment:"
+            + id
+            + "\"}");
+    task.setEvidenceJson("{\"modelResponded\":true}");
+    task.setEstimatedCostUsd(new BigDecimal("0.442742"));
+    when(repository.findById(id)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    when(agents.findByAgentKey("communication-director")).thenReturn(Optional.of(iris));
+    when(repository.findReplayableClaimedCallbackCandidates("communication-director"))
+        .thenReturn(List.of(task));
+    var service = service(repository, agents, Clock.systemUTC());
+
+    service.updateStatus(id, new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+
+    assertThat(task.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(
+            service.claimEligibleProcessTask(
+                "communication-director", "creative-production-approval", "nonAudiovisual"))
+        .isEmpty();
+    var replay =
+        service
+            .claimEligibleProcessTask(
+                "communication-director",
+                "creative-production-approval",
+                "nonAudiovisual",
+                null,
+                "IRIS_RENDER_PLAN_V1")
+            .orElseThrow();
+    assertThat(replay.taskId()).isEqualTo(id);
+    assertThat(replay.retryResultJson()).isEqualTo(task.getResultJson());
+    assertThat(replay.retryEvidenceJson()).isEqualTo(task.getEvidenceJson());
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.442742");
+  }
+
+  /** Recupera o callback legado de uma peça já materializada sem renovar a inferência. */
   @Test
   void retriesFrozenVisualMaterializationWithoutNewInference() {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);

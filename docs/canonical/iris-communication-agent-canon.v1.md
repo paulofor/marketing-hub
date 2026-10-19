@@ -589,6 +589,15 @@ passa a garantir esse mínimo na marca, identificação fixa e rótulo solicitad
 regressão compara a altura dos glifos desses três identificadores à ação em fonte 36,
 em duas identidades, sem depender da avaliação verbal de legibilidade do modelo.
 
+Depois de corrigir o impedimento técnico, uma resposta `READY_FOR_RENDER` preservada
+pode ser reaplicada pelo comando existente de retomada da tarefa. A fila só entrega
+esse plano a um executor que anuncia `IRIS_RENDER_PLAN_V1`; o executor não chama o
+modelo nem acrescenta custo de inferência. Preservar a resposta bruta original, o
+resultado anterior, a auditoria e o custo da mesma tarefa. A tela oferece o comando
+apenas no detalhe auditado de materialização não audiovisual bloqueada, no mesmo
+escopo. Uma reaplicação não substitui os novos pareceres sobre os pixels corrigidos
+nem o aceite humano. Falha incerta de envio exige reler o estado persistido.
+
 ### Autoria preservada na passagem ao destino — 09/10/2026
 
 Cada item de `communicationArtifacts` do ciclo privado preserva `agentKey` da tarefa

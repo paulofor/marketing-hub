@@ -71,3 +71,32 @@ consultadas em 19/10/2026, e preserva qualquer cadastro existente. A quarta
 regressão cobre criação, preservação de preço atualizado e rollback não destrutivo.
 Fonte: https://developers.openai.com/api/docs/pricing (Standard e Batch, por milhão
 de tokens; estimativa da assinatura continua distinta de fatura).
+
+## Segunda passagem: recibo maior que o leitor
+
+Após publicar os sete contratos compatíveis, o job `5422374e-f997-44da-94be-e59237a90338` concluiu no Codex. O recibo durável tem 458.444 bytes, hash SHA-256 `8fd65a8180be535576a6472197fee9963fea35d8f7e8703b914e135e6dd10963`, 31.752 tokens de entrada e 863 de saída. O backend recebeu `OpenAI Responses API returned HTTP 200`, sem resposta ou custo. Duas regressões locais falharam antes da correção com `DataBufferLimitException: 262144`.
+
+Foram comparados reduzir o recibo (perderia auditoria), remover o limite global dos clientes (ampliaria risco de memória e escopo) e configurar um limite exclusivo do adaptador junto à recuperação do recibo. A terceira opção preserva a entrega existente, mantém limite de 16 MiB e não repete inferência.
+
+### Matriz da recuperação
+
+| Caso | Aceite |
+| --- | --- |
+| Original e outro produto | Recibo acima de 460 KiB chega ao callback com uso, custo e conteúdo completos |
+| Replay | Mesmo job, hash e bytes; somente um turno; nenhum novo processo do provedor |
+| Ausência ou divergência | Outro job, prompt, schema ou modelo bloqueiam antes de abrir sessão |
+| Transporte indevido | Recuperação exclusiva não pode chamar API paga |
+| Backend | Lock, revalidação da entrada, histórico, callback e avanço somente no sucesso |
+| Compatibilidade | Retomada técnica anterior e respostas pequenas permanecem válidas |
+| Interface | Explica recuperação sem novo consumo; mantém a tentativa selecionada e evita duplicação |
+| Limite de memória | Limite finito exclusivo do recibo Codex; outros endpoints preservados |
+
+A publicação será seguida pela recuperação deste mesmo job pela tela. Testes e dados sintéticos não contam como evidência comercial. Nenhum vídeo ou aceite humano precisa ser repetido.
+
+### Resultado local da correção do recebimento
+
+- As duas regressões falharam antes da correção no limite de 262.144 bytes e passaram após o ajuste.
+- Backend: 55 testes funcionais aprovados; quatro fixtures MySQL de catálogo não aplicáveis a esta alteração sem changelog ficaram condicionadas ao ambiente. As quatro passaram fisicamente na entrega anterior. Arquitetura: 92 regras aprovadas.
+- Worker: 37 testes finais do adaptador e cliente aprovados, incluindo limite finito, transporte indevido, recibo ausente e replay. Etapas comerciais existentes também passaram.
+- Node: 34 testes aprovados. Frontend: seis casos, TypeScript e build aprovados; navegação local em desktop, iPhone 15 Pro e Pixel 7 sem transbordamento ou duplicação, com identidades distintas.
+- Spotless e montagem das atestações comerciais vigentes aprovados. Nenhum modelo externo, pagamento ou envio real foi utilizado na validação local.

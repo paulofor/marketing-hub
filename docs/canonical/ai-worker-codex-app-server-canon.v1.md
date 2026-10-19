@@ -77,3 +77,18 @@ Matriz: `docs/homologacao/capella-worker-retomada-codex-v1.md`.
 Instalação nova deve preparar o registro de preços antes dos templates: a migração
 semeia somente o modelo ausente, com fonte oficial, e não sobrescreve valores já
 cadastrados. O rollback preserva essa referência para a auditoria das execuções.
+
+## Recebimento e recuperação de recibos — 19/10/2026
+
+O recibo completo contém eventos e request auditáveis e pode ultrapassar 256 KiB.
+O adaptador Codex deve decodificá-lo com limite explícito de 16 MiB, sem truncar
+auditoria nem aumentar indiscriminadamente todos os clientes HTTP. Falha de leitura
+após HTTP 200 não comprova falha da inferência e não autoriza repetir geração.
+
+No GeraSalesPage, o contrato existente de recuperação pode reenfileirar o mesmo
+job em modo `replayOnly`, depois de conferir entrada, modelo, schema e antecessores.
+O executor só pode abrir o recibo do hash exato; se não existir, bloqueia antes de
+conectar à sessão ou iniciar turno. O controle não compõe o hash da inferência.
+Transporte API paga não pode executar esse modo. O callback conserva saída, uso,
+custo e erro original, limpa apenas a mensagem de falha vigente no sucesso e
+devolve ao backend a decisão de avançar. Repetir o comando não cria outro job.

@@ -50,7 +50,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
         this.promptTemplateResolver = new PromptTemplateResolver(path -> "", this::toJsonOrText);
     }
 
-    /** Revalida a demonstração antes do modelo e retorna JSON com mídia e condições preservadas. */
+    /** Revalida a demonstração e recupera o recibo exato quando o backend proíbe nova inferência. */
     @Override
     public StageResult<GeraSalesPageOutput> process(StageContext<GeraSalesPageInput> context) {
         GeraSalesPageReviewedVideo.validate(context.input().promptData(), objectMapper);
@@ -345,7 +345,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
         return html + script;
     }
 
-    /** Monta o request da Responses API usando prompt e schema entregues pelo backend. */
+    /** Monta o contrato original e transporta a restrição de replay fora do prompt comercial. */
     private OpenAiRequest buildOpenAiRequest(StageContext<GeraSalesPageInput> context) {
         GeraSalesPageInput input = context.input();
         String prompt = promptTemplateResolver.resolve(
@@ -353,6 +353,13 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                 input.promptData(),
                 "database:" + input.stageCode());
         String requestBodyJson = buildResponsesApiRequest(input.model(), prompt, input.schemaJson(), input.schemaName());
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("stageCode", context.execution().stageCode());
+        metadata.put("idJob", context.execution().idJob());
+        metadata.put("experimentId", context.execution().aggregateId());
+        if (Boolean.TRUE.equals(context.execution().config().get("replayOnly"))) {
+            metadata.put("marketingHubReplayOnly", true);
+        }
         return new OpenAiRequest(
                 input.model(),
                 prompt,
@@ -360,10 +367,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                 input.schemaName(),
                 input.schemaJson(),
                 input.promptMarkdownContent(),
-                Map.of(
-                        "stageCode", context.execution().stageCode(),
-                        "idJob", context.execution().idJob(),
-                        "experimentId", context.execution().aggregateId()),
+                metadata,
                 serviceTier);
     }
 

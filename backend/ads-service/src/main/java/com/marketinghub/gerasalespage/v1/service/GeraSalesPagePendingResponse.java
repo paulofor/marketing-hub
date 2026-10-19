@@ -11,4 +11,5 @@ public record GeraSalesPagePendingResponse(
     Instant executionRequestedAt,
     Map<String, Object> experiment,
     Map<String, Object> promptTemplate,
-    Map<String, Object> previousStageOutputs) {}
+    Map<String, Object> previousStageOutputs,
+    boolean replayOnly) {}

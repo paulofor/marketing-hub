@@ -10351,3 +10351,11 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
   do executor continuam aplicáveis. Matriz: `capella-worker-retomada-codex-v1.md`.
 - **Limites:** conexão, configuração e testes não aprovam página, criativo, campanha
   ou gasto. Retomar pelo frontend após publicação e conferir cada aceite persistido.
+
+## LOOP-WORKER-CODEX-RECIBO-GRANDE — 2026-10-19
+
+- **Evidência:** Capella, job `5422374e-f997-44da-94be-e59237a90338`: recibo `completed` com 458.444 bytes, 31.752 tokens de entrada e 863 de saída. O backend recebeu erro HTTP 200 sem resultado. Fixtures de dois produtos reproduziram `DataBufferLimitException`, limite 262.144 bytes.
+- **Causa:** `ClientResponse.create` no filtro Codex utilizava os codecs padrão e recusava o recibo auditável, embora o modelo tivesse concluído. Os testes anteriores só cobriam respostas pequenas.
+- **Correção:** codec limitado a 16 MiB exclusivo do adaptador; recuperação oficial do mesmo job com `replayOnly`, entrada revalidada, sem gerar se o recibo exato estiver ausente. Auditoria e custo conservados.
+- **Prevenção:** integração local com App Server simulado produz recibo de 460 KiB em duas identidades, recupera os mesmos bytes com uma única inferência, bloqueia identidade/contexto/schema/modelo diferentes e conserva o caminho anterior de retomada técnica.
+- **Limites:** não corrige schema inválido, resultado ausente, despacho incerto ou demanda comercial. Evidência de aceite local em `docs/homologacao/capella-worker-retomada-codex-v1.md`.

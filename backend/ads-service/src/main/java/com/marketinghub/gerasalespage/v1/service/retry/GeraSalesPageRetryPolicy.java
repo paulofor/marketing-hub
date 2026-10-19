@@ -40,6 +40,21 @@ public final class GeraSalesPageRetryPolicy {
         && execution.getOutputTokens() == null;
   }
 
+  /** Permite somente procurar um recibo exato após falha ao ler uma resposta HTTP já recebida. */
+  public static boolean receiptRecoveryWithoutResult(GeraSalesPageStageExecution execution) {
+    return "FALHA".equals(execution.getStatus())
+        && Objects.toString(execution.getErrorMessage(), "")
+            .contains("Responses API returned HTTP 200")
+        && Objects.toString(execution.getErrorDetail(), "").contains("OpenAiHttpException")
+        && execution.getOpenAiRequestBody() != null
+        && execution.getOpenAiJobId() == null
+        && execution.getRawResponse() == null
+        && execution.getModelResponse() == null
+        && execution.getCostUsd() == null
+        && execution.getInputTokens() == null
+        && execution.getOutputTokens() == null;
+  }
+
   /** Compara semanticamente os dados inseridos no prompt, modelo e schema, sem ignorar campos. */
   public static boolean sameInputs(
       GeraSalesPageStageExecution execution,

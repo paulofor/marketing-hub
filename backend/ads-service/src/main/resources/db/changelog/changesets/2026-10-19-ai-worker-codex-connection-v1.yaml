@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-19-ai-worker-codex-connection-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE ai_worker_codex_connection (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                status VARCHAR(30) NOT NULL,
+                verification_url VARCHAR(100) NULL,
+                user_code VARCHAR(30) NULL,
+                requested_at DATETIME NOT NULL,
+                expires_at DATETIME NOT NULL,
+                completed_at DATETIME NULL,
+                session_authenticated BOOLEAN NOT NULL DEFAULT FALSE,
+                checked_at DATETIME NULL,
+                PRIMARY KEY (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+              INSERT INTO ai_worker_codex_connection
+                (id, status, requested_at, expires_at)
+              VALUES (1, 'DISCONNECTED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE ai_worker_codex_connection;

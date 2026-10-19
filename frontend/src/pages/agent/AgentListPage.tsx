@@ -144,6 +144,12 @@ export default function AgentListPage() {
             >
               Preparar sessões Codex
             </button>
+            <Link
+              className="btn btn-sm btn-outline-primary"
+              to="/ai/pending-requests#worker-connection"
+            >
+              Conectar Worker IA
+            </Link>
           </div>
           <div className="table-responsive mt-3">
             <table className="table table-sm align-middle mb-0">
@@ -216,7 +222,9 @@ export default function AgentListPage() {
                               aria-hidden="true"
                             />
                           ) : null}
-                          {item.automaticExecutionEnabled ? "■ Stop" : "▶ Play"}
+                          {item.automaticExecutionEnabled
+                            ? "■ Stop"
+                            : "▶ Play"}
                         </button>
                       </div>
                     </td>

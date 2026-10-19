@@ -232,7 +232,7 @@ export async function login(options, showCode) {
     const started = await server.request('account/login/start', { type: 'chatgptDeviceCode' });
     loginId = started.loginId;
     if (!loginId || !started.verificationUrl || !started.userCode) throw new Error('App Server não forneceu device code válido');
-    showCode({ verificationUrl: started.verificationUrl, userCode: started.userCode });
+    await showCode({ verificationUrl: started.verificationUrl, userCode: started.userCode });
     await confirmed;
     const account = await server.request('account/read', { refreshToken: false });
     if (account.account?.type !== 'chatgpt') throw new Error('A conta conectada não é uma sessão ChatGPT');

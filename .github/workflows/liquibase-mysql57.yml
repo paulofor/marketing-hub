@@ -145,8 +145,9 @@ jobs:
         working-directory: backend/ads-service
         env:
           AGENT_COST_MYSQL: "true"
+          WORKER_CONNECTION_MYSQL: "true"
           AGENT_COST_DB_HOST: 127.0.0.1
-        run: mvn -B -Dtest=AgentExecutionCostMysql57Test,CommercialAssumptionHandoffMysql57Test test
+        run: mvn -B -Dtest=AgentExecutionCostMysql57Test,CommercialAssumptionHandoffMysql57Test,AiWorkerConnectionMysql57Test test
 
   validate-agent-runtime:
     name: Runtime dos nove agentes com MySQL 5.7

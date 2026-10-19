@@ -1,5 +1,18 @@
 # Telemetria de execução dos agentes Codex — cânone v1
 
+## Conexão administrativa do Worker IA — 19/10/2026
+
+O Worker IA conserva identidade e sessão próprias, sem cadastro fictício de agente.
+Sua conexão é solicitada em `/ai/pending-requests#worker-connection`, também acessível
+pelo atalho **Conectar Worker IA** em Agentes. O backend persiste o comando e o Worker
+consome `/api/ai/worker-connection/internal/pending`; a confirmação ocorre pelo App
+Server no executor. O frontend recebe somente URL oficial, código transitório e estado.
+Código vencido deve ser renovável na mesma página. Prova de sessão vence em três minutos;
+login histórico não equivale a executor disponível. Falha de callback recupera o recibo
+da conexão, sem repetir login ou inferência. Sessões e limites de outros agentes e produtos
+continuam independentes. Ver [matriz e evidências](../homologacao/ai-worker-conexao-painel-v1.md)
+e [contrato HTTP](../swagger/ai-worker-connection-swagger.yaml).
+
 ## Objetivo
 
 Distinguir um job apenas reservado de um processo Codex efetivamente ativo, sem depender de logs técnicos.

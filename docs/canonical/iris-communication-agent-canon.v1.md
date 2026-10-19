@@ -180,6 +180,24 @@ custo já persistido é reescrito.
 
 ## Harness e experiência sensorial
 
+### Prova funcional da comunicação — 19/10/2026
+
+Capturas técnicas preservam entrada, resultado utilizável e encerramento separadamente,
+ligados ao cenário, dispositivo e versão. O encerramento sozinho não demonstra o produto.
+O contrato existente `PDE_KIT_CAPTURE_MOMENTS_V1` identifica BRIEFING e CONTENT também
+na homologação estática de Alcyone, mantendo a leitura dos relatórios históricos.
+
+Quando faltar esse momento no gate aceito, reutilizar a captura complementar determinística
+existente, sem reabrir pareceres ou alterar a versão. A referência histórica
+`experiment:<id>@video-proof-v1` permanece por compatibilidade. Seus pixels só chegam
+à comunicação enquanto o gate original estiver válido, com produto, experimento,
+versão, destino, arquivo e hash conferidos e efeitos externos nulos.
+
+Íris prioriza CONTENT e BRIEFING em relação a telas de encerramento. Fixtures mantêm
+identificação sintética; nenhum recorte se transforma em prova de personalização ou venda.
+A nova peça continua dependente de Psique, Têmis e seleção humana. Capturar não autoriza
+produção paga, publicação, mídia ou mudança da hipótese comercial.
+
 O harness de Íris deve exibir integralmente constituição, prompts, schema, MCP, configuração e
 empacotamento versionados. Sua comunicação apresenta o valor cotidiano do PDE e a experiência
 personalizada do harness, em vez de vender IA abstrata. Direção visual, ritmo, contraste, movimento,

@@ -188,6 +188,68 @@ class CreativeVisualEvidenceServiceTest {
         .hasMessageContaining("origem e destino");
   }
 
+  /** Acrescenta momentos funcionais em dois produtos sem gravar nem substituir o gate original. */
+  @Test
+  void addsSupplementalFunctionalPixelsWithoutReplacingAcceptedGate() {
+    for (long product : List.of(91010L, 92010L)) {
+      task.setSourceReference("experiment:" + (product + 82));
+      var authorized = authorizedInput(product);
+      when(context.resolve(task.getSourceReference())).thenReturn(Optional.of(authorized));
+      var supplemental = supplementalProof(product);
+      var source = image(920001L, 920118L, "FULL_PAGE", "c".repeat(64));
+      source.setEvidenceKey("ADHERENT-IPHONE_15_PRO-CONTENT");
+      source.setDeviceProfile("IPHONE_15_PRO");
+      when(images.findByIdAndTaskId(920118L, 920001L)).thenReturn(Optional.of(source));
+      useSupplement(supplemental);
+
+      var inputs = service.inputs("communication-director", task.getId());
+      assertThat(inputs).hasSize(2);
+      assertThat(inputs.getLast().sourceTaskId()).isEqualTo(920001L);
+      assertThat(inputs.getLast().evidence().evidenceKey()).endsWith("-CONTENT");
+      verify(tasks, never()).save(any());
+    }
+  }
+
+  /** Recusa origem, versão, gasto, arquivo e gate incompatíveis na prova complementar. */
+  @Test
+  void refusesSupplementalIdentityDriftAndForeignOrUnpersistedPixels() {
+    long product = 91010L;
+    var authorized = authorizedInput(product);
+    when(context.resolve(task.getSourceReference())).thenReturn(Optional.of(authorized));
+    var proof = supplementalProof(product);
+    var source = image(920001L, 920118L, "FULL_PAGE", "c".repeat(64));
+    when(images.findByIdAndTaskId(920118L, 920001L)).thenReturn(Optional.of(source));
+    for (String field :
+        List.of(
+            "productId",
+            "prototypeVersion",
+            "sourceReference",
+            "publicUrl",
+            "providerCalls",
+            "trafficClass",
+            "captureMomentsContract")) {
+      var invalid = proof.deepCopy();
+      if (field.equals("productId") || field.equals("providerCalls")) invalid.put(field, 999);
+      else invalid.put(field, "foreign");
+      useSupplement(invalid);
+      assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+          .hasMessageContaining("captura complementar");
+    }
+    var paid = proof.deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) paid.path("sideEffects"))
+        .put("mediaSpendBrl", 1);
+    useSupplement(paid);
+    assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+        .hasMessageContaining("captura complementar");
+    useSupplement(proof);
+    when(images.findByIdAndTaskId(920118L, 920001L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+        .hasMessageContaining("hash aprovado");
+    authorized.put("inputReadiness", "BLOCKED");
+    assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+        .hasMessageContaining("aprovação dos predecessores");
+  }
+
   /** Mantém o bloqueio para briefing sem arquivo e pacote de outra referência. */
   @Test
   void rejectsBriefOnlyAndCrossProductPayload() throws Exception {
@@ -201,6 +263,101 @@ class CreativeVisualEvidenceServiceTest {
                 service.validateCompletion(
                     task, result().replace("experiment:91092", "experiment:99999")))
         .hasMessageContaining("outra referência");
+  }
+
+  /** Simula o gate original vigente sem alterar seu resultado ou autorizar produção. */
+  private Map<String, Object> authorizedInput(long product) {
+    String proofReference = "product:" + product + "@agent-validation-v1";
+    var proof =
+        Map.of(
+            "contractVersion",
+            "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+            "decision",
+            "APPROVED",
+            "prototypeVersion",
+            "sandbox-v12",
+            "sourceReference",
+            proofReference,
+            "productId",
+            product,
+            "publicUrl",
+            "https://example.test/private",
+            "artifacts",
+            List.of(Map.of("artifactId", 910118L, "sha256", "a".repeat(64))));
+    var input = new LinkedHashMap<String, Object>();
+    input.put("inputReadiness", "READY");
+    input.put("prototypeVersion", "sandbox-v12");
+    input.put("product", Map.of("id", product));
+    input.put("approvedDestination", Map.of("url", "https://example.test/private"));
+    input.put("approvedVisualArtifacts", List.of(Map.of("taskId", 910395L, "result", proof)));
+    input.put(
+        "visualProofAuthorization",
+        Map.of(
+            "contractVersion",
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "proofSourceReference",
+            proofReference,
+            "targetSourceReference",
+            task.getSourceReference(),
+            "productId",
+            product,
+            "prototypeVersion",
+            "sandbox-v12",
+            "gateInstanceId",
+            91002L,
+            "publicUrl",
+            "https://example.test/private"));
+    return input;
+  }
+
+  /** Cria relatório determinístico sintético da mesma versão e experimento. */
+  private com.fasterxml.jackson.databind.node.ObjectNode supplementalProof(long product) {
+    var proof = json.createObjectNode();
+    proof.put("contractVersion", "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1");
+    proof.put("captureMomentsContract", "PDE_KIT_CAPTURE_MOMENTS_V1");
+    proof.put("decision", "APPROVED");
+    proof.put("sourceReference", task.getSourceReference() + "@video-proof-v1");
+    proof.put("proofSourceReference", "product:" + product + "@agent-validation-v1");
+    proof.put("productId", product);
+    proof.put("prototypeVersion", "sandbox-v12");
+    proof.put("publicUrl", "https://example.test/private");
+    proof.put("trafficClass", "AGENT_VALIDATION");
+    proof.put("internalMarker", "mh_internal_test");
+    proof.put("providerCalls", 0);
+    proof.put("humanEvidenceClaimed", false);
+    proof.put("commercialEvidenceClaimed", false);
+    proof
+        .putObject("sideEffects")
+        .put("paymentEnabled", false)
+        .put("published", false)
+        .put("campaignCreated", false)
+        .put("mediaSpendBrl", 0);
+    proof
+        .putArray("artifacts")
+        .addObject()
+        .put("artifactId", 920118L)
+        .put("sha256", "c".repeat(64));
+    return proof;
+  }
+
+  /** Entrega a captura pelo mesmo contrato de consulta do backend, sem gravação direta. */
+  private void useSupplement(com.fasterxml.jackson.databind.JsonNode proof) {
+    when(tasks.findFunctionalSnapshots(
+            task.getSourceReference() + "@video-proof-v1",
+            Set.of("pde-construction-approval"),
+            null))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    920001L,
+                    91067L,
+                    "pde-construction-approval",
+                    "technicalHomologation",
+                    "customer-agent",
+                    "COMPLETED",
+                    null,
+                    null,
+                    proof.toString())));
   }
 
   /** Recusa bytes de outra tarefa e preserva o conteúdo privado no contrato HTTP. */

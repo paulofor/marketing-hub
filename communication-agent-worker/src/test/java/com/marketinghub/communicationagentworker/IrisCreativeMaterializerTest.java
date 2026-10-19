@@ -123,6 +123,39 @@ class IrisCreativeMaterializerTest {
     }
   }
 
+  /**
+   * Renderiza os pixels reais capturados localmente e confirma o arquivo persistido pelo backend
+   * simulado.
+   */
+  @Test
+  void rendersAndPersistsFunctionalPixelsFromRealLocalCapture() throws Exception {
+    String report = System.getenv("ALCYONE_LOCAL_REPORT");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        report != null, "Captura funcional local opcional.");
+    var input = json.readTree(java.nio.file.Path.of(report).toFile());
+    JsonNode artifact = null;
+    for (var item : input.path("artifacts"))
+      if ("ADHERENT-IPHONE_15_PRO-CONTENT".equals(item.path("evidenceKey").asText()))
+        artifact = item;
+    assertThat(artifact).isNotNull();
+    source =
+        java.nio.file.Files.readAllBytes(
+            java.nio.file.Path.of(artifact.path("localPath").asText()));
+    sourceHash = IrisCreativeMaterializer.sha(source);
+    var task = task();
+    try (var prepared = materializer.prepare(task)) {
+      var materialized = materializer.materialize(task, result(), prepared);
+      var render = materialized.path("functionalOutput").path("renderedAssets").get(0);
+      assertThat(render.path("sourceSha256").asText()).isEqualTo(sourceHash);
+      assertThat(saved.get()).isNotEmpty();
+      assertThat(render.path("sha256").asText())
+          .isEqualTo(IrisCreativeMaterializer.sha(saved.get()));
+      var pixels = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(saved.get()));
+      assertThat(pixels.getWidth()).isEqualTo(1080);
+      assertThat(pixels.getHeight()).isEqualTo(1350);
+    }
+  }
+
   /** Uma fonte mobile com hash divergente bloqueia antes de solicitar modelo ou salvar peça. */
   @Test
   void refusesCorruptedMobileProof() {

@@ -1,0 +1,29 @@
+services:
+  pde-platform-backend:
+    image: aihub-homologation/${AIHUB_HOMOLOGATION_SESSION}/alcyone-proof-backend:latest
+    environment:
+      PDE_INTERNAL_API_TOKEN: alcyone-local-proof-token
+      PDE_INTERNAL_QA_ENABLED: "true"
+      PDE_APP_BASE_URL: http://127.0.0.1:58184
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8096/actuator/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  alcyone:
+    image: aihub-homologation/${AIHUB_HOMOLOGATION_SESSION}/alcyone-proof-frontend:latest
+    ports:
+      - "58184:80"
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    environment:
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:8096
+      PDE_PRODUCT_ID: "11"
+      VITE_PDE_PRODUCT_SLUG: pde-planejado-46
+      PDE_EXPERIENCE_VERSION: alcyone-private-v3
+      PDE_FRONTEND_VERSION: alcyone-private-v3
+      PDE_FRONTEND_PUBLIC_URL: http://127.0.0.1:58184
+      PDE_FRONTEND_IMAGE: local-proof
+      PDE_FRONTEND_VERSION_ID: alcyone-private-v3
+      PDE_DEPLOY_IMAGE_TAG: local

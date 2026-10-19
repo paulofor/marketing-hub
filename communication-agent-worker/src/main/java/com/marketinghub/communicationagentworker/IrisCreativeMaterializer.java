@@ -90,10 +90,15 @@ public class IrisCreativeMaterializer {
     }
   }
 
-  /** Limita o contexto a uma prova mobile e uma desktop, sem aceitar fonte fora do contrato. */
-  private static List<JsonNode> selectSources(JsonNode inputs) {
+  /**
+   * Prioriza o resultado funcional aprovado por dispositivo sem perder a leitura de provas antigas.
+   */
+  static List<JsonNode> selectSources(JsonNode inputs) {
     JsonNode mobile = null, desktop = null;
-    for (JsonNode input : inputs) {
+    List<JsonNode> ordered = new ArrayList<>();
+    inputs.forEach(ordered::add);
+    ordered.sort(Comparator.comparingInt(IrisCreativeMaterializer::momentPriority));
+    for (JsonNode input : ordered) {
       var evidence = input.path("evidence");
       int width = evidence.path("viewportWidth").asInt();
       String profile = evidence.path("deviceProfile").asText();
@@ -108,6 +113,12 @@ public class IrisCreativeMaterializer {
     if (mobile != null) selected.add(mobile);
     if (desktop != null && !desktop.equals(mobile)) selected.add(desktop);
     return selected.isEmpty() ? List.of(inputs.get(0)) : List.copyOf(selected);
+  }
+
+  /** Ordena conteúdo e entrada antes de telas de conclusão que não demonstram o produto. */
+  private static int momentPriority(JsonNode input) {
+    String key = input.path("evidence").path("evidenceKey").asText();
+    return key.endsWith("-CONTENT") ? 0 : key.endsWith("-BRIEFING") ? 1 : 2;
   }
 
   /** Impede enviar à revisão paga os mesmos pixels que já receberam um pedido de ajuste. */

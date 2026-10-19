@@ -175,6 +175,7 @@ await writeFile(
     mode: input.mode,
     decision: approved ? "APPROVED" : "BLOCKED",
     sourceReference: input.sourceReference,
+    proofSourceReference: `product:${input.productId}@agent-validation-v1`,
     productId: input.productId,
     productSlug: input.productSlug,
     publicUrl: input.sourceUrl,
@@ -189,6 +190,10 @@ await writeFile(
     checks,
     artifacts,
     fixtureContract: "PDE_STATIC_RESULT_FIXTURES_V1",
+    ...(input.mode === "TECHNICAL"
+      ? { captureMomentsContract: "PDE_KIT_CAPTURE_MOMENTS_V1" }
+      : {}),
+    providerCalls: 0,
     sideEffects: {
       paymentEnabled: false,
       published: false,
@@ -217,7 +222,9 @@ async function executeScenario(scenarioCode, deviceProfile) {
   const session = await internalApi("/internal/sessions", {
     method: "POST",
     body: JSON.stringify({
-      sourceReference: input.sourceReference,
+      sourceReference: input.sourceReference.endsWith("@video-proof-v1")
+        ? `product:${input.productId}@agent-validation-v1`
+        : input.sourceReference,
       scenarioCode,
     }),
   });
@@ -254,6 +261,7 @@ async function executeScenario(scenarioCode, deviceProfile) {
   let nullableMilestonesPreserved = false;
   let accessibility = null;
   const errorStates = [];
+  const momentKeys = [];
   const observedCredentials = [session.sessionToken];
   try {
     if (scenarioCode === "RECOVERY") {
@@ -307,6 +315,11 @@ async function executeScenario(scenarioCode, deviceProfile) {
       );
     }
     await fillInput(page, scenarioCode === "SAFETY");
+    if (input.mode === "TECHNICAL" && scenarioCode === "ADHERENT") {
+      momentKeys.push(
+        await captureMoment(page, deviceProfile, `ADHERENT-${deviceProfile}-BRIEFING`),
+      );
+    }
     await page.getByRole("button", { name: "Salvar entrada segura" }).click();
     if (scenarioCode === "RECOVERY") {
       await page.route(
@@ -355,6 +368,11 @@ async function executeScenario(scenarioCode, deviceProfile) {
         .waitFor();
       resultReadyAt = new Date();
       staticFixturesValid = await validateFixtures(page);
+      if (input.mode === "TECHNICAL" && scenarioCode === "ADHERENT") {
+        momentKeys.push(
+          await captureMoment(page, deviceProfile, `ADHERENT-${deviceProfile}-CONTENT`),
+        );
+      }
       await page.getByLabel("O que tornou o pacote útil?").waitFor();
       await page
         .getByLabel("O que tornou o pacote útil?")
@@ -400,7 +418,9 @@ async function executeScenario(scenarioCode, deviceProfile) {
       const outsider = await internalApi("/internal/sessions", {
         method: "POST",
         body: JSON.stringify({
-          sourceReference: input.sourceReference,
+          sourceReference: input.sourceReference.endsWith("@video-proof-v1")
+            ? `product:${input.productId}@agent-validation-v1`
+            : input.sourceReference,
           scenarioCode: "ADHERENT",
         }),
       });
@@ -718,11 +738,38 @@ async function executeScenario(scenarioCode, deviceProfile) {
       sideEffects: evidence.sideEffects,
       humanEvidenceClaimed: evidence.humanEvidenceClaimed,
       commercialEvidenceClaimed: evidence.commercialEvidenceClaimed,
-      screenshotEvidenceKeys: [evidenceKey],
+      screenshotEvidenceKeys: [...momentKeys, evidenceKey],
     };
   } finally {
     await context.close();
   }
+}
+
+/** Preserva os pixels da entrada e do resultado antes que o encerramento esconda a experiência. */
+async function captureMoment(page, deviceProfile, evidenceKey) {
+  if (artifacts.some((artifact) => artifact.evidenceKey === evidenceKey)) {
+    throw new Error("Momento já capturado nesta sessão: " + evidenceKey);
+  }
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
+  const localPath = resolve(evidenceDirectory, evidenceKey.toLowerCase() + ".png");
+  await page.screenshot({ path: localPath, fullPage: true });
+  artifacts.push({
+    captureSessionId: input.captureSessionId,
+    evidenceKey,
+    evidenceType: "FULL_PAGE",
+    deviceProfile,
+    pageNumber: 1,
+    foldNumber: null,
+    viewportWidth: profiles[deviceProfile].viewport.width,
+    viewportHeight: profiles[deviceProfile].viewport.height,
+    pageHeightPx: await page.evaluate(() => document.documentElement.scrollHeight),
+    scrollY: 0,
+    sourceUrl: input.sourceUrl,
+    finalUrl: page.url(),
+    capturedAt: new Date().toISOString(),
+    localPath,
+  });
+  return evidenceKey;
 }
 
 /** Preenche somente referências sintéticas e ativa o limite proibido em SAFETY. */

@@ -423,8 +423,9 @@ export function useCommercialPlanOperationalFlow(planId?: number | null) {
   });
 }
 
-export function useCommercialPlans() {
+export function useCommercialPlans(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["commercial-plans"],
     queryFn: async () => {
       const { data } = await axios.get<CommercialPlan[]>(

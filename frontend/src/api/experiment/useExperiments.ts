@@ -212,8 +212,9 @@ export interface Experiment {
   campaignMetric?: ExperimentCampaignMetric | null;
 }
 
-export function useExperiments() {
+export function useExperiments(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["experiments"],
     queryFn: async () => {
       const { data } = await axios.get<Experiment[]>("/api/experiments");

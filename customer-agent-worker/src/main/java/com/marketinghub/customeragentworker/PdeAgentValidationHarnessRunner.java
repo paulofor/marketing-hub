@@ -151,13 +151,18 @@ public class PdeAgentValidationHarnessRunner {
         "pde-planejado-46".equals(productSlug)
             && prototypeVersion.matches("alcyone-private-v(?:[2-9]|[1-9][0-9]+)")
             && List.of("", "/").contains(URI.create(sourceUrl).getPath());
-    if (supplementary && !privateKit)
+    boolean supplementalProduct =
+        supplementary
+            && alcyone
+            && identityReference.equals("experiment:" + target.path("experimentId").asLong());
+    if (supplementary && !privateKit && !supplementalProduct)
       throw new HarnessException(
           "Captura complementar exige o contrato executável do kit privado.");
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)
         && !vega
         && !miraCandidate
-        && !privateKit) {
+        && !privateKit
+        && !supplementalProduct) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
     if (!vega && !mira && !alcyone && !miraCandidate && !privateKit) {
@@ -349,7 +354,7 @@ public class PdeAgentValidationHarnessRunner {
     if ("TECHNICAL".equals(mode)) {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
-      int extraKitCaptures = privateKit ? validateKitCaptureMoments(result) : 0;
+      int extraKitCaptures = privateKit || alcyone ? validateKitCaptureMoments(result) : 0;
       int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone || privateKit ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
@@ -464,7 +469,10 @@ public class PdeAgentValidationHarnessRunner {
     return List.copyOf(artifacts);
   }
 
-  /** Exige entrada e conteúdo reais nos três dispositivos quando o kit declara momentos extras. */
+  /**
+   * Exige entrada e conteúdo vinculados ao cenário nos três dispositivos, preservando relatórios
+   * antigos.
+   */
   private int validateKitCaptureMoments(JsonNode result) {
     if (!result.has("captureMomentsContract")) return 0;
     if (!"PDE_KIT_CAPTURE_MOMENTS_V1".equals(result.path("captureMomentsContract").asText()))
@@ -475,11 +483,15 @@ public class PdeAgentValidationHarnessRunner {
         throw new HarnessException("Captura de momento duplicada.");
     }
     for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+      String completionSuffix =
+          "PDE_STATIC_RESULT_FIXTURES_V1".equals(result.path("fixtureContract").asText())
+              ? "-FULL_PAGE"
+              : "";
       var expectedKeys =
           Set.of(
               "ADHERENT-" + device + "-BRIEFING",
               "ADHERENT-" + device + "-CONTENT",
-              "ADHERENT-" + device);
+              "ADHERENT-" + device + completionSuffix);
       JsonNode scenario = null;
       for (JsonNode value : result.path("scenarios"))
         if ("ADHERENT".equals(value.path("scenarioCode").asText())

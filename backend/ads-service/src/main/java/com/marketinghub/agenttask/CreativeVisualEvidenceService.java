@@ -159,9 +159,61 @@ public class CreativeVisualEvidenceService {
             new VisualInput(sourceId, version, AgentTaskVisualEvidenceService.response(stored)));
       }
     }
+    output.addAll(supplementalSources(task, version, scope));
     require(
         !output.isEmpty(),
         "Não há captura aprovada e persistida da versão atual para produzir a imagem.");
+    return List.copyOf(output);
+  }
+
+  /**
+   * Acrescenta momentos funcionais da mesma versão sem modificar o gate ou os pareceres aceitos. A
+   * referência histórica video-proof também identifica provas usadas pela comunicação estática.
+   */
+  private List<VisualInput> supplementalSources(AgentTask task, String version, VisualScope scope) {
+    if (!scope.reauthorized() || !task.getSourceReference().matches("experiment:[1-9][0-9]*"))
+      return List.of();
+    String reference = task.getSourceReference() + "@video-proof-v1";
+    var latest =
+        tasks.findFunctionalSnapshots(reference, Set.of("pde-construction-approval"), null).stream()
+            .filter(t -> "technicalHomologation".equals(t.processActivityId()))
+            .filter(t -> "customer-agent".equals(t.agentKey()))
+            .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id));
+    if (latest.isEmpty() || !"COMPLETED".equals(latest.get().status())) return List.of();
+    JsonNode proof = result(latest.get().resultJson());
+    require(
+        reference.equals(proof.path("sourceReference").asText())
+            && scope.proofSourceReference().equals(proof.path("proofSourceReference").asText())
+            && "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1".equals(proof.path("contractVersion").asText())
+            && "PDE_KIT_CAPTURE_MOMENTS_V1".equals(proof.path("captureMomentsContract").asText())
+            && "APPROVED".equals(proof.path("decision").asText())
+            && scope.productId() == proof.path("productId").asLong()
+            && version.equals(proof.path("prototypeVersion").asText())
+            && scope.publicUrl().equals(proof.path("publicUrl").asText())
+            && "AGENT_VALIDATION".equals(proof.path("trafficClass").asText())
+            && "mh_internal_test".equals(proof.path("internalMarker").asText())
+            && proof.path("providerCalls").asInt(-1) == 0
+            && !proof.path("humanEvidenceClaimed").asBoolean(true)
+            && !proof.path("commercialEvidenceClaimed").asBoolean(true)
+            && !proof.path("sideEffects").path("paymentEnabled").asBoolean(true)
+            && !proof.path("sideEffects").path("published").asBoolean(true)
+            && !proof.path("sideEffects").path("campaignCreated").asBoolean(true)
+            && proof.path("sideEffects").path("mediaSpendBrl").asDouble(-1) == 0,
+        "A captura complementar não corresponde à versão privada autorizada e aos seus limites.");
+    List<VisualInput> output = new ArrayList<>();
+    for (JsonNode artifact : proof.path("artifacts")) {
+      long id = artifact.path("artifactId").asLong();
+      var stored = evidence.findByIdAndTaskId(id, latest.get().id()).orElse(null);
+      require(
+          stored != null
+              && Set.of("FULL_PAGE", "FOLD").contains(stored.getEvidenceType())
+              && stored.getSha256().equals(artifact.path("sha256").asText()),
+          "A captura complementar não está persistida com o hash aprovado.");
+      output.add(
+          new VisualInput(
+              latest.get().id(), version, AgentTaskVisualEvidenceService.response(stored)));
+    }
+    require(!output.isEmpty(), "A captura complementar não contém imagens funcionais.");
     return List.copyOf(output);
   }
 

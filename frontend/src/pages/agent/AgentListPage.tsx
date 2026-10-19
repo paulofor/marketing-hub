@@ -516,6 +516,12 @@ export default function AgentListPage() {
                       >
                         Abrir mesa
                       </button>
+                      <Link
+                        className="btn btn-sm btn-outline-primary"
+                        to={`/agents/${agent.id}?newTask=1`}
+                      >
+                        Nova solicitação
+                      </Link>
                       <button
                         className="btn btn-sm btn-outline-primary"
                         onClick={() => navigate(`/agents/${agent.id}/edit`)}

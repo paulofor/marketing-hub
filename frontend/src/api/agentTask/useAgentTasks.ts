@@ -8,10 +8,10 @@ import {
 } from "./types";
 
 /** Consulta a caixa de entrada segregada pela identidade técnica do agente. */
-export function useAgentTasks(agentKey?: string) {
+export function useAgentTasks(agentKey?: string, enabled = true) {
   return useQuery({
     queryKey: ["agent-tasks", agentKey],
-    enabled: Boolean(agentKey),
+    enabled: Boolean(agentKey) && enabled,
     queryFn: async () =>
       (
         await axios.get<AgentTask[]>(

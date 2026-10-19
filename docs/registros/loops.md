@@ -1,3 +1,21 @@
+## LOOP-IRIS-PROVA-SOMENTE-ENCERRAMENTO — 19/10/2026
+
+- **Evidência:** Alcyone 711 produziu peça com capturas 488/489 do encerramento técnico.
+  Psique 712 solicitou entrada ou escolha de looks; Íris 713 e 753 receberam os mesmos
+  pixels e bloquearam a correção. O MCP confirmou a origem e a ausência de outras
+  capturas funcionais no gate 583. A segunda tentativa não mudou a entrada.
+- **Causa:** o harness fazia screenshot depois de concluir o percurso; o seletor de
+  Íris escolhia a primeira imagem por dispositivo, sem distinguir o momento funcional.
+- **Correção:** preservar BRIEFING, CONTENT e encerramento; reaproveitar a captura
+  complementar existente, com referência própria, gate original vigente, versão,
+  produto, destino, hash, segregação e efeitos nulos. Priorizar CONTENT para Íris.
+- **Prevenção:** matriz local de nove cenários e quinze capturas; regressões em duas
+  identidades, fallback histórico, momento ausente/duplicado, dispositivo divergente,
+  captura estrangeira, versão, gasto e gate inválidos. Nenhum parecer fabricado.
+- **Limite:** prova sintética continua sintética; a peça nova exige Psique, Têmis e
+  seleção humana. Não autoriza publicação, mídia nem vídeo pago.
+- **Registro:** [Matriz e evidências](../homologacao/alcyone-creative-functional-proof-v1.md).
+
 ## LOOP-VIDEO-PARECER-ANTES-DO-ROTEIRO — 10/10/2026
 
 - **Histórico:** Capella, ciclo 12/experimento 105, projetos 11/12, abriu ciclos

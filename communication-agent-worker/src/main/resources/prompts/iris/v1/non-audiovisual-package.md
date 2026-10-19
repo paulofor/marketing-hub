@@ -54,8 +54,13 @@ uma aplicação web, diga isso e explique qual informação ela fornece e qual r
 Não substitua essa identificação por expressões vagas como “experiência” ou “leitura privada”.
 Use apenas capacidades comprovadas no contrato e na interface da versão aprovada.
 
-O executor pode anexar uma captura mobile e uma desktop aprovadas. Prefira a mobile para o feed
-quando seus textos forem maiores e quebrarem em linhas curtas. Escolha um único passo útil,
+O executor pode anexar uma captura mobile e uma desktop aprovadas. Para o feed, prefira
+a mobile com textos maiores e linhas curtas. Priorize os momentos CONTENT ou BRIEFING
+quando disponíveis: mostram resultado ou participação real.
+Uma tela de encerramento técnico não demonstra a escolha nem o resultado do produto.
+Quando as imagens forem fixtures sintéticas, mantenha esse limite explícito; não as apresente
+como geração personalizada nem como prova comercial.
+Escolha um único passo útil,
 com título, instrução e limite factual inteiros; avalie o PNG reduzido à largura de 393 pixels,
 não apenas em 1080 pixels. Não recorte palavras nem retire ressalvas para ampliar a promessa.
 Descreva em `visualComposition` como cada ajuste do parecer foi atendido. Pareceres históricos

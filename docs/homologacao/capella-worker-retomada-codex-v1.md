@@ -50,7 +50,7 @@ o isolamento do schema antes de repetir somente seus três cenários.
 
 ## Resultado local
 
-- Backend: 61 casos aprovados, incluindo três cenários físicos MySQL 5.7.44.
+- Backend: 62 casos aprovados, incluindo quatro cenários físicos MySQL 5.7.44.
 - Executor: 39 casos aprovados; um replay visual opcional preexistente não se aplica
   à alteração de configuração. Integração percorre fila, App Server simulado,
   schema, estimativa de custo e callback para três identidades.
@@ -63,3 +63,11 @@ o isolamento do schema antes de repetir somente seus três cenários.
 A adoção depende da execução real preservando qualidade e custos; retornar ao
 contrato anterior é operação auditável, sem apagar os novos snapshots. Nenhum
 resultado local comprova venda, aprovação independente ou saldo da assinatura.
+
+A revisão do caminho de instalação nova encontrou outra dependência: o catálogo
+de preços podia ainda não conter o modelo antes de o Liquibase iniciar. Uma
+migração anterior prepara somente a linha ausente, usando as tarifas oficiais
+consultadas em 19/10/2026, e preserva qualquer cadastro existente. A quarta
+regressão cobre criação, preservação de preço atualizado e rollback não destrutivo.
+Fonte: https://developers.openai.com/api/docs/pricing (Standard e Batch, por milhão
+de tokens; estimativa da assinatura continua distinta de fatura).

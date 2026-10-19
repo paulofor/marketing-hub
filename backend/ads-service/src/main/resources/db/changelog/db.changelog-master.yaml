@@ -2220,5 +2220,8 @@ databaseChangeLog:
       file: changesets/2026-10-19-ai-worker-codex-connection-v1.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-10-19-codex-model-catalog-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-10-19-sales-page-codex-model-v1.yaml
       relativeToChangelogFile: true

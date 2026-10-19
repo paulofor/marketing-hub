@@ -73,3 +73,7 @@ colisão ou modelo sem preço falha antes de ativar parcialmente as novas versõ
 A regressão MySQL 5.7 aplica as definições históricas reais, confere preservação de
 conteúdo e snapshots de duas identidades, idempotência e rollback sem apagar auditoria.
 Matriz: `docs/homologacao/capella-worker-retomada-codex-v1.md`.
+
+Instalação nova deve preparar o registro de preços antes dos templates: a migração
+semeia somente o modelo ausente, com fonte oficial, e não sobrescreve valores já
+cadastrados. O rollback preserva essa referência para a auditoria das execuções.

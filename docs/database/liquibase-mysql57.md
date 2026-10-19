@@ -291,3 +291,6 @@ identidades e outro pipeline. Valida fonte/preço ausentes, colisão, reaplicaç
 rollback sem apagar contratos e proteção de evolução posterior. Usa
 `WORKER_CONNECTION_MYSQL=true` e o mesmo banco efêmero `AGENT_COST_DB_HOST:33343`;
 não utiliza conta, credencial ou inferência produtiva.
+
+A fixture também aplica o seed de catálogo anterior aos templates em uma instalação
+sem o modelo, preservando preços existentes e a referência após rollback.

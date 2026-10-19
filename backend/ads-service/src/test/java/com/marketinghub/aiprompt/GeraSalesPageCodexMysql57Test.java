@@ -37,8 +37,9 @@ class GeraSalesPageCodexMysql57Test {
     sql(
         "DROP TABLE IF EXISTS historical_execution, ai_prompt_schema_template, openai_model, DATABASECHANGELOG, DATABASECHANGELOGLOCK");
     sql(
-        "CREATE TABLE openai_model(code VARCHAR(120) PRIMARY KEY, price_input_standard DECIMAL(12,5), price_output_standard DECIMAL(12,5))");
-    sql("INSERT INTO openai_model VALUES ('gpt-6.1-sol',2,10)");
+        "CREATE TABLE openai_model(id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), code VARCHAR(128) UNIQUE, price_input_standard DECIMAL(12,5), price_output_standard DECIMAL(12,5), price_input_cached_standard DECIMAL(12,5), price_input_batch DECIMAL(12,5), price_input_cached_batch DECIMAL(12,5), price_output_batch DECIMAL(12,5), accepts_image_input BOOLEAN NOT NULL DEFAULT 0, pricing_source VARCHAR(255), last_pricing_sync_at DATETIME, created_at DATETIME, updated_at DATETIME)");
+    sql(
+        "INSERT INTO openai_model(code,price_input_standard,price_output_standard) VALUES ('gpt-6.1-sol',2,10)");
     sql(
         "CREATE TABLE ai_prompt_schema_template (template_key VARCHAR(191) PRIMARY KEY, pipeline_code VARCHAR(100) NOT NULL, stage_code VARCHAR(100) NOT NULL, version VARCHAR(40) NOT NULL, openai_model VARCHAR(120) NOT NULL, schema_name VARCHAR(120) NOT NULL, prompt_markdown_content LONGTEXT NOT NULL, schema_json LONGTEXT NOT NULL, active BOOLEAN NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)");
     for (String source :
@@ -122,7 +123,8 @@ class GeraSalesPageCodexMysql57Test {
     var migration = migration(MIGRATION);
     sql("DELETE FROM openai_model");
     assertThatThrownBy(() -> migration.update("")).isInstanceOf(LiquibaseException.class);
-    sql("INSERT INTO openai_model VALUES ('gpt-6.1-sol',2,10)");
+    sql(
+        "INSERT INTO openai_model(code,price_input_standard,price_output_standard) VALUES ('gpt-6.1-sol',2,10)");
     sql(
         "UPDATE ai_prompt_schema_template SET active=0 WHERE pipeline_code='gera-sales-page-v1' AND stage_code='sales-page-wireframe'");
     assertThatThrownBy(() -> migration.update("")).isInstanceOf(LiquibaseException.class);
@@ -160,6 +162,34 @@ class GeraSalesPageCodexMysql57Test {
             value(
                 "SELECT COUNT(*) FROM ai_prompt_schema_template WHERE pipeline_code='gera-sales-page-v1' AND active=1"))
         .isEqualTo("7");
+  }
+
+  /** Prepara instalações novas sem sobrescrever preço cadastrado ou apagá-lo no rollback. */
+  @Test
+  void seedsMissingCatalogBeforeActivatingContracts() throws Exception {
+    sql("DELETE FROM openai_model");
+    var catalog = migration("2026-10-19-codex-model-catalog-v1.yaml");
+    catalog.update("");
+    catalog.update("");
+    assertThat(value("SELECT COUNT(*) FROM openai_model")).isEqualTo("1");
+    assertThat(
+            value(
+                "SELECT CONCAT(price_input_standard,':',price_output_standard) FROM openai_model WHERE code='gpt-6.1-sol'"))
+        .isEqualTo("2.00000:10.00000");
+    migration(MIGRATION).update("");
+    assertThat(
+            value(
+                "SELECT COUNT(*) FROM ai_prompt_schema_template WHERE active=1 AND openai_model='gpt-6.1-sol'"))
+        .isEqualTo("7");
+    migration(MIGRATION).rollback(1, "");
+    catalog.rollback(1, "");
+    sql(
+        "UPDATE openai_model SET price_input_standard=7,price_output_standard=35 WHERE code='gpt-6.1-sol'");
+    catalog.update("");
+    assertThat(
+            value(
+                "SELECT CONCAT(price_input_standard,':',price_output_standard) FROM openai_model WHERE code='gpt-6.1-sol'"))
+        .isEqualTo("7.00000:35.00000");
   }
 
   /** Carrega o arquivo versionado real e mantém a mesma conexão sintética entre aplicações. */

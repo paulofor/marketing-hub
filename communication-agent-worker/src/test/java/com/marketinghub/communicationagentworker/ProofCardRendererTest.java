@@ -18,6 +18,41 @@ class ProofCardRendererTest {
   private final ObjectMapper json = new ObjectMapper();
   private final ProofCardRenderer renderer = new ProofCardRenderer();
 
+  /**
+   * Garante que o limite da demonstração seja lido antes do convite à ação em produtos distintos.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {910118L, 910219L})
+  void qualifiesPrivateActionBeforeTheButton(long artifactId) throws Exception {
+    var input = spec().put("sourceArtifactId", artifactId);
+    var image = ImageIO.read(new ByteArrayInputStream(renderer.render(input, source(), true)));
+    int actionTop = actionTop(image, Color.decode(input.path("accentColor").asText()));
+    assertThat(actionTop).isPositive();
+    long qualificationInk = 0;
+    for (int y = actionTop - 64; y < actionTop - 8; y++) {
+      for (int x = 64; x < 1016; x++) {
+        var color = new Color(image.getRGB(x, y));
+        if (color.getRed() < 130 && color.getGreen() < 130 && color.getBlue() < 130)
+          qualificationInk++;
+      }
+    }
+    assertThat(qualificationInk)
+        .as("A qualificação da demonstração deve anteceder o botão, sem depender da copy gerada")
+        .isGreaterThan(300);
+  }
+
+  /** Localiza a ação pela faixa contínua de cor, sem depender das coordenadas do template. */
+  private static int actionTop(BufferedImage image, Color accent) {
+    for (int y = 0; y < image.getHeight(); y++) {
+      int count = 0;
+      for (int x = 64; x < 1016; x++) {
+        if (image.getRGB(x, y) == accent.getRGB()) count++;
+      }
+      if (count > 850) return y;
+    }
+    throw new AssertionError("A imagem precisa conter um botão reconhecível.");
+  }
+
   /** Produz uma peça real e preserva exatamente o detalhe aprovado em vez de redesenhá-lo. */
   @Test
   void rendersPngWithOriginalPixels() throws Exception {

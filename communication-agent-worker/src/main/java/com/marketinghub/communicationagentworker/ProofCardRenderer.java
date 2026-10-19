@@ -16,9 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProofCardRenderer {
-  /**
-   * Compõe prova fiel com linguagem de cliente, rótulos e ressalva factual na preparação privada.
-   */
+  /** Compõe prova fiel e qualifica a demonstração antes da ação, preservando a ressalva factual. */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
@@ -85,14 +83,14 @@ public class ProofCardRenderer {
           g,
           spec.path("body").asText(),
           64,
-          privateValidation ? 276 : 351,
+          privateValidation ? 268 : 351,
           952,
-          privateValidation ? 92 : 115,
+          privateValidation ? 80 : 115,
           33,
           Font.PLAIN);
       if (privateValidation) {
         g.setColor(accent);
-        text(g, spec.path("eyebrow").asText(), 64, 375, 952, 40, 25, Font.PLAIN);
+        text(g, spec.path("eyebrow").asText(), 64, 350, 952, 32, 25, Font.PLAIN);
       }
       int proofHeight = privateValidation ? 667 : 550;
       double scale = Math.min(952.0 / width, (double) proofHeight / height);
@@ -102,10 +100,10 @@ public class ProofCardRenderer {
         throw new IllegalArgumentException(
             "O recorte perde legibilidade no criativo; selecione um detalhe menor da prova.");
       int left = (1080 - drawWidth) / 2,
-          top = (privateValidation ? 442 : 497) + (proofHeight - drawHeight) / 2;
+          top = (privateValidation ? 402 : 497) + (proofHeight - drawHeight) / 2;
       g.setColor(new Color(255, 255, 255));
       g.fillRoundRect(
-          56, privateValidation ? 430 : 485, 968, privateValidation ? 691 : 574, 26, 26);
+          56, privateValidation ? 390 : 485, 968, privateValidation ? 691 : 574, 26, 26);
       g.drawImage(
           original,
           left,
@@ -117,6 +115,11 @@ public class ProofCardRenderer {
           x + width,
           y + height,
           null);
+      // A qualificação vem antes do convite, sem depender da copy produzida pelo modelo.
+      if (privateValidation) {
+        g.setColor(new Color(70, 64, 68));
+        text(g, "Exemplo com dados de teste · sem cobrança.", 64, 1090, 952, 50, 36, Font.PLAIN);
+      }
       g.setColor(accent);
       g.fillRoundRect(
           64, privateValidation ? 1148 : 1104, 952, privateValidation ? 90 : 104, 22, 22);
@@ -136,7 +139,7 @@ public class ProofCardRenderer {
         throw new IllegalArgumentException("Texto obrigatório do criativo ausente.");
       text(
           g,
-          privateValidation ? "Exemplo com dados de teste · sem cobrança. " + footer : footer,
+          footer,
           64,
           privateValidation ? 1252 : 1245,
           952,

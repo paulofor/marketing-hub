@@ -54,8 +54,13 @@ uma aplicação web, diga isso e explique qual informação ela fornece e qual r
 Não substitua essa identificação por expressões vagas como “experiência” ou “leitura privada”.
 Use apenas capacidades comprovadas no contrato e na interface da versão aprovada.
 
-O executor pode anexar uma captura mobile e uma desktop aprovadas. Para o feed, prefira
-a mobile com textos maiores e linhas curtas. Priorize os momentos CONTENT ou BRIEFING
+O executor pode anexar uma captura mobile e uma desktop aprovadas. Compare as duas:
+escolha a fonte cujo recorte mostra a entrega reconhecível e mantém a orientação legível.
+Quando a promessa depende de um resultado visual, mostre esse resultado, além da descrição:
+uma combinação de roupas, uma arte do kit ou o objeto funcional correspondente. Um trecho
+exclusivamente textual não demonstra a parte visual. Prefira desktop quando o enquadramento
+mobile exigir excluir essa entrega para caber no template; não escolha a fonte só pelo dispositivo.
+Priorize os momentos CONTENT ou BRIEFING
 quando disponíveis: mostram resultado ou participação real.
 Uma tela de encerramento técnico não demonstra a escolha nem o resultado do produto.
 Quando as imagens forem fixtures sintéticas, mantenha esse limite explícito; não as apresente
@@ -85,11 +90,14 @@ Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_
 
 Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 
-Em validação privada o executor imprime os marcadores “DEMONSTRAÇÃO DO SITE” e “Exemplo com dados de teste · sem cobrança”. Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
+Em validação privada o executor imprime “DEMONSTRAÇÃO DO SITE” junto à identificação e
+“Exemplo com dados de teste · sem cobrança” imediatamente **antes do CTA**. Preserve essa
+qualificação e o CTA congelado; não use a copy para contornar a ordem do template.
+Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
 
 O `footer` é um limite factual obrigatório e permanece impresso também na peça privada,
-além do aviso de demonstração sintética. Use uma ressalva curta: os dois textos ocupam até
-duas linhas em fonte de 36 pixels, sem reduzir fonte nem cortar a prova ou o CTA. Não repita
+além do aviso de demonstração sintética que antecede o CTA. Use uma ressalva curta:
+o rodapé ocupa até duas linhas em fonte de 36 pixels, sem reduzir fonte nem cortar a prova ou o CTA. Não repita
 o aviso privado no `footer` nem esconda o limite factual em outro campo para contornar o
 template. Ausência ou excesso de texto bloqueia a renderização antes de persistir a peça.
 

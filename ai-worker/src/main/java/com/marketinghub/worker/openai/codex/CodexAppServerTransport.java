@@ -67,6 +67,8 @@ public final class CodexAppServerTransport {
       if (!"completed".equals(mapper.readTree(raw).path("status").asText())) {
         throw new IllegalStateException("Codex não entregou um recibo concluído");
       }
+      log.info(
+          "Recibo integral do Codex App Server; operation=responses; rawResponseJson={}", raw);
       return raw;
     } catch (IOException ex) {
       log.error("Falha de I/O do Codex App Server; operation=responses; script={}", script, ex);

@@ -1,5 +1,21 @@
 # Registros — Modelos OpenAI
 
+## 2026-10-19 — Modelo estratégico por agente e contrato de atividade
+
+- Evidência anterior: os nove cadastros indicavam Sol e os executores usavam o modelo
+  padrão inclusive em estratégia, economia, arquitetura e contrato de comunicação.
+  Editar apenas o cadastro não mudaria o comando enviado ao Codex.
+- Adotada a política híbrida v1: Astra como padrão de Atena e por contrato estratégico
+  de Plutus, Dédalo e Íris. Rotinas e modalidades especializadas preservam seus modelos.
+- Comando, auditoria e uso de tokens seguem a mesma seleção; resultados anteriores e
+  callbacks recuperados mantêm sua identidade e não disparam nova inferência.
+- Prevenção: regressões com identidades diferentes, caminho operacional antes válido,
+  configuração ausente e replay. O contrato de saúde e o painel explicam a política.
+- Hipótese de melhoria: maior qualidade das decisões com menor retrabalho. Adoção e
+  reversão devem considerar aceite independente, custo e tempo por entrega, antes de
+  atribuir qualquer mudança em vendas ao modelo. Não houve experimento comercial.
+- Escopo, versões e matriz: [homologação](../homologacao/agentes-modelo-estrategico-v1.md).
+
 ## 2026-07-09 — Correção da fonte da rotina diária de preços
 
 - Confirmado que a rotina diária falhava porque tentava obter preços financeiros em `GET /models`, mas essa API não entregava metadados de preço suficientes para sincronização.

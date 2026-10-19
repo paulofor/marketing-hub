@@ -259,6 +259,15 @@ public final class PdeEconomicsImageSmoke {
           response.equals(json.readTree(callback.path("resultJson").asText())),
           "Resposta bruta alterada");
       String prompt = Files.readString(directory.resolve("prompt.txt"));
+      require(
+          Files.readString(directory.resolve("arguments.json")).contains("gpt-6-astra"),
+          "Modelo do comando diverge da política estratégica");
+      require(
+          "gpt-6-astra".equals(callback.path("executionAudit").path("modelCode").asText()),
+          "Auditoria econômica deve identificar Astra");
+      require(
+          "gpt-6-astra".equals(callback.path("modelUsages").get(0).path("modelCode").asText()),
+          "Custo deve corresponder ao modelo executado");
       JsonNode schema = json.readTree(Files.readString(directory.resolve("schema.json")));
       require(
           prompt.equals(callback.path("executionAudit").path("promptSent").asText()),

@@ -45,8 +45,9 @@ public class FinancialCodexRunner {
     this(properties, objectMapper, null, null);
   }
 
-  /** Confere o escopo antes de executar uma conciliação efêmera somente leitura e auditável. */
+  /** Executa o job somente leitura com o modelo da autoridade e preserva a auditoria. */
   public Map<String, Object> run(FinancialAgentJob job) throws IOException, InterruptedException {
+    String selectedModel = properties.modelForAuthority(job.authorityMode());
     PromptComposition prompt = buildPromptComposition(job);
     Path output = Files.createTempFile("financial-agent-", ".json");
     Path processOutput = Files.createTempFile("financial-agent-process-", ".log");
@@ -63,9 +64,9 @@ public class FinancialCodexRunner {
     Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
     try {
       if (backend != null && job.agentTaskId() != null) {
-        backend.recordTaskExecutionAudit(job.agentTaskId(), executionAudit(prompt));
+        backend.recordTaskExecutionAudit(job.agentTaskId(), executionAudit(prompt, selectedModel));
       }
-      ProcessBuilder builder = new ProcessBuilder(buildCommand(output, schema, mcp));
+      ProcessBuilder builder = new ProcessBuilder(buildCommand(output, schema, mcp, selectedModel));
       builder.redirectErrorStream(true).redirectOutput(processOutput.toFile());
       builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
       builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
@@ -102,7 +103,7 @@ public class FinancialCodexRunner {
                         : projection ? "executiveSummary" : "dailyReport")
                 .asText());
         payload.put("rawModelResponse", raw);
-        payload.put("model", properties.getModel());
+        payload.put("model", selectedModel);
         payload.put("estimatedCost", null);
         payload.put("promptSent", prompt.fullPrompt());
         payload.put("agentPromptPart", prompt.agentPromptPart());
@@ -131,9 +132,14 @@ public class FinancialCodexRunner {
 
   /** Monta o envelope completo que antecede a chamada de modelo vinculada à tarefa BPM. */
   Map<String, Object> executionAudit(PromptComposition prompt) {
+    return executionAudit(prompt, properties.getModel());
+  }
+
+  /** Registra o modelo escolhido pela autoridade do job, sem alterar a conciliação. */
+  Map<String, Object> executionAudit(PromptComposition prompt, String selectedModel) {
     LinkedHashMap<String, Object> audit = new LinkedHashMap<>();
     audit.put("executionMode", "MODEL");
-    audit.put("modelCode", properties.getModel());
+    audit.put("modelCode", selectedModel);
     audit.put("reasoningEffort", properties.requiredReasoningEffort());
     audit.put("promptSent", prompt.fullPrompt());
     audit.put("agentPromptPart", prompt.agentPromptPart());
@@ -371,6 +377,11 @@ public class FinancialCodexRunner {
 
   /** Monta o comando Codex preservando sandbox e repositorio somente leitura. */
   List<String> buildCommand(Path output, Path schema) {
+    return buildCommand(output, schema, properties.getModel());
+  }
+
+  /** Preserva os limites do executor e aplica explicitamente o modelo escolhido. */
+  List<String> buildCommand(Path output, Path schema, String selectedModel) {
     String reasoningEffort = properties.requiredReasoningEffort();
     List<String> command =
         new ArrayList<>(
@@ -396,9 +407,9 @@ public class FinancialCodexRunner {
                 "--config",
                 "service_tier=\"" + configuredServiceTier() + "\""));
     command.addAll(List.of("--config", "model_reasoning_effort=\"" + reasoningEffort + "\""));
-    if (properties.getModel() != null && !properties.getModel().isBlank()) {
+    if (selectedModel != null && !selectedModel.isBlank()) {
       command.add("--model");
-      command.add(properties.getModel());
+      command.add(selectedModel);
     }
     return command;
   }
@@ -407,7 +418,12 @@ public class FinancialCodexRunner {
    * Libera leituras do MCP exclusivo e mantém escritas sujeitas à aprovação da política vigente.
    */
   List<String> buildCommand(Path output, Path schema, Path mcp) {
-    List<String> command = new ArrayList<>(buildCommand(output, schema));
+    return buildCommand(output, schema, mcp, properties.getModel());
+  }
+
+  /** Acrescenta o MCP do próprio agente ao comando com o modelo estratégico ou operacional. */
+  List<String> buildCommand(Path output, Path schema, Path mcp, String selectedModel) {
+    List<String> command = new ArrayList<>(buildCommand(output, schema, selectedModel));
     command.addAll(
         List.of(
             "--config",

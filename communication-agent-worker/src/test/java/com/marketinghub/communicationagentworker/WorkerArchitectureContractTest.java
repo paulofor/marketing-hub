@@ -30,7 +30,7 @@ class WorkerArchitectureContractTest {
             "AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}'");
     assertThat(compose)
         .contains(
-            "AGENT_HEALTH_VERSION: \"3\"",
+            "AGENT_HEALTH_VERSION: \"4\"",
             "AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}");
   }
 

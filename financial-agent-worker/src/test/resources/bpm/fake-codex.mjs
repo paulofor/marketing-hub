@@ -5,6 +5,7 @@ import { join } from 'node:path';
 const args = process.argv.slice(2);
 const value = (flag) => args[args.indexOf(flag) + 1];
 const directory = value('--cd');
+writeFileSync(join(directory, 'arguments.json'), JSON.stringify(args));
 writeFileSync(join(directory, 'prompt.txt'), readFileSync(0));
 writeFileSync(join(directory, 'schema.json'), readFileSync(value('--output-schema')));
 writeFileSync(value('--output-last-message'), readFileSync(join(directory, 'response.json')));

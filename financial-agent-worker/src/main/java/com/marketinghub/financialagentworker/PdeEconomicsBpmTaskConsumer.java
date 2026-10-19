@@ -174,10 +174,7 @@ public class PdeEconomicsBpmTaskConsumer {
                 "service_tier=\"default\"",
                 "--config",
                 "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
-    if (properties.getModel() != null && !properties.getModel().isBlank()) {
-      command.add("--model");
-      command.add(properties.getModel());
-    }
+    command.addAll(List.of("--model", properties.getStrategicModel()));
     return command;
   }
 
@@ -739,11 +736,9 @@ public class PdeEconomicsBpmTaskConsumer {
     return Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks");
   }
 
-  /** Retorna o modelo efetivo configurado para Plutus. */
+  /** Retorna o modelo estratégico efetivo das avaliações econômicas BPM de Plutus. */
   private String modelCode() {
-    return properties.getModel() == null || properties.getModel().isBlank()
-        ? "codex-default"
-        : properties.getModel();
+    return properties.getStrategicModel();
   }
 
   /** Extrai o identificador persistido da tarefa. */

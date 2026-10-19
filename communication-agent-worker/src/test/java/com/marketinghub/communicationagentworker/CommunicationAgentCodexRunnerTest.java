@@ -23,6 +23,62 @@ class CommunicationAgentCodexRunnerTest {
   private static final String STRATEGY_HASH = "a".repeat(64);
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Executa contratos estratégicos e materiais em processo local e compara auditoria e consumo. */
+  @ParameterizedTest
+  @ValueSource(strings = {"communicationContract", "nonAudiovisual"})
+  void usesActivityModelInCommandAndCallback(
+      String activity, @org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
+    boolean strategic = activity.equals("communicationContract");
+    String expected = strategic ? "gpt-6-astra" : "fixture-operational";
+    var input =
+        task(
+            strategic ? "pde-communication-sales-journey" : "creative-production-approval",
+            activity,
+            context("READY", true));
+    var answer =
+        result(
+            strategic ? "COMMUNICATION_PACKAGE" : "NON_AUDIOVISUAL_PACKAGE",
+            activity,
+            strategic ? "COMPLETED" : "READY_FOR_RENDER");
+    Files.writeString(directory.resolve("response.json"), answer.toString());
+    Path executable = directory.resolve("fake-codex.py");
+    Files.writeString(
+        executable,
+        """
+        #!/usr/bin/env python3
+        import json,sys,pathlib
+        args=sys.argv
+        root=pathlib.Path(args[args.index('--cd')+1])
+        (root/'arguments.json').write_text(json.dumps(args))
+        sys.stdin.read()
+        pathlib.Path(args[args.index('--output-last-message')+1]).write_text((root/'response.json').read_text())
+        print(json.dumps({'usage':{'input_tokens':17,'cached_input_tokens':0,'output_tokens':9}}))
+        """);
+    assertThat(executable.toFile().setExecutable(true)).isTrue();
+    var config = properties();
+    config.setRepositoryPath(directory.toString());
+    config.setCodexCommand(executable.toString());
+    config.setModel("fixture-operational");
+    var telemetry = mock(CodexTelemetryReporter.class);
+    when(telemetry.monitor(anyLong(), any(), any()))
+        .thenReturn(mock(CodexTelemetryReporter.Session.class));
+    var runner = new CommunicationAgentCodexRunner(config, json, telemetry);
+    var execution = runner.run(input);
+    var arguments = json.readTree(Files.readString(directory.resolve("arguments.json")));
+    var args =
+        json.convertValue(
+            arguments,
+            new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+    assertThat(args).containsSubsequence("--model", expected);
+    var consumer = new CommunicationAgentTaskConsumer(null, runner, config, null, json.copy().findAndRegisterModules(), null);
+    Map<String, Object> callback =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            consumer, "basePayload", input, execution, java.time.Instant.now());
+    var payload = json.valueToTree(callback);
+    assertThat(payload.path("executionAudit").path("modelCode").asText()).isEqualTo(expected);
+    assertThat(payload.path("modelUsages").get(0).path("modelCode").asText()).isEqualTo(expected);
+  }
+
   /** Distingue plano técnico de atividade concluída e recusa esse estado nas outras saídas. */
   @Test
   void acceptsRenderReadyPlanOnlyForNonAudiovisualOutput() throws Exception {
@@ -125,13 +181,13 @@ class CommunicationAgentCodexRunnerTest {
     var runner = spy(new CommunicationAgentCodexRunner(properties(), json, telemetry));
     doThrow(new AssertionError("O modelo não pode ser iniciado neste cenário."))
         .when(runner)
-        .command(any(), any(), any());
+        .command(any(), any(), any(), any());
 
     assertThatThrownBy(() -> runner.run(input))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Atena")
         .hasMessageContaining("lacunas do parecer");
-    verify(runner, never()).command(any(), any(), any());
+    verify(runner, never()).command(any(), any(), any(), any());
     verifyNoInteractions(telemetry);
   }
 

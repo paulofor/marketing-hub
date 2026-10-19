@@ -12,6 +12,7 @@ public class CommunicationAgentProperties {
   private String repositoryPath;
   private String codexCommand;
   private String model;
+  private String strategicModel = "gpt-6-astra";
   private String reasoningEffort = "high";
   private String serviceTier = "default";
   private String serviceTierExceptionReason =
@@ -56,6 +57,30 @@ public class CommunicationAgentProperties {
   /** Configura o modelo utilizado por Íris. */
   public void setModel(String model) {
     this.model = model;
+  }
+
+  /** Retorna o modelo estratégico explícito, sem fallback silencioso ao modelo operacional. */
+  public String getStrategicModel() {
+    if (strategicModel == null || strategicModel.isBlank()) {
+      throw new IllegalStateException(
+          "Modelo estratégico obrigatório; configure CODEX_STRATEGIC_MODEL.");
+    }
+    return strategicModel.trim();
+  }
+
+  /** Configura o modelo das decisões estratégicas sem alterar o padrão operacional. */
+  public void setStrategicModel(String strategicModel) {
+    this.strategicModel = strategicModel;
+  }
+
+  /** Seleciona pelo contrato da atividade, sem inferir importância pelo texto ou pelo produto. */
+  public String modelForActivity(String processCode, String activityId) {
+    boolean strategic =
+        ("pde-communication-sales-journey".equals(processCode)
+                && "communicationContract".equals(activityId))
+            || ("landing-page-generation".equals(processCode)
+                && ("strategy".equals(activityId) || "compose".equals(activityId)));
+    return strategic ? getStrategicModel() : getModel();
   }
 
   /** Retorna o esforço de raciocínio auditado. */

@@ -12,6 +12,7 @@ public class LandingGeneratorAgentProperties {
   private String mcpScriptPath = "/app/mcp/landing-generator.mjs";
   private String codexCommand = "codex";
   private String model = "gpt-6.1-sol";
+  private String strategicModel = "gpt-6-astra";
   private String reasoningEffort = "max";
   private String buildReference = "local";
   private Duration codexTimeout = Duration.ofMinutes(40);
@@ -74,6 +75,27 @@ public class LandingGeneratorAgentProperties {
   /** Define o modelo canônico. */
   public void setModel(String value) {
     model = value;
+  }
+
+  /** Retorna o modelo estratégico explícito, sem fallback silencioso ao modelo operacional. */
+  public String getStrategicModel() {
+    if (strategicModel == null || strategicModel.isBlank()) {
+      throw new IllegalStateException(
+          "Modelo estratégico obrigatório; configure CODEX_STRATEGIC_MODEL.");
+    }
+    return strategicModel.trim();
+  }
+
+  /** Configura o modelo das decisões estratégicas sem alterar o padrão operacional. */
+  public void setStrategicModel(String strategicModel) {
+    this.strategicModel = strategicModel;
+  }
+
+  /** Seleciona pelo contrato da atividade, sem inferir importância pelo texto ou pelo produto. */
+  public String modelForActivity(String processCode, String activityId) {
+    boolean strategic =
+        "pde-commercial-plan-offer".equals(processCode) && "productArchitecture".equals(activityId);
+    return strategic ? getStrategicModel() : getModel();
   }
 
   /** Retorna o esforço de raciocínio. */

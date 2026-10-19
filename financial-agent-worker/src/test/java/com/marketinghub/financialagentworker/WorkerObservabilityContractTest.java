@@ -29,7 +29,7 @@ class WorkerObservabilityContractTest {
     String workflow =
         Files.readString(Path.of("../.github/workflows/financial-agent-worker-ci.yml"));
 
-    assertThat(compose).contains("AGENT_HEALTH_VERSION: \"6\"");
+    assertThat(compose).contains("AGENT_HEALTH_VERSION: \"7\"");
     assertThat(compose).contains("AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}");
     assertThat(workflow).contains("AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}'");
   }

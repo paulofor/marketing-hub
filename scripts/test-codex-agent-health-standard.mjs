@@ -22,11 +22,15 @@ for (const agent of contract.agents) {
   assert.ok(agent.modelSources?.length > 0, `[ARQUITETURA] ${agent.key}: fontes do modelo ausentes`);
   for (const source of agent.modelSources) {
     const runtime = await readFile(path.join(root, source), "utf8");
-    assert.ok(runtime.includes(contract.codexModel), `[ARQUITETURA] ${agent.key}: ${source} omite o modelo vigente`);
+    assert.ok(runtime.includes(agent.codexModel ?? contract.codexModel), `[ARQUITETURA] ${agent.key}: ${source} omite o modelo vigente`);
     assert.doesNotMatch(runtime, /gpt-5\.6(?:-sol)?/, `[ARQUITETURA] ${agent.key}: ${source} mantém modelo legado`);
     for (const match of runtime.matchAll(/CODEX_VERSION:\s*["']([^"']+)["']/g)) {
       assert.equal(match[1], contract.codexVersion, `[ARQUITETURA] ${agent.key}: Compose sobrescreve a versão do Dockerfile`);
     }
+  }
+  for (const source of agent.strategicModelSources ?? []) {
+    const runtime = await readFile(path.join(root, source), "utf8");
+    assert.ok(runtime.includes(contract.strategicModel), `[ARQUITETURA] ${agent.key}: ${source} omite o modelo estratégico`);
   }
   const reporter = await readFile(path.join(module, agent.reporter), "utf8");
   const activation = await readFile(path.join(module, agent.activation), "utf8");

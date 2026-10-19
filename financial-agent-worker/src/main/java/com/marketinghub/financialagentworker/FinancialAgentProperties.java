@@ -12,6 +12,7 @@ public class FinancialAgentProperties {
   private String repositoryPath;
   private String codexCommand;
   private String model;
+  private String strategicModel = "gpt-6-astra";
   private String reasoningEffort = "high";
   private String serviceTier = "default";
   private String serviceTierExceptionReason =
@@ -57,6 +58,28 @@ public class FinancialAgentProperties {
   /** Configura o modelo do agente. */
   public void setModel(String model) {
     this.model = model;
+  }
+
+  /** Retorna o modelo estratégico explícito, sem fallback silencioso ao modelo operacional. */
+  public String getStrategicModel() {
+    if (strategicModel == null || strategicModel.isBlank()) {
+      throw new IllegalStateException(
+          "Modelo estratégico obrigatório; configure CODEX_STRATEGIC_MODEL.");
+    }
+    return strategicModel.trim();
+  }
+
+  /** Configura o modelo das decisões estratégicas sem alterar o padrão operacional. */
+  public void setStrategicModel(String strategicModel) {
+    this.strategicModel = strategicModel;
+  }
+
+  /** Seleciona Astra nas projeções e hipóteses; preserva a conciliação de rotina. */
+  public String modelForAuthority(String authorityMode) {
+    return "READ_ONLY_REVENUE_PROJECTION".equals(authorityMode)
+            || "COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(authorityMode)
+        ? getStrategicModel()
+        : getModel();
   }
 
   /** Retorna o esforço de raciocínio auditado. */

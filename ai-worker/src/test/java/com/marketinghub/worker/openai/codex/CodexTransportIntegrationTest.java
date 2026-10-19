@@ -166,7 +166,22 @@ class CodexTransportIntegrationTest {
     assertThat(inferenceCount()).isEqualTo(1);
     assertThat(callbacks.getFirst().path("errorMessage").asText())
         .contains("viola schema")
-        .contains("recibo=");
+        .contains("recibo persistido");
+  }
+
+  /** Resposta inválida grande fica no recibo, sem exceder o campo operacional de erro do backend. */
+  @Test
+  void shouldKeepLargeInvalidOutputOutOfOperationalErrorMessage() throws Exception {
+    experimentId = 105;
+    jobId = "synthetic-large-invalid-105";
+    String invalid = mapper.writeValueAsString(Map.of("ready", true, "unexpected", "x".repeat(70000)));
+    assertThat(worker(mapper.writeValueAsString(Map.of("text", invalid))).processPending(1).failed()).isEqualTo(1);
+    assertThat(callbacks.getFirst().path("errorMessage").asText()).hasSizeLessThan(2000);
+    try (var receipts = Files.list(directory.resolve("receipts"))) {
+      Path receipt = receipts.filter(path -> path.toString().endsWith(".json")).findFirst().orElseThrow();
+      assertThat(Files.size(receipt)).isGreaterThan(70000);
+    }
+    assertThat(inferenceCount()).isEqualTo(1);
   }
 
   /** Uso ausente continua desconhecido em vez de produzir custo zero fictício. */

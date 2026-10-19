@@ -55,8 +55,14 @@ public final class CodexAppServerTransport {
             process.exitValue(),
             detail,
             raw);
+        String operationalDetail =
+            detail.length() <= 1000
+                ? detail
+                : "Falha do App Server; diagnóstico integral preservado no log do job.";
         throw new IllegalStateException(
-            "Codex App Server: " + detail + (raw.isBlank() ? "" : "; recibo=" + raw));
+            "Codex App Server: "
+                + operationalDetail
+                + (raw.isBlank() ? "" : "; recibo persistido para o mesmo job."));
       }
       if (!"completed".equals(mapper.readTree(raw).path("status").asText())) {
         throw new IllegalStateException("Codex não entregou um recibo concluído");

@@ -49,7 +49,7 @@ Fonte oficial consultada: [Codex App Server](https://learn.chatgpt.com/docs/app-
 
 ## Resultado local de 19/10/2026
 
-- Java: 288 casos registrados, 285 executados sem falha e três exclusões preexistentes:
+- Java: 289 casos registrados, 286 executados sem falha e três exclusões preexistentes:
   um replay opcional de navegador e dois testes legados explicitamente desativados.
 - Node: 20 casos aprovados; `npm audit` sem vulnerabilidades nas dependências fixadas.
 - Integração: adapters produtivos do GeraSalesPage, fila `pending`, subprocesso do App
@@ -67,3 +67,6 @@ Fonte oficial consultada: [Codex App Server](https://learn.chatgpt.com/docs/app-
   Foram comparados adiar a pausa, liberar o publicador durante a revisão e separar a
   validação sem publicação. Foi adotado `ai-worker-validation.yml`, reutilizado pelo
   publicador e disparado no PR. O teste de contrato proíbe publicação nessa validação.
+- A regressão adicional de 70 KB falhou antes da correção: a resposta bruta estava
+  incorporada ao campo de erro. Agora o recibo integral e a correlação do job continuam
+  preservados; a mensagem operacional é curta e o callback de falha consegue ser registrado.

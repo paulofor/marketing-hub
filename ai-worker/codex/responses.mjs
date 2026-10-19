@@ -166,7 +166,7 @@ export async function execute(body, options) {
       id: `codex:${threadId}:${turn.id}`, status: 'completed', model: body.model, service_tier: 'default', output_text: text,
       output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
       usage: usage ? { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens, total_tokens: usage.totalTokens } : null,
-      codex_app_server: { version: 1, threadId, turnId: turn.id, request: { thread: threadParams, turn: turnParams }, requestedServiceTier: body.service_tier || 'flex', effectiveServiceTier: 'default', compatibilityReason: COMPATIBILITY_REASON, events: server.events },
+      codex_app_server: { version: 1, threadId, turnId: turn.id, metadata: body.metadata || {}, request: { thread: threadParams, turn: turnParams }, requestedServiceTier: body.service_tier || 'flex', effectiveServiceTier: 'default', compatibilityReason: COMPATIBILITY_REASON, events: server.events },
     };
     // Salva a saída crua antes da validação: resposta inválida também é recuperável e auditável.
     if (receipt) {
@@ -184,7 +184,7 @@ export function validateResponse(body, response) {
     const parsed = JSON.parse(response.output_text);
     if (schema) {
       const validate = schemaValidator(schema);
-      if (!validate(parsed)) throw new Error(`Resposta Codex viola schema: ${JSON.stringify(validate.errors)}`);
+      if (!validate(parsed)) throw new Error(`Resposta Codex viola schema: ${validate.errors.length} inconsistência(s); recibo completo preservado para diagnóstico`);
     }
   }
   return response;

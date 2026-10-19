@@ -25,6 +25,7 @@ test('gera uma saída validada, preservando tier, tokens, request e resposta rea
   assert.equal(response.service_tier, 'default');
   assert.equal(response.usage.input_tokens, 80);
   assert.equal(response.codex_app_server.requestedServiceTier, 'flex');
+  assert.equal(response.codex_app_server.metadata.idJob, 'capella-105-offer');
   assert.equal(response.codex_app_server.request.thread.approvalPolicy, 'never');
   assert.equal(response.codex_app_server.request.thread.sandbox, 'read-only');
   assert.equal(response.codex_app_server.request.turn.outputSchema.properties.ready.type, 'boolean');

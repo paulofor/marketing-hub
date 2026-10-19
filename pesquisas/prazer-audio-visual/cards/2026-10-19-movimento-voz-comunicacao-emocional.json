@@ -1,0 +1,18 @@
+{
+  "cardKey": "movimento-voz-comunicacao-emocional",
+  "collection": "prazer-audio-visual",
+  "title": "Movimento expressivo complementa emoção comunicada pela voz",
+  "finding": "Em experimento randomizado com 80 adultos, performances vocais acompanhadas de movimento tiveram maiores avaliações de intensidade emocional, afeto positivo e expressividade que performances estáticas.",
+  "mechanism": "Pistas corporais visíveis podem complementar a voz no processamento afetivo. Não foi demonstrado um circuito causal específico de prazer.",
+  "commercialApplication": "Comparar gestos expressivos coerentes com apresentação estática do mesmo avatar, preservando voz, roteiro, duração e volume.",
+  "evidenceStrength": "Moderada para contraste experimental específico; baixa para transferência a anúncios e vendas.",
+  "publishedOn": "2026-10-19",
+  "validUntil": "2026-12-03",
+  "experimentHypothesis": "Movimento expressivo coerente elevará compreensão da emoção transmitida e naturalidade sem prejudicar clareza da mensagem.",
+  "risks": "Gestos artificiais, distração, extrapolação de fisiologia para prazer, eficácia comercial não comprovada.",
+  "limits": "80 adultos em contexto vocal específico, resultados em autorrelato e medidas fisiológicas; sem dopamina ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-19-movimento-voz-comunicacao-emocional.md",
+  "sourceTitle": "Fonte revisada v1 — Movimento e voz",
+  "sourceSha256": "eb829d260d789004c74b6699010c949b83679eb1e9e2866c933ab1ba3960169a"
+}

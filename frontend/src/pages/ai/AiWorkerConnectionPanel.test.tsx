@@ -26,6 +26,13 @@ describe("conexão administrativa do Worker IA", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("não afirma que um pedido foi salvo antes de solicitá-lo", () => {
+    test.query.data.workerAvailable = false;
+    render(<AiWorkerConnectionPanel />);
+    expect(screen.getByText(/Solicite a conexão e acompanhe/)).toBeVisible();
+    expect(screen.queryByText(/permanece salvo/)).not.toBeInTheDocument();
+  });
+
   it("mostra somente o link oficial e mantém código selecionável mesmo em HTTP", async () => {
     test.query.data = {
       status: "AWAITING_CONFIRMATION",

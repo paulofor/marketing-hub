@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
     properties = {
       "spring.config.name=connection-test",
       "spring.liquibase.enabled=false",
-      "spring.datasource.url=jdbc:h2:mem:workerconnection;MODE=MySQL;DB_CLOSE_DELAY=-1",
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.aiworkerconnection.AiWorkerConnectionFlowTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0",
       "spring.datasource.username=sa",
       "spring.datasource.password=",
       "spring.jpa.hibernate.ddl-auto=create-drop"
@@ -143,7 +143,7 @@ class AiWorkerConnectionFlowTest {
             "spring.liquibase.enabled",
             "false",
             "spring.datasource.url",
-            "jdbc:h2:mem:workerconnection;MODE=MySQL;DB_CLOSE_DELAY=-1",
+            "jdbc:h2:mem:com.marketinghub.aiworkerconnection.AiWorkerConnectionFlowTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0",
             "spring.datasource.username",
             "sa",
             "spring.datasource.password",

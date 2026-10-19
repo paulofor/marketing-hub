@@ -63,10 +63,10 @@ export default function AiWorkerConnectionPanel() {
         <p role="status" aria-live="polite">
           {query.isLoading ? "Consultando conexão..." : message}
         </p>
-        {state && !state.workerAvailable && !query.isError ? (
+        {state && !state.workerAvailable && !pending && !query.isError ? (
           <p className="small text-body-secondary">
-            Ainda não há uma confirmação recente do Worker. O pedido de conexão
-            permanece salvo para o executor.
+            Ainda não há uma confirmação recente do Worker. Solicite a conexão e
+            acompanhe o resultado aqui.
           </p>
         ) : null}
         {code && officialUrl ? (

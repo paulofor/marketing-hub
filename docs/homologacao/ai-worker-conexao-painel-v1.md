@@ -52,10 +52,13 @@ Reversão mantém sessão e recibos; apenas desabilita o consumo dos comandos ad
 ## Resultado local
 
 - Backend: 105 testes de fluxo HTTP/JPA, monitor dos agentes e arquitetura; sem falhas.
+- Suíte completa do backend após o ajuste de isolamento: 4.863 testes, sem falhas ou erros;
+  40 testes condicionais não aplicáveis à rodada local. A migração própria foi validada
+  separadamente no MySQL 5.7.44.
 - MySQL 5.7.44: Liquibase aplicado duas vezes, tipos temporais conferidos, rollback e reaplicação aceitos.
 - Worker Java: 291 testes, sem falhas; três testes já condicionais não aplicáveis ao ambiente.
 - Bridge Node: 27 testes aprovados, incluindo recuperação de callback após interrupção e outro identificador.
-- Frontend: 15 testes aprovados, verificação TypeScript e build de produção aceitos.
+- Frontend: 16 testes aprovados, verificação TypeScript e build de produção aceitos.
 - Chromium: fluxo completo com backend real sintético em desktop, iPhone 15 Pro e Pixel 7;
   confirmação preservada após recarregar, sem rolagem horizontal. Expiração e falha de rede verificadas.
 - Contratos existentes dos agentes, shell (`bash -n` e ShellCheck) e validação estática Liquibase aceitos.
@@ -64,3 +67,5 @@ Capturas e resultado sintético ficam em `artifacts/worker-connection/` na sandb
 O harness é `scripts/test-ai-worker-connection-browser.mjs` com o backend restrito
 `AiWorkerConnectionFlowTest.main`; a configuração de teste é excluída dos contextos
 produtivos. Nenhuma chamada de inferência ou login real foi usada nessa homologação.
+O banco H2 do harness inclui nome completo da classe e UUID por contexto, com
+encerramento ao fechar a conexão; o contrato existente do CI protege esse isolamento.

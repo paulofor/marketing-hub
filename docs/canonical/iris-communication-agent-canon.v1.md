@@ -561,8 +561,9 @@ Evidência: [Mira — seleção criativa privada](../homologacao/mira-selecao-cr
 
 O `footer` de `PROOF_CARD_V1` permanece obrigatório e impresso na validação privada,
 além de “Exemplo com dados de teste · sem cobrança”. O aviso de demonstração não
-substitui limitações factuais da oferta ou do produto. Os dois textos usam fonte
-36 na área disponível após o CTA; excesso ou ausência bloqueia a peça, sem cortar
+substitui limitações factuais da oferta ou do produto. O aviso de demonstração usa fonte
+36 imediatamente antes do CTA; a ressalva factual mantém fonte 36 logo depois da ação.
+Excesso ou ausência bloqueia a peça, sem cortar
 texto, diminuir fonte ou alterar a prova. A composição comercial permanece própria.
 
 Em Capella, #691 tinha a ressalva correta, mas o PNG 595 a perdeu; Psique #692
@@ -573,6 +574,14 @@ Fonte, especificação, saída bruta e custo continuam auditados. As revisões
 independentes examinam os pixels finais, e seu aceite não autoriza publicação.
 
 Regressões e matriz: [Capella — ressalva no rodapé](../homologacao/capella-ressalva-rodape-2026-10-09.md).
+
+Complemento de 19/10/2026: Alcyone 755/1039 e os pareceres 756/757 comprovaram que
+imprimir a qualificação somente depois do botão não atende ao enquadramento da ação.
+O renderizador garante sua posição antes do convite, independentemente da copy do modelo,
+preservando a área de prova de 952 × 667 e as ressalvas. Íris compara as fontes mobile e
+desktop e mostra a entrega visual reconhecível quando ela compõe a promessa; uma descrição
+textual não a substitui. A candidata corrigida conserva os pixels aprovados e exige seus
+próprios pareceres, sem promover a preparação privada a publicação comercial.
 
 ### Autoria preservada na passagem ao destino — 09/10/2026
 

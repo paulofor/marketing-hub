@@ -8349,6 +8349,12 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   Regressões verificam pixels de dois domínios, ramo comercial antes válido,
   HTTP de materialização, callback e replay sem inferência. Registro e matriz:
   `docs/homologacao/capella-ressalva-rodape-2026-10-09.md`.
+- **Recorrência da ordem de leitura em 19/10/2026:** Alcyone 755/1039, Psique 756
+  e Têmis 757. O aviso existia, mas o template o fixava depois do CTA; repetir a
+  instrução ao modelo não alterava os pixels. A composição privada passa a qualificá-lo
+  antes do botão e conserva o rodapé factual depois, sem reduzir fonte ou área da prova.
+  Dois produtos sintéticos reproduzem a falha antes da correção; replay de 758/1028
+  e o ramo comercial protegem o caminho válido. Registro: `alcyone-creative-functional-proof-v1.md`.
 - **Recorrência de transporte confirmada:** a peça #407 foi aprovada por Psique #527, Têmis #528 e
   pela decisão humana do processo #64, mas o subprocesso de landing continuou bloqueado porque o
   plano #8 só consultava sua biblioteca visual e nenhum contrato transportava a seleção aprovada.

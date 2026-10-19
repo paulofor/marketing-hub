@@ -95,3 +95,38 @@ Resultado da extensão: 19 testes frontend passaram, typecheck e build concluír
 O navegador confirmou três dispositivos, duas identidades adicionais, nenhum carregamento
 integral de tarefas/experimentos e recuperação da falha de envio com o mesmo pedido.
 As respostas e gravações da matriz são simuladas; nenhuma tarefa produtiva foi criada.
+
+## Retomada real e ajuste do template — 19/10/2026
+
+Após o PR 5625, a captura complementar 754 passou nos nove cenários e persistiu quinze
+imagens, com zero chamadas de provedor. Íris 755 recebeu CONTENT 1028/1025, preservando
+583–587 e 710 com os mesmos hashes. A peça 1039 foi renderizada; Psique 756 e Têmis 757
+pediram enquadrar a combinação visual e qualificar a demonstração antes do botão.
+
+A nova evidência confirmou outra causa compartilhada: `ProofCardRenderer` fixava o aviso
+de teste somente após o CTA. O recorte de 755 mostrava apenas texto; o refinamento 758
+reposicionou os mesmos pixels para mostrar a roupa, sem gerar imagem. A execução 68 foi
+pausada pela tela, preservando a tarefa que já havia começado e impedindo novas revisões
+durante a correção local. Os pareceres são decisões independentes, não falhas de callback.
+
+| Alternativa | Benefício | Limite | Decisão |
+| --- | --- | --- | --- |
+| Acrescentar instrução ao prompt | Mudança curta | Não altera a posição fixa do aviso | Insuficiente |
+| Repetir o aviso na copy | Pode qualificá-lo antes da ação | Duplica texto, depende da inferência e ocupa o benefício | Descartada |
+| Corrigir o template e orientar seleção da prova visual | Ordem garantida para todos os produtos | Exige regressão de pixels e leitura em celular | Adotada |
+
+A composição privada mantém fonte 36, CTA e prova 952 × 667. Reorganiza espaços acima
+da prova e coloca o aviso imediatamente antes do botão, com o rodapé factual depois.
+O ramo comercial conserva suas coordenadas. O prompt passa a escolher a fonte pela entrega
+visível e legibilidade, evitando favorecer mobile quando isso exclui o objeto demonstrado.
+
+Matriz adicional definida antes da implementação: duas identidades sintéticas; posição do
+aviso antes da ação detectada pelos pixels, sem depender de copy gerada; ressalvas, recorte
+e ramo comercial preservados; replay local da especificação real 758 com a fonte 1028;
+leitura em Chromium desktop, iPhone e Pixel; nenhum upload ou inferência durante os testes.
+O teste novo falhou antes da correção (zero pixels da qualificação antes do botão em ambos
+os casos) e passou depois. A suíte de Íris executou 94 testes, sem falhas ou erros; quatro
+casos opcionais mantiveram suas condições. O replay com a fonte real foi executado separadamente.
+O PNG desse replay foi conferido em desktop, iPhone 15 Pro e Pixel 7: roupa inteira,
+orientação legível, aviso antes da ação e ressalva preservada, sem transbordamento.
+O novo arquivo produtivo ainda exige produção pelo executor e novos pareceres independentes.

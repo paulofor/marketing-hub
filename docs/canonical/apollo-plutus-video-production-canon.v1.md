@@ -710,3 +710,9 @@ humana, revisão independente ou autorização de mídia muda por essa política
 Para texto/visão do Worker IA, seguir também
 [Worker IA com Codex App Server](ai-worker-codex-app-server-canon.v1.md#modelo-tier-e-custo).
 As locuções históricas via Speech não foram convertidas em Codex pela troca de transporte.
+
+Recusa de planejamento comprovadamente anterior à inferência pode receber custo incremental
+estimado zero somente com todos os envios pareados às recusas HTTP 429 `flex_unavailable`,
+sem resposta aceita/usage/saída, sem asset/providerJobId e sem task de vídeo aceita no banco.
+Preservar requests, responses, contexto e eventos sob fonte própria; timeout, resposta ausente,
+outro erro ou aceite posterior continuam desconhecidos. A migração Codex não é essa evidência.

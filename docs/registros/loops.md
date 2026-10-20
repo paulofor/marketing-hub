@@ -10445,3 +10445,10 @@ Regressões: caminho anterior sem extrato bloqueia; opção nova funciona em dua
 recibo após falha, duplicidade, lote inválido, HTTP real, idempotência e substituição posterior
 por extrato são cobertos. Teto, gates e aceites permanecem. Matriz e limites:
 `docs/homologacao/mira-estimativa-custos-codex-v1.md`.
+
+A conferência completa de Mira identificou também 21265: Flex recusado com `flex_unavailable`
+antes de qualquer geração e sem task aceita. O custo de uma renderização projetada na lista não
+é consumo dessa tentativa. A mesma operação auditada agora valida todos os pares envio/recusa e
+a ausência de task no banco antes de registrar custo incremental zero com fonte específica.
+Timeout, resposta aceita, outra falha, ID/entrada divergente ou task existente continuam bloqueados.
+A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recriar a execução.

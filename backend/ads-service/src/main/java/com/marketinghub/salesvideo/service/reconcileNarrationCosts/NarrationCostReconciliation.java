@@ -77,9 +77,14 @@ public class NarrationCostReconciliation {
               && job.getProfile().getProduct() != null
               && metadata.path("productId").asLong() == job.getProfile().getProduct().getId(),
           "A tentativa pertence a outro tenant, produto ou experimento.");
+      boolean rejectedBeforeGeneration =
+          input.estimateFromReceipts() && PreGenerationCostEvidence.withoutGeneration(job, json);
       require(
-          job.getJobType() == SalesVideoJobType.POST_PRODUCTION
-              && "MUSA_POST_PRODUCTION".equals(job.getProviderName())
+          !rejectedBeforeGeneration || ledger.confirmsNoAcceptedProviderTask(id),
+          "Há tarefa de provedor aceita ou sua consulta não está disponível.");
+      require(
+          (rejectedBeforeGeneration || job.getJobType() == SalesVideoJobType.POST_PRODUCTION)
+              && (rejectedBeforeGeneration || "MUSA_POST_PRODUCTION".equals(job.getProviderName()))
               && Set.of(SalesVideoStatus.VIDEO_FAILED, SalesVideoStatus.VIDEO_READY)
                   .contains(job.getStatus()),
           "Somente finalizações encerradas podem ser conciliadas.");
@@ -92,11 +97,12 @@ public class NarrationCostReconciliation {
       require(
           Objects.equals(entry.experimentId(), experimentId)
               && Objects.equals(entry.productId(), job.getProfile().getProduct().getId())
-              && "AUDIO".equals(entry.assetType())
+              && (rejectedBeforeGeneration ? "VIDEO" : "AUDIO").equals(entry.assetType())
               && entry.providerCostUsd() == null,
           "O lançamento diverge do contexto ou já tem cobrança confirmada pelo provedor.");
       JsonNode audit = NarrationUsageEvidence.audit(job, json);
-      boolean zero = NarrationUsageEvidence.withoutNewSpeech(job, audit, metadata);
+      boolean zero =
+          rejectedBeforeGeneration || NarrationUsageEvidence.withoutNewSpeech(job, audit, metadata);
       NarrationUsageEvidence.PaidSpeech speech =
           zero ? null : NarrationUsageEvidence.paid(job, audit, requestIds);
       if (speech != null) {
@@ -127,7 +133,9 @@ public class NarrationCostReconciliation {
               entry,
               speech,
               zero
-                  ? metadata.has("preservedNarration") ? REUSED : BEFORE_TTS
+                  ? rejectedBeforeGeneration
+                      ? PreGenerationCostEvidence.POLICY
+                      : metadata.has("preservedNarration") ? REUSED : BEFORE_TTS
                   : input.estimateFromReceipts() ? ESTIMATE : COHORT));
     }
     BigDecimal total =
@@ -147,7 +155,7 @@ public class NarrationCostReconciliation {
                       .multiply(BigDecimal.valueOf(attempt.speech().count()))
                       .divide(BigDecimal.valueOf(calls), 6, RoundingMode.CEILING);
       var entry = attempt.entry();
-      if (Set.of(COHORT, REUSED, BEFORE_TTS, ESTIMATE)
+      if (Set.of(COHORT, REUSED, BEFORE_TTS, ESTIMATE, PreGenerationCostEvidence.POLICY)
               .contains(Objects.toString(entry.costEvidence(), ""))
           && !(ESTIMATE.equals(entry.costEvidence()) && !input.estimateFromReceipts()))
         require(
@@ -160,10 +168,11 @@ public class NarrationCostReconciliation {
       if (attempt.evidence().equals(entry.costEvidence()) && entry.estimatedCostUsd() != null)
         continue;
       BigDecimal reconciledCost = values.get(attempt.job().getId());
-      ledger.reconcileNarrationCost(
+      ledger.reconcileProductionCost(
           attempt.job().getId(),
           entry.productId(),
           experimentId,
+          entry.assetType(),
           reconciledCost,
           attempt.evidence());
       var details = json.createObjectNode();
@@ -177,10 +186,12 @@ public class NarrationCostReconciliation {
           .put("providerRequests", calls)
           .put(
               "allocation",
-              input.estimateFromReceipts() ? ESTIMATE : "REQUEST_COUNT_CONSERVATIVE_ESTIMATE")
+              input.estimateFromReceipts()
+                  ? attempt.evidence()
+                  : "REQUEST_COUNT_CONSERVATIVE_ESTIMATE")
           .put("providerInvoiceConfirmed", false)
           .put("newProviderCall", false);
-      if (input.estimateFromReceipts()) {
+      if (ESTIMATE.equals(attempt.evidence())) {
         details
             .put("durationRateUsdPerMinute", NarrationCostEstimate.USD_PER_MINUTE)
             .put("inputEnvelopeUsdPerMillionUtf8Bytes", new BigDecimal("1.2"))

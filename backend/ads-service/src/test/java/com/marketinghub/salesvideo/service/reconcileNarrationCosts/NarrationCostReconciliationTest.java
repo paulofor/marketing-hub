@@ -26,10 +26,17 @@ class NarrationCostReconciliationTest {
   private final StudioCostLedgerEntryRepository ledger =
       mock(StudioCostLedgerEntryRepository.class);
   private final SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
+  private final com.marketinghub.repository.jpa.financialagent
+          .StudioProviderTaskConsumptionRepository
+      providerTasks =
+          mock(
+              com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository
+                  .class);
   private final NarrationCostReconciliation service =
       new NarrationCostReconciliation(
           jobs,
-          new com.marketinghub.financialagent.service.StudioCostLedgerService(ledger),
+          new com.marketinghub.financialagent.service.StudioCostLedgerService(
+              ledger, providerTasks),
           events,
           json);
 
@@ -322,6 +329,117 @@ class NarrationCostReconciliationTest {
         .isInstanceOf(ResponseStatusException.class);
     verify(ledger, never()).save(any());
     verifyNoInteractions(events);
+  }
+
+  /** A recusa Flex comprovada em duas identidades não vira consumo nem requer extrato. */
+  @ParameterizedTest
+  @ValueSource(longs = {9007, 9010})
+  void recognizesPlanningRejectedBeforeAnyGeneration(long productId) throws Exception {
+    var job = rejectedPlanningJob(91001, productId);
+    var result = service.reconcile(99001L, estimate(List.of(job.getId())));
+    assertThat(result.estimatedCostUsd()).isZero();
+    assertThat(result.newProviderRequests()).isZero();
+    var entry = ledger.findBySourceTypeAndSourceId("SALES_VIDEO_JOB", "91001").orElseThrow();
+    assertThat(entry.getCostEvidence()).isEqualTo(PreGenerationCostEvidence.POLICY);
+    assertThat(entry.getProviderCostUsd()).isNull();
+    service.reconcile(99001L, estimate(List.of(job.getId())));
+    verify(events, times(1)).save(any());
+  }
+
+  /** Resposta ausente, aceita ou ambígua e task de vídeo impedem zerar a tentativa. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "no-response",
+        "received",
+        "transport",
+        "other-error",
+        "other-job",
+        "other-request",
+        "duplicate",
+        "provider-task",
+        "provider-id",
+        "malformed",
+        "asset",
+        "usage"
+      })
+  void rejectsUncertainOrAcceptedPlanning(String variant) throws Exception {
+    var job = rejectedPlanningJob(91001, 9007);
+    var event = job.getEvents().getLast();
+    var audit = (ObjectNode) json.readTree(event.getDetailsJson());
+    switch (variant) {
+      case "no-response" -> job.getEvents().removeLast();
+      case "received" -> audit.put("status", "RECEIVED").put("httpStatus", 200);
+      case "transport" -> audit.put("status", "TRANSPORT_OR_AUDIT_ERROR");
+      case "other-error" -> audit.put("rawResponse", "{\"error\":{\"code\":\"unknown\"}}");
+      case "other-job" -> audit.put("jobId", 91002);
+      case "other-request" -> ((ObjectNode) audit.path("request")).put("input", "outra entrada");
+      case "duplicate" ->
+          job.getEvents()
+              .add(SalesVideoJobEvent.builder().detailsJson(event.getDetailsJson()).build());
+      case "provider-task" -> when(providerTasks.existsBySalesVideoJobId(91001L)).thenReturn(true);
+      case "provider-id" -> job.setProviderJobId("provider-accepted-task");
+      case "malformed" ->
+          job.getEvents()
+              .add(
+                  SalesVideoJobEvent.builder()
+                      .detailsJson("{\"eventType\":\"APOLLO_PLANNING_HTTP\", ")
+                      .build());
+      case "asset" -> job.setAsset(new com.marketinghub.media.Asset());
+      case "usage" ->
+          audit.put(
+              "rawResponse",
+              "{\"error\":{\"code\":\"flex_unavailable\"},\"usage\":{\"input_tokens\":10}}");
+    }
+    event.setDetailsJson(audit.toString());
+    assertThatThrownBy(() -> service.reconcile(99001L, estimate(List.of(job.getId()))))
+        .isInstanceOf(ResponseStatusException.class);
+    verify(ledger, never()).save(any());
+    verifyNoInteractions(events);
+  }
+
+  /** Reproduz a sequência auditada antes de qualquer chamada ao motor de vídeo. */
+  private SalesVideoJob rejectedPlanningJob(long id, long productId) throws Exception {
+    var job = job(id, productId, 99001);
+    job.setJobType(SalesVideoJobType.RENDER);
+    job.setProviderName("RUNWAY_ROUTER");
+    job.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    job.setFailureCode("APOLLO_PLANNING_HTTP_ERROR");
+    var entry =
+        ledger.findBySourceTypeAndSourceId("SALES_VIDEO_JOB", Long.toString(id)).orElseThrow();
+    entry.setAssetType("VIDEO");
+    var metadata = (ObjectNode) json.readTree(job.getMetadataJson());
+    metadata.remove("tts_interactions");
+    job.setMetadataJson(metadata.toString());
+    job.getEvents()
+        .add(
+            SalesVideoJobEvent.builder()
+                .detailsJson(
+                    "retryable=false;code=APOLLO_PLANNING_HTTP_ERROR;message=Planejador recusado; vídeo não iniciado.")
+                .build());
+    var request =
+        json.createObjectNode()
+            .put("model", "gpt-6.1-sol")
+            .put("service_tier", "flex")
+            .put("input", "fixture");
+    var audit =
+        json.createObjectNode()
+            .put("eventType", "APOLLO_PLANNING_HTTP")
+            .put("jobId", id)
+            .put("attempt", 1)
+            .put("endpoint", "https://api.openai.com/v1/responses")
+            .put("model", "gpt-6.1-sol")
+            .put("serviceTier", "flex")
+            .put("status", "REQUESTED");
+    audit.set("request", request);
+    job.getEvents().add(SalesVideoJobEvent.builder().detailsJson(audit.toString()).build());
+    audit
+        .put("status", "REJECTED")
+        .put("httpStatus", 429)
+        .put("requestId", "request-" + id)
+        .put("rawResponse", "{\"error\":{\"code\":\"flex_unavailable\"}}");
+    job.getEvents().add(SalesVideoJobEvent.builder().detailsJson(audit.toString()).build());
+    return job;
   }
 
   /** A opção JSON percorre controller, fachada e ledger reais sem precisar de extrato. */

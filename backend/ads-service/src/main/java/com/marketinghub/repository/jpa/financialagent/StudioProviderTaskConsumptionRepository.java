@@ -15,6 +15,9 @@ public interface StudioProviderTaskConsumptionRepository
   Optional<StudioProviderTaskConsumption> findByProviderAndProviderTaskId(
       String provider, String providerTaskId);
 
+  /** Confere no banco se houve aceite de alguma task do provedor. */
+  boolean existsBySalesVideoJobId(Long jobId);
+
   /** Lista as tasks aceitas de um job para auditoria e conciliação. */
   List<StudioProviderTaskConsumption> findBySalesVideoJobIdOrderBySceneNumberAsc(Long jobId);
 

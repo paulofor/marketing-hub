@@ -25,9 +25,12 @@ function setup(experimentId = 99001) {
     </QueryClientProvider>,
   );
   fireEvent.click(screen.getByText("Conciliação da locução"));
-  fireEvent.change(screen.getByLabelText("Tentativas de finalização (IDs) *"), {
-    target: { value: "91001, 91002" },
-  });
+  fireEvent.change(
+    screen.getByLabelText("Tentativas de produção/finalização (IDs) *"),
+    {
+      target: { value: "91001, 91002" },
+    },
+  );
   fireEvent.change(screen.getByLabelText("Fonte consultada *"), {
     target: {
       value: "https://api.openai.com/v1/organization/usage/completions",

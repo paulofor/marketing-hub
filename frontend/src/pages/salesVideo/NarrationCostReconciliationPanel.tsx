@@ -90,7 +90,7 @@ export default function NarrationCostReconciliationPanel({
             Experimento: {experimentId ?? "selecione um vídeo com contexto"}
           </p>
           <label htmlFor="narration-cost-jobs">
-            Tentativas de finalização (IDs) *
+            Tentativas de produção/finalização (IDs) *
           </label>
           <input
             id="narration-cost-jobs"
@@ -110,9 +110,11 @@ export default function NarrationCostReconciliationPanel({
           {estimate && (
             <p role="note">
               O sistema calculará o custo pela duração medida das locuções e
-              pelo modelo auditado. O valor serve ao controle do teto; não
-              representa cobrança confirmada. Texto e visão via Codex usam
-              estimativa própria e não exigem extrato da API.
+              pelo modelo auditado. Tentativas recusadas antes de gerar exigem
+              prova completa de recusa e ausência de tarefas aceitas. O valor
+              serve ao controle do teto; não representa cobrança confirmada.
+              Texto e visão via Codex usam estimativa própria e não exigem
+              extrato da API.
             </p>
           )}
           <label htmlFor="narration-cost-usage">

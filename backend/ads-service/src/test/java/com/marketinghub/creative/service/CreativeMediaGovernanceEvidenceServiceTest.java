@@ -53,7 +53,13 @@ class CreativeMediaGovernanceEvidenceServiceTest {
   void setup() {
     service =
         new CreativeMediaGovernanceEvidenceService(
-            videoAssets, videoProjects, assets, providerModels, creatives, new ObjectMapper());
+            videoAssets,
+            videoProjects,
+            assets,
+            providerModels,
+            creatives,
+            new ObjectMapper(),
+            null);
   }
 
   /** Expõe a cadeia completa somente quando arquivo, projeto, referência e licença convergem. */

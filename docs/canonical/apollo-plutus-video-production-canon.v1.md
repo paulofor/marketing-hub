@@ -716,3 +716,22 @@ estimado zero somente com todos os envios pareados às recusas HTTP 429 `flex_un
 sem resposta aceita/usage/saída, sem asset/providerJobId e sem task de vídeo aceita no banco.
 Preservar requests, responses, contexto e eventos sob fonte própria; timeout, resposta ausente,
 outro erro ou aceite posterior continuam desconhecidos. A migração Codex não é essa evidência.
+
+## Governança da montagem editorial e voz nativa — 20/10/2026
+
+A receita `DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF` usa o contrato
+`CREATIVE_MEDIA_GOVERNANCE_V5`. Backend revalida projeto, produto, tenant, versão, arquivo final,
+fonte editorial, capturas técnicas e artes aplicadas, com seus hashes e aprovações persistidas.
+A captura sintética continua prova técnica, sem alegar cliente, venda ou demanda.
+
+O modo `APPROVED_PRODUCT_PROOF_WITH_BUILT_IN_TTS` não possui apresentador. O disclosure da voz
+nativa é independente de `presenterIsSynthetic`; não criar pessoa ou consentimento fictícios.
+Cada trecho exige recibo original OpenAI, voz nativa permitida, modelo, texto, resposta binária,
+hash e mesmo contexto; a política versionada cita fontes oficiais e limites dos direitos.
+Voz customizada, referência identificável, trilha ou origem não cobertas permanecem bloqueadas.
+Têmis inspeciona o arquivo exato e decide de forma independente; VERIFIED não é aceite comercial.
+História, seleção humana, custo original desconhecido e tetos não são alterados por essa projeção.
+Leitura de prova já aceita e materialização de nova comunicação são contratos separados.
+O avanço para autorização, publicação ou medição não invalida pixels aprovados por si só:
+revalidar ciclo aberto, gate, revisões, produto e versão, sem liberar nova tarefa de Íris.
+Regressões e matriz: `docs/homologacao/capella-governanca-editorial-v1.md`.

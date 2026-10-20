@@ -225,13 +225,42 @@ class IrisLearningCycleContextTest {
     verify(instances, never()).save(any());
   }
 
+  /** Lê somente a prova vigente após a autorização, conservando bloqueada nova criação de Íris. */
+  @ParameterizedTest
+  @ValueSource(strings = {"AUTHORIZATION", "PUBLICATION", "MEASUREMENT", "DECISION"})
+  void readsApprovedProofAfterPrivatePreparationWithoutReopeningMaterialization(String stage) {
+    cycle.setStage(stage);
+    assertThat(provider.resolve(SOURCE).orElseThrow().get("inputReadiness")).isEqualTo("BLOCKED");
+    var result = provider.resolveVisualProof(SOURCE).orElseThrow();
+    assertThat(result.get("inputReadiness")).isEqualTo("READY");
+    assertThat(result).containsKeys("visualProofAuthorization", "approvedVisualArtifacts");
+    assertThat(result)
+        .doesNotContainKeys(
+            "marketStrategicContract",
+            "communicationArtifacts",
+            "privateCreativePreparation",
+            "publicationAuthorized",
+            "paymentEnabled");
+    gate.setObjectiveAchieved(false);
+    assertThat(provider.resolveVisualProof(SOURCE).orElseThrow().get("inputReadiness"))
+        .isEqualTo("BLOCKED");
+    gate.setObjectiveAchieved(true);
+    cycle.setStatus("CLOSED");
+    assertThat(provider.resolveVisualProof(SOURCE).orElseThrow().get("inputReadiness"))
+        .isEqualTo("BLOCKED");
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+  }
+
   /** Liga produtor, adaptador e consumidor reais sem simular a autorização visual do ciclo. */
   @ParameterizedTest
   @CsvSource({
     "7,12,105,26,ADJUSTMENT",
     "7,12,105,26,VIDEO_APPROVAL",
+    "7,12,105,26,PUBLICATION",
     "91007,91012,91105,91026,ADJUSTMENT",
-    "91007,91012,91105,91026,VIDEO_APPROVAL"
+    "91007,91012,91105,91026,VIDEO_APPROVAL",
+    "91007,91012,91105,91026,PUBLICATION"
   })
   void passesSupplementalCaptureFromCycleThroughVideoContract(
       long productId, long cycleId, long experimentId, long chainId, String stage)
@@ -265,9 +294,21 @@ class IrisLearningCycleContextTest {
     when(storage.read(91733L, 91722L))
         .thenReturn(
             new AgentTaskVisualEvidenceService.EvidenceContent("image/png", new byte[] {1, 2, 3}));
+    var communication =
+        new IrisCommunicationMaterializationContextProvider(
+            mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class),
+            mock(com.marketinghub.planning.service.CommercialPlanVersionService.class),
+            mock(com.marketinghub.planning.service.CommercialPlanLandingAssetService.class),
+            tasks,
+            mock(
+                com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository
+                    .class),
+            json);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        communication, "learningCycles", provider);
     var bridge =
         new com.marketinghub.agenttask.AgentTaskVideoProductProofSource(
-            images, storage, provider::resolve, json);
+            images, storage, communication, json);
     var projects = mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class);
     var project =
         com.marketinghub.salesvideo.VideoProject.builder()

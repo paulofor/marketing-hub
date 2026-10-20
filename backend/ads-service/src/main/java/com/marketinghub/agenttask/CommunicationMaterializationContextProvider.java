@@ -10,6 +10,11 @@ public interface CommunicationMaterializationContextProvider {
   /** Resolve o contrato de entrada pela referência canônica da tarefa. */
   Optional<Map<String, Object>> resolve(String sourceReference);
 
+  /** Revalida somente a prova já aprovada sem autorizar nova materialização de comunicação. */
+  default Optional<Map<String, Object>> resolveVisualProof(String sourceReference) {
+    return resolve(sourceReference);
+  }
+
   /** Informa mudança funcional de entrada sem invalidar a mensagem ou o contrato legado. */
   default Optional<String> executionInputVersion(String processCode, String sourceReference) {
     return Optional.empty();

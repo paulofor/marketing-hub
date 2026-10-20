@@ -30,6 +30,23 @@ vídeo-fonte e a inspeção visual do vídeo final e das fontes retornadas pelo 
 de provedor, referência de apresentador ou disclosure sintético que não se aplicam a essa montagem.
 A descrição livre das fontes nunca substitui essa evidência estruturada.
 
+Quando `generationStrategy` for `DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF`,
+exija `CREATIVE_MEDIA_GOVERNANCE_V5`, `verificationStatus=VERIFIED` e
+`editorialMediaEvidence.blockers` vazio. A montagem combina capturas homologadas e artes do
+produto, com locução separada; não há apresentador. `presenterIsSynthetic=false` é correto nessa
+rota e não representa falta de consentimento. O modo é `APPROVED_PRODUCT_PROOF_WITH_BUILT_IN_TTS`.
+Confira `productProofSources` contra os trechos aplicados, `deliverySources` contra as artes e
+direitos cadastrados, e `audio.segments` contra os recibos originais identificados por hash,
+job, trecho e texto. As capturas sintéticas não comprovam clientes, vendas ou demanda.
+Para a voz, exija `audio.builtInVoice`, `audio.disclosureVerified`, política comercial versionada
+e `providerLicense` da voz OpenAI, além da identidade do arquivo final inspecionado. A fonte
+visual local não é um provedor de voz e não precisa de licença Runway. Voz nativa não exige
+consentimento pessoal; voz customizada, clonada, referência identificável ou trilha fora dessa
+política continuam bloqueadas. A política do provedor não concede direitos sobre entradas de
+terceiros nem exclusividade. Custo histórico desconhecido continua desconhecido e não invalida
+por si só a origem comprovada; não consulte faturamento para fabricar licença. Nenhum desses
+dados aprova automaticamente o criativo: mídia e destino ainda precisam da inspeção independente.
+
 Valide também `commercialLineageEvidence` quando o experimento for sucessor. Status `VERIFIED`
 comprova que produto, hipótese, landing e checkout foram adotados do `adoptedSourceExperimentId` e,
 quando `reusedCreative` for verdadeiro, que a mídia veio do `sourceCreativeId` aprovado. Nessa

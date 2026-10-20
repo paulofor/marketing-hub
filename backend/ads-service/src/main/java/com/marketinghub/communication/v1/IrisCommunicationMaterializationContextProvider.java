@@ -96,6 +96,17 @@ public class IrisCommunicationMaterializationContextProvider
     return Optional.of(preparation(sourceReference, context(sourceReference, scope.get())));
   }
 
+  /** Preserva o gate técnico do ciclo na leitura comercial sem reabrir tarefas de Íris. */
+  @Override
+  @Transactional(readOnly = true)
+  public Optional<Map<String, Object>> resolveVisualProof(String sourceReference) {
+    if (learningCycles != null) {
+      var proof = learningCycles.resolveVisualProof(sourceReference);
+      if (proof.isPresent()) return proof;
+    }
+    return resolve(sourceReference);
+  }
+
   /**
    * Identifica a entrada privada do subprocesso criativo, preservando a mensagem aceita e ignorando
    * artefatos, custos e horários gerados pela própria execução.

@@ -1,0 +1,28 @@
+{
+  "contractVersion": "OPENAI_BUILT_IN_SPEECH_RIGHTS_V1",
+  "verifiedAt": "2026-10-20T11:14:18Z",
+  "provider": "OPENAI_TTS",
+  "endpoint": "https://api.openai.com/v1/audio/speech",
+  "models": [
+    "gpt-4o-mini-tts-2025-12-15"
+  ],
+  "voices": [
+    "alloy",
+    "ash",
+    "ballad",
+    "coral",
+    "echo",
+    "fable",
+    "onyx",
+    "nova",
+    "sage",
+    "shimmer",
+    "verse",
+    "marin",
+    "cedar"
+  ],
+  "documentationUrl": "https://developers.openai.com/api/docs/guides/text-to-speech",
+  "rightsUrl": "https://openai.com/policies/services-agreement/",
+  "rightsBasis": "Seção 4: saída atribuída ao cliente nos limites legais, sujeita aos direitos sobre as entradas e às políticas do serviço.",
+  "limitations": "Não comprova exclusividade, consentimento de pessoa real, direitos de terceiros ou licença de voz customizada. Exige request de voz nativa, áudio auditado e disclosure no arquivo final. Não aprova o criativo nem concilia custo."
+}

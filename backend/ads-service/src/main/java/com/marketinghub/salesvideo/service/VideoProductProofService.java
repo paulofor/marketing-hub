@@ -58,7 +58,16 @@ public class VideoProductProofService {
       Long projectId,
       java.util.List<com.marketinghub.salesvideo.service.postproduction.ProductProofShot> shots,
       String captionText) {
-    VideoProject project = ownedProject(projectId);
+    return verifiedSequence(ownedProject(projectId), shots, captionText);
+  }
+
+  /** Revalida uma sequência auditada do projeto proprietário para o gate comercial do backend. */
+  @Transactional(readOnly = true)
+  public java.util.List<Map<String, Object>> verifiedSequence(
+      VideoProject project,
+      java.util.List<com.marketinghub.salesvideo.service.postproduction.ProductProofShot> shots,
+      String captionText) {
+    TenantContextHolder.assertTenant(project.getTenantId());
     if (shots == null || shots.isEmpty() || shots.size() > 5)
       throw invalid("Use de um a cinco trechos de demonstração.");
     int segments = captionText.split("\\s*\\|\\s*", -1).length;

@@ -28,7 +28,8 @@ public record CreativeMediaGovernanceEvidenceDto(
     boolean productIsDigitalExperience,
     ProviderLicense providerLicense,
     String approvedBy,
-    Instant approvedAt) {
+    Instant approvedAt,
+    EditorialMediaEvidenceDto editorialMediaEvidence) {
 
   /** Responsabilidade: identificar um criativo previamente aprovado usado na montagem final. */
   public record ApprovedCreativeSource(

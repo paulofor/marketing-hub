@@ -10554,3 +10554,20 @@ Essa prova local não aprova a página comercial nem representa uma nova geraç�
   esgotamento de retries e replay posterior; duas identidades, contrato antes válido e
   inferência única. Processamento recente, inferência original, custo ou saída existentes
   e schema alterado continuam bloqueados. Não requer consulta de faturamento da API.
+
+## LOOP-TEMIS-EDITORIAL-EXIGE-APRESENTADOR — 20/10/2026
+
+- Evidência: criativo540 de Capella/105, vídeo76, final3286 e fonte3227. Têmis confirmou
+  destino/preço/copy, mas recebeu governança INCOMPLETE, presenterReferenceMode UNRESOLVED e
+  providerLicense null. Os requests, sete áudios, provas e hashes já existiam.
+- Causa: o resolvedor só tratava geração com apresentador e uploads versionados. A receita
+  editorial e a licença da voz foram interpretadas como se dependessem do provedor visual
+  Runway; disclosure exigia presenter_synthetic mesmo sem apresentador.
+- Correção: contratoV5 específico, com verificação cruzada das provas, artes, jobs, contexto,
+  áudio original e política de voz nativa. Sem reescrever história, gerar mídia ou aprovar o gate.
+  A leitura da captura #733/#721 deixou de exigir etapa privada de criação: após avançar para
+  PUBLICATION, o gate aprovado ainda deve ser revalidado por uma projeção exclusiva de prova.
+  O contrato completo de criação de Íris permanece bloqueado nessas etapas.
+- Prevenção: duas identidades e alterações negativas de hash, fonte, job, recorte, direitos,
+  modelo, voz, tenant e versão. Runway e uploads versionados mantêm os contratos próprios.
+  A nova revisão independente só é solicitada após validar a projeção real localmente.

@@ -55,6 +55,7 @@ public class CreativeMediaGovernanceEvidenceService {
   private final SalesVideoProviderModelRepository providerModels;
   private final CreativeRepository creatives;
   private final ObjectMapper objectMapper;
+  private final EditorialMediaGovernanceEvidenceResolver editorialEvidence;
 
   /** Monta evidência estruturada sem alterar o criativo e sinaliza qualquer lacuna ao revisor. */
   public CreativeMediaGovernanceEvidenceDto resolve(Creative creative) {
@@ -118,6 +119,10 @@ public class CreativeMediaGovernanceEvidenceService {
         resolveProviderModel(sourceProvider, sourceProviderFromAsset, sourceProviderMetadata);
     MediaArtifact finalArtifact = artifact(finalAsset, mediaUrl, video.getProvider(), null);
     MediaArtifact generatedSource = artifact(sourceAsset, null, sourceProvider, sourceAssetId);
+    if (editorialEvidence != null && editorialEvidence.supports(lineage)) {
+      return editorialEvidence.resolve(
+          creative, video, project, lineage, finalArtifact, generatedSource);
+    }
     MediaReference presenterReference =
         reference(presenterAsset, projectMatches ? project.getCharacterPerformanceUri() : null);
     ProviderLicense providerLicense = providerLicense(providerModel, sourceProvider);
@@ -169,7 +174,8 @@ public class CreativeMediaGovernanceEvidenceService {
         governance.path("productIsDigitalExperience").asBoolean(false),
         providerLicense,
         trimToNull(video.getReviewedBy()),
-        video.getReviewedAt());
+        video.getReviewedAt(),
+        null);
   }
 
   /**
@@ -229,7 +235,8 @@ public class CreativeMediaGovernanceEvidenceService {
         false,
         null,
         trimToNull(video.getReviewedBy()),
-        video.getReviewedAt());
+        video.getReviewedAt(),
+        null);
   }
 
   /** Confere novamente no banco cada criativo registrado no snapshot do upload. */
@@ -615,6 +622,7 @@ public class CreativeMediaGovernanceEvidenceService {
         UNRESOLVED_REFERENCE,
         false,
         false,
+        null,
         null,
         null,
         null);

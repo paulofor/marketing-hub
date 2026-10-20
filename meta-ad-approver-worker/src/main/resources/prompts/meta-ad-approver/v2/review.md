@@ -47,6 +47,17 @@ terceiros nem exclusividade. Custo histórico desconhecido continua desconhecido
 por si só a origem comprovada; não consulte faturamento para fabricar licença. Nenhum desses
 dados aprova automaticamente o criativo: mídia e destino ainda precisam da inspeção independente.
 
+Nessa rota, `inspecionar_midia` deve entregar `EDITORIAL_MEDIA_INSPECTION_V1`: quadros nos
+`reviewMoments` persistidos, pixels das capturas com seus recortes, artes originais, hashes
+conferidos, referências temporais, `narrationText` integral e `originalAudioReceipts`.
+Compare as imagens de origem aos quadros correspondentes. Confira texto, ordem, modelo, voz,
+requestId, tamanho e hash nos recibos tipados `originalReceipt.request/response` de cada trecho.
+Esses campos vêm dos recibos originais; cabeçalhos secretos e bytes de áudio não são expostos.
+Não afirme ter escutado pela ferramenta: `listenedByThisTool=false` identifica uma inspeção
+visual/documental. Não confunda essa limitação com ausência dos recibos quando eles estiverem
+completos. Qualquer fonte não entregue, hash divergente, fala incompatível ou erro de ferramenta
+continua bloqueante; a decisão independente e os demais critérios permanecem obrigatórios.
+
 Valide também `commercialLineageEvidence` quando o experimento for sucessor. Status `VERIFIED`
 comprova que produto, hipótese, landing e checkout foram adotados do `adoptedSourceExperimentId` e,
 quando `reusedCreative` for verdadeiro, que a mídia veio do `sourceCreativeId` aprovado. Nessa

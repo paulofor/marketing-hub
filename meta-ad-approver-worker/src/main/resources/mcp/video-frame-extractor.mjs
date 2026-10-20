@@ -12,7 +12,7 @@ const MAX_VIDEO_BYTES = 64 * 1024 * 1024;
 const MAX_FRAME_BYTES = 12 * 1024 * 1024;
 const PROCESS_TIMEOUT_MS = 120000;
 
-export async function extractRemoteVideoFrames(url, correlation = {}) {
+export async function extractRemoteVideoFrames(url, correlation = {}, reviewMoments = []) {
   const requestedAt = new Date().toISOString();
   process.stderr.write(
     `${JSON.stringify({ operation: 'download_video_for_review', phase: 'request', url, requestedAt, ...correlation })}\n`,
@@ -32,7 +32,7 @@ export async function extractRemoteVideoFrames(url, correlation = {}) {
       );
     }
     const bytes = await readLimitedBody(response);
-    return await extractVideoFrames(bytes);
+    return await extractVideoFrames(bytes, reviewMoments);
   } catch (error) {
     process.stderr.write(
       `${JSON.stringify({ operation: 'download_video_for_review', phase: 'failure', url, requestedAt, failedAt: new Date().toISOString(), error: error instanceof Error ? (error.stack ?? error.message) : String(error), ...correlation })}\n`,
@@ -113,7 +113,7 @@ async function readLimitedBody(response) {
   return Buffer.concat(chunks, total);
 }
 
-async function extractVideoFrames(bytes) {
+async function extractVideoFrames(bytes, reviewMoments = []) {
   if (!Buffer.isBuffer(bytes) || bytes.length === 0) {
     throw new Error('Vídeo vazio recebido para inspeção.');
   }
@@ -128,18 +128,52 @@ async function extractVideoFrames(bytes) {
     await writeFile(input, bytes, { mode: 0o600 });
     const duration = await probeDuration(input);
     const frames = [];
-    for (const position of [0.1, 0.5, 0.9]) {
-      frames.push(await extractFrame(input, Math.max(0, duration * position)));
+    if (!Array.isArray(reviewMoments) || reviewMoments.length > 12 ||
+        reviewMoments.some(value => !Number.isFinite(value) || value < 0 || value >= duration)) {
+      throw new Error('Momentos de revisão fora da duração física do vídeo.');
+    }
+    const frameTimes = [...new Set([...([0.1, 0.5, 0.9].map(position => duration * position)), ...reviewMoments]
+      .map(value => Number(value.toFixed(3))))];
+    for (const second of frameTimes) {
+      frames.push(await extractFrame(input, second));
     }
     return {
       duration,
       frames,
+      frameTimes,
       byteLength: bytes.length,
       sha256: createHash('sha256').update(bytes).digest('hex'),
     };
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+}
+
+// Mostra os pixels da fonte e seu recorte auditado; nunca substitui ou persiste o ativo original.
+export async function renderSourceImage(bytes, crop = null) {
+  const directory = await mkdtemp(join(tmpdir(), 'temis-source-'));
+  const input = join(directory, 'source-image');
+  try {
+    await writeFile(input, bytes, { mode: 0o600 });
+    const { stdout } = await execFileAsync(FFPROBE_PATH, ['-v','error','-select_streams','v:0',
+      '-show_entries','stream=width,height','-of','json',input],
+      { encoding: 'utf8', maxBuffer: 65536, timeout: PROCESS_TIMEOUT_MS, killSignal: 'SIGKILL' });
+    const { width, height } = JSON.parse(stdout).streams?.[0] ?? {};
+    if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 ||
+        width * height > 20_000_000) throw new Error('Dimensões da fonte inválidas.');
+    const args = ['-v','error','-threads','1','-i',input];
+    if (crop !== null) {
+      if (!Array.isArray(crop) || crop.length !== 4 || crop.some(value => !Number.isSafeInteger(value)) ||
+          crop[0] < 0 || crop[1] < 0 || crop[2] < 1 || crop[3] < 1 ||
+          crop[0] + crop[2] > width || crop[1] + crop[3] > height)
+        throw new Error('Recorte fora dos pixels da fonte.');
+      args.push('-vf', `crop=${crop[2]}:${crop[3]}:${crop[0]}:${crop[1]}:exact=1`);
+    }
+    args.push('-frames:v','1','-threads','1','-c:v','png','-f','image2pipe','pipe:1');
+    const result = await execFileAsync(FFMPEG_PATH, args,
+      { encoding: 'buffer', maxBuffer: MAX_FRAME_BYTES, timeout: PROCESS_TIMEOUT_MS, killSignal: 'SIGKILL' });
+    return { bytes: result.stdout, mimeType: 'image/png' };
+  } finally { await rm(directory, { recursive: true, force: true }); }
 }
 
 async function probeDuration(input) {

@@ -14,6 +14,7 @@ import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
 import com.marketinghub.creative.dto.UpdateCreativeStatusRequest;
 import com.marketinghub.creative.mapper.CreativeMapper;
+import com.marketinghub.creative.service.CreativeEditorialEvidenceService;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.service.video.VideoCreativeRequest;
 import com.marketinghub.creative.service.video.VideoCreativeService;
@@ -51,19 +52,22 @@ public class CreativeController {
   private final AssetRepository assetRepository;
   private final VideoCreativeService videoCreativeService;
   private final ApprovedVisualAssetCreativeService approvedVisualAssetCreativeService;
+  private final CreativeEditorialEvidenceService editorialEvidence;
 
-  /** Inicializa os endpoints com serviços de criativo, mídia aprovada, mapeamento e ativos. */
+  /** Inicializa os endpoints com criativos, mídia aprovada, provas de inspeção e mapeamento. */
   public CreativeController(
       CreativeService service,
       CreativeMapper mapper,
       AssetRepository assetRepository,
       VideoCreativeService videoCreativeService,
-      ApprovedVisualAssetCreativeService approvedVisualAssetCreativeService) {
+      ApprovedVisualAssetCreativeService approvedVisualAssetCreativeService,
+      CreativeEditorialEvidenceService editorialEvidence) {
     this.service = service;
     this.mapper = mapper;
     this.assetRepository = assetRepository;
     this.videoCreativeService = videoCreativeService;
     this.approvedVisualAssetCreativeService = approvedVisualAssetCreativeService;
+    this.editorialEvidence = editorialEvidence;
   }
 
   /** Lista imagens aprovadas do plano que podem virar um controle estático auditável. */
@@ -215,6 +219,24 @@ public class CreativeController {
   public CreativeAgentReviewPendingDto agentReviewContext(
       @PathVariable Long id, @RequestParam Long experimentId) {
     return service.getAgentReviewContext(id, experimentId);
+  }
+
+  /** Fornece a Têmis somente os pixels homologados vinculados ao anúncio e experimento. */
+  @Operation(
+      summary = "Inspecionar a captura de origem da montagem editorial",
+      description = "Revalida governança V5, escopo e hash; não gera mídia nem aprova o anúncio.")
+  @GetMapping(
+      value = "/api/internal/creatives/{id}/agent-review/product-proofs/{taskId}/{evidenceId}",
+      produces = "image/png")
+  public ResponseEntity<byte[]> editorialProof(
+      @PathVariable Long id,
+      @RequestParam Long experimentId,
+      @PathVariable Long taskId,
+      @PathVariable Long evidenceId) {
+    return ResponseEntity.ok()
+        .cacheControl(org.springframework.http.CacheControl.noStore())
+        .contentType(org.springframework.http.MediaType.IMAGE_PNG)
+        .body(editorialEvidence.readProof(id, experimentId, taskId, evidenceId));
   }
 
   /** Solicita revisão do agente sem alterar ou liberar o conteúdo do anúncio. */

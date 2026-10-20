@@ -23,6 +23,7 @@ public record EditorialMediaEvidenceDto(
       String voice,
       boolean builtInVoice,
       boolean disclosureVerified,
+      String narrationText,
       String costStatus,
       CreativeMediaGovernanceEvidenceDto.ProviderLicense license,
       List<AudioSegment> segments,
@@ -37,5 +38,34 @@ public record EditorialMediaEvidenceDto(
       String sha256,
       String requestId,
       String inputTextSha256,
-      double durationSeconds) {}
+      double durationSeconds,
+      String text,
+      SpeechReceipt originalReceipt) {}
+
+  /** Expõe somente campos permitidos do recibo que originou o trecho, sem credenciais ou custo. */
+  public record SpeechReceipt(
+      String operation,
+      String provider,
+      String endpoint,
+      String status,
+      SpeechRequest request,
+      SpeechResponse response) {}
+
+  /** Conserva o texto e os parâmetros originais da voz nativa para comparação independente. */
+  public record SpeechRequest(
+      String model,
+      String voice,
+      String input,
+      String instructions,
+      String responseFormat,
+      Double speed) {}
+
+  /** Identifica a resposta binária auditada sem serializar áudio ou qualquer cabeçalho secreto. */
+  public record SpeechResponse(
+      String representation,
+      String fileName,
+      String contentType,
+      long bytes,
+      String sha256,
+      String requestId) {}
 }

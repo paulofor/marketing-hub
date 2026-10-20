@@ -2,6 +2,7 @@ import { chromium } from 'playwright-core';
 import { createServer } from 'node:http';
 import { captureCommercialLanding } from './landing-evidence.mjs';
 import { validateVideoDecoder } from './video-frame-extractor.mjs';
+import { validateEditorialInspection } from './editorial-runtime-check.mjs';
 
 const server = createServer((request, response) => {
   if (request.url?.startsWith('/product')) {
@@ -41,6 +42,7 @@ try {
     throw new Error('O navegador não produziu a evidência visual de runtime.');
   }
   const video = await validateVideoDecoder();
+  const editorial = await validateEditorialInspection();
   if (!/^[a-f0-9]{64}$/.test(video.sha256) || video.byteLength <= 0) {
     throw new Error('O decoder não devolveu SHA-256 e tamanho do arquivo completo.');
   }
@@ -55,7 +57,7 @@ try {
     throw new Error('Checkout não preservou preço e inspeção somente leitura.');
   }
   process.stdout.write(
-    `${JSON.stringify({ browser: await browser.version(), screenshotBytes: screenshot.length, video: { ...video, frames: undefined }, checkout: { ...landing.checkout, screenshot: undefined } })}\n`,
+    `${JSON.stringify({ browser: await browser.version(), screenshotBytes: screenshot.length, video: { ...video, frames: undefined }, editorial, checkout: { ...landing.checkout, screenshot: undefined } })}\n`,
   );
 } finally {
   await browser.close();

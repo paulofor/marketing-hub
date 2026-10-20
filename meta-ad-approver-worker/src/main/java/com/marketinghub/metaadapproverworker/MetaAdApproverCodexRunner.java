@@ -220,15 +220,17 @@ public class MetaAdApproverCodexRunner {
     return path;
   }
 
-  /** Materializa o MCP junto às dependências disponíveis na imagem ou no módulo local. */
+  /** Materializa o MCP e seus leitores de mídia, fontes e destino junto às dependências locais. */
   Path materializeMcp() throws IOException {
     Path directory = Files.createTempDirectory("meta-ad-approver-mcp-");
     Path server = directory.resolve("meta-ad-approver.mjs");
     Path videoFrameExtractor = directory.resolve("video-frame-extractor.mjs");
     Path landingEvidence = directory.resolve("landing-evidence.mjs");
+    Path editorialEvidence = directory.resolve("editorial-evidence.mjs");
     Files.writeString(server, read("mcp/meta-ad-approver.mjs"));
     Files.writeString(videoFrameExtractor, read("mcp/video-frame-extractor.mjs"));
     Files.writeString(landingEvidence, read("mcp/landing-evidence.mjs"));
+    Files.writeString(editorialEvidence, read("mcp/editorial-evidence.mjs"));
     Path imageDependencies = Path.of("/app/node_modules/@modelcontextprotocol/sdk");
     Path dependencies =
         Files.isDirectory(imageDependencies)
@@ -247,6 +249,7 @@ public class MetaAdApproverCodexRunner {
     Files.deleteIfExists(server);
     Files.deleteIfExists(directory.resolve("video-frame-extractor.mjs"));
     Files.deleteIfExists(directory.resolve("landing-evidence.mjs"));
+    Files.deleteIfExists(directory.resolve("editorial-evidence.mjs"));
     Files.deleteIfExists(directory.resolve("node_modules"));
     Files.deleteIfExists(directory);
   }

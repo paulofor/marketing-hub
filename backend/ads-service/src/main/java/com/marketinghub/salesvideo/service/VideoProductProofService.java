@@ -146,11 +146,16 @@ public class VideoProductProofService {
   /** Entrega outra captura homologada do mesmo projeto para demonstrar entrada e saída reais. */
   @Transactional(readOnly = true)
   public byte[] read(Long projectId, Long taskId, Long evidenceId) {
+    return readVerified(ownedProject(projectId), taskId, evidenceId);
+  }
+
+  /** Entrega a prova ao contexto interno já verificado, sem afrouxar o tenant da rota de vídeo. */
+  @Transactional(readOnly = true)
+  public byte[] readVerified(VideoProject project, Long taskId, Long evidenceId) {
+    TenantContextHolder.assertTenant(project.getTenantId());
     var proof =
         resolveReference(
-            ownedProject(projectId),
-            "internal://agent-tasks/" + taskId + "/visual-evidence/" + evidenceId,
-            true);
+            project, "internal://agent-tasks/" + taskId + "/visual-evidence/" + evidenceId, true);
     return source.read((Long) proof.get("taskId"), (Long) proof.get("evidenceId"));
   }
 

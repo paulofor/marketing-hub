@@ -65,6 +65,8 @@ class MetaAdApproverCodexRunnerTest {
               "image.loading = 'eager'",
               "commercialCheckout",
               "interactionPerformed: false");
+      assertThat(Files.readString(server.getParent().resolve("editorial-evidence.mjs")))
+          .contains("EDITORIAL_MEDIA_INSPECTION_V1", "originalAudioReceipts", "product-proofs/");
       assertThat(Files.isSymbolicLink(server.getParent().resolve("node_modules"))).isTrue();
       Path dependencies = Files.readSymbolicLink(server.getParent().resolve("node_modules"));
       assertThat(dependencies.resolve("@modelcontextprotocol/sdk")).isDirectory();
@@ -72,6 +74,7 @@ class MetaAdApproverCodexRunnerTest {
       Files.deleteIfExists(server);
       Files.deleteIfExists(server.getParent().resolve("video-frame-extractor.mjs"));
       Files.deleteIfExists(server.getParent().resolve("landing-evidence.mjs"));
+      Files.deleteIfExists(server.getParent().resolve("editorial-evidence.mjs"));
       Files.deleteIfExists(server.getParent().resolve("node_modules"));
       Files.deleteIfExists(server.getParent());
     }

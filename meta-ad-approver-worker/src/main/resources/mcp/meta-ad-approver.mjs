@@ -4,6 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { extractRemoteVideoFrames } from './video-frame-extractor.mjs';
 import { captureCommercialLanding } from './landing-evidence.mjs';
+import { editorialReviewMoments, inspectEditorialSources } from './editorial-evidence.mjs';
 
 const baseUrl = requiredEnv('MCP_MARKETING_HUB_URL').replace(/\/$/, '');
 const creativeId = positiveInteger(requiredEnv('MCP_CREATIVE_ID'), 'MCP_CREATIVE_ID');
@@ -11,7 +12,7 @@ const experimentId = positiveInteger(requiredEnv('MCP_EXPERIMENT_ID'), 'MCP_EXPE
 
 const server = new McpServer({ name: 'meta-ad-approver', version: '1.0.0' });
 registerTool('consultar_contexto', 'Confirma no Marketing Hub os dados atuais do anúncio reservado.');
-registerTool('inspecionar_midia', 'Retorna a imagem em alta definição ou três quadros do vídeo.');
+registerTool('inspecionar_midia', 'Inspeciona a mídia final; na montagem editorial entrega quadros nos momentos aplicados, pixels das fontes e recibos completos da locução.');
 registerTool('inspecionar_landing', 'Renderiza e retorna a página de destino em mobile e desktop.');
 registerMemoryTool('recuperar_memoria_especializada', 'Recupera aprendizados de copy, estética e integração deste experimento.', false);
 registerMemoryTool('registrar_aprendizado_candidato', 'Registra uma hipótese de melhoria do anúncio sem aprová-la automaticamente.', true);
@@ -89,16 +90,18 @@ async function inspectMedia(creative, toolName, startedAt) {
     const data = Buffer.from(await response.arrayBuffer()).toString('base64');
     return [text({ audit: audit(toolName, startedAt), mediaType: 'IMAGE', source: url }), { type: 'image', data, mimeType }];
   }
+  const governance = creative.mediaGovernanceEvidence;
   const evidence = await extractRemoteVideoFrames(url, {
     tool: toolName,
     creativeId,
     experimentId
-  });
+  }, editorialReviewMoments(governance));
   const governedSha256 = creative.mediaGovernanceEvidence?.finalArtifact?.sha256 ?? null;
   const approvedCreativeSources = creative.mediaGovernanceEvidence?.approvedCreativeSources ?? [];
   const approvedVideoSources = creative.mediaGovernanceEvidence?.approvedVideoSources ?? [];
   const creativeSourceContent = await inspectApprovedSourceMedia(approvedCreativeSources, toolName, startedAt);
   const videoSourceContent = await inspectApprovedVideoSourceMedia(approvedVideoSources, toolName, startedAt);
+  const editorialContent = await inspectEditorialSources(governance, { baseUrl, creativeId, experimentId });
   return [
     text({
       audit: audit(toolName, startedAt),
@@ -111,15 +114,18 @@ async function inspectMedia(creative, toolName, startedAt) {
       governedSha256,
       sha256MatchesGovernance: Boolean(governedSha256) && evidence.sha256 === governedSha256,
       approvedSourceCreativeCount: approvedCreativeSources.length,
-      approvedSourceVideoCount: approvedVideoSources.length
+      approvedSourceVideoCount: approvedVideoSources.length,
+      frameTimes: evidence.frameTimes,
+      editorialInspectionProvided: editorialContent.length > 0
     }),
-    ...evidence.frames.map(frame => ({
+    ...evidence.frames.flatMap((frame, index) => [text({ finalFrameAtSeconds: evidence.frameTimes[index] }), ({
       type: 'image',
       data: frame.toString('base64'),
       mimeType: 'image/jpeg'
-    })),
+    })]),
     ...creativeSourceContent,
-    ...videoSourceContent
+    ...videoSourceContent,
+    ...editorialContent
   ];
 }
 

@@ -10571,3 +10571,8 @@ Essa prova local não aprova a página comercial nem representa uma nova geraç�
 - Prevenção: duas identidades e alterações negativas de hash, fonte, job, recorte, direitos,
   modelo, voz, tenant e versão. Runway e uploads versionados mantêm os contratos próprios.
   A nova revisão independente só é solicitada após validar a projeção real localmente.
+  A revisão seguinte reconheceu a projeção, mas confirmou outra lacuna: o MCP não entregava
+  pixels de origem ou texto/recibos completos. O leitor canônico de criativos e a inspeção
+  editorial agora fazem essa entrega, com comparação temporal e teste stdio executável do
+  caso real, outra identidade, falhas e caminho V4. Metadados e texto no prompt, isoladamente,
+  não comprovam a capacidade de inspeção. Registro: `docs/homologacao/capella-inspecao-fontes-editoriais-v1.md`.

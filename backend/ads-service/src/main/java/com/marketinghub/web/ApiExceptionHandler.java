@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
@@ -90,9 +91,10 @@ public class ApiExceptionHandler {
     return buildResponse(HttpStatus.BAD_REQUEST, message, request, null);
   }
 
-  /** Converte falhas de validação de entrada em HTTP 400 sem registrar como erro interno. */
+  /** Converte parâmetros obrigatórios ausentes e falhas de validação em HTTP 400. */
   @ExceptionHandler({
     MethodArgumentNotValidException.class,
+    MissingServletRequestParameterException.class,
     HandlerMethodValidationException.class,
     ConstraintViolationException.class,
     MethodArgumentTypeMismatchException.class,

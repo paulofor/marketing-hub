@@ -138,6 +138,18 @@ humana antes da publicação.
 
 Sem qualquer evidência obrigatória, o gate permanece fechado.
 
+### Inspeção das fontes editoriais — 20/10/2026
+
+Na receita editorial V5, identificadores e hashes sem os pixels e recibos não bastam.
+O MCP entrega `EDITORIAL_MEDIA_INSPECTION_V1` com fontes recortadas, artes originais,
+momentos aplicados, quadros correspondentes e a locução integral com recibos tipados.
+O endpoint de pixels pertence ao controller de criativos e revalida o escopo reservado;
+o revisor não passa a consumir controllers de vídeo ou banco diretamente.
+Fonte divergente, recorte inválido ou recibo ausente mantém a inspeção fechada.
+`listenedByThisTool=false` preserva a distinção entre inspeção visual/documental e escuta.
+O gate independente, o aceite humano e os limites financeiros permanecem obrigatórios.
+Matriz: [inspeção das fontes](../homologacao/capella-inspecao-fontes-editoriais-v1.md).
+
 ### Compatibilidade das atestações com o código compartilhado
 
 Antes de empacotar evidências para Têmis ou Psique, validar por produto a revisão numérica vigente

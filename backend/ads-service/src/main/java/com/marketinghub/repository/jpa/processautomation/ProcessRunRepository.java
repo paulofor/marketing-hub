@@ -33,9 +33,14 @@ public interface ProcessRunRepository extends JpaRepository<ProcessRun, Long> {
   /** Impede trocar a ficha de uma referência que já iniciou processo, inclusive histórico. */
   boolean existsByProductIdAndSourceReference(Long productId, String sourceReference);
 
-  /** Distribui a conciliação pela execução menos observada, excluindo contextos encerrados. */
+  /** Oferece a execução menos observada de cada produto, sem colocar pai e filho em disputa. */
   @Query(
-      "select r.id from ProcessRun r where r.status not in ('PAUSED', 'COMPLETED', 'ERROR', 'CLOSED') order by r.lastReconciledAt, r.id")
+      "select r.id from ProcessRun r where r.status not in ('PAUSED', 'COMPLETED', 'ERROR', 'CLOSED') "
+          + "and not exists (select older.id from ProcessRun older where older.productId = r.productId "
+          + "and older.status not in ('PAUSED', 'COMPLETED', 'ERROR', 'CLOSED') "
+          + "and (older.lastReconciledAt < r.lastReconciledAt "
+          + "or (older.lastReconciledAt = r.lastReconciledAt and older.id < r.id))) "
+          + "order by r.lastReconciledAt, r.id")
   List<Long> pending(Pageable pageable);
 
   /** Ordena processos ativos sem deixar um ciclo encerrado reservar o produto indefinidamente. */

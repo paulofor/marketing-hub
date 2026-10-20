@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -240,6 +241,8 @@ public class ProcessRunService {
 
   /**
    * Concilia um contexto atomicamente e registra falhas depois de reverter a transação inválida.
+   * Disputa transitória preserva o estado para a próxima consulta do executor, sem pendência
+   * humana.
    */
   public ProcessRunResponse reconcile(Long runId) {
     var identity =
@@ -256,6 +259,10 @@ public class ProcessRunService {
           identity.productId(),
           identity.processDefinitionId(),
           ex);
+      if (ex instanceof PessimisticLockingFailureException)
+        return transaction.execute(
+            ignored ->
+                response(requiredRun(identity.productId(), identity.processDefinitionId(), runId)));
       return locked(
           identity.productId(),
           identity.processDefinitionId(),

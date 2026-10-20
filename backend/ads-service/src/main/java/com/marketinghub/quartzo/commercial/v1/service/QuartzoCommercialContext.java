@@ -224,7 +224,7 @@ public class QuartzoCommercialContext {
     return cached.deepCopy();
   }
 
-  /** Monta a fotografia canônica quando ainda não existe leitura compartilhada na transação. */
+  /** Monta a fotografia da implementação e resolve finanças pela versão canônica do contrato. */
   private ObjectNode buildSnapshot(String source) {
     var scope = scope(source, null, false);
     var experiment = scope.experiment();
@@ -301,10 +301,15 @@ public class QuartzoCommercialContext {
         plans.findByExperimentReference(experiment.getId()).stream()
             .map(com.marketinghub.planning.CommercialPlan::getId)
             .toList();
+    String financialContractVersion = product.getValidationDefinitionVersion();
     var financial =
         finances.list("PRODUCT", product.getId(), Environment.LIVE).stream()
             .filter(p -> allowedPlans.contains(p.commercialPlanId()))
-            .filter(p -> scope.productVersion().equals(p.assumptions().productVersion()))
+            .filter(
+                p ->
+                    financialContractVersion != null
+                        && !financialContractVersion.isBlank()
+                        && financialContractVersion.equals(p.assumptions().productVersion()))
             .findFirst()
             .orElse(null);
     result.set("financialPlan", financial == null ? json.nullNode() : json.valueToTree(financial));

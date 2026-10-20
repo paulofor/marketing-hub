@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.PageRequest;
@@ -73,6 +75,28 @@ class ProcessRunRepositoryTest {
         .get()
         .extracting(ProcessRun::getStatus)
         .isEqualTo("ERROR");
+  }
+
+  /** Pai e filho alternam a vez sem concorrer no mesmo produto nem bloquear outro produto. */
+  @ParameterizedTest
+  @ValueSource(longs = {7L, 9007L})
+  void offersOnePendingRunPerProductWithFairRotation(long productId) {
+    var parent = repository.saveAndFlush(run(productId, "WAITING_SUBPROCESS"));
+    var child = run(productId, "WAITING_ACTIVITY");
+    child.setParentRunId(parent.getId());
+    child.setLastReconciledAt(parent.getLastReconciledAt().plusSeconds(1));
+    repository.saveAndFlush(child);
+    var other = repository.saveAndFlush(run(productId + 1, "QUEUED"));
+
+    assertThat(repository.pending(PageRequest.of(0, 20)))
+        .containsExactly(parent.getId(), other.getId());
+
+    parent.setLastReconciledAt(child.getLastReconciledAt().plusSeconds(1));
+    repository.saveAndFlush(parent);
+    assertThat(repository.pending(PageRequest.of(0, 20)))
+        .containsExactly(other.getId(), child.getId());
+    assertThat(parent.getStatus()).isEqualTo("WAITING_SUBPROCESS");
+    assertThat(child.getStatus()).isEqualTo("WAITING_ACTIVITY");
   }
 
   /** Cria uma execução raiz sintética com todos os campos duráveis obrigatórios. */

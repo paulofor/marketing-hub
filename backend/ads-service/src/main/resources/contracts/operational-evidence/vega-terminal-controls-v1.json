@@ -660,7 +660,28 @@
     {
       "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
       "sha256": "e313bc6558f5147ca9cf4dbce400abb46d94a23877aad21deb479f6af7a6b62c"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/privateprototype/v1/service/VegaPrivateService.java",
+      "sha256": "bd989b4a4a712e314d12aeb0eb6120b90ff2119b21dc769a148be584396c261a"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/privateprototype/v1/controller/VegaPrivateController.java",
+      "sha256": "6ec3dc1e9bd376f7fde208dc6a1e72e73de5f5faba6c465dc33cf57838b1191e"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/VegaPrivateLocalApplication.java",
+      "sha256": "f0c53e5a62b8bc3a69d765b95fd744113815ab4e85673ecfeb746b3ccfbbf2f4"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessConsumer.java",
+      "sha256": "043b98bf7506c15565357e510e789fd3344dce9106a9ad4623e18d5c819ef899"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessConsumerTest.java",
+      "sha256": "731491b27661ce57bc41541cf0cfafdf5a9bf22c7577179e9ae075e7afa102bd"
     }
   ],
-  "testReceiptPath": "docs/homologacao/evidencias/vega-v14/terminal/harness-result.json"
+  "testReceiptPath": "docs/homologacao/evidencias/vega-v14/terminal/harness-result.json",
+  "databaseVersion": "5.7.44"
 }

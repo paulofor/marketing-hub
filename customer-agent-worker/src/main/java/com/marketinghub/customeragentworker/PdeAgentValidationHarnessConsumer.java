@@ -98,7 +98,7 @@ public class PdeAgentValidationHarnessConsumer {
     return pending == null || pending.isEmpty() ? null : pending.getFirst();
   }
 
-  /** Substitui caminhos locais por ids, hashes e URLs já persistidos no backend. */
+  /** Vincula jornadas e encerramentos a ids, hashes e URLs já persistidos no backend. */
   private ObjectNode enrichResult(
       JsonNode raw, List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded) {
     ObjectNode result = raw.deepCopy();
@@ -131,6 +131,13 @@ public class PdeAgentValidationHarnessConsumer {
                     (ObjectNode) value, "screenshotEvidenceKeys", "screenshotEvidenceIds", byKey));
     result
         .withArray("scenarios")
+        .forEach(
+            value ->
+                replaceKeysWithIds(
+                    (ObjectNode) value, "screenshotEvidenceKeys", "screenshotEvidenceIds", byKey));
+    result
+        .path("terminalResultEvidence")
+        .path("cases")
         .forEach(
             value ->
                 replaceKeysWithIds(

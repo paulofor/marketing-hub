@@ -86,11 +86,11 @@
     },
     {
       "path": "docs/homologacao/vega-integridade-terminal-2026-10-20.md",
-      "sha256": "4eaa67c93f86681c3fedc69b40358ec775507b8eac666173dca83646c7596bae"
+      "sha256": "a45a381e6e4016001689e30b97d48bef7d9777f99d7aca46ea49f634d5d58fed"
     },
     {
       "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-terminal-controls-v1.json",
-      "sha256": "665c76e39e116963a4390d68e2e60538e269563cd810ddd39121ecc015045413"
+      "sha256": "afe0057408ef9e8372256419509a4fc4621f2665beb72eeeab0a24faa82aa42a"
     },
     {
       "path": "customer-agent-worker/src/main/resources/browser/private-terminal-result-evidence.mjs",
@@ -99,6 +99,14 @@
     {
       "path": "customer-agent-worker/src/test/js/private-terminal-result-evidence.test.mjs",
       "sha256": "6d63be2cee24481f08f2ff118d7a71fb0900a3cba6958e280a702cb6201781a6"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessConsumer.java",
+      "sha256": "043b98bf7506c15565357e510e789fd3344dce9106a9ad4623e18d5c819ef899"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessConsumerTest.java",
+      "sha256": "731491b27661ce57bc41541cf0cfafdf5a9bf22c7577179e9ae075e7afa102bd"
     }
   ],
   "validationReport": "docs/homologacao/mira-narration-recovery-v1.md",

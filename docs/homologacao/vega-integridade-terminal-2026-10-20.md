@@ -57,3 +57,8 @@ Os testes de navegador tiveram duas falhas de recursos ao abrir Chromium em para
 a repetição dos dois testes isolados passou. O pacote de evidências preserva os
 manifestos históricos e acrescenta somente a compatibilidade v34 de Mira, sem publicá-la
 ou renovar seu aceite. A entrega de Vega ainda depende da revisão real de Têmis.
+
+A regressão do consumidor reproduziu a falta do identificador de screenshot no código
+anterior e passou após a correção, para duas identidades. O callback entregue ao backend
+contém somente IDs persistidos; ausência do recibo bloqueia o resultado. As 49 verificações
+JavaScript passaram em execução sequencial, sem nova rodada da matriz funcional.

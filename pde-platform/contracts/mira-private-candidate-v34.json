@@ -229,7 +229,7 @@
     {
       "promptMode": "FULL",
       "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
-      "sha256": "106a557a8df554082f1f4aae3ce58d5c03b4b017e9ff7b55bef822eac36218c7"
+      "sha256": "467f9df9aa23296760ba4bb4ade1aecc4b22b552b5bc1052839763adad825ae5"
     },
     {
       "promptMode": "FULL",
@@ -719,7 +719,7 @@
     },
     {
       "path": "docs/homologacao/vega-publicacao-segura-atena-v1.md",
-      "sha256": "294029d119006a175bceb20e62a6700ce4e3fbec29d1b22c6095c2b6bb258d4a",
+      "sha256": "4aef5d73e12e4659967f3ef261648ea866983a3889c0a0c89708c381f81066cc",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Comprova espera pela execução corrente, handshake e recuperação sem inferência duplicada."
     },
@@ -755,7 +755,7 @@
     },
     {
       "path": "docs/homologacao/video-customer-quality-v1.md",
-      "sha256": "b8246f6fef6012e002541c5895043202e013aaec8ea0af907e373962163dafbd",
+      "sha256": "e601d5905da9c285ac31cd9bed7f97a079244bda8e374cc6118cf7bb8cc6e3d0",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Regressão local de rejeição, identidade de mídia, frames e composição. Não aprova novos vídeos nem modifica a versão privada do produto."
     },
@@ -785,7 +785,7 @@
     },
     {
       "path": "docs/homologacao/capella-captura-complementar-v1.md",
-      "sha256": "bb2d97f28cd8f92307cd9bfbcbfd0a420c9a41ad946b181f97c64bc59bfba432",
+      "sha256": "d94950e7c3680c0c96081295cb0d0aefef56d6ddc6cf7af2ea1e82dbee643ee2",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Compatibilidade do runner compartilhado: captura complementar separada apenas para kits privados. Os percursos, versão, provas, limites e publicação de Mira permanecem inalterados; não constitui novo parecer independente."
     },
@@ -833,7 +833,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoEvidenceTest.java",
-      "sha256": "99220a6c4d7142f2ee90a45ad3528aa86a3a0c1b409043a1dae4b0c033224319",
+      "sha256": "2259cd7f1079201f33a44b89989a4e616cb83df9af12146fb1f356800524ba2c",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Regressões do ramo PDE preservado e do destino low-ticket sem slot, com mídia divergente e autoplay bloqueados."
     },
@@ -861,7 +861,7 @@
     },
     {
       "path": "docs/homologacao/vega-integridade-terminal-2026-10-20.md",
-      "sha256": "4eaa67c93f86681c3fedc69b40358ec775507b8eac666173dca83646c7596bae"
+      "sha256": "a45a381e6e4016001689e30b97d48bef7d9777f99d7aca46ea49f634d5d58fed"
     }
   ],
   "compatibilityAttestation": {

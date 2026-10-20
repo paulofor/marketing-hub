@@ -163,3 +163,7 @@ sem confirmação não é sucesso persistido; não imprimir seus corpos com cred
 A rotina não troca o token em memória de uma campanha em curso. Token expirado exige
 reconexão excepcional do titular conforme a Meta, mantendo renovação habilitada.
 Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.
+
+- Indisponibilidade transitória do backend na inicialização deve recuperar a
+  consulta de elegíveis com retentativas limitadas. Não esperar seis horas pela
+  primeira recuperação, nem aplicar esse retry à troca Meta, callback ou HTTP 4xx.

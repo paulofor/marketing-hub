@@ -10701,3 +10701,11 @@ Essa prova local não aprova a página comercial nem representa uma nova geraç�
 - **Limite:** token já vencido exige autenticação do titular segundo a Meta. A correção
   preserva automação e gates; não equivale a campanha ativa ou venda.
 - **Evidência:** `docs/homologacao/meta-renovacao-automatica-v1.md`.
+
+### Complemento de LOOP-META-RENOVACAO-BLOQUEADA-POR-FILA — 20/10/2026
+
+A aplicação simultânea de backend e worker revelou conexão recusada às 20:29 UTC.
+A consulta de elegíveis agora tem recuperação transitória limitada antes do
+próximo ciclo; troca Meta e callback permanecem fora desse retry.
+`FacebookTokenRenewalRecoveryTest` cobre conexão recusada recuperada, 503, limite
+de tentativas e recusa permanente, com Meta chamada uma única vez.

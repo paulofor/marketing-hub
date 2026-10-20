@@ -80,3 +80,34 @@ exige confirmar o agendador exclusivo em execução e os callbacks persistidos;
 uma regressão de transporte ou isolamento exige reversão pelo fluxo de PR.
 O vencimento já confirmado exige recuperação da autenticação, separadamente da
 correção que previne recorrência.
+
+
+## Recuperação de inicialização observada na publicação
+
+A primeira entrega foi integrada pelo PR #5648 no SHA
+`8b6e01f6fd7f781d2544a92596430cf35bd9c9b9`; quatro workflows do PR e treze da
+main/encadeados terminaram com sucesso. O backend confirmou esse SHA. O worker
+iniciou sem reinícios e a rotina exclusiva executou às 20:29:00 UTC, mas a consulta
+recebeu conexão recusada enquanto o backend reiniciava. Esperar seis horas nesse
+caso prolongaria uma indisponibilidade transitória.
+
+A correção complementar repete somente a consulta GET de elegíveis: até cinco
+retentativas, espera exponencial inicial de dez segundos, limitada a um minuto
+entre tentativas. Falha permanente de autorização não entra nessa recuperação.
+A troca Meta e o callback não são repetidos por esse mecanismo. A configuração
+permanece no executor (`facebook.token-renewal.backend-retry-delay-ms`).
+
+A regressão de backend temporariamente indisponível falhou antes da mudança.
+A rodada local acrescenta conexão TCP recusada com recuperação do backend,
+resposta 503 seguida de sucesso, limite de tentativas e recusa 403 sem repetição.
+Duas contas distintas continuam isoladas, e cada recuperação chama a Meta uma
+única vez. Essa recuperação não regenera a credencial já expirada nem substitui
+a autenticação exigida pelo provedor.
+
+A suíte completa local do worker terminou com **177 testes aprovados**, sem
+falhas ou testes ignorados, após essa correção complementar.
+
+Para essa recuperação, reinício manual repetiria a dependência; reduzir todo o
+agendamento para um minuto aumentaria consultas e trocas desnecessárias. Foi
+escolhida a retentativa limitada somente da leitura, preservando a frequência
+normal e os efeitos externos.

@@ -251,7 +251,8 @@ jobs:
 
       - name: Validar renovação e consultas MCP com TLS local
         run: |
-          bash -n deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
+          bash -n deploy/bin/renew-mcp-tls.sh
+          bash -n deploy/bin/retire-legacy-mcp-renewal.sh
           shellcheck deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
           python3 scripts/test-mcp-tls.py
 

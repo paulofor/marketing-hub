@@ -48,7 +48,7 @@ public class GeraSalesPageStageService {
   private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
       reviewedVideos;
 
-  private static final String REPLAY_PREFIX = "Recuperação exclusiva do recibo Codex: ";
+  private static final String REPLAY_PREFIX = GeraSalesPageRetryPolicy.REPLAY_PREFIX;
   private static final String RETRY_PREFIX = "Retomada técnica da execução: ";
   private static final String STATUS_STARTED = "INICIADO";
   private static final String STATUS_PROCESSING = "EM_PROCESSAMENTO";
@@ -149,8 +149,8 @@ public class GeraSalesPageStageService {
   }
 
   /**
-   * Serializa retomada técnica ou recuperação exclusiva do recibo, preservando entradas e
-   * auditoria.
+   * Serializa retomada técnica ou reentrega do recibo interrompida, preservando entradas e
+   * auditoria sem inferência substituta.
    */
   @Transactional
   public StageRetryView retry(Long experimentId, String failedJobId) {
@@ -166,8 +166,8 @@ public class GeraSalesPageStageService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.CONFLICT, "Nenhuma geração solicitada."));
-    if (Objects.toString(latest.getErrorDetail(), "")
-        .startsWith(REPLAY_PREFIX + failedJobId + "\n")) {
+    if (Objects.toString(latest.getErrorDetail(), "").startsWith(REPLAY_PREFIX + failedJobId + "\n")
+        && !GeraSalesPageRetryPolicy.receiptRecoveryWithoutResult(latest)) {
       return new StageRetryView(
           latest.getIdJob(),
           latest.getStageCode(),
@@ -199,10 +199,18 @@ public class GeraSalesPageStageService {
           REPLAY_PREFIX
               + failedJobId
               + "\n"
+              + "Reentrega solicitada em "
+              + Instant.now()
+              + "; estado anterior="
+              + latest.getStatus()
+              + "; início anterior="
+              + latest.getProcessingStartedAt()
+              + "\n"
               + latest.getErrorMessage()
               + "\n"
               + latest.getErrorDetail());
       latest.setStatus(STATUS_STARTED);
+      latest.setProcessingStartedAt(null);
       executionRepository.save(latest);
       log.info(
           "GeraSalesPage: recuperação de recibo sem nova inferência. experimentId={} jobId={}",
@@ -350,11 +358,19 @@ public class GeraSalesPageStageService {
 
   /**
    * Bloqueia a publicação sob leitura atual antes de alterar a execução; preserva resposta, custo e
-   * avanço pelo backend.
+   * avanço pelo backend; falha tardia de entrega não reverte um resultado já aceito.
    */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public void receiveResult(String idJob, GeraSalesPageResultRequest payload) {
     GeraSalesPageStageExecution execution = findExecution(idJob);
+    if (STATUS_COMPLETED.equals(execution.getStatus())
+        && StringUtils.hasText(payload.errorMessage())) {
+      log.warn(
+          "GeraSalesPage: falha tardia de entrega ignorada após aceite. experimentId={} jobId={}",
+          execution.getExperimentId(),
+          idJob);
+      return;
+    }
     if (!StringUtils.hasText(payload.errorMessage())
         && GeraSalesPageStageCode.PUBLICATION_PACKAGE.code().equals(execution.getStageCode())) {
       publicationAuditService.preparePublication(execution.getExperimentId());

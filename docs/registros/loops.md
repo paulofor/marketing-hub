@@ -10539,3 +10539,18 @@ limite finito, clientes anteriores e inferência única em duas identidades. O r
 local do caso real percorreu fila de 389.608 bytes, recibo de 2.073.985 bytes,
 estimativa US$0,156902 e callback com provedor `/bin/false`, conservando o recibo.
 Essa prova local não aprova a página comercial nem representa uma nova geração.
+
+### Resultado salvo com callback interrompido pelo reinício — 20/10/2026
+
+- Evidência: no mesmo job final de Capella/105, o worker leu o recibo e tentou entregar
+  durante o reinício do backend. Tanto o callback de resultado quanto o relatório de falha
+  receberam conexão recusada. O banco manteve AGUARDANDO_RETORNO_OPENAI sem custo/saída,
+  apesar do recibo durável completo; não havia turno ou transação longa ativos.
+- Causa: entrega de callback sem retry de transporte e recuperação que tratava o primeiro
+  comando de replay como definitivo, inclusive após sua entrega ser interrompida.
+- Correção: retry limitado do mesmo corpo em rede/5xx; erro tardio não reverte aceite;
+  recuperação oficial de replay antigo, sem outro job ou inferência e com entrada revalidada.
+- Prevenção: backend indisponível, ACK perdido, relatório de erro indisponível, 4xx permanente,
+  esgotamento de retries e replay posterior; duas identidades, contrato antes válido e
+  inferência única. Processamento recente, inferência original, custo ou saída existentes
+  e schema alterado continuam bloqueados. Não requer consulta de faturamento da API.

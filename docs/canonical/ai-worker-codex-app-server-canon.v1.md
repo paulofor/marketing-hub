@@ -115,3 +115,18 @@ O campo legado `experiment.feoDeliverablePackage` aceita dois fornecedores docum
 Recibos anteriores ao adaptador podem ser recuperados com a representação antiga somente se o prompt, modelo, schema e todos os dados de negócio originais coincidirem. Essa compatibilidade aceita exclusivamente a ausência anterior do bloco derivado; não ignora alterações do produto. Novas etapas recebem os itens declarados, evitando que a comunicação interprete a ausência de pacote FEO como ausência da entrega.
 
 O replay entrega ao worker `auditedPrompt` e `auditedRequestBodyJson` literais da auditoria validada. Não reconstruir o prompt a partir da serialização atual: diferenças de espaços, ordem de propriedades ou representação numérica não podem transformar recuperação em outra identidade de recibo. Metadados de controle ficam fora do prompt e são removidos antes do cálculo do hash.
+
+## Reentrega durante indisponibilidade do backend — 20/10/2026
+
+O resultado salvo não depende de uma conexão única para chegar ao backend. O executor
+reenvia o mesmo callback em falhas transitórias de rede ou HTTP 5xx, com backoff limitado,
+sem repetir prompt, turno ou cálculo de custo. Erros 4xx de contrato não autorizam retry.
+Falha de envio do próprio relatório de erro também recebe essa proteção. Um erro tardio
+não reverte um resultado já aceito pelo backend.
+
+Se ambas as entregas forem interrompidas e a execução permanecer aguardando, o comando
+oficial de recuperação pode reenfileirar somente um replay já identificado do mesmo job,
+com request auditado e sem saída/uso persistidos, após 35 minutos. A margem supera o timeout
+operacional padrão de 30 minutos; não é cancelamento de uma inferência original. O comando
+preserva horário, estado anterior e erro na auditoria. Entradas, schema, modelo e antecessores
+continuam conferidos; ausência do recibo exato bloqueia, sem criar nova inferência.

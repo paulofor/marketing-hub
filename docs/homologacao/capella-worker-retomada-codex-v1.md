@@ -238,3 +238,36 @@ falha de callback, preservam recibo/custo e bloqueiam excesso sem afetar cliente
 com o limite anterior. O caso real passou localmente com provider `/bin/false`:
 fila 389.608 bytes, recibo 2.073.985 bytes, 47.261/6.238 tokens, US$0,156902 estimado.
 Nenhuma inferência, consulta de faturamento ou publicação externa foi feita no teste.
+
+## Entrega do callback durante publicação
+
+O replay de produção coincidiu com o reinício do backend: o recibo foi lido, mas resultado
+e relatório de falha receberam conexão recusada. A saúde posterior foi confirmada e não
+havia execução ou transação longa ativa. Isso difere das falhas anteriores de decodificação
+e concorrência; não autoriza repetir a geração nem atribuir novo consumo ao Codex.
+
+Foram comparadas três opções: outbox nova (maior mudança), recuperação manual isolada
+(não previne nova perda) e retry de transporte com recuperação oficial do recibo antigo.
+A terceira cobre a interrupção observada com os contratos e armazenamento existentes.
+
+| Cenário local | Resultado exigido |
+| --- | --- |
+| Rede/503 transitório | Mesmo callback, um turno, saída/custo preservados |
+| Confirmação perdida | Reentrega aceita, sem segunda inferência |
+| Erro tardio após aceite | Etapa continua concluída, sem nova publicação/custo |
+| Relatório de falha indisponível | Retry limitado, sem transformar schema inválido em sucesso |
+| 400/401/403/409/422 | Recusa preservada, sem retry automático do resultado |
+| Indisponibilidade prolongada | Falha auditada e posterior replay do recibo exato |
+| Replay antigo, original e outra identidade | Mesmo job após 35 min, entrada e auditoria preservadas |
+| Em execução recente, schema alterado ou resultado existente | Recuperação bloqueada |
+
+Os testes usam backend HTTP e Codex simulados, sem custo ou dado comercial. O recibo real
+também é revalidado com provider `/bin/false`, para comprovar a recuperação sem inferência.
+
+Rodada desta proteção: 172 testes executados de GeraSalesPage/ArchUnit, 306 do Worker
+e 48 de preparação/liberação comercial, todos sem falhas. Oito fixtures condicionadas
+do backend (migração e MySQL físico já executado na correção concorrente anterior) e
+três testes preexistentes do Worker não executam nesta rodada. Os 16 testes do pacote
+de evidências, sua montagem de 539 arquivos/122 manifestos, Spotless, Bash-n, ShellCheck
+e revisão do diff passaram. O replay real preservou os 2.073.985 bytes e US$0,156902
+estimados, com provedor `/bin/false`. Não houve geração ou compra de teste em produção.

@@ -148,3 +148,28 @@ abrir um PR paralelo duplicaria a entrega; concluir o PR existente com o recibo
 validado preserva histórico e reduz consumo. A terceira foi escolhida.
 A homologação comercial, os pareceres independentes e a comprovação de campanha
 ativa continuam obrigatórios antes de declarar RUNNING.
+
+
+## Diagnóstico da validação do Worker
+
+A anotação do job anterior 118148382315 confirma limite de 30 minutos excedido;
+não é evidência suficiente para atribuir a interrupção ao incidente global.
+No HEAD atualizado, backend/MySQL, frontend, comunicação e contrato visual passaram;
+a validação completa do Worker permaneceu no passo de testes. A suíte completa
+passou localmente também com Node 22, 512 MiB e duas CPUs: 293 executados, três
+condicionados/desativados preexistentes.
+
+Os testes produzem cerca de 16 MB de logs, com linhas de 4,8 MB. O histórico
+anterior também continha linhas grandes e passou; portanto, volume não foi
+declarado causa comprovada do timeout. A lacuna comprovada é ausência de resumo
+limitado e diagnóstico recuperável em caso de falha. Foram comparados aumentar
+o timeout (prolonga espera), suprimir logs (perde evidência) e preservar arquivos
+integrais com resumo no console. A terceira foi aplicada ao harness existente.
+
+O wrapper preserva o exit code Maven, os XMLs e a saída completa. O workflow
+conserva teste, build e dependências obrigatórios, publica diagnóstico com always
+e encerra somente o passo de teste após dez minutos para permitir a coleta da
+falha dentro do limite global anterior. A regressão sintética escreve uma linha
+de 4,8 MB, verifica os bytes preservados e comprova status 0/17 e console menor
+que 4 KiB. Bash, ShellCheck, Actionlint e a execução real do wrapper são validados
+antes do push; esta mudança não altera inferências nem gates comerciais.

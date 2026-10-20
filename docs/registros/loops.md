@@ -10485,3 +10485,19 @@ A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recri
 - **Correção:** adaptador puro do contrato de entrega, com origem explícita e sem gravar pacote fictício; FEO persistido mantém prioridade. Replay anterior usa a representação exata auditada e não mistura novas entradas ao recibo.
 - **Prevenção:** duas identidades, fontes ausentes/divergentes, preço, JSON inválido, categoria desconhecida, tipo legado e alteração do produto após solicitar replay. Caminhos anteriores de FEO permanecem nas regressões do módulo.
 - **Limites:** a lista declara a oferta; não substitui arquivos, pareceres, aceite humano nem prova comercial.
+
+
+## LOOP-WORKER-CI-TIMEOUT-SEM-DIAGNOSTICO — 20/10/2026
+
+- Evidência: a validação anterior do PR #5624 excedeu 30 minutos no passo de testes.
+  A suíte atual passou localmente, inclusive com Node 22, duas CPUs e 512 MiB.
+- Lacuna: stdout de aproximadamente 16 MB, linhas de 4,8 MB e ausência de artefato
+  de teste impedem uma leitura proporcional do problema quando o job é interrompido.
+  O histórico já aprovou linhas grandes; não se atribui o timeout ao volume como fato.
+- Melhoria: wrapper mantém o exit code, preserva stdout/XMLs e resume o resultado;
+  upload always e timeout do passo permitem coletar a falha sem remover checks.
+- Prevenção: falso Maven de 4,8 MB comprova saída preservada, console limitado e
+  sucesso/falha distintos. A suíte real e as análises Bash/ShellCheck/Actionlint
+  completam a validação. Sem inferência externa e sem declarar impacto comercial.
+- Limite: o diagnóstico não presume causa funcional nem autoriza rerun sem evidência.
+  Matriz: docs/homologacao/capella-worker-retomada-codex-v1.md.

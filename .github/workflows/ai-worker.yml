@@ -8,6 +8,8 @@ on:
       - '.github/workflows/ai-worker.yml'
       - '.github/workflows/ai-worker-validation.yml'
       - 'scripts/test-ai-worker-image-contract.sh'
+      - 'scripts/run-ai-worker-tests.sh'
+      - 'scripts/test-ai-worker-test-output.sh'
   workflow_dispatch:
     inputs:
       recovery_sha:

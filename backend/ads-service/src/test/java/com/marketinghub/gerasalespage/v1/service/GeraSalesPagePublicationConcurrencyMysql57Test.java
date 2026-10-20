@@ -201,4 +201,132 @@ class GeraSalesPagePublicationConcurrencyMysql57Test {
     return new GeraSalesPagePublicationAuditService(
         experiments, products, null, null, null, null, null, null, null, new ObjectMapper());
   }
+
+  /** Reproduz a leitura antiga que permanece invisível após a espera pelo lock do pai. */
+  @Test
+  void repeatableReadRejectsSecondIdenticalCallback() throws Exception {
+    callbackFixture(Connection.TRANSACTION_REPEATABLE_READ, 7, 105, 1);
+  }
+
+  /** Confirma uma única publicação e custo sob callbacks duplicados em duas identidades. */
+  @ParameterizedTest
+  @CsvSource({"7,105", "307,9105"})
+  void duplicateCallbacksPreserveSnapshotAndCost(long productId, long experimentId)
+      throws Exception {
+    var transaction =
+        java.util.Arrays.stream(GeraSalesPageStageService.class.getMethods())
+            .filter(method -> method.getName().equals("receiveResult"))
+            .findFirst()
+            .orElseThrow()
+            .getAnnotation(org.springframework.transaction.annotation.Transactional.class);
+    assertThat(transaction.isolation())
+        .isEqualTo(org.springframework.transaction.annotation.Isolation.READ_COMMITTED);
+    callbackFixture(transaction.isolation().value(), productId, experimentId, 2);
+    for (String methodName :
+        List.of("preparePublication", "snapshotPublication", "listPublications", "republish")) {
+      var annotation =
+          java.util.Arrays.stream(GeraSalesPagePublicationAuditService.class.getMethods())
+              .filter(method -> method.getName().equals(methodName))
+              .findFirst()
+              .orElseThrow()
+              .getAnnotation(org.springframework.transaction.annotation.Transactional.class);
+      assertThat(annotation.isolation())
+          .as(methodName)
+          .isEqualTo(org.springframework.transaction.annotation.Isolation.READ_COMMITTED);
+    }
+  }
+
+  /** Mantém leitura inicial simultânea e confere o snapshot após o guardião real de publicação. */
+  private void callbackFixture(
+      int isolation, long productId, long experimentId, int expectedSuccess) throws Exception {
+    String prefix = "cb_" + UUID.randomUUID().toString().replace("-", "");
+    String productsTable = prefix + "_p",
+        experimentsTable = prefix + "_e",
+        auditTable = prefix + "_a";
+    var pool = Executors.newFixedThreadPool(2);
+    var initialRead = new CyclicBarrier(2);
+    try (var setup = connection();
+        var sql = setup.createStatement()) {
+      sql.execute("CREATE TABLE " + productsTable + "(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
+      sql.execute(
+          "CREATE TABLE "
+              + experimentsTable
+              + "(id BIGINT PRIMARY KEY, product_id BIGINT, FOREIGN KEY(product_id) REFERENCES "
+              + productsTable
+              + "(id)) ENGINE=InnoDB");
+      sql.execute(
+          "CREATE TABLE "
+              + auditTable
+              + "(job VARCHAR(64) PRIMARY KEY, experiment_id BIGINT, cost_usd DECIMAL(18,8), html_hash CHAR(64), FOREIGN KEY(experiment_id) REFERENCES "
+              + experimentsTable
+              + "(id)) ENGINE=InnoDB");
+      sql.execute("INSERT INTO " + productsTable + " VALUES(" + productId + ")");
+      sql.execute(
+          "INSERT INTO " + experimentsTable + " VALUES(" + experimentId + "," + productId + ")");
+      List<Future<Boolean>> calls = new java.util.ArrayList<>();
+      for (int i = 0; i < 2; i++)
+        calls.add(
+            pool.submit(
+                () -> {
+                  try (var tx = connection()) {
+                    tx.setTransactionIsolation(isolation);
+                    tx.setAutoCommit(false);
+                    try (var statement = tx.createStatement()) {
+                      try (var rows =
+                          statement.executeQuery("SELECT COUNT(*) FROM " + auditTable)) {
+                        rows.next();
+                      }
+                      initialRead.await(10, TimeUnit.SECONDS);
+                      guard(tx, productsTable, experimentsTable, productId, experimentId)
+                          .preparePublication(experimentId);
+                      boolean exists;
+                      try (var rows =
+                          statement.executeQuery(
+                              "SELECT COUNT(*) FROM " + auditTable + " WHERE job='same-job'")) {
+                        rows.next();
+                        exists = rows.getInt(1) > 0;
+                      }
+                      if (!exists)
+                        statement.execute(
+                            "INSERT INTO "
+                                + auditTable
+                                + " VALUES('same-job',"
+                                + experimentId
+                                + ",0.156902,'"
+                                + "b".repeat(64)
+                                + "')");
+                    }
+                    tx.commit();
+                    return true;
+                  } catch (SQLException ex) {
+                    log.info(
+                        "Regressão de callback duplicado experimentId={} isolation={}",
+                        experimentId,
+                        isolation,
+                        ex);
+                    if (isolation == Connection.TRANSACTION_REPEATABLE_READ
+                        && ex.getErrorCode() == 1062) return false;
+                    throw ex;
+                  }
+                }));
+      int successful = 0;
+      for (var call : calls) if (call.get(20, TimeUnit.SECONDS)) successful++;
+      assertThat(successful).isEqualTo(expectedSuccess);
+      try (var rows =
+          sql.executeQuery("SELECT COUNT(*),SUM(cost_usd),MIN(html_hash) FROM " + auditTable)) {
+        rows.next();
+        assertThat(rows.getInt(1)).isEqualTo(1);
+        assertThat(rows.getBigDecimal(2)).isEqualByComparingTo("0.156902");
+        assertThat(rows.getString(3)).isEqualTo("b".repeat(64));
+      }
+    } finally {
+      pool.shutdownNow();
+      try (var cleanup = connection();
+          var sql = cleanup.createStatement()) {
+        sql.execute("DROP TABLE IF EXISTS " + auditTable);
+        sql.execute("DROP TABLE IF EXISTS " + experimentsTable);
+        sql.execute("DROP TABLE IF EXISTS " + productsTable);
+      }
+    }
+  }
 }

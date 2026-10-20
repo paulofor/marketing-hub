@@ -108,7 +108,7 @@ public class GeraSalesPagePublicationAuditService {
   }
 
   /** Serializa produto e experimento antes de gravar filhos ou modificar o destino público. */
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public Experiment preparePublication(Long experimentId) {
     experimentRepository
         .findProductIdForPublication(experimentId)
@@ -123,8 +123,8 @@ public class GeraSalesPagePublicationAuditService {
         .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
   }
 
-  /** Cria o snapshot final sob a mesma ordem de locks dos comandos comerciais do ciclo. */
-  @Transactional
+  /** Cria snapshot com leitura atual após o lock, preservando idempotência entre callbacks. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public void snapshotPublication(GeraSalesPageStageExecution publicationExecution) {
     if (!isCompletedPublication(publicationExecution)) return;
     Experiment experiment = preparePublication(publicationExecution.getExperimentId());
@@ -132,8 +132,8 @@ public class GeraSalesPagePublicationAuditService {
     saveAudit(experiment, publicationExecution);
   }
 
-  /** Lista a auditoria e serializa apenas o backfill histórico que ainda precisa gravar dados. */
-  @Transactional
+  /** Lista a auditoria com leitura atual e serializa somente o backfill ainda necessário. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public List<GeraSalesPagePublicationResponse> listPublications(Long experimentId) {
     backfillMissingSnapshots(experimentId);
     experimentRepository
@@ -171,7 +171,7 @@ public class GeraSalesPagePublicationAuditService {
   }
 
   /** Reenvia somente os bytes auditados atuais, preservando conteúdo, histórico e geração paga. */
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public PublicationRecoveryView republish(
       Long experimentId, Long publicationId, RepublishPublicationRequest request) {
     Experiment experiment = preparePublication(experimentId);

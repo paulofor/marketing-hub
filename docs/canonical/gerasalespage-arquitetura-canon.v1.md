@@ -171,3 +171,17 @@ identidade bloqueia sem inferência; resultado/custo já consumido não é regen
 Não executar novamente a inferência para compensar rollback do banco. Snapshot,
 HTML, hash, destino e publicação idempotente continuam auditados; o gate comercial
 permanece obrigatório.
+
+As entradas transacionais de recebimento, snapshot, backfill e republicação usam
+`READ_COMMITTED`: uma consulta feita antes de esperar pelo lock não pode manter
+um snapshot antigo e ignorar a publicação que acabou de ser confirmada. O lock de
+produto/experimento continua obrigatório. Dois callbacks iguais devem concluir
+com um único snapshot, o mesmo hash e o custo registrado uma vez. Não usar leitura
+com gap lock sobre job inexistente para resolver essa repetição entre produtos.
+
+O leitor HTTP da fila do executor também usa limite finito de 16 MiB, exclusivo
+do GeraSalesPage. O replay pode transportar contexto, prompt e request auditados
+juntos; testar só o tamanho da resposta do Codex não cobre essa entrada. O clone
+do cliente preserva o limite padrão dos outros consumidores. A regressão percorre
+fila acima de 400 KB, recibo grande, falha de callback e recuperação com uma única
+inferência; ausência do recibo continua bloqueando. Não truncar o contexto.

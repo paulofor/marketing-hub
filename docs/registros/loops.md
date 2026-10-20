@@ -10509,3 +10509,33 @@ A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recri
 - **Correção:** reservar produto→experimento antes de alterar a execução/filhos, produto→ciclo nos comandos de ciclo; backfill consulta novamente sob lock. Recuperação 5xx aceita somente callback do mesmo job/etapa e recibo exato, sem inferência substituta.
 - **Prevenção:** MySQL 5.7.44 reproduz deadlock na ordem anterior, confirma página e janela com a ordem corrigida em duas identidades, e testes HTTP comprovam replay/isolamento/recusa de entrada alterada. A suíte preserva o caminho válido de recuperação anterior.
 - **Limite:** testes locais não comprovam venda, margem, autorização comercial ou ausência de todos os tipos de deadlock. Não cancelar transações remotas nem repetir publicação para diagnóstico.
+
+### Callback duplicado e snapshot de leitura — 20/10/2026
+
+Na revisão da mesma recuperação, a fixture física reproduziu uma segunda falha:
+com `REPEATABLE-READ` (isolamento confirmado no MySQL operacional), duas transações
+leem a ausência inicial; depois do lock, a segunda ainda vê ausência e tenta
+inserir o mesmo job. O teste observou um callback aceito e um erro 1062, sem segunda
+publicação. O guardião de contexto fecha a concorrência de escrita, mas a leitura
+consistente antiga precisava ser corrigida também.
+
+As entradas do callback e da auditoria usam `READ_COMMITTED`, mantendo os locks de
+contexto. Os testes físicos exigem dois callbacks aceitos, um snapshot, hash igual
+e estimativa de custo única em duas identidades, além do caso anterior e do
+conflito entre janela e página. Isso preserva replay e evita retentativa de IA por
+uma resposta duplicada. Não altera gates de publicação, oferta ou autorização.
+
+### Fila de replay maior que o leitor — 20/10/2026
+
+A retomada do pacote de Capella ficou em INICIADO: o `pending` tinha 389.608 bytes,
+pois reunia contexto, prompt e request auditado. O MCP confirmou DataBufferLimitException
+262144 em GeraSalesPageBackendClient.pendingForStage. As etapas normais e a primeira
+recuperação menor haviam funcionado; a resposta do Codex já tinha leitor de 16 MiB,
+mas o cliente da fila ainda usava 256 KiB.
+
+Duas regressões do fluxo completo falharam antes da correção. O cliente exclusivo
+da fila passa a 16 MiB sem modificar o builder compartilhado. Os testes preservam
+limite finito, clientes anteriores e inferência única em duas identidades. O replay
+local do caso real percorreu fila de 389.608 bytes, recibo de 2.073.985 bytes,
+estimativa US$0,156902 e callback com provedor `/bin/false`, conservando o recibo.
+Essa prova local não aprova a página comercial nem representa uma nova geração.

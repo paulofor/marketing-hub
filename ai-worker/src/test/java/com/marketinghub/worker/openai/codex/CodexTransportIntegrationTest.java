@@ -41,6 +41,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * Comprova fila, App Server, contrato, custo e callback reais do GeraSalesPage com provedor local.
  */
 class CodexTransportIntegrationTest {
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CodexTransportIntegrationTest.class);
   private static final String SCHEMA =
       "{\"type\":\"object\",\"properties\":{\"ready\":{\"type\":\"boolean\"}},\"required\":[\"ready\"],\"additionalProperties\":false}";
   @TempDir Path directory;
@@ -52,6 +53,8 @@ class CodexTransportIntegrationTest {
   private String jobId;
   private long experimentId;
   private JsonNode savedRequest;
+  private int contextPadding;
+  private String promptTemplate = "Uma oferta útil e fiel ao produto.";
 
   /** Inicia apenas um backend local e isola todas as identidades e arquivos de teste. */
   @BeforeEach
@@ -85,7 +88,7 @@ class CodexTransportIntegrationTest {
                                 "stageCode",
                                 "sales-page-offer-brief",
                                 "experiment",
-                                Map.of("id", experimentId),
+                                Map.of("id", experimentId, "context", "c".repeat(contextPadding)),
                                 "previousStageOutputs",
                                 Map.of(),
                                 "promptTemplate",
@@ -97,7 +100,7 @@ class CodexTransportIntegrationTest {
                                     "schemaJson",
                                     SCHEMA,
                                     "promptMarkdownContent",
-                                    "Uma oferta útil e fiel ao produto.")))));
+                                    promptTemplate)))));
               if (path.equals("/pricing"))
                 return json(
                     "[{\"code\":\"gpt-test\",\"priceInputStandard\":10,\"priceOutputStandard\":20,\"priceInputBatch\":1,\"priceOutputBatch\":2}]");
@@ -111,6 +114,7 @@ class CodexTransportIntegrationTest {
               }
               return new MockResponse().setResponseCode(204);
             } catch (IOException ex) {
+              log.error("Falha no backend simulado de GeraSalesPage. experimentId={} path={}", experimentId, request.getPath(), ex);
               throw new IllegalStateException("Falha ao simular backend local", ex);
             }
           }
@@ -181,6 +185,50 @@ class CodexTransportIntegrationTest {
         .isEqualTo(callbacks.getFirst().path("rawResponse").asText());
     assertThat(callbacks.getFirst().path("costUsd").decimalValue())
         .isEqualByComparingTo("0.00120000");
+  }
+
+  /** Recupera fila e recibo grandes após callback falho sem repetir inferência em outro produto. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9106})
+  void shouldRecoverLargePendingAndReceiptAfterCallbackFailure(long identity) throws Exception {
+    experimentId = identity;
+    jobId = "synthetic-large-queue-" + identity;
+    contextPadding = 140000;
+    promptTemplate = "Uma oferta útil e fiel ao produto: {{experiment}}";
+    refuseFirstSuccess.set(true);
+    var worker = worker("{\"auditPadding\":460000}");
+    assertThat(worker.processPending(1).failed()).isEqualTo(1);
+    replayOnly.set(true);
+    assertThat(savedRequest.path("prompt").asText()).hasSizeGreaterThan(140000);
+    assertThat(savedRequest.path("requestBodyJson").asText()).hasSizeGreaterThan(140000);
+    assertThat(worker.processPending(1).succeeded()).isEqualTo(1);
+    assertThat(inferenceCount()).isEqualTo(1);
+    assertThat(callbacks.getLast().path("rawResponse").asText())
+        .isEqualTo(callbacks.getFirst().path("rawResponse").asText());
+    assertThat(callbacks.getFirst().path("rawResponse").asText()).hasSizeGreaterThan(460000);
+    assertThat(callbacks.getLast().path("costUsd").decimalValue())
+        .isEqualByComparingTo(callbacks.getFirst().path("costUsd").decimalValue());
+  }
+
+  /** Mantém o limite da fila finito e não altera os codecs dos outros clientes HTTP. */
+  @Test
+  void shouldKeepQueueDecoderBoundedAndScoped() {
+    experimentId = 105;
+    jobId = "synthetic-bounded-queue";
+    contextPadding = 300000;
+    var builder = WebClient.builder();
+    var properties = new GeraSalesPageWorkerProperties(true, 1, backend.url("/").toString(),
+        "/api", List.of("sales-page-offer-brief"), Duration.ofSeconds(10), "flex");
+    var client = new GeraSalesPageBackendClient(builder, properties, mapper);
+    assertThat(client.listPending(1)).hasSize(1);
+    assertThatThrownBy(() -> builder.build().get()
+        .uri(backend.url("/api/internal/gerasalespage/v1/sales-page-offer-brief/stage-executions/pending").toString())
+        .retrieve().bodyToMono(String.class).block())
+        .hasRootCauseInstanceOf(org.springframework.core.io.buffer.DataBufferLimitException.class);
+    contextPadding = 16 * 1024 * 1024;
+    assertThatThrownBy(() -> client.listPending(1))
+        .hasRootCauseInstanceOf(org.springframework.core.io.buffer.DataBufferLimitException.class);
+    assertThat(savedRequest).isNull();
   }
 
   /** A fila de recuperação nunca gera quando o recibo está ausente ou pertence a outro job. */

@@ -214,3 +214,27 @@ simulado. A rodada local canônica `--persistence-only` passou em decisões REST
 janela/ciclos, contexto, migrations/reaplicação/idempotência e diff. Bash-n e
 ShellCheck do runner, Spotless e pacote de evidências também aprovados. Esta rodada
 não cria tráfego ou compras nem substitui os gates comerciais de Capella.
+
+## Proteção complementar de idempotência
+
+A conferência local após o PR #5637 reproduziu em MySQL 5.7 uma leitura antiga de
+snapshot após aguardar o lock: um callback aceito e um duplicado com erro 1062.
+Foram comparados repetir toda a transação (risco de repetir HTTP), consultar o job
+com lock de leitura (gap lock de ausência poderia voltar a disputar inserts de
+outros produtos) e usar READ_COMMITTED nas entradas com o guardião de contexto já
+existente. A terceira opção preserva serialização e lê a publicação confirmada.
+A matriz acrescenta callbacks simultâneos com duas identidades, snapshot/custo
+únicos e preservação do hash. O conflito original de FK e a recuperação anterior
+continuam cobertos. Nenhuma consulta ao faturamento da OpenAI é necessária.
+
+A conferência operacional do PR #5637 confirmou a versão e saúde publicadas. Ao
+retomar o último job, a fila excedeu o codec de 256 KiB do cliente do backend,
+antecedendo o processamento. A fixture anterior só aumentava o recibo; agora
+contexto e request também crescem e a falha foi reproduzida antes do ajuste.
+
+O mesmo PR complementar inclui o cliente exclusivo da fila com limite de 16 MiB.
+Testes executam o percurso completo em duas identidades, mantêm um turno após
+falha de callback, preservam recibo/custo e bloqueiam excesso sem afetar clientes
+com o limite anterior. O caso real passou localmente com provider `/bin/false`:
+fila 389.608 bytes, recibo 2.073.985 bytes, 47.261/6.238 tokens, US$0,156902 estimado.
+Nenhuma inferência, consulta de faturamento ou publicação externa foi feita no teste.

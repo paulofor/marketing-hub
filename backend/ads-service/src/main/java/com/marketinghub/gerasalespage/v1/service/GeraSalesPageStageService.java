@@ -271,7 +271,7 @@ public class GeraSalesPageStageService {
         available = true;
         reason =
             replayOnly
-                ? "O retorno foi recebido, mas sua leitura falhou. É possível recuperar somente o recibo exato salvo no Worker, sem nova inferência; sua ausência bloqueia a recuperação."
+                ? "O resultado não foi registrado após falha de leitura ou de callback. É possível recuperar somente o recibo exato salvo no Worker, sem nova inferência; sua ausência bloqueia a recuperação."
                 : "Conexão interrompida sem resposta recuperável. A retomada usa as mesmas entradas e preserva as etapas concluídas. Uma nova chamada de IA pode ter custo; o consumo da tentativa interrompida não foi informado.";
       } else {
         reason =
@@ -349,11 +349,16 @@ public class GeraSalesPageStageService {
   }
 
   /**
-   * Preserva resposta, falha e origem da retomada; enfileira a próxima etapa somente no sucesso.
+   * Bloqueia a publicação antes de alterar a execução; preserva resposta, custo e avanço pelo
+   * backend.
    */
   @Transactional
   public void receiveResult(String idJob, GeraSalesPageResultRequest payload) {
     GeraSalesPageStageExecution execution = findExecution(idJob);
+    if (!StringUtils.hasText(payload.errorMessage())
+        && GeraSalesPageStageCode.PUBLICATION_PACKAGE.code().equals(execution.getStageCode())) {
+      publicationAuditService.preparePublication(execution.getExperimentId());
+    }
     if (StringUtils.hasText(payload.errorMessage())) {
       execution.setStatus(STATUS_FAILED);
       execution.setErrorMessage(payload.errorMessage());

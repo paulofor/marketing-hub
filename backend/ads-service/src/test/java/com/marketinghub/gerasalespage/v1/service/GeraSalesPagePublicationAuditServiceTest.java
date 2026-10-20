@@ -43,6 +43,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Valida o snapshot historico de publicacoes do GeraSalesPage v1. */
 @ExtendWith(MockitoExtension.class)
 class GeraSalesPagePublicationAuditServiceTest {
+  @Mock private com.marketinghub.repository.jpa.product.ProductRepository productRepository;
   @Mock private ExperimentRepository experimentRepository;
   @Mock private GeraSalesPageStageExecutionRepository executionRepository;
   @Mock private GeraSalesPagePublicationAuditRepository publicationRepository;
@@ -53,6 +54,26 @@ class GeraSalesPagePublicationAuditServiceTest {
   @Mock private CommercialPlanLandingAssetService landingAssetService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
   @InjectMocks private GeraSalesPagePublicationAuditService service;
+
+  /** Ordena produto e experimento antes de carregar ou gravar entidades dependentes. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"7,105", "307,9105"})
+  void locksProductBeforeExperiment(long productId, long experimentId) {
+    var product = com.marketinghub.product.Product.builder().id(productId).build();
+    var experiment = Experiment.builder().id(experimentId).product(product).build();
+    when(experimentRepository.findProductIdForPublication(experimentId))
+        .thenReturn(Optional.of(productId));
+    when(productRepository.findLockedById(productId)).thenReturn(Optional.of(product));
+    when(experimentRepository.findForSalesPageRecovery(experimentId))
+        .thenReturn(Optional.of(experiment));
+    assertThat(service.preparePublication(experimentId)).isSameAs(experiment);
+    var ordered = org.mockito.Mockito.inOrder(experimentRepository, productRepository);
+    ordered.verify(experimentRepository).findProductIdForPublication(experimentId);
+    ordered.verify(productRepository).findLockedById(productId);
+    ordered.verify(experimentRepository).findForSalesPageRecovery(experimentId);
+    org.mockito.Mockito.verify(experimentRepository, org.mockito.Mockito.never())
+        .findById(experimentId);
+  }
 
   /** Deve salvar a pagina final junto dos prompts e schemas usados pelas etapas. */
   @Test
@@ -76,7 +97,7 @@ class GeraSalesPagePublicationAuditServiceTest {
             Instant.parse("2026-07-01T10:10:00Z"));
 
     when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
-    when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(53L)).thenReturn(Optional.of(experiment));
     when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
         .thenReturn(List.of(offer, publication));
     when(leadPortalFlowRepository.findBySlug("exp-53-gerasalespage-v1"))
@@ -194,7 +215,7 @@ class GeraSalesPagePublicationAuditServiceTest {
             Instant.parse("2026-07-01T10:10:00Z"));
 
     when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
-    when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(53L)).thenReturn(Optional.of(experiment));
     when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
         .thenReturn(List.of(publication));
     when(leadPortalPublicUrlResolver.resolve(flow))
@@ -245,7 +266,7 @@ class GeraSalesPagePublicationAuditServiceTest {
             Instant.parse("2026-07-01T10:10:00Z"));
 
     when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
-    when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(53L)).thenReturn(Optional.of(experiment));
     when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
         .thenReturn(List.of(publication));
 
@@ -279,7 +300,7 @@ class GeraSalesPagePublicationAuditServiceTest {
             Instant.parse("2026-07-01T10:10:00Z"));
 
     when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
-    when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(53L)).thenReturn(Optional.of(experiment));
     when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
         .thenReturn(List.of(publication));
 
@@ -308,7 +329,7 @@ class GeraSalesPagePublicationAuditServiceTest {
             Instant.parse("2026-07-01T10:10:00Z"));
 
     when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
-    when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(53L)).thenReturn(Optional.of(experiment));
     when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
         .thenReturn(List.of(publication));
 

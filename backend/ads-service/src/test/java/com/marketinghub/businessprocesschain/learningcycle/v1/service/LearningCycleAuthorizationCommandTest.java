@@ -104,9 +104,11 @@ class LearningCycleAuthorizationCommandTest {
     validation.setCreatedAt(now);
 
     when(products.findById(4L)).thenReturn(Optional.of(Product.builder().id(4L).build()));
+    when(products.findLockedById(4L)).thenReturn(Optional.of(Product.builder().id(4L).build()));
     when(cycles.findByProductIdOrderByIdDesc(4L)).thenReturn(List.of(cycle));
     when(cycles.findByPreviousCycleId(2L)).thenReturn(Optional.empty());
     when(experiments.findById(92L)).thenReturn(Optional.of(experiment));
+    when(experiments.findForSalesPageRecovery(92L)).thenReturn(Optional.of(experiment));
     when(processes.findById(75L)).thenReturn(Optional.of(process));
     when(chains.findById(14L)).thenReturn(Optional.of(chain));
     when(events.findByCycleIdOrderByRevisionAsc(2L)).thenReturn(List.of(validation));
@@ -434,6 +436,10 @@ class LearningCycleAuthorizationCommandTest {
 
     var response = service.revalidateWindow(4L, 2L, request, "Operador sintético");
 
+    var ordered = org.mockito.Mockito.inOrder(products, cycles, experiments);
+    ordered.verify(products).findLockedById(4L);
+    ordered.verify(cycles).findLocked(4L, 2L);
+    ordered.verify(experiments).findForSalesPageRecovery(92L);
     assertThat(response.stage()).isEqualTo("PUBLICATION");
     assertThat(response.revision()).isEqualTo(14);
     assertThat(response.budgetLimitBrl()).isEqualByComparingTo("100");

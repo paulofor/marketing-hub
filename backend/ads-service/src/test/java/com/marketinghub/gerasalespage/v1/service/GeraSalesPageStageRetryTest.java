@@ -254,6 +254,66 @@ class GeraSalesPageStageRetryTest {
     verify(publications).snapshotPublication(failed);
   }
 
+  /** Recupera callback 5xx do próprio job sem inferência e bloqueia identidades divergentes. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9405})
+  void recoversExactReceiptAfterResultCallbackFailure(long id) throws Exception {
+    configure(id);
+    String endpoint =
+        "/api/internal/gerasalespage/v1/"
+            + failed.getStageCode()
+            + "/stage-executions/"
+            + failed.getIdJob()
+            + "/recebe-resposta";
+    failed.setErrorMessage("500 Internal Server Error from POST http://backend.invalid" + endpoint);
+    failed.setErrorDetail("WebClientResponseException$InternalServerError: callback rejected");
+    failed.setOpenAiRequestBody("{\"model\":\"model-test\",\"input\":\"original\"}");
+    assertThat(service.retryView(id).available()).isTrue();
+    assertThat(service.retryView(id).replayOnly()).isTrue();
+    String original = failed.getErrorMessage();
+    for (String invalid :
+        List.of(
+            original.replace("500", "400"),
+            original.replace("POST", "GET"),
+            original.replace(failed.getIdJob(), "another-job"),
+            original.replace(failed.getStageCode(), "another-stage"),
+            original + "?other=true")) {
+      failed.setErrorMessage(invalid);
+      assertThat(service.retryView(id).available()).as(invalid).isFalse();
+    }
+    failed.setErrorMessage(original);
+    var retried = service.retry(id, failed.getIdJob());
+    assertThat(retried.idJob()).isEqualTo(failed.getIdJob());
+    assertThat(history).hasSize(7);
+    assertThat(service.pending(failed.getStageCode()).getFirst().replayOnly()).isTrue();
+    doAnswer(
+            invocation -> {
+              assertThat(failed.getStatus()).isEqualTo("INICIADO");
+              return experiment;
+            })
+        .when(publications)
+        .preparePublication(id);
+    service.receiveResult(
+        failed.getIdJob(),
+        new GeraSalesPageResultRequest(
+            id,
+            failed.getStageCode(),
+            "{\"readyForTraffic\":true}",
+            "saved-exact-receipt",
+            100,
+            20,
+            new BigDecimal("0.001"),
+            "codex:saved-turn",
+            null,
+            null));
+    var ordered = inOrder(publications);
+    ordered.verify(publications).preparePublication(id);
+    ordered.verify(publications).snapshotPublication(failed);
+    assertThat(failed.getStatus()).isEqualTo("CONCLUIDO");
+    assertThat(failed.getRawResponse()).isEqualTo("saved-exact-receipt");
+    assertThat(history).hasSize(7);
+  }
+
   /** O recibo antigo conserva seu prompt; novas pendências recebem os itens do contrato vigente. */
   @ParameterizedTest
   @ValueSource(longs = {105, 9317})

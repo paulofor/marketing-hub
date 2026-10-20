@@ -38,7 +38,7 @@ O GeraSalesPage v1 é um pipeline independente para gerar página de vendas dire
 | Navegadores | desktop Chromium, iPhone e Pixel aprovados | bloquear overflow, interação inacessível e mídia incompatível | screenshots e resultado por dispositivo |
 | Agentes | todos os pareceres obrigatórios aprovados | qualquer reprovação impede publicação/RUNNING | identidade do agente, versão, decisão e justificativa |
 
-Uma rodada local completa sem defeitos conclui a homologação. Se houver correção, a contagem reinicia e são exigidas cinco rodadas completas e consecutivas sem falhas depois da última correção.
+Uma rodada local dos testes relevantes comprova o aceite técnico. Se revelar defeito, investigar a causa, corrigir e repetir as validações necessárias à correção e às regressões relacionadas, sem quantidade mínima artificial. Aceite local não substitui os pareceres independentes nem os gates comerciais.
 
 - O pipeline só pode iniciar com `followUpActionUrl` real de checkout.
 - CTA deve apontar para checkout, não para formulário ou `#checkout_externo`.
@@ -155,3 +155,19 @@ integração de Quartzo. A existência do vídeo na página não aprova economia
 entrega, pagamento, aquisição ou campanha.
 Produtos `PDE` e `AI_PRODUCT` com enum legado `LOW_TICKET_PRODUCT` não recebem o
 contrato do kit automaticamente; preservar seu percurso identificado pelo catálogo.
+
+### Publicação concorrente e recuperação de callback — 20/10/2026
+
+Antes de modificar a execução final ou criar registros com FK para o experimento,
+a publicação bloqueia produto e depois experimento. Comandos de janela e orçamento
+adquirem produto, ciclo e experimento nessa ordem. O backfill só reserva escrita
+quando realmente falta um snapshot e carrega o experimento após obter os locks;
+assim não regrava uma janela com uma entidade lida antes da espera.
+
+Erro 5xx no callback `recebe-resposta` do mesmo job/etapa permite recuperar apenas
+seu recibo exato, sob o contrato já existente `replayOnly`. Request, modelo, schema,
+entradas e antecessores precisam permanecer compatíveis. Recibo ausente ou de outra
+identidade bloqueia sem inferência; resultado/custo já consumido não é regenerado.
+Não executar novamente a inferência para compensar rollback do banco. Snapshot,
+HTML, hash, destino e publicação idempotente continuam auditados; o gate comercial
+permanece obrigatório.

@@ -706,6 +706,7 @@ public class LearningCycleService {
               .AuthorizeCycleBudgetRequest
           request,
       String operatorName) {
+    requireProduct(productId, true);
     var cycle =
         cycles
             .findLocked(productId, cycleId)
@@ -737,7 +738,7 @@ public class LearningCycleService {
             data));
   }
 
-  /** Define a primeira janela do rascunho ou renova a janela legada elegível sem herdar gasto. */
+  /** Registra a janela sob locks de produto, ciclo e experimento, sem herdar gasto. */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse revalidateWindow(
       Long productId, Long cycleId, RevalidateCycleWindowRequest request, String operatorName) {
@@ -763,7 +764,7 @@ public class LearningCycleService {
     require(
         cycle.getRevision() == request.expectedRevision(),
         "O ciclo mudou. Atualize a tela antes de revalidar a janela.");
-    var experiment = requiredExperiment(productId, cycle.getExperimentId());
+    var experiment = requiredExperiment(productId, cycle.getExperimentId(), true);
     String blocker = windowRevalidationBlocker(cycle, experiment);
     require(blocker == null, blocker);
     require(
@@ -836,6 +837,7 @@ public class LearningCycleService {
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse completeIntegratedVideoValidation(
       Long productId, Long cycleId, LearningCycleCommand request) {
+    requireProduct(productId, true);
     var cycle =
         cycles.findLocked(productId, cycleId).orElseThrow(() -> notFound("Ciclo não encontrado."));
     require(
@@ -2035,7 +2037,16 @@ public class LearningCycleService {
 
   /** Resolve somente um experimento do produto solicitado. */
   private Experiment requiredExperiment(Long productId, Long id) {
-    var value = experiments.findById(id).orElseThrow(() -> notFound("Experimento não encontrado."));
+    return requiredExperiment(productId, id, false);
+  }
+
+  /**
+   * Adquire o experimento antes de gravar filhos para impedir promoção concorrente de locks de FK.
+   */
+  private Experiment requiredExperiment(Long productId, Long id, boolean lock) {
+    var value =
+        (lock ? experiments.findForSalesPageRecovery(id) : experiments.findById(id))
+            .orElseThrow(() -> notFound("Experimento não encontrado."));
     require(
         value.getProduct() != null && productId.equals(value.getProduct().getId()),
         "O experimento pertence a outro produto.");

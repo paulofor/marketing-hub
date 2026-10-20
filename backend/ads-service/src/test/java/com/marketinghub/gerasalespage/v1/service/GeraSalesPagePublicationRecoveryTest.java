@@ -34,6 +34,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: provar recuperação sem geração, perda de histórico ou troca de versão. */
 class GeraSalesPagePublicationRecoveryTest {
+  final com.marketinghub.repository.jpa.product.ProductRepository products =
+      mock(com.marketinghub.repository.jpa.product.ProductRepository.class);
   final ExperimentRepository experiments = mock(ExperimentRepository.class);
   final GeraSalesPageStageExecutionRepository executions =
       mock(GeraSalesPageStageExecutionRepository.class);
@@ -48,6 +50,7 @@ class GeraSalesPagePublicationRecoveryTest {
   final GeraSalesPagePublicationAuditService service =
       new GeraSalesPagePublicationAuditService(
           experiments,
+          products,
           executions,
           publications,
           stages,

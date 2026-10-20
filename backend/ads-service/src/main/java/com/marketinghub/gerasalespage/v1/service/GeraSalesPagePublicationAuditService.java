@@ -24,6 +24,7 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublication
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationStageAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -72,6 +73,7 @@ public class GeraSalesPagePublicationAuditService {
   private static final int MIN_TRANSFORMATION_VISUAL_SCENES = 3;
 
   private final ExperimentRepository experimentRepository;
+  private final ProductRepository productRepository;
   private final GeraSalesPageStageExecutionRepository executionRepository;
   private final GeraSalesPagePublicationAuditRepository publicationRepository;
   private final GeraSalesPagePublicationStageAuditRepository publicationStageRepository;
@@ -84,6 +86,7 @@ public class GeraSalesPagePublicationAuditService {
   /** Inicializa o service com repositorios e serializador usados nos snapshots. */
   public GeraSalesPagePublicationAuditService(
       ExperimentRepository experimentRepository,
+      ProductRepository productRepository,
       GeraSalesPageStageExecutionRepository executionRepository,
       GeraSalesPagePublicationAuditRepository publicationRepository,
       GeraSalesPagePublicationStageAuditRepository publicationStageRepository,
@@ -93,6 +96,7 @@ public class GeraSalesPagePublicationAuditService {
       CommercialPlanLandingAssetService landingAssetService,
       ObjectMapper objectMapper) {
     this.experimentRepository = experimentRepository;
+    this.productRepository = productRepository;
     this.executionRepository = executionRepository;
     this.publicationRepository = publicationRepository;
     this.publicationStageRepository = publicationStageRepository;
@@ -103,34 +107,38 @@ public class GeraSalesPagePublicationAuditService {
     this.objectMapper = objectMapper;
   }
 
-  /** Cria snapshot da publicacao final quando a etapa de pacote termina com sucesso. */
+  /** Serializa produto e experimento antes de gravar filhos ou modificar o destino público. */
+  @Transactional
+  public Experiment preparePublication(Long experimentId) {
+    experimentRepository
+        .findProductIdForPublication(experimentId)
+        .ifPresent(
+            productId ->
+                productRepository
+                    .findLockedById(productId)
+                    .orElseThrow(
+                        () -> new EntityNotFoundException("Produto não encontrado: " + productId)));
+    return experimentRepository
+        .findForSalesPageRecovery(experimentId)
+        .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+  }
+
+  /** Cria o snapshot final sob a mesma ordem de locks dos comandos comerciais do ciclo. */
   @Transactional
   public void snapshotPublication(GeraSalesPageStageExecution publicationExecution) {
-    if (!isCompletedPublication(publicationExecution)
-        || publicationRepository.existsByPublicationJobId(publicationExecution.getIdJob())) {
-      return;
-    }
-    Experiment experiment =
-        experimentRepository
-            .findById(publicationExecution.getExperimentId())
-            .orElseThrow(
-                () ->
-                    new EntityNotFoundException(
-                        "Experiment not found: " + publicationExecution.getExperimentId()));
+    if (!isCompletedPublication(publicationExecution)) return;
+    Experiment experiment = preparePublication(publicationExecution.getExperimentId());
+    if (publicationRepository.existsByPublicationJobId(publicationExecution.getIdJob())) return;
     saveAudit(experiment, publicationExecution);
   }
 
-  /**
-   * Lista publicacoes historicas e faz backfill quando houver execucao final antiga sem snapshot.
-   */
+  /** Lista a auditoria e serializa apenas o backfill histórico que ainda precisa gravar dados. */
   @Transactional
   public List<GeraSalesPagePublicationResponse> listPublications(Long experimentId) {
-    Experiment experiment =
-        experimentRepository
-            .findById(experimentId)
-            .orElseThrow(
-                () -> new EntityNotFoundException("Experiment not found: " + experimentId));
-    backfillMissingSnapshots(experiment);
+    backfillMissingSnapshots(experimentId);
+    experimentRepository
+        .findById(experimentId)
+        .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
     return publicationRepository.findByExperimentIdOrderByPublishedAtDesc(experimentId).stream()
         .map(this::toResponse)
         .toList();
@@ -166,11 +174,7 @@ public class GeraSalesPagePublicationAuditService {
   @Transactional
   public PublicationRecoveryView republish(
       Long experimentId, Long publicationId, RepublishPublicationRequest request) {
-    Experiment experiment =
-        experimentRepository
-            .findForSalesPageRecovery(experimentId)
-            .orElseThrow(
-                () -> new EntityNotFoundException("Experiment not found: " + experimentId));
+    Experiment experiment = preparePublication(experimentId);
     var audit = ownedPublication(experimentId, publicationId);
     LeadPortalFlow flow = recoveryFlow(experiment, audit);
     requireRecovery(
@@ -291,12 +295,21 @@ public class GeraSalesPagePublicationAuditService {
         .orElse(null);
   }
 
-  /** Cria snapshots para publicacoes antigas que ainda possuem execucoes auditaveis no banco. */
-  private void backfillMissingSnapshots(Experiment experiment) {
-    executionRepository
-        .findByExperimentIdAndStageCodeAndStatusOrderByExecutionRequestedAtAsc(
-            experiment.getId(), GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(), STATUS_COMPLETED)
-        .stream()
+  /**
+   * Recupera publicações históricas após bloquear o contexto, sem carregar um experimento obsoleto.
+   */
+  private void backfillMissingSnapshots(Long experimentId) {
+    var missing =
+        executionRepository
+            .findByExperimentIdAndStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                experimentId, GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(), STATUS_COMPLETED)
+            .stream()
+            .filter(
+                execution -> !publicationRepository.existsByPublicationJobId(execution.getIdJob()))
+            .toList();
+    if (missing.isEmpty()) return;
+    Experiment experiment = preparePublication(experimentId);
+    missing.stream()
         .filter(execution -> !publicationRepository.existsByPublicationJobId(execution.getIdJob()))
         .forEach(execution -> saveAudit(experiment, execution));
   }

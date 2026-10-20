@@ -768,3 +768,19 @@ O rótulo de uma ilustração editorial privada deve distinguir sua origem da en
 “No site: exemplo com dados de teste, sem cobrança.” Ambas ficam antes do CTA,
 legíveis na redução móvel, sem recortar a imagem ou esconder o limite de personalização.
 A expressão “por IA” isolada é insuficiente quando o produto também gera imagens por IA.
+
+### Recuperação da leitura de provas por Têmis — 20/10/2026
+
+Antes da inferência, o executor de Têmis pode recuperar somente GETs de evidências
+interrompidos por transporte ou HTTP 502/503/504, em até três tentativas por leitura,
+com pausa limitada e rastreabilidade por tarefa/rota. Isso não repete o modelo, não
+cria tarefas nem muda a decisão de avanço do backend. Cancelamento, TLS inválido,
+autorização, contrato, versão e hash divergentes não recebem retentativa automática.
+
+Uma captura reapresentada como fonte e destino pode reutilizar os bytes já recebidos
+pela mesma rota nesta execução, mas cada referência deve reconferir o hash. O cache
+é efêmero e exclusivo da tarefa. Falha persistente bloqueia antes do modelo, preserva
+a causa e não produz parecer parcial. O replay de uma resposta de modelo já existente
+continua separado desse mecanismo. Aceites independentes e seleção humana permanecem.
+
+Regressão e limites: `docs/homologacao/alcyone-temis-download-recovery-2026-10-20.md`.

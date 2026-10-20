@@ -1,3 +1,18 @@
+## LOOP-TEMIS-LEITURA-TRANSITORIA-BLOQUEIA-REVISAO — 20/10/2026
+
+- **Evidência:** Alcyone, tarefa 778, falhou antes do modelo ao ler 765/1047 por timeout.
+  A revisão anterior 766 recebeu essa prova; nova leitura administrativa retornou os mesmos
+  arquivos, HTTP 200 em 2,98 s. Não há resposta de modelo para replay nem prova de arquivo ausente.
+- **Causa compartilhada:** o carregador encerrava a tarefa na primeira falha transitória de GET
+  e repetia downloads de capturas já verificadas na mesma revisão.
+- **Correção:** até três leituras para transporte/502/503/504 antes da inferência; reutilização
+  efêmera da mesma rota com hash reconferido. Autorização, TLS, versão, contrato e hash continuam
+  bloqueantes; não há retry de modelo ou aprovação fabricada.
+- **Prevenção:** regressões do caso 778 e outra identidade, caminho anterior válido, HTTP local
+  e modelo simulado, falha persistente sem inferência, cancelamento e cache com hash divergente.
+  Três regressões falharam antes da mudança. Não há comprovação de ganho comercial.
+- **Registro:** `docs/homologacao/alcyone-temis-download-recovery-2026-10-20.md`.
+
 ## LOOP-IRIS-PROVA-SOMENTE-ENCERRAMENTO — 19/10/2026
 
 - **Evidência:** Alcyone 711 produziu peça com capturas 488/489 do encerramento técnico.

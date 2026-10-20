@@ -349,10 +349,10 @@ public class GeraSalesPageStageService {
   }
 
   /**
-   * Bloqueia a publicação antes de alterar a execução; preserva resposta, custo e avanço pelo
-   * backend.
+   * Bloqueia a publicação sob leitura atual antes de alterar a execução; preserva resposta,
+   * custo e avanço pelo backend.
    */
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public void receiveResult(String idJob, GeraSalesPageResultRequest payload) {
     GeraSalesPageStageExecution execution = findExecution(idJob);
     if (!StringUtils.hasText(payload.errorMessage())

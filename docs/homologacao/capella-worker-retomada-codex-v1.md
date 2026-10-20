@@ -214,3 +214,15 @@ simulado. A rodada local canônica `--persistence-only` passou em decisões REST
 janela/ciclos, contexto, migrations/reaplicação/idempotência e diff. Bash-n e
 ShellCheck do runner, Spotless e pacote de evidências também aprovados. Esta rodada
 não cria tráfego ou compras nem substitui os gates comerciais de Capella.
+
+## Proteção complementar de idempotência
+
+A conferência local após o PR #5637 reproduziu em MySQL 5.7 uma leitura antiga de
+snapshot após aguardar o lock: um callback aceito e um duplicado com erro 1062.
+Foram comparados repetir toda a transação (risco de repetir HTTP), consultar o job
+com lock de leitura (gap lock de ausência poderia voltar a disputar inserts de
+outros produtos) e usar READ_COMMITTED nas entradas com o guardião de contexto já
+existente. A terceira opção preserva serialização e lê a publicação confirmada.
+A matriz acrescenta callbacks simultâneos com duas identidades, snapshot/custo
+únicos e preservação do hash. O conflito original de FK e a recuperação anterior
+continuam cobertos. Nenhuma consulta ao faturamento da OpenAI é necessária.

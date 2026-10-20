@@ -314,6 +314,61 @@ class GeraSalesPageStageRetryTest {
     assertThat(history).hasSize(7);
   }
 
+  /** Recupera somente uma reentrega antiga interrompida, sem criar outra execução ou inferência. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9405})
+  void resumesInterruptedReceiptDeliveryAfterBackendRestart(long id) throws Exception {
+    configure(id);
+    failed.setStatus("AGUARDANDO_RETORNO_OPENAI");
+    failed.setProcessingStartedAt(Instant.now().minusSeconds(2160));
+    failed.setErrorDetail(
+        GeraSalesPageRetryPolicy.REPLAY_PREFIX + failed.getIdJob() + "\nOriginal callback 500");
+    failed.setOpenAiRequestBody("{\"model\":\"model-test\",\"input\":\"original\"}");
+    assertThat(service.retryView(id).available()).isTrue();
+    assertThat(service.retryView(id).replayOnly()).isTrue();
+    var recovery = service.retry(id, failed.getIdJob());
+    assertThat(recovery.idJob()).isEqualTo(failed.getIdJob());
+    assertThat(failed.getStatus()).isEqualTo("INICIADO");
+    assertThat(failed.getProcessingStartedAt()).isNull();
+    assertThat(service.retry(id, failed.getIdJob()).idJob()).isEqualTo(failed.getIdJob());
+    assertThat(service.pending(failed.getStageCode()).getFirst().replayOnly()).isTrue();
+    assertThat(history).hasSize(7);
+  }
+
+  /** Mantém processamento atual, inferência original e resultados existentes fora da retomada. */
+  @ParameterizedTest
+  @ValueSource(strings = {"recent", "original", "foreign", "cost", "result", "schema"})
+  void rejectsUnsafeInterruptedReplay(String cause) {
+    failed.setStatus("AGUARDANDO_RETORNO_OPENAI");
+    failed.setProcessingStartedAt(Instant.now().minusSeconds(cause.equals("recent") ? 30 : 2160));
+    failed.setErrorDetail(
+        GeraSalesPageRetryPolicy.REPLAY_PREFIX
+            + (cause.equals("foreign") ? "another" : failed.getIdJob())
+            + "\nOriginal callback 500");
+    failed.setOpenAiRequestBody("original");
+    if (cause.equals("original")) failed.setErrorDetail("Ainda gerando o primeiro resultado");
+    if (cause.equals("cost")) failed.setCostUsd(BigDecimal.ZERO);
+    if (cause.equals("result")) failed.setRawResponse("saved-result");
+    if (cause.equals("schema")) template.setSchemaJson("{\"type\":\"string\"}");
+    assertThat(service.retryView(experiment.getId()).available()).isFalse();
+    assertThat(history).hasSize(7);
+  }
+
+  /** Falha de transporte de um replay nunca se transforma em autorização para outro modelo. */
+  @Test
+  void failedReceiptDeliveryStaysReplayOnly() {
+    failed.setOpenAiRequestBody("original");
+    failed.setErrorDetail(
+        GeraSalesPageRetryPolicy.REPLAY_PREFIX
+            + failed.getIdJob()
+            + "\nWebClientRequestException: Connection refused");
+    failed.setErrorMessage("Connection refused");
+    assertThat(service.retryView(experiment.getId()).replayOnly()).isTrue();
+    assertThat(service.retry(experiment.getId(), failed.getIdJob()).idJob())
+        .isEqualTo(failed.getIdJob());
+    assertThat(history).hasSize(7);
+  }
+
   /** O recibo antigo conserva seu prompt; novas pendências recebem os itens do contrato vigente. */
   @ParameterizedTest
   @ValueSource(longs = {105, 9317})

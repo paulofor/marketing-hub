@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 
 /** Responsabilidade: permitir retomada técnica apenas com entrada auditada e inalterada. */
 public final class GeraSalesPageRetryPolicy {
+  public static final String REPLAY_PREFIX = "Recuperação exclusiva do recibo Codex: ";
+  private static final java.time.Duration REPLAY_DELIVERY_TIMEOUT =
+      java.time.Duration.ofMinutes(35);
   private static final Logger log = LoggerFactory.getLogger(GeraSalesPageRetryPolicy.class);
   private static final Pattern PLACEHOLDER =
       Pattern.compile(
@@ -40,10 +43,24 @@ public final class GeraSalesPageRetryPolicy {
         && execution.getOutputTokens() == null;
   }
 
-  /** Recupera somente o recibo exato após falha de leitura ou do callback da própria execução. */
+  /** Recupera o recibo exato após falha de leitura, callback ou entrega de replay interrompida. */
   public static boolean receiptRecoveryWithoutResult(GeraSalesPageStageExecution execution) {
-    return "FALHA".equals(execution.getStatus())
-        && (responseReadFailure(execution) || resultCallbackFailure(execution))
+    boolean originalResult =
+        "FALHA".equals(execution.getStatus())
+            && (responseReadFailure(execution) || resultCallbackFailure(execution));
+    boolean priorReplay =
+        Objects.toString(execution.getErrorDetail(), "")
+            .startsWith(REPLAY_PREFIX + execution.getIdJob() + "\n");
+    boolean interruptedReplay =
+        priorReplay
+            && (transportFailureWithoutResult(execution)
+                || (("EM_PROCESSAMENTO".equals(execution.getStatus())
+                        || "AGUARDANDO_RETORNO_OPENAI".equals(execution.getStatus()))
+                    && execution.getProcessingStartedAt() != null
+                    && execution
+                        .getProcessingStartedAt()
+                        .isBefore(java.time.Instant.now().minus(REPLAY_DELIVERY_TIMEOUT))));
+    return (originalResult || interruptedReplay)
         && execution.getOpenAiRequestBody() != null
         && execution.getOpenAiJobId() == null
         && execution.getRawResponse() == null

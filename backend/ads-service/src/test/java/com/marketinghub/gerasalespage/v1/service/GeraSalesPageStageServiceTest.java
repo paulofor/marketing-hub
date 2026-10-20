@@ -444,6 +444,43 @@ class GeraSalesPageStageServiceTest {
             55L, GeraSalesPageStageCode.PUBLICATION_PACKAGE.code());
   }
 
+  /** Mantém o resultado aceito quando a confirmação se perde e o executor relata erro tardio. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {105, 9405})
+  void lateDeliveryFailureDoesNotUndoAcceptedResult(long id) {
+    var execution =
+        GeraSalesPageStageExecution.builder()
+            .idJob("accepted-" + id)
+            .experimentId(id)
+            .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+            .status("CONCLUIDO")
+            .modelResponse("accepted-output")
+            .rawResponse("exact-receipt")
+            .costUsd(new BigDecimal("0.15"))
+            .openAiJobId("codex:accepted-" + id)
+            .build();
+    when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(execution.getIdJob()))
+        .thenReturn(Optional.of(execution));
+    service.receiveResult(
+        execution.getIdJob(),
+        new GeraSalesPageResultRequest(
+            id,
+            execution.getStageCode(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Connection reset after delivery",
+            "WebClientRequestException: Connection reset"));
+    assertThat(execution.getStatus()).isEqualTo("CONCLUIDO");
+    assertThat(execution.getRawResponse()).isEqualTo("exact-receipt");
+    assertThat(execution.getCostUsd()).isEqualByComparingTo("0.15");
+    org.mockito.Mockito.verifyNoInteractions(publicationAuditService);
+    verify(executionRepository, never()).save(any());
+  }
+
   /** Cria template mínimo de prompt/schema para etapa de teste. */
   private AiPromptSchemaTemplate template(String stageCode) {
     return AiPromptSchemaTemplate.builder()

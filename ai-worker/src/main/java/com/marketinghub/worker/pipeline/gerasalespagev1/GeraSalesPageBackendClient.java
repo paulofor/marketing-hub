@@ -15,6 +15,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: integrar o worker GeraSalesPage v1 aos endpoints internos do backend. */
 public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPageInput, GeraSalesPageOutput> {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GeraSalesPageBackendClient.class);
+    private final reactor.util.retry.RetryBackoffSpec callbackRetry;
     private final WebClient webClient;
     private final GeraSalesPageWorkerProperties properties;
     private final ObjectMapper objectMapper;
@@ -24,6 +26,15 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
             WebClient.Builder builder,
             GeraSalesPageWorkerProperties properties,
             ObjectMapper objectMapper) {
+        this(builder, properties, objectMapper, reactor.util.retry.Retry.backoff(12, java.time.Duration.ofSeconds(2))
+                .maxBackoff(java.time.Duration.ofSeconds(30)).jitter(0.2));
+    }
+
+    /** Permite validar a entrega com backoff local sem alterar política ou custo do modelo. */
+    public GeraSalesPageBackendClient(WebClient.Builder builder, GeraSalesPageWorkerProperties properties,
+            ObjectMapper objectMapper, reactor.util.retry.RetryBackoffSpec callbackRetry) {
+        this.callbackRetry = callbackRetry.filter(GeraSalesPageBackendClient::transientCallbackFailure)
+                .onRetryExhaustedThrow((policy, signal) -> signal.failure());
         this.webClient = builder.clone()
                 .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
                 .build();
@@ -67,7 +78,7 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
                 .block(properties.timeout());
     }
 
-    /** Envia resposta final validada para o backend concluir a etapa. */
+    /** Entrega a mesma resposta validada com retentativa de transporte, sem repetir o modelo. */
     @Override
     public void markCompleted(StageExecution<GeraSalesPageInput> execution, StageResult<GeraSalesPageOutput> result) {
         OpenAiResult<String> openAiResult = openAiResult(result);
@@ -82,15 +93,10 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
         body.put("openAiJobId", openAiResult.openAiJobId());
         body.put("errorMessage", null);
         body.put("errorDetail", null);
-        webClient.post()
-                .uri(stageExecutionBaseUrl(execution.stageCode()) + "/{idJob}/recebe-resposta", execution.idJob())
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .block(properties.timeout());
+        deliverResult(execution, body);
     }
 
-    /** Envia falha técnica ou validação inválida para o backend. */
+    /** Registra a falha com reenvio de transporte para não deixar a execução sem confirmação. */
     @Override
     public void markFailed(StageExecution<GeraSalesPageInput> execution, Throwable error) {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -104,12 +110,32 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
         body.put("openAiJobId", null);
         body.put("errorMessage", error != null ? error.getMessage() : "Unknown error");
         body.put("errorDetail", error != null ? stackTraceSummary(error) : null);
-        webClient.post()
-                .uri(stageExecutionBaseUrl(execution.stageCode()) + "/{idJob}/recebe-resposta", execution.idJob())
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Void.class)
+        deliverResult(execution, body);
+    }
+
+    /** Reenvia somente o mesmo resultado enquanto o backend estiver temporariamente indisponível. */
+    private void deliverResult(StageExecution<GeraSalesPageInput> execution, Map<String, Object> body) {
+        String endpoint = stageExecutionBaseUrl(execution.stageCode()) + "/" + execution.idJob() + "/recebe-resposta";
+        webClient.post().uri(endpoint).bodyValue(body).retrieve().bodyToMono(Void.class)
+                .retryWhen(callbackRetry.doBeforeRetry(signal -> log.warn(
+                        "GeraSalesPage: reentrega de callback. jobId={} stage={} endpoint={} attempt={}",
+                        execution.idJob(), execution.stageCode(), endpoint, signal.totalRetries() + 1, signal.failure())))
+                .doOnError(error -> log.error("GeraSalesPage: callback sem confirmação. jobId={} stage={} endpoint={}",
+                        execution.idJob(), execution.stageCode(), endpoint, error))
                 .block(properties.timeout());
+    }
+
+    /** Separa indisponibilidade temporária de recusa funcional para não repetir um contrato inválido. */
+    private static boolean transientCallbackFailure(Throwable error) {
+        Throwable current = reactor.core.Exceptions.unwrap(error);
+        for (int i = 0; current != null && i < 8; i++, current = current.getCause()) {
+            if (current instanceof org.springframework.web.reactive.function.client.WebClientResponseException response)
+                return response.getStatusCode().is5xxServerError();
+            if (current instanceof org.springframework.web.reactive.function.client.WebClientRequestException
+                    || current instanceof java.io.IOException || current instanceof java.util.concurrent.TimeoutException)
+                return true;
+        }
+        return false;
     }
 
     /** Busca pendências de uma etapa específica no backend. */

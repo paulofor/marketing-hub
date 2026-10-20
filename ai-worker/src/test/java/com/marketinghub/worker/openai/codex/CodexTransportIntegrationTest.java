@@ -54,6 +54,10 @@ class CodexTransportIntegrationTest {
   private long experimentId;
   private JsonNode savedRequest;
   private int contextPadding;
+  private int callbackRetryAttempts;
+  private int rejectSuccessStatus;
+  private final AtomicBoolean refuseFirstFailure = new AtomicBoolean();
+  private final AtomicBoolean loseFirstSuccessAck = new AtomicBoolean();
   private String promptTemplate = "Uma oferta útil e fiel ao produto.";
 
   /** Inicia apenas um backend local e isola todas as identidades e arquivos de teste. */
@@ -108,6 +112,12 @@ class CodexTransportIntegrationTest {
               if (path.endsWith("/recebe-resposta")) {
                 JsonNode body = mapper.readTree(request.getBody().readUtf8());
                 callbacks.add(body);
+                if (body.path("modelResponse").isNull() && refuseFirstFailure.compareAndSet(true, false))
+                  return new MockResponse().setResponseCode(503);
+                if (!body.path("modelResponse").isNull() && rejectSuccessStatus != 0)
+                  return new MockResponse().setResponseCode(rejectSuccessStatus);
+                if (!body.path("modelResponse").isNull() && loseFirstSuccessAck.compareAndSet(true, false))
+                  return new MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AFTER_REQUEST);
                 if (!body.path("modelResponse").isNull()
                     && refuseFirstSuccess.compareAndSet(true, false))
                   return new MockResponse().setResponseCode(503);
@@ -229,6 +239,80 @@ class CodexTransportIntegrationTest {
     assertThatThrownBy(() -> client.listPending(1))
         .hasRootCauseInstanceOf(org.springframework.core.io.buffer.DataBufferLimitException.class);
     assertThat(savedRequest).isNull();
+  }
+
+  /** Reenvia resposta pronta após 503 sem repetir a inferência nem converter sucesso em falha. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9106})
+  void shouldRetryResultDeliveryWithoutInference(long identity) throws Exception {
+    experimentId = identity;
+    jobId = "synthetic-callback-retry-" + identity;
+    callbackRetryAttempts = 2;
+    refuseFirstSuccess.set(true);
+    assertThat(worker("{}").processPending(1).succeeded()).isEqualTo(1);
+    assertThat(callbacks).hasSize(2);
+    assertThat(callbacks.getFirst()).isEqualTo(callbacks.getLast());
+    assertThat(callbacks.getLast().path("errorMessage").isNull()).isTrue();
+    assertThat(inferenceCount()).isEqualTo(1);
+  }
+
+  /** Confirma ACK perdido com a mesma resposta, sem fazer outro turno ou perder o custo. */
+  @Test
+  void shouldRetryLostCallbackAcknowledgement() throws Exception {
+    experimentId = 105;
+    jobId = "synthetic-lost-ack";
+    callbackRetryAttempts = 2;
+    loseFirstSuccessAck.set(true);
+    assertThat(worker("{}").processPending(1).succeeded()).isEqualTo(1);
+    assertThat(callbacks).hasSize(2);
+    assertThat(callbacks.getFirst()).isEqualTo(callbacks.getLast());
+    assertThat(inferenceCount()).isEqualTo(1);
+  }
+
+  /** Persiste falha de validação mesmo quando seu primeiro envio encontra backend indisponível. */
+  @Test
+  void shouldRetryFailureReportWithoutAnotherInference() throws Exception {
+    experimentId = 105;
+    jobId = "synthetic-failure-report";
+    callbackRetryAttempts = 2;
+    refuseFirstFailure.set(true);
+    assertThat(worker("{\"text\":\"{\\\"ready\\\":\\\"talvez\\\"}\"}").processPending(1).failed()).isEqualTo(1);
+    assertThat(callbacks).hasSize(2);
+    assertThat(callbacks.getFirst()).isEqualTo(callbacks.getLast());
+    assertThat(callbacks.getLast().path("errorMessage").isTextual()).isTrue();
+    assertThat(inferenceCount()).isEqualTo(1);
+  }
+
+  /** Recusa funcional não recebe retentativa de transporte nem outra geração. */
+  @ParameterizedTest
+  @ValueSource(ints = {400, 401, 403, 409, 422})
+  void shouldNotRetryRejectedCallback(int status) throws Exception {
+    experimentId = 105;
+    jobId = "synthetic-refused-" + status;
+    callbackRetryAttempts = 2;
+    rejectSuccessStatus = status;
+    assertThat(worker("{}").processPending(1).failed()).isEqualTo(1);
+    assertThat(callbacks.stream().filter(body -> !body.path("modelResponse").isNull())).hasSize(1);
+    assertThat(inferenceCount()).isEqualTo(1);
+  }
+
+  /** Esgotamento do envio preserva recibo e falha auditada, permitindo apenas replay após retorno. */
+  @Test
+  void shouldRecoverAfterCallbackRetriesAreExhausted() throws Exception {
+    experimentId = 105;
+    jobId = "synthetic-exhausted-delivery";
+    callbackRetryAttempts = 2;
+    rejectSuccessStatus = 503;
+    refuseFirstFailure.set(true);
+    var worker = worker("{}");
+    assertThat(worker.processPending(1).failed()).isEqualTo(1);
+    assertThat(callbacks.stream().filter(body -> !body.path("modelResponse").isNull())).hasSize(3);
+    assertThat(callbacks.getLast().path("errorMessage").asText()).contains("503");
+    rejectSuccessStatus = 0;
+    replayOnly.set(true);
+    assertThat(worker.processPending(1).succeeded()).isEqualTo(1);
+    assertThat(callbacks.getLast().path("rawResponse").asText()).isEqualTo(callbacks.getFirst().path("rawResponse").asText());
+    assertThat(inferenceCount()).isEqualTo(1);
   }
 
   /** A fila de recuperação nunca gera quando o recibo está ausente ou pertence a outro job. */
@@ -430,7 +514,8 @@ class CodexTransportIntegrationTest {
             List.of("sales-page-offer-brief"),
             Duration.ofSeconds(10),
             "flex");
-    var port = new GeraSalesPageBackendClient(builder, workerProperties, mapper);
+    var port = new GeraSalesPageBackendClient(builder, workerProperties, mapper,
+        reactor.util.retry.Retry.backoff(callbackRetryAttempts, Duration.ofMillis(1)).maxBackoff(Duration.ofMillis(2)).jitter(0));
     var processor =
         new GeraSalesPageProcessor(
             mapper, client, new GeraSalesPageResponseValidator(mapper), port, "flex");

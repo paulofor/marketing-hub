@@ -30,6 +30,24 @@ public class InternalCreativeVisualInputController {
     return service.inputs(agentKey, taskId);
   }
 
+  /** Lista somente ilustrações auditadas da mesma identidade, sem aprovar seu uso. */
+  @GetMapping("/illustrations")
+  @Operation(summary = "Lista apoio ilustrativo auditado, separado da prova funcional")
+  public List<CreativeIllustrationSources.Illustration> illustrations(
+      @PathVariable String agentKey, @PathVariable Long taskId) {
+    return service.illustrations(agentKey, taskId);
+  }
+
+  /** Lê os bytes auditados com autorização renovada na tarefa reservada. */
+  @GetMapping("/illustrations/{jobId}/content")
+  @Operation(summary = "Lê ilustração autorizada no contexto criativo reservado")
+  public ResponseEntity<byte[]> illustration(
+      @PathVariable String agentKey, @PathVariable Long taskId, @PathVariable String jobId) {
+    return ResponseEntity.ok()
+        .contentType(MediaType.IMAGE_PNG)
+        .body(service.illustrationContent(agentKey, taskId, jobId));
+  }
+
   /** Entrega os pixels privados após conferir novamente tarefa, versão e origem aprovada. */
   @GetMapping("/{sourceTaskId}/{evidenceId}/content")
   @Operation(summary = "Lê PNG autorizado pela origem da tarefa criativa")

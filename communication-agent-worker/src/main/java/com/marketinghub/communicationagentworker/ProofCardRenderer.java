@@ -184,7 +184,7 @@ public class ProofCardRenderer {
   }
 
   /** Aceita somente cores hexadecimais explícitas do briefing. */
-  private static Color color(JsonNode spec, String field) {
+  static Color color(JsonNode spec, String field) {
     String value = spec.path(field).asText();
     if (!value.matches("#[0-9a-fA-F]{6}"))
       throw new IllegalArgumentException("Cor criativa inválida: " + field);
@@ -192,7 +192,7 @@ public class ProofCardRenderer {
   }
 
   /** Quebra linhas sem reduzir fonte ou cortar texto para esconder transbordamento. */
-  private static void text(
+  static void text(
       Graphics2D g, String value, int x, int top, int width, int height, int size, int style) {
     if (value == null || value.isBlank())
       throw new IllegalArgumentException("Texto obrigatório do criativo ausente.");

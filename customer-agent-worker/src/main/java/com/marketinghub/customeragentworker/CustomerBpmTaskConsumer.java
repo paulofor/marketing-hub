@@ -202,6 +202,8 @@ public class CustomerBpmTaskConsumer {
           throw new IllegalStateException("Ferramenta auditiva de Psique indisponível.");
         task = finalVideoAudioReview.enrich(task, visualEvidence.directory());
       }
+      if ("creative-production-approval".equals(processCode(task)))
+        task.put("staticCreativeQualityVersion", "STATIC_CREATIVE_QUALITY_V1");
       execution = execute(task, visualEvidence.uploaded());
       validateExecution(task, execution);
       enqueueDecision(task, execution);
@@ -242,6 +244,8 @@ public class CustomerBpmTaskConsumer {
         !"BLOCKED".equals(result.path("decision").asText()));
     if ("creative-production-approval".equals(processCode(task))) {
       validateCreativeAudit(result, execution.visualEvidence());
+      if ("STATIC_CREATIVE_QUALITY_V1".equals(task.get("staticCreativeQualityVersion")))
+        StaticCreativeQualityContract.validate(result, execution.visualEvidence());
       FinalVideoReviewInputs.validate(json, task, result, execution.visualEvidence());
     } else validateVisualAudit(result, execution.visualEvidence());
   }

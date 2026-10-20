@@ -716,3 +716,23 @@ Uma seleção com `scope=PRIVATE_PREPARATION` ou evidência
 `PDE_PRIVATE_CREATIVE_SELECTION_V1` nunca autoriza a importação da peça como ativo comercial
 aprovado. Preservar a seleção privada, seus custos e arquivos; a preparação comercial usa
 seus próprios materiais e gates. Não remover avisos nem elevar aprovação privada por inferência.
+
+
+## Qualidade visual além da fixture — 20/10/2026
+
+A fixture técnica comprova funcionamento e permanece no histórico. Ela não é, por isso,
+material visual adequado para persuadir. Uma rejeição de acabamento exige corrigir a fonte,
+não apenas tipografia ou escala. A preparação privada conserva essa exigência de qualidade.
+
+O executor pode reutilizar imagens já auditadas do mesmo produto, plano e experimento como
+`GENERATED_ILLUSTRATION`, nunca como prova de personalização. `EDITORIAL_CARD_V1` identifica
+essa natureza antes do CTA, mantém o limite factual e vincula a prova funcional aprovada
+separadamente (`LINKED_FUNCTIONAL_PROOF`). Têmis recebe origem ilustrativa e funcional,
+com hashes. Imagem ilustrativa não herda aprovação, não muda a oferta e não autoriza gasto.
+O template anterior permanece disponível para capturas funcionais visualmente adequadas.
+
+Psique classifica a fonte e avalia acabamento, conexão com o desejo e clareza do produto em
+`STATIC_CREATIVE_QUALITY_V1`. Fixture técnica ou dimensão abaixo de três impede aprovação.
+Estilo ilustrado intencional não é defeito por si só. Não exigir pessoa/fotografia por regra.
+O feedback atual do operador orienta a revisão integral, sem estreitar o julgamento ao ajuste
+anterior. Aprendizado e matriz: `docs/homologacao/alcyone-qualidade-visual-v1.md`.

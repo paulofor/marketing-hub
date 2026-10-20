@@ -86,6 +86,7 @@ class CreativeReviewImagesTest {
     byte[] finalPng = png(1080, 1350);
     byte[] sourcePng = png(400, 500);
     byte[] currentPng = png(480, 720);
+    byte[] illustrationPng = png(1254, 1254);
     var input = mapper.createObjectNode();
     input.put("sourceTaskId", 910403L).put("prototypeVersion", "sandbox-v12");
     input.set(
@@ -119,6 +120,7 @@ class CreativeReviewImagesTest {
           byte[] response;
           if (!path.endsWith("/content"))
             response = ("[" + input + "]").getBytes(StandardCharsets.UTF_8);
+          else if (path.contains("/illustrations/")) response = illustrationPng;
           else if (path.contains("/910395/")) response = corrupt.get() ? finalPng : sourcePng;
           else if (path.contains("/910398/")) response = currentPng;
           else response = finalPng;
@@ -161,6 +163,23 @@ class CreativeReviewImagesTest {
                 sha(sourcePng),
                 "2026-10-19T20:00:00Z");
       }
+      proof.put("templateVersion", "EDITORIAL_CARD_V1");
+      var illustration =
+          proof
+              .putObject("illustration")
+              .put("jobId", "img-sandbox")
+              .put("sha256", sha(illustrationPng))
+              .put("role", "GENERATED_ILLUSTRATION");
+      illustration.putObject("crop").put("x", 0).put("y", 0).put("width", 1080).put("height", 1000);
+      try (var files = CreativeReviewImages.load(backend, new HashMap<>(task))) {
+        assertThat(
+                files.attach(List.of("codex", "exec")).stream().filter("--image"::equals).count())
+            .isEqualTo(5);
+      }
+      illustration.put("sha256", "0".repeat(64));
+      assertThatThrownBy(() -> CreativeReviewImages.load(backend, new HashMap<>(task)))
+          .hasMessageContaining("ilustração");
+      illustration.put("sha256", sha(illustrationPng));
       corrupt.set(true);
       assertThatThrownBy(() -> CreativeReviewImages.load(backend, new HashMap<>(task)))
           .isInstanceOf(java.io.IOException.class)

@@ -24,8 +24,9 @@ class CreativeVisualEvidenceServiceTest {
   private final CommunicationMaterializationContextProvider context =
       mock(CommunicationMaterializationContextProvider.class);
   private final ObjectMapper json = new ObjectMapper();
+  private final CreativeIllustrationSources illustrations = mock(CreativeIllustrationSources.class);
   private final CreativeVisualEvidenceService service =
-      new CreativeVisualEvidenceService(tasks, images, storage, context, json);
+      new CreativeVisualEvidenceService(tasks, images, storage, context, json, illustrations);
   private AgentTask task;
 
   /** Configura origem e peça sintéticas em uma referência exclusiva de homologação. */
@@ -66,6 +67,43 @@ class CreativeVisualEvidenceServiceTest {
                     "sandbox-v12",
                     "approvedUpstreamArtifacts",
                     List.of(Map.of("taskId", 910395L, "result", proof)))));
+  }
+
+  /** Permite apoio ilustrativo da tarefa reservada sem tornar o template um passe comercial. */
+  @Test
+  void routesIllustrationOnlyForClaimedTaskAndPrivateContext() throws Exception {
+    var metadata =
+        new CreativeIllustrationSources.Illustration(
+            "img-sandbox", "d".repeat(64), 800, 500, "GENERATED_ILLUSTRATION", false);
+    when(illustrations.list(any(), eq(task.getSourceReference()))).thenReturn(List.of(metadata));
+    when(illustrations.read(any(), eq(task.getSourceReference()), eq("img-sandbox")))
+        .thenReturn(new CreativeIllustrationSources.Content(metadata, new byte[] {1, 2, 3}));
+    var mvc =
+        MockMvcBuilders.standaloneSetup(new InternalCreativeVisualInputController(service)).build();
+    String base =
+        "/api/internal/agent-tasks/communication-director/stage-executions/910403/visual-inputs/illustrations";
+    mvc.perform(get(base)).andExpect(status().isOk());
+    mvc.perform(get(base + "/img-sandbox/content")).andExpect(status().isOk());
+    mvc.perform(get(base + "/img-foreign/content")).andExpect(status().isConflict());
+    var output = json.readTree(result());
+    var render =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            output.path("functionalOutput").path("renderedAssets").get(0);
+    render
+        .put("templateVersion", "EDITORIAL_CARD_V1")
+        .put("proofPresentation", "LINKED_FUNCTIONAL_PROOF");
+    assertThatThrownBy(() -> service.validateCompletion(task, output.toString()))
+        .hasMessageContaining("preparação privada");
+    var privateContext = new HashMap<>(context.resolve(task.getSourceReference()).orElseThrow());
+    privateContext.put("mode", "PRODUCT_PRIVATE");
+    when(context.resolve(task.getSourceReference())).thenReturn(Optional.of(privateContext));
+    render.set("illustration", json.valueToTree(metadata));
+    when(illustrations.validate(any(), eq(task.getSourceReference()), any())).thenReturn(metadata);
+    service.validateCompletion(task, output.toString());
+    verify(illustrations)
+        .validate(any(), eq(task.getSourceReference()), eq(render.path("illustration")));
+    task.setStatus("COMPLETED");
+    mvc.perform(get(base)).andExpect(status().isConflict());
   }
 
   /** Aceita somente PNG final com hash, tarefa e versão da origem aprovada. */

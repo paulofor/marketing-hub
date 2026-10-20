@@ -451,7 +451,8 @@
         "required": [
           "artifactId",
           "sha256",
-          "assessment"
+          "assessment",
+          "staticQuality"
         ],
         "properties": {
           "artifactId": {
@@ -465,6 +466,48 @@
           "assessment": {
             "type": "string",
             "minLength": 1
+          },
+          "staticQuality": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceKind",
+              "craftsmanship",
+              "desireConnection",
+              "productClarity",
+              "assessment"
+            ],
+            "properties": {
+              "sourceKind": {
+                "type": "string",
+                "enum": [
+                  "TECHNICAL_PLACEHOLDER",
+                  "FUNCTIONAL_CAPTURE",
+                  "EDITORIAL_ILLUSTRATION",
+                  "PRODUCT_PHOTOGRAPHY",
+                  "OTHER"
+                ]
+              },
+              "assessment": {
+                "type": "string",
+                "minLength": 1
+              },
+              "craftsmanship": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "desireConnection": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "productClarity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              }
+            }
           }
         }
       }

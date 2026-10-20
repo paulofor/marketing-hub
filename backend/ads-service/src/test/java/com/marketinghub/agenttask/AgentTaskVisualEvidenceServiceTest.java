@@ -530,7 +530,12 @@ class AgentTaskVisualEvidenceServiceTest {
     render.putObject("crop").put("x", 90).put("y", 1050).put("width", 999).put("height", 600);
     var completion =
         new CreativeVisualEvidenceService(
-            taskRepository, evidenceRepository, service, materialization, json);
+            taskRepository,
+            evidenceRepository,
+            service,
+            materialization,
+            json,
+            org.mockito.Mockito.mock(CreativeIllustrationSources.class));
     completion.validateCompletion(task, functional.toString());
     verify(targetContextProvider, never())
         .resolve(task.getSourceReference(), process.getProcessCode());

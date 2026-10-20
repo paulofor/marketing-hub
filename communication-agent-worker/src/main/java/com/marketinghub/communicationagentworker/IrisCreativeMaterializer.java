@@ -82,6 +82,31 @@ public class IrisCreativeMaterializer {
             bytes.length);
       }
       task.put("approvedVisualInputs", prepared.inputs().stream().map(Input::metadata).toList());
+      var illustrationMetadata = new ArrayList<JsonNode>();
+      JsonNode illustrations =
+          backend.get().uri(endpoint + "/illustrations").retrieve().body(JsonNode.class);
+      if (illustrations == null || !illustrations.isArray())
+        throw new IllegalStateException("Catálogo ilustrativo inválido.");
+      for (JsonNode item : illustrations) {
+        String job = item.path("jobId").asText();
+        if (!job.matches("img-[a-zA-Z0-9-]+")
+            || !"GENERATED_ILLUSTRATION".equals(item.path("role").asText())
+            || item.path("productProof").asBoolean(true))
+          throw new IllegalStateException("Papel ilustrativo inválido.");
+        byte[] bytes =
+            backend
+                .get()
+                .uri(endpoint + "/illustrations/" + job + "/content")
+                .retrieve()
+                .body(byte[].class);
+        if (bytes == null || !sha(bytes).equals(item.path("sha256").asText()))
+          throw new IllegalStateException("Hash ilustrativo divergente.");
+        Path file = directory.resolve(job + ".png");
+        Files.write(file, bytes);
+        prepared.inputs().add(new Input(item, file));
+        illustrationMetadata.add(item);
+      }
+      task.put("approvedIllustrationInputs", List.copyOf(illustrationMetadata));
       return prepared;
     } catch (Exception ex) {
       log.error("Falha ao preparar fonte criativa. taskId={}", taskId, ex);
@@ -187,7 +212,36 @@ public class IrisCreativeMaterializer {
                   () ->
                       new IllegalArgumentException(
                           "O briefing não identifica a prova visual aprovada."));
-      byte[] bytes = renderer.render(spec, Files.readAllBytes(source.path()), privateValidation);
+      JsonNode illustration = spec.path("illustration");
+      byte[] illustrationBytes = null;
+      if ("EDITORIAL_CARD_V1".equals(spec.path("templateVersion").asText())) {
+        EditorialCardRenderer.validateLinkedProof(
+            spec.path("crop"), Files.readAllBytes(source.path()));
+        if (!privateValidation)
+          throw new IllegalArgumentException(
+              "Composição editorial disponível somente para preparação privada.");
+        Input selected =
+            prepared.inputs().stream()
+                .filter(
+                    i ->
+                        "GENERATED_ILLUSTRATION".equals(i.metadata().path("role").asText())
+                            && i.metadata()
+                                .path("jobId")
+                                .asText()
+                                .equals(illustration.path("jobId").asText())
+                            && i.metadata()
+                                .path("sha256")
+                                .asText()
+                                .equals(illustration.path("sha256").asText()))
+                .findFirst()
+                .orElseThrow(
+                    () -> new IllegalArgumentException("Ilustração não recebida pelo executor."));
+        illustrationBytes = Files.readAllBytes(selected.path());
+      }
+      byte[] bytes =
+          illustrationBytes == null
+              ? renderer.render(spec, Files.readAllBytes(source.path()), privateValidation)
+              : EditorialCardRenderer.render(spec, illustrationBytes);
       rejectUnchangedCorrection(context, sha(bytes), taskId);
       Path file = prepared.directory().resolve("creative-" + (++index) + ".png");
       Files.write(file, bytes);
@@ -230,7 +284,11 @@ public class IrisCreativeMaterializer {
       rendered.put("sha256", saved.path("sha256").asText());
       rendered.put("width", 1080);
       rendered.put("height", 1350);
-      rendered.put("templateVersion", "PROOF_CARD_V1");
+      rendered.put("templateVersion", spec.path("templateVersion").asText());
+      if (illustrationBytes != null) {
+        rendered.set("illustration", illustration);
+        rendered.put("proofPresentation", "LINKED_FUNCTIONAL_PROOF");
+      }
       rendered.put("sourceTaskId", source.metadata().path("sourceTaskId").asLong());
       rendered.put("sourceArtifactId", spec.path("sourceArtifactId").asLong());
       rendered.put("sourceSha256", spec.path("sourceSha256").asText());

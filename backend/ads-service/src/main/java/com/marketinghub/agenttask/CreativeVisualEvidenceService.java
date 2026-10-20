@@ -29,6 +29,7 @@ public class CreativeVisualEvidenceService {
   private final AgentTaskVisualEvidenceService storage;
   private final CommunicationMaterializationContextProvider context;
   private final ObjectMapper json;
+  private final CreativeIllustrationSources illustrations;
 
   /** Entrega somente entradas aprovadas do mesmo contexto à tarefa reservada do agente. */
   @Transactional(readOnly = true)
@@ -38,6 +39,41 @@ public class CreativeVisualEvidenceService {
     var producer = latestProducer(task);
     require("COMPLETED".equals(producer.status()), "A produção criativa ainda não foi concluída.");
     return validatedRenders(producer.id(), task, result(producer.resultJson()));
+  }
+
+  /** Lista apoio ilustrativo separado das provas, restrito ao escopo e à tarefa reservada. */
+  @Transactional(readOnly = true)
+  public List<CreativeIllustrationSources.Illustration> illustrations(
+      String agentKey, Long taskId) {
+    AgentTask task = claimed(agentKey, taskId);
+    approvedSources(task);
+    JsonNode input = illustrationContext(task);
+    if ("nonAudiovisual".equals(task.getProcessActivityId()))
+      return illustrations.list(input, task.getSourceReference());
+    return inputs(agentKey, taskId).stream()
+        .filter(
+            value ->
+                value.creativeProof() != null && value.creativeProof().illustration().isObject())
+        .map(
+            value ->
+                illustrations.validate(
+                    input, task.getSourceReference(), value.creativeProof().illustration()))
+        .toList();
+  }
+
+  /** Entrega somente uma ilustração permitida; não aceita URLs externas nem outra identidade. */
+  @Transactional(readOnly = true)
+  public byte[] illustrationContent(String agentKey, Long taskId, String jobId) {
+    require(
+        illustrations(agentKey, taskId).stream().anyMatch(item -> item.jobId().equals(jobId)),
+        "A ilustração não pertence às entradas desta tarefa.");
+    AgentTask task = claimed(agentKey, taskId);
+    return illustrations.read(illustrationContext(task), task.getSourceReference(), jobId).bytes();
+  }
+
+  /** Obtém contexto vigente sem inferir identidade pelo nome do produto. */
+  private JsonNode illustrationContext(AgentTask task) {
+    return json.valueToTree(context.resolve(task.getSourceReference()).orElseThrow());
   }
 
   /** Confere a entrada autorizada novamente antes de entregar seus bytes privados ao executor. */
@@ -98,9 +134,23 @@ public class CreativeVisualEvidenceService {
       require(
           "CREATIVE_RENDER".equals(stored.getEvidenceType())
               && stored.getSha256().equals(render.path("sha256").asText())
-              && "PROOF_CARD_V1".equals(render.path("templateVersion").asText())
+              && Set.of("PROOF_CARD_V1", "EDITORIAL_CARD_V1")
+                  .contains(render.path("templateVersion").asText())
               && render.path("crop").isObject(),
           "A identidade ou a derivação da imagem está incompleta.");
+      if ("EDITORIAL_CARD_V1".equals(render.path("templateVersion").asText())) {
+        require(
+            Set.of("LEARNING_CYCLE_PRIVATE", "PRODUCT_PRIVATE", "INITIAL_EXPERIMENT_PRIVATE")
+                .contains(illustrationContext(task).path("mode").asText()),
+            "Composição editorial disponível somente na preparação privada.");
+        require(
+            "LINKED_FUNCTIONAL_PROOF".equals(render.path("proofPresentation").asText()),
+            "A ilustração não pode substituir a prova funcional.");
+        illustrations.validate(
+            illustrationContext(task), task.getSourceReference(), render.path("illustration"));
+      } else
+        require(
+            !render.path("illustration").isObject(), "O template anterior não suporta ilustração.");
       output.add(
           new VisualInput(
               producerId,
@@ -318,7 +368,8 @@ public class CreativeVisualEvidenceService {
         approved.scope().reauthorized() ? approved.scope().productId() : null,
         approved.scope().publicUrl(),
         approved.authorization(),
-        destination);
+        destination,
+        render.path("illustration"));
   }
 
   /** Autoriza bytes somente da peça, da fonte exata e das capturas declaradas ao mesmo revisor. */
@@ -438,7 +489,8 @@ public class CreativeVisualEvidenceService {
       Long productId,
       String publicUrl,
       JsonNode visualProofAuthorization,
-      DestinationEvidence currentDestination) {}
+      DestinationEvidence currentDestination,
+      JsonNode illustration) {}
 
   /**
    * Responsabilidade: transportar o relatório determinístico e suas capturas funcionais datadas.

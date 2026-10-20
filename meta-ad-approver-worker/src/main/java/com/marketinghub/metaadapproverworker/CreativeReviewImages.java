@@ -104,6 +104,35 @@ final class CreativeReviewImages implements AutoCloseable {
     var proof = input.path("creativeProof");
     check.put("sourceVerificationAvailable", proof.isObject());
     if (!proof.isObject()) return;
+    var illustration = proof.path("illustration");
+    if ("EDITORIAL_CARD_V1".equals(proof.path("templateVersion").asText())) {
+      String job = illustration.path("jobId").asText();
+      if (!job.matches("img-[a-zA-Z0-9-]+")
+          || !"GENERATED_ILLUSTRATION".equals(illustration.path("role").asText()))
+        throw new IllegalStateException("Origem ilustrativa incompleta.");
+      byte[] illustrationBytes =
+          backend
+              .get()
+              .uri(endpoint + "/illustrations/" + job + "/content")
+              .retrieve()
+              .body(byte[].class);
+      if (illustrationBytes == null
+          || !sha(illustrationBytes).equals(illustration.path("sha256").asText()))
+        throw new IllegalStateException("Hash da ilustração divergente.");
+      int index = attachPixels("illustration-" + job, illustrationBytes);
+      check.put(
+          "illustration",
+          Map.of(
+              "metadata",
+              illustration,
+              "attachmentIndex",
+              index,
+              "hashVerified",
+              true,
+              "productProof",
+              false));
+      check.put("proofPresentation", "LINKED_FUNCTIONAL_PROOF_NOT_RENDERED");
+    }
     var source = proof.path("source");
     requireSameVersion(input, source);
     byte[] bytes = verifiedPixels(backend, endpoint, taskId, source);

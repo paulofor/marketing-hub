@@ -10417,3 +10417,17 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
   confundir recálculo de hash com navegação nova. Captura atual é feita pelo fluxo existente;
   revisão independente, seleção humana e limites comerciais permanecem obrigatórios.
   Matriz: `docs/homologacao/alcyone-creative-functional-proof-v1.md`.
+
+## LOOP-IRIS-FIXTURE-APROVADA-COMO-QUALIDADE — 20/10/2026
+
+- **Evidência:** Alcyone 762/1042 usava um desenho geométrico do harness. Psique 763
+  reconheceu baixo encantamento, mas aprovou pela coerência privada; o usuário rejeitou.
+- **Causa:** fonte de prova técnica obrigatória confundida com acabamento persuasivo,
+  sem critério separado de qualidade na aprovação de imagem estática.
+- **Correção:** ilustrações já auditadas podem compor a apresentação privada, mantendo
+  prova funcional vinculada e rotulagem; Psique exige acabamento, conexão e clareza.
+- **Prevenção:** duas identidades, isolamento de contexto/hash, crop inválido, fixture
+  e notas insuficientes recusados; captura antes válida, ADJUST e replay preservados.
+- **Limites:** ilustração não comprova personalização ou vendas, nem recebe aprovação
+  implícita. Novos pixels passam por revisores e seleção humana; sem novo orçamento.
+  Matriz e evidências: `docs/homologacao/alcyone-qualidade-visual-v1.md`.

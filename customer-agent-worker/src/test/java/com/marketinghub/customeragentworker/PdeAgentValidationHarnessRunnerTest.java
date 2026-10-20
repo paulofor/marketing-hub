@@ -163,6 +163,7 @@ class PdeAgentValidationHarnessRunnerTest {
     "10,/vega-private",
     "11,/vega-private",
     "12,/vega-private",
+    "14,/agent-validation",
     "20,/vega-private",
     "100,/vega-private",
     "12,/agent-validation"
@@ -185,6 +186,7 @@ class PdeAgentValidationHarnessRunnerTest {
             .replace(
                 "\"checks\":{",
                 "\"checks\":{\"videoIdentity\":true,\"videoPlayback\":true,\"videoOptional\":true,\"videoFailureRecovery\":true,"));
+    if (Integer.parseInt(version) >= 14) withTerminalMatrix(vega);
     var target = new HashMap<String, Object>();
     target.put("productId", 4L);
     target.put("experimentId", 92L);
@@ -207,6 +209,32 @@ class PdeAgentValidationHarnessRunnerTest {
             null,
             temporaryDirectory.resolve("vega"));
     assertThat(execution.result().path("decision").asText()).isEqualTo("APPROVED");
+    if (Integer.parseInt(version) >= 14) {
+      String validScript = Files.readString(vega);
+      for (String invalidScript :
+          java.util.List.of(
+              validScript.replace("\"terminalResultEvidence\"", "\"unrecognizedEvidence\""),
+              validScript.replace("\"sessionState\":\"FINISHED\"", "\"sessionState\":\"ACTIVE\""),
+              validScript.replace(
+                  "\"savedResultConfirmed\":true", "\"savedResultConfirmed\":false"))) {
+        Files.writeString(vega, invalidScript);
+        assertThatThrownBy(
+                () ->
+                    runner.run(
+                        Map.of(
+                            "taskId",
+                            901L,
+                            "sourceReference",
+                            "experiment:92",
+                            "taskTarget",
+                            target),
+                        "TECHNICAL",
+                        null,
+                        temporaryDirectory.resolve("invalid-terminal")))
+            .hasMessageContaining("encerramento");
+      }
+      Files.writeString(vega, validScript);
+    }
     assertThat(json.readTree(execution.serializedInput()).path("cycleId").asLong()).isEqualTo(2L);
     assertThat(
             json.readTree(execution.serializedInput())
@@ -570,5 +598,61 @@ class PdeAgentValidationHarnessRunnerTest {
             .formatted(approved ? "APPROVED" : "BLOCKED", humanEvidenceClaimed, approved));
     script.toFile().setExecutable(true);
     return script;
+  }
+
+  /** Acrescenta provas terminais independentes à fixture de uma versão executável atual. */
+  private void withTerminalMatrix(Path scriptPath) throws Exception {
+    String script = Files.readString(scriptPath);
+    int start = script.indexOf("{\n", script.indexOf("<<JSON"));
+    int end = script.lastIndexOf("\nJSON");
+    var proof =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(script.substring(start, end));
+    var cases =
+        proof
+            .putObject("terminalResultEvidence")
+            .put("contractVersion", "PDE_TERMINAL_RESULT_MATRIX_V1")
+            .putArray("cases");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) proof.path("checks"))
+        .put("terminalResultCoverage", true);
+    var captures = (com.fasterxml.jackson.databind.node.ArrayNode) proof.path("artifacts");
+    for (String device : java.util.List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+      for (String state : java.util.List.of("COMPLETED", "BLOCKED", "FAILED", "NOT_STARTED")) {
+        boolean hasResult = state.equals("COMPLETED");
+        String key;
+        if (hasResult) key = "ADHERENT-" + device + "-FULL_PAGE";
+        else if (state.equals("BLOCKED") && device.equals("PIXEL_7"))
+          key = "SAFETY-PIXEL_7-FULL_PAGE";
+        else {
+          key = "TERMINAL-" + state + "-" + device;
+          var capture = (com.fasterxml.jackson.databind.node.ObjectNode) captures.get(0).deepCopy();
+          capture.put("evidenceKey", key).put("deviceProfile", device);
+          captures.add(capture);
+        }
+        var item =
+            cases
+                .addObject()
+                .put("deviceProfile", device)
+                .put("generationStatus", state)
+                .put("persistedGenerationStatus", state)
+                .put("sessionState", "FINISHED")
+                .put("reloadedSessionState", "FINISHED")
+                .put("resultPresent", hasResult)
+                .put("renderedResultPresent", hasResult)
+                .put("reloadedResultPresent", hasResult)
+                .put("prototypeVersion", proof.path("prototypeVersion").asText())
+                .put("evidenceId", key)
+                .put("status", "PASS")
+                .put("messageMatchesResult", true)
+                .put("terminalMessage", "Encerramento sintético observado " + state)
+                .put("reloadedMessage", "Encerramento sintético observado " + state);
+        if (hasResult) item.put("savedResultConfirmed", true);
+        else item.putNull("savedResultConfirmed");
+        item.putArray("screenshotEvidenceKeys").add(key);
+      }
+    }
+    Files.writeString(
+        scriptPath,
+        script.substring(0, start) + json.writeValueAsString(proof) + script.substring(end));
   }
 }

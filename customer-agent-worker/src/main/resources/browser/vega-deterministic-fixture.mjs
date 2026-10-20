@@ -20,11 +20,12 @@ export function fixtureResult(job) {
 }
 
 // Inicia pela fila oficial e conclui apenas a execução correlacionada ao cenário desta sessão.
-export async function completeVegaFixture(api, input, session, executionId) {
+export async function completeVegaFixture(api, input, session, executionId, { fail = false } = {}) {
   const path = '/internal/adjustment/stage-executions';
   const pending = await api(path + '/pending?mode=FIXTURE');
   const queued = pending.find(job => job.id === executionId && job.sessionId === session.id);
   assert.ok(queued, 'A fixture precisa partir da pendência oficial da própria sessão');
+  assert.ok(['AGENT_VALIDATION', 'QA_INTERNAL'].includes(queued.context.origin));
   assert.equal(queued.context.cycleId, input.cycleId);
   assert.equal(queued.context.productId, input.productId);
   assert.equal(queued.context.experimentId, Number(input.sourceReference.split(':')[1]));
@@ -33,7 +34,12 @@ export async function completeVegaFixture(api, input, session, executionId) {
   assert.equal(job.status, 'RUNNING');
   const request = {provider: 'DETERMINISTIC_FIXTURE', fixtureVersion: fixtureModel, context: job.context};
   await api(`${path}/${executionId}/request`, {request, model: fixtureModel});
-  const result = fixtureResult(job);
+  const result = fail ? {
+    status: 'FAILED', card: null,
+    rawResponse: {fixtureVersion: fixtureModel, synthetic: true, simulatedFailure: true},
+    model: fixtureModel, inputTokens: 0, outputTokens: 0, costUsd: 0,
+    error: 'Falha sintética da homologação: nenhum provedor foi chamado.',
+  } : fixtureResult(job);
   const completed = await api(`${path}/${executionId}/result`, result);
   assert.equal(completed.status, result.status);
   assert.equal(completed.costUsd, 0);

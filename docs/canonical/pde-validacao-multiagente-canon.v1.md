@@ -430,6 +430,14 @@ falha mais nova nem uma execução ainda pendente.
 
 ### Suplemento de prova sem mudança do produto
 
+Correção confirmada em 20/10/2026, Vega #780: declarar consistência terminal exige encerrar
+realmente a sessão. Na família executável Vega v14 e posteriores, o harness entrega
+`PDE_TERMINAL_RESULT_MATRIX_V1`: COMPLETED, BLOCKED, FAILED e NOT_STARTED nos três dispositivos,
+com estado persistido, cartão presente/ausente, salvamento quando aplicável, mensagem literal,
+recarga e captura própria. O executor bloqueia cobertura ausente ou incoerente antes de
+encaminhar parecer pago. Os cinco percursos históricos não são reclassificados retroativamente.
+Outros produtos podem reutilizar a mesma verificação com seus contratos de estados e mensagens.
+
 Uma lacuna de cobertura não exige mudar a versão do produto quando implementação, entradas,
 saídas e limites permanecem iguais. O suplemento deve vir de testes executados, identificar
 produto/versão, fonte, origem e hash, e declarar cada critério com resultado rastreável.

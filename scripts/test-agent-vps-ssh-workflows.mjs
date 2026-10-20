@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,4 +62,45 @@ for (const script of ["test-agent-vps-ssh-workflows.mjs", "test-configure-vps-ss
   assert.ok(ci.split(`scripts/${script}`).length >= 4, `CI deve observar push/PR e executar ${script}`);
 }
 assert.ok(ci.split("scripts/fixtures/vps-ssh/**").length >= 3, "CI deve acompanhar alterações na fixture SSH.");
+
+// Exercita o comando real de cópia e a interferência de outro publicador com chaves sintéticas.
+const psique = readFileSync(path.join(workflows, "customer-agent-worker-ci.yml"), "utf8");
+const iris = readFileSync(path.join(workflows, "meta-ad-approver-worker-ci.yml"), "utf8");
+const sourceKey = "/root/infra/psique-openai-token/openai_api_key";
+const runtimeKey = "/opt/growth-operator/agents/customer-agent/secrets/openai_api_key";
+assert.ok(psique.includes(`test -f ${sourceKey}`), "Psique exige sua fonte própria antes da cópia.");
+assert.ok(!iris.includes(sourceKey), "A publicação de Íris não pode reescrever a fonte de Psique.");
+const copyMatch = psique.match(/&& test -f [^\n]+\\\n\s*&& test -s [^\n]+\\\n\s*&& install [^\n]+/);
+assert.ok(copyMatch, "O pipeline deve validar arquivo e conteúdo antes de instalar a chave de Psique.");
+const fixture = mkdtempSync(path.join(tmpdir(), "psique-credential-"));
+try {
+  const own = path.join(fixture, "psique-source");
+  const shared = path.join(fixture, "iris-source");
+  const installed = path.join(fixture, "runtime-key");
+  const synthetic = "sk-local-only-psique-fixture";
+  writeFileSync(own, synthetic);
+  writeFileSync(shared, "sk-local-only-old-iris-fixture");
+  const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+  // O runner não é root; a propriedade permanece validada no contrato, sem chown na fixture.
+  assert.ok(copyMatch[0].includes("-o 10001 -g 10001 -m 0400"));
+  const command = copyMatch[0].replace(/^&& /, "").replace(/\\\n\s*/g, " ")
+    .replace(/\s*\\$/, "").replace("-o 10001 -g 10001 ", "")
+    .replaceAll(sourceKey, quote(own)).replaceAll(runtimeKey, quote(installed));
+  const runCopy = () => spawnSync("bash", ["-euc", command], { encoding: "utf8" });
+  assert.equal(runCopy().status, 0);
+  assert.equal(readFileSync(installed, "utf8"), synthetic);
+  assert.equal(statSync(installed).mode & 0o777, 0o400);
+  writeFileSync(shared, "sk-local-only-rotated-iris-fixture");
+  assert.equal(runCopy().status, 0);
+  assert.equal(readFileSync(installed, "utf8"), synthetic, "Outro agente não muda a credencial de Psique.");
+  writeFileSync(own, "");
+  assert.notEqual(runCopy().status, 0);
+  assert.equal(readFileSync(installed, "utf8"), synthetic, "Fonte vazia preserva a chave instalada.");
+  rmSync(own);
+  assert.notEqual(runCopy().status, 0);
+  assert.equal(readFileSync(installed, "utf8"), synthetic, "Fonte ausente não recebe fallback de outro agente.");
+} finally {
+  rmSync(fixture, { recursive: true, force: true });
+}
 console.log("Nove publicadores: preflight, fallbacks, SSH/SCP/rsync e limpeza sem autenticação protegidos.");
+console.log("Psique: fonte isolada, rotação de outro agente e preservação da chave em falhas validadas.");

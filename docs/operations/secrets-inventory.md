@@ -115,8 +115,11 @@ imprimir seus valores ou elevar o usuário do executor. A validação final usa 
 ## Psique — ferramenta auditiva (15/10/2026)
 
 `customer-agent-worker` em `163.245.202.80` usa `OPENAI_API_KEY_FILE=/run/secrets/psique_openai_api_key`.
-O pipeline versionado copia o arquivo já existente `/root/infra/openai-token/openai_api_key`
+O pipeline versionado copia a fonte exclusiva `/root/infra/psique-openai-token/openai_api_key`
 para `/opt/growth-operator/agents/customer-agent/secrets/openai_api_key`, UID/GID 10001, modo 0400.
+Essa fonte é provisionada pelo operador autorizado em diretório protegido e não recebe fallback
+do arquivo compartilhado `/root/infra/openai-token/openai_api_key`, que o publicador de Íris pode
+substituir com seu próprio secret. A rotação de Íris não pode trocar a credencial de escuta.
 Compose monta somente esse arquivo em leitura. Preflight exige origem não vazia; nenhum valor
 é impresso ou incluído em imagem. Ausência bloqueia antes de reservar/consumir a escuta, sem
 interferir em tarefas sem vídeo. A chave local de testes é sintética e o provider é localhost.

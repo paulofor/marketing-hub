@@ -45,3 +45,21 @@ pelo PR e preserva o teto de US$ 12, mesmo se ele não cobrir as revisões atuai
 
 Nenhuma chamada de provedor ou venda foi simulada como resultado comercial. O aceite local
 comprova a atualização do limite; a revisão real ainda depende de custo conhecido e saldo.
+
+## Fonte exclusiva da credencial de escuta
+
+A conferência operacional encontrou HTTP 401 na chave instalada de Psique e HTTP 200 na
+fonte operacional já atualizada do Worker IA. O pipeline de Psique copiava a origem
+`/root/infra/openai-token/openai_api_key`, que o pipeline de Íris também substitui a cada
+publicação. Uma cópia manual dessa origem seria perdida em uma próxima publicação.
+
+Foram comparadas a atualização do secret global, a sincronização repetida do arquivo comum
+e uma fonte exclusiva de Psique. A última preserva o escopo e o mount privado já existente,
+sem alterar credenciais dos demais agentes. A fonte passa a
+`/root/infra/psique-openai-token/openai_api_key`; ausência ou conteúdo vazio impede a cópia,
+preservando o arquivo instalado. A aplicação continua sendo feita pelo pipeline versionado.
+
+O teste existente dos publicadores executa o comando real com chaves sintéticas: fonte
+própria válida, rotação da fonte de outro agente, fonte ausente e fonte vazia. A regressão
+reprovou o workflow anterior e protege o modo 0400 e a propriedade 10001 do contrato. Isso
+comprova isolamento de configuração, sem produzir escuta, aprovar vídeo ou comprovar vendas.

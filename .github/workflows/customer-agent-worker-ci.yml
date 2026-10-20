@@ -263,8 +263,9 @@ jobs:
           # shellcheck disable=SC2029
           ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_IP}" "\
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/customer-agent/codex-home /opt/growth-operator/agents/customer-agent/secrets \
-            && test -s /root/infra/openai-token/openai_api_key \
-            && install -o 10001 -g 10001 -m 0400 /root/infra/openai-token/openai_api_key /opt/growth-operator/agents/customer-agent/secrets/openai_api_key \
+            && test -f /root/infra/psique-openai-token/openai_api_key \
+            && test -s /root/infra/psique-openai-token/openai_api_key \
+            && install -o 10001 -g 10001 -m 0400 /root/infra/psique-openai-token/openai_api_key /opt/growth-operator/agents/customer-agent/secrets/openai_api_key \
             && \
             export BACKEND_URL=http://191.252.181.168 \
                    CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home \

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,10 +17,10 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/** Renova a credencial Meta pelo comando administrativo e persiste somente a validade informada. */
 @Service
 public class FacebookTokenRevalidationService {
   private static final Logger log = LoggerFactory.getLogger(FacebookTokenRevalidationService.class);
-  private static final long LONG_LIVED_TOKEN_VALIDITY_DAYS = 60L;
 
   private final RestTemplate restTemplate;
   private final FacebookAccountRepository repository;
@@ -27,6 +28,7 @@ public class FacebookTokenRevalidationService {
   private final String graphApiBaseUrl;
   private final String graphApiVersion;
 
+  /** Inicializa transporte, persistência e contrato de versão da Graph API. */
   public FacebookTokenRevalidationService(
       RestTemplateBuilder restTemplateBuilder,
       FacebookAccountRepository repository,
@@ -40,8 +42,11 @@ public class FacebookTokenRevalidationService {
     this.graphApiVersion = trimSlashes(graphApiVersion);
   }
 
+  /**
+   * Troca a credencial sem presumir validade e preserva a anterior quando a resposta é inválida.
+   */
   public RevalidationResult revalidate(FacebookAccount account) {
-    LocalDateTime attemptedAt = LocalDateTime.now();
+    LocalDateTime attemptedAt = LocalDateTime.now(ZoneOffset.UTC);
     String url = buildTokenExchangeUrl(account);
     log.info(
         "Requesting Facebook long-lived token via Graph API: accountId={}, endpoint={}/{}",
@@ -63,8 +68,12 @@ public class FacebookTokenRevalidationService {
             "Facebook returned an empty token while generating a new access token");
       }
 
+      if (response.expiresIn() == null || response.expiresIn() <= 0) {
+        throw new IllegalStateException(
+            "Meta não informou prazo de validade positivo; credencial anterior preservada");
+      }
       LocalDateTime renewedAt = attemptedAt;
-      LocalDateTime expiresAt = attemptedAt.plusDays(LONG_LIVED_TOKEN_VALIDITY_DAYS);
+      LocalDateTime expiresAt = attemptedAt.plusSeconds(response.expiresIn());
 
       account.setAccessToken(response.accessToken());
       account.setTokenExpiresAt(expiresAt);
@@ -81,12 +90,10 @@ public class FacebookTokenRevalidationService {
           account.getId(),
           expiresAt);
       log.debug(
-          "Facebook token generation updated credentials: accountId={}, renewedAt={},"
-              + " expiresInSeconds={}, configuredValidityDays={}",
+          "Facebook token generation updated credentials: accountId={}, renewedAt={}, expiresInSeconds={}",
           account.getId(),
           renewedAt,
-          response.expiresIn(),
-          LONG_LIVED_TOKEN_VALIDITY_DAYS);
+          response.expiresIn());
 
       return new RevalidationResult(
           FacebookTokenRenewalStatus.SUCCESS,
@@ -97,7 +104,8 @@ public class FacebookTokenRevalidationService {
           null);
     } catch (RestClientResponseException ex) {
       GraphErrorResponse error = parseGraphError(ex.getResponseBodyAsString());
-      String message = buildFailureMessage(ex, error);
+      String message = redactCredential(buildFailureMessage(ex, error), account);
+      RuntimeException safe = safeFailure(ex, message);
       if (error != null && error.error() != null) {
         GraphError graphError = error.error();
         log.error(
@@ -110,34 +118,52 @@ public class FacebookTokenRevalidationService {
             graphError.errorSubcode(),
             graphError.isTransient(),
             graphError.fbtraceId(),
-            graphError.message(),
-            ex);
+            redactCredential(graphError.message(), account),
+            safe);
       } else {
         log.error(
             "Facebook token generation failed: accountId={}, status={}, response={}",
             account.getId(),
             ex.getRawStatusCode(),
-            sanitizeBody(ex.getResponseBodyAsString()),
-            ex);
+            redactCredential(sanitizeBody(ex.getResponseBodyAsString()), account),
+            safe);
       }
       return registerFailure(account, attemptedAt, message);
     } catch (RestClientException ex) {
       log.error(
           "Facebook token generation failed: accountId={}, message={}",
           account.getId(),
-          ex.getMessage(),
-          ex);
-      return registerFailure(account, attemptedAt, ex.getMessage());
+          redactCredential(ex.getMessage(), account),
+          safeFailure(ex, redactCredential(ex.getMessage(), account)));
+      return registerFailure(account, attemptedAt, redactCredential(ex.getMessage(), account));
     } catch (RuntimeException ex) {
       log.error(
           "Facebook token generation failed: accountId={}, message={}",
           account.getId(),
-          ex.getMessage(),
-          ex);
-      return registerFailure(account, attemptedAt, ex.getMessage());
+          redactCredential(ex.getMessage(), account),
+          safeFailure(ex, redactCredential(ex.getMessage(), account)));
+      return registerFailure(account, attemptedAt, redactCredential(ex.getMessage(), account));
     }
   }
 
+  /** Remove as credenciais da conta de mensagens que podem conter a URL da requisição. */
+  private String redactCredential(String text, FacebookAccount account) {
+    if (text == null) return null;
+    for (String secret : new String[] {account.getAppSecret(), account.getAccessToken()}) {
+      if (StringUtils.hasText(secret)) text = text.replace(secret, "[OCULTO]");
+    }
+    return text;
+  }
+
+  /** Conserva a pilha original sem manter a exceção HTTP cujo texto inclui a URL com segredo. */
+  private RuntimeException safeFailure(RuntimeException failure, String message) {
+    IllegalStateException safe =
+        new IllegalStateException(failure.getClass().getSimpleName() + ": " + message);
+    safe.setStackTrace(failure.getStackTrace());
+    return safe;
+  }
+
+  /** Registra a falha sem desligar a automação nem substituir a credencial anterior. */
   private RevalidationResult registerFailure(
       FacebookAccount account, LocalDateTime attemptedAt, String errorMessage) {
     account.setTokenRenewalStatus(FacebookTokenRenewalStatus.FAILED.name());
@@ -148,6 +174,7 @@ public class FacebookTokenRevalidationService {
         FacebookTokenRenewalStatus.FAILED, null, null, null, attemptedAt, errorMessage);
   }
 
+  /** Resume o erro oficial preservando código, subcódigo e identificação da tentativa. */
   private String buildFailureMessage(RestClientResponseException ex, GraphErrorResponse error) {
     if (error != null && error.error() != null) {
       GraphError graphError = error.error();
@@ -183,6 +210,7 @@ public class FacebookTokenRevalidationService {
         "HTTP %d: %s", ex.getRawStatusCode(), sanitizeBody(ex.getResponseBodyAsString()));
   }
 
+  /** Lê o erro estruturado retornado pela Meta. */
   private GraphErrorResponse parseGraphError(String responseBody) {
     if (!StringUtils.hasText(responseBody)) {
       return null;
@@ -190,11 +218,12 @@ public class FacebookTokenRevalidationService {
     try {
       return objectMapper.readValue(responseBody, GraphErrorResponse.class);
     } catch (JsonProcessingException parsingException) {
-      log.debug("Unable to parse Graph API error response: {}", responseBody, parsingException);
+      log.debug("Não foi possível ler o erro estruturado da Meta; corpo omitido");
       return null;
     }
   }
 
+  /** Monta a troca no servidor, sem transportar o segredo para a interface. */
   private String buildTokenExchangeUrl(FacebookAccount account) {
     return UriComponentsBuilder.fromHttpUrl(graphApiBaseUrl)
         .pathSegment(graphApiVersion)
@@ -208,6 +237,7 @@ public class FacebookTokenRevalidationService {
         .toUriString();
   }
 
+  /** Oculta a maior parte de um identificador sensível nos logs. */
   private String maskForLogs(String value) {
     if (!StringUtils.hasText(value)) {
       return "<empty>";
@@ -219,6 +249,7 @@ public class FacebookTokenRevalidationService {
     return value.substring(0, 4) + "..." + value.substring(length - 4);
   }
 
+  /** Limita o corpo de diagnóstico quando não há erro estruturado. */
   private String sanitizeBody(String body) {
     if (!StringUtils.hasText(body)) {
       return "<empty>";
@@ -230,6 +261,7 @@ public class FacebookTokenRevalidationService {
     return trimmed;
   }
 
+  /** Normaliza a URL base da integração. */
   private String trimTrailingSlash(String value) {
     if (value == null || value.isBlank()) {
       return "https://graph.facebook.com";
@@ -237,6 +269,7 @@ public class FacebookTokenRevalidationService {
     return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
   }
 
+  /** Normaliza a versão da Graph API. */
   private String trimSlashes(String value) {
     if (value == null || value.isBlank()) {
       return "v23.0";

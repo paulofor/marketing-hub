@@ -44,12 +44,12 @@ expiração automática.
 2. Para cada conta elegível, o `FacebookTokenRenewalService` chama diretamente a
    Graph API através de `FacebookAdsService.renewLongLivedToken`. O worker envia
    o `appId`, o `appSecret` e o token atual (`fb_exchange_token`) para gerar um
-   novo token de 60 dias.
-3. Ao receber a resposta (`access_token` + `expires_in`), o worker atualiza seu
-   `FacebookAdsService` em memória quando o token pertence à conta atualmente
-   configurada e reporta o resultado ao backend via `POST
+   novo token quando a Meta permitir a troca. A validade vem de `expires_in`; não é presumida.
+3. Ao receber a resposta (`access_token` + `expires_in` positivo), o worker
+   reporta o resultado ao backend via `POST
    /api/accounts/facebook/{id}/token/renewal`. O backend persiste o novo token,
-   a data de expiração calculada e os horários da tentativa.
+   a data de expiração calculada em UTC e os horários da tentativa. Os consumidores
+   carregam o token no próximo ciclo; a renovação não troca o contexto de campanhas em curso.
 4. Em caso de falha (por exemplo, `(#190) OAuthException`), o worker registra o
    erro com status `FAILED` no mesmo endpoint `token/renewal`, mantendo o token
    anterior até que uma intervenção manual ou nova tentativa automática seja
@@ -67,7 +67,7 @@ expiração automática.
     `tokenRenewalStatus`, `tokenRenewalLastAttemptAt`, `tokenRenewedAt` e
     `tokenExpiresAt`, preservando o token mais recente ou a mensagem de erro.
 - **Sucesso** – Quando `status=SUCCESS`, o backend salva o novo `accessToken`,
-  atualiza `tokenExpiresAt` para 60 dias após a tentativa, bem como
+  atualiza `tokenExpiresAt` conforme o prazo positivo informado pela Meta, bem como
   `tokenLastRefreshedAt` e `tokenRenewedAt`, e limpa `tokenRenewalLastError`. O
   novo token passa a ser utilizado pelo frontend e por futuras execuções do
   worker.
@@ -89,3 +89,24 @@ expiração automática.
 - Revise também os novos campos opcionais (como `defaultLeadGenFormId`) ao
   atualizar tokens: eles não impactam a autenticação, mas garantem que campanhas
   de leads continuem direcionando corretamente os formulários.
+
+## Recuperação automática e validade real — 20/10/2026
+
+A renovação usa um agendador exclusivo e mantém o intervalo operacional existente.
+As outras rotinas continuam seriais. Todos os clientes WebClient gerenciados pelo
+Spring recebem timeout de conexão de 10 segundos e de inatividade de resposta de
+60 segundos, incluindo leitura do corpo. Uma nova passagem pode recuperar a consulta,
+sem manter o worker preso indefinidamente. Esses limites são propriedades do executor.
+
+Falha de persistência do callback é propagada: troca aceita pela Meta sem confirmação
+no backend não é anunciada como concluída. Resposta sem validade positiva não substitui
+a credencial anterior. O backend administrativo usa a mesma regra de `expires_in`.
+
+A [Meta](https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived/)
+exige token válido na troca. Renovação automática não recria consentimento de uma
+sessão já vencida ou revogada; nesse caso, há reconexão excepcional do titular. A flag
+de automação permanece ligada. Não usar token de outro aplicativo nem fabricar prazo.
+
+A investigação comprovou a fila bloqueada em `MetaAudienceBackendClient.listPending`
+desde 10/10, antes do vencimento da conta #1 em 19/10. A matriz local está em
+[meta-renovacao-automatica-v1.md](../homologacao/meta-renovacao-automatica-v1.md).

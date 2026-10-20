@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.LocalDateTime;
 import java.util.Collections;
 
+/** Confirma no backend os resultados de renovação sem expor credenciais nos logs. */
 @Component
 public class FacebookTokenRenewalClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookTokenRenewalClient.class);
@@ -21,6 +22,7 @@ public class FacebookTokenRenewalClient {
     private final String backendBaseUrl;
     private final String apiPrefix;
 
+    /** Configura o transporte para o callback oficial do backend. */
     public FacebookTokenRenewalClient(
         WebClient.Builder builder,
         @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
@@ -31,6 +33,7 @@ public class FacebookTokenRenewalClient {
         this.apiPrefix = apiPrefix;
     }
 
+    /** Persiste a nova credencial e exige confirmação antes de declarar sucesso. */
     public void reportSuccess(
         Long accountId,
         String accessToken,
@@ -49,6 +52,7 @@ public class FacebookTokenRenewalClient {
         postRenewal(accountId, payload);
     }
 
+    /** Preserva a falha e o horário da tentativa no backend. */
     public void reportFailure(Long accountId, LocalDateTime attemptedAt, String errorMessage) {
         FacebookTokenRenewalRequest payload = new FacebookTokenRenewalRequest(
             FacebookTokenRenewalStatus.FAILED,
@@ -61,6 +65,7 @@ public class FacebookTokenRenewalClient {
         postRenewal(accountId, payload);
     }
 
+    /** Envia o resultado sem registrar o corpo retornado, que pode conter credenciais. */
     private void postRenewal(Long accountId, FacebookTokenRenewalRequest payload) {
         String path = "/accounts/facebook/" + accountId + "/token/renewal";
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, path);
@@ -71,17 +76,17 @@ public class FacebookTokenRenewalClient {
             JsonLogFormatter.wrap(payload)
         );
         try {
-            String response = backendClient
+            backendClient
                 .post()
                 .uri(url)
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(String.class)
+                .toBodilessEntity()
                 .block();
             LOGGER.info(
-                "Backend acknowledged Facebook token renewal result: url<=={}, response={}",
-                url,
-                response
+                "Backend acknowledged Facebook token renewal result: accountId={}, status={}",
+                accountId,
+                payload.status()
             );
         } catch (WebClientResponseException | WebClientRequestException ex) {
             LOGGER.error(
@@ -91,14 +96,17 @@ public class FacebookTokenRenewalClient {
                 ex.getMessage(),
                 ex
             );
+            throw new IllegalStateException("Não foi possível persistir a renovação da conta " + accountId, ex);
         }
     }
 
+    /** Estados aceitos pelo callback canônico. */
     public enum FacebookTokenRenewalStatus {
         SUCCESS,
         FAILED
     }
 
+    /** Payload interno de renovação, nunca serializado sem máscara para logs. */
     public record FacebookTokenRenewalRequest(
         FacebookTokenRenewalStatus status,
         String accessToken,

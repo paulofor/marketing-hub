@@ -867,3 +867,14 @@ colocou o experimento em `RUNNING`; uma chamada legada de status feita logo
 depois retornou HTTP 400 por repetir a transição já concluída. O worker deixa o
 `POST /api/facebook-campaigns` como único comando de sucesso e o teste de
 contrato proíbe o `PATCH ...status=RUNNING` redundante.
+
+## Renovação automática independente — 20/10/2026
+
+A renovação Meta permanece automática em `facebookTokenRenewalTaskScheduler`, separada
+da fila serial operacional. Preserve `FacebookHttpClientConfiguration`: conexão e
+inatividade de resposta limitadas impedem públicos/métricas de bloquear indefinidamente
+as rotinas. Use `expires_in` positivo, em UTC, sem presumir sessenta dias. Callback
+sem confirmação não é sucesso persistido; não imprimir seus corpos com credenciais.
+A rotina não troca o token em memória de uma campanha em curso. Token expirado exige
+reconexão excepcional do titular conforme a Meta, mantendo renovação habilitada.
+Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.

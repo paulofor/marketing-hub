@@ -61,11 +61,42 @@ public class IrisLearningCycleContext {
    */
   @Transactional(readOnly = true)
   public Optional<Map<String, Object>> resolve(String reference) {
+    return resolve(reference, false);
+  }
+
+  /**
+   * Revalida a prova congelada durante autorização, publicação e medição, sem entregar um novo
+   * prompt a Íris nem dispensar gate, versão, revisões ou identidade do ciclo aberto.
+   */
+  @Transactional(readOnly = true)
+  public Optional<Map<String, Object>> resolveVisualProof(String reference) {
+    return resolve(reference, true)
+        .map(
+            input -> {
+              var result = new LinkedHashMap<String, Object>();
+              for (String key :
+                  List.of(
+                      "availability",
+                      "inputReadiness",
+                      "product",
+                      "prototypeVersion",
+                      "approvedDestination",
+                      "approvedVisualArtifacts",
+                      "visualProofAuthorization",
+                      "gateInstanceId")) {
+                if (input.containsKey(key)) result.put(key, input.get(key));
+              }
+              return java.util.Collections.unmodifiableMap(result);
+            });
+  }
+
+  /** Separa elegibilidade para criação de comunicação da leitura de sua prova já aprovada. */
+  private Optional<Map<String, Object>> resolve(String reference, boolean proofReadOnly) {
     if (reference == null || !reference.matches("experiment:[1-9][0-9]*")) return Optional.empty();
     var cycle = cycles.findByExperimentId(Long.parseLong(reference.substring(11))).orElse(null);
     if (cycle == null || cycle.isBaseline()) return Optional.empty();
     try {
-      return Optional.of(context(reference, cycle));
+      return Optional.of(context(reference, cycle, proofReadOnly));
     } catch (Exception ex) {
       log.error(
           "Entrada privada de Íris indisponível. sourceReference={} cycleId={} productId={}",
@@ -91,14 +122,18 @@ public class IrisLearningCycleContext {
   }
 
   /**
-   * Conserva estratégia, economia e gate durante toda a preparação privada, incluindo a revisão
-   * audiovisual e a autorização de leitura da prova da mesma versão, antes da liberação comercial.
+   * Conserva estratégia, economia e gate na preparação privada e revalida os mesmos contratos na
+   * leitura de provas das etapas comerciais, sem permitir nova materialização por essa leitura.
    */
-  private Map<String, Object> context(String reference, LearningSalesCycle cycle) throws Exception {
+  private Map<String, Object> context(
+      String reference, LearningSalesCycle cycle, boolean proofReadOnly) throws Exception {
     require(
         "OPEN".equals(cycle.getStatus())
             && (Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
-                || LearningCycleRules.VIDEO_STAGES.contains(cycle.getStage())),
+                || LearningCycleRules.VIDEO_STAGES.contains(cycle.getStage())
+                || proofReadOnly
+                    && Set.of("AUTHORIZATION", "PUBLICATION", "MEASUREMENT", "DECISION")
+                        .contains(cycle.getStage())),
         "Ciclo privado não aberto.");
     var experiment = experiments.findById(cycle.getExperimentId()).orElseThrow();
     var target = construction.resolve(reference, experiment, CONSTRUCTION).orElseThrow();

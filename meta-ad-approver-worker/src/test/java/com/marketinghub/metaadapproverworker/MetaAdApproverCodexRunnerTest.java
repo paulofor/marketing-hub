@@ -228,6 +228,25 @@ class MetaAdApproverCodexRunnerTest {
             "ligada a outra mídia mantém o gate fechado");
   }
 
+  /** Separa montagem de provas e voz nativa de geração com apresentador sem dispensar direitos. */
+  @Test
+  void requiresAuditedEditorialProofAndBuiltInVoice() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
+    assertThat(prompt)
+        .contains(
+            "DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF",
+            "CREATIVE_MEDIA_GOVERNANCE_V5",
+            "editorialMediaEvidence.blockers",
+            "APPROVED_PRODUCT_PROOF_WITH_BUILT_IN_TTS",
+            "productProofSources",
+            "deliverySources",
+            "audio.segments",
+            "audio.builtInVoice",
+            "audio.disclosureVerified",
+            "terceiros nem exclusividade",
+            "inspeção independente");
+  }
+
   /** Reconhece sucessão auditada e montagem local sem exigir provas externas inaplicáveis. */
   @Test
   void recognizesAuditedSuccessorAndVersionedMontage() throws Exception {

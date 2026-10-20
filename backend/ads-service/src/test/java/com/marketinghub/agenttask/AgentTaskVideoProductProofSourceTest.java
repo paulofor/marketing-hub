@@ -55,7 +55,7 @@ class AgentTaskVideoProductProofSourceTest {
                 Map.of("id", 91007L),
                 "approvedDestination",
                 Map.of("url", "https://fixture.invalid/kit")));
-    when(context.resolve(reference)).thenReturn(Optional.of(input));
+    when(context.resolveVisualProof(reference)).thenReturn(Optional.of(input));
     assertThat(source.isSupplementalAuthorizedFor(proof, reference, 91007L, "fixture-v3")).isTrue();
     assertThat(source.isSupplementalAuthorizedFor(proof, reference, 92018L, "fixture-v3"))
         .isFalse();

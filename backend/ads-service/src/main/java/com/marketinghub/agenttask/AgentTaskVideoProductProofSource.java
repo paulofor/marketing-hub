@@ -61,7 +61,7 @@ public class AgentTaskVideoProductProofSource implements VideoProductProofSource
         || productId == null
         || prototypeVersion == null) return false;
     return context
-        .resolve(targetSourceReference)
+        .resolveVisualProof(targetSourceReference)
         .<JsonNode>map(json::valueToTree)
         .filter(input -> "READY".equals(input.path("inputReadiness").asText()))
         .filter(
@@ -84,7 +84,7 @@ public class AgentTaskVideoProductProofSource implements VideoProductProofSource
         || !reference.matches("experiment:[1-9][0-9]*")
         || !(reference + "@video-proof-v1").equals(proof.sourceReference())) return false;
     return context
-        .resolve(reference)
+        .resolveVisualProof(reference)
         .<JsonNode>map(json::valueToTree)
         .filter(input -> "READY".equals(input.path("inputReadiness").asText()))
         .filter(

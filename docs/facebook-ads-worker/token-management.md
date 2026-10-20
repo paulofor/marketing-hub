@@ -115,3 +115,9 @@ A documentação oficial descreve extensão de token curto e renovação por SDK
 condicionada ao uso do aplicativo. Uma chamada de servidor bem-sucedida não deve
 ser interpretada como garantia de renovação perpétua: conferir sempre a validade
 retornada. A automação conserva esse limite do provedor.
+
+Na inicialização, indisponibilidade transitória da leitura de elegíveis (rede ou
+HTTP 5xx) recebe até cinco retentativas com espera exponencial, iniciada em dez
+segundos e limitada a um minuto entre tentativas. O parâmetro
+`facebook.token-renewal.backend-retry-delay-ms` pertence ao executor. Essa
+recuperação não repete troca Meta ou callback e não repete HTTP 4xx.

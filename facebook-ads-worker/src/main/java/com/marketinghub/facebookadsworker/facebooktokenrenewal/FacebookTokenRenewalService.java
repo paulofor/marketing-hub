@@ -12,11 +12,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import reactor.util.retry.Retry;
 
 /** Renova as contas elegíveis e informa ao backend a validade e o resultado efetivos. */
 @Service
@@ -28,6 +30,9 @@ public class FacebookTokenRenewalService {
     private final FacebookTokenRenewalClient tokenRenewalClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
+
+    @Value("${facebook.token-renewal.backend-retry-delay-ms:10000}")
+    private long backendRetryDelayMs = 10000;
 
     /** Recebe o cliente do backend e a integração Meta já configurados. */
     public FacebookTokenRenewalService(
@@ -61,7 +66,7 @@ public class FacebookTokenRenewalService {
         }
     }
 
-    /** Busca o contrato de contas autorizadas à renovação automática. */
+    /** Busca o contrato e recupera indisponibilidade transitória antes do próximo ciclo de seis horas. */
     private List<FacebookAccountRenewalCandidate> fetchEligibleAccounts() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/renewal/eligible");
         LOGGER.info(
@@ -76,6 +81,7 @@ public class FacebookTokenRenewalService {
                 .retrieve()
                 .bodyToFlux(FacebookAccountRenewalCandidate.class)
                 .collectList()
+                .retryWhen(backendReadRecovery(url))
                 .blockOptional()
                 .orElse(Collections.emptyList());
             LOGGER.info(
@@ -94,6 +100,23 @@ public class FacebookTokenRenewalService {
             );
             return Collections.emptyList();
         }
+    }
+
+    /** Repete somente a leitura idempotente; não repete troca Meta, callback ou erro de autorização. */
+    private Retry backendReadRecovery(String url) {
+        return Retry.backoff(5, Duration.ofMillis(backendRetryDelayMs))
+                .maxBackoff(Duration.ofMinutes(1))
+                .filter(this::isTransientBackendRead)
+                .doBeforeRetry(signal -> LOGGER.warn(
+                        "Backend temporariamente indisponível para renovação Meta: endpoint={}, retentativa={}/5",
+                        url, signal.totalRetries() + 1, signal.failure()))
+                .onRetryExhaustedThrow((spec, signal) -> signal.failure());
+    }
+
+    /** Identifica falhas de transporte e de servidor que permitem repetir uma consulta sem efeitos. */
+    private boolean isTransientBackendRead(Throwable failure) {
+        return failure instanceof WebClientRequestException
+                || failure instanceof WebClientResponseException response && response.getStatusCode().is5xxServerError();
     }
 
     /** Renova uma conta e deixa os consumidores carregarem a nova credencial do backend. */

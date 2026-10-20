@@ -75,3 +75,22 @@ recebe no máximo duas fontes concluídas do produto, plano e experimento exatos
 Têmis recebe somente a origem selecionada pela peça atual. Nenhuma rota gera
 imagem, concede aceite humano ou publica ativo. `EDITORIAL_CARD_V1` é privado;
 a saída registra `LINKED_FUNCTIONAL_PROOF`, origem ilustrativa, hash e recorte.
+
+## Correção observada na candidata 767
+
+A candidata 767/1058 reutilizou a ilustração auditada e custou US$ 0,482244
+estimados. O arquivo mostrou uma divergência determinística: o contrato previa
+`O convite chegou.\nE o look?`, mas o renderizador normalizava toda separação
+em espaço. A correção respeita as quebras explícitas e preserva o bloqueio de
+transbordamento. O plano já pago será recomposto pelo painel, em nova tarefa,
+com custo incremental de inferência zero e histórico intacto.
+
+Matriz adicional: duas frases/identidades nos pixels; limite de altura; comando
+com motivo; rejeição de origem pública, ativa e superada; repetição idempotente;
+callback determinístico com custo zero; formulário desktop/iPhone/Pixel;
+recuperação existente sem chamar o modelo e novos pareceres obrigatórios.
+
+A regressão de correlação reproduziu duas vezes o ID antigo na evidência da nova
+tarefa (767/768 e 1767/1768). A recomposição agora grava a identificação da nova
+tarefa e conserva a origem em `creativeRecomposition.sourceTaskId`; o teste
+confirmou a correção, a imutabilidade da origem e custo zero após o callback.

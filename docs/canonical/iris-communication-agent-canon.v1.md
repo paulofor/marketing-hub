@@ -736,3 +736,19 @@ Psique classifica a fonte e avalia acabamento, conexão com o desejo e clareza d
 Estilo ilustrado intencional não é defeito por si só. Não exigir pessoa/fotografia por regra.
 O feedback atual do operador orienta a revisão integral, sem estreitar o julgamento ao ajuste
 anterior. Aprendizado e matriz: `docs/homologacao/alcyone-qualidade-visual-v1.md`.
+
+### Recomposição determinística de peça privada — 2026-10-20
+
+Quando o renderizador desrespeitar a especificação já produzida, o operador pode
+usar **Recompor sem nova inferência** na caixa de Íris. O comando
+`POST /api/agent-tasks/{taskId}/creative-recomposition` exige autor e motivo,
+aceita somente a peça privada concluída mais recente e cria uma nova tarefa
+no mesmo contexto com a resposta preservada. Repetir o comando devolve a mesma
+tentativa. A fila canônica executa a montagem, sem chamar o modelo nem transferir
+custos ou aprovações; a tarefa anterior permanece imutável. Novos pixels exigem
+pareceres próprios e decisão humana. Isso não autoriza publicação comercial.
+
+Quebras de linha explícitas da especificação fazem parte da direção editorial:
+o renderizador deve preservá-las, mantendo tamanho mínimo e rejeição de texto
+que exceda a área. Uma quebra desejada não pode ser convertida em espaço e gerar
+uma palavra isolada na linha seguinte.

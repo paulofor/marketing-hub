@@ -42,6 +42,72 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /** Recompõe duas identidades sem duplicar custos, origem, requisição ou aprovação. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {767L, 1767L})
+  void recomposesPrivateCreativeWithPreservedPlanAndZeroInference(long sourceId) throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var iris = agent(9L, "communication-director", "Íris");
+    var process = process("PUBLISHED", "Íris");
+    process.setProcessCode("creative-production-approval");
+    var source = processTask(sourceId, iris, process, "nonAudiovisual", "COMPLETED");
+    source.setSourceReference("experiment:" + sourceId);
+    source.setResultJson(
+        "{\"executionStatus\":\"COMPLETED\",\"functionalOutput\":{\"staticAssets\":[{}],\"renderedAssets\":[{\"privateValidation\":true}]}}");
+    source.setEvidenceJson("{\"taskId\":" + sourceId + ",\"rawModelResponse\":\"preservada\"}");
+    source.setEstimatedCostUsd(new BigDecimal("0.482244"));
+    var queued = processTask(sourceId + 1, iris, process, "nonAudiovisual", "PENDING");
+    queued.setSourceReference(source.getSourceReference());
+    when(repository.findLockedById(sourceId)).thenReturn(Optional.of(source));
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(source.getSourceReference()))
+        .thenReturn(List.of(source));
+    when(repository.findById(queued.getId())).thenReturn(Optional.of(queued));
+    when(repository.save(queued)).thenReturn(queued);
+    var service =
+        org.mockito.Mockito.spy(
+            service(repository, mock(AgentRepository.class), Clock.systemUTC()));
+    var created = mock(AgentTaskResponse.class);
+    when(created.id()).thenReturn(queued.getId());
+    org.mockito.Mockito.doReturn(created).when(service).createByHuman(any());
+    var request = new RecomposeCreativeRequest("Operador", "Preservar a quebra editorial ignorada");
+    var response = service.recomposeCreative(sourceId, request);
+    assertThat(response.id()).isEqualTo(queued.getId());
+    assertThat(queued.getResultJson()).isEqualTo(source.getResultJson());
+    assertThat(queued.getEvidenceJson())
+        .contains("sourceTaskId", "preservada", "creativeRecomposition");
+    assertThat(new ObjectMapper().readTree(queued.getEvidenceJson()).path("taskId").asLong())
+        .isEqualTo(queued.getId());
+    assertThat(new ObjectMapper().readTree(source.getEvidenceJson()).path("taskId").asLong())
+        .isEqualTo(sourceId);
+    assertThat(queued.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(queued.getExecutionMode()).isEqualTo("DETERMINISTIC");
+    assertThat(queued.getEstimatedCostUsd()).isZero();
+    assertThat(source.getEstimatedCostUsd()).isEqualByComparingTo("0.482244");
+    assertThat(source.getStatus()).isEqualTo("COMPLETED");
+    assertThat(queued.getGateStatus()).isNull();
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(source.getSourceReference()))
+        .thenReturn(List.of(source, queued));
+    assertThat(service.recomposeCreative(sourceId, request).id()).isEqualTo(queued.getId());
+    verify(service).createByHuman(any());
+    queued.setStatus("IN_PROGRESS");
+    when(repository.findLockedById(queued.getId())).thenReturn(Optional.of(queued));
+    service.completeClaimedProcessTask(
+        "communication-director",
+        queued.getId(),
+        new CompleteAgentTaskRequest(queued.getResultJson(), queued.getEvidenceJson()));
+    assertThat(queued.getStatus()).isEqualTo("COMPLETED");
+    assertThat(queued.getEstimatedCostUsd()).isZero();
+    queued.setEvidenceJson("{}");
+    assertThatThrownBy(() -> service.recomposeCreative(sourceId, request))
+        .hasMessageContaining("mais recente");
+    source.setResultJson(source.getResultJson().replace("true", "false"));
+    assertThatThrownBy(() -> service.recomposeCreative(sourceId, request))
+        .hasMessageContaining("privadas");
+    source.setStatus("IN_PROGRESS");
+    assertThatThrownBy(() -> service.recomposeCreative(sourceId, request))
+        .hasMessageContaining("Origem");
+  }
+
   /** Preserva o retorno tardio sem reabrir tarefa cancelada nem duplicar seu consumo. */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({

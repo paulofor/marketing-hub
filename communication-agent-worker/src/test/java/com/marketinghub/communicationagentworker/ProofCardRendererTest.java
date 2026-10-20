@@ -18,6 +18,40 @@ class ProofCardRendererTest {
   private final ObjectMapper json = new ObjectMapper();
   private final ProofCardRenderer renderer = new ProofCardRenderer();
 
+  /**
+   * Confere nos pixels que uma quebra editorial não é substituída pelo empacotamento de palavras.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "O convite chegou.,E o look?",
+    "Sua próxima ocasião.,Comece por aqui."
+  })
+  void preservesDeliberateLineBreaks(String first, String second) {
+    var actual = new BufferedImage(1080, 250, BufferedImage.TYPE_INT_RGB);
+    var expected = new BufferedImage(1080, 250, BufferedImage.TYPE_INT_RGB);
+    var g = actual.createGraphics();
+    var reference = expected.createGraphics();
+    try {
+      g.setColor(Color.WHITE);
+      reference.setColor(Color.WHITE);
+      reference.setFont(new java.awt.Font("DejaVu Sans", java.awt.Font.BOLD, 64));
+      var metrics = reference.getFontMetrics();
+      reference.drawString(first, 48, metrics.getAscent());
+      reference.drawString(second, 48, metrics.getAscent() + metrics.getHeight());
+      ProofCardRenderer.text(g, first + "\n" + second, 48, 0, 984, 166, 64, java.awt.Font.BOLD);
+      assertThat(actual.getRGB(0, 0, 1080, 250, null, 0, 1080))
+          .isEqualTo(expected.getRGB(0, 0, 1080, 250, null, 0, 1080));
+      assertThatThrownBy(
+              () ->
+                  ProofCardRenderer.text(
+                      g, first + "\n" + second, 48, 0, 984, 70, 64, java.awt.Font.BOLD))
+          .hasMessageContaining("excede");
+    } finally {
+      g.dispose();
+      reference.dispose();
+    }
+  }
+
   /** Compara os identificadores privados ao texto da ação, ambos prometidos com fonte mínima 36. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {910118L, 910219L})

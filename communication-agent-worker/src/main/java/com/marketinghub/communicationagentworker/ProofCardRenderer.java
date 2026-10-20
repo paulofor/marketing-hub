@@ -191,7 +191,7 @@ public class ProofCardRenderer {
     return Color.decode(value);
   }
 
-  /** Quebra linhas sem reduzir fonte ou cortar texto para esconder transbordamento. */
+  /** Preserva quebras editoriais e quebra linhas longas sem reduzir fonte nem cortar conteúdo. */
   static void text(
       Graphics2D g, String value, int x, int top, int width, int height, int size, int style) {
     if (value == null || value.isBlank())
@@ -199,17 +199,19 @@ public class ProofCardRenderer {
     g.setFont(new Font("DejaVu Sans", style, size));
     FontMetrics metrics = g.getFontMetrics();
     List<String> lines = new ArrayList<>();
-    String line = "";
-    for (String word : value.strip().split("\\s+")) {
-      if (metrics.stringWidth(word) > width)
-        throw new IllegalArgumentException("Palavra não cabe no criativo.");
-      String candidate = line.isEmpty() ? word : line + " " + word;
-      if (metrics.stringWidth(candidate) > width) {
-        lines.add(line);
-        line = word;
-      } else line = candidate;
+    for (String paragraph : value.strip().split("\\R", -1)) {
+      String line = "";
+      for (String word : paragraph.strip().split("\\s+")) {
+        if (metrics.stringWidth(word) > width)
+          throw new IllegalArgumentException("Palavra não cabe no criativo.");
+        String candidate = line.isEmpty() ? word : line + " " + word;
+        if (metrics.stringWidth(candidate) > width) {
+          lines.add(line);
+          line = word;
+        } else line = candidate;
+      }
+      lines.add(line);
     }
-    lines.add(line);
     if (lines.size() * metrics.getHeight() > height)
       throw new IllegalArgumentException("Texto excede a área legível do criativo: " + value);
     for (int i = 0; i < lines.size(); i++)

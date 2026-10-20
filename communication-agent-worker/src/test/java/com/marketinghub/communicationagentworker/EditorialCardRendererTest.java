@@ -37,7 +37,7 @@ class EditorialCardRendererTest {
         .hasMessageContaining("pixels");
   }
 
-  /** Reproduz a composição com a imagem histórica real sem upload, geração ou aprovação. */
+  /** Reproduz imagem e, quando fornecida, especificação reais sem upload ou nova inferência. */
   @Test
   void replaysAuditedImageLocally() throws Exception {
     String path = System.getenv("IRIS_ILLUSTRATION_FILE");
@@ -47,6 +47,8 @@ class EditorialCardRendererTest {
     var spec = spec(png, original.getWidth(), (int) (original.getHeight() * 0.67));
     ((ObjectNode) spec.path("illustration").path("crop"))
         .put("y", (int) (original.getHeight() * 0.12));
+    String specPath = System.getenv("IRIS_RENDER_SPEC");
+    if (specPath != null) spec = (ObjectNode) json.readTree(Files.readString(Path.of(specPath)));
     byte[] rendered = EditorialCardRenderer.render(spec, png);
     Path output = Path.of(System.getenv("IRIS_RENDER_OUTPUT"));
     Files.write(output, rendered);

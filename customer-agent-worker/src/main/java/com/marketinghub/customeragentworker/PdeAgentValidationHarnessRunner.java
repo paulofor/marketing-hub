@@ -355,10 +355,12 @@ public class PdeAgentValidationHarnessRunner {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
       int extraKitCaptures = privateKit || alcyone ? validateKitCaptureMoments(result) : 0;
+      int terminalCaptures = validateTerminalResultEvidence(result, expected);
       int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone || privateKit ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
-          || result.path("artifacts").size() != expectedScenarioDeviceGates + extraKitCaptures
+          || result.path("artifacts").size()
+              != expectedScenarioDeviceGates + extraKitCaptures + terminalCaptures
           || !devices.equals(Set.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
           || !scenarios.equals(Set.of("ADHERENT", "RECOVERY", "SAFETY"))) {
         throw new HarnessException(
@@ -467,6 +469,62 @@ public class PdeAgentValidationHarnessRunner {
     }
     if (artifacts.isEmpty()) throw new HarnessException("O harness não produziu screenshots.");
     return List.copyOf(artifacts);
+  }
+
+  /** Exige a matriz terminal declarada pela família Vega v14 antes de qualquer parecer pago. */
+  private int validateTerminalResultEvidence(JsonNode result, Map<String, Object> expected)
+      throws HarnessException {
+    String version = String.valueOf(expected.get("prototypeVersion"));
+    var matcher =
+        java.util.regex.Pattern.compile("musa-pde-entry-v([0-9]+)-primeiro-ajuste-aplicavel")
+            .matcher(version);
+    if (!matcher.matches()
+        || new java.math.BigInteger(matcher.group(1)).compareTo(java.math.BigInteger.valueOf(14))
+            < 0) return 0;
+    JsonNode evidence = result.path("terminalResultEvidence");
+    if (!"PDE_TERMINAL_RESULT_MATRIX_V1".equals(evidence.path("contractVersion").asText())
+        || !result.path("checks").path("terminalResultCoverage").asBoolean(false)
+        || evidence.path("cases").size() != 12)
+      throw new HarnessException(
+          "A homologação não comprovou a matriz de encerramento por estado e dispositivo.");
+    Set<String> combinations = new java.util.HashSet<>();
+    Set<String> references = new java.util.HashSet<>();
+    for (JsonNode item : evidence.path("cases")) {
+      String state = item.path("generationStatus").asText();
+      String device = item.path("deviceProfile").asText();
+      boolean hasResult = "COMPLETED".equals(state);
+      if (!Set.of("COMPLETED", "BLOCKED", "FAILED", "NOT_STARTED").contains(state)
+          || !Set.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7").contains(device)
+          || !combinations.add(state + "|" + device)
+          || !version.equals(item.path("prototypeVersion").asText())
+          || item.path("evidenceId").asText().isBlank()
+          || !"PASS".equals(item.path("status").asText())
+          || !state.equals(item.path("persistedGenerationStatus").asText())
+          || !"FINISHED".equals(item.path("sessionState").asText())
+          || !"FINISHED".equals(item.path("reloadedSessionState").asText())
+          || !item.path("resultPresent").isBoolean()
+          || item.path("resultPresent").asBoolean() != hasResult
+          || !item.path("renderedResultPresent").equals(item.path("resultPresent"))
+          || !item.path("reloadedResultPresent").equals(item.path("resultPresent"))
+          || (hasResult
+              ? !item.path("savedResultConfirmed").asBoolean(false)
+              : !item.path("savedResultConfirmed").isNull())
+          || !item.path("messageMatchesResult").asBoolean(false)
+          || item.path("terminalMessage").asText().length() < 16
+          || !item.path("terminalMessage").equals(item.path("reloadedMessage"))
+          || item.path("screenshotEvidenceKeys").size() != 1)
+        throw new HarnessException(
+            "A matriz de encerramento contém prova incompleta ou inconsistente.");
+      String key = item.path("screenshotEvidenceKeys").get(0).asText();
+      boolean matched = false;
+      for (JsonNode artifact : result.path("artifacts"))
+        if (key.equals(artifact.path("evidenceKey").asText())
+            && device.equals(artifact.path("deviceProfile").asText())) matched = true;
+      if (!matched || !references.add(key))
+        throw new HarnessException(
+            "A matriz de encerramento não possui captura própria do dispositivo.");
+    }
+    return 8;
   }
 
   /**

@@ -1,5 +1,6 @@
 import { completeVegaFixture, fixtureModel } from './vega-deterministic-fixture.mjs';
 import { isTerminalResultConsistent } from './private-result-state-checks.mjs';
+import { completeTerminalMatrix, validTerminalResult } from './private-terminal-result-evidence.mjs';
 import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 import {chromium,devices} from 'playwright-core';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
@@ -20,6 +21,33 @@ const plans=input.mode==='TECHNICAL'?[['ADHERENT','DESKTOP_1440'],['ADHERENT','I
 const browser=await chromium.launch(videoBrowserOptions());
 await mkdir(evidenceDirectory,{recursive:true});
 const startedAt=new Date();const scenarios=[],artifacts=[];
+const terminalCases=[];
+const terminalProofRequired=input.mode==='TECHNICAL' && Number(input.prototypeVersion.match(/-v(\d+)-/)?.[1])>=14;
+
+// Encerra pela interface e compara o estado persistido, a mensagem e o cartão após recarregar.
+async function observeTerminal(page,session,deviceProfile,generationStatus,savedResultConfirmed=null){
+ const finish=page.getByRole('button',{name:'Encerrar leitura',exact:true});
+ if(await finish.count()){
+  const response=page.waitForResponse(r=>r.url().endsWith(base+'/finish')&&r.request().method()==='POST'&&r.ok());
+  await finish.click();await response;
+ }
+ await page.locator('footer [role="status"]').waitFor();
+ const state=await (await page.request.get(new URL(base+'/session',input.sourceUrl).href,{headers:{'X-Vega-Session':session.sessionToken}})).json();
+ const terminalMessage=await page.locator('footer [role="status"]').innerText();
+ const renderedResultPresent=await page.locator('.card-result').count()===1;
+ await page.reload({waitUntil:'domcontentloaded'});await page.locator('footer [role="status"]').waitFor();
+ const reloaded=await (await page.request.get(new URL(base+'/session',input.sourceUrl).href,{headers:{'X-Vega-Session':session.sessionToken}})).json();
+ const messages={COMPLETED:/Seu ajuste continua disponível/,BLOCKED:/pedido foi bloqueado e nenhum ajuste foi gerado/i,FAILED:/Não foi possível gerar um ajuste/,NOT_STARTED:/Nenhum ajuste foi gerado/i};
+ const item={deviceProfile,generationStatus,sessionState:state.state,reloadedSessionState:reloaded.state,
+  resultPresent:!!state.card,renderedResultPresent,reloadedResultPresent:await page.locator('.card-result').count()===1,
+  savedResultConfirmed,terminalMessage,reloadedMessage:await page.locator('footer [role="status"]').innerText(),
+  messageMatchesResult:messages[generationStatus].test(terminalMessage)&& (generationStatus==='COMPLETED'||!/Seu ajuste continua disponível/.test(terminalMessage)),
+  persistedGenerationStatus:state.generationStatus||'NOT_STARTED',evidenceId:session.id,prototypeVersion:state.prototypeVersion};
+ assert.equal(item.persistedGenerationStatus,generationStatus);
+ assert.equal(reloaded.card?.cardId,state.card?.cardId);
+ assert.equal(validTerminalResult(item),true,'O encerramento precisa corresponder ao estado e resultado realmente persistidos');
+ return {...item,status:'PASS',screenshotEvidenceKeys:[`vega-${session.id}`]};
+}
 let videoIdentity=null;
 const videoResults=[];
 try {
@@ -74,6 +102,7 @@ for(const [scenarioCode,deviceProfile] of plans){
   await page.getByRole('button',{name:'Meu ajuste salvo'}).click();
   await page.getByText('Este é o mesmo ajuste').waitFor();
  }
+ if(terminalProofRequired && scenarioCode!=='RECOVERY')terminalCases.push(await observeTerminal(page,session,deviceProfile,scenarioCode==='SAFETY'?'BLOCKED':'COMPLETED',scenarioCode==='SAFETY'?null:true));
  const report=await api(`/internal/cycles/${input.cycleId}/report`);const evidence=report.readings.find(r=>r.id===session.id);assert.ok(evidence);
  const terminalResultConsistent=isTerminalResultConsistent(evidence,await page.locator('footer').innerText(),{resultAvailable:/Seu ajuste continua disponível/,noResult:/nenhum ajuste foi gerado|Não foi possível gerar um ajuste/i});
  const scenarioInput=evidence.executions[0]?.context?.input;
@@ -89,10 +118,41 @@ for(const [scenarioCode,deviceProfile] of plans){
  scenarios.push({scenarioCode,deviceProfile,status:terminalResultConsistent?'PASS':'BLOCKED',prototypeVersion:input.prototypeVersion,evidenceId:session.id,screenshotEvidenceKeys:[evidenceKey],input:scenarioInput,card:evidence.card,events:evidence.events,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,resultReadySeconds:Math.ceil((Date.now()-generatedAt)/1000),resumed,recovered,safetyBlocked:scenarioCode==='SAFETY',terminalResultConsistent,accessibilityBasic,noHorizontalOverflow,privacyPreserved,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0}});
  await context.close();
 }
+if(terminalProofRequired){
+ for(const deviceProfile of Object.keys(profiles))for(const generationStatus of ['BLOCKED','FAILED','NOT_STARTED']){
+  if(terminalCases.some(item=>item.deviceProfile===deviceProfile&&item.generationStatus===generationStatus))continue;
+  const session=await api('/internal/sessions',{cycleId:input.cycleId,prototypeVersion:input.prototypeVersion,origin:'AGENT_VALIDATION'});
+  assert.equal(session.productId,input.productId);assert.equal(session.experimentId,Number(input.sourceReference.split(':')[1]));assert.equal(session.prototypeVersion,input.prototypeVersion);
+  const context=await browser.newContext(profiles[deviceProfile]);const page=await context.newPage();
+  await context.addInitScript(token=>localStorage.setItem('vega-private-session-v1',token),session.sessionToken);
+  await page.goto(input.sourceUrl,{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:'Começar',exact:true}).click();
+  if(generationStatus!=='NOT_STARTED'){
+   await page.getByLabel('Ocasião').selectOption({label:'Almoço informal'});
+   await page.getByLabel('Qual roupa').fill('Camisa branca e calça preta que já possuo');
+   if(generationStatus==='BLOCKED')await page.getByLabel('Algo que gostaria').fill('Quero comprar outra roupa');
+   const response=page.waitForResponse(r=>r.url().endsWith(base+'/generate')&&r.request().method()==='POST'&&r.ok());
+   await page.getByRole('button',{name:'Criar meu ajuste',exact:true}).click();const queued=await(await response).json();
+   const status=page.waitForResponse(async r=>r.url().endsWith(base+'/session')&&r.ok()&&(await r.json()).generationStatus===generationStatus);
+   await completeVegaFixture(api,input,session,queued.executionId,{fail:generationStatus==='FAILED'});
+   await status;await page.getByRole('button',{name:'Encerrar leitura',exact:true}).waitFor();
+  }
+  const terminal=await observeTerminal(page,session,deviceProfile,generationStatus);
+  const report=await api(`/internal/cycles/${input.cycleId}/report`);const reading=report.readings.find(r=>r.id===session.id);
+  assert.equal(reading.state,'FINISHED');assert.equal(reading.card??null,null);
+  assert.deepEqual(Object.keys(reading.events),['EXPERIENCE_STARTED']);
+  assert.equal(reading.executions.length,generationStatus==='NOT_STARTED'?0:1);
+  const screenshotPath=resolve(evidenceDirectory,`TERMINAL-${generationStatus}-${deviceProfile}.png`);await page.screenshot({path:screenshotPath,fullPage:true});
+  const viewport=page.viewportSize();artifacts.push({captureSessionId:input.captureSessionId,evidenceKey:`vega-${session.id}`,evidenceType:'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:null,viewportWidth:viewport.width,viewportHeight:viewport.height,pageHeightPx:await page.evaluate(()=>document.documentElement.scrollHeight),scrollY:0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:screenshotPath});
+  terminalCases.push(terminal);await context.close();
+ }
+ assert.equal(completeTerminalMatrix(terminalCases),true,'A matriz terminal precisa comprovar quatro estados nos três dispositivos');
+}
 }finally{await browser.close();}
 const deviceResults=[...new Set(plans.map(p=>p[1]))].map(deviceProfile=>({deviceProfile,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)}));
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||deviceResults.length===3,happyResultWithinTenMinutes:scenarios.filter(s=>s.scenarioCode==='ADHERENT').every(s=>s.resultReadySeconds<=600),recoveryPreserved:input.mode!=='TECHNICAL'||scenarios.some(s=>s.recovered&&s.resumed),safetyBlocked:input.mode!=='TECHNICAL'||scenarios.some(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:scenarios.every(s=>s.trafficClass==='AGENT_VALIDATION'),paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
 if(input.videoIntegration)Object.assign(checks,{videoIdentity:videoIdentity.length===2,videoPlayback:videoResults.length===plans.length,videoOptional:videoResults.every(r=>r.optional),videoFailureRecovery:videoResults.every(r=>r.failureRecovery)});
 checks.terminalResultConsistency=scenarios.every(s=>s.terminalResultConsistent);
+if(terminalProofRequired)checks.terminalResultCoverage=completeTerminalMatrix(terminalCases);
 const finishedAt=new Date();
-await writeFile(outputPath,JSON.stringify({cycleId:input.cycleId,generationMode:"DETERMINISTIC_FIXTURE",fixtureModel,modelFunctionalBehaviorClaimed:false,...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,videoIdentity,videoResults}:{}),contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));
+await writeFile(outputPath,JSON.stringify({cycleId:input.cycleId,generationMode:"DETERMINISTIC_FIXTURE",fixtureModel,modelFunctionalBehaviorClaimed:false,...(terminalProofRequired?{terminalResultEvidence:{contractVersion:'PDE_TERMINAL_RESULT_MATRIX_V1',cases:terminalCases}}:{}),...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,videoIdentity,videoResults}:{}),contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));

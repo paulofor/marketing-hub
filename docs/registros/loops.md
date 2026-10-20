@@ -16,6 +16,23 @@
   seleção humana. Não autoriza publicação, mídia nem vídeo pago.
 - **Registro:** [Matriz e evidências](../homologacao/alcyone-creative-functional-proof-v1.md).
 
+## LOOP-PDE-PROVA-TERMINAL-AGREGADA — 20/10/2026
+
+- **Evidência:** Vega #774 aprovou cinco jornadas; Têmis #780 bloqueou por ausência
+  de FAILED, NOT_STARTED e mensagens terminais por dispositivo na mesma v14.
+- **Causa:** o verificador aceitava sessão ainda não encerrada e a cobertura agregada
+  não correspondia aos quatro estados predeclarados. Os pareceres independentes
+  aprovados não cobriam esses estados adicionais.
+- **Correção:** matriz explícita de doze encerramentos, estado persistido, cartão,
+  salvamento, mensagem, recarga e captura. O executor recusa prova incompleta antes
+  da revisão paga. Suplemento existente permite reapresentar a mesma implementação
+  a Têmis sem mudar produto nem repetir pareceres compatíveis.
+- **Prevenção:** regressões de cobertura, sessão ativa, salvamento ausente, duplicação,
+  outra identidade e caminhos históricos. Local MySQL 5.7 com bytes reais da rota
+  publicada; dados sintéticos, sem inferência ou mídia.
+- **Registro:** [matriz, evidências e limites](../homologacao/vega-integridade-terminal-2026-10-20.md).
+
+
 ## LOOP-VIDEO-PARECER-ANTES-DO-ROTEIRO — 10/10/2026
 
 - **Histórico:** Capella, ciclo 12/experimento 105, projetos 11/12, abriu ciclos

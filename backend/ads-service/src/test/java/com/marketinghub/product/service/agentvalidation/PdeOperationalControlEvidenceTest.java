@@ -225,4 +225,38 @@ class PdeOperationalControlEvidenceTest {
     when(resources.getResource("classpath:contracts/operational-evidence/fixture-v1.json"))
         .thenReturn(new ByteArrayResource(bytes));
   }
+
+  /** Confere o suplemento real de Vega e seus doze encerramentos sem reclassificar o histórico. */
+  @Test
+  void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
+    var real =
+        new PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader());
+    var evidence =
+        real.resolve("metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
+            .orElseThrow();
+    assertThat(evidence.path("criteria").size()).isEqualTo(15);
+    assertThat(evidence.path("testedProductIds").get(0).asLong()).isEqualTo(91004L);
+    var cases = new java.util.HashSet<String>();
+    for (var criterion : evidence.path("criteria")) {
+      if (!criterion.path("code").asText().startsWith("TERMINAL_")) continue;
+      var result = criterion.path("result");
+      cases.add(
+          result.path("generationStatus").asText() + "|" + result.path("deviceProfile").asText());
+      assertThat(result.path("sessionState").asText()).isEqualTo("FINISHED");
+      assertThat(result.path("reloadedMessage")).isEqualTo(result.path("terminalMessage"));
+      var path =
+          java.nio.file.Path.of("../..").resolve(result.path("screenshot").path("path").asText());
+      assertThat(
+              HexFormat.of()
+                  .formatHex(
+                      MessageDigest.getInstance("SHA-256")
+                          .digest(java.nio.file.Files.readAllBytes(path))))
+          .isEqualTo(result.path("screenshot").path("sha256").asText());
+    }
+    assertThat(cases).hasSize(12);
+    assertThat(real.resolve("metodo-musa-7-dias", "musa-pde-entry-v13-primeiro-ajuste-aplicavel"))
+        .isEmpty();
+    assertThat(evidence.path("agentApprovalClaimed").asBoolean()).isFalse();
+  }
 }

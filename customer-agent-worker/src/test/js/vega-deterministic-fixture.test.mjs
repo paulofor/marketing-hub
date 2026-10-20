@@ -52,3 +52,20 @@ test('não consome tarefa de outro ciclo ou sessão', async () => {
     assert.equal(calls.length, 1);
   }
 });
+
+test('falha sintética usa a fila e o callback auditados e nunca aceita contexto humano', async () => {
+  const calls = [];
+  const api = async (path, body) => {
+    calls.push({path, body});
+    if (path.includes('/pending')) return [job];
+    if (path.endsWith('/claim')) return {...job, status: 'RUNNING'};
+    if (path.endsWith('/result')) return body;
+  };
+  const result = await completeVegaFixture(api, input, {id: job.sessionId}, job.id, {fail: true});
+  assert.equal(result.status, 'FAILED');
+  assert.equal(result.card, null);
+  assert.equal(result.costUsd, 0);
+  assert.equal(result.rawResponse.simulatedFailure, true);
+  assert.deepEqual(calls.map(c => c.path.split('/').at(-1)), ['pending?mode=FIXTURE', 'claim', 'request', 'result']);
+  await assert.rejects(completeVegaFixture(async () => [{...job, context: {...job.context, origin: 'HUMAN'}}], input, {id: job.sessionId}, job.id, {fail: true}));
+});

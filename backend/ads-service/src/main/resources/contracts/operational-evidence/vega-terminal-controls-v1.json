@@ -1,0 +1,666 @@
+{
+  "contractVersion": "PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1",
+  "productSlug": "metodo-musa-7-dias",
+  "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+  "status": "PASS",
+  "origin": "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "generatedAt": "2026-10-20T16:03:32.312Z",
+  "frontendSourceFingerprint": "b77a2869c1944afc8edb1c0870caa6016e07f05c80113f56e1a829dcff3bc014",
+  "testReceiptSha256": "9db5606febe8e49e1a90c3c65f9ab110f461fcf754ef23b7d6b6714b12da6922",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "testedProductIds": [
+    91004
+  ],
+  "testedCycleId": 91002,
+  "testedExperimentId": 91092,
+  "contextBoundary": "Somente cadastros de contexto simulados. Sessões, execução, callback e eventos em MySQL 5.7 real. Bytes do frontend publicados, executados localmente. Não são novas sessões do ciclo 13 nem pareceres independentes.",
+  "requiredCriteria": [
+    "TERMINAL_COMPLETED_DESKTOP_1440",
+    "TERMINAL_COMPLETED_IPHONE_15_PRO",
+    "TERMINAL_COMPLETED_PIXEL_7",
+    "TERMINAL_BLOCKED_PIXEL_7",
+    "TERMINAL_BLOCKED_DESKTOP_1440",
+    "TERMINAL_FAILED_DESKTOP_1440",
+    "TERMINAL_NOT_STARTED_DESKTOP_1440",
+    "TERMINAL_BLOCKED_IPHONE_15_PRO",
+    "TERMINAL_FAILED_IPHONE_15_PRO",
+    "TERMINAL_NOT_STARTED_IPHONE_15_PRO",
+    "TERMINAL_FAILED_PIXEL_7",
+    "TERMINAL_NOT_STARTED_PIXEL_7",
+    "PUBLISHED_ARTIFACT_IDENTITY",
+    "ORIGINAL_ACCESS_VALID",
+    "CUMULATIVE_CAPACITY"
+  ],
+  "criteria": [
+    {
+      "code": "TERMINAL_COMPLETED_DESKTOP_1440",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "DESKTOP_1440",
+        "generationStatus": "COMPLETED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": true,
+        "renderedResultPresent": true,
+        "reloadedResultPresent": true,
+        "savedResultConfirmed": true,
+        "terminalMessage": "Leitura encerrada. Seu ajuste continua disponível durante a validade do convite.",
+        "reloadedMessage": "Leitura encerrada. Seu ajuste continua disponível durante a validade do convite.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "COMPLETED",
+        "evidenceId": "e25aa886-eb16-47b7-8a68-0d58baca5bd7",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-e25aa886-eb16-47b7-8a68-0d58baca5bd7"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/COMPLETED-DESKTOP_1440.png",
+          "sha256": "4f4e9e04790f469e9ddf59dab1fbb513d64b72f11a07ea3f35c432b4ea36d0ac"
+        }
+      },
+      "resultSha256": "b998e856ae309f269c9561bb8b181267e347e1df86aabf0b36316c06e6b87baf"
+    },
+    {
+      "code": "TERMINAL_COMPLETED_IPHONE_15_PRO",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "IPHONE_15_PRO",
+        "generationStatus": "COMPLETED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": true,
+        "renderedResultPresent": true,
+        "reloadedResultPresent": true,
+        "savedResultConfirmed": true,
+        "terminalMessage": "Leitura encerrada. Seu ajuste continua disponível durante a validade do convite.",
+        "reloadedMessage": "Leitura encerrada. Seu ajuste continua disponível durante a validade do convite.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "COMPLETED",
+        "evidenceId": "0d9714c1-bbe6-40ee-a561-5bece016e65b",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-0d9714c1-bbe6-40ee-a561-5bece016e65b"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/COMPLETED-IPHONE_15_PRO.png",
+          "sha256": "f14f7d15a6298c66264b10087f07156881861e48adf43dfd583d2866be8a7678"
+        }
+      },
+      "resultSha256": "3c3c84bbe9f22a3e15d52744127c62722bcb855c95971d6c60a6b9538711445c"
+    },
+    {
+      "code": "TERMINAL_COMPLETED_PIXEL_7",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "PIXEL_7",
+        "generationStatus": "COMPLETED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": true,
+        "renderedResultPresent": true,
+        "reloadedResultPresent": true,
+        "savedResultConfirmed": true,
+        "terminalMessage": "Leitura encerrada. Seu ajuste continua disponível durante a validade do convite.",
+        "reloadedMessage": "Leitura encerrada. Seu ajuste continua disponível durante a validade do convite.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "COMPLETED",
+        "evidenceId": "07f38e70-a5dc-4a2d-adda-5963cd6d2ac4",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-07f38e70-a5dc-4a2d-adda-5963cd6d2ac4"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/COMPLETED-PIXEL_7.png",
+          "sha256": "29d61153db7e629df054074c268f987b3a0adafe1d0d58a40a4e59d24038f4de"
+        }
+      },
+      "resultSha256": "7ad5c22d718f6bcff63f16b7f07fe628e391904a8650925206aeb55e724c0088"
+    },
+    {
+      "code": "TERMINAL_BLOCKED_PIXEL_7",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "PIXEL_7",
+        "generationStatus": "BLOCKED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Este pedido foi bloqueado e nenhum ajuste foi gerado. Suas escolhas foram preservadas; reformule acima usando as roupas que você já possui.",
+        "reloadedMessage": "Leitura encerrada. Este pedido foi bloqueado e nenhum ajuste foi gerado. Suas escolhas foram preservadas; reformule acima usando as roupas que você já possui.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "BLOCKED",
+        "evidenceId": "6751d876-0dd7-4170-b6ed-16f4380cbe16",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-6751d876-0dd7-4170-b6ed-16f4380cbe16"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/BLOCKED-PIXEL_7.png",
+          "sha256": "449b303c77a45dbb0735dbb89ba5ff6b380105f4bd1407ea82156f7109cf0ec5"
+        }
+      },
+      "resultSha256": "0f70ceccca417f0d7e1cd23d881ecc4d48871d016fb755d2d07f0d210e19f8f4"
+    },
+    {
+      "code": "TERMINAL_BLOCKED_DESKTOP_1440",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "DESKTOP_1440",
+        "generationStatus": "BLOCKED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Este pedido foi bloqueado e nenhum ajuste foi gerado. Suas escolhas foram preservadas; reformule acima usando as roupas que você já possui.",
+        "reloadedMessage": "Leitura encerrada. Este pedido foi bloqueado e nenhum ajuste foi gerado. Suas escolhas foram preservadas; reformule acima usando as roupas que você já possui.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "BLOCKED",
+        "evidenceId": "db5c1ed4-5c30-4b74-9597-188b582df1b6",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-db5c1ed4-5c30-4b74-9597-188b582df1b6"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/BLOCKED-DESKTOP_1440.png",
+          "sha256": "0147b52cb473376426b4009c7379ddb0c374dae5dd5abb283d81f47a5005bc93"
+        }
+      },
+      "resultSha256": "06c6599f869b7ea0c7bd60d3fd2e5ccd66dafab6652376cf52278754d53a1fea"
+    },
+    {
+      "code": "TERMINAL_FAILED_DESKTOP_1440",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "DESKTOP_1440",
+        "generationStatus": "FAILED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Não foi possível gerar um ajuste. Suas escolhas foram preservadas; você pode tentar novamente acima.",
+        "reloadedMessage": "Leitura encerrada. Não foi possível gerar um ajuste. Suas escolhas foram preservadas; você pode tentar novamente acima.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "FAILED",
+        "evidenceId": "5f83cf5e-88d4-4fc8-8b51-b25939a1b337",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-5f83cf5e-88d4-4fc8-8b51-b25939a1b337"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/FAILED-DESKTOP_1440.png",
+          "sha256": "d9a5e38e9c3d3169b99fe63aa58c88469bd99d52e409008688b8dbd9b28b341f"
+        }
+      },
+      "resultSha256": "2f20f51e7731d6ee990a0eb8fe452d23e830cb00c812138e24bb24230b0b3740"
+    },
+    {
+      "code": "TERMINAL_NOT_STARTED_DESKTOP_1440",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "DESKTOP_1440",
+        "generationStatus": "NOT_STARTED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Nenhum ajuste foi gerado. Suas escolhas foram preservadas.",
+        "reloadedMessage": "Leitura encerrada. Nenhum ajuste foi gerado. Suas escolhas foram preservadas.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "NOT_STARTED",
+        "evidenceId": "77ed778b-652c-4471-bf1a-1f30f0996da8",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-77ed778b-652c-4471-bf1a-1f30f0996da8"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/NOT_STARTED-DESKTOP_1440.png",
+          "sha256": "ac85b2a3bceb70eaabd294f3d25f9ab0ca57bf434cfe3de88628d1dee5e7fdfb"
+        }
+      },
+      "resultSha256": "423e87b83e8738f4ac3ed4f8191695f508cda3b1ae20c508d1a108b2b5bedd9d"
+    },
+    {
+      "code": "TERMINAL_BLOCKED_IPHONE_15_PRO",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "IPHONE_15_PRO",
+        "generationStatus": "BLOCKED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Este pedido foi bloqueado e nenhum ajuste foi gerado. Suas escolhas foram preservadas; reformule acima usando as roupas que você já possui.",
+        "reloadedMessage": "Leitura encerrada. Este pedido foi bloqueado e nenhum ajuste foi gerado. Suas escolhas foram preservadas; reformule acima usando as roupas que você já possui.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "BLOCKED",
+        "evidenceId": "7a80f91c-b097-4834-9edb-f329fc5e9b6a",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-7a80f91c-b097-4834-9edb-f329fc5e9b6a"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/BLOCKED-IPHONE_15_PRO.png",
+          "sha256": "473ef64ffcf1d7d91ff2db67d618719ea45546bc5e630372b1dc46cd39fe1c86"
+        }
+      },
+      "resultSha256": "7645906119193d84feead5eab4bec195853226b8ed4da6382a72c1c1b79ef97a"
+    },
+    {
+      "code": "TERMINAL_FAILED_IPHONE_15_PRO",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "IPHONE_15_PRO",
+        "generationStatus": "FAILED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Não foi possível gerar um ajuste. Suas escolhas foram preservadas; você pode tentar novamente acima.",
+        "reloadedMessage": "Leitura encerrada. Não foi possível gerar um ajuste. Suas escolhas foram preservadas; você pode tentar novamente acima.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "FAILED",
+        "evidenceId": "6f13e033-d380-411d-9476-936a26e81c50",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-6f13e033-d380-411d-9476-936a26e81c50"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/FAILED-IPHONE_15_PRO.png",
+          "sha256": "fa042197f7d0fb3d6da0c9cefe55b788775bc624f8156d3cdb6c6ef482990df2"
+        }
+      },
+      "resultSha256": "bb30e64c02b21697eec1f3530e1a067e19805e597d9ac7de5d05a0088405e5ea"
+    },
+    {
+      "code": "TERMINAL_NOT_STARTED_IPHONE_15_PRO",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "IPHONE_15_PRO",
+        "generationStatus": "NOT_STARTED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Nenhum ajuste foi gerado. Suas escolhas foram preservadas.",
+        "reloadedMessage": "Leitura encerrada. Nenhum ajuste foi gerado. Suas escolhas foram preservadas.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "NOT_STARTED",
+        "evidenceId": "e7466617-ffb8-40b8-91a6-5b027f2915ed",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-e7466617-ffb8-40b8-91a6-5b027f2915ed"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/NOT_STARTED-IPHONE_15_PRO.png",
+          "sha256": "53c13dedfb733a651cc0d5ff9516f3531ae746be9d92fda6d1e5a1e47e71a785"
+        }
+      },
+      "resultSha256": "7da0d31a04a48a28c9ad3a28fb0c3259ef88058b76845fac6268fc57bdaec83d"
+    },
+    {
+      "code": "TERMINAL_FAILED_PIXEL_7",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "PIXEL_7",
+        "generationStatus": "FAILED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Não foi possível gerar um ajuste. Suas escolhas foram preservadas; você pode tentar novamente acima.",
+        "reloadedMessage": "Leitura encerrada. Não foi possível gerar um ajuste. Suas escolhas foram preservadas; você pode tentar novamente acima.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "FAILED",
+        "evidenceId": "f3eb0c1b-bcad-4d5e-8bdb-dd3fdb3fc9d8",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-f3eb0c1b-bcad-4d5e-8bdb-dd3fdb3fc9d8"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/FAILED-PIXEL_7.png",
+          "sha256": "d743224d622f216a47161e0b239592dc784410891ab9cefce2dabe5527323b4e"
+        }
+      },
+      "resultSha256": "87db63ba4c1f9b2b93052e7d7dc04723a8ac9933ebeb79317663d31072f5268c"
+    },
+    {
+      "code": "TERMINAL_NOT_STARTED_PIXEL_7",
+      "status": "PASS",
+      "testMethod": "observeTerminal",
+      "source": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "result": {
+        "deviceProfile": "PIXEL_7",
+        "generationStatus": "NOT_STARTED",
+        "sessionState": "FINISHED",
+        "reloadedSessionState": "FINISHED",
+        "resultPresent": false,
+        "renderedResultPresent": false,
+        "reloadedResultPresent": false,
+        "savedResultConfirmed": null,
+        "terminalMessage": "Leitura encerrada. Nenhum ajuste foi gerado. Suas escolhas foram preservadas.",
+        "reloadedMessage": "Leitura encerrada. Nenhum ajuste foi gerado. Suas escolhas foram preservadas.",
+        "messageMatchesResult": true,
+        "persistedGenerationStatus": "NOT_STARTED",
+        "evidenceId": "05811068-d518-48e3-af10-7151ad343f46",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-05811068-d518-48e3-af10-7151ad343f46"
+        ],
+        "screenshot": {
+          "path": "docs/homologacao/evidencias/vega-v14/terminal/NOT_STARTED-PIXEL_7.png",
+          "sha256": "41e3df13bdab56fa218b4a170a6eb62839c2b8e3bda5168bb62409ab20e3f12b"
+        }
+      },
+      "resultSha256": "9966ecac9b00e46040e32f64027a9e905c2a9013514d4ee5930d562626e391b4"
+    },
+    {
+      "code": "PUBLISHED_ARTIFACT_IDENTITY",
+      "status": "PASS",
+      "testMethod": "publishedBytesWithLocalApi",
+      "result": {
+        "publicUrl": "https://v8.clubemusa.com.br/agent-validation",
+        "diagnostic": {
+          "status": "UP",
+          "surface": "pde-platform-frontend",
+          "version": "v8",
+          "legacySlot": "v8",
+          "publicUrl": "https://v8.clubemusa.com.br",
+          "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "productSlug": "metodo-musa-7-dias",
+          "image": "ghcr.io/paulofor/pde-platform-frontend-v8:6e54e1908fae9a3a8883ea94c9a15a0e90d8bd6c",
+          "imageVersionId": "v8",
+          "imageTag": "6e54e1908fae9a3a8883ea94c9a15a0e90d8bd6c",
+          "commitSha": "6e54e1908fae9a3a8883ea94c9a15a0e90d8bd6c",
+          "frontendSourceSha256": "b77a2869c1944afc8edb1c0870caa6016e07f05c80113f56e1a829dcff3bc014",
+          "deployedAt": "2026-10-09T16:23:50Z",
+          "containerHostname": "db01e8edc748",
+          "knownPointedDomains": [
+            {
+              "host": "v1.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "legacy",
+              "experienceVersion": "musa-pde-entry-v5-video-explicativo"
+            },
+            {
+              "host": "v2.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "legacy",
+              "experienceVersion": "musa-pde-entry-v5-video-explicativo"
+            },
+            {
+              "host": "v5.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "pointed",
+              "experienceVersion": "musa-pde-entry-v5-video-explicativo"
+            },
+            {
+              "host": "v6.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "pointed",
+              "experienceVersion": "musa-pde-entry-v6-video-motivacional"
+            },
+            {
+              "host": "v7.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "pointed",
+              "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"
+            },
+            {
+              "host": "v8.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "pointed",
+              "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"
+            },
+            {
+              "host": "v9.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "reserved",
+              "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"
+            },
+            {
+              "host": "v10.clubemusa.com.br",
+              "observedAddress": "163.245.200.7",
+              "role": "reserved",
+              "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"
+            }
+          ]
+        },
+        "assets": [
+          {
+            "path": "index.html",
+            "sha256": "afd9e8e0be3ad8eede1f12198c0fa96ad2fde0973010f4183193ab6ec6a8e177",
+            "bytes": 528
+          },
+          {
+            "path": "runtime-config.js",
+            "sha256": "0ac8fa11dc86ea2285bfc1a18c58d4ccc1118f1164d280a0ac12ff251a186900",
+            "bytes": 327
+          },
+          {
+            "path": "version-diagnostics.json",
+            "sha256": "c8af6e27f13aae56732eaae3bc81b2d020dc64541bf74b291fd82e2dad7b1d19",
+            "bytes": 1939
+          },
+          {
+            "path": "assets/index-C-ULzpJJ.js",
+            "sha256": "86475883074b2ba82c50be2f5b9b064b144ff7363c73e8d81e6b73a4183162f0",
+            "bytes": 805145
+          },
+          {
+            "path": "assets/index-BpcB_2rj.css",
+            "sha256": "6d0a21a21f4ac69097fff1f178a616ecfc28833f80457196796583f4ed337328",
+            "bytes": 69739
+          },
+          {
+            "path": "assets/component-C7NwQeqs.js",
+            "sha256": "def967a36cc4c630c44ad2885f0eca2529812485a53b8ee8665759f243e4b087",
+            "bytes": 13061
+          },
+          {
+            "path": "assets/component-Bh0GJILa.css",
+            "sha256": "492f3e034852fd88ec2e01d28da25c4f85f5e1cbfc48e6674417c4ff0ffc10b0",
+            "bytes": 3528
+          }
+        ],
+        "execution": "Os arquivos públicos acima foram executados na sandbox, com API local e MySQL real. O campo experienceVersion=v12 do diagnóstico pertence ao slot comercial; a rota agent-validation contém e usa a v14 da sessão.",
+        "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel"
+      },
+      "resultSha256": "92390259dc2e80a4a194cd616368be2da43884b6a0fc1ae00cca68f387ef610f"
+    },
+    {
+      "code": "ORIGINAL_ACCESS_VALID",
+      "status": "PASS",
+      "testMethod": "originalSessionValidity",
+      "result": {
+        "observedAt": "2026-10-20T16:04:55.017385+00:00",
+        "source": "MCP db_query; SELECT projetado sem segredos",
+        "sessions": [
+          {
+            "id": "38ff517d-b800-4ba8-9637-0dd648e6e989",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "GENERATING",
+            "revoked": false,
+            "expires_at": "2026-10-27T04:57:10.787363",
+            "created_at": "2026-10-20T04:57:10.787355"
+          },
+          {
+            "id": "dd38eb30-5db7-4afe-b1ff-bce8f037f165",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "GENERATING",
+            "revoked": false,
+            "expires_at": "2026-10-27T04:57:18.391593",
+            "created_at": "2026-10-20T04:57:18.391588"
+          },
+          {
+            "id": "49aa756c-c9a8-4efd-b8cc-820abe4d4028",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "GENERATING",
+            "revoked": false,
+            "expires_at": "2026-10-27T04:57:23.158846",
+            "created_at": "2026-10-20T04:57:23.158841"
+          },
+          {
+            "id": "f762f33a-a110-4cd4-b0bb-28c582c4f567",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "GENERATING",
+            "revoked": false,
+            "expires_at": "2026-10-27T04:57:29.878945",
+            "created_at": "2026-10-20T04:57:29.87894"
+          },
+          {
+            "id": "42010d03-8412-449c-9209-0234165d44e9",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "FINISHED",
+            "revoked": false,
+            "expires_at": "2026-10-27T04:57:35.899086",
+            "created_at": "2026-10-20T04:57:35.89908"
+          },
+          {
+            "id": "fe317767-c68b-40a8-8d1a-c353b894e3c6",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "GENERATING",
+            "revoked": false,
+            "expires_at": "2026-10-27T04:59:15.239257",
+            "created_at": "2026-10-20T04:59:15.239252"
+          },
+          {
+            "id": "5cb0e9e1-f9fa-43ff-ba55-d59cde76c44c",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "GENERATING",
+            "revoked": false,
+            "expires_at": "2026-10-27T05:07:48.49648",
+            "created_at": "2026-10-20T05:07:48.496471"
+          },
+          {
+            "id": "7e231af5-5e20-4135-a9c9-d4c87b7d4dda",
+            "cycle_id": 13,
+            "product_id": 4,
+            "experiment_id": 106,
+            "prototype_version": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+            "origin": "AGENT_VALIDATION",
+            "state": "FINISHED",
+            "revoked": false,
+            "expires_at": "2026-10-27T05:12:04.141976",
+            "created_at": "2026-10-20T05:12:04.141971"
+          }
+        ],
+        "expiredOrRevoked": false
+      },
+      "resultSha256": "dd67223dd3c187885267217d0e6d6c88f8bfc9d519ff1ca4eaa53b197e6f1bba"
+    },
+    {
+      "code": "CUMULATIVE_CAPACITY",
+      "status": "PASS",
+      "testMethod": "boundedTerminalCoverage",
+      "result": {
+        "originalCycleId": 13,
+        "originalSessionsUsed": 8,
+        "sessionLimit": 18,
+        "attemptLimit": 36,
+        "localSessionsUsed": 13,
+        "futureFullHomologationAndReviews": 16,
+        "newPublishedSessionsCreated": 0
+      },
+      "resultSha256": "24ca6b5f78b1b13b39b0359ab6e47b582f2b6ccd9b241fe9692720a9d68b34cd"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "sha256": "65b3d1c9f17056f72d6a4c48d2b9d2f801297f24b8592aad91dcd929f86b7d25"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/private-terminal-result-evidence.mjs",
+      "sha256": "419a3df02f1862811943a747e791ef019a9c1229e2936b82bb76d095a493849f"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/vega-deterministic-fixture.mjs",
+      "sha256": "b35f4a3245940d0eb5e0ebc49bbe126f449fee31e69e1a925221816d25172998"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "sha256": "e313bc6558f5147ca9cf4dbce400abb46d94a23877aad21deb479f6af7a6b62c"
+    }
+  ],
+  "testReceiptPath": "docs/homologacao/evidencias/vega-v14/terminal/harness-result.json"
+}

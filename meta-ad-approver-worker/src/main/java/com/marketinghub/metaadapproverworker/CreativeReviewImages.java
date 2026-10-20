@@ -19,6 +19,7 @@ final class CreativeReviewImages implements AutoCloseable {
   private final List<Path> paths = new ArrayList<>();
   private final List<JsonNode> metadata = new ArrayList<>();
   private final Map<String, Integer> attachedHashes = new LinkedHashMap<>();
+  private final Map<String, byte[]> verifiedDownloads = new HashMap<>();
 
   /** Reserva o diretório efêmero somente para a tarefa em revisão. */
   private CreativeReviewImages(Path directory) {
@@ -26,8 +27,8 @@ final class CreativeReviewImages implements AutoCloseable {
   }
 
   /**
-   * Baixa imagens exclusivamente pelo contrato reservado do backend e confere a identidade dos
-   * pixels.
+   * Recupera leituras transitórias pelo contrato reservado do backend e confere os pixels antes
+   * de permitir a inferência.
    */
   static CreativeReviewImages load(RestClient backend, Map<String, Object> task)
       throws IOException {
@@ -38,7 +39,7 @@ final class CreativeReviewImages implements AutoCloseable {
     String endpoint =
         "/api/internal/agent-tasks/meta-ad-approver/stage-executions/" + id + "/visual-inputs";
     try {
-      var inputs = backend.get().uri(endpoint).retrieve().body(JsonNode.class);
+      var inputs = CreativeEvidenceReader.read(backend, endpoint, id, JsonNode.class);
       if (inputs == null || !inputs.isArray() || inputs.isEmpty())
         throw new IllegalStateException("Peça final indisponível para Têmis.");
       var checks = new ArrayList<Map<String, Object>>();
@@ -54,7 +55,7 @@ final class CreativeReviewImages implements AutoCloseable {
                 + evidence.path("id").asLong()
                 + "/content";
         log.info("Baixando peça para Têmis. taskId={} endpoint={}", id, content);
-        byte[] bytes = backend.get().uri(content).retrieve().body(byte[].class);
+        byte[] bytes = CreativeEvidenceReader.read(backend, content, id, byte[].class);
         if (bytes == null
             || !HexFormat.of()
                 .formatHex(MessageDigest.getInstance("SHA-256").digest(bytes))
@@ -111,11 +112,8 @@ final class CreativeReviewImages implements AutoCloseable {
           || !"GENERATED_ILLUSTRATION".equals(illustration.path("role").asText()))
         throw new IllegalStateException("Origem ilustrativa incompleta.");
       byte[] illustrationBytes =
-          backend
-              .get()
-              .uri(endpoint + "/illustrations/" + job + "/content")
-              .retrieve()
-              .body(byte[].class);
+          CreativeEvidenceReader.read(
+              backend, endpoint + "/illustrations/" + job + "/content", taskId, byte[].class);
       if (illustrationBytes == null
           || !sha(illustrationBytes).equals(illustration.path("sha256").asText()))
         throw new IllegalStateException("Hash da ilustração divergente.");
@@ -213,24 +211,30 @@ final class CreativeReviewImages implements AutoCloseable {
       throw new IllegalStateException("A fonte ou o destino pertencem a outra versão.");
   }
 
-  /** Recalcula o hash de bytes entregues pelo endpoint canônico reservado para esta revisão. */
+  /** Reutiliza a mesma leitura nesta tarefa e reconfere o hash de cada referência à prova. */
   private byte[] verifiedPixels(RestClient backend, String endpoint, long taskId, JsonNode source)
       throws Exception {
     long sourceTask = source.path("sourceTaskId").asLong();
     long artifact = source.path("evidence").path("id").asLong();
     if (sourceTask < 1 || artifact < 1) throw new IllegalStateException("Fonte sem identidade.");
     String content = endpoint + "/" + sourceTask + "/" + artifact + "/content";
-    log.info("Baixando prova de origem/destino para Têmis. taskId={} endpoint={}", taskId, content);
-    byte[] bytes = backend.get().uri(content).retrieve().body(byte[].class);
+    byte[] bytes = verifiedDownloads.get(content);
+    boolean reused = bytes != null;
+    if (!reused) {
+      log.info("Baixando prova de origem/destino para Têmis. taskId={} endpoint={}", taskId, content);
+      bytes = CreativeEvidenceReader.read(backend, content, taskId, byte[].class);
+    }
     if (bytes == null || !sha(bytes).equals(source.path("evidence").path("sha256").asText()))
       throw new IllegalStateException(
           "O hash da fonte ou da captura recebida por Têmis está incorreto.");
+    verifiedDownloads.put(content, bytes);
     log.info(
-        "Prova recebida por Têmis. taskId={} endpoint={} bytes={} sha256={}",
+        "Prova verificada por Têmis. taskId={} endpoint={} bytes={} sha256={} reused={}",
         taskId,
         content,
         bytes.length,
-        sha(bytes));
+        sha(bytes),
+        reused);
     return bytes;
   }
 

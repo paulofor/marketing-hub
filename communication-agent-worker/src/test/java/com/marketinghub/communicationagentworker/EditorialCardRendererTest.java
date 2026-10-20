@@ -15,6 +15,42 @@ import org.junit.jupiter.api.Test;
 class EditorialCardRendererTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Confere nos pixels a distinção entre ilustração e demonstração antes da ação. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"Look para a Ocasião", "Outra ocasião"})
+  void distinguishesEditorialImageFromSiteResultBeforeAction(String brand) throws Exception {
+    byte[] png = ProofCardRendererTest.source();
+    var input = spec(png, 800, 500).put("brandLabel", brand);
+    var actual =
+        javax.imageio.ImageIO.read(
+            new java.io.ByteArrayInputStream(EditorialCardRenderer.render(input, png)));
+    var expected =
+        new java.awt.image.BufferedImage(984, 110, java.awt.image.BufferedImage.TYPE_INT_RGB);
+    var g = expected.createGraphics();
+    try {
+      g.setRenderingHint(
+          java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+      g.setRenderingHint(
+          java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+          java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+      g.setColor(java.awt.Color.decode(input.path("backgroundColor").asText()));
+      g.fillRect(0, 0, 984, 110);
+      g.setColor(java.awt.Color.decode(input.path("accentColor").asText()));
+      g.setFont(new java.awt.Font("DejaVu Sans", java.awt.Font.PLAIN, 36));
+      var metrics = g.getFontMetrics();
+      String first = "Ilustração por IA; não é resultado do site.";
+      String second = "No site: exemplo com dados de teste, sem cobrança.";
+      assertThat(metrics.stringWidth(first)).isLessThanOrEqualTo(984);
+      assertThat(metrics.stringWidth(second)).isLessThanOrEqualTo(984);
+      g.drawString(first, 0, metrics.getAscent());
+      g.drawString(second, 0, metrics.getAscent() + metrics.getHeight());
+      assertThat(actual.getRGB(48, 1032, 984, 110, null, 0, 984))
+          .isEqualTo(expected.getRGB(0, 0, 984, 110, null, 0, 984));
+    } finally {
+      g.dispose();
+    }
+  }
+
   /** Recusa fonte adulterada, papel fictício e recorte ilegível antes de produzir PNG. */
   @Test
   void preservesProvenanceAndRejectsInvalidCrops() throws Exception {

@@ -133,11 +133,12 @@ proofReference e visualComposition. A ilustração não herda o parecer da prova
 personalização. Não diga que é captura, resultado pessoal, foto de cliente ou produto físico.
 Escolha recorte com roupas/objetos inteiros, detalhes reconhecíveis e acabamento adequado;
 retire rótulos operacionais impressos na origem sem esconder limites materiais. O renderer
-identifica a ilustração antes do CTA e mantém o footer factual. A prova funcional continua
+identifica antes do CTA que a ilustração não é resultado do site e que o destino oferece
+exemplo com dados de teste, sem cobrança; mantém o footer factual. A prova funcional continua
 acessível ao revisor; os pixels ilustrativos não podem ser apontados como parte dela.
 
 Use uma abertura ligada à situação/desejo, benefício simples e próxima ação verdadeira.
-Não transforme a peça em manual técnico. O template editorial oferece 984×640 para a imagem,
+Não transforme a peça em manual técnico. O template editorial oferece 984×590 para a imagem,
 headline de até duas linhas, corpo de até duas linhas, identificação e CTA legíveis a 393 pixels.
 Não invente disponibilidade comercial. Não altere oferta, formatos ou orçamento.
 

@@ -94,3 +94,34 @@ A regressão de correlação reproduziu duas vezes o ID antigo na evidência da 
 tarefa (767/768 e 1767/1768). A recomposição agora grava a identificação da nova
 tarefa e conserva a origem em `creativeRecomposition.sourceTaskId`; o teste
 confirmou a correção, a imutabilidade da origem e custo zero após o callback.
+
+## Retorno independente da peça 768 — identificação da ilustração
+
+A recomposição 768/1059 terminou sem inferência (tokens e custo incrementais zero),
+com pixels idênticos ao replay local. Psique 769 recebeu o arquivo exato e marcou
+acabamento 4, conexão com desejo 4 e clareza do produto 2. O gate não aprovou a peça:
+“Ilustração por IA” poderia ser entendido como resultado do próprio site, que usa IA.
+O parecer é uma simulação; as notas não comprovam preferência ou vendas.
+
+Repetir Íris consumiria saldo para refazer um plano já preservado; ignorar o parecer
+manteria uma interpretação enganosa. A opção escolhida corrige o rótulo compartilhado
+do renderer sem inferência, preservando manchete, CTA, fonte, prova e histórico.
+O quadro ilustrativo reserva 590 pixels de altura para caberem duas linhas de
+qualificação com fonte 36 antes da ação. Não há corte adicional das roupas.
+
+A regressão reproduziu a ausência dessas duas linhas nos pixels para Alcyone e
+outra identidade antes da correção. A validação adicional cobre leitura a 393 pixels,
+correspondência dos arquivos, ausência de sobreposição e os caminhos anteriores.
+Os novos pixels exigem seus próprios pareceres e decisão humana.
+
+Validação local: 116 testes do executor, zero falhas/erros, quatro integrações
+opcionais dispensadas; o replay com a imagem e especificação reais foi executado.
+Chromium desktop, iPhone 15 Pro e Pixel 7 emulados confirmaram os 1080×1350 pixels,
+sem transbordamento, com os dois qualificadores completos antes da ação.
+
+O consumo conhecido desta preparação após Psique 769 é US$ 9,1779158 de US$ 10,
+saldo estimado de US$ 0,8220842. A última revisão de Psique custou US$ 0,5101036;
+Têmis 766 custou US$ 0,36045. A soma histórica (US$ 0,8705536) excede esse saldo,
+portanto novas chamadas ficam pausadas até existir limite suficiente ou saldo
+conciliado que as comporte. A correção e recomposição determinísticas podem prosseguir.
+Esses valores são estimativas, não fatura conciliada, nem autorização adicional.

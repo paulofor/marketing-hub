@@ -34,7 +34,7 @@ final class EditorialCardRenderer {
       throw new IllegalArgumentException("Recorte da prova vinculada fora dos pixels aprovados.");
   }
 
-  /** Preserva os pixels da ilustração e imprime sua natureza antes do convite. */
+  /** Preserva os pixels e distingue ilustração da demonstração de teste antes do convite. */
   static byte[] render(JsonNode spec, byte[] bytes) throws IOException {
     ProofCardRenderer.validateCustomerCopy(spec);
     var illustration = spec.path("illustration");
@@ -59,8 +59,8 @@ final class EditorialCardRenderer {
         || (long) x + w > original.getWidth()
         || (long) y + h > original.getHeight())
       throw new IllegalArgumentException("Recorte fora dos pixels ilustrativos.");
-    double scale = Math.min(984.0 / w, 640.0 / h);
-    if (scale < 0.6 || (w * scale) * (h * scale) < 984 * 640 * 0.75)
+    double scale = Math.min(984.0 / w, 590.0 / h);
+    if (scale < 0.6 || (w * scale) * (h * scale) < 984 * 590 * 0.75)
       throw new IllegalArgumentException("Ilustração pequena ou pouco legível na composição.");
     var canvas = new BufferedImage(1080, 1350, BufferedImage.TYPE_INT_RGB);
     Graphics2D g = canvas.createGraphics();
@@ -79,13 +79,21 @@ final class EditorialCardRenderer {
       ProofCardRenderer.text(g, spec.path("body").asText(), 48, 280, 984, 95, 36, Font.PLAIN);
       ProofCardRenderer.text(g, spec.path("eyebrow").asText(), 48, 373, 984, 48, 36, Font.PLAIN);
       int width = (int) Math.round(w * scale), height = (int) Math.round(h * scale);
-      int left = (1080 - width) / 2, top = 425 + (640 - height) / 2;
+      int left = (1080 - width) / 2, top = 425 + (590 - height) / 2;
       g.setColor(Color.WHITE);
-      g.fillRoundRect(40, 420, 1000, 650, 24, 24);
+      g.fillRoundRect(40, 420, 1000, 600, 24, 24);
       g.drawImage(original, left, top, left + width, top + height, x, y, x + w, y + h, null);
       g.setColor(accent);
       ProofCardRenderer.text(
-          g, "Ilustração por IA · exemplo sem cobrança.", 48, 1082, 984, 50, 36, Font.PLAIN);
+          g,
+          "Ilustração por IA; não é resultado do site.\n"
+              + "No site: exemplo com dados de teste, sem cobrança.",
+          48,
+          1032,
+          984,
+          110,
+          36,
+          Font.PLAIN);
       g.fillRoundRect(48, 1150, 984, 95, 22, 22);
       g.setColor(Color.WHITE);
       ProofCardRenderer.text(g, spec.path("ctaText").asText(), 72, 1166, 936, 62, 36, Font.BOLD);

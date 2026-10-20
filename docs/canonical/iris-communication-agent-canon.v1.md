@@ -752,3 +752,9 @@ Quebras de linha explícitas da especificação fazem parte da direção editori
 o renderizador deve preservá-las, mantendo tamanho mínimo e rejeição de texto
 que exceda a área. Uma quebra desejada não pode ser convertida em espaço e gerar
 uma palavra isolada na linha seguinte.
+
+O rótulo de uma ilustração editorial privada deve distinguir sua origem da entrega:
+“Ilustração por IA; não é resultado do site.” A linha seguinte explica o destino:
+“No site: exemplo com dados de teste, sem cobrança.” Ambas ficam antes do CTA,
+legíveis na redução móvel, sem recortar a imagem ou esconder o limite de personalização.
+A expressão “por IA” isolada é insuficiente quando o produto também gera imagens por IA.

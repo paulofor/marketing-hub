@@ -1,0 +1,18 @@
+{
+  "cardKey": "avaliacoes-online-credibilidade-explicacoes-mentais",
+  "collection": "neuromarketing",
+  "title": "Explicar credibilidade de avaliações com pistas verificáveis",
+  "finding": "Estudo comparativo com 166 pessoas: justificativas narrativas para classificação de avaliações online receberam melhores notas percebidas do que destaque de palavras. Não foram medidas compras nem precisão real.",
+  "mechanism": "Explicações contextualizadas podem facilitar compreensão. Maior confiança relatada não demonstra veracidade.",
+  "commercialApplication": "Exibir origem e evidências verificáveis de avaliações autênticas, com justificativas claras e indicação de incerteza.",
+  "evidenceStrength": "Estudo humano com 166 avaliadores e entrevistas com 10; escalas subjetivas, alta correlação entre indicadores, sem medição de compras.",
+  "publishedOn": "2026-10-20",
+  "validUntil": "2026-12-04",
+  "experimentHypothesis": "Num conjunto rotulado independentemente, explicações auditáveis elevarão a identificação correta sem aumentar erros ou confiança excessiva.",
+  "risks": "Confiança indevida e classificação incorreta; verificar fatos e consentimento.",
+  "limits": "Não avalia vendas ou acurácia real; amostra e contexto não generalizáveis ao Brasil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-20-explicacoes-credibilidade-avaliacoes.md",
+  "sourceTitle": "Fonte revisada MIND-X: explicações de credibilidade de avaliações online",
+  "sourceSha256": "3d3d38a053c0da80d32875dfef3c4c74fe8a57b730e88b86e3770036424439a8"
+}

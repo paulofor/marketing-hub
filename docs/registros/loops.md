@@ -10501,3 +10501,11 @@ A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recri
   completam a validação. Sem inferência externa e sem declarar impacto comercial.
 - Limite: o diagnóstico não presume causa funcional nem autoriza rerun sem evidência.
   Matriz: docs/homologacao/capella-worker-retomada-codex-v1.md.
+
+## LOOP-GERASALESPAGE-CALLBACK-JANELA-DEADLOCK — 2026-10-20
+
+- **Evidência:** Capella/105, pacote `df01c098-8baf-46e6-87eb-a9de6d8842e4`: modelo concluiu, recibo de 2.073.985 bytes, 47.261/6.238 tokens; callback e definição da primeira janela falharam com deadlock ao atualizar `experiment` às 08:09:33 UTC. A transação não persistiu saída/custo. O mesmo callback foi bem-sucedido nas seis etapas anteriores, descartando falta de crédito ou schema como causa desta falha.
+- **Causa:** gravação de filhos com FK seguida da promoção concorrente do lock no pai; comandos de ciclo também tinham entrada ciclo→produto, oposta ao comando canônico.
+- **Correção:** reservar produto→experimento antes de alterar a execução/filhos, produto→ciclo nos comandos de ciclo; backfill consulta novamente sob lock. Recuperação 5xx aceita somente callback do mesmo job/etapa e recibo exato, sem inferência substituta.
+- **Prevenção:** MySQL 5.7.44 reproduz deadlock na ordem anterior, confirma página e janela com a ordem corrigida em duas identidades, e testes HTTP comprovam replay/isolamento/recusa de entrada alterada. A suíte preserva o caminho válido de recuperação anterior.
+- **Limite:** testes locais não comprovam venda, margem, autorização comercial ou ausência de todos os tipos de deadlock. Não cancelar transações remotas nem repetir publicação para diagnóstico.

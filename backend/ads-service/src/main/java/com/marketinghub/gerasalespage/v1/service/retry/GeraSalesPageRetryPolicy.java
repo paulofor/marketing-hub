@@ -40,12 +40,10 @@ public final class GeraSalesPageRetryPolicy {
         && execution.getOutputTokens() == null;
   }
 
-  /** Permite somente procurar um recibo exato após falha ao ler uma resposta HTTP já recebida. */
+  /** Recupera somente o recibo exato após falha de leitura ou do callback da própria execução. */
   public static boolean receiptRecoveryWithoutResult(GeraSalesPageStageExecution execution) {
     return "FALHA".equals(execution.getStatus())
-        && Objects.toString(execution.getErrorMessage(), "")
-            .contains("Responses API returned HTTP 200")
-        && Objects.toString(execution.getErrorDetail(), "").contains("OpenAiHttpException")
+        && (responseReadFailure(execution) || resultCallbackFailure(execution))
         && execution.getOpenAiRequestBody() != null
         && execution.getOpenAiJobId() == null
         && execution.getRawResponse() == null
@@ -53,6 +51,31 @@ public final class GeraSalesPageRetryPolicy {
         && execution.getCostUsd() == null
         && execution.getInputTokens() == null
         && execution.getOutputTokens() == null;
+  }
+
+  /** Reconhece a resposta do provedor recebida antes da falha local de decodificação. */
+  private static boolean responseReadFailure(GeraSalesPageStageExecution execution) {
+    return Objects.toString(execution.getErrorMessage(), "")
+            .contains("Responses API returned HTTP 200")
+        && Objects.toString(execution.getErrorDetail(), "").contains("OpenAiHttpException");
+  }
+
+  /** Exige erro 5xx no callback de resultado do mesmo job e etapa, sem aceitar outro destino. */
+  private static boolean resultCallbackFailure(GeraSalesPageStageExecution execution) {
+    if (execution.getStageCode() == null || execution.getIdJob() == null) return false;
+    String target =
+        "/api/internal/gerasalespage/v1/"
+            + execution.getStageCode()
+            + "/stage-executions/"
+            + execution.getIdJob()
+            + "/recebe-resposta";
+    return Objects.toString(execution.getErrorDetail(), "").contains("WebClientResponseException")
+        && Pattern.compile(
+                "\\A5[0-9]{2} [^\\r\\n]+ from POST https?://[^/\\s]+"
+                    + Pattern.quote(target)
+                    + "\\z")
+            .matcher(Objects.toString(execution.getErrorMessage(), ""))
+            .matches();
   }
 
   /** Compara semanticamente os dados inseridos no prompt, modelo e schema, sem ignorar campos. */

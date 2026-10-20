@@ -173,3 +173,44 @@ falha dentro do limite global anterior. A regressão sintética escreve uma linh
 de 4,8 MB, verifica os bytes preservados e comprova status 0/17 e console menor
 que 4 KiB. Bash, ShellCheck, Actionlint e a execução real do wrapper são validados
 antes do push; esta mudança não altera inferências nem gates comerciais.
+
+## Continuação de 20/10: callback versus janela
+
+O PR #5624 foi integrado e publicado em `f7bf40c0db09b84fe0e51a483e1669f0b221c7bc`.
+A recuperação da oferta não iniciou nova inferência; seis etapas foram aceitas.
+O pacote final concluiu no Codex (recibo 2.073.985 bytes, 47.261 tokens de entrada,
+6.238 de saída, estimativa US$0,156902). Os logs comprovam deadlock no UPDATE do
+experimento durante callback e definição da primeira janela, não falha do modelo.
+A janela permaneceu ausente e o resultado continuou no recibo durável.
+
+Alternativas avaliadas: retentar a transação inteira (poderia repetir HTTP já
+executado), separar publicação externa em outbox (maior mudança de arquitetura)
+e ordenar locks antes de escrever filhos. A terceira opção fecha a causa observada
+com menor mudança, preservando os contratos e a recuperação idempotente existente.
+
+| Validação local | Aceite |
+| --- | --- |
+| MySQL 5.7, ordem anterior | Duas transações com FK reproduzem deadlock 1213 |
+| Ordem corrigida, original e outra identidade | Janela e página persistem, sem perda de atualização |
+| Callback e recebimento HTTP | Mesmo job, recibo/uso preservados; nenhum novo job |
+| Contexto ou callback divergente | Bloqueio de job, etapa, método, status, prompt ou modelo incorreto |
+| Recibo real | Validação de schema com provedor `/bin/false`; nenhuma chamada de IA |
+| Compatibilidade | Transporte antigo, publicação, recuperação e comandos de ciclo continuam válidos |
+| Comercial | Após deploy, recuperar pela tela e seguir gates até RUNNING ou dependência externa comprovada |
+
+Os testes são sintéticos e isolados; não entram em compras ou contribuição.
+Estimativa de uso do Codex permanece separada de faturamento da API ou assinatura.
+
+Validação da correção concorrente: 579 testes executados de GeraSalesPage, ciclos e
+arquitetura, sem falhas; quatro fixtures antigas de migração condicionadas não se
+aplicam ao diff sem changelog. Os três cenários novos de MySQL 5.7.44 foram
+executados. Spotless e revisão do diff aprovados. Replay do recibo real validou o
+schema com comando de provedor `/bin/false`, sem nova sessão de IA.
+
+O CI ampliado revelou um double antigo do repositório de experimentos sem a nova
+consulta com lock; o comando de janela sintético retornava 404. A fixture agora
+executa `SELECT ... FOR UPDATE` na mesma transação MySQL e devolve o estado externo
+simulado. A rodada local canônica `--persistence-only` passou em decisões REST,
+janela/ciclos, contexto, migrations/reaplicação/idempotência e diff. Bash-n e
+ShellCheck do runner, Spotless e pacote de evidências também aprovados. Esta rodada
+não cria tráfego ou compras nem substitui os gates comerciais de Capella.

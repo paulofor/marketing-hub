@@ -56,6 +56,7 @@ public class PublicationRecoveryLocalApplication {
     var service =
         new GeraSalesPagePublicationAuditService(
             fixture.experiments,
+            fixture.products,
             fixture.executions,
             fixture.publications,
             fixture.stages,

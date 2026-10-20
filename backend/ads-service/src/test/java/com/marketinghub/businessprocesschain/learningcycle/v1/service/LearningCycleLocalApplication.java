@@ -492,7 +492,7 @@ public class LearningCycleLocalApplication {
         com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository.class);
   }
 
-  /** Simula o cadastro oficial e estados externos que o ciclo apenas consulta. */
+  /** Simula estados externos, preservando os locks físicos usados pelos comandos do ciclo. */
   @Bean
   ExperimentRepository experiments(DataSource source) {
     resetExperiments();
@@ -507,6 +507,15 @@ public class LearningCycleLocalApplication {
                   && experiment.getProduct().getId().equals(call.getArgument(1));
             });
     var jdbc = new org.springframework.jdbc.core.JdbcTemplate(source);
+    when(repository.findForSalesPageRecovery(anyLong()))
+        .thenAnswer(
+            call -> {
+              Long id = call.getArgument(0);
+              var rows =
+                  jdbc.queryForList(
+                      "SELECT id FROM experiment WHERE id = ? FOR UPDATE", Long.class, id);
+              return rows.isEmpty() ? Optional.empty() : Optional.ofNullable(EXPERIMENTS.get(id));
+            });
     var nextId =
         new java.util.concurrent.atomic.AtomicLong(
             jdbc.queryForObject("SELECT COALESCE(MAX(id), 92000) FROM experiment", Long.class));

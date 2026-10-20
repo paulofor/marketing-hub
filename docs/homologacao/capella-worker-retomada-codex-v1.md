@@ -206,3 +206,11 @@ arquitetura, sem falhas; quatro fixtures antigas de migração condicionadas nã
 aplicam ao diff sem changelog. Os três cenários novos de MySQL 5.7.44 foram
 executados. Spotless e revisão do diff aprovados. Replay do recibo real validou o
 schema com comando de provedor `/bin/false`, sem nova sessão de IA.
+
+O CI ampliado revelou um double antigo do repositório de experimentos sem a nova
+consulta com lock; o comando de janela sintético retornava 404. A fixture agora
+executa `SELECT ... FOR UPDATE` na mesma transação MySQL e devolve o estado externo
+simulado. A rodada local canônica `--persistence-only` passou em decisões REST,
+janela/ciclos, contexto, migrations/reaplicação/idempotência e diff. Bash-n e
+ShellCheck do runner, Spotless e pacote de evidências também aprovados. Esta rodada
+não cria tráfego ou compras nem substitui os gates comerciais de Capella.

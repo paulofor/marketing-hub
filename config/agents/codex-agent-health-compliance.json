@@ -40,7 +40,7 @@
       "module": "financial-agent-worker",
       "reporter": "agent-health-report.mjs",
       "activation": "docker-compose.yml",
-      "expectedVersion": 6,
+      "expectedVersion": 7,
       "versionSources": [
         "financial-agent-worker/docker-compose.yml"
       ],
@@ -48,6 +48,10 @@
         "financial-agent-worker/docker-compose.yml",
         "financial-agent-worker/src/main/resources/application.yml",
         ".github/workflows/financial-agent-worker-ci.yml"
+      ],
+      "strategicModelSources": [
+        "financial-agent-worker/docker-compose.yml",
+        "financial-agent-worker/src/main/resources/application.yml"
       ]
     },
     {
@@ -55,7 +59,7 @@
       "module": "experiment-strategist-worker",
       "reporter": "agent-health-report.mjs",
       "activation": "docker-compose.yml",
-      "expectedVersion": 7,
+      "expectedVersion": 8,
       "versionSources": [
         "experiment-strategist-worker/docker-compose.yml"
       ],
@@ -64,7 +68,8 @@
         "experiment-strategist-worker/src/main/resources/application.yml",
         "experiment-strategist-worker/scripts/start-validated-runtime.sh",
         "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/OpportunityReviewConsumer.java"
-      ]
+      ],
+      "codexModel": "gpt-6-astra"
     },
     {
       "key": "meta-ad-approver",
@@ -88,7 +93,7 @@
       "module": "landing-generator-agent-worker",
       "reporter": "agent-health-report.mjs",
       "activation": "docker-compose.yml",
-      "expectedVersion": 6,
+      "expectedVersion": 7,
       "versionSources": [
         "landing-generator-agent-worker/docker-compose.yml"
       ],
@@ -97,6 +102,10 @@
         "landing-generator-agent-worker/src/main/resources/application.yml",
         ".github/workflows/landing-generator-agent-worker-ci.yml",
         "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentProperties.java"
+      ],
+      "strategicModelSources": [
+        "landing-generator-agent-worker/docker-compose.yml",
+        "landing-generator-agent-worker/src/main/resources/application.yml"
       ]
     },
     {
@@ -104,7 +113,7 @@
       "module": "communication-agent-worker",
       "reporter": "agent-health-report.mjs",
       "activation": "docker-compose.yml",
-      "expectedVersion": 3,
+      "expectedVersion": 4,
       "versionSources": [
         "communication-agent-worker/docker-compose.yml"
       ],
@@ -112,6 +121,10 @@
         "communication-agent-worker/docker-compose.yml",
         "communication-agent-worker/src/main/resources/application.yml",
         ".github/workflows/communication-agent-worker-ci.yml"
+      ],
+      "strategicModelSources": [
+        "communication-agent-worker/docker-compose.yml",
+        "communication-agent-worker/src/main/resources/application.yml"
       ]
     },
     {
@@ -150,5 +163,6 @@
     }
   ],
   "codexVersion": "0.159.3",
-  "codexModel": "gpt-6.1-sol"
+  "codexModel": "gpt-6.1-sol",
+  "strategicModel": "gpt-6-astra"
 }

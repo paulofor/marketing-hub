@@ -11,7 +11,7 @@ public class WorkerProperties {
   private String backendUrl;
   private String repositoryPath;
   private String codexCommand;
-  private String model;
+  private String model = "gpt-6-astra";
   private String reasoningEffort = "high";
   private Duration codexTimeout = Duration.ofMinutes(40);
   private String clarityApiTokenFile;

@@ -11,7 +11,13 @@ if not PROJECT.startswith("aihub-"):
     raise ValueError("Use o projeto Compose exclusivo autorizado.")
 COMPOSE = ["docker", "compose", "-p", PROJECT, "-f", str(pathlib.Path(__file__).with_name("compose.yaml"))]
 CONTRACT = json.loads((ROOT / "config/agents/codex-agent-health-compliance.json").read_text())
-AGENTS = CONTRACT["agents"]
+# Baseline imutável da migração de 01/10, independente do rollout técnico atual.
+HISTORICAL_VERSIONS = {"growth-operator": 8, "customer-agent": 8, "financial-agent": 6,
+                       "experiment-strategist": 7, "meta-ad-approver": 6,
+                       "landing-generator": 6, "communication-director": 3,
+                       "videomaker": 5, "market-radar": 9}
+AGENTS = [{**agent, "expectedVersion": HISTORICAL_VERSIONS[agent["key"]]}
+          for agent in CONTRACT["agents"]]
 LIQUIBASE = [
     "mvn", "-q", "-f", str(ROOT / "backend/ads-service/pom.xml"),
     "-Dliquibase.changeLogFile=src/main/resources/db/changelog/changesets/2026-10-01-agents-codex-gpt61-v1.yaml",

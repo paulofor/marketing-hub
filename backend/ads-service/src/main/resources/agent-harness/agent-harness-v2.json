@@ -397,7 +397,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração do Codex financeiro.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Modelo canônico configurável por CODEX_MODEL.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" },
+            { "key": "engine", "label": "Motor", "value": "gpt-6-astra estratégico · gpt-6.1-sol operacional", "description": "Astra na economia BPM, hipóteses e projeções; Sol na conciliação, tarifas e teto audiovisual.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "Nenhum valor é inferido na tela.", "sourceReference": "financial-agent-worker/src/main/java/com/marketinghub/financialagentworker/FinancialCodexRunner.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Execução limitada ao snapshot persistido.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" }
           ]
@@ -498,8 +498,8 @@
           "title": "Runtime do modelo",
           "description": "Configuração do Codex estrategista.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · modelo do contrato do agente", "description": "A pesquisa web é habilitada explicitamente no comando.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/CodexStrategistRunner.java" },
-            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "Nenhum valor é inventado pelo painel.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/CodexStrategistRunner.java" },
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6-astra", "description": "Padrão de Atena para estratégia, hipóteses e aprendizado; modelo efetivo registrado em cada execução.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/CodexStrategistRunner.java" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high explícito", "description": "Esforço configurado por EXPERIMENT_STRATEGIST_REASONING_EFFORT e preservado na troca do modelo.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/CodexStrategistRunner.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Possui também limite de inatividade durante a execução.", "sourceReference": "experiment-strategist-worker/src/main/resources/application.yml" }
           ]
         },
@@ -724,7 +724,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração efetiva da construção PDE.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Modelo canônico do Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
+            { "key": "engine", "label": "Motor", "value": "gpt-6-astra na arquitetura · gpt-6.1-sol na execução", "description": "A atividade productArchitecture do planejamento prevalece sobre o padrão operacional do agente.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Obrigatório em toda execução; configuração inferior bloqueia antes do modelo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentProperties.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Browser é usado para verificar, não para publicar.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" }
           ]
@@ -845,7 +845,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração efetiva da materialização de comunicação.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Sessão individual de Íris sem chave OpenAI no prompt.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
+            { "key": "engine", "label": "Motor", "value": "gpt-6-astra na mensagem/copy · gpt-6.1-sol na produção", "description": "Astra no contrato de comunicação e strategy/compose da página; Sol na materialização e HTML.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
             { "key": "image-engine", "label": "Motor visual", "value": "OpenAI · gpt-image-2.5-sunburst", "description": "Produz somente LANDING, ADS e SOCIAL apoiados em prova real aprovada.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável e auditado por execução.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "A agente devolve artefatos pelo callback e não escreve no repositório.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentCodexRunner.java" }

@@ -49,7 +49,7 @@ public class CommunicationAgentCodexRunner {
     Path schema = materialize("prompts/iris/v1/output-schema.json", ".json");
     Path mcp = materialize("mcp/communication-agent.mjs", ".mjs");
     try {
-      List<String> command = command(answer, schema, mcp);
+      List<String> command = command(answer, schema, mcp, modelCode(task));
       for (Path image : images) {
         command.add("--image");
         command.add(image.toAbsolutePath().toString());
@@ -66,7 +66,7 @@ public class CommunicationAgentCodexRunner {
           task.get("taskId"),
           task.get("processCode"),
           task.get("activityId"),
-          modelCode(),
+          modelCode(task),
           configuredServiceTier());
       Process process = builder.start();
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
@@ -139,6 +139,11 @@ public class CommunicationAgentCodexRunner {
 
   /** Monta o comando Codex sem permissão de escrita ou aprovação interativa. */
   List<String> command(Path answer, Path schema, Path mcp) {
+    return command(answer, schema, mcp, properties.getModel());
+  }
+
+  /** Monta o comando com o modelo efetivo escolhido antes de iniciar a atividade. */
+  List<String> command(Path answer, Path schema, Path mcp, String selectedModel) {
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -171,8 +176,8 @@ public class CommunicationAgentCodexRunner {
     command.addAll(
         List.of(
             "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
-    if (hasText(properties.getModel())) {
-      command.addAll(List.of("--model", properties.getModel()));
+    if (hasText(selectedModel)) {
+      command.addAll(List.of("--model", selectedModel));
     }
     return command;
   }
@@ -566,8 +571,11 @@ public class CommunicationAgentCodexRunner {
   }
 
   /** Retorna o modelo efetivamente declarado na auditoria. */
-  String modelCode() {
-    return hasText(properties.getModel()) ? properties.getModel() : "codex-default";
+  String modelCode(Map<String, Object> task) {
+    String selected =
+        properties.modelForActivity(
+            String.valueOf(task.get("processCode")), String.valueOf(task.get("activityId")));
+    return hasText(selected) ? selected : "codex-default";
   }
 
   /** Confirma que a auditoria não solicite um tier omitido pelo catálogo atual do Codex. */

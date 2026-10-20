@@ -65,6 +65,7 @@ class PdeMarketStrategyDeliveryTest {
         (root/'prompt.txt').write_text(sys.stdin.read())
         with (root/'invocations.txt').open('a') as f: f.write('call\\n')
         args=sys.argv
+        (root/'arguments.json').write_text(json.dumps(args))
         pathlib.Path(args[args.index('--output-last-message')+1]).write_text((root/'answer.json').read_text())
         print(json.dumps({'type':'turn.completed','usage':{'input_tokens':100,'cached_input_tokens':20,'output_tokens':10}}))
         """);
@@ -75,6 +76,22 @@ class PdeMarketStrategyDeliveryTest {
         PdeMarketStrategyBpmTaskConsumerTest.validResult("APPROVE", "null", "null"));
     control = mock(AutomaticExecutionControl.class);
     when(control.allowsAutomaticExecution()).thenReturn(true);
+  }
+
+  /** Comprova o padrão Astra no processo real e na auditoria sem inferência externa. */
+  @Test
+  void routesStrategicDefaultAndPreservesRecordedModelOnReplay() throws Exception {
+    properties.setModel(new WorkerProperties().getModel());
+    callbackFailures = 1;
+    consumer().processOne();
+    assertThat(Files.readString(temporary.resolve("arguments.json"))).contains("gpt-6-astra");
+    properties.setModel("future-model-must-not-replace-receipt");
+    consumer().processOne();
+    assertThat(callbacks).hasSize(2);
+    assertThat(callbacks.get(0)).isEqualTo(callbacks.get(1));
+    assertThat(callbacks.get(1).path("executionAudit").path("modelCode").asText())
+        .isEqualTo("gpt-6-astra");
+    assertThat(Files.readAllLines(temporary.resolve("invocations.txt"))).hasSize(1);
   }
 
   /**

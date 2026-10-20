@@ -317,7 +317,7 @@ public class PdeConstructionBpmTaskConsumer {
             "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
             AGENT_KEY,
             taskId(task))
-        .body(executionAudit(fullPrompt, agentPromptPart, activityPromptPart))
+        .body(executionAudit(task, fullPrompt, agentPromptPart, activityPromptPart))
         .retrieve()
         .toBodilessEntity();
   }
@@ -351,7 +351,7 @@ public class PdeConstructionBpmTaskConsumer {
     command.addAll(
         List.of(
             "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
-    command.addAll(List.of("--model", properties.getModel()));
+    command.addAll(List.of("--model", properties.modelForActivity(contract.processCode(), contract.activityId())));
     return command;
   }
 
@@ -389,11 +389,14 @@ public class PdeConstructionBpmTaskConsumer {
     Map<String, Object> body = new HashMap<>();
     body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, execution.usage());
+    putModelUsage(body, execution.usage(), task);
     body.put(
         "executionAudit",
         executionAudit(
-            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
+            task,
+            execution.promptSent(),
+            execution.agentPromptPart(),
+            execution.activityPromptPart()));
     backend
         .post()
         .uri(
@@ -412,11 +415,14 @@ public class PdeConstructionBpmTaskConsumer {
     body.put("error", "Dédalo bloqueou a construção: " + result.path("rationale").asText());
     body.put("resultJson", json.writeValueAsString(result));
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, execution.usage());
+    putModelUsage(body, execution.usage(), task);
     body.put(
         "executionAudit",
         executionAudit(
-            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
+            task,
+            execution.promptSent(),
+            execution.agentPromptPart(),
+            execution.activityPromptPart()));
     body.put("blockerGuidance", functionalGuidance(result));
     backend
         .post()
@@ -480,9 +486,10 @@ public class PdeConstructionBpmTaskConsumer {
     } else {
       body.put("evidenceJson", evidence(task));
     }
-    putModelUsage(body, usage);
+    putModelUsage(body, usage, task);
     if (promptSent != null) {
-      body.put("executionAudit", executionAudit(promptSent, agentPromptPart, activityPromptPart));
+      body.put(
+          "executionAudit", executionAudit(task, promptSent, agentPromptPart, activityPromptPart));
     }
     body.put("blockerGuidance", technicalGuidance());
     return body;
@@ -490,10 +497,13 @@ public class PdeConstructionBpmTaskConsumer {
 
   /** Monta a auditoria integral da chamada executada por Dédalo. */
   private Map<String, Object> executionAudit(
-      String promptSent, String agentPromptPart, String activityPromptPart) {
+      Map<String, Object> task,
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart) {
     Map<String, Object> audit = new java.util.LinkedHashMap<>();
     audit.put("executionMode", "MODEL");
-    audit.put("modelCode", properties.getModel());
+    audit.put("modelCode", modelCode(task));
     audit.put("reasoningEffort", properties.requiredReasoningEffort());
     audit.put("promptSent", promptSent);
     audit.put("agentPromptPart", agentPromptPart);
@@ -548,7 +558,7 @@ public class PdeConstructionBpmTaskConsumer {
             "agent",
             "Dédalo",
             "model",
-            properties.getModel(),
+            modelCode(task),
             "promptVersion",
             contractFor(task).promptVersion(),
             "sourceReference",
@@ -1019,17 +1029,22 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Acrescenta ao callback apenas uma medição real da execução. */
-  private void putModelUsage(Map<String, Object> body, TokenUsage usage) {
+  private void putModelUsage(Map<String, Object> body, TokenUsage usage, Map<String, Object> task) {
     if (usage == null || !usage.informed()) return;
     body.put(
         "modelUsages",
         List.of(
             Map.of(
-                "modelCode", properties.getModel(),
+                "modelCode", modelCode(task),
                 "serviceTier", "STANDARD",
                 "inputTokens", usage.inputTokens(),
                 "cachedInputTokens", usage.cachedInputTokens(),
                 "outputTokens", usage.outputTokens())));
+  }
+
+  /** Resolve arquitetura estratégica sem elevar as atividades de produção e entrega. */
+  String modelCode(Map<String, Object> task) {
+    return properties.modelForActivity(processCode(task), activityId(task));
   }
 
   /** Extrai o identificador estável da tarefa reservada. */

@@ -36,7 +36,7 @@ public class OpportunityReviewConsumer {
   public OpportunityReviewConsumer(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${STRATEGIST_CODEX_EXECUTABLE:codex}") String codex,
-      @Value("${STRATEGIST_MODEL:gpt-6.1-sol}") String model,
+      @Value("${STRATEGIST_MODEL:gpt-6-astra}") String model,
       @Value("${STRATEGIST_REPOSITORY_PATH:/workspace}") String repositoryPath,
       ObjectMapper json) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();

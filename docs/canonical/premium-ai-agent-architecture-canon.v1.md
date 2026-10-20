@@ -178,6 +178,30 @@ pesquisa web do Codex.
 
 ## Baseline dos agentes operacionais
 
+### Seleção proporcional de modelo — decisão de 19/10/2026
+
+Usar os dois níveis: padrão explícito por agente e precedência da atividade quando
+ela exigir raciocínio estratégico. Atena usa `gpt-6-astra` como padrão, pois sua
+responsabilidade é estratégia, hipótese e aprendizado. Plutus usa Astra na avaliação
+econômica e nas projeções/hipóteses comerciais; consultas de tarifas, conciliação
+rotineira e conferência de teto audiovisual preservam o modelo operacional.
+Dédalo usa Astra na arquitetura do produto; Íris, no contrato de comunicação e na
+estratégia/copy da página. Execução material, pesquisa factual, homologação técnica,
+renderização, escuta e demais atividades preservam seus modelos especializados.
+
+A seleção usa contratos explícitos de atividade, nunca palavras no texto enviado
+pelo usuário, nomes de produtos ou IDs produtivos. A configuração da atividade
+prevalece sobre o padrão do agente. Comando, auditoria e contabilização devem usar
+o mesmo modelo efetivo. Uma mudança de configuração não autoriza repetir resultados
+preservados, alterar tarefas encerradas, trocar o responsável nem ampliar orçamentos.
+Indisponibilidade de Astra deve produzir falha acionável, sem substituição silenciosa.
+Esforço de raciocínio e exceção de tier da sessão Codex permanecem explícitos.
+
+O detalhe do harness deve explicar o padrão e as atividades especiais. A validação
+local cobre seleção estratégica/rotineira, produtos distintos, comando real com
+executor simulado, auditoria, custos e recuperação sem nova inferência. Isso prova
+roteamento; qualidade estratégica, contribuição e conversão exigem medição posterior.
+
 Esta é a configuração mínima vigente. Uma capacidade marcada como específica não pode ser removida
 sem alterar antes este cânone e os testes de contrato.
 
@@ -188,8 +212,8 @@ sem alterar antes este cânone e os testes de contrato.
 | Financeiro | `financial-agent-worker` | `financial-agent.mjs` | obrigatórios | snapshots financeiros congelados; browser dispensado |
 | Estrategista | `experiment-strategist-worker` | `experiment-strategist.mjs` | obrigatórios | browser e pesquisa de mercado auditável |
 | Integridade Comercial | `meta-ad-approver-worker` | `meta-ad-approver.mjs` | obrigatórios | Têmis usa Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile somente para revisão independente |
-| Construção PDE / Gerador de Landing histórico | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Dédalo constrói o PDE e preserva execuções históricas de landing; Codex `gpt-5.6-sol` e browser ficam restritos ao produto e à prova real |
-| Comunicação | `communication-agent-worker` + `iris-image-studio` | `communication-agent.mjs` | obrigatórios | Íris usa Codex `gpt-5.6-sol` para contratos, copy e landing e `gpt-image-2.5-sunburst` isolado para `LANDING`, `ADS` e `SOCIAL` com prova aprovada |
+| Construção PDE / Gerador de Landing histórico | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Dédalo constrói o PDE e preserva execuções históricas de landing; Codex conforme a política por atividade e browser restritos ao produto e à prova real |
+| Comunicação | `communication-agent-worker` + `iris-image-studio` | `communication-agent.mjs` | obrigatórios | Íris usa Codex conforme a política estratégica/operacional para contratos, copy e landing e `gpt-image-2.5-sunburst` isolado para `LANDING`, `ADS` e `SOCIAL` com prova aprovada |
 
 O executor técnico visual passa a se chamar `iris-image-studio`. Os códigos persistidos
 `themis-image-studio` e `pde-visual-materialization` são aliases de compatibilidade, sem identidade de

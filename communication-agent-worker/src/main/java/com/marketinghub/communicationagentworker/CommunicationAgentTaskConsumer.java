@@ -256,9 +256,10 @@ public class CommunicationAgentTaskConsumer {
       payload.put(
           "evidenceJson",
           retryEvidence != null ? retryEvidence : evidence(task, startedAt, Instant.now(), false));
-      putUsage(payload, usage);
+      putUsage(payload, usage, task);
       if (prompt != null) {
-        payload.put("executionAudit", executionAudit(prompt, agentPromptPart, activityPromptPart));
+        payload.put(
+            "executionAudit", executionAudit(task, prompt, agentPromptPart, activityPromptPart));
       }
       payload.put("blockerGuidance", technicalGuidance());
       backend.fail(taskId(task), payload);
@@ -275,11 +276,14 @@ public class CommunicationAgentTaskConsumer {
       Instant startedAt) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("evidenceJson", evidence(task, startedAt, Instant.now(), true));
-    putUsage(payload, execution.usage());
+    putUsage(payload, execution.usage(), task);
     payload.put(
         "executionAudit",
         executionAudit(
-            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
+            task,
+            execution.promptSent(),
+            execution.agentPromptPart(),
+            execution.activityPromptPart()));
     return payload;
   }
 
@@ -315,13 +319,15 @@ public class CommunicationAgentTaskConsumer {
 
   /** Acrescenta somente tokens medidos pelo runtime do modelo. */
   private void putUsage(
-      Map<String, Object> payload, CommunicationAgentCodexRunner.TokenUsage usage) {
+      Map<String, Object> payload,
+      CommunicationAgentCodexRunner.TokenUsage usage,
+      Map<String, Object> task) {
     if (usage == null || !usage.informed()) return;
     payload.put(
         "modelUsages",
         List.of(
             Map.of(
-                "modelCode", modelCode(),
+                "modelCode", modelCode(task),
                 "serviceTier", "STANDARD",
                 "inputTokens", usage.inputTokens(),
                 "cachedInputTokens", usage.cachedInputTokens(),
@@ -330,12 +336,12 @@ public class CommunicationAgentTaskConsumer {
 
   /** Monta a auditoria imutável do request enviado ao Codex. */
   private Map<String, Object> executionAudit(
-      String prompt, String agentPromptPart, String activityPromptPart) {
+      Map<String, Object> task, String prompt, String agentPromptPart, String activityPromptPart) {
     return Map.of(
         "executionMode",
         "MODEL",
         "modelCode",
-        modelCode(),
+        modelCode(task),
         "reasoningEffort",
         properties.requiredReasoningEffort(),
         "promptSent",
@@ -381,10 +387,11 @@ public class CommunicationAgentTaskConsumer {
   }
 
   /** Resolve o nome do modelo sem inventar preço local. */
-  private String modelCode() {
-    return properties.getModel() == null || properties.getModel().isBlank()
-        ? "codex-default"
-        : properties.getModel();
+  private String modelCode(Map<String, Object> task) {
+    String selected =
+        properties.modelForActivity(
+            String.valueOf(task.get("processCode")), String.valueOf(task.get("activityId")));
+    return selected == null || selected.isBlank() ? "codex-default" : selected;
   }
 
   /** Extrai o identificador obrigatório da tarefa reservada. */

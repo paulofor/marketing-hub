@@ -8,7 +8,7 @@ install -d -o 10001 -g 10001 "$EXPERIMENT_STRATEGIST_CODEX_HOME"
 cd "$repository_dir/experiment-strategist-worker"
 export BACKEND_URL=http://191.252.181.168
 export MARKETING_HUB_REPOSITORY_HOST="$repository_dir"
-export CODEX_MODEL=gpt-6.1-sol
+export CODEX_MODEL=gpt-6-astra
 export AGENT_BUILD_REFERENCE="$validated_revision"
 export EXPERIMENT_STRATEGIST_IMAGE="marketing-hub/experiment-strategist-worker:$validated_revision"
 docker compose up -d --no-build --pull never --remove-orphans

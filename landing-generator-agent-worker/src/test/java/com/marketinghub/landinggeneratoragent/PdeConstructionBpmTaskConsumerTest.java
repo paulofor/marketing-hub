@@ -171,6 +171,17 @@ class PdeConstructionBpmTaskConsumerTest {
               telemetry)
           .processOne();
       assertThat(operations).containsExactly("execution-audit", "result");
+      var arguments =
+          json.readTree(java.nio.file.Files.readString(directory.resolve("arguments.json")));
+      assertThat(arguments.toString())
+          .contains("gpt-6-astra")
+          .doesNotContain("fixture-dedalo-no-network");
+      assertThat(callback.get().path("executionAudit").path("modelCode").asText())
+          .isEqualTo("gpt-6-astra");
+      assertThat(callback.get().path("modelUsages").get(0).path("modelCode").asText())
+          .isEqualTo("gpt-6-astra");
+      assertThat(json.readTree(callback.get().path("evidenceJson").asText()).path("model").asText())
+          .isEqualTo("gpt-6-astra");
       var result = json.readTree(callback.get().path("resultJson").asText());
       assertThat(result.path("decision").asText()).isEqualTo("APPROVE");
       assertThat(

@@ -444,6 +444,16 @@ produto/versão, fonte, origem e hash, e declarar cada critério com resultado r
 Testes locais com MySQL real e cadastros simulados declaram essa fronteira; não representam
 ações em ciclos publicados, parecer independente, comportamento humano ou prova comercial.
 
+Quando o suplemento declarar `PDE_PRIVATE_EXECUTION_CONTROLS_V1`, cada controle
+obrigatório deve ter execução real registrada, resultado observado e regressão
+em pelo menos duas identidades independentes. Contagem de sessões, saldo de
+capacidade ou leitura positiva isolada não comprovam concorrência, rejeição por
+limite, idempotência, expiração, revogação ou isolamento. Relatório parcial não
+é disponibilizado como prova completa para novo parecer pago. Relatórios já
+revisados permanecem imutáveis no histórico por hash; o novo suplemento declara
+as provas reaproveitadas e seus horários originais. Aplicação e limites:
+[Vega, controles operacionais](../homologacao/vega-controles-operacionais-2026-10-20.md).
+
 O backend entrega o suplemento em `pdeContext.operationalControlEvidence` por catálogo versionado
 e integridade dos bytes. Prova nova, posterior ao horário persistido do bloqueio, libera somente
 uma nova revisão independente de Têmis. Bloqueios usam `updatedAt`; `deliveredAt` pertence às

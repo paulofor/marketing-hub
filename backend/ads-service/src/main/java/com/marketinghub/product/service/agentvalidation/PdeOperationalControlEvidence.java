@@ -83,9 +83,9 @@ public class PdeOperationalControlEvidence {
 
   /**
    * Recusa provas incompletas, origem ambígua, efeitos externos e critérios sem resultado
-   * rastreável.
+   * rastreável, incluindo os controles executados quando o relatório declarar esse contrato.
    */
-  private boolean valid(JsonNode report, String slug, String version) {
+  private boolean valid(JsonNode report, String slug, String version) throws java.io.IOException {
     if (!"PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1".equals(report.path("contractVersion").asText())
         || !slug.equals(report.path("productSlug").asText())
         || !version.equals(report.path("prototypeVersion").asText())
@@ -109,6 +109,41 @@ public class PdeOperationalControlEvidence {
     }
     Set<String> required = new HashSet<>();
     report.path("requiredCriteria").forEach(node -> required.add(node.asText()));
-    return !required.isEmpty() && codes.equals(required);
+    return !required.isEmpty() && codes.equals(required) && validOperationalControls(report);
+  }
+
+  /** Impede que contagens observadas substituam testes de limites, concorrência e acesso. */
+  private boolean validOperationalControls(JsonNode report) throws java.io.IOException {
+    JsonNode declared = report.path("operationalControlsContract");
+    if (declared.isMissingNode()) return true;
+    JsonNode policy;
+    try (var input =
+        resources
+            .getResource("classpath:contracts/pde-private-execution-controls-v1.json")
+            .getInputStream()) {
+      policy = json.readTree(input);
+    }
+    if (!policy.path("contractVersion").equals(declared)) return false;
+    Set<String> required = new HashSet<>();
+    policy.path("requiredCriteria").forEach(value -> required.add(value.asText()));
+    for (JsonNode criterion : report.path("criteria")) {
+      String code = criterion.path("code").asText();
+      if (!required.contains(code)) continue;
+      JsonNode result = criterion.path("result");
+      if (!"EXECUTION".equals(criterion.path("verificationType").asText())
+          || !"PASS".equals(result.path("status").asText())
+          || !result.path("contexts").isArray()) return false;
+      Set<Long> identities = new HashSet<>();
+      for (JsonNode context : result.path("contexts")) {
+        if (context.path("productId").asLong() < 1
+            || !"PASS".equals(context.path("status").asText())
+            || !context.path("observed").isObject()
+            || context.path("observed").isEmpty()) return false;
+        identities.add(context.path("productId").asLong());
+      }
+      if (identities.size() < policy.path("minimumIndependentContexts").asInt()) return false;
+      required.remove(code);
+    }
+    return required.isEmpty();
   }
 }

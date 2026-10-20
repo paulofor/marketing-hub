@@ -31,6 +31,11 @@
   outra identidade e caminhos históricos. Local MySQL 5.7 com bytes reais da rota
   publicada; dados sintéticos, sem inferência ou mídia.
 - **Registro:** [matriz, evidências e limites](../homologacao/vega-integridade-terminal-2026-10-20.md).
+- **Complemento #784:** os encerramentos foram aceitos; faltavam testes de
+  concorrência, limites, replay e acessos negativos. O suplemento v2 acrescenta
+  dez controles executados em duas identidades com MySQL 5.7, preservando o v1.
+  O contrato compartilhado recusa contagens observadas como substituto desses
+  testes, antes de nova revisão paga. [Prova e prevenção](../homologacao/vega-controles-operacionais-2026-10-20.md).
 
 
 ## LOOP-VIDEO-PARECER-ANTES-DO-ROTEIRO — 10/10/2026

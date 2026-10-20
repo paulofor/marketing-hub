@@ -117,6 +117,110 @@ class PdeOperationalControlEvidenceTest {
     assertThat(provider.resolve("original", "v3")).isEmpty();
   }
 
+  /** Aceita os controles executados em identidades independentes para qualquer candidata. */
+  @Test
+  void acceptsExecutedControlsAcrossIndependentContexts() throws Exception {
+    operationalReport();
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isPresent();
+    report.put("productSlug", "another-product");
+    report.put("prototypeVersion", "candidate-seven");
+    catalog(false);
+    assertThat(provider.resolve("another-product", "candidate-seven")).isPresent();
+  }
+
+  /** Impede nova revisão paga quando um controle obrigatório não foi executado. */
+  @Test
+  void rejectsPartialOperationalCoverage() throws Exception {
+    operationalReport();
+    report.withArray("criteria").remove(0);
+    report.withArray("requiredCriteria").remove(0);
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+  }
+
+  /** Uma contagem observada não equivale a executar concorrência, limites ou acesso inválido. */
+  @Test
+  void rejectsObservationsDisguisedAsExecutedControls() throws Exception {
+    operationalReport();
+    ((ObjectNode) report.path("criteria").get(0)).put("verificationType", "OBSERVATION");
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+  }
+
+  /** A cobertura deve preservar regressão em outra identidade, sem duplicar a mesma execução. */
+  @Test
+  void rejectsMissingOrDuplicatedIndependentContext() throws Exception {
+    operationalReport();
+    var contexts =
+        (com.fasterxml.jackson.databind.node.ArrayNode)
+            report.path("criteria").get(0).path("result").path("contexts");
+    ((ObjectNode) contexts.get(1)).put("productId", contexts.get(0).path("productId").asLong());
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+    contexts.remove(1);
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+  }
+
+  /** Resultados vazios ou reprovados não podem satisfazer o contrato de execução. */
+  @Test
+  void rejectsMissingObservedResultOrFailedContext() throws Exception {
+    operationalReport();
+    var context =
+        (ObjectNode) report.path("criteria").get(0).path("result").path("contexts").get(0);
+    context.put("status", "FAIL");
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+    context.put("status", "PASS");
+    context.putObject("observed");
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+  }
+
+  /** Contratos desconhecidos não abrem reavaliação com regras silenciosamente incompletas. */
+  @Test
+  void rejectsUnknownOperationalContract() throws Exception {
+    operationalReport();
+    report.put("operationalControlsContract", "UNKNOWN_V1");
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isEmpty();
+  }
+
+  /** Monta recibo sintético do contrato compartilhado sem exceções por produto ou versão. */
+  private void operationalReport() throws Exception {
+    byte[] raw;
+    try (var input =
+        getClass().getResourceAsStream("/contracts/pde-private-execution-controls-v1.json")) {
+      raw = input.readAllBytes();
+    }
+    var policy = json.readTree(raw);
+    when(resources.getResource("classpath:contracts/pde-private-execution-controls-v1.json"))
+        .thenReturn(new ByteArrayResource(raw));
+    report.put("operationalControlsContract", policy.path("contractVersion").asText());
+    report.set("requiredCriteria", policy.path("requiredCriteria").deepCopy());
+    var criteria = report.putArray("criteria");
+    for (var code : policy.path("requiredCriteria")) {
+      var criterion =
+          criteria
+              .addObject()
+              .put("code", code.asText())
+              .put("status", "PASS")
+              .put("verificationType", "EXECUTION")
+              .put("testMethod", "executedControl")
+              .put("resultSha256", "c".repeat(64));
+      var contexts = criterion.putObject("result").put("status", "PASS").putArray("contexts");
+      for (long id : new long[] {91004L, 97004L}) {
+        contexts
+            .addObject()
+            .put("productId", id)
+            .put("status", "PASS")
+            .putObject("observed")
+            .put("requestStatus", 200);
+      }
+    }
+  }
+
   /**
    * Confere a prova realmente emitida e impede que alteração da implementação use recibo antigo.
    */
@@ -226,7 +330,7 @@ class PdeOperationalControlEvidenceTest {
         .thenReturn(new ByteArrayResource(bytes));
   }
 
-  /** Confere o suplemento real de Vega e seus doze encerramentos sem reclassificar o histórico. */
+  /** Confere controles executados e doze encerramentos reutilizados sem reclassificar histórico. */
   @Test
   void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
     var real =
@@ -235,10 +339,18 @@ class PdeOperationalControlEvidenceTest {
     var evidence =
         real.resolve("metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
             .orElseThrow();
-    assertThat(evidence.path("criteria").size()).isEqualTo(15);
+    assertThat(evidence.path("criteria").size()).isEqualTo(25);
     assertThat(evidence.path("testedProductIds").get(0).asLong()).isEqualTo(91004L);
+    assertThat(evidence.path("testedProductIds").get(1).asLong()).isEqualTo(97004L);
+    assertThat(evidence.path("operationalControlsContract").asText())
+        .isEqualTo("PDE_PRIVATE_EXECUTION_CONTROLS_V1");
+    int executed = 0;
     var cases = new java.util.HashSet<String>();
     for (var criterion : evidence.path("criteria")) {
+      if ("EXECUTION".equals(criterion.path("verificationType").asText())) {
+        executed++;
+        assertThat(criterion.path("result").path("contexts").size()).isEqualTo(2);
+      }
       if (!criterion.path("code").asText().startsWith("TERMINAL_")) continue;
       var result = criterion.path("result");
       cases.add(
@@ -255,8 +367,36 @@ class PdeOperationalControlEvidenceTest {
           .isEqualTo(result.path("screenshot").path("sha256").asText());
     }
     assertThat(cases).hasSize(12);
+    assertThat(executed).isEqualTo(10);
+    for (var source : evidence.path("sourceFiles")) {
+      assertThat(fileHash(source.path("path").asText()))
+          .as(source.path("path").asText())
+          .isEqualTo(source.path("sha256").asText());
+    }
+    assertThat(fileHash(evidence.path("testReceiptPath").asText()))
+        .isEqualTo(evidence.path("testReceiptSha256").asText());
+    String reviewedHash = "afe0057408ef9e8372256419509a4fc4621f2665beb72eeeab0a24faa82aa42a";
+    var reviewed =
+        real.resolveReviewed(
+                "metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel", reviewedHash)
+            .orElseThrow();
+    assertThat(reviewed.path("criteria").size()).isEqualTo(15);
+    assertThat(evidence.path("reusedTerminalEvidence").path("reportSha256").asText())
+        .isEqualTo(reviewedHash);
+    assertThat(evidence.path("reusedTerminalEvidence").path("generatedAt"))
+        .isEqualTo(reviewed.path("generatedAt"));
     assertThat(real.resolve("metodo-musa-7-dias", "musa-pde-entry-v13-primeiro-ajuste-aplicavel"))
         .isEmpty();
     assertThat(evidence.path("agentApprovalClaimed").asBoolean()).isFalse();
+  }
+
+  /** Calcula hash dos bytes versionados para impedir recibo incompatível com fonte alterada. */
+  private String fileHash(String relativePath) throws Exception {
+    return HexFormat.of()
+        .formatHex(
+            MessageDigest.getInstance("SHA-256")
+                .digest(
+                    java.nio.file.Files.readAllBytes(
+                        java.nio.file.Path.of("../..").resolve(relativePath))));
   }
 }

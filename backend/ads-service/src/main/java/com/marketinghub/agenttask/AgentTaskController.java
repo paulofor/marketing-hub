@@ -47,6 +47,15 @@ public class AgentTaskController {
     return service.createByHuman(request);
   }
 
+  /** Enfileira nova composição privada com o plano preservado e revisões próprias. */
+  @PostMapping("/{taskId}/creative-recomposition")
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Recompor peça privada de Íris sem nova inferência ou aprovação automática")
+  public AgentTaskResponse recomposeCreative(
+      @PathVariable Long taskId, @Valid @RequestBody RecomposeCreativeRequest request) {
+    return service.recomposeCreative(taskId, request);
+  }
+
   /** Permite evoluir o estado operacional da tarefa. */
   @PatchMapping("/{taskId}/status")
   public AgentTaskResponse updateStatus(

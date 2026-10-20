@@ -78,3 +78,22 @@ export function useUpdateAgentTaskStatus(agentKey?: string) {
       queryClient.invalidateQueries({ queryKey: ["agent-tasks", agentKey] }),
   });
 }
+
+/** Enfileira nova composição privada a partir da resposta preservada de Íris. */
+export function useRecomposeCreative(agentKey?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: number; reason: string }) =>
+      (
+        await axios.post<AgentTask>(
+          `/api/agent-tasks/${input.id}/creative-recomposition`,
+          {
+            requestedByName: "Operador do Marketing Hub",
+            reason: input.reason,
+          },
+        )
+      ).data,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["agent-tasks", agentKey] }),
+  });
+}

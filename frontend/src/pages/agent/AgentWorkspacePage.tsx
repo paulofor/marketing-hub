@@ -9,6 +9,9 @@ import {
 import { AgentTask, AgentTaskStatus } from "../../api/agentTask/types";
 import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
 import AgentTaskFailureAudit from "../../components/AgentTaskFailureAudit";
+import CreativeRecomposition, {
+  canRecomposeCreative,
+} from "../../components/CreativeRecomposition";
 import PageTitle from "../../components/PageTitle";
 import {
   useCommercialPlans,
@@ -932,6 +935,9 @@ export default function AgentWorkspacePage() {
                           </button>
                         ))}
                       </div>
+                      {canRecomposeCreative(task) && (
+                        <CreativeRecomposition task={task} />
+                      )}
                     </article>
                   ))}
                   {!inbox.isLoading && (inbox.data ?? []).length === 0 ? (

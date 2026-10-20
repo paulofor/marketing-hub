@@ -504,6 +504,94 @@ public class AgentTaskService {
     return response(task);
   }
 
+  /** Cria uma tentativa técnica privada, mantendo a origem imutável e sem duplicar inferência. */
+  @Transactional
+  public AgentTaskResponse recomposeCreative(Long sourceId, RecomposeCreativeRequest request) {
+    AgentTask source = repository.findLockedById(sourceId).orElseThrow();
+    if (!"COMPLETED".equals(source.getStatus())
+        || !COMMUNICATION_AGENT_KEY.equals(source.getAssignedAgent().getAgentKey())
+        || !callbackCanReplayWithoutInference(source, true, false))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Origem não permite recomposição de Íris.");
+    try {
+      JsonNode result = objectMapper.readTree(source.getResultJson());
+      JsonNode renders = result.path("functionalOutput").path("renderedAssets");
+      if (!renders.isArray() || renders.isEmpty())
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Origem sem peça materializada.");
+      for (JsonNode render : renders)
+        if (!render.path("privateValidation").asBoolean())
+          throw new ResponseStatusException(
+              HttpStatus.CONFLICT, "Somente peças privadas podem ser recompostas.");
+      AgentTask latest =
+          repository
+              .findBySourceReferenceOrderByCreatedAtAscIdAsc(source.getSourceReference())
+              .stream()
+              .filter(
+                  t ->
+                      t.getProcessDefinition() != null
+                          && t.getProcessDefinition()
+                              .getId()
+                              .equals(source.getProcessDefinition().getId())
+                          && "nonAudiovisual".equals(t.getProcessActivityId())
+                          && !"CANCELLED".equals(t.getStatus()))
+              .max(java.util.Comparator.comparing(AgentTask::getId))
+              .orElse(source);
+      if (!latest.getId().equals(sourceId)) {
+        JsonNode evidence =
+            readOptionalJson(latest.getEvidenceJson(), "recomposição", latest.getId());
+        if (evidence.path("creativeRecomposition").path("sourceTaskId").asLong() == sourceId)
+          return response(latest);
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "Já existe uma peça mais recente neste contexto.");
+      }
+      AgentTaskResponse created =
+          createByHuman(
+              new CreateAgentTaskRequest(
+                  COMMUNICATION_AGENT_KEY,
+                  request.requestedByName(),
+                  "Recompor peça privada #" + sourceId,
+                  "Recomposição determinística da tarefa #"
+                      + sourceId
+                      + ": "
+                      + request.reason()
+                      + ". Reutilizar o plano sem inferência; novos pixels exigem novas revisões e seleção humana.",
+                  "HIGH",
+                  source.getSourceReference(),
+                  source.getProcessDefinition().getId(),
+                  source.getProcessActivityId(),
+                  false,
+                  null));
+      AgentTask queued = task(created.id());
+      ObjectNode evidence = (ObjectNode) objectMapper.readTree(source.getEvidenceJson());
+      evidence
+          .putObject("creativeRecomposition")
+          .put("sourceTaskId", sourceId)
+          .put("requestedBy", request.requestedByName())
+          .put("reason", request.reason())
+          .put("modelInvoked", false)
+          .put("incrementalModelCostUsd", 0);
+      queued.setResultJson(source.getResultJson());
+      queued.setEvidenceJson(evidence.toString());
+      queued.setExecutionError("AUTO_RETRY_ONCE|DETERMINISTIC_CREATIVE_RECOMPOSITION");
+      ensureDeterministicCommandAudit(
+          queued,
+          "creative-recomposition-v1",
+          Map.of(
+              "sourceTaskId",
+              sourceId,
+              "reason",
+              request.reason(),
+              "requestedBy",
+              request.requestedByName(),
+              "sourceReference",
+              source.getSourceReference()));
+      return response(repository.save(queued));
+    } catch (java.io.IOException ex) {
+      log.error("Falha ao preparar recomposição privada. sourceTaskId={}", sourceId, ex);
+      throw new IllegalStateException("Plano preservado de recomposição inválido.", ex);
+    }
+  }
+
   /** Importa uma execução já validada, preservando resultado, evidência e consumo reais. */
   @Transactional
   public AgentTaskResponse recordImportedCompletedTask(ImportedCompletedAgentTask importedTask) {

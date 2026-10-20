@@ -474,3 +474,26 @@ continua COST_PENDING. Ela não comprova audição nem rejeição comercial do p
 repetição automática, supressão da recusa ou troca oculta de modelo. A retomada governada
 mantém a tentativa anterior e pode abrir nova tarefa; reusar a escuta válida do outro vídeo
 evita uma cobrança desnecessária. Envios incertos não recebem essa autorização.
+
+
+### Recusa de créditos anterior à escuta — 20/10/2026
+
+Texto e visão do Worker IA usam Codex App Server; a ferramenta sonora de Psique continua
+na API de áudio e depende dos créditos da organização da sua chave. A assinatura Codex
+não comprova saldo nessa API. Não exigir extrato de consumo para estimar custos Codex.
+
+Um envelope JSON estrito contendo somente `error`, com `code=credit_balance_exhausted`
+e `type=insufficient_quota`, sem modelo, usage, choices ou avaliação, indica recusa antes
+da escuta. Classificar como `ACCOUNT_BLOCKED`, com custo incremental **estimado** zero e
+fonte `PROVIDER_ACCOUNT_REJECTION_NO_INFERENCE`; não declarar fatura ou parecer concluído.
+Preservar corpo bruto, mídia, reserva histórica e tarefa. Não repetir automaticamente nem
+confundir com modelo incompatível, recusa de conteúdo ou conciliação pendente.
+
+O callback de resultado existente pode reinterpretar o mesmo corpo preservado em
+`COST_PENDING` sem chamar o provedor. Exigir igualdade exata do corpo e ausência de custo
+ou avaliação anteriores. Qualquer uso, resposta ambígua ou outro erro mantém as proteções
+anteriores. A retomada depende de créditos efetivamente disponíveis e do teto vigente;
+a reclassificação sozinha não autoriza outra inferência.
+
+Fonte: [códigos de erro oficiais](https://developers.openai.com/api/docs/guides/error-codes#api-errors).
+Matriz e evidências: `docs/homologacao/mira-estimativa-custos-codex-v1.md`.

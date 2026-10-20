@@ -158,7 +158,9 @@ public class AgentAudioReviewService {
     return receipt(entry, true);
   }
 
-  /** Preserva resposta/custo e valida JSON estrito: o modelo auditivo não garante o schema. */
+  /**
+   * Preserva respostas, identifica recusa de saldo e valida o parecer somente quando houver saída.
+   */
   @Transactional
   public AudioReviewReceipt complete(
       String agent, long taskId, long assetId, AudioReviewResultRequest input) {
@@ -171,6 +173,21 @@ public class AgentAudioReviewService {
       require(
           entry.getResponseJson().equals(input.rawResponse()),
           "A resposta desta chamada já foi preservada.");
+      if ("COST_PENDING".equals(entry.getStatus()) && entry.getEstimatedUsd() == null) {
+        try {
+          if (classifyMissingCredits(entry, object(json, input.rawResponse()))) {
+            reviews.saveAndFlush(entry);
+            saveLedger(entry);
+          }
+        } catch (Exception ex) {
+          log.warn(
+              "Reclassificação da resposta auditiva preservada recusada. taskId={} assetId={} reviewId={}",
+              taskId,
+              assetId,
+              entry.getId(),
+              ex);
+        }
+      }
       return receipt(entry, false);
     }
     entry.setResponseJson(input.rawResponse());
@@ -178,6 +195,11 @@ public class AgentAudioReviewService {
     entry.setStatus("COST_PENDING");
     try {
       JsonNode raw = object(json, input.rawResponse());
+      if (classifyMissingCredits(entry, raw)) {
+        reviews.saveAndFlush(entry);
+        saveLedger(entry);
+        return receipt(entry, false);
+      }
       model(raw);
       entry.setEstimatedUsd(cost(raw));
       if (entry.getEstimatedUsd() != null) entry.setStatus("INVALID");
@@ -274,6 +296,40 @@ public class AgentAudioReviewService {
     }
   }
 
+  /**
+   * Reclassifica recusa de saldo sem repetir a chamada nem sobrescrever custo ou avaliação já
+   * conhecidos.
+   */
+  private boolean classifyMissingCredits(AgentAudioReview review, JsonNode response) {
+    if (!rejectedForMissingCredits(response)) return false;
+    require(
+        review.getEstimatedUsd() == null && review.getResultJson() == null,
+        "Não substitua consumo ou avaliação existentes por uma recusa de saldo.");
+    var existing =
+        ledger.findBySourceTypeAndSourceId("AGENT_AUDIO_REVIEW", review.getId().toString());
+    require(
+        existing.isEmpty()
+            || (existing.get().getProviderCostUsd() == null
+                && Set.of("RESERVATION_NOT_BILLED_COST", "PROVIDER_ACCOUNT_REJECTION_NO_INFERENCE")
+                    .contains(Objects.toString(existing.get().getCostEvidence(), ""))),
+        "O ledger já possui consumo que precisa ser preservado.");
+    String previous = review.getStatus();
+    review.setEstimatedUsd(BigDecimal.ZERO);
+    review.setStatus("ACCOUNT_BLOCKED");
+    review.setErrorMessage(
+        "credit_balance_exhausted: a API de áudio de Psique está sem créditos. "
+            + "A solicitação foi recusada antes da avaliação; custo incremental estimado zero. "
+            + "Texto e visão do Worker IA usam Codex, mas esta escuta usa a API de áudio. "
+            + "Disponibilize créditos na organização da chave de Psique antes de nova tentativa; não repetir automaticamente.");
+    log.warn(
+        "Recusa de saldo auditivo identificada sem nova inferência. taskId={} assetId={} reviewId={} previousStatus={} status=ACCOUNT_BLOCKED endpoint=https://api.openai.com/v1/chat/completions code=credit_balance_exhausted",
+        review.getTaskId(),
+        review.getAssetId(),
+        review.getId(),
+        previous);
+    return true;
+  }
+
   /** Mantém consumo no ledger existente, sem misturá-lo a tokens textuais do parecer principal. */
   private void saveLedger(AgentAudioReview review) {
     var entry =
@@ -292,9 +348,11 @@ public class AgentAudioReviewService {
     entry.setEstimatedCostUsd(
         review.getEstimatedUsd() != null ? review.getEstimatedUsd() : review.getReservedUsd());
     entry.setCostEvidence(
-        review.getEstimatedUsd() != null
-            ? "MODALITY_TOKEN_RATE_ESTIMATE"
-            : "RESERVATION_NOT_BILLED_COST");
+        "ACCOUNT_BLOCKED".equals(review.getStatus())
+            ? "PROVIDER_ACCOUNT_REJECTION_NO_INFERENCE"
+            : review.getEstimatedUsd() != null
+                ? "MODALITY_TOKEN_RATE_ESTIMATE"
+                : "RESERVATION_NOT_BILLED_COST");
     entry.setStartedAt(review.getStartedAt());
     entry.setFinishedAt(review.getFinishedAt());
     ledger.saveAndFlush(entry);

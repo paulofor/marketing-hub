@@ -52,9 +52,9 @@ espera por custo e diferença estimado/medido; não há prova de aumento de vend
 
 - 208 testes backend passaram (incluindo 92 regras de arquitetura) (ledger, endpoint, orçamento e gate auditivo); quatro testes do
   formulário, tipos e build passaram.
-- Replay local do service real com os 14 jobs/recibos preservados: **33 sínteses novas**,
+- Replay local do service real com os 14 jobs/recibos preservados: **33 sínteses históricas**,
   130,632 segundos medidos, **US$ 0,174380 estimados**; seis origens com geração e oito
-  reutilizações/falhas anteriores à voz. Reenvio manteve os mesmos valores sem eventos adicionais.
+  reutilizações/falhas anteriores à voz. Nenhuma síntese foi executada nesta conciliação. Reenvio manteve os mesmos valores sem eventos adicionais.
 - O valor substitui apenas a parcela desconhecida de locução no planejamento; a reserva histórica
   de US$ 2 não é somada novamente nem tratada como custo faturado.
 - O Worker IA já estima texto/visão Codex por tokens reportados; não houve necessidade de alterar
@@ -102,3 +102,35 @@ somente a recusa explícita conferida; não permite inferir custo zero de outros
 O replay final incluiu 15 tentativas e manteve US$ 0,174380, com a recusa pré-geração em zero.
 A presença do diagnóstico legado em texto foi reproduzida; somente eventos estruturados com
 `eventType` são lidos como auditoria. JSON declarado truncado segue bloqueante.
+
+
+## Retomada real e erro de conta de Psique — 20/10/2026
+
+O registro pela UI reconciliou 15 tentativas, com US$ 0,174380 estimados para locução,
+sem fatura confirmada nem nova geração. Mira retomou pelo processo #55; a tarefa #781
+recebeu recusa da API auditiva antes da avaliação. O recibo #8 preservou corpo contendo
+somente erro `credit_balance_exhausted`/`insufficient_quota`, sem usage/modelo/choices.
+A validação anterior confundiu ausência de modelo com modelo incompatível e manteve
+US$ 4,116 como custo pendente. Isso não é evidência de consumo ou saldo Codex.
+
+Alternativas consideradas:
+
+| Alternativa | Benefício | Risco/custo | Escolha |
+|---|---|---|---|
+| Pedir extrato e manter reserva | Preserva prudência | Espera desnecessária; há recusa explícita antes da escuta | Não |
+| Zerar qualquer erro/quota | Simples | Esconde consumo, limites e tentativas ambíguas | Não |
+| Classificar somente recusa estrita e reaplicar o mesmo recibo | Expõe causa real, remove reserva sem consumo e preserva auditoria | Exige validação local do ledger e idempotência | Sim |
+
+Matriz adicional definida antes da correção: caminho válido histórico permanece; duas
+identidades recebem `ACCOUNT_BLOCKED`; replay do mesmo recibo sem provedor; corpo diferente
+não sobrescreve; sete variantes com uso, conteúdo ambíguo, duplicado, outro erro ou custo
+preservam bloqueio. Não existe nova avaliação de Psique nem teste comercial nesta rodada.
+
+A classificação usa o callback existente. Não exige novo endpoint, prompt, agente ou
+mudança de modelo. O backend conserva a reserva histórica como auditoria, mas o ledger
+passa a custo incremental estimado zero somente na recusa comprovada. Uma nova tentativa
+continua proibida automaticamente até resolver os créditos externos. A meta de aprendizado
+é reduzir bloqueios classificados incorretamente; qualidade e vendas não foram medidas.
+
+Validação local adicional: 139 testes passaram, incluindo 92 regras de arquitetura, os
+recibos históricos válidos e as regressões de recusa/replay. Ausência de avaliação mantém o objeto vazio já canônico no DTO.

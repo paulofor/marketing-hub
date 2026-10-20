@@ -46,6 +46,16 @@ public final class AudioReviewContract {
     return message.path("content").asText().trim();
   }
 
+  /** Identifica somente a recusa explícita de saldo anterior a qualquer saída ou uso reportado. */
+  public static boolean rejectedForMissingCredits(JsonNode response) {
+    return response != null
+        && response.isObject()
+        && response.size() == 1
+        && response.path("error").isObject()
+        && "credit_balance_exhausted".equals(response.at("/error/code").asText())
+        && "insufficient_quota".equals(response.at("/error/type").asText());
+  }
+
   /** Confirma a família exata antes de aplicar suas tarifas ou aceitar seu parecer. */
   public static void model(JsonNode response) {
     String model = response.path("model").asText();

@@ -10452,3 +10452,21 @@ antes de qualquer geração e sem task aceita. O custo de uma renderização pro
 a ausência de task no banco antes de registrar custo incremental zero com fonte específica.
 Timeout, resposta aceita, outra falha, ID/entrada divergente ou task existente continuam bloqueados.
 A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recriar a execução.
+
+
+## LOOP-PSIQUE-SALDO-COMO-MODELO — recusa de créditos vira modelo incompatível
+
+- **Evidência (20/10/2026):** na retomada autorizada de Mira, tarefa #781, recibo auditivo
+  #8 recebeu apenas `credit_balance_exhausted`/`insufficient_quota`. O validador procurou
+  `model` antes de interpretar o erro, produzindo `COST_PENDING`, mensagem de modelo
+  incompatível e reserva de US$ 4,116 sem escuta nem usage. O histórico de respostas
+  válidas de Capella contém modelo/usage e deve continuar aceito; não generalizar custo zero.
+- **Causa:** envelope de erro de conta foi tratado como envelope de sucesso do modelo.
+- **Correção reutilizável:** reconhecer somente a recusa explícita estrita antes da validação
+  de modelo; registrar `ACCOUNT_BLOCKED` e custo incremental estimado zero. Replay do mesmo
+  corpo reclassifica o recibo sem nova chamada; custo ou parecer existentes são preservados.
+- **Prevenção:** `AgentAudioReviewServiceTest` cobre duas identidades, replay, corpos
+  divergentes, usage, choices, modelo, duplicidade, outros erros e ledger já custeado.
+  Avaliações históricas válidas e recusas com consumo continuam nos testes existentes.
+- **Limite:** Codex texto/visão não substitui a API auditiva. Crédito ausente é dependência
+  externa real, sem retentativa automática, aumento de teto ou extrato obrigatório.

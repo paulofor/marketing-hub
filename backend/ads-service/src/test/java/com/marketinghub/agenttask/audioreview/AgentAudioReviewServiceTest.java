@@ -93,6 +93,106 @@ class AgentAudioReviewServiceTest {
     assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
   }
 
+  /** Duas identidades recebem causa de saldo correta, sem fatura, parecer ou nova chamada. */
+  @ParameterizedTest
+  @ValueSource(longs = {9005, 93005})
+  void classifiesCreditRejectionBeforeModelValidation(long productId) {
+    var input = prepare(productId);
+    service.reserve("customer-agent", 9001, input);
+    String raw =
+        "{\"error\":{\"type\":\"insufficient_quota\",\"code\":\"credit_balance_exhausted\",\"message\":\"No credits remaining\"}}";
+    var request = new AudioReviewResultRequest(raw);
+    var result = service.complete("customer-agent", 9001, 9003, request);
+    assertThat(result.status()).isEqualTo("ACCOUNT_BLOCKED");
+    assertThat(result.estimatedUsd()).isZero();
+    assertThat(result.assessment().isObject()).isTrue();
+    assertThat(result.assessment().size()).isZero();
+    assertThat(result.mayInvoke()).isFalse();
+    assertThat(result.error())
+        .contains(
+            "credit_balance_exhausted", "API de áudio", "Codex", "não repetir automaticamente");
+    assertThat(saved.get(9003L).getResponseJson()).isEqualTo(raw);
+    assertThat(service.complete("customer-agent", 9001, 9003, request)).isEqualTo(result);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+    var entries = org.mockito.ArgumentCaptor.forClass(StudioCostLedgerEntry.class);
+    verify(ledger, times(2)).saveAndFlush(entries.capture());
+    assertThat(entries.getValue().getCostEvidence())
+        .isEqualTo("PROVIDER_ACCOUNT_REJECTION_NO_INFERENCE");
+    assertThat(entries.getValue().getEstimatedCostUsd()).isZero();
+    assertThat(entries.getValue().getProviderCostUsd()).isNull();
+  }
+
+  /** Reinterpreta o mesmo recibo antigo sem nova reserva ou perda da resposta preservada. */
+  @Test
+  void reconcilesHistoricalCostPendingCreditRejectionWithoutCallingProvider() {
+    var input = prepare(93005);
+    service.reserve("customer-agent", 9001, input);
+    var entry = saved.get(9003L);
+    String raw =
+        "{\"error\":{\"type\":\"insufficient_quota\",\"code\":\"credit_balance_exhausted\"}}";
+    entry.setResponseJson(raw);
+    entry.setStatus("COST_PENDING");
+    entry.setErrorMessage("Resposta de modelo incompatível.");
+    var result = service.complete("customer-agent", 9001, 9003, new AudioReviewResultRequest(raw));
+    assertThat(result.status()).isEqualTo("ACCOUNT_BLOCKED");
+    assertThat(result.estimatedUsd()).isZero();
+    assertThat(entry.getResponseJson()).isEqualTo(raw);
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    "customer-agent",
+                    9001,
+                    9003,
+                    new AudioReviewResultRequest("{\"error\":{\"code\":\"other\"}}")))
+        .hasMessageContaining("já foi preservada");
+  }
+
+  /** Recusa ambígua, uso reportado ou custo já existente não podem virar custo zero. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "usage",
+        "choices",
+        "model",
+        "other-code",
+        "other-type",
+        "duplicated",
+        "charged-ledger"
+      })
+  void preservesUncertainRejectionCosts(String variant) {
+    var input = prepare(9005);
+    service.reserve("customer-agent", 9001, input);
+    var raw = json.createObjectNode();
+    raw.putObject("error")
+        .put("type", "insufficient_quota")
+        .put("code", "credit_balance_exhausted");
+    switch (variant) {
+      case "usage" -> raw.putObject("usage").put("prompt_tokens", 100);
+      case "choices" -> raw.putArray("choices").addObject();
+      case "model" -> raw.put("model", "gpt-audio-1.5");
+      case "other-code" ->
+          ((com.fasterxml.jackson.databind.node.ObjectNode) raw.path("error"))
+              .put("code", "rate_limit_exceeded");
+      case "other-type" ->
+          ((com.fasterxml.jackson.databind.node.ObjectNode) raw.path("error"))
+              .put("type", "unknown");
+      case "charged-ledger" -> {
+        var charged = new StudioCostLedgerEntry();
+        charged.setProviderCostUsd(new BigDecimal("0.10"));
+        when(ledger.findBySourceTypeAndSourceId("AGENT_AUDIO_REVIEW", "9100"))
+            .thenReturn(Optional.of(charged));
+      }
+    }
+    String body =
+        variant.equals("duplicated")
+            ? "{\"error\":{}," + raw.toString().substring(1)
+            : raw.toString();
+    var result = service.complete("customer-agent", 9001, 9003, new AudioReviewResultRequest(body));
+    assertThat(result.status()).isEqualTo("COST_PENDING");
+    assertThat(result.estimatedUsd()).isNull();
+    assertThat(result.mayInvoke()).isFalse();
+  }
+
   /** Falhas explícitas, truncamento e falta de texto bloqueiam mesmo com uso contabilizado. */
   @ParameterizedTest
   @ValueSource(strings = {"REFUSAL", "FILTER", "LENGTH", "NULL", "EMPTY", "MODEL", "RAW_DUPLICATE"})

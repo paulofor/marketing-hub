@@ -1,0 +1,18 @@
+{
+  "cardKey": "descoberta-por-ia-checkout-de-confianca",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Descoberta por IA não garante checkout no mesmo canal",
+  "finding": "Pesquisa PYMNTS (2.191 consumidores dos EUA, ago/2026): entre participantes que relataram a última compra assistida por IA, 59,7% a concluíram na Amazon; entre usuários de IA para descoberta/compras, 57,9% afirmam normalmente comprar na Amazon mesmo após pesquisa por IA.",
+  "mechanism": "Hipótese: a pesquisa por IA reduz o esforço de descoberta, enquanto preço, entrega, familiaridade e confiança no destino continuam a influenciar a escolha do checkout. Evidência observacional não estabelece causalidade.",
+  "commercialApplication": "Separar otimização para ser descoberto por IA da otimização da conclusão da compra. Testar oferta e pagamento confiáveis, claros e autorizados, inclusive via parceiros quando apropriado.",
+  "evidenceStrength": "Moderada para comportamento declarado em survey representativo dos EUA (N=2.191); baixa para efeitos causais, extrapolação ao Brasil ou resultado comercial de uma intervenção.",
+  "publishedOn": "2026-10-20",
+  "validUntil": "2026-12-15",
+  "experimentHypothesis": "Na mesma oferta B2C e público, checkout em canal familiar com políticas explícitas terá taxa de pagamento reconciliado maior que checkout desconhecido, sem piorar margem ou reembolsos.",
+  "risks": "Confundir pesquisa com compra, induzir falsa confiança, depender de intermediário, elevar taxas ou perder dados; cumprir políticas de privacidade e consentimento.",
+  "limits": "Survey autorrelatado dos EUA, coletado em agosto e divulgado em outubro de 2026; não demonstra causalidade, preferência brasileira nem incremento de vendas do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-20-pymnts-descoberta-ia-checkout-confiavel.md",
+  "sourceTitle": "PYMNTS 2026: da descoberta por IA ao checkout de confiança",
+  "sourceSha256": "c5f435daaf5e29ebe73f727bd86e5899d0308e51c21aec018ca6e34556e7c4e7"
+}

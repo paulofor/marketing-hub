@@ -19,6 +19,49 @@ class ProofCardRendererTest {
   private final ProofCardRenderer renderer = new ProofCardRenderer();
 
   /**
+   * Preserva nos pixels o CTA congelado que cabe na prova privada, mesmo acima de 32 caracteres.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "910118,Experimentar um ajuste com minhas roupas,Experimentar um ajuste com minhas,roupas",
+    "910219,Experimentar um ajuste com o que já tenho,Experimentar um ajuste com o que já tenho,"
+  })
+  void preservesFrozenPrivateCtaWithoutAdvertisingCharacterLimit(
+      long artifactId, String cta, String firstLine, String secondLine) throws Exception {
+    assertThat(cta.length()).isGreaterThan(32);
+    var input = spec().put("sourceArtifactId", artifactId).put("ctaText", cta);
+    var actual = ImageIO.read(new ByteArrayInputStream(renderer.render(input, source(), true)));
+    var expected = new BufferedImage(896, 90, BufferedImage.TYPE_INT_RGB);
+    var graphics = expected.createGraphics();
+    try {
+      graphics.setRenderingHint(
+          java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+      graphics.setRenderingHint(
+          java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+          java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+      graphics.setColor(Color.decode(input.path("accentColor").asText()));
+      graphics.fillRect(0, 0, 896, 90);
+      graphics.setFont(new java.awt.Font("DejaVu Sans", java.awt.Font.BOLD, 36));
+      assertThat(graphics.getFontMetrics().stringWidth(firstLine)).isLessThanOrEqualTo(896);
+      graphics.setColor(Color.WHITE);
+      int top = secondLine == null ? 12 : 2;
+      graphics.drawString(firstLine, 0, top + graphics.getFontMetrics().getAscent());
+      if (secondLine != null)
+        graphics.drawString(
+            secondLine,
+            0,
+            top + graphics.getFontMetrics().getAscent() + graphics.getFontMetrics().getHeight());
+    } finally {
+      graphics.dispose();
+    }
+    assertThat(actual.getRGB(92, 1148, 896, 90, null, 0, 896))
+        .isEqualTo(expected.getRGB(0, 0, 896, 90, null, 0, 896));
+    assertThatThrownBy(
+            () -> renderer.render(input.deepCopy().put("ctaText", cta.repeat(4)), source(), true))
+        .hasMessageContaining("excede a área legível");
+  }
+
+  /**
    * Confere nos pixels que uma quebra editorial não é substituída pelo empacotamento de palavras.
    */
   @org.junit.jupiter.params.ParameterizedTest

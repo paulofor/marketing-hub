@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProofCardRenderer {
-  /** Compõe prova fiel com identificadores legíveis e qualifica a demonstração antes da ação. */
+  /** Compõe prova fiel, qualifica a demonstração e preserva o CTA privado em até duas linhas. */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
@@ -124,15 +124,18 @@ public class ProofCardRenderer {
       g.fillRoundRect(
           64, privateValidation ? 1148 : 1104, 952, privateValidation ? 90 : 104, 22, 22);
       g.setColor(Color.WHITE);
-      text(
-          g,
-          spec.path("ctaText").asText(),
-          92,
-          privateValidation ? 1160 : 1125,
-          896,
-          66,
-          36,
-          Font.BOLD);
+      String cta = spec.path("ctaText").asText();
+      int ctaTop = privateValidation ? 1160 : 1125;
+      int ctaHeight = 66;
+      if (privateValidation) {
+        g.setFont(new Font("DejaVu Sans", Font.BOLD, 36));
+        if (cta.contains("\n") || cta.contains("\r") || g.getFontMetrics().stringWidth(cta) > 896) {
+          // Duas linhas usam a mesma área do botão, sem reduzir fonte, prova ou ressalvas.
+          ctaTop = 1150;
+          ctaHeight = 86;
+        }
+      }
+      text(g, cta, 92, ctaTop, 896, ctaHeight, 36, Font.BOLD);
       g.setColor(new Color(70, 64, 68));
       String footer = spec.path("footer").asText();
       if (privateValidation && footer.isBlank())

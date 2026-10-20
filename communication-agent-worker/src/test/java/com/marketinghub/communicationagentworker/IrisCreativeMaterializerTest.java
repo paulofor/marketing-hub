@@ -319,15 +319,27 @@ class IrisCreativeMaterializerTest {
         .isEqualTo(raw);
   }
 
-  /** Renderiza a especificação pronta sem exigir shell ou imagem prévia dentro do modelo. */
-  @Test
-  void materializesReadySpecificationBeforeCompletingActivity() throws Exception {
+  /**
+   * Preserva o convite aprovado até upload e callback em dois contextos privados e no caso curto.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "LEARNING_CYCLE_PRIVATE,Experimentar um ajuste com minhas roupas",
+    "PRODUCT_PRIVATE,Experimentar um ajuste com o que já tenho",
+    "LEARNING_CYCLE_PRIVATE,Ver meu primeiro resultado"
+  })
+  void materializesReadySpecificationBeforeCompletingActivity(String privateMode, String cta)
+      throws Exception {
+    mode = privateMode;
     var backend = mock(CommunicationAgentBackendClient.class);
     var runner = mock(CommunicationAgentCodexRunner.class);
     var control = mock(AutomaticExecutionControl.class);
     when(control.allowsAutomaticExecution()).thenReturn(true);
     when(backend.claim(anyString(), anyString())).thenReturn(task());
     var planned = result().put("executionStatus", "READY_FOR_RENDER");
+    ((ObjectNode) planned.path("functionalOutput").path("staticAssets").get(0).path("renderSpec"))
+        .put("ctaText", cta);
+    ((ObjectNode) planned.path("functionalOutput")).putObject("copy").put("ctaText", cta);
     when(runner.run(anyMap(), anyList()))
         .thenReturn(
             new CommunicationAgentCodexRunner.Execution(
@@ -345,6 +357,26 @@ class IrisCreativeMaterializerTest {
     var completed = json.readTree(String.valueOf(payload.getValue().get("resultJson")));
     assertThat(completed.path("executionStatus").asText()).isEqualTo("COMPLETED");
     assertThat(completed.path("functionalOutput").path("renderedAssets")).hasSize(1);
+    assertThat(completed.path("functionalOutput").path("copy").path("ctaText").asText())
+        .isEqualTo(cta);
+    assertThat(
+            completed
+                .path("functionalOutput")
+                .path("staticAssets")
+                .get(0)
+                .path("renderSpec")
+                .path("ctaText")
+                .asText())
+        .isEqualTo(cta);
+    assertThat(saved.get()).isNotEmpty();
+    assertThat(
+            completed
+                .path("functionalOutput")
+                .path("renderedAssets")
+                .get(0)
+                .path("sha256")
+                .asText())
+        .isEqualTo(IrisCreativeMaterializer.sha(saved.get()));
     assertThat(
             json.readTree(String.valueOf(payload.getValue().get("evidenceJson")))
                 .path("rawModelResponse")

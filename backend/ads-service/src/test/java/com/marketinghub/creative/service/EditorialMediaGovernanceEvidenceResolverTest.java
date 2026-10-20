@@ -81,8 +81,13 @@ class EditorialMediaGovernanceEvidenceResolverTest {
     assertThat(result.editorialMediaEvidence().deliverySources()).hasSize(2);
     assertThat(result.editorialMediaEvidence().audio().segments()).hasSize(2);
     assertThat(result.editorialMediaEvidence().audio().costStatus()).contains("NOT_RECONCILED");
+    assertThat(result.editorialMediaEvidence().audio().narrationText())
+        .isEqualTo("Primeiro trecho Segundo trecho");
+    var first = result.editorialMediaEvidence().audio().segments().getFirst();
+    assertThat(first.text()).isEqualTo(first.originalReceipt().request().input());
+    assertThat(first.sha256()).isEqualTo(first.originalReceipt().response().sha256());
     assertThat(json.writeValueAsString(result))
-        .doesNotContain("raw_request", "instructions", "authorization");
+        .doesNotContain("raw_request", "authorization", "api_key");
     assertThat(video.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.APPROVED);
     assertThat(result.finalArtifact().sha256()).isEqualTo("f".repeat(64));
   }
@@ -101,6 +106,9 @@ class EditorialMediaGovernanceEvidenceResolverTest {
         "proof",
         "captureHash",
         "captureCrop",
+        "proofTiming",
+        "artTiming",
+        "unexpectedRequestField",
         "deliveryHash",
         "deliveryRights",
         "audioHash",
@@ -162,6 +170,14 @@ class EditorialMediaGovernanceEvidenceResolverTest {
                   ""));
       case "audioHash" -> changeAudio(0, "hash");
       case "audioRequest" -> changeAudio(0, "request");
+      case "unexpectedRequestField" -> changeAudio(0, "unexpected");
+      case "proofTiming" ->
+          ((ObjectNode) finalMetadata.at("/product_reference_overlay/productProof/shots/0"))
+              .putArray("reviewMoments")
+              .add(60);
+      case "artTiming" ->
+          ((ObjectNode) finalMetadata.at("/product_reference_overlay/deliveryExamples/shots/0"))
+              .put("reviewMoment", 60);
       case "customVoice" -> changeAudio(0, "voice");
       case "model" -> ((ObjectNode) finalMetadata.at("/audio/review")).put("model", "other-model");
       case "disclosure" ->
@@ -337,7 +353,11 @@ class EditorialMediaGovernanceEvidenceResolverTest {
                   "commercialEvidenceClaimed",
                   false,
                   "syntheticScenario",
-                  true)));
+                  true,
+                  "reviewMoments",
+                  List.of(i * 3.0 + 1.5),
+                  "intervals",
+                  "between(t," + i * 3 + "," + (i + 1) * 3 + ")")));
     var appliedArts = overlay.putObject("deliveryExamples").putArray("shots");
     for (int i = 0; i < 2; i++)
       appliedArts.add(
@@ -348,7 +368,13 @@ class EditorialMediaGovernanceEvidenceResolverTest {
                   "sha256",
                   (i == 0 ? "c" : "d").repeat(64),
                   "captionCueIndex",
-                  i)));
+                  i,
+                  "startSeconds",
+                  i * 3.0,
+                  "endSeconds",
+                  (i + 1) * 3.0,
+                  "reviewMoment",
+                  i * 3.0 + 1.5)));
     finalJobMetadata = lineage.deepCopy();
     var preserved =
         finalJobMetadata
@@ -578,6 +604,9 @@ class EditorialMediaGovernanceEvidenceResolverTest {
     else if (fault.equals("request"))
       ((ObjectNode) meta.at("/provider_metadata/tts_interactions/0/raw_request"))
           .put("input", "Outro texto");
+    else if (fault.equals("unexpected"))
+      ((ObjectNode) meta.at("/provider_metadata/tts_interactions/0/raw_request"))
+          .put("authorization", "fixture-not-exported");
     else
       ((ObjectNode) meta.at("/provider_metadata/tts_interactions/0/raw_request"))
           .putObject("voice")

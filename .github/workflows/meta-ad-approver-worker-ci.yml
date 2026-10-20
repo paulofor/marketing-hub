@@ -103,6 +103,8 @@ jobs:
           node --check src/main/resources/mcp/meta-ad-approver.mjs
           node --check src/main/resources/mcp/landing-evidence.mjs
           node --check src/main/resources/mcp/video-frame-extractor.mjs
+          node --check src/main/resources/mcp/editorial-evidence.mjs
+          node --check src/main/resources/mcp/editorial-runtime-check.mjs
           node --check src/main/resources/mcp/temis-library-review.mjs
           docker run --rm --init --network none \
             --user "$(id -u):$(id -g)" \

@@ -43,7 +43,7 @@ class TemisContainerIsolationContractTest {
         .doesNotContain("nodejs", "npm", "codex", "playwright", "agent-health-report");
   }
 
-  /** Garante navegador compartilhado, Java e decoder pinados, sem cache npm ou espelho APT. */
+  /** Garante navegador, decoder pinado e inspeção das fontes na mesma imagem somente leitura. */
   @Test
   void usesBundledHeadlessShellAndStaticVideoDecoder() throws Exception {
     String dockerfile = Files.readString(Path.of("Dockerfile"));
@@ -80,7 +80,8 @@ class TemisContainerIsolationContractTest {
             "const PROCESS_TIMEOUT_MS = 120000",
             "'/usr/local/bin/ffmpeg'",
             "'/usr/local/bin/ffprobe'",
-            "return await extractVideoFrames(bytes)",
+            "return await extractVideoFrames(bytes, reviewMoments)",
+            "renderSourceImage",
             "createHash('sha256')",
             "byteLength: bytes.length",
             "invalidVideoBlocked = true",

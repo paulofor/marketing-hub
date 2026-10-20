@@ -33,9 +33,35 @@ class CreativeControllerCorsTest {
 
   private static final String REQUEST_ORIGIN = "http://app.local";
 
+  /** Confirma endpoint do próprio módulo, cache privado e parâmetros vinculados ao anúncio. */
+  @Test
+  void servesEditorialProofThroughCreativeScope() throws Exception {
+    byte[] pixels = {1, 2, 3};
+    when(editorialEvidence.readProof(540L, 105L, 733L, 721L)).thenReturn(pixels);
+    mockMvc
+        .perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                "/api/internal/creatives/540/agent-review/product-proofs/733/721?experimentId=105"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", "image/png"))
+        .andExpect(header().string("Cache-Control", "no-store"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .bytes(pixels));
+    verify(editorialEvidence).readProof(540L, 105L, 733L, 721L);
+    mockMvc
+        .perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                "/api/internal/creatives/540/agent-review/product-proofs/733/721"))
+        .andExpect(status().isBadRequest());
+  }
+
   @Autowired private MockMvc mockMvc;
 
   @MockBean private CreativeService creativeService;
+
+  @MockBean
+  private com.marketinghub.creative.service.CreativeEditorialEvidenceService editorialEvidence;
 
   @MockBean private VideoCreativeService videoCreativeService;
 

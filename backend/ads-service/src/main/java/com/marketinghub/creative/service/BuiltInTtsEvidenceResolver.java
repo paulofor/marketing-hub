@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.ProviderLicense;
 import com.marketinghub.creative.dto.EditorialMediaEvidenceDto.AudioEvidence;
 import com.marketinghub.creative.dto.EditorialMediaEvidenceDto.AudioSegment;
+import com.marketinghub.creative.dto.EditorialMediaEvidenceDto.SpeechReceipt;
+import com.marketinghub.creative.dto.EditorialMediaEvidenceDto.SpeechRequest;
+import com.marketinghub.creative.dto.EditorialMediaEvidenceDto.SpeechResponse;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -120,6 +123,7 @@ public class BuiltInTtsEvidenceResolver {
         voice,
         nativeVoice,
         disclosed,
+        String.join(" ", segments.stream().map(AudioSegment::text).toList()),
         "HISTORICAL_COST_UNCHANGED_NOT_RECONCILED",
         license,
         List.copyOf(segments),
@@ -173,6 +177,12 @@ public class BuiltInTtsEvidenceResolver {
               && voice.equals(part.path("voice").asText())
               && part.path("text").asText().equals(request.path("input").asText())
               && REQUEST_FIELDS.containsAll(fields)
+              && (!request.hasNonNull("instructions") || request.path("instructions").isTextual())
+              && (!request.hasNonNull("response_format")
+                  || request.path("response_format").isTextual())
+              && (!request.hasNonNull("speed")
+                  || request.path("speed").isNumber()
+                      && Double.isFinite(request.path("speed").asDouble()))
               && response.path("bytes").asLong() > 0
               && response.path("bytes").asLong() == metadata.path("size_bytes").asLong()
               && response
@@ -191,7 +201,27 @@ public class BuiltInTtsEvidenceResolver {
           part.path("sha256").asText(),
           response.path("request_id").asText(null),
           sha256(request.path("input").asText()),
-          part.path("durationSeconds").asDouble());
+          part.path("durationSeconds").asDouble(),
+          request.path("input").asText(),
+          new SpeechReceipt(
+              interaction.path("interaction_type").asText(),
+              interaction.path("provider").asText(),
+              interaction.path("endpoint").asText(),
+              interaction.path("status").asText(),
+              new SpeechRequest(
+                  model,
+                  voice,
+                  request.path("input").asText(),
+                  request.path("instructions").asText(null),
+                  request.path("response_format").asText(null),
+                  request.path("speed").isNumber() ? request.path("speed").doubleValue() : null),
+              new SpeechResponse(
+                  response.path("representation").asText(null),
+                  response.path("asset_file_name").asText(),
+                  response.path("content_type").asText(null),
+                  response.path("bytes").asLong(),
+                  response.path("sha256").asText(),
+                  response.path("request_id").asText(null))));
     }
     blockers.add("Request e resposta originais do trecho de voz não foram localizados.");
     return null;

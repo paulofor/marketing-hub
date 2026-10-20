@@ -138,8 +138,17 @@ public class EditorialMediaGovernanceEvidenceResolver {
           || ((Number) primary.get("evidenceId")).longValue()
               != sourceInputs.get(0).path("asset_id").asLong())
         blockers.add("O vídeo fonte não corresponde à prova homologada do produto.");
-      else proofSources.add(primary);
-      verifyProofShots(project, lineage, finalMetadata, proofSources, blockers);
+      else {
+        primary.put("sourceRole", "EDITORIAL_SOURCE");
+        proofSources.add(primary);
+      }
+      verifyProofShots(
+          project,
+          lineage,
+          finalMetadata,
+          proofSources,
+          blockers,
+          video.getDurationSeconds() == null ? 0 : video.getDurationSeconds());
     } catch (ResponseStatusException ex) {
       log.warn(
           "Governança editorial: prova não verificável. creativeId={} projectId={}",
@@ -148,7 +157,13 @@ public class EditorialMediaGovernanceEvidenceResolver {
           ex);
       blockers.add("Prova técnica não verificável: " + ex.getReason());
     }
-    verifyDelivery(project, lineage, finalMetadata, visualSources, blockers);
+    verifyDelivery(
+        project,
+        lineage,
+        finalMetadata,
+        visualSources,
+        blockers,
+        video.getDurationSeconds() == null ? 0 : video.getDurationSeconds());
     var audio =
         speech.resolve(
             sourceJob,
@@ -175,7 +190,8 @@ public class EditorialMediaGovernanceEvidenceResolver {
       JsonNode lineage,
       JsonNode finalMetadata,
       List<Map<String, Object>> result,
-      List<String> blockers) {
+      List<String> blockers,
+      int durationSeconds) {
     JsonNode requested = lineage.path("requestedProofShots");
     JsonNode applied = finalMetadata.at("/product_reference_overlay/productProof/shots");
     if (!requested.isArray()
@@ -206,7 +222,18 @@ public class EditorialMediaGovernanceEvidenceResolver {
               && !used.path("commercialEvidenceClaimed").asBoolean(true)
               && used.path("syntheticScenario").asBoolean(false);
       if (!matches) blockers.add("Captura aplicada diverge da fonte homologada: trecho " + i);
-      else result.add(proof);
+      else {
+        proof.put("sourceRole", "APPLIED_PRODUCT_PROOF");
+        proof.put(
+            "reviewMoments",
+            used.path("reviewMoments").isArray()
+                ? json.convertValue(used.path("reviewMoments"), List.class)
+                : List.of());
+        proof.put("appliedIntervals", used.path("intervals").asText());
+        if (!validReviewMoments(used.path("reviewMoments"), durationSeconds))
+          blockers.add("Captura sem momentos auditáveis para inspeção: trecho " + i);
+        result.add(proof);
+      }
     }
   }
 
@@ -218,7 +245,8 @@ public class EditorialMediaGovernanceEvidenceResolver {
       JsonNode lineage,
       JsonNode finalMetadata,
       List<Map<String, Object>> result,
-      List<String> blockers) {
+      List<String> blockers,
+      int durationSeconds) {
     JsonNode requested = lineage.path("requestedDeliveryExamples");
     JsonNode applied = finalMetadata.at("/product_reference_overlay/deliveryExamples/shots");
     if (!requested.isArray()
@@ -258,8 +286,34 @@ public class EditorialMediaGovernanceEvidenceResolver {
       item.put("origin", source.origin());
       item.put("rightsStatement", source.rightsStatement());
       item.put("captionCueIndex", used.path("captionCueIndex").asInt());
+      item.put("startSeconds", used.path("startSeconds").asDouble());
+      item.put("endSeconds", used.path("endSeconds").asDouble());
+      item.put("reviewMoment", used.path("reviewMoment").asDouble());
+      if (!used.path("startSeconds").isNumber()
+          || !used.path("endSeconds").isNumber()
+          || !used.path("reviewMoment").isNumber()
+          || !Double.isFinite(used.path("startSeconds").asDouble())
+          || !Double.isFinite(used.path("endSeconds").asDouble())
+          || !Double.isFinite(used.path("reviewMoment").asDouble())
+          || used.path("startSeconds").asDouble() < 0
+          || used.path("endSeconds").asDouble() > durationSeconds
+          || used.path("endSeconds").asDouble() <= used.path("startSeconds").asDouble()
+          || used.path("reviewMoment").asDouble() < used.path("startSeconds").asDouble()
+          || used.path("reviewMoment").asDouble() >= used.path("endSeconds").asDouble())
+        blockers.add("Arte sem intervalo auditável para inspeção: trecho " + i);
       result.add(item);
     }
+  }
+
+  /** Aceita somente instantes físicos limitados para extrair quadros, sem executar expressões. */
+  private boolean validReviewMoments(JsonNode values, int durationSeconds) {
+    if (!values.isArray() || values.isEmpty() || values.size() > 5) return false;
+    for (JsonNode value : values)
+      if (!value.isNumber()
+          || !Double.isFinite(value.asDouble())
+          || value.asDouble() < 0
+          || value.asDouble() >= durationSeconds) return false;
+    return true;
   }
 
   /** Exige o projeto e o contrato exatos do produto e do experimento do criativo. */

@@ -208,6 +208,104 @@ class GeraSalesPageStageRetryTest {
     verify(experiments, times(2)).findForSalesPageRecovery(id);
   }
 
+  /** Reutiliza o mesmo job após falha de leitura e preserva histórico e custo em outro produto. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9307})
+  void recoversOnlySavedReceiptWithoutCreatingAnotherJob(long id) throws Exception {
+    configure(id);
+    failed.setErrorMessage("OpenAI Responses API returned HTTP 200");
+    failed.setErrorDetail("OpenAiHttpException: HTTP 200");
+    failed.setOpenAiRequestBody("{\"model\":\"model-test\",\"input\":\"original\"}");
+    assertThat(service.retryView(id).replayOnly()).isTrue();
+    assertThat(service.retryView(id).available()).isTrue();
+    String job = failed.getIdJob();
+    var mvc =
+        MockMvcBuilders.standaloneSetup(new GeraSalesPageController(service, publications)).build();
+    mvc.perform(
+            post("/api/experiments/" + id + "/gerasalespage/v1/stage-recovery")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("failedJobId", job))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.replayOnly").value(true))
+        .andExpect(jsonPath("$.idJob").value(job));
+    assertThat(service.retry(id, job).idJob()).isEqualTo(job);
+    assertThat(history).hasSize(7);
+    assertThat(service.pending(failed.getStageCode()).getFirst().replayOnly()).isTrue();
+    service.markRunning(job);
+    service.receiveResult(
+        job,
+        new GeraSalesPageResultRequest(
+            id,
+            failed.getStageCode(),
+            "{\"readyForTraffic\":true}",
+            "unchanged-raw-receipt",
+            31752,
+            863,
+            new BigDecimal("0.072134"),
+            "codex:original:turn",
+            null,
+            null));
+    assertThat(failed.getStatus()).isEqualTo("CONCLUIDO");
+    assertThat(failed.getErrorMessage()).isNull();
+    assertThat(failed.getErrorDetail()).contains("OpenAiHttpException: HTTP 200");
+    assertThat(failed.getCostUsd()).isEqualByComparingTo("0.072134");
+    assertThat(service.retry(id, job).idJob()).isEqualTo(job);
+    assertThat(history).hasSize(7);
+    verify(publications).snapshotPublication(failed);
+  }
+
+  /** O recibo antigo conserva seu prompt; novas pendências recebem os itens do contrato vigente. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9317})
+  void replaysHistoricalRepresentationWhileNewStagesReceiveDeclaredKit(long id) throws Exception {
+    configure(id);
+    var kit = GeraSalesPageProductDeliverablesTest.kit(id);
+    experiment.setProduct(kit.getProduct());
+    experiment.setExperimentType(kit.getExperimentType());
+    experiment.setUnitPrice(kit.getUnitPrice());
+    Map<String, Object> oldPayload =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "experimentPayload", experiment, false);
+    Map<String, Object> previous =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "previousStageOutputs", id);
+    failed.setPrompt(
+        template
+            .getPromptMarkdownContent()
+            .replace("{{experiment}}", mapper.writeValueAsString(oldPayload))
+            .replace("{{previousStageOutputs}}", mapper.writeValueAsString(previous)));
+    failed.setErrorMessage("OpenAI Responses API returned HTTP 200");
+    failed.setErrorDetail("OpenAiHttpException: HTTP 200");
+    failed.setOpenAiRequestBody("original");
+    assertThat(service.retryView(id).available()).isTrue();
+    service.retry(id, failed.getIdJob());
+    var pending = service.pending(failed.getStageCode()).getFirst();
+    assertThat(pending.replayOnly()).isTrue();
+    assertThat(pending.experiment().get("feoDeliverablePackage")).isEqualTo(Map.of());
+    Map<String, Object> current =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "experimentPayload", experiment);
+    assertThat(
+            mapper.valueToTree(current).path("feoDeliverablePackage").path("deliverables").size())
+        .isEqualTo(5);
+    experiment.getProduct().setCurrentPriceBrl(new BigDecimal("99.00"));
+    assertThat(service.pending(failed.getStageCode())).isEmpty();
+    assertThat(failed.getStatus()).isEqualTo("FALHA");
+  }
+
+  /** Mudança após solicitar recuperação impede entregar a pendência ao executor. */
+  @Test
+  void blocksReceiptRecoveryWhenInputsChange() {
+    failed.setErrorMessage("OpenAI Responses API returned HTTP 200");
+    failed.setErrorDetail("OpenAiHttpException: HTTP 200");
+    failed.setOpenAiRequestBody("original");
+    service.retry(experiment.getId(), failed.getIdJob());
+    experiment.setUnitPrice(new BigDecimal("99.00"));
+    assertThat(service.pending(failed.getStageCode())).isEmpty();
+    assertThat(failed.getStatus()).isEqualTo("FALHA");
+    assertThat(history).hasSize(7);
+  }
+
   /** Recusa resultados potencialmente consumidos, reprovação funcional e mudanças no contexto. */
   @ParameterizedTest
   @ValueSource(

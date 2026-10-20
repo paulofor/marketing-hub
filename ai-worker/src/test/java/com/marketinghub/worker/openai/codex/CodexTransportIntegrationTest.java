@@ -1,6 +1,7 @@
 package com.marketinghub.worker.openai.codex;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,9 +47,11 @@ class CodexTransportIntegrationTest {
   private final ObjectMapper mapper = new ObjectMapper();
   private final List<JsonNode> callbacks = new ArrayList<>();
   private final AtomicBoolean refuseFirstSuccess = new AtomicBoolean();
+  private final AtomicBoolean replayOnly = new AtomicBoolean();
   private MockWebServer backend;
   private String jobId;
   private long experimentId;
+  private JsonNode savedRequest;
 
   /** Inicia apenas um backend local e isola todas as identidades e arquivos de teste. */
   @BeforeEach
@@ -71,6 +74,12 @@ class CodexTransportIntegrationTest {
                             Map.of(
                                 "jobid",
                                 jobId,
+                                "replayOnly",
+                                replayOnly.get(),
+                                "auditedPrompt",
+                                savedRequest == null ? "Uma oferta útil e fiel ao produto." : savedRequest.path("prompt").asText(),
+                                "auditedRequestBodyJson",
+                                savedRequest == null ? "{\"model\":\"gpt-test\",\"input\":\"original\"}" : savedRequest.path("requestBodyJson").asText(),
                                 "experimentId",
                                 experimentId,
                                 "stageCode",
@@ -92,6 +101,7 @@ class CodexTransportIntegrationTest {
               if (path.equals("/pricing"))
                 return json(
                     "[{\"code\":\"gpt-test\",\"priceInputStandard\":10,\"priceOutputStandard\":20,\"priceInputBatch\":1,\"priceOutputBatch\":2}]");
+              if (path.endsWith("/recebe-prompt")) savedRequest = mapper.readTree(request.getBody().readUtf8());
               if (path.endsWith("/recebe-resposta")) {
                 JsonNode body = mapper.readTree(request.getBody().readUtf8());
                 callbacks.add(body);
@@ -155,6 +165,35 @@ class CodexTransportIntegrationTest {
         .isEqualTo(callbacks.getLast().path("rawResponse").asText());
   }
 
+  /** Entrega recibos reais acima de 256 KiB e os recupera sem repetir inferência em dois produtos. */
+  @ParameterizedTest
+  @ValueSource(longs = {105, 9106})
+  void shouldDeliverLargeAuditReceiptAndReplayWithoutInference(long identity) throws Exception {
+    experimentId = identity;
+    jobId = "synthetic-large-receipt-" + identity;
+    var worker = worker("{\"auditPadding\":460000}");
+    assertThat(worker.processPending(1).succeeded()).isEqualTo(1);
+    replayOnly.set(true);
+    assertThat(worker.processPending(1).succeeded()).isEqualTo(1);
+    assertThat(inferenceCount()).isEqualTo(1);
+    assertThat(callbacks.getFirst().path("rawResponse").asText()).hasSizeGreaterThan(460000);
+    assertThat(callbacks.getLast().path("rawResponse").asText())
+        .isEqualTo(callbacks.getFirst().path("rawResponse").asText());
+    assertThat(callbacks.getFirst().path("costUsd").decimalValue())
+        .isEqualByComparingTo("0.00120000");
+  }
+
+  /** A fila de recuperação nunca gera quando o recibo está ausente ou pertence a outro job. */
+  @Test
+  void shouldBlockReplayQueueWithoutExactReceipt() throws Exception {
+    experimentId = 105;
+    jobId = "synthetic-missing-receipt";
+    replayOnly.set(true);
+    assertThat(worker("{}").processPending(1).failed()).isEqualTo(1);
+    assertThat(callbacks.getFirst().path("errorMessage").asText()).contains("CODEX_RECEIPT_NOT_FOUND");
+    assertThat(Files.exists(directory.resolve("session/calls.jsonl"))).isFalse();
+  }
+
   /** Falha de contrato preserva o recibo e bloqueia conclusão, mesmo na reentrega do job. */
   @Test
   void shouldKeepInvalidReceiptWithoutPaidRetry() throws Exception {
@@ -182,6 +221,19 @@ class CodexTransportIntegrationTest {
       assertThat(Files.size(receipt)).isGreaterThan(70000);
     }
     assertThat(inferenceCount()).isEqualTo(1);
+  }
+
+  /** Limita o recibo sem remover a proteção de memória nem executar integração de rede. */
+  @Test
+  void shouldKeepFiniteReceiptDecoderLimit() {
+    CodexAppServerTransport transport = mock(CodexAppServerTransport.class);
+    when(transport.execute(any())).thenReturn("{\"audit\":\"" + "x".repeat(16 * 1024 * 1024) + "\"}");
+    var client = WebClient.builder()
+        .filter(new CodexResponsesFilter(backend.url("/v1").toString(), transport, mapper)).build();
+    assertThatThrownBy(() -> client.post().uri(backend.url("/v1/responses").toString())
+        .bodyValue(Map.of("input", "test")).retrieve().bodyToMono(Map.class).block())
+        .hasRootCauseInstanceOf(org.springframework.core.io.buffer.DataBufferLimitException.class);
+    assertThat(backend.getRequestCount()).isZero();
   }
 
   /** Uso ausente continua desconhecido em vez de produzir custo zero fictício. */

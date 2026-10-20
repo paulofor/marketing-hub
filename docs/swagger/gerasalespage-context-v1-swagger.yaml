@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GeraSalesPage v1 — contexto comercial do produto
-  version: 1.2.0
+  version: 1.3.0
 paths:
   /api/internal/gerasalespage/v1/{stageCode}/stage-executions/pending:
     get:
@@ -25,16 +25,48 @@ paths:
                     experimentId:
                       type: integer
                       format: int64
+                    replayOnly:
+                      type: boolean
+                      description: Recuperação exclusiva do recibo exato; ausência bloqueia sem inferência.
+                    auditedPrompt:
+                      type: string
+                      nullable: true
+                      description: Prompt original literal somente em replay, após revalidação semântica.
+                    auditedRequestBodyJson:
+                      type: string
+                      nullable: true
+                      description: Request original literal somente em replay, sem reconstruir ou alterar seu hash.
                     experiment:
                       type: object
                       additionalProperties: true
                       properties:
+                        feoDeliverablePackage:
+                          $ref: '#/components/schemas/DeclaredDeliverablePackage'
                         product:
                           $ref: '#/components/schemas/ProductCommercialContext'
                         approvedLandingVideo:
                           $ref: '#/components/schemas/ApprovedLandingVideo'
 components:
   schemas:
+    DeclaredDeliverablePackage:
+      type: object
+      additionalProperties: true
+      description: Pacote FEO persistido tem prioridade. Sem FEO, kit low-ticket recebe itens textuais concordantes de delivery.formats nos dois contratos do produto, com preço compatível. Objeto vazio indica fonte ausente. Não representa homologação, arquivo ou ID FEO inventado.
+      properties:
+        source: {type: string, enum: [PRODUCT_DELIVERY_CONTRACT]}
+        productId: {type: integer, format: int64}
+        productVersion: {type: string, nullable: true}
+        deliverables:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              sourceField: {type: string}
+              title: {type: string}
+              publicTitle: {type: string}
+              description: {type: string}
+              publicDescription: {type: string}
     ApprovedLandingVideo:
       type: object
       description: Demonstração revalidada do recibo do ciclo; ausente no legado, sem acesso privado ou autorizações.

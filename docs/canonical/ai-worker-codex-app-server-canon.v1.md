@@ -46,6 +46,10 @@ locuções, imagens ou vídeos gerados por API: sua origem e custo continuam sep
 A assinatura pode possuir quotas e créditos; não presumir uso gratuito ou ilimitado.
 Não aumentar limites de preparação, audiovisual, mídia nem conceder aprovações humanas.
 
+Reafirmação para Capella em 20/10/2026: a preparação pelo Worker Codex não depende de
+consulta de faturamento da API. Recuperar primeiro o recibo já concluído e aproveitar os
+tokens reportados no cálculo estimado, sem nova inferência ou duplicação no acumulado.
+
 ## Contrato, auditoria e recuperação
 
 O App Server recebe `outputSchema`; a saída passa também por validação local do schema e
@@ -88,3 +92,26 @@ Matriz: `docs/homologacao/capella-worker-retomada-codex-v1.md`.
 Instalação nova deve preparar o registro de preços antes dos templates: a migração
 semeia somente o modelo ausente, com fonte oficial, e não sobrescreve valores já
 cadastrados. O rollback preserva essa referência para a auditoria das execuções.
+
+## Recebimento e recuperação de recibos — 19/10/2026
+
+O recibo completo contém eventos e request auditáveis e pode ultrapassar 256 KiB.
+O adaptador Codex deve decodificá-lo com limite explícito de 16 MiB, sem truncar
+auditoria nem aumentar indiscriminadamente todos os clientes HTTP. Falha de leitura
+após HTTP 200 não comprova falha da inferência e não autoriza repetir geração.
+
+No GeraSalesPage, o contrato existente de recuperação pode reenfileirar o mesmo
+job em modo `replayOnly`, depois de conferir entrada, modelo, schema e antecessores.
+O executor só pode abrir o recibo do hash exato; se não existir, bloqueia antes de
+conectar à sessão ou iniciar turno. O controle não compõe o hash da inferência.
+Transporte API paga não pode executar esse modo. O callback conserva saída, uso,
+custo e erro original, limpa apenas a mensagem de falha vigente no sucesso e
+devolve ao backend a decisão de avançar. Repetir o comando não cria outro job.
+
+### Fonte dos entregáveis no GeraSalesPage
+
+O campo legado `experiment.feoDeliverablePackage` aceita dois fornecedores documentados: pacote FEO persistido, que mantém prioridade, ou `source: PRODUCT_DELIVERY_CONTRACT` para kit low-ticket sem pacote FEO. O segundo copia somente `delivery.formats` textuais concordantes no contrato de validação e na experiência do produto, com preço vigente compatível. Não cria pacote, ID, arquivo ou prova de homologação fictícios. Ausência ou divergência permanece visível. Os gates de entrega e homologação comercial continuam independentes.
+
+Recibos anteriores ao adaptador podem ser recuperados com a representação antiga somente se o prompt, modelo, schema e todos os dados de negócio originais coincidirem. Essa compatibilidade aceita exclusivamente a ausência anterior do bloco derivado; não ignora alterações do produto. Novas etapas recebem os itens declarados, evitando que a comunicação interprete a ausência de pacote FEO como ausência da entrega.
+
+O replay entrega ao worker `auditedPrompt` e `auditedRequestBodyJson` literais da auditoria validada. Não reconstruir o prompt a partir da serialização atual: diferenças de espaços, ordem de propriedades ou representação numérica não podem transformar recuperação em outra identidade de recibo. Metadados de controle ficam fora do prompt e são removidos antes do cálculo do hash.

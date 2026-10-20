@@ -48,6 +48,33 @@ test('replay continua estável quando a JVM altera a ordem de serialização das
   assert.equal((await calls(options)).filter(c => c.method === 'turn/start').length, 1);
 });
 
+test('recuperação exclusiva preserva o recibo antigo e não abre outra sessão', async t => {
+  const options = await setup(t, { auditPadding: 460000 });
+  const original = await execute(body(), options);
+  const before = (await calls(options)).length;
+  const recovered = await execute({ ...body(), metadata: { ...body().metadata, marketingHubReplayOnly: true } }, options);
+  assert.deepEqual(recovered, original);
+  assert.equal((await calls(options)).length, before);
+  assert.equal(JSON.stringify(recovered).length > 460000, true);
+});
+
+for (const change of ['missing', 'different-job', 'different-input', 'different-schema', 'different-model', 'unscoped']) {
+  test(`recuperação exclusiva bloqueia ${change} antes de abrir sessão ou consumir IA`, async t => {
+    const options = await setup(t);
+    if (change !== 'missing') await execute(body(), options);
+    const request = { ...body(), metadata: { ...body().metadata, marketingHubReplayOnly: true } };
+    if (change === 'different-job') request.metadata.idJob = 'other-product-9110';
+    if (change === 'different-input') request.input = 'outra oferta';
+    if (change === 'different-schema') request.text = { format: { type: 'json_schema', schema: { type: 'string' } } };
+    if (change === 'different-model') request.model = 'other-model';
+    if (change === 'unscoped') request.metadata = { marketingHubReplayOnly: true };
+    const before = change === 'missing' ? 0 : (await calls(options)).length;
+    await assert.rejects(execute(request, options), /CODEX_RECEIPT_NOT_FOUND/);
+    if (!before) await assert.rejects(readFile(join(options.home, 'calls.jsonl')), { code: 'ENOENT' });
+    else assert.equal((await calls(options)).length, before);
+  });
+}
+
 test('separa outro produto e outra execução mesmo com texto idêntico', async t => {
   const options = await setup(t);
   await execute(body(), options);

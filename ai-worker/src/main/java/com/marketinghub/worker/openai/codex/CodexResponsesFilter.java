@@ -24,6 +24,10 @@ import reactor.core.scheduler.Schedulers;
 /** Redireciona somente Responses do provedor configurado ao App Server dentro do próprio worker. */
 public final class CodexResponsesFilter implements ExchangeFilterFunction {
   private static final Logger log = LoggerFactory.getLogger(CodexResponsesFilter.class);
+  private static final ExchangeStrategies RECEIPT_STRATEGIES =
+      ExchangeStrategies.builder()
+          .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
+          .build();
   private final URI endpoint;
   private final CodexAppServerTransport transport;
   private final ObjectMapper mapper;
@@ -82,7 +86,7 @@ public final class CodexResponsesFilter implements ExchangeFilterFunction {
                     }
                     return Mono.fromCallable(
                             () ->
-                                ClientResponse.create(HttpStatus.OK)
+                                ClientResponse.create(HttpStatus.OK, RECEIPT_STRATEGIES)
                                     .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                                     .header("X-MarketingHub-Transport", "codex-app-server")
                                     .body(transport.execute(buffer.body()))

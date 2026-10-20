@@ -10470,3 +10470,34 @@ A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recri
   Avaliações históricas válidas e recusas com consumo continuam nos testes existentes.
 - **Limite:** Codex texto/visão não substitui a API auditiva. Crédito ausente é dependência
   externa real, sem retentativa automática, aumento de teto ou extrato obrigatório.
+## LOOP-WORKER-CODEX-RECIBO-GRANDE — 2026-10-19
+
+- **Evidência:** Capella, job `5422374e-f997-44da-94be-e59237a90338`: recibo `completed` com 458.444 bytes, 31.752 tokens de entrada e 863 de saída. O backend recebeu erro HTTP 200 sem resultado. Fixtures de dois produtos reproduziram `DataBufferLimitException`, limite 262.144 bytes.
+- **Causa:** `ClientResponse.create` no filtro Codex utilizava os codecs padrão e recusava o recibo auditável, embora o modelo tivesse concluído. Os testes anteriores só cobriam respostas pequenas.
+- **Correção:** codec limitado a 16 MiB exclusivo do adaptador; recuperação oficial do mesmo job com `replayOnly`, entrada revalidada, sem gerar se o recibo exato estiver ausente. Auditoria e custo conservados.
+- **Prevenção:** integração local com App Server simulado produz recibo de 460 KiB em duas identidades, recupera os mesmos bytes com uma única inferência, bloqueia identidade/contexto/schema/modelo diferentes e conserva o caminho anterior de retomada técnica.
+- **Limites:** não corrige schema inválido, resultado ausente, despacho incerto ou demanda comercial. Evidência de aceite local em `docs/homologacao/capella-worker-retomada-codex-v1.md`.
+
+## LOOP-GERASALES-KIT-SEM-FEO — 2026-10-19
+
+- **Evidência:** primeira saída real de Capella retornou `offerStack: []` porque `feoDeliverablePackage` estava vazio, embora os dois contratos do produto declarassem os mesmos cinco grupos: posts, stories, legendas, mensagens e calendário.
+- **Causa:** o produtor de contexto consultava somente pacotes FEO, omitindo a fonte atual de kits low-ticket.
+- **Correção:** adaptador puro do contrato de entrega, com origem explícita e sem gravar pacote fictício; FEO persistido mantém prioridade. Replay anterior usa a representação exata auditada e não mistura novas entradas ao recibo.
+- **Prevenção:** duas identidades, fontes ausentes/divergentes, preço, JSON inválido, categoria desconhecida, tipo legado e alteração do produto após solicitar replay. Caminhos anteriores de FEO permanecem nas regressões do módulo.
+- **Limites:** a lista declara a oferta; não substitui arquivos, pareceres, aceite humano nem prova comercial.
+
+
+## LOOP-WORKER-CI-TIMEOUT-SEM-DIAGNOSTICO — 20/10/2026
+
+- Evidência: a validação anterior do PR #5624 excedeu 30 minutos no passo de testes.
+  A suíte atual passou localmente, inclusive com Node 22, duas CPUs e 512 MiB.
+- Lacuna: stdout de aproximadamente 16 MB, linhas de 4,8 MB e ausência de artefato
+  de teste impedem uma leitura proporcional do problema quando o job é interrompido.
+  O histórico já aprovou linhas grandes; não se atribui o timeout ao volume como fato.
+- Melhoria: wrapper mantém o exit code, preserva stdout/XMLs e resume o resultado;
+  upload always e timeout do passo permitem coletar a falha sem remover checks.
+- Prevenção: falso Maven de 4,8 MB comprova saída preservada, console limitado e
+  sucesso/falha distintos. A suíte real e as análises Bash/ShellCheck/Actionlint
+  completam a validação. Sem inferência externa e sem declarar impacto comercial.
+- Limite: o diagnóstico não presume causa funcional nem autoriza rerun sem evidência.
+  Matriz: docs/homologacao/capella-worker-retomada-codex-v1.md.

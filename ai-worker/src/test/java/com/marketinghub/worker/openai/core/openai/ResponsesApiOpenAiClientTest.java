@@ -57,6 +57,18 @@ class ResponsesApiOpenAiClientTest {
         server.shutdown();
     }
 
+    /** Impede que a recuperação de recibo seja convertida em chamada paga por configuração legada. */
+    @Test
+    void shouldBlockReceiptReplayWhenConfiguredTransportIsPaidApi() {
+        var client = new ResponsesApiOpenAiClient(WebClient.builder(), new ObjectMapper(), properties("gpt-test"));
+        var request = new OpenAiRequest("gpt-test", "Prompt", "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}",
+                "schema", "{}", "Prompt", Map.of("idJob", "original-job", "marketingHubReplayOnly", true));
+        assertThat(catchThrowable(() -> client.dispatch(request)))
+                .isInstanceOf(StageWorkerException.class)
+                .hasMessageContaining("nenhuma chamada de IA foi iniciada");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
     /** Deve registrar o request final em modo flex quando a Responses API rejeitar a chamada com erro HTTP. */
     @Test
     void dispatchShouldLogFlexOpenAiRequestWhenHttpErrorHappens() throws Exception {

@@ -7,6 +7,8 @@ on:
       - '.github/workflows/ai-worker.yml'
       - '.github/workflows/ai-worker-validation.yml'
       - 'scripts/test-ai-worker-image-contract.sh'
+      - 'scripts/run-ai-worker-tests.sh'
+      - 'scripts/test-ai-worker-test-output.sh'
   workflow_call:
     inputs:
       recovery_sha:
@@ -77,8 +79,25 @@ jobs:
         run: mvn -B -Dmaven.test.skip=true install
       - name: Run architecture tests
         run: mvn -B -s settings.xml -Dtest='*ArchitectureTest,*ArquiteturaTest' test
+      - name: Validate bounded test diagnostics
+        working-directory: .
+        run: |
+          bash -n scripts/run-ai-worker-tests.sh scripts/test-ai-worker-test-output.sh
+          shellcheck scripts/run-ai-worker-tests.sh scripts/test-ai-worker-test-output.sh
+          bash scripts/test-ai-worker-test-output.sh
       - name: Run tests
-        run: mvn -B -s settings.xml test
+        timeout-minutes: 10
+        run: bash ../scripts/run-ai-worker-tests.sh
+      - name: Preserve worker test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-worker-test-diagnostics
+          path: |
+            ai-worker/target/test-evidence/
+            ai-worker/target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 3
       - name: Build
         run: mvn -B -s settings.xml package -DskipTests
       - name: Validate tested image contract

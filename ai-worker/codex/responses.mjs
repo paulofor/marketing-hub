@@ -119,6 +119,13 @@ async function connect(options) {
 
 // Executa uma inferência isolada e preserva seu recibo para replay sem novo consumo.
 export async function execute(body, options) {
+  const replayOnly = body.metadata?.marketingHubReplayOnly === true;
+  // O controle de replay não altera a identidade da inferência já salva.
+  if (Object.hasOwn(body.metadata || {}, 'marketingHubReplayOnly')) {
+    const metadata = { ...body.metadata };
+    delete metadata.marketingHubReplayOnly;
+    body = { ...body, metadata };
+  }
   const translated = translate(body);
   if (translated.schema) schemaValidator(translated.schema);
   const fingerprint = createHash('sha256').update(JSON.stringify(canonical(body))).digest('hex');
@@ -126,8 +133,10 @@ export async function execute(body, options) {
   const receipt = options.cacheDirectory && scoped ? join(options.cacheDirectory, `${fingerprint}.json`) : null;
   if (receipt) {
     try { return JSON.parse(await readFile(receipt, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (replayOnly) throw new Error('CODEX_RECEIPT_NOT_FOUND: recuperação bloqueada sem recibo exato; nenhuma inferência iniciada');
     await mkdir(options.cacheDirectory, { recursive: true, mode: 0o700 });
   }
+  if (replayOnly) throw new Error('CODEX_RECEIPT_NOT_FOUND: recuperação requer recibo correlacionado ao job; nenhuma inferência iniciada');
   const server = await connect(options);
   let threadParams, turnParams, threadId, turnId, usage;
   let inferenceStarted = false;

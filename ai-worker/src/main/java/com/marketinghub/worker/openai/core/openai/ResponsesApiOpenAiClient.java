@@ -70,7 +70,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                 .build();
     }
 
-    /** Envia o request final com fallback de service tier por tentativa e devolve os dados de despacho para auditoria no backend. */
+    /** Envia o request final e impede nova chamada paga quando o backend permite apenas replay Codex. */
     @Override
     public OpenAiDispatch dispatch(OpenAiRequest request) {
         String originalRequestBodyJson = request.requestBodyJson();
@@ -78,6 +78,10 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         String requestBodyJson = originalRequestBodyJson;
         String finalServiceTier = request.serviceTier();
         try {
+            if (Boolean.TRUE.equals(request.metadata().get("marketingHubReplayOnly"))
+                    && !"codex-app-server".equals(properties.textTransport())) {
+                throw new StageWorkerException("Recuperação exclusiva de recibo requer Codex; nenhuma chamada de IA foi iniciada");
+            }
             Map<String, Object> requestBody = buildServiceTierRequestBody(originalRequestBodyJson, request.serviceTier());
             if ("codex-app-server".equals(properties.textTransport())) {
                 // Correlaciona o recibo ao job para impedir reutilização entre produtos ou execuções.

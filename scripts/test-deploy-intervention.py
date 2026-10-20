@@ -136,6 +136,15 @@ class LocalCoordinationTest(unittest.TestCase):
         self.assertEqual(self.github.workflows["deploy-containers.yml"]["state"], "active")
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
 
+    def test_mcp_tls_scope_preserves_other_workers_on_same_host(self):
+        """Coordena renovação e deploy MCP sem suspender Worker IA ou Meta."""
+        state = self.begin(["mcp"])
+        self.assertEqual(state["phase"], "ACTIVE")
+        self.assertEqual([workflow["file"] for workflow in state["workflows"]], ["mcp-server.yml"])
+        self.assertEqual(self.github.workflows["ai-worker.yml"]["state"], "active")
+        self.assertEqual(self.github.workflows["facebook-ads-worker.yml"]["state"], "active")
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+
     def test_alcyone_proxy_has_dedicated_reversible_scope(self):
         state = self.begin(["alcyone-proxy"])
         self.assertEqual(state["phase"], "ACTIVE")

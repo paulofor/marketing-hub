@@ -7,11 +7,25 @@ on:
       - "mcp-server/**"
       - "deploy/**"
       - ".github/workflows/mcp-server.yml"
+      - "scripts/check-mcp-tls.py"
   workflow_dispatch:
+    inputs:
+      operation:
+        description: "Publicar MCP ou somente renovar/verificar TLS"
+        type: choice
+        default: deploy
+        options: [deploy, renew]
+      recovery_sha:
+        description: "Revisão integrada para recuperação coordenada"
+        type: string
+        required: false
+  schedule:
+    - cron: '23 4,16 * * *'
 
 concurrency:
   group: deploy-mcp-server-${{ github.ref }}
-  cancel-in-progress: true
+  queue: max
+  cancel-in-progress: false
 
 env:
   MCP_VPS_IP: 191.252.210.83
@@ -21,6 +35,8 @@ env:
   MCP_IMAGE_NAME: marketinghub-mcp-server
   MCP_IMAGE: ghcr.io/${{ github.repository_owner }}/marketinghub-mcp-server
   MCP_CERTBOT_EMAIL: paulofore@gmail.com
+  RECOVERY_SHA: ${{ inputs.recovery_sha || '' }}
+  GH_TOKEN: ${{ github.token }}
 
 permissions:
   contents: read
@@ -29,12 +45,23 @@ permissions:
 jobs:
   mcp-image:
     name: MCP - build and push image
+    if: github.ref == 'refs/heads/main' && github.event_name != 'schedule' && inputs.operation != 'renew'
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.image_metadata.outputs.image }}
       image-tag: ${{ steps.image_metadata.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate coordinated recovery revision
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/validate-publisher-recovery.py
+
+      - name: Validate TLS renewal locally
+        run: |
+          bash -n deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
+          shellcheck deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
+          python3 scripts/test-mcp-tls.py
 
       - name: Validate isolated MCP deployment contract
         run: deploy/bin/test-isolated-compose-contract.sh
@@ -102,6 +129,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate coordinated recovery revision
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - name: Validate MCP GitHub credential
         run: |
           if [[ -z "${MCP_GITHUB_TOKEN}" ]]; then
@@ -132,3 +163,59 @@ jobs:
           ssh ${VPS_USER}@${MCP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
           ssh ${VPS_USER}@${MCP_VPS_IP} \
             "GHCR_USERNAME='${GHCR_USERNAME}' GHCR_TOKEN='${GHCR_TOKEN}' MCP_GITHUB_TOKEN='${MCP_GITHUB_TOKEN}' MCP_IMAGE='${MCP_REGISTRY_IMAGE}' IMAGE_TAG='${MCP_IMAGE_TAG}' DEPLOY_DIR='${DEPLOY_DIR}' EMAIL='${MCP_CERTBOT_EMAIL}' /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
+
+  renew-tls:
+    name: Renew and verify MCP TLS
+    needs: [deploy-mcp]
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      (needs.deploy-mcp.result == 'success' || github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.operation == 'renew'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate coordinated recovery revision
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/validate-publisher-recovery.py
+
+      - name: Validate TLS renewal locally
+        run: |
+          bash -n deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
+          shellcheck deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
+          python3 scripts/test-mcp-tls.py
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_CHAVE }}
+
+      - name: Pin verified MCP host identity
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          install -m 600 deploy/mcp-known-hosts "$HOME/.ssh/known_hosts"
+
+      - name: Renew existing certificate and reload only MCP proxy
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=30 \
+            -o ServerAliveInterval=20 -o ServerAliveCountMax=3 \
+            "${VPS_USER}@${MCP_VPS_IP}" bash -s < deploy/bin/renew-mcp-tls.sh
+
+      - name: Verify trusted TLS and MCP tools from outside the host
+        run: |
+          for attempt in 1 2 3; do
+            if python3 scripts/check-mcp-tls.py; then
+              exit 0
+            fi
+            echo "Verificação TLS/MCP ainda indisponível; tentativa ${attempt}/3."
+            sleep 2
+          done
+          exit 1
+
+      - name: Retire only the superseded legacy renewal
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=30 \
+            "${VPS_USER}@${MCP_VPS_IP}" bash -s < deploy/bin/retire-legacy-mcp-renewal.sh

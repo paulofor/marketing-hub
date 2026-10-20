@@ -375,7 +375,33 @@ O `mcp-server` foi configurado para usar `MYSQL_PASS` do arquivo `.env` no host:
 Esse `.env` é exclusivo do servidor e **não deve ser propagado, versionado ou injetado no processo do GitHub Actions**.
 
 
-### Reemissão do certificado (fluxo mais seguro)
+### Renovação produtiva automática (20/10/2026)
+
+O workflow **MCP Server - Build and Deploy** mantém o certificado de
+`mcpserverdigi.shop` e `www.mcpserverdigi.shop`. Executa diariamente às 04:23 e
+16:23 UTC, após cada deploy do MCP ou manualmente com `operation=renew` na `main`.
+A renovação manual não recompila nem recria a aplicação. Ambos os caminhos usam a
+mesma fila, sem cancelar transações iniciadas.
+
+`deploy/bin/renew-mcp-tls.sh` confere os volumes e os desafios HTTP, renova apenas
+a linhagem do MCP e executa `nginx -t` e reload **no host**, fora do Certbot. Não
+monta socket Docker no Certbot nem altera Worker IA ou Facebook Ads. Os registros
+ACME ficam em `volumes/mcp/certbot/logs`; as chaves permanecem no host.
+
+`scripts/check-mcp-tls.py` exige confiança pública, hostname correto, ao menos
+14 dias de validade e sucesso real de `tools/list` e `db_health` por HTTPS.
+Falha mantém o workflow vermelho; HTTP 200 com erro JSON-RPC não é sucesso.
+Nunca contorne o certificado com `curl -k` ou trust store relaxado.
+
+Somente após comprovar o TLS, o pipeline remove a entrada antiga de cron que
+tentava executar `docker` dentro do Certbot; preserva backup restrito e os demais
+agendamentos. A renovação está coberta por testes de CA local, certificado vencido,
+identidade incorreta, falha da CA/reload e recuperação sem repetir emissão.
+Intervenção fora do pipeline exige escopo `mcp` no coordenador existente.
+
+[Diagnóstico, alternativas e homologação](../docs/homologacao/mcp-tls-renovacao-2026-10-20.md).
+
+### Emissão inicial (referência; recuperação produtiva usa o workflow acima)
 
 No lugar de executar o comando manual direto, use o script versionado:
 

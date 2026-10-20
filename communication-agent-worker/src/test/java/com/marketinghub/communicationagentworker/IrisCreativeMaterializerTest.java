@@ -139,6 +139,13 @@ class IrisCreativeMaterializerTest {
       assertThat(render.path("sourceArtifactId").asLong()).isEqualTo(910118);
       assertThat(render.path("illustration").path("sha256").asText()).isEqualTo(sourceHash);
       assertThat(saved.get()).isNotEmpty();
+      int originalWidth = spec.path("crop").path("width").asInt();
+      ((ObjectNode) spec.path("crop")).put("width", 999999);
+      saved.set(null);
+      assertThatThrownBy(() -> materializer.materialize(task, result, prepared))
+          .hasMessageContaining("prova vinculada");
+      assertThat(saved.get()).isNull();
+      ((ObjectNode) spec.path("crop")).put("width", originalWidth);
       ((ObjectNode) spec.path("illustration")).put("jobId", "img-other-product");
       saved.set(null);
       assertThatThrownBy(() -> materializer.materialize(task, result, prepared))

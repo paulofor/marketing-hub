@@ -14,6 +14,26 @@ final class EditorialCardRenderer {
   /** Impede instanciação do renderizador sem estado. */
   private EditorialCardRenderer() {}
 
+  /** Valida também o recorte da prova vinculada, ainda que seus pixels não sejam renderizados. */
+  static void validateLinkedProof(JsonNode crop, byte[] bytes) throws IOException {
+    var pixels = ImageIO.read(new ByteArrayInputStream(bytes));
+    if (pixels == null) throw new IllegalArgumentException("Prova vinculada não decodificável.");
+    for (String key : List.of("x", "y", "width", "height"))
+      if (!crop.path(key).isIntegralNumber() || !crop.path(key).canConvertToInt())
+        throw new IllegalArgumentException("Recorte da prova vinculada inválido.");
+    int x = crop.path("x").asInt(),
+        y = crop.path("y").asInt(),
+        w = crop.path("width").asInt(),
+        h = crop.path("height").asInt();
+    if (x < 0
+        || y < 0
+        || w < 100
+        || h < 100
+        || (long) x + w > pixels.getWidth()
+        || (long) y + h > pixels.getHeight())
+      throw new IllegalArgumentException("Recorte da prova vinculada fora dos pixels aprovados.");
+  }
+
   /** Preserva os pixels da ilustração e imprime sua natureza antes do convite. */
   static byte[] render(JsonNode spec, byte[] bytes) throws IOException {
     ProofCardRenderer.validateCustomerCopy(spec);

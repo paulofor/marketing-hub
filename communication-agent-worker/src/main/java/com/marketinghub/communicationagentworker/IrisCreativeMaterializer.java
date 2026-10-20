@@ -215,6 +215,8 @@ public class IrisCreativeMaterializer {
       JsonNode illustration = spec.path("illustration");
       byte[] illustrationBytes = null;
       if ("EDITORIAL_CARD_V1".equals(spec.path("templateVersion").asText())) {
+        EditorialCardRenderer.validateLinkedProof(
+            spec.path("crop"), Files.readAllBytes(source.path()));
         if (!privateValidation)
           throw new IllegalArgumentException(
               "Composição editorial disponível somente para preparação privada.");

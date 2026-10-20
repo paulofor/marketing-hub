@@ -7615,6 +7615,46 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   contribuição negativa, dupla dedução, decisão desfavorável, cobertura incompleta e revisão
   financeira sem repetição das quatro atividades anteriores.
 
+### Versão executável confundida com contrato financeiro — 20/10/2026
+
+- Histórico: Capella/ciclo #4/experimento #88 usava `v1` no ciclo e no contrato.
+  O ciclo #12/#105 usa implementação `capella-private-v3`, enquanto o contrato canônico
+  e a revisão financeira #22/parecer #88 continuam `v1`. Todas as revisões foram conferidas;
+  não faltava cadastro nem nova decisão econômica.
+- Causa: o seletor Quartzo comparava o contrato financeiro à versão da implementação.
+  O serviço financeiro, corretamente, valida a revisão contra `validationDefinitionVersion`.
+  Renomear a revisão só a tornaria desatualizada; remover o filtro aceitaria outro contrato.
+- Correção: selecionar a revisão LIVE do plano pertinente pelo contrato canônico,
+  mantendo a versão executável nas provas e no contexto. Sem fallback quando o contrato
+  estiver ausente e sem nova chamada a Plutus ou alteração do parecer.
+- Prevenção: `QuartzoFinancialContractContextTest` usa o contexto e o gate econômico reais,
+  duas identidades com versões distintas, a variante antes válida e o percurso sem ciclo.
+  Contrato estrangeiro, outro plano e ausência de versão continuam bloqueados.
+  Quatro cenários falharam antes da mudança, com os dois percursos legados aprovados.
+- Limites e matriz: `docs/homologacao/capella-quartzo-versao-financeira-v1.md`.
+
+### Pai e filho oferecidos em paralelo ao conciliador — 20/10/2026
+
+- Evidência: Processo 5 #71 delegou Quartzo #72, ambos do produto #7. Página, anúncio,
+  checkout e público ficaram `COMPLETED` nas instâncias #703–706, mas a conciliação
+  registrou `RECONCILIATION_FAILED`/`WAITING_INPUT`. O arquivo completo do backend confirmou
+  SQL 1205 na reserva do produto. As consultas MCP filtradas e o tail curto não alcançavam
+  a ocorrência; a leitura operacional somente leitura recuperou a stack. A consulta
+  posterior de locks estava vazia; não se atribui uma transação bloqueadora não observada.
+- Causa reproduzida: o pending anterior oferecia pai e filho do mesmo produto ao executor
+  paralelo, embora ambos precisem do mesmo lock. Além disso, uma disputa transitória era
+  contada como defeito funcional/entrada ausente e podia encerrar o controle como erro.
+- Correção: uma execução por produto, com rotação justa; falha transitória retorna a verdade
+  persistida sem outra reserva de produto ou mudança de estado. Locks, STOP, pausa e
+  idempotência continuam. O worker mantém polling e concorrência operacional existentes.
+- Prevenção: duas identidades na consulta JPA e no MySQL 5.7.44; SQL extraído do repository,
+  alternância pai/filho e paralelismo entre produtos. O mesmo banco reproduz 1205 com dois
+  clientes e volta a aceitar a reserva após liberação. Transações JPA independentes conservam
+  pausa concorrente, custo e revisão; falha de programação continua gerando evento persistido.
+  Antes da correção, oito testes tiveram duas falhas e três erros; após, os oito passaram.
+- Limite: não remove todas as disputas com outros comandos nem aumenta timeout ou orçamento.
+  Matriz e alternativas no mesmo relatório da passagem financeira Quartzo.
+
 ### Recorrência — atualização comercial bloqueava a própria renovação em 29/09/2026
 
 - **Evidência confirmada:** Mira #10 recebeu o contrato `MIRA_COMMERCIAL_V1` e o plano comercial

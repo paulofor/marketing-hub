@@ -1030,6 +1030,12 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
   silenciosa para a versão nova. Encerramento e motivo são persistidos uma única vez no diário.
 - Produtos diferentes avançam em paralelo. Processos do mesmo produto aguardam uma execução
   anterior terminar ou pausar; subprocessos da mesma raiz compartilham a autorização da chamada.
+- O `pending` do conciliador oferece somente a execução menos observada de cada produto,
+  ordenada por `lastReconciledAt` e ID. Pai e filho alternam a observação sem disputar o lock
+  do mesmo produto no lote; outros produtos conservam o paralelismo. SQL 1205/1213 traduzido
+  como falha transitória de lock preserva o estado durável para a próxima consulta do executor.
+  Não incrementa falha funcional, cria pendência humana nem reativa pausa/STOP. O diagnóstico
+  completo continua no log; erros não transitórios mantêm o tratamento persistido existente.
 - Na preparação do primeiro experimento `PLANNED`, sem ciclo ou predecessor, a
   comunicação `pde-communication-sales-journey` em `WAITING_INPUT`, sem falha e
   aguardando `communicationContract`, não reserva a fila contra o planejamento

@@ -17,6 +17,19 @@ Planos de produto congelam a versão do plano comercial. Mudança comercial ou v
 exige nova revisão. Cada gravação preserva o histórico e registra responsável e premissas.
 Dados de homologação usam escopo `TEST`, separado de `LIVE`, sem resultados de vendas.
 
+### Versão do contrato e versão executável — esclarecimento de 20/10/2026
+
+`PlanAssumptions.productVersion` identifica a versão canônica do contrato do produto
+(`Product.validationDefinitionVersion`), conferida pelo próprio serviço financeiro.
+A versão executável do ciclo (`LearningSalesCycle.productVersion`) pode ter outro nome;
+ela continua identificando as provas, mídias e a homologação da implementação.
+
+Quartzo deve localizar a revisão `LIVE` do produto, plano comercial e versão canônica
+correspondentes, preservando ambas as identidades. Não renomear revisão financeira para
+coincidir com a implementação nem aceitar qualquer contrato como alternativa. Contrato
+ausente, tipo ou plano alterado, vencimento e parecer desfavorável conservam seus gates.
+Essa distinção permite encontrar o parecer existente; não cria aprovação ou autorização.
+
 ## Operação pela tela
 
 ### Preparação simplificada — decisão de 20/09/2026

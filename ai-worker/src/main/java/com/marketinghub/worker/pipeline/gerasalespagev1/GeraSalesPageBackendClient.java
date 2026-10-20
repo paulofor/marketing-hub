@@ -19,12 +19,14 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
     private final GeraSalesPageWorkerProperties properties;
     private final ObjectMapper objectMapper;
 
-    /** Inicializa o client com WebClient, propriedades do worker e ObjectMapper para normalização. */
+    /** Inicializa o client com limite finito para fila, contexto e request auditado de recuperação. */
     public GeraSalesPageBackendClient(
             WebClient.Builder builder,
             GeraSalesPageWorkerProperties properties,
             ObjectMapper objectMapper) {
-        this.webClient = builder.build();
+        this.webClient = builder.clone()
+                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
+                .build();
         this.properties = properties;
         this.objectMapper = objectMapper;
     }

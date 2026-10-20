@@ -10524,3 +10524,18 @@ contexto. Os testes físicos exigem dois callbacks aceitos, um snapshot, hash ig
 e estimativa de custo única em duas identidades, além do caso anterior e do
 conflito entre janela e página. Isso preserva replay e evita retentativa de IA por
 uma resposta duplicada. Não altera gates de publicação, oferta ou autorização.
+
+### Fila de replay maior que o leitor — 20/10/2026
+
+A retomada do pacote de Capella ficou em INICIADO: o `pending` tinha 389.608 bytes,
+pois reunia contexto, prompt e request auditado. O MCP confirmou DataBufferLimitException
+262144 em GeraSalesPageBackendClient.pendingForStage. As etapas normais e a primeira
+recuperação menor haviam funcionado; a resposta do Codex já tinha leitor de 16 MiB,
+mas o cliente da fila ainda usava 256 KiB.
+
+Duas regressões do fluxo completo falharam antes da correção. O cliente exclusivo
+da fila passa a 16 MiB sem modificar o builder compartilhado. Os testes preservam
+limite finito, clientes anteriores e inferência única em duas identidades. O replay
+local do caso real percorreu fila de 389.608 bytes, recibo de 2.073.985 bytes,
+estimativa US$0,156902 e callback com provedor `/bin/false`, conservando o recibo.
+Essa prova local não aprova a página comercial nem representa uma nova geração.

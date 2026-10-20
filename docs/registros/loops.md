@@ -10616,3 +10616,23 @@ Essa prova local não aprova a página comercial nem representa uma nova geraç�
   editorial agora fazem essa entrega, com comparação temporal e teste stdio executável do
   caso real, outra identidade, falhas e caminho V4. Metadados e texto no prompt, isoladamente,
   não comprovam a capacidade de inspeção. Registro: `docs/homologacao/capella-inspecao-fontes-editoriais-v1.md`.
+
+
+## LOOP-AGENTES-PARECER-SUPERADO-NO-CONTEXTO — 20/10/2026
+
+- **Evidência:** Alcyone tem Têmis #764 bloqueada, #766 concluída e nova falha #778;
+  Capella tem Psique #741 bloqueada e #744 concluída. O produtor de contexto selecionava
+  os últimos COMPLETED e BLOCKED separadamente. Três regressões locais reproduziram
+  o envio contraditório ao próximo agente, incluindo aprovação anterior a nova rejeição.
+- **Causa:** filtragem por status antes de resolver a cronologia; bloqueios também eram
+  agrupados só pela atividade, podendo sobrescrever outra responsabilidade histórica.
+- **Correção:** selecionar o resultado terminal vigente por origem/atividade/agente antes
+  das listas, com identidade do processo e versão. Retentativa não apaga reprovação;
+  custos, recibos e história não sofrem mutação. A autoridade permanece no backend.
+- **Prevenção:** fila/HTTP com service real, duas identidades, ordem invertida, origem
+  estrangeira, dois revisores, nova rejeição, retentativa e caminho antes válido.
+  Preservar os testes de correção PDE entre versões e replay sem modelo.
+- **Limites:** não atribuir todos os bloqueios da cadeia a essa falha; não homologar
+  artefato por status de tarefa nem iniciar gasto/campanha. A melhoria reduz contradição
+  de entrada; efeito em retrabalho e vendas exige medição posterior.
+  Matriz: `docs/homologacao/agentes-contexto-vigente-v1.md`.

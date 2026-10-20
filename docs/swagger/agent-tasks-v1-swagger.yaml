@@ -632,7 +632,13 @@ components:
         processContextJson:
           type: string
           description: >-
-            Contexto legado serializado do processo. No retrabalho PDE, blockedActivities contém
+            Contexto legado serializado do processo, com handoffContractVersion AGENT_HANDOFF_CONTEXT_V1.
+            completedActivities e blockedActivities são mutuamente exclusivas por agente/atividade:
+            somente o último COMPLETED ou BLOCKED da mesma sourceReference é vigente. PENDING,
+            IN_PROGRESS e CANCELLED não resolvem bloqueios anteriores. Cada item expõe status,
+            sourceReference, processDefinitionId, processCode e processVersion, além de resultado
+            e evidência. Essa seleção não homologa artefatos nem altera histórico, gates ou custos.
+            No retrabalho PDE, blockedActivities contém
             os pareceres de origem e correctionAttempts preserva separadamente as tentativas
             de correção bloqueadas; cada item mantém tarefa, causa, ação e resultado estruturados.
             No processo pde-construction-approval v7 ou posterior, validationPolicy publica

@@ -2998,46 +2998,29 @@ public class AgentTaskService {
   }
 
   /**
-   * Consolida histórico, ficha e fontes comerciais do tipo para os agentes, preservando a entrada
-   * privada de Íris e as identidades comerciais exatas de Quartzo e Safira.
+   * Consolida resultados vigentes por responsável e atividade, ficha e fontes comerciais; preserva
+   * histórico na auditoria e evita repassar bloqueios superados ou conclusões invalidadas.
    */
   private String processContext(AgentTask task) {
     try {
       List<AgentTask> processTasks = processContextTasks(task);
       boolean prototypeCorrection = isPdePrototypeCorrection(task);
-      Map<String, AgentTask> latestByOwnerActivity = new LinkedHashMap<>();
-      processTasks.stream()
-          .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
-          .forEach(
-              sibling ->
-                  latestByOwnerActivity.put(
-                      sibling.getAssignedAgent().getAgentKey()
-                          + ":"
-                          + sibling.getProcessActivityId(),
-                      sibling));
+      List<AgentTask> currentOutcomes =
+          AgentTaskContextSelector.currentOutcomes(processTasks, task.getSourceReference());
       List<Map<String, Object>> completedActivities =
-          latestByOwnerActivity.values().stream()
-              .sorted(java.util.Comparator.comparing(AgentTask::getId))
+          currentOutcomes.stream()
+              .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
               .map(this::agentActivityContext)
               .toList();
-      Map<String, AgentTask> latestBlockedByActivity = new LinkedHashMap<>();
-      processTasks.stream()
-          .filter(sibling -> "BLOCKED".equals(sibling.getStatus()))
-          .filter(sibling -> !prototypeCorrection || !isPdePrototypeCorrection(sibling))
-          .forEach(
-              sibling ->
-                  latestBlockedByActivity.merge(
-                      sibling.getProcessActivityId(),
-                      sibling,
-                      (current, replacement) ->
-                          replacement.getId() > current.getId() ? replacement : current));
       List<Map<String, Object>> blockedActivities =
-          latestBlockedByActivity.values().stream()
-              .sorted(java.util.Comparator.comparing(AgentTask::getId))
+          currentOutcomes.stream()
+              .filter(sibling -> "BLOCKED".equals(sibling.getStatus()))
+              .filter(sibling -> !prototypeCorrection || !isPdePrototypeCorrection(sibling))
               .map(this::blockedActivityContext)
               .toList();
       List<Map<String, Object>> completedHumanActivities = completedHumanActivities(task);
       Map<String, Object> context = new java.util.LinkedHashMap<>();
+      context.put("handoffContractVersion", "AGENT_HANDOFF_CONTEXT_V1");
       context.put("completedActivities", completedActivities);
       if (opalaCommercialContext != null
           && com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.CODE.equals(
@@ -3160,13 +3143,9 @@ public class AgentTaskService {
         && "prototypeCorrection".equals(task.getProcessActivityId());
   }
 
-  /** Converte uma tarefa concluída em contexto estruturado sem JSON serializado dentro de JSON. */
+  /** Entrega resultado e prova vigentes com identidade rastreável, sem reescrever sua auditoria. */
   private Map<String, Object> agentActivityContext(AgentTask sibling) {
-    Map<String, Object> context = new LinkedHashMap<>();
-    context.put("taskId", sibling.getId());
-    context.put("agentKey", sibling.getAssignedAgent().getAgentKey());
-    context.put("activityId", sibling.getProcessActivityId());
-    context.put("activityName", sibling.getProcessActivityName());
+    Map<String, Object> context = activityContextIdentity(sibling);
     context.put("result", readOptionalJson(sibling.getResultJson(), "resultado", sibling.getId()));
     context.put(
         "evidence", readOptionalJson(sibling.getEvidenceJson(), "evidência", sibling.getId()));
@@ -3178,11 +3157,7 @@ public class AgentTaskService {
 
   /** Converte um bloqueio em causa, ação e evidência estruturadas para a tarefa de correção. */
   private Map<String, Object> blockedActivityContext(AgentTask sibling) {
-    Map<String, Object> context = new LinkedHashMap<>();
-    context.put("taskId", sibling.getId());
-    context.put("agentKey", sibling.getAssignedAgent().getAgentKey());
-    context.put("activityId", sibling.getProcessActivityId());
-    context.put("activityName", sibling.getProcessActivityName());
+    Map<String, Object> context = activityContextIdentity(sibling);
     context.put("category", sibling.getBlockerCategory());
     context.put("recommendedAction", sibling.getBlockerAction());
     context.put("error", sibling.getExecutionError());
@@ -3191,6 +3166,21 @@ public class AgentTaskService {
         "evidence", readOptionalJson(sibling.getEvidenceJson(), "evidência", sibling.getId()));
     context.put(
         "blockedAt", sibling.getUpdatedAt() == null ? null : sibling.getUpdatedAt().toString());
+    return context;
+  }
+
+  /** Identifica origem, versão do processo e estado sem confundi-los com aprovação do artefato. */
+  private Map<String, Object> activityContextIdentity(AgentTask sibling) {
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("taskId", sibling.getId());
+    context.put("agentKey", sibling.getAssignedAgent().getAgentKey());
+    context.put("activityId", sibling.getProcessActivityId());
+    context.put("activityName", sibling.getProcessActivityName());
+    context.put("status", sibling.getStatus());
+    context.put("sourceReference", sibling.getSourceReference());
+    context.put("processDefinitionId", sibling.getProcessDefinition().getId());
+    context.put("processCode", sibling.getProcessDefinition().getProcessCode());
+    context.put("processVersion", sibling.getProcessDefinition().getVersionNumber());
     return context;
   }
 

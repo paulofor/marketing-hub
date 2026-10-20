@@ -10686,3 +10686,18 @@ Essa prova local não aprova a página comercial nem representa uma nova geraç�
   artefato por status de tarefa nem iniciar gasto/campanha. A melhoria reduz contradição
   de entrada; efeito em retrabalho e vendas exige medição posterior.
   Matriz: `docs/homologacao/agentes-contexto-vigente-v1.md`.
+
+## LOOP-META-RENOVACAO-BLOQUEADA-POR-FILA — 20/10/2026
+
+- **Sintoma:** renovação habilitada, runtime HTTP disponível, mas token vence e bloqueia Capella #105.
+- **Causa confirmada:** a única thread `scheduling-1` ficou em `Mono.block()` de
+  `MetaAudienceBackendClient.listPending`. Logs registram a última verificação de
+  renovação em 10/10 às 07:15 UTC; dump de 20/10 comprovou a espera ainda ativa.
+- **Correção:** limites HTTP de conexão e resposta no executor; fila exclusiva de
+  renovação; demais rotinas continuam seriais. Validade oficial substitui o prazo
+  fictício de sessenta dias; callback exige confirmação e omite corpos com segredo.
+- **Prevenção:** testes reais com servidor HTTP sem resposta e corpo travado, recuperação,
+  agendador ocupado, duas contas, prazo ausente/negativo, erro 190 e falha do callback.
+- **Limite:** token já vencido exige autenticação do titular segundo a Meta. A correção
+  preserva automação e gates; não equivale a campanha ativa ou venda.
+- **Evidência:** `docs/homologacao/meta-renovacao-automatica-v1.md`.

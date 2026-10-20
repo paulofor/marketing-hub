@@ -30,6 +30,30 @@
 
 Este documento complementa o `system-governance-canon.v3.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
+## Renovação automática das credenciais — decisão de 20/10/2026
+
+A renovação da conta Meta permanece automática, habilitada e executada pelo
+Facebook Ads Worker. Não substituir essa rotina por uma tarefa manual recorrente.
+O backend conserva credencial, validade oficial e resultado; o executor controla
+frequência, timeout e isolamento do agendamento. A fila de renovação é independente
+da fila serial de campanhas, públicos e métricas. Uma consulta externa sem resposta
+não pode impedir a verificação antes do vencimento.
+
+Usar somente o prazo positivo devolvido pela Meta (`expires_in`), calculado em UTC;
+jamais inventar sessenta dias quando a resposta omite validade ou informa outro prazo.
+Resposta inválida ou callback não confirmado não comprova renovação. Não trocar a
+credencial de uma campanha em curso; os consumidores carregam a versão persistida
+no próximo ciclo. Manter segredos fora de logs, inclusive respostas dos callbacks.
+
+Token vencido ou sessão revogada pode exigir nova autenticação do titular conforme
+o contrato da Meta. Essa recuperação excepcional não desativa a automação, não
+autoriza substituir identidade/aplicativo por outro token e não amplia mídia.
+Registrar o diagnóstico e orientar o titular somente depois de conferir a rotina,
+as entradas, as tentativas e os limites oficiais. Renovação técnica não autoriza
+campanha: gates, seleção, orçamento e janela do experimento continuam obrigatórios.
+
+Evidências, alternativas e regressões: [renovação automática Meta](../homologacao/meta-renovacao-automatica-v1.md).
+
 ## 1. Propósito
 
 ### Recuperação de falhas de publicação

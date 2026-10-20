@@ -13,14 +13,15 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/** Renova as contas elegíveis e informa ao backend a validade e o resultado efetivos. */
 @Service
 public class FacebookTokenRenewalService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookTokenRenewalService.class);
-    private static final long FALLBACK_LONG_LIVED_TOKEN_VALIDITY_SECONDS = 60L * 24L * 60L * 60L;
 
     private final WebClient backendClient;
     private final FacebookAdsService facebookAdsService;
@@ -28,6 +29,7 @@ public class FacebookTokenRenewalService {
     private final String backendBaseUrl;
     private final String apiPrefix;
 
+    /** Recebe o cliente do backend e a integração Meta já configurados. */
     public FacebookTokenRenewalService(
         WebClient.Builder builder,
         FacebookAdsService facebookAdsService,
@@ -42,6 +44,7 @@ public class FacebookTokenRenewalService {
         this.apiPrefix = apiPrefix;
     }
 
+    /** Consulta e renova as contas elegíveis sem interferir no token de campanhas em curso. */
     public void renewTokensIfNeeded() {
         List<FacebookAccountRenewalCandidate> candidates = fetchEligibleAccounts();
         if (candidates.isEmpty()) {
@@ -49,9 +52,16 @@ public class FacebookTokenRenewalService {
             return;
         }
 
-        candidates.forEach(this::renewCandidateToken);
+        for (FacebookAccountRenewalCandidate candidate : candidates) {
+            try {
+                renewCandidateToken(candidate);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Falha na passagem de renovação Meta: accountId={}", candidate.id(), ex);
+            }
+        }
     }
 
+    /** Busca o contrato de contas autorizadas à renovação automática. */
     private List<FacebookAccountRenewalCandidate> fetchEligibleAccounts() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/renewal/eligible");
         LOGGER.info(
@@ -86,6 +96,7 @@ public class FacebookTokenRenewalService {
         }
     }
 
+    /** Renova uma conta e deixa os consumidores carregarem a nova credencial do backend. */
     private void renewCandidateToken(FacebookAccountRenewalCandidate candidate) {
         LOGGER.info(
             "Attempting token renewal for Facebook account id={}, name={}, expiresAt={}",
@@ -94,17 +105,12 @@ public class FacebookTokenRenewalService {
             candidate.tokenExpiresAt()
         );
 
-        boolean matchesCurrentToken = Objects.equals(
-            candidate.accessToken(),
-            facebookAdsService.getCurrentAccessToken()
-        );
-
         TokenRenewalAttemptResult attempt = renewTokenForAccount(
             candidate.id(),
             candidate.appId(),
             candidate.appSecret(),
             candidate.accessToken(),
-            matchesCurrentToken
+            false
         );
 
         if (attempt.status() == FacebookTokenRenewalStatus.SUCCESS) {
@@ -122,6 +128,7 @@ public class FacebookTokenRenewalService {
         }
     }
 
+    /** Persiste o resultado antes de confirmar a renovação ao chamador. */
     public TokenRenewalAttemptResult renewTokenForAccount(
         Long accountId,
         String appId,
@@ -137,13 +144,6 @@ public class FacebookTokenRenewalService {
         TokenRenewalAttemptResult attempt = performTokenRenewal(accountId, appId, appSecret, currentToken);
 
         if (attempt.status() == FacebookTokenRenewalStatus.SUCCESS) {
-            if (updateInMemory && attempt.accessToken() != null) {
-                facebookAdsService.updateAccessToken(attempt.accessToken());
-                LOGGER.info(
-                    "Updated in-memory Facebook access token after Graph API renewal for account id={}",
-                    accountId
-                );
-            }
             tokenRenewalClient.reportSuccess(
                 accountId,
                 attempt.accessToken(),
@@ -151,6 +151,13 @@ public class FacebookTokenRenewalService {
                 attempt.renewedAt(),
                 attempt.attemptedAt()
             );
+            if (updateInMemory && attempt.accessToken() != null) {
+                facebookAdsService.updateAccessToken(attempt.accessToken());
+                LOGGER.info(
+                    "Updated in-memory Facebook access token after Graph API renewal for account id={}",
+                    accountId
+                );
+            }
         } else {
             tokenRenewalClient.reportFailure(accountId, attempt.attemptedAt(), attempt.errorMessage());
         }
@@ -158,20 +165,21 @@ public class FacebookTokenRenewalService {
         return attempt;
     }
 
+    /** Executa a troca oficial e rejeita respostas sem validade verificável. */
     private TokenRenewalAttemptResult performTokenRenewal(
         Long accountId,
         String appId,
         String appSecret,
         String currentToken
     ) {
-        LocalDateTime attemptedAt = LocalDateTime.now();
+        LocalDateTime attemptedAt = LocalDateTime.now(ZoneOffset.UTC);
         try {
             FacebookAdsService.TokenRenewalResponse response = facebookAdsService.renewLongLivedToken(
                 appId,
                 appSecret,
                 currentToken
             );
-            LocalDateTime renewedAt = LocalDateTime.now();
+            LocalDateTime renewedAt = attemptedAt;
             LocalDateTime expiresAt = calculateExpiration(renewedAt, response.expiresInSeconds());
             return new TokenRenewalAttemptResult(
                 FacebookTokenRenewalStatus.SUCCESS,
@@ -199,11 +207,15 @@ public class FacebookTokenRenewalService {
         }
     }
 
+    /** Calcula em UTC a validade exata informada pelo provedor, sem fallback inventado. */
     private LocalDateTime calculateExpiration(LocalDateTime renewedAt, long expiresInSeconds) {
-        long duration = expiresInSeconds > 0 ? expiresInSeconds : FALLBACK_LONG_LIVED_TOKEN_VALIDITY_SECONDS;
-        return renewedAt.plusSeconds(duration);
+        if (expiresInSeconds <= 0) {
+            throw new IllegalStateException("Meta não informou prazo de validade positivo; credencial anterior preservada");
+        }
+        return renewedAt.plusSeconds(expiresInSeconds);
     }
 
+    /** Contrato de conta elegível recebido exclusivamente do backend. */
     public record FacebookAccountRenewalCandidate(
         Long id,
         String name,
@@ -213,6 +225,7 @@ public class FacebookTokenRenewalService {
         LocalDateTime tokenExpiresAt
     ) {}
 
+    /** Resultado da troca, com datas oficiais ou falha sem nova credencial. */
     public record TokenRenewalAttemptResult(
         FacebookTokenRenewalStatus status,
         String accessToken,

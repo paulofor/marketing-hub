@@ -152,3 +152,14 @@
 - O fallback de segmentação manual para publicação de campanha pertence ao `facebook-ads-worker`: quando não houver playbook pronto, buscar o pacote aprovado no backend pelo contrato enxuto (`/api/facebook-adsets/experiments/{experimentId}/targeting-package`) e montar o targeting da Meta localmente, sem carregar o DTO completo do experimento, sem delegar ao `ai-worker` e sem chamar OpenAI. Qualquer item aprovado e identificável pela Meta (`INTEREST`, `JOB_TITLE` ou `BEHAVIOR`) já atende o mínimo operacional de público; não exigir cargo isoladamente.
 - A publicação de campanhas deve seguir o padrão de etapa plugável: núcleo genérico em `facebookadsworker.pipeline` e implementação concreta em `facebookcampaign.publication`, sem acoplar o núcleo a etapas concretas.
 - Na publicação de campanhas, preserve o `publicationJobId` recebido em `/api/facebook-campaigns/experiments-ready` e registre cada interação com a Graph API da Meta em `POST /api/facebook-campaigns/publication-job-steps`, incluindo payload enviado, payload recebido, endpoint, método, status e etapa.
+
+## Renovação automática independente — 20/10/2026
+
+A renovação Meta permanece automática em `facebookTokenRenewalTaskScheduler`, separada
+da fila serial operacional. Preserve `FacebookHttpClientConfiguration`: conexão e
+inatividade de resposta limitadas impedem públicos/métricas de bloquear indefinidamente
+as rotinas. Use `expires_in` positivo, em UTC, sem presumir sessenta dias. Callback
+sem confirmação não é sucesso persistido; não imprimir seus corpos com credenciais.
+A rotina não troca o token em memória de uma campanha em curso. Token expirado exige
+reconexão excepcional do titular conforme a Meta, mantendo renovação habilitada.
+Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.

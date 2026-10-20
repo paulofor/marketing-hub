@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -43,7 +44,9 @@ public class FacebookAccount {
   @Setter(AccessLevel.NONE)
   private boolean accessTokenProvided;
 
+  @Column(name = "token_expires_at")
   private LocalDateTime tokenExpiresAt;
+
   private LocalDateTime tokenLastRefreshedAt;
   private String authorizedUserId;
   private String authorizedUserName;
@@ -165,14 +168,14 @@ public class FacebookAccount {
   @Setter(AccessLevel.NONE)
   private boolean appSecretProvided;
 
-  /** Informa se o token de acesso já ultrapassou a validade persistida. */
+  /** Informa se o token de acesso já ultrapassou a validade oficial persistida em UTC. */
   @Transient
   @JsonProperty("tokenExpired")
   public boolean isTokenExpired() {
-    return tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now());
+    return tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now(ZoneOffset.UTC));
   }
 
-  /** Informa se o token está ausente, sem validade ou próximo do vencimento. */
+  /** Informa se o token está ausente, sem validade ou próximo do vencimento em UTC. */
   @Transient
   @JsonProperty("requiresTokenRenewal")
   public boolean isTokenRenewalRequired() {
@@ -182,19 +185,19 @@ public class FacebookAccount {
     if (tokenExpiresAt == null) {
       return true;
     }
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
     LocalDateTime threshold = now.plusDays(TOKEN_RENEWAL_THRESHOLD_DAYS);
     return !tokenExpiresAt.isAfter(threshold);
   }
 
-  /** Calcula quantos dias restam até o vencimento conhecido do token. */
+  /** Calcula quantos dias restam até o vencimento conhecido em UTC do token. */
   @Transient
   @JsonProperty("tokenExpiresInDays")
   public Long getTokenExpiresInDays() {
     if (tokenExpiresAt == null) {
       return null;
     }
-    long days = ChronoUnit.DAYS.between(LocalDateTime.now(), tokenExpiresAt);
+    long days = ChronoUnit.DAYS.between(LocalDateTime.now(ZoneOffset.UTC), tokenExpiresAt);
     return days;
   }
 

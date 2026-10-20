@@ -3466,6 +3466,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return trimmed.startsWith("v") ? trimmed : "v" + trimmed;
     }
 
+    /** Troca a credencial e preserva erros oficiais sem registrar segredos presentes na URL. */
     public TokenRenewalResponse renewLongLivedToken(String appId, String appSecret, String currentToken) {
         Objects.requireNonNull(appId, "appId");
         Objects.requireNonNull(appSecret, "appSecret");
@@ -3512,24 +3513,26 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             );
             return new TokenRenewalResponse(newToken, expiresInSeconds);
         } catch (WebClientResponseException ex) {
-            String body = ex.getResponseBodyAsString();
-            LOGGER.error(
-                "Facebook token renewal failed: appId={}, status={}, responseBody={}",
-                appId,
-                ex.getRawStatusCode(),
-                maskAccessToken(body),
-                ex
-            );
-            throw ex;
+            RuntimeException safe = safeTokenRenewalException(ex, appSecret, currentToken);
+            LOGGER.error("Falha ao renovar credencial Meta: appId={}, status={}",
+                    appId, ex.getStatusCode().value(), safe);
+            throw safe;
         } catch (WebClientRequestException ex) {
-            LOGGER.error(
-                "Facebook token renewal request could not be completed: appId={}, message={}",
-                appId,
-                ex.getMessage(),
-                ex
-            );
-            throw ex;
+            RuntimeException safe = safeTokenRenewalException(ex, appSecret, currentToken);
+            LOGGER.error("Falha de transporte ao renovar credencial Meta: appId={}", appId, safe);
+            throw safe;
         }
+    }
+
+    /** Preserva o diagnóstico e a pilha da falha, removendo segredo e token da mensagem HTTP. */
+    private RuntimeException safeTokenRenewalException(RuntimeException failure, String appSecret, String token) {
+        String detail = failure instanceof WebClientResponseException response
+                ? "HTTP " + response.getStatusCode().value() + ": " + response.getResponseBodyAsString()
+                : failure.getClass().getSimpleName() + ": " + failure.getMessage();
+        detail = detail.replace(appSecret, "[OCULTO]").replace(token, "[OCULTO]");
+        IllegalStateException safe = new IllegalStateException(detail);
+        safe.setStackTrace(failure.getStackTrace());
+        return safe;
     }
 
     /** Confirma a trava financeira persistida na Meta antes de criar qualquer anúncio. */

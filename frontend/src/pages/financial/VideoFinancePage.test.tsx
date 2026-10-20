@@ -252,6 +252,40 @@ describe("Financeiro dos vídeos", () => {
     expect(screen.queryByRole("form")).not.toBeInTheDocument();
     expect(axios.post).not.toHaveBeenCalled();
   });
+  it("substitui o total na revisão sem somar o teto anterior nem confirmar automaticamente", async () => {
+    budget.stageLabel = "Revisar e integrar os dois vídeos";
+    budget.status = "LIMIT_RECORDED";
+    budget.currentAuthorization = {
+      eventId: 10,
+      reference: "internal://learning-cycles/2/video-budget/original",
+      budgetLimitUsd: 10,
+      operatorName: "Operador local",
+      justification: "Autorização anterior do conjunto",
+      createdAt: "2026-09-12T22:00:00Z",
+      productVersion: budget.productVersion,
+      current: true,
+    };
+    budget.history = [budget.currentAuthorization];
+    open();
+    expect(await screen.findByRole("note")).toHaveTextContent(
+      "O novo teto substitui o anterior e inclui todo o consumo já realizado",
+    );
+    expect(
+      screen.getByRole("textbox", { name: /Teto total autorizado/ }),
+    ).toHaveValue("");
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(axios.post).not.toHaveBeenCalled();
+    await fill("12,00");
+    fireEvent.submit(screen.getByRole("form"));
+    await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
+    expect(axios.post).toHaveBeenCalledWith(
+      `${api}/4/2/video-budget`,
+      expect.objectContaining({ budgetLimitUsd: "12.00", expectedRevision: 7 }),
+    );
+    expect(
+      await screen.findByText(/Teto registrado:.*12,00/),
+    ).toBeInTheDocument();
+  });
   it("exige seleção explícita no menu e não herda o último ciclo", async () => {
     open("/financial/videos");
     expect(

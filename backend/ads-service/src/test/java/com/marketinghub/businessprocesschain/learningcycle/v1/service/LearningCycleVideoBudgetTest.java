@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -114,8 +115,8 @@ class LearningCycleVideoBudgetTest {
     return new AuthorizeVideoBudgetRequest(
         UUID.randomUUID(),
         cycle.getRevision(),
-        14L,
-        92L,
+        cycle.getChainDefinitionId(),
+        cycle.getExperimentId(),
         cycle.getProductVersion(),
         new BigDecimal(amount),
         "Operador local",
@@ -246,21 +247,88 @@ class LearningCycleVideoBudgetTest {
         .andExpect(status().isBadRequest());
   }
 
-  /** Mantém o histórico disponível sem permitir alterar teto após início do fluxo de produção. */
+  /** Mantém produção e liberação comercial fora da substituição autorizada na revisão. */
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "CAMPAIGN_VIDEO",
-        "PDE_ENTRY_VIDEO",
-        "VIDEO_APPROVAL",
-        "AUTHORIZATION",
-        "PLANNING"
-      })
+  @ValueSource(strings = {"CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "AUTHORIZATION", "PLANNING"})
   void otherStagesAreReadOnly(String stage) {
     budget.authorize(cycle, request("20"), true, now);
     cycle.setStage(stage);
     assertThat(budget.response(cycle, product, true).canAuthorize()).isFalse();
     assertThatThrownBy(() -> budget.authorize(cycle, request("30"), true, now))
+        .isInstanceOf(ResponseStatusException.class);
+    assertThat(history).hasSize(1);
+  }
+
+  /** Reproduz Mira e outro produto pela API, sem somar tetos, voltar etapa ou autorizar mídia. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102,Mira", "7,12,105,Capella"})
+  void replacesCumulativeTotalDuringReview(
+      long productId, long cycleId, long experimentId, String name) throws Exception {
+    cycle.setId(cycleId);
+    cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    cycle.setBudgetLimitBrl(new BigDecimal("100.00"));
+    product.setId(productId);
+    product.setInternalName(name);
+    when(events.findByCycleIdAndActionOrderByRevisionDesc(cycleId, "AUTHORIZE_VIDEO_BUDGET"))
+        .thenAnswer(call -> history.reversed());
+    when(events.findByCycleIdAndRequestKey(eq(cycleId), anyString()))
+        .thenAnswer(
+            call ->
+                history.stream()
+                    .filter(event -> event.getRequestKey().equals(call.getArgument(1)))
+                    .findFirst());
+    when(cycles.findLocked(productId, cycleId)).thenReturn(Optional.of(cycle));
+    when(cycles.findById(cycleId)).thenReturn(Optional.of(cycle));
+    when(products.findLockedById(productId)).thenReturn(Optional.of(product));
+    when(products.findById(productId)).thenReturn(Optional.of(product));
+    var experiment = new Experiment();
+    experiment.setId(experimentId);
+    experiment.setProduct(product);
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    budget.authorize(cycle, request("10.00"), true, now);
+    cycle.setStage("VIDEO_APPROVAL");
+    String url =
+        "/api/business-process-chains/learning-cycles/v1/products/"
+            + productId
+            + "/"
+            + cycleId
+            + "/video-budget";
+    http.perform(get(url + "?chainId=14"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.canAuthorize").value(true));
+    var amendment = request("12.00");
+    for (int attempt = 0; attempt < 2; attempt++) {
+      http.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(json.write(amendment)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.currentAuthorization.budgetLimitUsd").value(12.0))
+          .andExpect(jsonPath("$.history.length()").value(2));
+    }
+    assertThat(history).hasSize(2);
+    assertThat(cycle.getStage()).isEqualTo("VIDEO_APPROVAL");
+    assertThat(cycle.getStatus()).isEqualTo("OPEN");
+    assertThat(cycle.getBudgetLimitBrl()).isEqualByComparingTo("100.00");
+    assertThat(budget.response(cycle, product, true).history().getLast().current()).isFalse();
+    var proof = json.read(history.getLast().getEvidenceJson());
+    assertThat(proof.path("financialReviewApproved").asBoolean()).isFalse();
+    assertThat(proof.path("mediaAuthorized").asBoolean()).isFalse();
+    assertThat(proof.path("commercialPublicationAuthorized").asBoolean()).isFalse();
+  }
+
+  /** A revisão não recebe primeira autorização nem herda teto de uma versão anterior. */
+  @Test
+  void reviewNeedsAnExistingAuthorizationForTheSameVersion() {
+    cycle.setStage("VIDEO_APPROVAL");
+    assertThat(budget.response(cycle, product, true).canAuthorize()).isFalse();
+    assertThatThrownBy(() -> budget.authorize(cycle, request("12.00"), true, now))
+        .isInstanceOf(ResponseStatusException.class);
+    cycle.setStage("VIDEO_BRIEF");
+    budget.authorize(cycle, request("10.00"), true, now);
+    cycle.setStage("VIDEO_APPROVAL");
+    cycle.setProductVersion("musa-v13");
+    cycle.setVersionChangedAt(now.plusSeconds(1));
+    assertThat(budget.response(cycle, product, true).canAuthorize()).isFalse();
+    assertThatThrownBy(() -> budget.authorize(cycle, request("12.00"), true, now.plusSeconds(2)))
         .isInstanceOf(ResponseStatusException.class);
     assertThat(history).hasSize(1);
   }

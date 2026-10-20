@@ -142,7 +142,10 @@ paths:
     post:
       summary: Registrar teto humano compartilhado entre anúncio e demonstração na entrada
       description: >-
-        USD, produção e revisão de AD e LANDING_HERO. Somente em VIDEO_BRIEF de ciclo OPEN com BPM de vídeos.
+        USD, produção e revisão de AD e LANDING_HERO. Em ciclo OPEN com BPM de vídeos,
+        permite definição em VIDEO_BRIEF ou substituição de teto já vigente da mesma versão
+        em VIDEO_APPROVAL. O novo teto é o total acumulado, incluindo consumo e reservas anteriores;
+        não soma os dois limites, não altera etapa/mídia e não inicia trabalho pago.
         Usa o lock do produto/ciclo, revisão esperada e evento AUTHORIZE_VIDEO_BUDGET. Não muda a etapa.
         Não equivale ao parecer de Plutus, não inicia produção, compra créditos, autoriza mídia, cobrança ou publicação.
         Repetição idêntica preserva o recibo; chave com outro conteúdo ou revisão antiga retornam conflito.

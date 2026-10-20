@@ -213,13 +213,13 @@ public class LearningCycleVideoBudget {
         && "USD".equals(proof.path("currency").asText());
   }
 
-  /** Restringe alterações à definição dos vídeos sem liberar consumo nas etapas seguintes. */
+  /** Permite definir o teto ou substituí-lo na revisão da mesma versão, sem liberar consumo. */
   private String blocker(LearningSalesCycle cycle, boolean videos) {
     if (!videos) return "Esta versão do processo não possui produção dos dois vídeos.";
     if (!"OPEN".equals(cycle.getStatus()))
       return "Ciclo encerrado: autorização disponível somente para consulta.";
-    if (!"VIDEO_BRIEF".equals(cycle.getStage()))
-      return "O teto pode ser registrado na etapa Definir os dois vídeos. Nesta etapa, consulte o histórico.";
-    return null;
+    if ("VIDEO_BRIEF".equals(cycle.getStage())) return null;
+    if ("VIDEO_APPROVAL".equals(cycle.getStage()) && current(cycle) != null) return null;
+    return "Defina o teto na etapa Definir os dois vídeos. Um teto vigente da mesma versão também pode ser substituído durante a revisão dos vídeos. Nas demais etapas, consulte o histórico.";
   }
 }

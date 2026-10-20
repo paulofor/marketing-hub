@@ -609,7 +609,12 @@ duas peças e suas revisões, não é um teto por vídeo.
 - O registro permite prosseguir com a avaliação financeira. Não constitui aprovação de
   Plutus, não cria jobs pagos, não compra créditos nem autoriza mídia, cobrança ou publicação comercial.
 - O valor pode ser registrado ou substituído enquanto o ciclo está em **Definir os dois vídeos**.
-  Depois dessa etapa, o registro fica disponível para consulta. A versão nova exige nova autorização.
+  Na etapa **Revisar e integrar os dois vídeos**, uma nova decisão humana também pode substituir
+  o teto já vigente da mesma versão. O novo valor é o total acumulado, incluindo consumo e reservas
+  anteriores; não se soma ao teto substituído. Preservar recibos, etapa e mídia. O registro não
+  retoma o processo, aprova pareceres nem libera consumo por si só; os gates financeiros e de custo
+  continuam aplicáveis. Sem teto vigente da mesma versão, revisão não recebe primeira autorização.
+  Nas demais etapas, o registro fica disponível para consulta. A versão nova exige nova autorização.
 - A auditoria usa eventos imutáveis do próprio ciclo, com lock, revisão esperada e chave de
   idempotência. Registrar o teto não conclui atividade nem avança o processo.
 - O briefing recebe a referência financeira oficial e o teto correspondente, mantendo o contexto

@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-ruido-visualizacao-mental-contextual",
+  "collection": "prazer-audio-visual",
+  "title": "Música e ruído ambiental modulam imagens mentais",
+  "finding": "Em tarefa de imaginação guiada com 107 participantes, música e ruído de tráfego, separadamente, elevaram a vividez relatada ante silêncio; música elevou o tom emocional; adicionar tráfego à música reduziu parte do efeito emocional positivo. Música também alterou estimativas subjetivas de distância e tempo imaginados.",
+  "mechanism": "O contexto auditivo fornece pistas semânticas e afetivas para gerar imagens mentais; o ruído pode introduzir conteúdo temático concorrente. Não foram medidos circuitos dopaminérgicos nem memória posterior.",
+  "commercialApplication": "Testar em vídeos narrativos e experiências de imaginação se uma paisagem musical limpa versus música com ruído ambiental modifica coerência da cena, imaginação evocada, compreensão e lembrança, sem impor trilha emocional a pessoas vulneráveis.",
+  "evidenceStrength": "Média para efeitos na imaginação guiada autorrelatada em experimento com condições auditivas; baixa para generalização a marketing ou conversão.",
+  "publishedOn": "2026-10-20",
+  "validUntil": "2026-12-04",
+  "experimentHypothesis": "Em uma narrativa digital contemplativa, uma trilha musical sem ruído ambiental irrelevante produzirá maiores avaliações de coerência emocional do que a mesma música com ruído concorrente, preservadas compreensão e conforto.",
+  "risks": "Ruído pode ser parte essencial do realismo narrativo; eliminar sons relevantes prejudica acessibilidade e significado. Não usar estímulos desconfortáveis como manipulação emocional encoberta.",
+  "limits": "N=107, majoritariamente estudantes universitários jovens, tarefa de imaginação guiada (não anúncio/vídeo comercial), repertório restrito de música e ruídos; resultados principalmente subjetivos; sem medida de prazer fisiológico, dopamina ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-20-musica-ruido-visualizacao-mental-contextual.md",
+  "sourceTitle": "Fonte revisada v1 — Música e ruído ambiental modulam imagens mentais",
+  "sourceSha256": "ecc5f3d230776defa02d44176d03881cfbc1bfeaceffc1dbb5962a4c7453c5a1"
+}

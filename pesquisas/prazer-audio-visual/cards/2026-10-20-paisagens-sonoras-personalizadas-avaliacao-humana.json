@@ -1,0 +1,18 @@
+{
+  "cardKey": "paisagens-sonoras-personalizadas-avaliacao-humana",
+  "collection": "prazer-audio-visual",
+  "title": "Paisagens sonoras personalizadas e avaliação humana da experiência",
+  "finding": "Em comparação intraindivíduo, paisagens sonoras criadas pelos próprios participantes foram avaliadas como mais agradáveis, calmas e alinhadas aos estados pretendidos que paisagens genéricas; resultados cognitivos dependeram da tarefa e os sinais fisiológicos em geral não resistiram a ajustes para múltiplas comparações.",
+  "mechanism": "Preferências pessoais, contexto e controle sobre o ambiente auditivo podem influenciar avaliações afetivas; a pesquisa não isolou qual deles explica as diferenças e não demonstrou mecanismo cerebral causal.",
+  "commercialApplication": "Para experiências digitais opt-in, comparar trilhas/paisagens sonoras selecionadas pelo usuário versus trilhas genéricas equivalentes, medindo satisfação, coerência, compreensão, conclusão e desconforto, sem presumir aumento de vendas.",
+  "evidenceStrength": "Média para diferenças subjetivas no experimento intraindivíduo; limitada para EEG, HRV e desempenho cognitivo generalizável.",
+  "publishedOn": "2026-10-20",
+  "validUntil": "2026-12-04",
+  "experimentHypothesis": "Usuários com escolha voluntária de uma paisagem sonora adequada ao contexto relatarão maior adequação e satisfação do que usuários com trilha genérica, sem piora de compreensão, custo ou abandono.",
+  "risks": "Personalização invasiva ou excessiva, exposição a volume inadequado, fadiga auditiva, captura de preferências sem consentimento e atribuição indevida de efeitos fisiológicos.",
+  "limits": "Desfechos principalmente autorrelatados, perfis pessoais construídos pelo próprio participante, resultado Stroop variável conforme a condição, múltiplos sinais fisiológicos sem significância robusta; sem vídeos promocionais ou compras testadas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-20-paisagens-sonoras-personalizadas-avaliacao-humana.md",
+  "sourceTitle": "Fonte revisada v1 — Paisagens sonoras personalizadas e avaliação humana da experiência",
+  "sourceSha256": "36addee72af2fc8da926603c6e123f4b1699e371257ceef5c2bc92ed10b8a22a"
+}

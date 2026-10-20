@@ -40,6 +40,35 @@ beforeEach(() => {
   get.mockResolvedValue({ data: view });
 });
 describe("Retomada de etapa", () => {
+  it("recupera o job original sem apresentar autorização para nova geração", async () => {
+    get.mockResolvedValue({ data: { ...view, replayOnly: true } });
+    post.mockResolvedValue({
+      data: {
+        ...view,
+        available: false,
+        replayOnly: true,
+        reason: "Recuperação solicitada.",
+      },
+    });
+    setup();
+    const button = await screen.findByRole("button", {
+      name: "Recuperar resultado salvo",
+    });
+    await waitFor(() => expect(button).not.toBeDisabled());
+    fireEvent.click(button);
+    expect(screen.getByText(/bloqueada sem consumir IA/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ela pode gerar custo/)).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar retomada da etapa" }),
+    );
+    expect(
+      await screen.findByText("Recuperação solicitada."),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith(
+      "/api/experiments/613/gerasalespage/v1/stage-recovery",
+      { failedJobId: "failed-613" },
+    );
+  });
   it("consulta sem disparar geração e solicita somente a tentativa confirmada", async () => {
     post.mockResolvedValue({
       data: {

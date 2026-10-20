@@ -18,7 +18,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/StageRetryView'}
     post:
-      summary: Retoma somente a etapa técnica conferida, com lock no experimento e histórico preservado
+      summary: Retoma a etapa técnica ou recupera somente seu recibo Codex, com lock e histórico preservado
       requestBody:
         required: true
         content:
@@ -30,7 +30,7 @@ paths:
                 failedJobId: {type: string, minLength: 1}
       responses:
         '200':
-          description: Nova tentativa ou a mesma retomada já solicitada; sem duplicar etapas concluídas
+          description: Nova tentativa técnica ou recuperação do mesmo job; replayOnly proíbe nova inferência e bloqueia se o recibo exato não existir
           content:
             application/json:
               schema: {$ref: '#/components/schemas/StageRetryView'}
@@ -40,10 +40,13 @@ components:
   schemas:
     StageRetryView:
       type: object
-      required: [available, reason]
+      required: [available, reason, replayOnly]
       properties:
         idJob: {type: string, nullable: true}
         stageCode: {type: string, nullable: true}
         status: {type: string, nullable: true}
         available: {type: boolean}
         reason: {type: string}
+        replayOnly:
+          type: boolean
+          description: Quando true, preserva idJob, prompt, schema e modelo; pending entrega a mesma restrição ao executor. Metadado de controle não altera o hash do recibo nem o conteúdo do prompt.

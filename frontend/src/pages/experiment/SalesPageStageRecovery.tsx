@@ -8,6 +8,7 @@ interface StageRecovery {
   status: string | null;
   available: boolean;
   reason: string;
+  replayOnly?: boolean;
 }
 
 export default function SalesPageStageRecovery({
@@ -60,8 +61,9 @@ export default function SalesPageStageRecovery({
       {confirming ? (
         <div>
           <p>
-            Confirmar uma nova chamada de IA somente para a etapa interrompida?
-            Ela pode gerar custo. As etapas concluídas serão preservadas.
+            {recovery.data?.replayOnly
+              ? "Recuperar somente o resultado já salvo, sem nova geração? Se o resultado não estiver disponível, a recuperação será bloqueada sem consumir IA."
+              : "Confirmar uma nova chamada de IA somente para a etapa interrompida? Ela pode gerar custo. As etapas concluídas serão preservadas."}
           </p>
           <div className="d-flex flex-wrap gap-2">
             <button
@@ -103,7 +105,9 @@ export default function SalesPageStageRecovery({
             setConfirming(recovery.data?.idJob ?? null);
           }}
         >
-          Retomar etapa interrompida
+          {recovery.data?.replayOnly
+            ? "Recuperar resultado salvo"
+            : "Retomar etapa interrompida"}
         </button>
       )}
     </div>

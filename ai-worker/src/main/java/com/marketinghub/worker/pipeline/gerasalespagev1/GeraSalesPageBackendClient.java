@@ -124,7 +124,7 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
         return payload.stream().map(this::toStageExecution).toList();
     }
 
-    /** Converte o payload pendente do backend para o modelo interno do pipeline genérico. */
+    /** Converte a pendência e mantém a restrição de replay separada dos dados enviados ao modelo. */
     private StageExecution<GeraSalesPageInput> toStageExecution(Map<String, Object> item) {
         Long experimentId = asLong(item.get("experimentId"));
         String stageCode = asString(item.get("stageCode"));
@@ -142,6 +142,12 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
                 asString(template.get("promptMarkdownContent")),
                 asString(template.get("schemaJson")),
                 promptData);
+        Map<String, Object> recovery = new LinkedHashMap<>();
+        if (Boolean.TRUE.equals(item.get("replayOnly"))) {
+            recovery.put("replayOnly", true);
+            recovery.put("auditedPrompt", java.util.Objects.toString(item.get("auditedPrompt"), ""));
+            recovery.put("auditedRequestBodyJson", java.util.Objects.toString(item.get("auditedRequestBodyJson"), ""));
+        }
         return new StageExecution<>(
                 idJob,
                 experimentId,
@@ -149,7 +155,7 @@ public class GeraSalesPageBackendClient implements StageBackendPort<GeraSalesPag
                 "INICIADO",
                 asInstant(item.get("executionRequestedAt")),
                 input,
-                Map.of());
+                recovery);
     }
 
     /** Extrai o resultado OpenAI bruto armazenado nas métricas do resultado. */

@@ -32,7 +32,7 @@ createInterface({ input: process.stdin }).on('line', line => {
       return;
     }
     const item = { type: 'agentMessage', id: 'answer', phase: 'final_answer', text: config.text || '{"ready":true}' };
-    event('item/completed', { item: { ...item, id: 'commentary', phase: 'commentary', text: 'Não usar comentário como resposta' } });
+    event('item/completed', { item: { ...item, id: 'commentary', phase: 'commentary', text: config.auditPadding ? 'x'.repeat(config.auditPadding) : 'Não usar comentário como resposta' } });
     event('item/completed', { item });
     if (!config.missingUsage) event('thread/tokenUsage/updated', { tokenUsage: { total: { inputTokens: 80, outputTokens: 20, totalTokens: 100 } } });
     event('turn/completed', { turn: { id: 'turn-1', status: config.status || 'completed' } });

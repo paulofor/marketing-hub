@@ -10,8 +10,8 @@
     {
       "productSlug": "metodo-musa-7-dias",
       "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
-      "resource": "contracts/operational-evidence/vega-terminal-controls-v1.json",
-      "sha256": "afe0057408ef9e8372256419509a4fc4621f2665beb72eeeab0a24faa82aa42a"
+      "resource": "contracts/operational-evidence/vega-operational-controls-v2.json",
+      "sha256": "87b8d3d08032dd54b86b4ed5400f7b3792746d95a5e102376ab9914eb026102e"
     }
   ],
   "historicalReports": [
@@ -20,6 +20,12 @@
       "prototypeVersion": "mira-private-candidate-v3",
       "resource": "contracts/operational-evidence/mira-private-controls-v1.json",
       "sha256": "de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4"
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "resource": "contracts/operational-evidence/vega-terminal-controls-v1.json",
+      "sha256": "afe0057408ef9e8372256419509a4fc4621f2665beb72eeeab0a24faa82aa42a"
     }
   ]
 }

@@ -1,0 +1,299 @@
+{
+  "providerCalls" : 0,
+  "observations" : [ {
+    "productId" : 91004,
+    "observed" : {
+      "costUsd" : 0,
+      "callbacks" : 3,
+      "sameResult" : true,
+      "sameFinishedAt" : true,
+      "persistedAttempts" : 1,
+      "divergentCallbackDidNotOverwrite" : true
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "IDEMPOTENT_CALLBACK",
+    "cycleId" : 171004,
+    "testMethod" : "duplicateCallbackPreservesResultAndCost"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "costUsd" : 0,
+      "callbacks" : 3,
+      "sameResult" : true,
+      "sameFinishedAt" : true,
+      "persistedAttempts" : 1,
+      "divergentCallbackDidNotOverwrite" : true
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "IDEMPOTENT_CALLBACK",
+    "cycleId" : 177004,
+    "testMethod" : "duplicateCallbackPreservesResultAndCost"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "absentFromPending" : true,
+      "closedCycleClaimStatus" : 409,
+      "requestAfterClosingStatus" : 409,
+      "wrongVersionClaimStatus" : 409,
+      "inputPreserved" : true,
+      "providerRequestPersisted" : false
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "INCOMPATIBLE_CONTEXT_REJECTED",
+    "cycleId" : 171004,
+    "testMethod" : "incompatibleContextCannotClaimOrSendRequest"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "absentFromPending" : true,
+      "closedCycleClaimStatus" : 409,
+      "requestAfterClosingStatus" : 409,
+      "wrongVersionClaimStatus" : 409,
+      "inputPreserved" : true,
+      "providerRequestPersisted" : false
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "INCOMPATIBLE_CONTEXT_REJECTED",
+    "cycleId" : 177004,
+    "testMethod" : "incompatibleContextCannotClaimOrSendRequest"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "rejectedClaims409" : 7,
+      "concurrentRequests" : 8,
+      "persistedAttempts" : 1,
+      "distinctExecutionIds" : 1,
+      "repeatedRequestReusedExecution" : true,
+      "concurrentClaimRequests" : 8,
+      "acceptedClaims" : 1
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "CONCURRENT_SINGLE_CONSUMPTION",
+    "cycleId" : 171004,
+    "testMethod" : "concurrentRequestsConsumeOnce"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "rejectedClaims409" : 7,
+      "concurrentRequests" : 8,
+      "persistedAttempts" : 1,
+      "distinctExecutionIds" : 1,
+      "repeatedRequestReusedExecution" : true,
+      "concurrentClaimRequests" : 8,
+      "acceptedClaims" : 1
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "IDEMPOTENT_REQUEST",
+    "cycleId" : 171004,
+    "testMethod" : "concurrentRequestsConsumeOnce"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "rejectedClaims409" : 7,
+      "concurrentRequests" : 8,
+      "persistedAttempts" : 1,
+      "distinctExecutionIds" : 1,
+      "repeatedRequestReusedExecution" : true,
+      "concurrentClaimRequests" : 8,
+      "acceptedClaims" : 1
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "CONCURRENT_SINGLE_CONSUMPTION",
+    "cycleId" : 177004,
+    "testMethod" : "concurrentRequestsConsumeOnce"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "rejectedClaims409" : 7,
+      "concurrentRequests" : 8,
+      "persistedAttempts" : 1,
+      "distinctExecutionIds" : 1,
+      "repeatedRequestReusedExecution" : true,
+      "concurrentClaimRequests" : 8,
+      "acceptedClaims" : 1
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "IDEMPOTENT_REQUEST",
+    "cycleId" : 177004,
+    "testMethod" : "concurrentRequestsConsumeOnce"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "foreignCardExposed" : false,
+      "ownerCardAvailable" : true,
+      "foreignQueryReturnsOwnSession" : true,
+      "foreignSessionAttempts" : 0
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "CROSS_SESSION_ISOLATION",
+    "cycleId" : 171004,
+    "testMethod" : "anotherSessionCannotReadOwnedResult"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "foreignCardExposed" : false,
+      "ownerCardAvailable" : true,
+      "foreignQueryReturnsOwnSession" : true,
+      "foreignSessionAttempts" : 0
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "CROSS_SESSION_ISOLATION",
+    "cycleId" : 177004,
+    "testMethod" : "anotherSessionCannotReadOwnedResult"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "generateStatus" : 401,
+      "absentFromPending" : true,
+      "persistedAttempts" : 1,
+      "readStatus" : 401,
+      "claimStatus" : 401
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "REVOKED_ACCESS_REJECTED",
+    "cycleId" : 171004,
+    "testMethod" : "revokedAccessCannotReadGenerateOrClaim"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "generateStatus" : 401,
+      "absentFromPending" : true,
+      "persistedAttempts" : 1,
+      "readStatus" : 401,
+      "claimStatus" : 401
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "REVOKED_ACCESS_REJECTED",
+    "cycleId" : 177004,
+    "testMethod" : "revokedAccessCannotReadGenerateOrClaim"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "persistedAttempts" : 1,
+      "generateStatus" : 401,
+      "readStatus" : 401,
+      "persistedSessions" : 1
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "INVALID_ACCESS_REJECTED",
+    "cycleId" : 171004,
+    "testMethod" : "expiredAccessCannotReadGenerateOrClaim"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "generateStatus" : 401,
+      "absentFromPending" : true,
+      "persistedAttempts" : 1,
+      "readStatus" : 401,
+      "claimStatus" : 401
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "EXPIRED_ACCESS_REJECTED",
+    "cycleId" : 171004,
+    "testMethod" : "expiredAccessCannotReadGenerateOrClaim"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "persistedAttempts" : 1,
+      "generateStatus" : 401,
+      "readStatus" : 401,
+      "persistedSessions" : 1
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "INVALID_ACCESS_REJECTED",
+    "cycleId" : 177004,
+    "testMethod" : "expiredAccessCannotReadGenerateOrClaim"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "generateStatus" : 401,
+      "absentFromPending" : true,
+      "persistedAttempts" : 1,
+      "readStatus" : 401,
+      "claimStatus" : 401
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "EXPIRED_ACCESS_REJECTED",
+    "cycleId" : 177004,
+    "testMethod" : "expiredAccessCannotReadGenerateOrClaim"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "revocationDidNotRefundCapacity" : true,
+      "sessions" : 18,
+      "thirdAttemptsRejected409" : 18,
+      "attemptsPerSession" : 2,
+      "newSessionStatusAfterRevocation" : 409,
+      "persistedAttempts" : 36
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "ATTEMPT_LIMIT",
+    "cycleId" : 171004,
+    "testMethod" : "attemptsRemainBoundedAfterFailuresAndRevocation"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "revocationDidNotRefundCapacity" : true,
+      "sessions" : 18,
+      "thirdAttemptsRejected409" : 18,
+      "attemptsPerSession" : 2,
+      "newSessionStatusAfterRevocation" : 409,
+      "persistedAttempts" : 36
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "ATTEMPT_LIMIT",
+    "cycleId" : 177004,
+    "testMethod" : "attemptsRemainBoundedAfterFailuresAndRevocation"
+  }, {
+    "productId" : 91004,
+    "observed" : {
+      "accepted" : 18,
+      "rejected409" : 6,
+      "requests" : 24,
+      "concurrentThreads" : 8,
+      "persistedSessions" : 18
+    },
+    "experimentId" : 172004,
+    "status" : "PASS",
+    "code" : "SESSION_LIMIT",
+    "cycleId" : 171004,
+    "testMethod" : "concurrentSessionCreationEnforcesCapacity"
+  }, {
+    "productId" : 97004,
+    "observed" : {
+      "accepted" : 18,
+      "rejected409" : 6,
+      "requests" : 24,
+      "concurrentThreads" : 8,
+      "persistedSessions" : 18
+    },
+    "experimentId" : 178004,
+    "status" : "PASS",
+    "code" : "SESSION_LIMIT",
+    "cycleId" : 177004,
+    "testMethod" : "concurrentSessionCreationEnforcesCapacity"
+  } ],
+  "databaseVersion" : "5.7.44",
+  "commercialSideEffects" : false,
+  "prototypeVersion" : "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+  "contractVersion" : "PDE_PRIVATE_EXECUTION_CONTROLS_RUN_V1",
+  "generatedAt" : "2026-10-20T17:04:42.777285719Z"
+}

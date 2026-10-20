@@ -96,6 +96,13 @@ function BudgetForm({ budget }: { budget: VideoBudget }) {
         Um único limite para o anúncio, a demonstração na entrada e as revisões
         das duas peças.
       </p>
+      {budget.currentAuthorization ? (
+        <p role="note">
+          O novo teto substitui o anterior e inclui todo o consumo já realizado
+          nesta preparação. Os valores não se somam; custos e reservas
+          anteriores continuam considerados.
+        </p>
+      ) : null}
       <fieldset disabled={mutation.isPending}>
         <label className="form-label d-block">
           Teto total autorizado (USD) *

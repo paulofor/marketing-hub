@@ -17,19 +17,19 @@ expiração automática.
 
 ## 1. Geração inicial do token
 
-1. Gere um token de usuário curto através do
-   [Graph API Explorer](https://developers.facebook.com/tools/explorer/) ou da
-   tela **Contas do Facebook** no backend.
-2. Converta esse token curto em um token de longa duração chamando a rota
-   `/{version}/oauth/access_token` da Graph API com os seguintes parâmetros:
-   - `client_id`: App ID do aplicativo aprovado para anunciar;
-   - `client_secret`: App Secret do mesmo aplicativo;
-   - `grant_type=fb_exchange_token`;
-   - `fb_exchange_token`: o token curto obtido no passo anterior.
-3. Copie o `access_token` retornado e preencha os campos **Token de acesso**,
-   **App ID** e **App Secret** na conta desejada dentro de **Contas do Facebook**
-   no frontend. O backend persiste esses valores em `facebook_account` e inicia o
-   controle de expiração (`tokenExpiresAt`, `tokenLastRefreshedAt`).
+1. Obtenha uma credencial de usuário válida pelo fluxo oficial de login do
+   aplicativo ou pelo [Graph API Explorer](https://developers.facebook.com/tools/explorer/),
+   usando o aplicativo e a conta autorizados. O painel administrativo atual exibe
+   o estado e permite revalidar, mas **não implementa login interativo da Meta nem
+   um campo de substituição do token principal**.
+2. A troca é feita no servidor pelo endpoint `/{version}/oauth/access_token`, com
+   `grant_type=fb_exchange_token`, `client_id`, `client_secret` e `fb_exchange_token`.
+   O segredo nunca deve ser colocado no navegador ou na conversa.
+3. Na recuperação operacional, disponibilize a credencial em arquivo protegido
+   ao responsável pela integração. Ela deve ser aplicada pelo contrato oficial
+   de atualização da conta, que persiste em `fb_account`; não editar diretamente
+   o banco. Acompanhe o resultado em **Contas do Facebook**. App ID e App Secret
+   já cadastrados são preservados quando não houver necessidade de alterá-los.
 
 > O worker também executa essa mesma chamada quando precisa gerar um novo token
 > automaticamente, garantindo que a lógica seja idêntica ao processo manual
@@ -80,9 +80,9 @@ expiração automática.
 
 - Sempre valide que o App ID e o App Secret pertencem ao mesmo aplicativo usado
   para gerar o token; inconsistências resultam em erro `OAuthException`.
-- Quando precisar substituir o token manualmente, atualize-o na interface do
-  backend. O worker detecta a mudança e passa a utilizar o novo valor sem
-  reiniciar o serviço.
+- Quando a Meta exigir recuperação da autenticação, use o fluxo oficial e o
+  contrato de atualização descritos acima. O worker detecta a credencial persistida
+  no próximo ciclo, sem reiniciar o serviço.
 - Monitore periodicamente os campos **Última tentativa de renovação** e **Último
   erro** na tela de contas para confirmar que o agendador está funcionando e que
   nenhuma credencial está próxima do vencimento.
@@ -110,3 +110,8 @@ de automação permanece ligada. Não usar token de outro aplicativo nem fabrica
 A investigação comprovou a fila bloqueada em `MetaAudienceBackendClient.listPending`
 desde 10/10, antes do vencimento da conta #1 em 19/10. A matriz local está em
 [meta-renovacao-automatica-v1.md](../homologacao/meta-renovacao-automatica-v1.md).
+
+A documentação oficial descreve extensão de token curto e renovação por SDK
+condicionada ao uso do aplicativo. Uma chamada de servidor bem-sucedida não deve
+ser interpretada como garantia de renovação perpétua: conferir sempre a validade
+retornada. A automação conserva esse limite do provedor.

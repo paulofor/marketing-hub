@@ -54,8 +54,11 @@ ciclo existente; testes técnicos não comprovam venda ou contribuição.
 A documentação oficial exige token ainda válido para a troca. Token expirado
 exige nova autenticação do titular; App Secret não substitui consentimento.
 A recuperação pontual não desativa a renovação automática nem amplia os tetos.
-O token de ambiente consultado também estava vencido; a outra credencial de
-pesquisa pertence a aplicativo diferente e não foi adotada para anúncios.
+A credencial alternativa cadastrada contém o mesmo token vencido, confirmado
+pelo `debug_token`. O token de ambiente consultado também estava vencido; a outra
+credencial de pesquisa pertence a aplicativo diferente e não foi adotada para
+anúncios. A troca pelo servidor não é garantia de renovação perpétua; o sistema
+usa a validade efetivamente retornada, conforme o contrato oficial.
 
 Fonte: [Meta — Long-lived access tokens](https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived/), consultada em 20/10/2026.
 

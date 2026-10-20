@@ -37,6 +37,19 @@
   O contrato compartilhado recusa contagens observadas como substituto desses
   testes, antes de nova revisão paga. [Prova e prevenção](../homologacao/vega-controles-operacionais-2026-10-20.md).
 
+## LOOP-IRIS-CTA-CONGELADO-LIMITE-DE-CANAL — 20/10/2026
+
+- **Evidência:** Vega #786 concluiu contrato com convite de 40 caracteres; #787
+  bloqueou a prova interna por uma instrução de 32 caracteres para Meta.
+- **Causa:** a restrição editorial era aplicada à prova privada e contradizia o
+  texto congelado. O teste demonstrou também que o convite exigia duas linhas
+  no renderizador; alterar só o prompt deixaria o problema de encaixe.
+- **Correção:** preservar texto aprovado, validar pixels e admitir duas linhas
+  em fonte 36 no mesmo botão privado. Manter limites externos e gates comerciais.
+- **Prevenção:** comparação literal dos pixels em duas identidades, caminho curto
+  preservado e excesso recusado. Sem reclassificar BLOCKED como plano pronto.
+- **Registro:** [Vega — CTA da prova privada](../homologacao/vega-cta-prova-privada-2026-10-20.md).
+
 
 ## LOOP-VIDEO-PARECER-ANTES-DO-ROTEIRO — 10/10/2026
 

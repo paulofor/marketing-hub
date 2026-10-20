@@ -598,6 +598,16 @@ apenas no detalhe auditado de materialização não audiovisual bloqueada, no me
 escopo. Uma reaplicação não substitui os novos pareceres sobre os pixels corrigidos
 nem o aceite humano. Falha incerta de envio exige reler o estado persistido.
 
+Na prova privada `PROOF_CARD_V1` destinada a revisão independente, o convite
+congelado é preservado literalmente na copy e no renderSpec. Limites editoriais
+dos campos de anúncio não constituem, por contagem isolada, um impedimento para
+o texto desenhado na prova. O renderizador mede o encaixe real e admite até duas
+linhas em fonte 36 dentro do mesmo botão, sem reduzir prova, avisos ou rodapé;
+excesso permanece bloqueado. CTA curto conserva os pixels anteriores. Essa
+adaptação de apresentação não altera oferta, experiência, condição testada ou
+contrato da API de publicação. Nova imagem exige seus próprios pareceres e aceite.
+Registro e regressões: [Vega — convite na prova privada](../homologacao/vega-cta-prova-privada-2026-10-20.md).
+
 A revisão de integridade recebe pelo mesmo contrato `visual-inputs` a peça final e
 `creativeProof`: fonte exata, recorte, autorização e relatório determinístico datado
 do destino. Têmis recalcula os hashes no executor e anexa fonte, prévia do recorte e

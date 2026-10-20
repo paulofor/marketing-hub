@@ -4,7 +4,9 @@ Prepare a copy completa e as composições não audiovisuais previstas pelo cont
 anúncios estáticos, carrosséis, mensagens, e-mails ou briefings de renderização. Cada peça deve ter
 formato, conteúdo publicável, prova real associada e correspondência explícita com a página de
 destino. Respeite os limites do canal presentes no contexto. Para Meta, preserve `primaryText` até
-125 caracteres, `headline` até 40, `description` até 25 e `ctaText` até 32, sem truncamento.
+125 caracteres, `headline` até 40, `description` até 25 e `ctaText` até 32, sem truncamento,
+quando produzir os campos editoriais da peça de canal. A prova interna abaixo possui escopo
+próprio e não é uma chamada à API de anúncios.
 
 Preencha `functionalOutput.copy` e ao menos um `staticAssets`. Um vídeo necessário deve aparecer
 somente como `audiovisualBrief`; Apolo produzirá a mídia final. Não gere URL fictícia nem marque o
@@ -22,6 +24,16 @@ Explique essa finalidade em messageStrategy, channelBriefings e visualCompositio
 especificação ao executor, que renderiza e persiste o PNG antes da revisão. Não declare a imagem como anúncio autorizado nem como aprovação
 do vídeo planejado. Quando o intento for BRIEF_ONLY, preserve o briefing de Apolo e registre
 que nenhum vídeo foi produzido; a produção pertence a um pedido governado e seus gates próprios.
+
+Na prova privada `PROOF_CARD_V1` destinada a `INDEPENDENT_REVIEW`, preserve literalmente o
+CTA congelado do predecessor em `functionalOutput.copy.ctaText` e `renderSpec.ctaText`.
+O limite editorial de 32 caracteres não se aplica ao texto desenhado nessa imagem. O executor
+mede o encaixe real em 896 pixels de largura e admite até duas linhas em fonte 36, sem truncar,
+reduzir a fonte ou remover prova e ressalvas. Um CTA de 40 caracteres não é lacuna contratual
+somente por sua contagem; entregue o renderSpec para essa validação determinística. Se não
+couber nas duas linhas, indique o impedimento de encaixe real, sem abreviar unilateralmente.
+Texto desenhado na imagem não configura `call_to_action.type` da Meta nem autoriza publicação;
+campos da API e limites do canal continuam dependendo de seu contrato e gates próprios.
 
 Preserve os formatos congelados no `COMMUNICATION_PACKAGE` predecessor. Quando esse contrato
 contiver `audiovisualBrief`, detalhe-o para Apolo; quando for `null`, mantenha `null`. Se uma
@@ -90,7 +102,7 @@ lacunas. A atividade só termina depois que o executor renderiza e persiste cada
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
 Ao escolher PROOF_CARD_V1, em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; na composição privada, a área da prova mede 952 × 667, com a identificação do formato da entrega, em linguagem de cliente e o `eyebrow` solicitado junto ao recorte. A composição comercial conserva a área de 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade. Considere a leitura real da peça reduzida a 393 pixels de largura.
 
-Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
+Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (CTA congelado, até duas linhas na prova privada conforme encaixe real; uma linha curta na composição comercial), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 
 No PROOF_CARD_V1 em validação privada o executor imprime “DEMONSTRAÇÃO DO SITE” junto à identificação e
 “Exemplo com dados de teste · sem cobrança” imediatamente **antes do CTA**. Preserve essa

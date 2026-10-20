@@ -10709,3 +10709,12 @@ A consulta de elegíveis agora tem recuperação transitória limitada antes do
 próximo ciclo; troca Meta e callback permanecem fora desse retry.
 `FacebookTokenRenewalRecoveryTest` cobre conexão recusada recuperada, 503, limite
 de tentativas e recusa permanente, com Meta chamada uma única vez.
+
+## LOOP-MCP-TLS-RENEWAL-HOOK — certificado expira com cron presente
+
+- **Caso:** MCP recusado por TLS em 20/10/2026; certificado expirado em 18/10, mesmo com cron diário.
+- **Causa confirmada:** hook de recarga pressupunha Docker dentro do Certbot. Reprodução local encerrou antes da renovação. Saída histórica do cron era descartada sem MTA; deploy verificava só existência do arquivo.
+- **Correção:** workflow MCP renova a linhagem com volumes conferidos, recarrega somente o proxy pelo host e exige TLS público confiável e consultas MCP funcionais. Duas execuções diárias; cron antigo retirado somente após sucesso.
+- **Prevenção executável:** `scripts/test-mcp-tls.py`, Bash/ShellCheck e escopo `mcp` no coordenador. Inclui certificado vencido, domínio de outro produto, falha de CA/reload, preservação de cron e recuperação com certificado já emitido.
+- **Limites:** renovação depende de DNS, HTTP-01, autoridade certificadora, Actions e acesso SSH; nenhuma falha permite desabilitar a verificação TLS.
+- **Evidências:** [homologação e alternativas](../homologacao/mcp-tls-renovacao-2026-10-20.md).

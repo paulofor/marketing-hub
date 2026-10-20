@@ -2,6 +2,23 @@
 
 ## Contrato operacional
 
+### TLS do MCP — decisão e recuperação de 20/10/2026
+
+A renovação de `mcpserverdigi.shop` é mantida pelo workflow versionado do MCP,
+duas vezes ao dia e após deploy. A operação manual `renew` renova a linhagem existente
+sem publicar imagem nova. A recarga do proxy acontece pelo host, nunca por um hook
+que presume Docker CLI/socket dentro do Certbot. Certbot não recebe socket Docker.
+A confirmação exige HTTPS público confiável nos dois nomes, validade mínima de
+14 dias e sucesso funcional de consultas MCP; nenhum `insecure` é aceito.
+
+O escopo `mcp` do coordenador cobre esse publicador e sua agenda. A fila não cancela
+operações em curso. Intervenções preservam Worker IA e Meta no mesmo host. O cron legado
+só é removido após homologação HTTPS, preservando backup restrito e entradas alheias.
+Falhas de emissão, recarga ou consulta ficam no workflow e não são tratadas como sucesso.
+Os logs da autoridade certificadora são persistidos no volume do MCP, sem versionar chaves.
+
+Matriz e causas: [renovação TLS MCP](../homologacao/mcp-tls-renovacao-2026-10-20.md).
+
 ### Intervenções autorizadas e versão em homologação
 
 Antes de uma intervenção autorizada em um serviço publicado, usar o coordenador

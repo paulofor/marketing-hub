@@ -16,6 +16,10 @@ on:
       - "deploy/docker-compose.video.yml"
       - "deploy/docker-compose.mcp.yml"
       - "deploy/bin/test-isolated-compose-contract.sh"
+      - "deploy/bin/renew-mcp-tls.sh"
+      - "deploy/bin/retire-legacy-mcp-renewal.sh"
+      - "scripts/check-mcp-tls.py"
+      - "scripts/test-mcp-tls.py"
       - "deploy/bin/test-video-planner-secret-recovery.sh"
       - "deploy/bin/reconcile-video-planner-secret.sh"
       - "video-management-service/src/main/resources/application.yml"
@@ -119,6 +123,10 @@ on:
       - "deploy/docker-compose.video.yml"
       - "deploy/docker-compose.mcp.yml"
       - "deploy/bin/test-isolated-compose-contract.sh"
+      - "deploy/bin/renew-mcp-tls.sh"
+      - "deploy/bin/retire-legacy-mcp-renewal.sh"
+      - "scripts/check-mcp-tls.py"
+      - "scripts/test-mcp-tls.py"
       - "deploy/bin/test-video-planner-secret-recovery.sh"
       - "deploy/bin/reconcile-video-planner-secret.sh"
       - "video-management-service/src/main/resources/application.yml"
@@ -240,6 +248,13 @@ jobs:
         run: |
           python3 scripts/test-deploy-intervention.py
           python3 scripts/test-publisher-recovery.py
+
+      - name: Validar renovação e consultas MCP com TLS local
+        run: |
+          bash -n deploy/bin/renew-mcp-tls.sh
+          bash -n deploy/bin/retire-legacy-mcp-renewal.sh
+          shellcheck deploy/bin/renew-mcp-tls.sh deploy/bin/retire-legacy-mcp-renewal.sh
+          python3 scripts/test-mcp-tls.py
 
       - name: Validar sintaxe dos contratos shell
         run: |

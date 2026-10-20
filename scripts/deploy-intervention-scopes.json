@@ -10,6 +10,7 @@
     "communication-agent-worker-ci.yml",
     "deploy-containers.yml"
   ],
+  "mcp": ["mcp-server.yml"],
   "pde": [
     "recover-public-proxy.yml",
     "pde-platform-metodo-musa-ci.yml"

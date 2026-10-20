@@ -54,7 +54,7 @@ class AgentTaskServiceTest {
     source.setSourceReference("experiment:" + sourceId);
     source.setResultJson(
         "{\"executionStatus\":\"COMPLETED\",\"functionalOutput\":{\"staticAssets\":[{}],\"renderedAssets\":[{\"privateValidation\":true}]}}");
-    source.setEvidenceJson("{\"rawModelResponse\":\"preservada\"}");
+    source.setEvidenceJson("{\"taskId\":" + sourceId + ",\"rawModelResponse\":\"preservada\"}");
     source.setEstimatedCostUsd(new BigDecimal("0.482244"));
     var queued = processTask(sourceId + 1, iris, process, "nonAudiovisual", "PENDING");
     queued.setSourceReference(source.getSourceReference());
@@ -75,6 +75,10 @@ class AgentTaskServiceTest {
     assertThat(queued.getResultJson()).isEqualTo(source.getResultJson());
     assertThat(queued.getEvidenceJson())
         .contains("sourceTaskId", "preservada", "creativeRecomposition");
+    assertThat(new ObjectMapper().readTree(queued.getEvidenceJson()).path("taskId").asLong())
+        .isEqualTo(queued.getId());
+    assertThat(new ObjectMapper().readTree(source.getEvidenceJson()).path("taskId").asLong())
+        .isEqualTo(sourceId);
     assertThat(queued.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
     assertThat(queued.getExecutionMode()).isEqualTo("DETERMINISTIC");
     assertThat(queued.getEstimatedCostUsd()).isZero();

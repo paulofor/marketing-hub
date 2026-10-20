@@ -563,6 +563,7 @@ public class AgentTaskService {
                   null));
       AgentTask queued = task(created.id());
       ObjectNode evidence = (ObjectNode) objectMapper.readTree(source.getEvidenceJson());
+      evidence.put("taskId", queued.getId());
       evidence
           .putObject("creativeRecomposition")
           .put("sourceTaskId", sourceId)

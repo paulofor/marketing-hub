@@ -89,3 +89,8 @@ Matriz adicional: duas frases/identidades nos pixels; limite de altura; comando
 com motivo; rejeição de origem pública, ativa e superada; repetição idempotente;
 callback determinístico com custo zero; formulário desktop/iPhone/Pixel;
 recuperação existente sem chamar o modelo e novos pareceres obrigatórios.
+
+A regressão de correlação reproduziu duas vezes o ID antigo na evidência da nova
+tarefa (767/768 e 1767/1768). A recomposição agora grava a identificação da nova
+tarefa e conserva a origem em `creativeRecomposition.sourceTaskId`; o teste
+confirmou a correção, a imutabilidade da origem e custo zero após o callback.

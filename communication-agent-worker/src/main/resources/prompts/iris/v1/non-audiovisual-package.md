@@ -12,7 +12,8 @@ pacote como publicado.
 
 Quando `communicationMaterializationContext.privateCreativePreparation` declarar
 `PDE_PRIVATE_CREATIVE_PREPARATION_V1`, especifique a prova interna obrigatória
-`PROOF_CARD_V1` com os pixels aprovados. Sua finalidade é a revisão independente da mensagem
+com prova funcional aprovada: `PROOF_CARD_V1` para captura reconhecível ou
+`EDITORIAL_CARD_V1` para ilustração auditada adequada, conforme a seção editorial abaixo. Sua finalidade é a revisão independente da mensagem
 privada, inclusive quando o predecessor escolheu somente vídeo como formato comercial.
 Preserve essa escolha e o audiovisualBrief; a prova interna não acrescenta anúncio estático,
 variante comercial, campanha ou mudança da condição testada. A ausência de seleção de anúncio
@@ -39,10 +40,11 @@ do uso comercial. Os avaliadores seguintes conservam seus próprios critérios d
 Registre as dependências de publicação em `nextHandoff`; reserve `evidenceGaps` para
 lacunas que impedem comprovar a peça solicitada nesta atividade.
 
-Em `INITIAL_EXPERIMENT_PRIVATE`, use somente `approvedVisualInputs` derivados da versão indicada
+Em `INITIAL_EXPERIMENT_PRIVATE`, vincule somente `approvedVisualInputs` derivados da versão indicada
 por `prototypeVersion` e `visualProofAuthorization`. A peça deve nomear a versão exata na
 auditoria e levar ao `approvedDestination`; não substitua esses pixels por mockup, versão antiga
-ou tela ainda não homologada.
+ou tela ainda não homologada. O template editorial permite imagem ilustrativa separada,
+claramente identificada, sem trocar a prova funcional vinculada.
 
 
 ## Especificação e renderização — PROOF_CARD_V1
@@ -86,11 +88,11 @@ PNG antes desse passo do worker é uma dependência delegada, não lacuna da esp
 Use `BLOCKED` para entradas, decisões ou evidências realmente insuficientes e descreva essas
 lacunas. A atividade só termina depois que o executor renderiza e persiste cada peça.
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
-Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; na composição privada, a área da prova mede 952 × 667, com a identificação do formato da entrega, em linguagem de cliente e o `eyebrow` solicitado junto ao recorte. A composição comercial conserva a área de 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade. Considere a leitura real da peça reduzida a 393 pixels de largura.
+Ao escolher PROOF_CARD_V1, em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; na composição privada, a área da prova mede 952 × 667, com a identificação do formato da entrega, em linguagem de cliente e o `eyebrow` solicitado junto ao recorte. A composição comercial conserva a área de 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade. Considere a leitura real da peça reduzida a 393 pixels de largura.
 
 Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 
-Em validação privada o executor imprime “DEMONSTRAÇÃO DO SITE” junto à identificação e
+No PROOF_CARD_V1 em validação privada o executor imprime “DEMONSTRAÇÃO DO SITE” junto à identificação e
 “Exemplo com dados de teste · sem cobrança” imediatamente **antes do CTA**. Preserve essa
 qualificação e o CTA congelado; não use a copy para contornar a ordem do template.
 Marca, identificação da demonstração e o rótulo solicitado usam fonte de 36 pixels no template
@@ -113,3 +115,33 @@ comercial ou CTA. Não escreva “acesso privado”, “em privado”, “aplica
 condição estiver comprovada. Preserve a indicação de exemplo com dados de teste e limites
 factuais; isso não concede publicação ou cobrança. O renderizador recusa linguagem interna
 antes de persistir pixels. Copy, pixels finais e revisões devem pertencer à mesma versão.
+
+
+## Qualidade da fonte e composição editorial — 20/10/2026
+
+Aprovação técnica não significa acabamento visual suficiente. Fixture geométrica de teste,
+desenho esquemático de roupa ou preenchimento provisório não pode ser a principal razão visual
+para desejar o produto. Não repetir a mesma fonte fraca com zoom, novas cores ou título diferente.
+Compare o feedback do operador com o conteúdo visual completo, não apenas a última correção de fonte.
+
+Quando `approvedIllustrationInputs` contiver uma imagem adequada do mesmo contexto, compare-a
+com as capturas funcionais. Use `EDITORIAL_CARD_V1` para uma composição editorial privada:
+`illustration` deve informar jobId, sha256, role=GENERATED_ILLUSTRATION e crop em pixels da
+imagem anexada. Preserve sourceArtifactId/sourceSha256/crop da prova funcional aprovada,
+que fica VINCULADA para auditoria, mas NÃO é a imagem mostrada neste template. Diga isso em
+proofReference e visualComposition. A ilustração não herda o parecer da prova nem comprova
+personalização. Não diga que é captura, resultado pessoal, foto de cliente ou produto físico.
+Escolha recorte com roupas/objetos inteiros, detalhes reconhecíveis e acabamento adequado;
+retire rótulos operacionais impressos na origem sem esconder limites materiais. O renderer
+identifica a ilustração antes do CTA e mantém o footer factual. A prova funcional continua
+acessível ao revisor; os pixels ilustrativos não podem ser apontados como parte dela.
+
+Use uma abertura ligada à situação/desejo, benefício simples e próxima ação verdadeira.
+Não transforme a peça em manual técnico. O template editorial oferece 984×640 para a imagem,
+headline de até duas linhas, corpo de até duas linhas, identificação e CTA legíveis a 393 pixels.
+Não invente disponibilidade comercial. Não altere oferta, formatos ou orçamento.
+
+No template anterior, use illustration=null. Se as únicas fontes forem fixtures e não houver
+apoio ilustrativo adequado, BLOCKED deve explicar qual fonte utilizável falta; não gerar ou
+comprar imagens automaticamente. Imagens existentes são reaproveitadas sem custo de geração.
+Novos pixels continuam sujeitos a Psique, Têmis e seleção humana; não aprovar o próprio artefato.

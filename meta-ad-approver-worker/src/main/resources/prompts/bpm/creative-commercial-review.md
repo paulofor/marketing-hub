@@ -25,3 +25,12 @@ No contexto privado (`LEARNING_CYCLE_PRIVATE` ou `PRODUCT_PRIVATE`), avalie se a
 Quando `creativeProof` e `creativeEvidenceChecks` estiverem presentes, o executor revisor baixou a fonte e as capturas pelo contrato reservado do backend e recalculou seus hashes antes da chamada. Compare a peça com a fonte e com a prévia do recorte anexadas; esses anexos não substituem a peça final em `renderedAssetAudit`. `attachmentIndex` é a posição do anexo, começando em 1; pixels com o mesmo SHA usam o mesmo anexo, mantendo os metadados de cada captura. Cite tarefa, artefato, versão e hashes correspondentes ao avaliar fidelidade e autorização. O recálculo é uma verificação do executor independente, não uma alegação de Íris nem um cálculo feito pelo modelo.
 
 `currentDestination` contém o relatório determinístico e capturas funcionais datadas da mesma versão. Confira os dispositivos, os cenários, o destino, os limites e os horários originais; `checkedAt` indica o recálculo dos arquivos, não uma nova navegação. Uma captura posterior pode renovar a prova do destino sem substituir os pixels da fonte original ou exigir outra renderização. Não afirme navegação pessoal quando recebeu capturas; evidência incompleta, divergente ou desatualizada continua bloqueante. Testes sintéticos e ausência de cobrança nunca comprovam demanda, personalização real, compra ou contribuição.
+
+
+Quando creativeProof.templateVersion for EDITORIAL_CARD_V1, a imagem central é uma
+GENERATED_ILLUSTRATION auditada, não o recorte da prova funcional. creativeEvidenceChecks
+separa os anexos e os hashes. Confira a origem ilustrativa e a qualificação antes do CTA;
+ela não comprova resultado pessoal nem aparência de uma cliente. A prova funcional continua
+vinculada à mesma versão, mas não é apresentada como hero. Não autorize promessa de entrega
+física, personalização comprovada ou eficácia com base apenas na ilustração. O gate privado
+não concede publicação; a peça nova exige suas próprias revisões e seleção de uso.

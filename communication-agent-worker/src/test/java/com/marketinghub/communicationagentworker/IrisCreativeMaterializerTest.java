@@ -24,6 +24,7 @@ class IrisCreativeMaterializerTest {
   private byte[] source;
   private String sourceHash;
   private boolean rejectUpload;
+  private boolean illustrationAvailable;
   private boolean mobileAvailable;
   private boolean invalidMobileHash;
   private String mode = "LEARNING_CYCLE_PRIVATE";
@@ -65,6 +66,17 @@ class IrisCreativeMaterializerTest {
               inputs.add(extra);
               response = json.writeValueAsBytes(inputs);
             }
+          } else if (path.endsWith("/visual-inputs/illustrations")) {
+            response =
+                (illustrationAvailable
+                        ? "[{\"jobId\":\"img-sandbox\",\"role\":\"GENERATED_ILLUSTRATION\",\"productProof\":false,\"sha256\":\""
+                            + sourceHash
+                            + "\"}]"
+                        : "[]")
+                    .getBytes(StandardCharsets.UTF_8);
+          } else if (path.endsWith("/illustrations/img-sandbox/content")) {
+            response = source;
+            contentType = "image/png";
           } else if (path.endsWith("/910395/910118/content")
               || path.endsWith("/910395/910119/content")) {
             response = source;
@@ -96,6 +108,43 @@ class IrisCreativeMaterializerTest {
     server.start();
     var properties = properties();
     materializer = new IrisCreativeMaterializer(properties, new ProofCardRenderer(), json);
+  }
+
+  /** Mantém prova e ilustração separadas no upload e rejeita outra imagem, sem inferência. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"LEARNING_CYCLE_PRIVATE", "PRODUCT_PRIVATE"})
+  void rendersAuditedIllustrationWithLinkedFunctionalProof(String privateMode) throws Exception {
+    mode = privateMode;
+    illustrationAvailable = true;
+    var task = task();
+    try (var prepared = materializer.prepare(task)) {
+      assertThat(prepared.inputs()).hasSize(2);
+      assertThat(json.valueToTree(task.get("approvedVisualInputs")).size()).isEqualTo(1);
+      assertThat(json.valueToTree(task.get("approvedIllustrationInputs")).size()).isEqualTo(1);
+      var result = result();
+      var spec =
+          (ObjectNode)
+              result.path("functionalOutput").path("staticAssets").get(0).path("renderSpec");
+      var editorial = new EditorialCardRendererTest().spec(source, 800, 500);
+      spec.setAll(editorial);
+      var render =
+          materializer
+              .materialize(task, result, prepared)
+              .path("functionalOutput")
+              .path("renderedAssets")
+              .get(0);
+      assertThat(render.path("templateVersion").asText()).isEqualTo("EDITORIAL_CARD_V1");
+      assertThat(render.path("proofPresentation").asText()).isEqualTo("LINKED_FUNCTIONAL_PROOF");
+      assertThat(render.path("sourceArtifactId").asLong()).isEqualTo(910118);
+      assertThat(render.path("illustration").path("sha256").asText()).isEqualTo(sourceHash);
+      assertThat(saved.get()).isNotEmpty();
+      ((ObjectNode) spec.path("illustration")).put("jobId", "img-other-product");
+      saved.set(null);
+      assertThatThrownBy(() -> materializer.materialize(task, result, prepared))
+          .hasMessageContaining("Ilustração");
+      assertThat(saved.get()).isNull();
+    }
   }
 
   /** Uma captura mobile aprovada chega ao modelo e pode originar a peça sem perder o desktop. */

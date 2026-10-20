@@ -419,7 +419,14 @@ class IrisLearningCycleContextTest {
     var bytes = new byte[] {1, 2, 3};
     when(storage.read(654L, 569L))
         .thenReturn(new AgentTaskVisualEvidenceService.EvidenceContent("image/png", bytes));
-    var reader = new CreativeVisualEvidenceService(tasks, images, storage, provider::resolve, json);
+    var reader =
+        new CreativeVisualEvidenceService(
+            tasks,
+            images,
+            storage,
+            provider::resolve,
+            json,
+            mock(com.marketinghub.agenttask.CreativeIllustrationSources.class));
     var before = reader.inputs("customer-agent", 723L);
     if (refreshedReport) {
       evidenceSupplementFixture();

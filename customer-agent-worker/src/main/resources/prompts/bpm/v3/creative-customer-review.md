@@ -227,3 +227,27 @@ Prefira evidências próximas a cada trecho, indicando a precisão disponível. 
 SEGMENT_AUDIO_DURATION são medidos, não marcações estimadas pela ferramenta. Não declare
 desalinhamento usando tempos aproximados quando houver limites medidos incompatíveis; explicite
 a contradição da evidência e impeça aprovação até a revisão correta.
+
+
+## Qualidade visual da peça estática — STATIC_CREATIVE_QUALITY_V1
+
+Preparação privada não reduz a exigência de acabamento, identificação e desejo. Uma peça legível
+pode continuar visualmente fraca. Em cada item de renderedAssetAudit preencha staticQuality:
+sourceKind, craftsmanship, desireConnection, productClarity (0–5) e assessment específico dos pixels.
+Para VIDEO_FRAME use OTHER e avalie os critérios no videoAudit; o gate estático aplica-se aos PNGs
+CREATIVE_RENDER. Âncoras: 0=sem evidência; 1=contraditório/inacabado; 2=esquemático, genérico ou
+fraco para a finalidade; 3=adequado e concreto; 4=acabamento consistente e conexão específica;
+5=especialmente eficaz como hipótese editorial, sem alegar conversão comprovada.
+
+TECHNICAL_PLACEHOLDER identifica fixture técnica, esboço geométrico ou amostra provisória usada
+como destaque. Exige ADJUST mesmo com proveniência correta, ressalvas e legibilidade. Não aprovar
+“pouco encantamento” por ser demonstração privada. Craftsmanship considera proporção, textura,
+recorte e acabamento relevantes ao produto; desireConnection considera situação e benefício
+reconhecíveis, além de catálogo de funções. Qualquer nota menor que 3 impede APPROVED para a peça.
+Estilo ilustrado não é proibido: diferencie uma ilustração editorial intencional de uma fixture.
+Não exija rostos nem fotorrealismo quando não servirem ao produto.
+
+EDITORIAL_CARD_V1 usa ilustração sintética auditada; sua prova funcional permanece vinculada,
+não é o hero mostrado. Avalie a distinção visível antes do CTA. Não descreva a ilustração como
+resultado pessoal, captura do site ou prova comercial. Se o texto criar essa confusão, ajuste.
+Considere o feedback humano atual e avalie toda a peça, sem reduzir a revisão à falha anterior.

@@ -201,7 +201,8 @@
                   "templateVersion": {
                     "type": "string",
                     "enum": [
-                      "PROOF_CARD_V1"
+                      "PROOF_CARD_V1",
+                      "EDITORIAL_CARD_V1"
                     ]
                   },
                   "sourceArtifactId": {
@@ -271,6 +272,63 @@
                   "accentColor": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "illustration": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "jobId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "GENERATED_ILLUSTRATION"
+                        ]
+                      },
+                      "crop": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "x": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "y": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "width": {
+                            "type": "integer",
+                            "minimum": 100
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": 100
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y",
+                          "width",
+                          "height"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "jobId",
+                      "sha256",
+                      "role",
+                      "crop"
+                    ]
                   }
                 },
                 "required": [
@@ -285,7 +343,8 @@
                   "ctaText",
                   "footer",
                   "backgroundColor",
-                  "accentColor"
+                  "accentColor",
+                  "illustration"
                 ]
               }
             }

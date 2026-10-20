@@ -37,7 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
     properties = {
       "spring.liquibase.enabled=false",
       "spring.jpa.show-sql=false",
-      "spring.datasource.url=jdbc:h2:mem:ProcessRunLockContentionPersistenceTest-${random.uuid};DB_CLOSE_DELAY=0"
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.businessprocess.automation.v1.service.ProcessRunLockContentionPersistenceTest-${random.uuid};DB_CLOSE_DELAY=0"
     })
 class ProcessRunLockContentionPersistenceTest {
   @Autowired ProcessRunRepository runs;

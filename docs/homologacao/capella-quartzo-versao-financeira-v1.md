@@ -45,6 +45,9 @@ A suíte relacionada de Quartzo, prontidão, automação e arquitetura executou 
 496 aprovados, sem falhas ou erros; três migrações antigas permanecem condicionadas ao
 runner MySQL específico, sem alteração de changelog neste lote. O MySQL 5.7.44 local
 validou a consulta e a disputa descritas abaixo. Spotless e revisão do diff passaram.
+A primeira passagem do CI exigiu o nome completo da classe no banco H2 da nova fixture;
+o identificador foi ajustado. Os quatro casos da fixture, os 28 contratos Python do CI,
+os 16 testes do bundle e a integridade dos 123 manifestos/540 arquivos passaram localmente.
 A conferência publicada deve localizar a revisão #22 sem reabrir Plutus e manter as provas
 já gravadas. Pareceres comerciais continuam independentes; publicação do código não os aprova.
 

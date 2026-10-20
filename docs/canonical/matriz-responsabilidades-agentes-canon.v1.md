@@ -109,3 +109,20 @@ margem, reembolso e satisfação.
 - continuar: handoffs íntegros, gates independentes e evidência real avançando para venda/entrega;
 - ajustar: retrabalho recorrente, atividade sem executor, contrato ausente ou gargalo operacional;
 - parar: conflito de autoridade, produto inseguro, economia inviável ou limite comercial atingido.
+
+## Contexto vigente entre agentes — 20/10/2026
+
+A fila canônica entrega `AGENT_HANDOFF_CONTEXT_V1` dentro de `processContextJson`.
+O backend seleciona um único resultado terminal por origem exata, atividade e agente,
+antes de separar `completedActivities` e `blockedActivities`. Uma conclusão posterior
+substitui o bloqueio anterior no contexto operacional; um bloqueio posterior retira a
+conclusão antiga dessa lista. Não inferir aprovação funcional apenas de `COMPLETED`:
+o resultado, as provas, a versão do artefato e os gates de domínio continuam obrigatórios.
+
+Retentativa pendente, em execução ou cancelada não comprova resolução. Um agente não
+resolve o bloqueio de outro. Os itens preservam origem, definição/versão do processo,
+identidade da tarefa, resultado e evidência; as tarefas históricas e seus custos não
+são alterados. A correção PDE entre versões mantém o tratamento próprio de origem e
+tentativas, sem misturar referências. Não há nova chamada de IA, autorização ou retomada
+por efeito dessa projeção. Validação e limites em
+`docs/homologacao/agentes-contexto-vigente-v1.md`.

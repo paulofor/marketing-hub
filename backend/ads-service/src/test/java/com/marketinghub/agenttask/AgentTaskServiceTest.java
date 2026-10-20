@@ -4158,6 +4158,110 @@ class AgentTaskServiceTest {
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
   }
 
+  /**
+   * Reproduz o repasse contraditório de Alcyone e Capella sem chamar modelos ou alterar auditoria.
+   */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "97,764,766,meta-ad-approver,Têmis",
+    "105,741,744,customer-agent,Psique"
+  })
+  void handsOffOnlyCurrentOutcomeAfterIndependentReview(
+      long experiment, long rejectedId, long acceptedId, String reviewerKey, String reviewerName)
+      throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var iris = agent(9L, "communication-director", "Íris");
+    var psique = agent(2L, reviewerKey, reviewerName);
+    var process = process("PUBLISHED", "Íris");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"nonAudiovisual\",\"type\":\"TASK\"}],\"flows\":[]}");
+    var rejected = processTask(rejectedId, psique, process, "customer", "BLOCKED");
+    rejected.setResultJson(
+        "{\"decision\":\"ADJUST\",\"requiredChanges\":[\"Corrigir legibilidade\"]}");
+    rejected.setEvidenceJson("{\"sha256\":\"artefato-anterior\"}");
+    rejected.setEstimatedCostUsd(new BigDecimal("0.68"));
+    var accepted = processTask(acceptedId, psique, process, "customer", "COMPLETED");
+    accepted.setResultJson("{\"decision\":\"APPROVE\"}");
+    accepted.setEvidenceJson("{\"sha256\":\"artefato-corrigido\"}");
+    var next = processTask(acceptedId + 1, iris, process, "nonAudiovisual", "PENDING");
+    var history = List.of(rejected, accepted, next);
+    history.forEach(task -> task.setSourceReference("experiment:" + experiment));
+    when(agents.findByAgentKey("communication-director")).thenReturn(Optional.of(iris));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "communication-director", "WORK", "PENDING"))
+        .thenReturn(List.of(next));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            process.getId(), next.getSourceReference()))
+        .thenReturn(history);
+
+    var controller =
+        new InternalAgentTaskExecutionController(
+            service(repository, agents, Clock.systemUTC()),
+            mock(AgentTaskVisualEvidenceService.class));
+    var mvc =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controller)
+            .build();
+    var response =
+        mvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/internal/agent-tasks/communication-director/stage-executions/pending"))
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    var mapper = new ObjectMapper();
+    var pending = mapper.readTree(response).get(0);
+    var context = mapper.readTree(pending.path("processContextJson").asText());
+
+    assertThat(context.path("blockedActivities")).isEmpty();
+    assertThat(context.path("completedActivities")).hasSize(1);
+    assertThat(context.path("completedActivities").get(0).path("taskId").asLong())
+        .isEqualTo(acceptedId);
+    assertThat(context.path("completedActivities").get(0).path("evidence").path("sha256").asText())
+        .isEqualTo("artefato-corrigido");
+    assertThat(context.path("handoffContractVersion").asText())
+        .isEqualTo("AGENT_HANDOFF_CONTEXT_V1");
+    assertThat(context.path("completedActivities").get(0).path("sourceReference").asText())
+        .isEqualTo("experiment:" + experiment);
+    assertThat(context.path("completedActivities").get(0).path("processDefinitionId").asLong())
+        .isEqualTo(process.getId());
+    assertThat(context.path("completedActivities").get(0).path("agentKey").asText())
+        .isEqualTo(reviewerKey);
+    assertThat(rejected.getStatus()).isEqualTo("BLOCKED");
+    assertThat(rejected.getEstimatedCostUsd()).isEqualByComparingTo("0.68");
+    assertThat(rejected.getResultJson()).contains("ADJUST");
+  }
+
+  /** Uma reprovação nova não pode coexistir com aprovação anterior como orientação vigente. */
+  @Test
+  void removesSupersededApprovalFromHandoffButKeepsUnresolvedReview() throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var process = process("PUBLISHED", "Íris");
+    var psique = agent(2L, "customer-agent", "Psique");
+    var oldApproval = processTask(30L, psique, process, "customer", "COMPLETED");
+    oldApproval.setResultJson("{\"decision\":\"APPROVE\"}");
+    var rejection = processTask(31L, psique, process, "customer", "BLOCKED");
+    rejection.setResultJson("{\"decision\":\"ADJUST\"}");
+    var retry = processTask(32L, psique, process, "customer", "IN_PROGRESS");
+    var next =
+        processTask(
+            33L, agent(9L, "communication-director", "Íris"), process, "nonAudiovisual", "PENDING");
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            process.getId(), next.getSourceReference()))
+        .thenReturn(List.of(oldApproval, rejection, retry, next));
+    String raw =
+        ReflectionTestUtils.invokeMethod(
+            service(repository, mock(AgentRepository.class), Clock.systemUTC()),
+            "processContext",
+            next);
+    var context = new ObjectMapper().readTree(raw);
+    assertThat(context.path("completedActivities")).isEmpty();
+    assertThat(context.path("blockedActivities")).hasSize(1);
+    assertThat(context.path("blockedActivities").get(0).path("taskId").asLong()).isEqualTo(31L);
+  }
+
   /** Preserva a origem técnica ou funcional e a memória do ciclo entre tentativas de correção. */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({

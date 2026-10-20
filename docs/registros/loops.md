@@ -10431,3 +10431,24 @@ sem declarar faturas conciliadas. [Matriz e evidências](../homologacao/plutus-d
 - **Limites:** ilustração não comprova personalização ou vendas, nem recebe aprovação
   implícita. Novos pixels passam por revisores e seleção humana; sem novo orçamento.
   Matriz e evidências: `docs/homologacao/alcyone-qualidade-visual-v1.md`.
+
+
+### Complemento de LOOP-LOCUCAO-CONCILIADA-FORA-DO-LEDGER — estimativa sem extrato (20/10/2026)
+
+Mira/ciclo 9 conservava recibos, duração e origem das locuções, mas só havia importação de
+consumo administrativo, indisponível com HTTP 403. A troca de texto/visão do Worker IA para
+Codex não migrou esse consumo histórico Speech. O usuário autorizou estimativa. O endpoint
+existente recebe opção explícita para calcular envelope conservador pelos recibos medidos,
+sem preencher custo faturado, fabricar tokens ou duplicar áudio reutilizado. Texto/visão
+Codex usa estimativa do catálogo a partir de tokens reportados, sem exigir extrato da API.
+Regressões: caminho anterior sem extrato bloqueia; opção nova funciona em duas identidades;
+recibo após falha, duplicidade, lote inválido, HTTP real, idempotência e substituição posterior
+por extrato são cobertos. Teto, gates e aceites permanecem. Matriz e limites:
+`docs/homologacao/mira-estimativa-custos-codex-v1.md`.
+
+A conferência completa de Mira identificou também 21265: Flex recusado com `flex_unavailable`
+antes de qualquer geração e sem task aceita. O custo de uma renderização projetada na lista não
+é consumo dessa tentativa. A mesma operação auditada agora valida todos os pares envio/recusa e
+a ausência de task no banco antes de registrar custo incremental zero com fonte específica.
+Timeout, resposta aceita, outra falha, ID/entrada divergente ou task existente continuam bloqueados.
+A regressão cobre duas identidades e doze variantes incertas/aceitas, sem recriar a execução.

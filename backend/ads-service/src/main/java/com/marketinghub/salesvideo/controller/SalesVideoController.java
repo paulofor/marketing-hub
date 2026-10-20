@@ -116,9 +116,9 @@ public class SalesVideoController {
     return salesVideoService.deliveryExamples(projectId);
   }
 
-  /** Concilia recibos e consumo agregado, preservando custos desconhecidos quando não há prova. */
+  /** Registra consumo oficial ou estimativa fundamentada em recibos, sem confirmar fatura. */
   @io.swagger.v3.oas.annotations.Operation(
-      summary = "Conciliar locução por consumo oficial e recibos auditados")
+      summary = "Registrar custo de locução por consumo oficial ou estimativa auditada")
   @PostMapping("/api/sales-videos/experiments/{experimentId}/narration-costs/reconcile")
   public ReconcileNarrationCostsResponse reconcileNarrationCosts(
       @PathVariable Long experimentId, @Valid @RequestBody ReconcileNarrationCostsRequest request) {

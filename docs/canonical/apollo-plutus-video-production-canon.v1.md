@@ -693,3 +693,26 @@ anúncio aprovado no mesmo destino; PDEs preservam seu slot ativo e contrato pú
 Os vídeos selecionados não são regenerados ou substituídos nesta passagem. O executor
 preserva o vídeo e suas legendas também quando o modelo omite a demonstração do HTML.
 Matriz: [checkout e continuação comercial](../homologacao/capella-checkout-compra-unica-v1.md).
+
+
+## Estimativa operacional sem extrato — decisão de 20/10/2026
+
+O usuário autorizou estimar custos para destravar a conferência de Mira, preservando o teto
+audiovisual total de US$ 12. A política é reutilizável: estimativa fundamentada pode cobrir
+o controle operacional quando não houver extrato por chamada, sem fabricar conciliação.
+Recibos originais, chamadas de API e consumo Codex mantêm origem distinta. Estimativas
+devem registrar fonte, modelo, duração física ou tokens realmente reportados, método,
+margem conservadora e cobertura; reutilizações não recebem novo custo da síntese original.
+O valor estimado nunca preenche custo cobrado pelo provedor nem elimina a incerteza.
+Extrato oficial posterior pode melhorar a medição sem dupla contagem. Nenhum teto, aprovação
+humana, revisão independente ou autorização de mídia muda por essa política.
+
+Para texto/visão do Worker IA, seguir também
+[Worker IA com Codex App Server](ai-worker-codex-app-server-canon.v1.md#modelo-tier-e-custo).
+As locuções históricas via Speech não foram convertidas em Codex pela troca de transporte.
+
+Recusa de planejamento comprovadamente anterior à inferência pode receber custo incremental
+estimado zero somente com todos os envios pareados às recusas HTTP 429 `flex_unavailable`,
+sem resposta aceita/usage/saída, sem asset/providerJobId e sem task de vídeo aceita no banco.
+Preservar requests, responses, contexto e eventos sob fonte própria; timeout, resposta ausente,
+outro erro ou aceite posterior continuam desconhecidos. A migração Codex não é essa evidência.

@@ -31,8 +31,19 @@ removidas do subprocesso Codex. Ausência de sessão ChatGPT bloqueia a inferên
 Preservar o modelo solicitado pela etapa e conferir sua disponibilidade por `model/list`.
 Ausência não autoriza substituir o modelo silenciosamente. A preferência Flex continua na
 entrada; Codex OAuth solicita `default` por compatibilidade, com motivo explícito no recibo.
-Tokens permitem estimativa conservadora Standard pelo catálogo do backend, sem representar
-fatura da assinatura ChatGPT. Uso desconhecido permanece desconhecido, nunca zero.
+Tokens informados pelo Codex permitem estimativa conservadora Standard pelo catálogo do backend,
+sem representar fatura da assinatura ChatGPT. Uso desconhecido permanece desconhecido, nunca zero.
+
+Decisão do usuário em 20/10/2026: tarefas de texto/visão executadas pelo Worker IA via
+Codex App Server devem usar custo estimado auditável para planejamento e controle do teto.
+Não exigir extrato da API OpenAI para uma execução autenticada pela conta ChatGPT. Registrar
+transporte, modelo, tokens reportados quando disponíveis, catálogo/data, método, premissas e
+incerteza; nunca inventar tokens nem chamar estimativa de custo faturado ou conciliado. Sem
+telemetria suficiente, usar envelope conservador explicitamente identificado e preservar a
+lacuna; ausência de tarifa, histórico ou envelope defensável não autoriza zero. A estimativa
+é substituída por medição melhor sem somar as duas. Essa decisão não migra retroativamente
+locuções, imagens ou vídeos gerados por API: sua origem e custo continuam separados.
+A assinatura pode possuir quotas e créditos; não presumir uso gratuito ou ilimitado.
 Não aumentar limites de preparação, audiovisual, mídia nem conceder aprovações humanas.
 
 ## Contrato, auditoria e recuperação

@@ -58,6 +58,25 @@ public class StudioCostLedgerService {
   @Transactional
   public void reconcileNarrationCost(
       Long jobId, Long productId, Long experimentId, BigDecimal costUsd, String evidence) {
+    reconcileProductionCost(jobId, productId, experimentId, "AUDIO", costUsd, evidence);
+  }
+
+  /** Confirma ausência de tasks aceitas; fonte indisponível não comprova ausência de consumo. */
+  @Transactional(readOnly = true)
+  public boolean confirmsNoAcceptedProviderTask(Long jobId) {
+    return taskConsumptionRepository != null
+        && !taskConsumptionRepository.existsBySalesVideoJobId(jobId);
+  }
+
+  /** Persiste custo auditado de áudio ou vídeo sem alterar cobrança e atribuição da tentativa. */
+  @Transactional
+  public void reconcileProductionCost(
+      Long jobId,
+      Long productId,
+      Long experimentId,
+      String assetType,
+      BigDecimal costUsd,
+      String evidence) {
     var entry =
         repository
             .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
@@ -65,7 +84,9 @@ public class StudioCostLedgerService {
                 () -> new IllegalArgumentException("Tentativa sem lançamento financeiro."));
     if (!java.util.Objects.equals(productId, entry.getProductId())
         || !java.util.Objects.equals(experimentId, entry.getExperimentId())
-        || !"AUDIO".equals(entry.getAssetType())
+        || assetType == null
+        || !java.util.Set.of("AUDIO", "VIDEO").contains(assetType)
+        || !assetType.equals(entry.getAssetType())
         || entry.getProviderCostUsd() != null
         || costUsd == null
         || costUsd.signum() < 0) {
@@ -321,6 +342,8 @@ public class StudioCostLedgerService {
                 || (java.util.Set.of(
                             "PROVIDER_TASK_RATE_CARD_ESTIMATE",
                             "OPENAI_USAGE_COHORT_ESTIMATE",
+                            "NARRATION_MEASURED_DURATION_ESTIMATE_V1",
+                            "PLANNING_REJECTED_BEFORE_GENERATION_AUDITED",
                             "PRESERVED_NARRATION_NO_NEW_CALL",
                             "FAILED_BEFORE_TTS_AUDITED")
                         .contains(java.util.Objects.toString(entry.getCostEvidence(), ""))

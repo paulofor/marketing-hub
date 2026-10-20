@@ -300,3 +300,19 @@ resposta substituída ou plano diferente não podem liberar validação no conte
 Oferta, próxima ação e versão persistidas integram os contextos dos dois agentes. Autorização
 específica de preparação não se confunde com mídia nem transforma hipótese em receita.
 Regressão e matriz: `docs/homologacao/alcyone-assumption-handoff-v1.md`.
+
+
+## Custos Codex e estimativa por recibos — decisão de 20/10/2026
+
+No Worker IA com autenticação ChatGPT/Codex, custo atribuído é estimativa interna, não
+cobrança da API. Usar modelo, transporte e tokens realmente reportados com catálogo/data,
+separando previsão/reserva, estimativa e fatura. Não exigir extrato administrativo da API
+para esse transporte; ausência de tokens permanece desconhecida. Assinatura e créditos
+não são custos variáveis zero por inferência; rateio depende de fonte de custo e critério
+explícito, sem somar novamente o equivalente já atribuído.
+
+Para voz histórica via API, o operador pode registrar estimativa fundamentada em recibos e
+duração física pelo contrato existente do Estúdio, segundo a política versionada de
+[produção audiovisual](apollo-plutus-video-production-canon.v1.md#estimativa-operacional-sem-extrato--decisão-de-20102026).
+Não atribuir locuções antigas ao Codex nem apagar custos. A estimativa pode alimentar o
+controle operacional; não comprova faturamento, margem realizada ou ampliação do teto.

@@ -173,6 +173,7 @@ class StudioCostLedgerServiceTest {
   @org.junit.jupiter.params.provider.ValueSource(
       strings = {
         "OPENAI_USAGE_COHORT_ESTIMATE",
+        "NARRATION_MEASURED_DURATION_ESTIMATE_V1",
         "PRESERVED_NARRATION_NO_NEW_CALL",
         "FAILED_BEFORE_TTS_AUDITED",
         "PROVIDER_REPORTED"

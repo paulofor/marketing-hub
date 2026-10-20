@@ -36,6 +36,47 @@ function setup(experimentId = 99001) {
 }
 
 describe("conciliação de locução", () => {
+  it("envia estimativa explícita sem extrato ou nova autorização e identifica sua incerteza", async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        estimatedCostUsd: 0.12,
+        newProviderRequests: 4,
+        reconciledJobIds: [91001, 91002],
+        providerInvoiceConfirmed: false,
+      },
+    });
+    setup(99004);
+    fireEvent.change(
+      screen.getByLabelText("Extrato de consumo OpenAI (JSON)"),
+      {
+        target: { value: "rascunho inválido que não deve ser enviado" },
+      },
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: /Usar estimativa/ }));
+    expect(
+      screen.getByLabelText("Extrato de consumo OpenAI (JSON)"),
+    ).toBeDisabled();
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "não representa cobrança confirmada",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar estimativa da locução" }),
+    );
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/sales-videos/experiments/99004/narration-costs/reconcile",
+        expect.objectContaining({
+          usage: null,
+          exclusiveUsageConfirmed: false,
+          estimateFromReceipts: true,
+        }),
+      ),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "0.120000 estimados",
+    );
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -52,7 +93,7 @@ describe("conciliação de locução", () => {
       screen.getByLabelText("Extrato de consumo OpenAI (JSON)"),
       { target: { value: '{"data":[],"has_more":false}' } },
     );
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Conferi que/ }));
     fireEvent.click(
       screen.getByRole("button", { name: "Registrar conciliação da locução" }),
     );
@@ -67,6 +108,7 @@ describe("conciliação de locução", () => {
         jobIds: [91001, 91002],
         usage: { data: [], has_more: false },
         exclusiveUsageConfirmed: true,
+        estimateFromReceipts: false,
         evidenceReference:
           "https://api.openai.com/v1/organization/usage/completions",
       },

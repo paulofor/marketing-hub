@@ -28,6 +28,7 @@ public class NarrationCostReconciliation {
   static final String COHORT = "OPENAI_USAGE_COHORT_ESTIMATE";
   static final String REUSED = "PRESERVED_NARRATION_NO_NEW_CALL";
   static final String BEFORE_TTS = "FAILED_BEFORE_TTS_AUDITED";
+  static final String ESTIMATE = NarrationCostEstimate.POLICY;
   private static final String CONTRACT = "NARRATION_COST_RECONCILIATION_V1";
   private final SalesVideoJobRepository jobs;
   private final StudioCostLedgerService ledger;
@@ -57,6 +58,10 @@ public class NarrationCostReconciliation {
             && !input.evidenceReference().isBlank()
             && input.evidenceReference().length() <= 1000,
         "Informe a fonte conferida da conciliação.");
+    require(
+        !input.estimateFromReceipts() || input.usage() == null || input.usage().isNull(),
+        "Escolha estimativa por recibos ou extrato oficial, sem misturar as fontes.");
+    var estimates = new LinkedHashMap<Long, BigDecimal>();
     var attempts = new ArrayList<Attempt>();
     var paid = new ArrayList<NarrationUsageEvidence.PaidSpeech>();
     var requestIds = new HashSet<String>();
@@ -94,7 +99,15 @@ public class NarrationCostReconciliation {
       boolean zero = NarrationUsageEvidence.withoutNewSpeech(job, audit, metadata);
       NarrationUsageEvidence.PaidSpeech speech =
           zero ? null : NarrationUsageEvidence.paid(job, audit, requestIds);
-      if (speech != null) paid.add(speech);
+      if (speech != null) {
+        paid.add(speech);
+        if (input.estimateFromReceipts()) {
+          require(
+              !COHORT.equals(entry.costEvidence()),
+              "Não substitua consumo oficial por estimativa de duração.");
+          estimates.put(id, NarrationCostEstimate.cost(audit));
+        }
+      }
       if (zero && metadata.has("preservedNarration")) {
         long parent = metadata.at("/preservedNarration/sourceJobId").asLong();
         var previous = ledger.narrationCost(parent).orElse(null);
@@ -113,10 +126,14 @@ public class NarrationCostReconciliation {
               job,
               entry,
               speech,
-              zero ? metadata.has("preservedNarration") ? REUSED : BEFORE_TTS : COHORT));
+              zero
+                  ? metadata.has("preservedNarration") ? REUSED : BEFORE_TTS
+                  : input.estimateFromReceipts() ? ESTIMATE : COHORT));
     }
     BigDecimal total =
-        NarrationUsageEvidence.cost(input.usage(), paid, input.exclusiveUsageConfirmed());
+        input.estimateFromReceipts()
+            ? estimates.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+            : NarrationUsageEvidence.cost(input.usage(), paid, input.exclusiveUsageConfirmed());
     int calls = paid.stream().mapToInt(NarrationUsageEvidence.PaidSpeech::count).sum();
     String hash = hash(json.valueToTree(input).toString());
     var values = new LinkedHashMap<Long, BigDecimal>();
@@ -124,11 +141,15 @@ public class NarrationCostReconciliation {
       BigDecimal value =
           attempt.speech() == null
               ? BigDecimal.ZERO.setScale(6)
-              : total
-                  .multiply(BigDecimal.valueOf(attempt.speech().count()))
-                  .divide(BigDecimal.valueOf(calls), 6, RoundingMode.CEILING);
+              : input.estimateFromReceipts()
+                  ? estimates.get(attempt.job().getId())
+                  : total
+                      .multiply(BigDecimal.valueOf(attempt.speech().count()))
+                      .divide(BigDecimal.valueOf(calls), 6, RoundingMode.CEILING);
       var entry = attempt.entry();
-      if (Set.of(COHORT, REUSED, BEFORE_TTS).contains(Objects.toString(entry.costEvidence(), "")))
+      if (Set.of(COHORT, REUSED, BEFORE_TTS, ESTIMATE)
+              .contains(Objects.toString(entry.costEvidence(), ""))
+          && !(ESTIMATE.equals(entry.costEvidence()) && !input.estimateFromReceipts()))
         require(
             entry.estimatedCostUsd() != null && entry.estimatedCostUsd().compareTo(value) == 0,
             "Esta tentativa já possui outra conciliação; preserve a auditoria antes de corrigir o valor.");
@@ -154,9 +175,18 @@ public class NarrationCostReconciliation {
           .put("estimatedCostUsd", reconciledCost)
           .put("cohortCostUsd", total)
           .put("providerRequests", calls)
-          .put("allocation", "REQUEST_COUNT_CONSERVATIVE_ESTIMATE")
+          .put(
+              "allocation",
+              input.estimateFromReceipts() ? ESTIMATE : "REQUEST_COUNT_CONSERVATIVE_ESTIMATE")
           .put("providerInvoiceConfirmed", false)
           .put("newProviderCall", false);
+      if (input.estimateFromReceipts()) {
+        details
+            .put("durationRateUsdPerMinute", NarrationCostEstimate.USD_PER_MINUTE)
+            .put("inputEnvelopeUsdPerMillionUtf8Bytes", new BigDecimal("1.2"))
+            .put("tokensMeasured", false)
+            .put("uncertainty", "INTERNAL_CONSERVATIVE_ENVELOPE_NOT_PROVIDER_BILLING");
+      }
       if (input.usage() != null) details.set("usage", input.usage());
       events.save(
           SalesVideoJobEvent.builder()

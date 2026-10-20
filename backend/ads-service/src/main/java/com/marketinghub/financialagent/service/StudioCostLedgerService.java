@@ -321,6 +321,7 @@ public class StudioCostLedgerService {
                 || (java.util.Set.of(
                             "PROVIDER_TASK_RATE_CARD_ESTIMATE",
                             "OPENAI_USAGE_COHORT_ESTIMATE",
+                            "NARRATION_MEASURED_DURATION_ESTIMATE_V1",
                             "PRESERVED_NARRATION_NO_NEW_CALL",
                             "FAILED_BEFORE_TTS_AUDITED")
                         .contains(java.util.Objects.toString(entry.getCostEvidence(), ""))

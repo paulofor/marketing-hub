@@ -20,6 +20,7 @@ export default function NarrationCostReconciliationPanel({
   const [usage, setUsage] = useState("");
   const [reference, setReference] = useState("");
   const [exclusive, setExclusive] = useState(false);
+  const [estimate, setEstimate] = useState(false);
   const [validation, setValidation] = useState("");
   const command = useMutation({
     mutationFn: async (body: {
@@ -27,6 +28,7 @@ export default function NarrationCostReconciliationPanel({
       usage: unknown;
       evidenceReference: string;
       exclusiveUsageConfirmed: boolean;
+      estimateFromReceipts: boolean;
     }) =>
       (
         await axios.post<Receipt>(
@@ -56,7 +58,7 @@ export default function NarrationCostReconciliationPanel({
     }
     let data: unknown = null;
     try {
-      data = usage.trim() ? JSON.parse(usage) : null;
+      data = !estimate && usage.trim() ? JSON.parse(usage) : null;
     } catch {
       setValidation("O extrato de consumo precisa ser um JSON válido.");
       return;
@@ -65,7 +67,8 @@ export default function NarrationCostReconciliationPanel({
       jobIds: ids,
       usage: data,
       evidenceReference: reference,
-      exclusiveUsageConfirmed: exclusive,
+      exclusiveUsageConfirmed: !estimate && exclusive,
+      estimateFromReceipts: estimate,
     });
   };
   const error = axios.isAxiosError(command.error)
@@ -96,6 +99,22 @@ export default function NarrationCostReconciliationPanel({
             value={jobIds}
             onChange={(e) => setJobIds(e.target.value)}
           />
+          <label className="d-block my-2">
+            <input
+              type="checkbox"
+              checked={estimate}
+              onChange={(e) => setEstimate(e.target.checked)}
+            />{" "}
+            Usar estimativa conservadora dos recibos, sem extrato oficial
+          </label>
+          {estimate && (
+            <p role="note">
+              O sistema calculará o custo pela duração medida das locuções e
+              pelo modelo auditado. O valor serve ao controle do teto; não
+              representa cobrança confirmada. Texto e visão via Codex usam
+              estimativa própria e não exigem extrato da API.
+            </p>
+          )}
           <label htmlFor="narration-cost-usage">
             Extrato de consumo OpenAI (JSON)
           </label>
@@ -103,6 +122,7 @@ export default function NarrationCostReconciliationPanel({
             id="narration-cost-usage"
             className="form-control"
             rows={5}
+            disabled={estimate}
             value={usage}
             onChange={(e) => setUsage(e.target.value)}
           />
@@ -123,6 +143,7 @@ export default function NarrationCostReconciliationPanel({
           <label className="d-block my-2">
             <input
               type="checkbox"
+              disabled={estimate}
               checked={exclusive}
               onChange={(e) => setExclusive(e.target.checked)}
             />{" "}
@@ -138,6 +159,8 @@ export default function NarrationCostReconciliationPanel({
                 />
                 Conciliando…
               </>
+            ) : estimate ? (
+              "Registrar estimativa da locução"
             ) : (
               "Registrar conciliação da locução"
             )}

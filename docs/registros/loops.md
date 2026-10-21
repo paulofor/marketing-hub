@@ -10738,3 +10738,13 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
 - **Prevenção executável:** `scripts/test-mcp-tls.py`, Bash/ShellCheck e escopo `mcp` no coordenador. Inclui certificado vencido, domínio de outro produto, falha de CA/reload, preservação de cron e recuperação com certificado já emitido.
 - **Limites:** renovação depende de DNS, HTTP-01, autoridade certificadora, Actions e acesso SSH; nenhuma falha permite desabilitar a verificação TLS.
 - **Evidências:** [homologação e alternativas](../homologacao/mcp-tls-renovacao-2026-10-20.md).
+
+
+## LOOP-META-RECUPERACAO-SEM-TELA — 21/10/2026
+
+- **Caso:** titular consegue gerar credencial, mas a tela só permite editar metadados ou diagnosticar a credencial vencida; recuperação dependia de arquivo no servidor.
+- **Causa:** contrato de edição removeu o token do formulário, sem disponibilizar comando específico; diagnóstico tratava HTTP 200 como validade mesmo com `is_valid=false`.
+- **Correção:** envio dedicado com verificação do aplicativo/titular/validade/permissões/conta antes da substituição; resposta sem segredo, presença por booleano e escrita condicionada à configuração verificada. Renovação automática preservada.
+- **Prevenção:** `FacebookTokenReplacementTest` e `FacebookTokenUpdateDialog.test.tsx`, incluindo outra identidade, recusa, sigilo, duplo envio e alteração concorrente. Diagnóstico não aprova somente por HTTP 200.
+- **Limites:** precisa de credencial emitida pelo titular; não inicia campanha, não amplia gastos nem muda gates. Transporte do painel herda o ingresso existente.
+- **Evidência:** `docs/homologacao/meta-token-painel-v1.md`.

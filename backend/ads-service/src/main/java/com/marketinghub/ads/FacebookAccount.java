@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 /** Mantém a configuração persistida de uma conta Meta usada pelo backend e pelos workers. */
 @Entity(name = "fb_account")
@@ -36,7 +37,9 @@ public class FacebookAccount {
   private String name;
   private String currency;
 
-  @Column(columnDefinition = "LONGTEXT")
+  @Column(name = "access_token", columnDefinition = "LONGTEXT")
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  @ToString.Exclude
   private String accessToken;
 
   @Transient
@@ -141,10 +144,12 @@ public class FacebookAccount {
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Setter(AccessLevel.NONE)
   @Column(columnDefinition = "LONGTEXT")
+  @ToString.Exclude
   private String appSecret;
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Column(name = "system_user_access_token", columnDefinition = "LONGTEXT")
+  @ToString.Exclude
   private String systemUserAccessToken;
 
   @Transient
@@ -167,6 +172,13 @@ public class FacebookAccount {
   @JsonIgnore
   @Setter(AccessLevel.NONE)
   private boolean appSecretProvided;
+
+  /** Informa presença da credencial sem transportá-la ao frontend. */
+  @Transient
+  @JsonGetter("hasAccessToken")
+  public boolean hasAccessToken() {
+    return accessToken != null && !accessToken.isBlank();
+  }
 
   /** Informa se o token de acesso já ultrapassou a validade oficial persistida em UTC. */
   @Transient

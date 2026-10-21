@@ -186,6 +186,68 @@ class PdeVersionOverviewServiceTest {
     assertThat(service().list(product)).isEmpty();
   }
 
+  /** Disponibiliza a candidata paga antes do checkout sem liberar promoção ou exigir vídeo. */
+  @Test
+  void preparesPaidCandidateWithoutCircularCheckoutOrVideoDependency() {
+    for (long id : List.of(97L, 870L)) {
+      Product product =
+          Product.builder()
+              .id(id + 10)
+              .slug("paid-" + id)
+              .primaryHypothesis("Entregar três combinações após compra")
+              .productTypeDefinition(ProductTypeDefinition.builder().code("AI_PRODUCT").build())
+              .build();
+      Experiment experiment =
+          Experiment.builder()
+              .id(id)
+              .product(product)
+              .status(ExperimentStatus.PLANNED)
+              .unitPrice(new BigDecimal("79"))
+              .primaryCta("Escolher minhas combinações")
+              .productAiSubtype(
+                  com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY)
+              .build();
+      var contract =
+          new ObjectMapper()
+              .createObjectNode()
+              .put("slug", product.getSlug())
+              .put("experienceVersion", "paid-v1")
+              .put("layoutKey", "paid-visual-v1");
+      contract
+          .putObject("commercialBinding")
+          .put("experimentId", id)
+          .put("priceBrl", 79)
+          .put("primaryCta", experiment.getPrimaryCta())
+          .put("billingModel", "ONE_TIME");
+      contract.putObject("paidVisualDelivery").put("contractVersion", "PDE_PAID_VISUAL_V1");
+      PdeProductionSlot slot =
+          PdeProductionSlot.builder()
+              .id(id)
+              .productSlug(product.getSlug())
+              .slotCode("paid-v1")
+              .experienceVersion("paid-v1")
+              .layoutKey("paid-visual-v1")
+              .sourceExperimentId(id)
+              .status(PdeProductionSlotStatus.CANDIDATE)
+              .draftExperienceJson(contract.toString())
+              .build();
+      when(slotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+          .thenReturn(List.of(slot));
+      when(experimentRepository.findAllById(List.of(id))).thenReturn(List.of(experiment));
+      when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(id)).thenReturn(List.of());
+      when(slotService.listProductionSlotVideosForProduct(product.getSlug())).thenReturn(List.of());
+      var result = service().list(product).getFirst();
+      assertThat(result.canPublishContract()).isTrue();
+      assertThat(result.canPreparePublication()).isFalse();
+      assertThat(result.operationalStatus()).isEqualTo(PdeProductionSlotStatus.CANDIDATE);
+      assertThat(result.pendingItems()).contains("Concluir a homologação comercial.");
+      assertThat(result.pendingItems()).noneMatch(item -> item.contains("vídeo"));
+      contract.withObject("/commercialBinding").put("experimentId", id + 1);
+      slot.setDraftExperienceJson(contract.toString());
+      assertThat(service().list(product).getFirst().canPublishContract()).isFalse();
+    }
+  }
+
   /** Cria o serviço com dependências isoladas para cada cenário. */
   private PdeVersionOverviewService service() {
     return new PdeVersionOverviewService(

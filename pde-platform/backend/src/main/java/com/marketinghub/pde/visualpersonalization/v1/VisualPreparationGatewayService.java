@@ -37,7 +37,20 @@ public class VisualPreparationGatewayService {
     if (backend == null) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Origem principal PDE ausente.");
     if (!suffix.matches("/(preparations/pde-visual-v1-[a-f0-9-]{36}(/reconcile)?|internal/stage-executions/(pending|pde-visual-v1-[a-f0-9-]{36}/(claim|request|result|replay)))"))
       throw new IllegalArgumentException("Operação fora do contrato visual PDE.");
-    URI endpoint = backend.resolve("/api/pde/visual-personalization/v1" + suffix);
+    return transport(method, "/api/pde/visual-personalization/v1" + suffix, body, header, token);
+  }
+
+  /** Encaminha somente operações públicas tipadas da entrega paga, sem elevar credenciais. */
+  public ResponseEntity<String> forwardPaid(String method,String suffix,String body,String token) {
+    if (!suffix.matches("/(experiments/[0-9]+/(offer|login)|session(/submit|/pde-visual-v1-[a-f0-9-]{36}/reconcile)?)"))
+      throw new IllegalArgumentException("Operação fora do contrato visual pago.");
+    return transport(method,"/api/pde/paid-visual/v1"+suffix,body,"X-PDE-Access-Token",token);
+  }
+
+  /** Executa transporte para a única origem principal configurada, sem registrar corpo ou bearer. */
+  private ResponseEntity<String> transport(String method,String path,String body,String header,String token) {
+    if(backend==null) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"Origem principal PDE ausente.");
+    URI endpoint = backend.resolve(path);
     var builder = HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(30))
         .header("Accept", "application/json").header("Content-Type", "application/json");
     if (token != null && !token.isBlank()) builder.header(header, token);

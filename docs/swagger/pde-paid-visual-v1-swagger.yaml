@@ -1,0 +1,107 @@
+openapi: 3.0.3
+info:
+  title: Entrega visual após compra
+  version: 1.0.0
+paths:
+  /api/pde/paid-visual/v1/experiments/{id}/offer:
+    get:
+      summary: Oferta publicada; checkout só é exposto após liberação comercial
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200': {description: Nome, versão, preço, selling e checkout quando autorizado}
+        '409': {description: Contrato ausente ou divergente}
+  /api/pde/paid-visual/v1/experiments/{id}/login:
+    post:
+      summary: Enviar acesso ao e-mail da compra, sem enumerar compradores
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, format: email, maxLength: 254}
+      responses:
+        '200': {description: Confirmação opaca, limite de um envio por pedido por minuto}
+  /api/pde/paid-visual/v1/session:
+    get:
+      summary: Recuperar somente entregas da compra ativa
+      security: [{CustomerAccess: []}]
+      responses:
+        '200': {description: Versão, prazo, estado e imagens das próprias tentativas}
+        '401': {description: Bearer inválido}
+        '403': {description: Reembolso ou prazo encerrado}
+  /api/pde/paid-visual/v1/session/submit:
+    post:
+      summary: Solicitar primeira entrega ou uma regeneração para a mesma ocasião
+      security: [{CustomerAccess: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operationKey, regeneration, occasionAt, input]
+              properties:
+                operationKey: {type: string, minLength: 16, maxLength: 64}
+                regeneration: {type: boolean}
+                occasionAt: {type: string, format: date-time}
+                input:
+                  type: object
+                  required: [occasion, pieces, preferences, constraints]
+                  properties:
+                    occasion: {type: string, maxLength: 500}
+                    pieces: {type: array, minItems: 2, maxItems: 12, items: {type: string, maxLength: 150}}
+                    preferences: {type: string, maxLength: 500}
+                    constraints: {type: string, maxLength: 500}
+      responses:
+        '200': {description: Tentativa persistida, idempotente e recuperável}
+        '409': {description: Operação divergente, limite ou pré-condição não atendida}
+  /api/pde/paid-visual/v1/session/{jobId}/reconcile:
+    post:
+      summary: Reaplicar resposta da própria compra sem inferência
+      security: [{CustomerAccess: []}]
+      parameters:
+        - {name: jobId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Resultado preservado reaplicado}
+  /api/pde/paid-visual/v1/internal/payments:
+    post:
+      summary: Aplicar pagamento recém-consultado no Mercado Pago pelo módulo de pagamentos
+      security: [{InternalPayments: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentId, paymentStatus, amount, currency, buyerEmail, externalReference, dateApproved, metadata]
+              properties:
+                paymentId: {type: string, maxLength: 80}
+                paymentStatus: {type: string, enum: [approved, refunded, charged_back]}
+                amount: {type: number}
+                currency: {type: string, enum: [BRL]}
+                buyerEmail: {type: string, format: email}
+                externalReference: {type: string}
+                dateApproved: {type: string, format: date-time}
+                metadata:
+                  type: object
+                  required: [productId, experimentId, deliveryContract, experienceVersion, providerLiveMode]
+                  properties:
+                    productId: {type: integer}
+                    experimentId: {type: integer}
+                    deliveryContract: {type: string, enum: [PDE_PAID_VISUAL_V1]}
+                    experienceVersion: {type: string}
+                    providerLiveMode: {type: boolean, enum: [true]}
+      responses:
+        '200': {description: Estado idempotente; reembolso não reabre com callback aprovado antigo}
+        '401': {description: Credencial interna ausente ou inválida}
+        '409': {description: Identidade ou preço divergente da versão homologada}
+components:
+  securitySchemes:
+    CustomerAccess: {type: apiKey, in: header, name: X-PDE-Access-Token}
+    InternalPayments: {type: apiKey, in: header, name: X-PDE-Internal-Token}

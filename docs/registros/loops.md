@@ -10820,3 +10820,18 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
 - **Prevenção:** testes com o validador real para 11/97 e 44/710, versão ausente, checkout
   ausente, jornada válida e referências históricas. Critério: corrigir a fonte no mesmo contexto
   sem criar tarefa paga ou aceite. [Matriz e limites](../homologacao/alcyone-preparacao-comercial-2026-10-21.md).
+
+
+## LOOP-PDE-ENTREGA-PRIVADA-NAO-E-POS-COMPRA — 2026-10-21
+
+**Evidência:** Alcyone tinha imagem privada recuperável e Processo 4 aceito, mas a URL raiz era uma guarda de homologação; o pagamento não liberava entrada/geração da compradora. Apenas alterar navegação não fecha o percurso.
+
+**Causa:** o contrato `PDE_VISUAL_PERSONALIZATION_V1` tinha consentimento sintético, orçamento de preparação e experimento PLANNED. Não havia fronteira de direito pago para este subtipo. A fila de amostra gratuita também não atende à ordem compra → entrada.
+
+**Correção reutilizável:** `PDE_PAID_VISUAL_V1`, pedido no backend principal, identidade financeira verificada, acesso por e-mail, uma regeneração, prazo e revogação por reembolso; reutilização de request/resposta e do executor visual. Sem exceção por nome/ID. A recusa de uma request concorrente também deixa de substituir a tentativa já auditada por uma falha local.
+
+**Prevenção:** `PaidVisualServiceTest`, `PaidVisualPolicyTest`, `PaidVisualControllerTest`, contratos reais de checkout/callback, regressão visual privada, testes do worker e `paid-visual-local.cjs` em desktop/iPhone/Pixel. Aceitar a capacidade exige essas validações; uso comercial depende dos pareceres e limites próprios. Não há resultado de vendas medido por esses testes.
+
+### 2026-10-21 — Inicialização do harness financeiro sem descoberta de prefixo Maven
+
+No job financeiro do PR #5660, `dependency:build-classpath` falhou antes dos testes com `NoPluginFoundForPrefixException`. O mesmo código havia passado no CI anterior. O runner financeiro e o runner da entrega paga agora usam a coordenada completa do plugin 3.6.1 já presente no projeto; a montagem de classpath foi executada offline na sandbox. A repetição do MySQL local foi limitada por disco cheio, com limpeza da topologia; a persistência continua obrigatória no runner dedicado do PR. Não se atribuiu a falha à lógica financeira nem se ignorou o check.

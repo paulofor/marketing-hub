@@ -12,6 +12,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         alcyone: fileURLToPath(new URL("./alcyone.html", import.meta.url)),
+        paidVisual: fileURLToPath(new URL("./paid-visual.html", import.meta.url)),
         personalization: fileURLToPath(new URL("./personalization.html", import.meta.url)),
       },
     },

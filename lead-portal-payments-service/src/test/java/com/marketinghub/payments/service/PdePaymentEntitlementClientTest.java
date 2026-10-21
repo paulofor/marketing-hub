@@ -41,6 +41,42 @@ class PdePaymentEntitlementClientTest {
         }
     }
 
+    /** Encaminha entrega visual ao backend principal, preservando identidade e credencial próprias. */
+    @Test
+    void publishesPaidVisualToMainBackend() throws Exception {
+        AtomicReference<String> token = new AtomicReference<>();
+        AtomicReference<String> body = new AtomicReference<>();
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/api/pde/paid-visual/v1/internal/payments", exchange -> {
+            token.set(exchange.getRequestHeaders().getFirst("X-PDE-Internal-Token"));
+            body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(200,-1); exchange.close();
+        });
+        server.start();
+        var properties=properties(server.getAddress().getPort());
+        properties.setMainBackendBaseUrl("http://127.0.0.1:"+server.getAddress().getPort());
+        properties.setMainBackendToken("local-financial");
+        for(long id:java.util.List.of(97L,709L)) {
+            var payment=new MercadoPagoPaymentDetails("paid-"+id,"approved",new BigDecimal("79"),"BRL","Cliente",
+                "buyer@example.test","produto-"+id,Instant.now(),Map.of("productId",id+100,"experimentId",id,
+                "deliveryContract","PDE_PAID_VISUAL_V1","experienceVersion","commercial-v1"),"{\"live_mode\":true}");
+            new PdePaymentEntitlementClient(properties).notifyIfSupported(payment);
+            assertThat(token.get()).isEqualTo("local-financial");
+            assertThat(body.get()).contains("\"providerLiveMode\":true").contains("\"experimentId\":"+id).contains("\"paymentStatus\":\"approved\"").doesNotContain("local-financial");
+        }
+    }
+
+    /** Nunca transforma confirmação sandbox em compra comercial, mesmo com metadata adulterada. */
+    @Test
+    void testPaymentCannotReleasePaidDelivery() {
+        var properties=properties(1);
+        for(String raw:java.util.List.of("{\"live_mode\":false}","{}")) {
+            new PdePaymentEntitlementClient(properties).notifyIfSupported(new MercadoPagoPaymentDetails(
+                "test-payment","approved",new BigDecimal("79"),"BRL","Teste","buyer@example.test","produto-709",Instant.now(),
+                Map.of("deliveryContract","PDE_PAID_VISUAL_V1","providerLiveMode",true),raw));
+        }
+    }
+
     /** Envia aprovação do Kit com segredo interno, URL exata e payload financeiro completo. */
     @Test
     void publishesSupportedPaymentWithDedicatedCredential() throws Exception {

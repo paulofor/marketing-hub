@@ -197,7 +197,10 @@ public class VisualPreparationService {
 
   /** Confere a credencial opaca da própria preparação sem expor a credencial persistida. */
   public void authorize(ImageGenerationRequest row, String secret) {
-    require(row.getJobId().startsWith(PREFIX), "A tentativa não pertence à preparação PDE.");
+    require(
+        row.getJobId().startsWith(PREFIX)
+            && VERSION.equals(read(row.getPrompt()).path("contractVersion").asText()),
+        "A tentativa não pertence à preparação privada PDE.");
     String expected = read(row.getPrompt()).path("sessionHash").asText();
     if (secret == null
         || expected.isBlank()
@@ -221,13 +224,13 @@ public class VisualPreparationService {
     result.put("experimentId", row.getExperimentId());
     result.put("productName", context.path("productName").asText());
     result.put("productVersion", context.path("productVersion").asText());
-    result.put("contractVersion", VERSION);
+    result.put("contractVersion", context.path("contractVersion").asText());
     result.put("status", row.getStatus());
     result.put("inputHash", context.path("inputHash").asText());
     result.put("createdAt", row.getCreatedAt().toString());
     if (row.getFinishedAt() != null) result.put("finishedAt", row.getFinishedAt().toString());
     result.set("input", context.path("input"));
-    result.put("trafficClass", "AGENT_VALIDATION");
+    result.put("trafficClass", context.path("trafficClass").asText());
     result.put("published", false);
     result.put("paymentEnabled", false);
     result.put("error", row.getErrorMessage());

@@ -34,6 +34,7 @@ public class VisualPreparationExecution {
   private final StudioCostLedgerService ledger;
   private final ImageGenerationUsageCost usageCost;
   private final TransactionTemplate tx;
+  private final com.marketinghub.pde.paidvisual.v1.service.PaidVisualService paid;
   private static final String IMAGE_MODEL = "gpt-image-2.5-sunburst";
 
   /** Configura persistência e transações separadas para preservar resposta antes da aplicação. */
@@ -44,7 +45,8 @@ public class VisualPreparationExecution {
       VisualPreparationBudget budgets,
       StudioCostLedgerService ledger,
       ImageGenerationUsageCost usageCost,
-      PlatformTransactionManager manager) {
+      PlatformTransactionManager manager,
+      com.marketinghub.pde.paidvisual.v1.service.PaidVisualService paid) {
     this.images = images;
     this.products = products;
     this.preparations = preparations;
@@ -52,6 +54,7 @@ public class VisualPreparationExecution {
     this.ledger = ledger;
     this.usageCost = usageCost;
     this.tx = new TransactionTemplate(manager);
+    this.paid = paid;
   }
 
   /** Expõe pendências, respostas para replay e reservas sem request paga auditada. */
@@ -87,6 +90,15 @@ public class VisualPreparationExecution {
                   && row.getOpenAiRequestBody() == null,
               "A tentativa já possui request auditada; não repita a geração.");
           try {
+            if (paid.isPaid(row)) {
+              var context = (ObjectNode) preparations.read(row.getPrompt());
+              context.put("reservedUsd", paid.authorizeGeneration(row));
+              row.setPrompt(preparations.write(context));
+              row.setStatus("PDE_RUNNING");
+              if (row.getStartedAt() == null) row.setStartedAt(Instant.now());
+              images.saveAndFlush(row);
+              return workerView(row);
+            }
             var scope =
                 preparations.scope(
                     row.getProductId(), row.getCommercialPlanId(), row.getExperimentId(), true);
@@ -106,15 +118,16 @@ public class VisualPreparationExecution {
             row.setStatus("PDE_RUNNING");
             if (row.getStartedAt() == null) row.setStartedAt(Instant.now());
             images.saveAndFlush(row);
-            ledger.recordImage(
-                row.getJobId(),
-                row.getProductId(),
-                row.getCommercialPlanId(),
-                row.getExperimentId(),
-                IMAGE_MODEL,
-                row.getStatus(),
-                row.getStartedAt(),
-                null);
+            if (!paid.isPaid(row))
+              ledger.recordImage(
+                  row.getJobId(),
+                  row.getProductId(),
+                  row.getCommercialPlanId(),
+                  row.getExperimentId(),
+                  IMAGE_MODEL,
+                  row.getStatus(),
+                  row.getStartedAt(),
+                  null);
             return workerView(row);
           } catch (ResponseStatusException ex) {
             log.warn(
@@ -126,7 +139,9 @@ public class VisualPreparationExecution {
             row.setStatus("PDE_BLOCKED");
             row.setErrorMessage(ex.getReason());
             row.setFinishedAt(Instant.now());
-            if (row.getStartedAt() != null && row.getOpenAiRequestBody() == null) {
+            if (!paid.isPaid(row)
+                && row.getStartedAt() != null
+                && row.getOpenAiRequestBody() == null) {
               var context = (ObjectNode) preparations.read(row.getPrompt());
               context.put("providerCalled", false);
               context.put("estimatedCostUsd", BigDecimal.ZERO);
@@ -184,18 +199,26 @@ public class VisualPreparationExecution {
                           preparations.read(
                               request.path("input").path(2).path("content").asText())),
               "A chamada não corresponde ao contrato privado limitado de geração.");
-          var scope =
-              preparations.scope(
-                  row.getProductId(), row.getCommercialPlanId(), row.getExperimentId(), true);
-          var budget =
-              budgets.read(scope.product(), scope.plan(), row.getExperimentId(), row.getJobId());
-          var context = preparations.read(row.getPrompt());
-          require(
-              budget.costComplete()
-                  && budget.authorizationHash().equals(context.path("authorizationHash").asText())
-                  && budget.availableUsd().compareTo(context.path("reservedUsd").decimalValue())
-                      >= 0,
-              "O consumo ou a autorização mudou; não iniciar outra chamada.");
+          if (paid.isPaid(row)) {
+            require(
+                paid.authorizeGeneration(row)
+                        .compareTo(savedContext.path("reservedUsd").decimalValue())
+                    >= 0,
+                "Reserva paga divergente do contrato.");
+          } else {
+            var scope =
+                preparations.scope(
+                    row.getProductId(), row.getCommercialPlanId(), row.getExperimentId(), true);
+            var budget =
+                budgets.read(scope.product(), scope.plan(), row.getExperimentId(), row.getJobId());
+            var context = preparations.read(row.getPrompt());
+            require(
+                budget.costComplete()
+                    && budget.authorizationHash().equals(context.path("authorizationHash").asText())
+                    && budget.availableUsd().compareTo(context.path("reservedUsd").decimalValue())
+                        >= 0,
+                "O consumo ou a autorização mudou; não iniciar outra chamada.");
+          }
           require(
               row.getOpenAiRequestBody() == null,
               "A request já foi registrada; não repita a chamada paga.");
@@ -212,6 +235,9 @@ public class VisualPreparationExecution {
           require(
               !input.providerCalled() || row.getOpenAiRequestBody() != null,
               "Resposta de provedor sem request auditada.");
+          require(
+              input.providerCalled() || row.getOpenAiRequestBody() == null,
+              "Falha anterior ao provedor não pode substituir uma request já auditada.");
           var context = (ObjectNode) preparations.read(row.getPrompt());
           if (input.providerCalled() && input.httpStatus() == 200) {
             require(
@@ -292,17 +318,18 @@ public class VisualPreparationExecution {
             row.setPrompt(preparations.write(context));
             row.setFinishedAt(Instant.now());
             images.saveAndFlush(row);
-            ledger.recordImage(
-                row.getJobId(),
-                row.getProductId(),
-                row.getCommercialPlanId(),
-                row.getExperimentId(),
-                IMAGE_MODEL,
-                row.getStatus(),
-                row.getStartedAt(),
-                row.getFinishedAt(),
-                cost,
-                evidence);
+            if (!paid.isPaid(row))
+              ledger.recordImage(
+                  row.getJobId(),
+                  row.getProductId(),
+                  row.getCommercialPlanId(),
+                  row.getExperimentId(),
+                  IMAGE_MODEL,
+                  row.getStatus(),
+                  row.getStartedAt(),
+                  row.getFinishedAt(),
+                  cost,
+                  evidence);
             return preparations.view(row);
           });
     } catch (RuntimeException ex) {

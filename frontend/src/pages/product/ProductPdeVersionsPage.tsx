@@ -40,6 +40,10 @@ const money = new Intl.NumberFormat("pt-BR", {
 
 const layoutOptions = [
   {
+    value: "paid-visual-v1",
+    label: "Entrega visual após a compra",
+  },
+  {
     value: "mira-routine-v1",
     label: "Mira · rotina comercial",
   },
@@ -76,6 +80,7 @@ const layoutOptions = [
 type NewPdeSlotForm = {
   slotCode: string;
   domain: string;
+  publicUrl?: string;
   backendUrl: string;
   experienceVersion: string;
   layoutKey: string;
@@ -496,6 +501,7 @@ export default function ProductPdeVersionsPage() {
                 productSlug: product.slug || "",
                 slotCode: form.slotCode,
                 domain: form.domain,
+                publicUrl: form.publicUrl?.trim() || undefined,
                 backendUrl: form.backendUrl.trim() || undefined,
                 experienceVersion: form.experienceVersion,
                 layoutKey: form.layoutKey,
@@ -545,6 +551,27 @@ export default function ProductPdeVersionsPage() {
                   }))
                 }
                 required
+              />
+            </div>
+            <div className="col-12 col-md-6">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-public-url"
+              >
+                Endereço completo da entrega
+              </label>
+              <input
+                id="pde-slot-public-url"
+                className="form-control form-control-sm"
+                type="url"
+                placeholder="Opcional; usa o domínio quando vazio"
+                value={form.publicUrl || ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    publicUrl: event.target.value,
+                  }))
+                }
               />
             </div>
             <div className="col-12 col-md-4">

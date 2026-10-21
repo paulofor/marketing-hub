@@ -34,6 +34,18 @@ class CommercialProductCheckoutServiceTest {
         service = new CommercialProductCheckoutService(mercadoPagoClient, new MercadoPagoProperties());
     }
 
+    /** Preserva a versão de entrega no pagamento e impede reutilizar preferência de outra versão. */
+    @Test
+    void paidVisualMetadataAndIdempotencyFollowDeliveryVersion() {
+        when(mercadoPagoClient.createPreference(any(),anyString())).thenReturn(new MercadoPagoPreferenceResponse("pref", "https://mercadopago.com/checkout"));
+        for(String version:java.util.List.of("commercial-v1","commercial-v2")) service.create(new CommercialProductCheckoutRequest(
+            "produto-local","Produto local",197L,97L,new BigDecimal("79"),"https://example.test/paid-visual.html?experiment=97","PDE_PAID_VISUAL_V1",version));
+        var requests=ArgumentCaptor.forClass(MercadoPagoPreferenceRequest.class);var keys=ArgumentCaptor.forClass(String.class);
+        verify(mercadoPagoClient,times(2)).createPreference(requests.capture(),keys.capture());
+        assertThat(requests.getAllValues().getFirst().metadata()).containsEntry("deliveryContract","PDE_PAID_VISUAL_V1").containsEntry("experienceVersion","commercial-v1");
+        assertThat(keys.getAllValues().getFirst()).isNotEqualTo(keys.getAllValues().getLast());
+    }
+
     /** Preserva preço, entrega e correlação no payload enviado ao Mercado Pago. */
     @Test
     void createsCheckoutFromValidatedCommercialContract() {

@@ -880,3 +880,12 @@ continuar viável. Entre os consultores, prefira WhatsApp para provar conversa e
 atrito; adote PWA quando a experiência visual própria for parte mensurável da entrega. Evolua para
 área de membros ou experiência educacional quando a venda exigir consumo recorrente, progresso ou
 treinamento mais profundo.
+
+
+### Entrega visual paga reutilizável — 2026-10-21
+
+`PDE_PAID_VISUAL_V1` materializa `AI_PERSONALIZED_PAID_DELIVERY` sem reutilizar a autorização de uma preparação privada. A versão publicada mantém `paidVisualDelivery` com `commercialPlanId`, `model`, `maxGenerationUsd`, `accessDays: 7` e `maxRegenerations: 1`; o teto por geração é entrada da homologação econômica, nunca um valor escolhido no navegador. A compra deve corresponder ao produto, experimento, versão, preço e moeda da oferta; novos direitos exigem experimento RUNNING, slot ACTIVE e validação OK. Callback antigo aprovado não reverte reembolso.
+
+O backend principal persiste o pedido e os vínculos das duas tentativas. A cliente recebe acesso no e-mail confirmado, informa ocasião e peças depois da compra e recupera a mesma imagem sem inferência adicional. O prazo termina em sete dias ou na ocasião informada, o que vier primeiro. A regeneração é explícita, única e só sucede entrega concluída. Resultado inválido, custo desconhecido ou interrupção preservam auditoria e não geram retentativa paga automática. A fila/executor visual existentes mantêm request, resposta e estimativa por tentativa; custos de entrega CUSTOMER não entram como preparação AGENT_VALIDATION. Sem reconciliação, o custo não é tratado como zero.
+
+A superfície `paid-visual.html?experiment=<id>` preserva a raiz privada e não exibe checkout antes das liberações. Esta capacidade técnica não equivale a publicação comercial ou parecer independente. [Contrato HTTP](../swagger/pde-paid-visual-v1-swagger.yaml) e [matriz local](../homologacao/alcyone-entrega-paga-v1.md).

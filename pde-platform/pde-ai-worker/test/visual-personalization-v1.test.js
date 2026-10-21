@@ -128,11 +128,10 @@ test('bloqueio antes da chamada não consome provedor', async (t) => {
   assert.equal(f.events.length, 2);
 });
 
-test('request recusada conclui falha local sem inventar consumo de provedor', async (t) => {
+test('request recusada preserva a tentativa já auditada por outro executor', async (t) => {
   const f = await fixture(t, { rejectRequest: true });
   await f.make().processNextPending();
-  const result = JSON.parse(f.events.find(e => e.url.endsWith('/result')).request.body);
-  assert.equal(result.providerCalled, false);
+  assert.equal(f.events.filter(e => e.url.endsWith('/result')).length, 0);
   assert.equal(f.events.filter(e => e.url.includes('api.openai.com')).length, 0);
 });
 

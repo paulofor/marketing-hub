@@ -1,0 +1,58 @@
+name: CI - PDE Paid Visual
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pde-paid-visual-ci.yml'
+      - 'infra/testing/paid-visual/**'
+      - 'backend/ads-service/src/**/paidvisual/**'
+      - 'backend/ads-service/src/**/visualpersonalization/**'
+      - 'pde-platform/frontend/src/PaidVisualDelivery.tsx'
+      - 'pde-platform/frontend/src/paid-visual.css'
+      - 'pde-platform/frontend/paid-visual.html'
+      - 'pde-platform/frontend/tests/paid-visual-local.cjs'
+      - 'pde-platform/pde-ai-worker/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pde-paid-visual-ci.yml'
+      - 'infra/testing/paid-visual/**'
+      - 'backend/ads-service/src/**/paidvisual/**'
+      - 'backend/ads-service/src/**/visualpersonalization/**'
+      - 'pde-platform/frontend/src/PaidVisualDelivery.tsx'
+      - 'pde-platform/frontend/src/paid-visual.css'
+      - 'pde-platform/frontend/paid-visual.html'
+      - 'pde-platform/frontend/tests/paid-visual-local.cjs'
+      - 'pde-platform/pde-ai-worker/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  delivery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: pde-platform/frontend/package-lock.json
+      - name: Install browser test dependencies
+        run: npm ci --prefix pde-platform/frontend --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: pde-platform/frontend
+        run: npx playwright install --with-deps chromium
+      - name: Exercise purchase and delivery with local doubles
+        run: python3 infra/testing/paid-visual/run-local.py
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-visual-local-evidence
+          path: artifacts/paid-visual-local
+          if-no-files-found: warn

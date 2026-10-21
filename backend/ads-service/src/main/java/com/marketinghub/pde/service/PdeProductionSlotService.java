@@ -301,7 +301,7 @@ public class PdeProductionSlotService {
     rejectCommercialBlockers(blockers);
   }
 
-  /** Impede publicar um snapshot antes da homologação e da coerência ponta a ponta. */
+  /** Disponibiliza candidatas pagas para validação e exige homologação na publicação comercial. */
   private void validateCommercialPublication(PdeProductionSlot slot, String contractJson) {
     JsonNode contract = readPublicationContract(slot, contractJson);
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
@@ -309,6 +309,17 @@ public class PdeProductionSlotService {
       return;
     }
     if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
+      if ("paid-visual-v1".equals(slot.getLayoutKey())
+          && (slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
+              || slot.getStatus() == PdeProductionSlotStatus.PLANNED)) {
+        var experiment =
+            slot.getSourceExperimentId() == null
+                ? null
+                : experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+        rejectCommercialBlockers(
+            PdeCommercialPublicationPolicy.preparationBlockers(slot, experiment, contract));
+        return;
+      }
       rejectCommercialBlockers(commercialBlockers(slot, contract, true));
     }
   }
@@ -818,6 +829,37 @@ public class PdeProductionSlotService {
   /** Executa as chamadas HTTP mínimas que provam a entrega pública do slot. */
   private ValidationResult validateSlotDelivery(PdeProductionSlot slot, ValidationMode mode)
       throws IOException, InterruptedException {
+    if (StringUtils.hasText(slot.getPublishedExperienceJson())
+        && com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy.VERSION.equals(
+            objectMapper
+                .readTree(slot.getPublishedExperienceJson())
+                .path("paidVisualDelivery")
+                .path("contractVersion")
+                .asText())) {
+      String failure =
+          new com.marketinghub.pde.paidvisual.v1.service.PaidVisualReadiness(
+                  httpClient, objectMapper)
+              .failure(slot, mode == ValidationMode.COMMERCIAL_COMPLETE);
+      if (failure != null)
+        return ValidationResult.failed(409, "Entrega paga ainda não está pronta", failure);
+      String evidence =
+          "Identidade da oferta, aplicação paga, limites e envio de acesso conferidos; não substitui pareceres ou autorização de campanha.";
+      return mode == ValidationMode.DELIVERY_CANDIDATE
+          ? ValidationResult.deliveryReady(
+              200,
+              "Entrega paga pronta para preparar checkout",
+              evidence,
+              slot.getProductSlug(),
+              "/paid-visual.html",
+              slot.getPublicUrl())
+          : ValidationResult.ok(
+              200,
+              "Entrega paga e condições comerciais disponíveis",
+              evidence,
+              slot.getProductSlug(),
+              "/paid-visual.html",
+              slot.getPublicUrl());
+    }
     HttpResponse<String> health = get(slot.getPublicUrl() + "/healthz");
     if (!isSuccess(health) || !health.body().contains("UP")) {
       return ValidationResult.failed(

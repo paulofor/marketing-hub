@@ -12,4 +12,9 @@ public record CommercialProductCheckoutRequest(
         @NotNull Long productId,
         @NotNull Long experimentId,
         @NotNull @DecimalMin("0.01") BigDecimal amount,
-        @NotBlank String deliveryPageUrl) {}
+        @NotBlank String deliveryPageUrl, String deliveryContract, String experienceVersion) {
+    /** Preserva contratos legados sem entrega visual após pagamento. */
+    public CommercialProductCheckoutRequest(String productKey,String productName,Long productId,Long experimentId,BigDecimal amount,String deliveryPageUrl) {
+        this(productKey,productName,productId,experimentId,amount,deliveryPageUrl,null,null);
+    }
+}

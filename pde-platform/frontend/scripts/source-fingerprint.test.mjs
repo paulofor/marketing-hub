@@ -34,6 +34,7 @@ async function fixture(t) {
     "mira-candidate.html",
     "alcyone.html",
     "personalization.html",
+    "paid-visual.html",
     "nginx.conf",
     "nginx.mira.conf",
     "nginx.mira-commercial.conf",
@@ -148,4 +149,10 @@ test("muda a identidade quando a entrada HTML da candidata de Mira muda", async 
     "entrada privada corrigida",
   );
   assert.notEqual(await sourceFingerprint(root), original);
+});
+
+test("vincula a entrada paga à identidade sem aceitar troca silenciosa", async (t) => {
+  const root=await fixture(t);const before=await sourceFingerprint(root);
+  await fs.writeFile(path.join(root,"paid-visual.html"),"outra entrega paga");
+  assert.notEqual(await sourceFingerprint(root),before);
 });

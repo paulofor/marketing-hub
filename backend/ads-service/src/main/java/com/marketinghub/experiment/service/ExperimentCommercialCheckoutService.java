@@ -31,6 +31,7 @@ public class ExperimentCommercialCheckoutService {
   private final LeadPortalPaymentsClient paymentsClient;
   private final PdeCommercialCheckoutContractResolver checkoutResolver;
   private final LowTicketCheckoutContract lowTicketContract;
+  private final com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy paidVisualPolicy;
 
   /**
    * Inicializa a operação com contratos de entrega por tipo e a integração oficial de pagamento.
@@ -41,13 +42,15 @@ public class ExperimentCommercialCheckoutService {
       PdeProductionSlotRepository pdeProductionSlotRepository,
       LeadPortalPaymentsClient paymentsClient,
       PdeCommercialCheckoutContractResolver checkoutResolver,
-      LowTicketCheckoutContract lowTicketContract) {
+      LowTicketCheckoutContract lowTicketContract,
+      com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy paidVisualPolicy) {
     this.experimentRepository = experimentRepository;
     this.productRepository = productRepository;
     this.pdeProductionSlotRepository = pdeProductionSlotRepository;
     this.paymentsClient = paymentsClient;
     this.checkoutResolver = checkoutResolver;
     this.lowTicketContract = lowTicketContract;
+    this.paidVisualPolicy = paidVisualPolicy;
   }
 
   /** Prepara checkout pelo contrato do kit ou do PDE sem liberar campanha ou cobrar clientes. */
@@ -92,9 +95,12 @@ public class ExperimentCommercialCheckoutService {
       return response;
     }
     var activeSlot = resolveDeliverySlot(experiment, product.getSlug());
+    boolean paidVisual =
+        experiment.getProductAiSubtype()
+            == com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY;
+    if (paidVisual) paidVisualPolicy.resolve(experimentId, false);
     var response =
-        checkoutResolver
-            .resolve(product)
+        (paidVisual ? Optional.<CanonicalCheckout>empty() : checkoutResolver.resolve(product))
             .map(checkout -> canonicalResponse(experiment, activeSlot, checkout))
             .orElseGet(
                 () ->
@@ -105,7 +111,12 @@ public class ExperimentCommercialCheckoutService {
                             product.getId(),
                             experiment.getId(),
                             experiment.getUnitPrice(),
-                            activeSlot.getPublicUrl())));
+                            activeSlot.getPublicUrl(),
+                            paidVisual
+                                ? com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy
+                                    .VERSION
+                                : null,
+                            paidVisual ? activeSlot.getExperienceVersion() : null)));
     validateCheckoutContract(experiment, product.getSlug(), activeSlot.getPublicUrl(), response);
     experiment.setCommercialCheckoutUrl(response.checkoutUrl());
     product.setPublicUrl(activeSlot.getPublicUrl());

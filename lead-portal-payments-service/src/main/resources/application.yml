@@ -100,6 +100,8 @@ pde:
     backend-base-url: ${PDE_ENTITLEMENT_BACKEND_BASE_URL:http://pde-platform-backend:8096}
     notification-path: ${PDE_ENTITLEMENT_NOTIFICATION_PATH:/api/internal/pde/mercado-pago/entitlements}
     internal-token: ${PDE_ENTITLEMENT_INTERNAL_TOKEN:${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}}
+    main-backend-token: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}
+    main-backend-base-url: ${PRODUCT_AI_DELIVERY_BACKEND_BASE_URL:http://191.252.181.168}
     product-slug: ${PDE_ENTITLEMENT_PRODUCT_SLUG:kit-whatsapp-pronto}
     product-slugs: ${PDE_ENTITLEMENT_PRODUCT_SLUGS:kit-whatsapp-pronto,pde-planejado-36}
 ---

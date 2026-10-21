@@ -245,6 +245,72 @@ class PdeProductionSlotServiceTest {
     assertThat(published.get("layoutKey").asText()).isEqualTo("layout-custom-v6");
   }
 
+  /** Disponibiliza a entrega paga candidata sem checkout e preserva a trava de ativação. */
+  @Test
+  void publishesPaidPreparationWithoutGrantingCommercialActivation() {
+    for (long id : List.of(97L, 870L)) {
+      var product =
+          com.marketinghub.product.Product.builder().id(id + 10).slug("paid-" + id).build();
+      var experiment =
+          Experiment.builder()
+              .id(id)
+              .product(product)
+              .status(com.marketinghub.experiment.ExperimentStatus.PLANNED)
+              .unitPrice(new java.math.BigDecimal("79"))
+              .primaryCta("Escolher minhas combinações")
+              .productAiSubtype(
+                  com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY)
+              .build();
+      var contract =
+          new ObjectMapper()
+              .createObjectNode()
+              .put("slug", product.getSlug())
+              .put("experienceVersion", "paid-v1")
+              .put("layoutKey", "paid-visual-v1");
+      contract
+          .putObject("commercialBinding")
+          .put("experimentId", id)
+          .put("priceBrl", 79)
+          .put("primaryCta", experiment.getPrimaryCta())
+          .put("billingModel", "ONE_TIME");
+      contract.putObject("paidVisualDelivery").put("contractVersion", "PDE_PAID_VISUAL_V1");
+      var slot =
+          PdeProductionSlot.builder()
+              .id(id)
+              .productSlug(product.getSlug())
+              .slotCode("paid-v1")
+              .experienceVersion("paid-v1")
+              .layoutKey("paid-visual-v1")
+              .sourceExperimentId(id)
+              .status(PdeProductionSlotStatus.CANDIDATE)
+              .build();
+      when(repository.findByProductSlugAndSlotCode(product.getSlug(), "paid-v1"))
+          .thenReturn(Optional.of(slot));
+      when(experimentRepository.findById(id)).thenReturn(Optional.of(experiment));
+      when(repository.save(slot)).thenReturn(slot);
+      var service =
+          new PdeProductionSlotService(
+              repository,
+              videoAssetRepository,
+              experimentRepository,
+              httpClient,
+              new ObjectMapper());
+      var request =
+          new PublishPdeProductionSlotContractRequest(contract.toString(), "Preparação técnica");
+      var result = service.publishProductionSlotContract(product.getSlug(), "paid-v1", request);
+      assertThat(result.status()).isEqualTo(PdeProductionSlotStatus.CANDIDATE);
+      assertThat(result.publishedExperienceJson()).contains("PDE_PAID_VISUAL_V1");
+      assertThatThrownBy(() -> service.activateProductionSlot(product.getSlug(), "paid-v1"))
+          .isInstanceOf(ResponseStatusException.class)
+          .hasMessageContaining("Somente uma versão homologada");
+      experiment.setUnitPrice(new java.math.BigDecimal("80"));
+      assertThatThrownBy(
+              () -> service.publishProductionSlotContract(product.getSlug(), "paid-v1", request))
+          .isInstanceOf(ResponseStatusException.class)
+          .hasMessageContaining("Alinhar preço");
+    }
+  }
+
   /** Deve bloquear publicação da v12 enquanto ela for candidata ou usar vínculos incompletos. */
   @Test
   void blocksV12PublicationBeforeHomologation() {

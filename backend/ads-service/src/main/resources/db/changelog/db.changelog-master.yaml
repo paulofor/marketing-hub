@@ -2228,3 +2228,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-21-opala-static-creative-v2.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-21-pde-paid-visual-v1.yaml
+      relativeToChangelogFile: true

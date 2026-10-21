@@ -7,13 +7,15 @@ const api = '/api/pde/visual-personalization/v1/internal/stage-executions';
 
 /** Materializa request limitada usando somente contexto persistido pelo backend. */
 export async function buildVisualRequest(execution) {
+  const paid = execution.contractVersion === 'PDE_PAID_VISUAL_V1' && execution.trafficClass === 'CUSTOMER';
+  const privateProof = execution.contractVersion === 'PDE_VISUAL_PERSONALIZATION_V1' && execution.trafficClass === 'AGENT_VALIDATION';
+  const directory = paid ? path.resolve(prompts, '../paid-visual-v1') : prompts;
   const [system, template, schema] = await Promise.all([
-    fs.readFile(path.join(prompts, 'system.md'), 'utf8'),
-    fs.readFile(path.join(prompts, 'user.md'), 'utf8'),
-    fs.readFile(path.join(prompts, 'response-schema.json'), 'utf8').then(JSON.parse),
+    fs.readFile(path.join(directory, 'system.md'), 'utf8'),
+    fs.readFile(path.join(directory, 'user.md'), 'utf8'),
+    fs.readFile(path.join(directory, 'response-schema.json'), 'utf8').then(JSON.parse),
   ]);
-  if (schema.properties.output.maxContains !== 1 || execution.trafficClass !== 'AGENT_VALIDATION'
-      || execution.contractVersion !== 'PDE_VISUAL_PERSONALIZATION_V1' || !execution.input || !execution.model) {
+  if (schema.properties.output.maxContains !== 1 || (!paid && !privateProof) || !execution.input || !execution.model) {
     throw new Error('Contrato visual privado incompleto; não enviar chamada paga.');
   }
   const user = template.replace('{{PRODUCT_NAME}}', execution.productName)
@@ -74,13 +76,16 @@ export class VisualPersonalizationWorker {
     if (!this.apiKey) return;
     let claimed = false;
     let providerCalled = false;
+    let auditingRequest = false;
     let result;
     try {
       const reserved = await this.backend('POST', '/' + execution.jobId + '/claim');
       if (reserved.status !== 'PDE_RUNNING') return;
       claimed = true;
       const rawRequest = await buildVisualRequest(reserved);
+      auditingRequest = true;
       await this.backend('POST', '/' + execution.jobId + '/request', { rawRequest });
+      auditingRequest = false;
       providerCalled = true;
       console.log('PDE visual request jobId=' + execution.jobId + ' endpoint=' + this.providerUrl + ' model=' + rawRequest.model + ' serviceTier=flex');
       const response = await this.fetch(this.providerUrl, {
@@ -98,7 +103,7 @@ export class VisualPersonalizationWorker {
       console.log('PDE visual response jobId=' + execution.jobId + ' endpoint=' + this.providerUrl + ' status=' + response.status + ' responseId=' + (rawResponse.id || 'unknown'));
     } catch (error) {
       console.error('Falha na homologação visual PDE jobId=' + execution.jobId + ' providerCalled=' + providerCalled, error);
-      if (!claimed) return;
+      if (!claimed || auditingRequest) return;
       result = { rawResponse: { error: { message: error instanceof Error ? error.message : String(error) } },
         httpStatus: 502, providerCalled };
     }

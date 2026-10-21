@@ -46,6 +46,12 @@ public class CommercialProductCheckoutService {
         metadata.put("productId", request.productId());
         metadata.put("experimentId", request.experimentId());
         metadata.put("delivery_url", deliveryPageUrl);
+        if (request.deliveryContract()!=null) {
+            if (!"PDE_PAID_VISUAL_V1".equals(request.deliveryContract()) || !StringUtils.hasText(request.experienceVersion()))
+                throw new IllegalArgumentException("Contrato de entrega visual inválido");
+            metadata.put("deliveryContract",request.deliveryContract());
+            metadata.put("experienceVersion",request.experienceVersion());
+        }
 
         MercadoPagoPreferenceRequest preference =
                 new MercadoPagoPreferenceRequest(
@@ -100,7 +106,8 @@ public class CommercialProductCheckoutService {
                                 + ":name:" + productName
                                 + ":amount:" + normalizedAmount
                                 + ":currency:BRL"
-                                + ":delivery:" + deliveryPageUrl)
+                                + ":delivery:" + deliveryPageUrl
+                                + ":contract:" + request.deliveryContract() + ":version:" + request.experienceVersion())
                                 .getBytes(StandardCharsets.UTF_8))
                 .toString();
     }

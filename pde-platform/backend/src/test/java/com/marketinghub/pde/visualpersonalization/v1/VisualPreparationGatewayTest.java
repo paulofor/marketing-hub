@@ -70,6 +70,28 @@ class VisualPreparationGatewayTest {
     assertThat(received.get()).endsWith(" {\"rawRequest\":{}}");
   }
 
+  /** A superfície pública paga nunca encaminha confirmação financeira ou credencial interna. */
+  @Test void paidGatewayCannotPublishPaymentOrElevateSession() throws Exception {
+    main.createContext("/api/pde/paid-visual/v1", e -> {
+      calls.incrementAndGet();
+      token.set(e.getRequestHeaders().getFirst("X-PDE-Access-Token"));
+      received.set(e.getRequestHeaders().getFirst("X-PDE-Internal-Token"));
+      byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
+      e.sendResponseHeaders(200, body.length); e.getResponseBody().write(body); e.close();
+    });
+    var paid = MockMvcBuilders.standaloneSetup(new com.marketinghub.pde.paidvisual.v1.PaidVisualGatewayController(service)).build();
+    paid.perform(get("/api/pde/paid-visual/v1/session").header("X-PDE-Access-Token", "buyer-only")
+        .header("X-PDE-Internal-Token", "must-not-forward"))
+        .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "private, no-store"));
+    assertThat(token.get()).isEqualTo("buyer-only");
+    assertThat(received.get()).isNull();
+    paid.perform(post("/api/pde/paid-visual/v1/internal/payments").contentType("application/json").content("{}"))
+        .andExpect(status().isNotFound());
+    assertThat(calls.get()).isEqualTo(1);
+    assertThatThrownBy(() -> service.forwardPaid("POST", "/internal/payments", "{}", "buyer-only"))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
   /** Não transforma caminho ou URL arbitrária em consulta de outro módulo. */
   @Test void rejectsForeignPathAndCredentialUrl() {
     assertThatThrownBy(() -> service.forward("GET", "/products/11", null, "X-PDE-Visual-Session", "session-only"))

@@ -25,6 +25,7 @@ const SOURCE_FILES = [
   "mira-candidate.html",
   "alcyone.html",
   "personalization.html",
+  "paid-visual.html",
   "nginx.conf",
   "nginx.mira.conf",
   "nginx.mira-commercial.conf",

@@ -15,6 +15,8 @@ export interface FacebookAccount {
   id: number;
   name: string;
   currency: string;
+  hasAccessToken?: boolean;
+  /** Compatibilidade durante a atualização do backend; novas respostas omitem o segredo. */
   accessToken?: string | null;
   tokenExpiresAt?: string | null;
   tokenLastRefreshedAt?: string | null;

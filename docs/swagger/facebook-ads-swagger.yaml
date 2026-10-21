@@ -99,6 +99,42 @@ paths:
         - $ref: '#/components/parameters/NumericId'
       responses:
         '200': { description: Revalidação registrada. }
+  /api/accounts/facebook/{id}/token:
+    post:
+      tags: [Facebook Accounts]
+      summary: Valida e substitui token de usuário sem alterar campanhas ou orçamento.
+      description: Confere validade, aplicativo, titular, permissões e conta anunciadora. Erros preservam a credencial anterior. A resposta não contém segredo.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessToken]
+              properties:
+                accessToken: { type: string, writeOnly: true, minLength: 8, maxLength: 8192 }
+      responses:
+        '200':
+          description: Token validado e salvo; Cache-Control no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountId: { type: integer, format: int64 }
+                  tokenExpiresAt: { type: string, format: date-time }
+                  validatedAt: { type: string, format: date-time }
+                  tokenRenewalEnabled: { type: boolean }
+        '400': { description: Formato inválido; nenhum segredo é ecoado. }
+        '404': { description: Conta inexistente. }
+        '409': { description: Configuração ausente ou alterada durante a validação. }
+        '422': { description: Meta não comprovou validade ou acesso. }
+        '503': { description: Consulta Meta indisponível; sem retry automático. }
   /api/accounts/facebook/{id}/token/diagnostics:
     post:
       tags: [Facebook Accounts]

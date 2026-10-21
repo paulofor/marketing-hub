@@ -54,6 +54,26 @@ campanha: gates, seleção, orçamento e janela do experimento continuam obrigat
 
 Evidências, alternativas e regressões: [renovação automática Meta](../homologacao/meta-renovacao-automatica-v1.md).
 
+## Recuperação de credencial pelo painel — decisão de 21/10/2026
+
+O titular pode enviar o novo token de usuário em `/accounts/facebook` pelo comando
+**Atualizar token → Validar e salvar token**. A recuperação excepcional usa
+`POST /api/accounts/facebook/{id}/token`, separado da edição geral e da renovação.
+O backend confere `is_valid`, aplicativo, titular cadastrado, tipo de token,
+validade oficial, permissões `ads_read`/`ads_management` e acesso à conta anunciadora.
+HTTP 200 sem validade afirmativa nunca representa token válido.
+
+Somente depois da conferência a credencial é substituída; alteração concorrente da
+credencial ou configuração verificada exige nova leitura. Erro preserva a anterior.
+Manter renovação automática, conta, orçamento, worker, campanha e gates existentes.
+A validação não realiza upload nem cria anúncio. O segredo não retorna à tela,
+não entra em logs/diagnósticos e não fica no cache de mutações; a listagem informa
+`hasAccessToken`. Consumidores internos continuam pelos contratos `worker-config`
+e `renewal/eligible`. TLS do ingresso administrativo continua uma responsabilidade
+operacional; ocultar o campo não substitui criptografia de transporte.
+
+Homologação: [envio pelo painel](../homologacao/meta-token-painel-v1.md).
+
 ## 1. Propósito
 
 ### Recuperação de falhas de publicação

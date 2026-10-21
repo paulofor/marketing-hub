@@ -5,13 +5,19 @@ import com.marketinghub.ads.FacebookTokenDiagnosticsService;
 import com.marketinghub.ads.FacebookTokenRenewalStatus;
 import com.marketinghub.ads.FacebookTokenRevalidationService;
 import com.marketinghub.ads.FacebookWorkerValidationError;
+import com.marketinghub.facebookads.service.token.FacebookTokenReplacementRequest;
+import com.marketinghub.facebookads.service.token.FacebookTokenReplacementResponse;
+import com.marketinghub.facebookads.service.token.FacebookTokenReplacementService;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import io.swagger.v3.oas.annotations.Operation;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,13 +31,18 @@ public class FacebookAccountController {
   private final FacebookTokenRevalidationService tokenRevalidationService;
   private final FacebookTokenDiagnosticsService tokenDiagnosticsService;
 
+  private final FacebookTokenReplacementService tokenReplacementService;
+
+  /** Conecta administração, renovação, diagnóstico e troca validada de credenciais. */
   public FacebookAccountController(
       FacebookAccountRepository repository,
       FacebookTokenRevalidationService tokenRevalidationService,
-      FacebookTokenDiagnosticsService tokenDiagnosticsService) {
+      FacebookTokenDiagnosticsService tokenDiagnosticsService,
+      FacebookTokenReplacementService tokenReplacementService) {
     this.repository = repository;
     this.tokenRevalidationService = tokenRevalidationService;
     this.tokenDiagnosticsService = tokenDiagnosticsService;
+    this.tokenReplacementService = tokenReplacementService;
   }
 
   @GetMapping
@@ -223,6 +234,34 @@ public class FacebookAccountController {
         result.renewedAt(),
         result.attemptedAt(),
         result.errorMessage());
+  }
+
+  /**
+   * Recebe token de usuário e preserva a configuração anterior quando a Meta não confirma acesso.
+   */
+  @PostMapping("/{id}/token")
+  @Operation(
+      summary = "Validar e substituir token Meta",
+      description =
+          "Confere validade, aplicativo, titular, permissões e conta de anúncios; não retorna credenciais nem inicia campanhas.")
+  public ResponseEntity<FacebookTokenReplacementResponse> replaceToken(
+      @PathVariable Long id, @RequestBody FacebookTokenReplacementRequest request) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(tokenReplacementService.replace(id, request));
+  }
+
+  /** Recusa JSON inválido sem copiar o corpo sensível para o log global de validação. */
+  @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+  public ResponseEntity<java.util.Map<String, String>> invalidCredentialPayload(
+      org.springframework.http.converter.HttpMessageNotReadableException ex) {
+    RuntimeException safe =
+        new IllegalArgumentException("JSON de conta Meta inválido; conteúdo omitido");
+    safe.setStackTrace(ex.getStackTrace());
+    log.warn("Meta: requisição de conta rejeitada por formato inválido", safe);
+    return ResponseEntity.badRequest()
+        .cacheControl(CacheControl.noStore())
+        .body(java.util.Map.of("message", "Requisição inválida. Confira os campos informados."));
   }
 
   @PostMapping("/{id}/token/diagnostics")

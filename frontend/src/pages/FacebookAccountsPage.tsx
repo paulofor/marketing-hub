@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import FacebookTokenUpdateDialog from "../components/FacebookTokenUpdateDialog";
 import PageTitle from "../components/PageTitle";
 import { useFacebookAccounts } from "../api/useFacebookAccounts";
 import type { FacebookAccount as RemoteFacebookAccount } from "../api/useFacebookAccounts";
@@ -168,8 +169,12 @@ function formatDateTime(value?: string | null): string {
   return dateTimeFormatter.format(parsed);
 }
 
+function hasToken(account: RemoteFacebookAccount): boolean {
+  return account.hasAccessToken ?? Boolean(account.accessToken);
+}
+
 function describeTokenExpiration(account: RemoteFacebookAccount): string {
-  if (!account.accessToken) {
+  if (!hasToken(account)) {
     return "Token não informado";
   }
   if (!account.tokenExpiresAt) {
@@ -249,7 +254,10 @@ function formatDiagnosticBadge(result?: GraphCallResult | null): {
   if (!result) {
     return { className: "text-bg-secondary", label: "Sem diagnóstico" };
   }
-  if (result.status === "SUCCESS") {
+  if (
+    result.status === "SUCCESS" &&
+    (!result.tokenDebug || result.tokenDebug.valid === true)
+  ) {
     return { className: "text-bg-success", label: "OK" };
   }
   if (result.status === "SKIPPED") {
@@ -442,6 +450,9 @@ function FacebookTokenDiagnosticsPanel({
 export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
   const accounts = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const [tokenAccount, setTokenAccount] =
+    useState<RemoteFacebookAccount | null>(null);
+  const [tokenSavedMessage, setTokenSavedMessage] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
     null,
   );
@@ -478,7 +489,7 @@ export default function FacebookAccountsPage() {
     () =>
       accounts.filter(
         (account) =>
-          Boolean(account.requiresTokenRenewal) || !account.accessToken,
+          Boolean(account.requiresTokenRenewal) || !hasToken(account),
       ),
     [accounts],
   );
@@ -655,7 +666,11 @@ export default function FacebookAccountsPage() {
           conta ativa:
         </p>
         <ul className="mb-0 ps-3">
-          <li>Token de acesso (gerado automaticamente pelo Marketing Hub)</li>
+          <li>
+            Token de usuário válido; use “Atualizar token” para recuperar um
+            acesso expirado. A renovação automática permanece configurada na
+            conta.
+          </li>
           <li>ID da conta de anúncios (act_)</li>
           <li>URL padrão do site</li>
           <li>Orçamento diário do conjunto</li>
@@ -681,6 +696,23 @@ export default function FacebookAccountsPage() {
             ))}
           </ul>
         </div>
+      )}
+      {tokenSavedMessage && (
+        <p className="alert alert-success" role="status">
+          {tokenSavedMessage}
+        </p>
+      )}
+      {tokenAccount && (
+        <FacebookTokenUpdateDialog
+          key={tokenAccount.id}
+          account={tokenAccount}
+          onClose={() => setTokenAccount(null)}
+          onSaved={(message) => {
+            setTokenSavedMessage(message);
+            setLastDiagnostics(null);
+            setLastUploadTest(null);
+          }}
+        />
       )}
       <div className="row g-4">
         <div className="col-12">
@@ -711,20 +743,20 @@ export default function FacebookAccountsPage() {
                         deletingAccountId === id;
                       const rowClasses = [
                         selectedAccountId === id ? "table-primary" : "",
-                        account.requiresTokenRenewal || !account.accessToken
+                        account.requiresTokenRenewal || !hasToken(account)
                           ? "table-warning"
                           : "",
                       ]
                         .filter(Boolean)
                         .join(" ");
-                      const badgeClass = !account.accessToken
+                      const badgeClass = !hasToken(account)
                         ? "text-bg-danger"
                         : account.tokenExpired
                           ? "text-bg-danger"
                           : account.requiresTokenRenewal
                             ? "text-bg-warning"
                             : "text-bg-success";
-                      const badgeLabel = !account.accessToken
+                      const badgeLabel = !hasToken(account)
                         ? "Token ausente"
                         : account.tokenExpired
                           ? "Token expirado"
@@ -811,117 +843,135 @@ export default function FacebookAccountsPage() {
                               )}
                             </div>
                           </td>
-                          <td className="text-end d-flex justify-content-end gap-2">
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => {
-                                const strategyForm =
-                                  toFinancialStrategyForm(account);
-                                setAccountForm({
-                                  id,
-                                  name,
-                                  authorizedUserId:
-                                    account.authorizedUserId ?? "",
-                                  authorizedUserName:
-                                    account.authorizedUserName ?? "",
-                                  authorizedUserEmail:
-                                    account.authorizedUserEmail ?? "",
-                                  appId: account.appId ?? "",
-                                  appSecret: "",
-                                  appSecretKept: Boolean(account.hasAppSecret),
-                                  tokenRenewalEnabled: Boolean(
-                                    account.tokenRenewalEnabled,
-                                  ),
-                                  adAccountId: account.adAccountId ?? "",
-                                  defaultPixelId:
-                                    account.defaultPixelId ?? "",
-                                  defaultWebsiteUrl:
-                                    account.defaultWebsiteUrl ?? "",
-                                  defaultLeadGenFormId:
-                                    account.defaultLeadGenFormId ?? "",
-                                  defaultCreativeMessageTemplate:
-                                    account.defaultCreativeMessageTemplate ??
-                                    "%s",
-                                  defaultCallToActionType:
-                                    account.defaultCallToActionType ??
-                                    "LEARN_MORE",
-                                  financialStrategy: strategyForm,
-                                  workerEnabled: Boolean(account.workerEnabled),
-                                  clearAppSecret: false,
-                                });
-                              }}
-                              disabled={isDeletingThisAccount}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-secondary"
-                              onClick={() => setSelectedAccountId(id)}
-                              disabled={isDeletingThisAccount}
-                            >
-                              Páginas
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-info"
-                              onClick={() => handleRunDiagnostics(id)}
-                              disabled={
-                                isDeletingThisAccount ||
-                                tokenDiagnosticsMutation.isPending ||
-                                videoUploadTestMutation.isPending
-                              }
-                            >
-                              {isRunningDiagnostics &&
-                              tokenDiagnosticsMutation.isPending ? (
-                                <>
-                                  <span
-                                    className="spinner-border spinner-border-sm me-2"
-                                    role="status"
-                                  />
-                                  Validando...
-                                </>
-                              ) : (
-                                "Validar token"
-                              )}
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-warning"
-                              onClick={() => handleRunVideoUploadTest(id)}
-                              disabled={
-                                isDeletingThisAccount ||
-                                tokenDiagnosticsMutation.isPending ||
-                                videoUploadTestMutation.isPending
-                              }
-                            >
-                              {isRunningDiagnostics &&
-                              videoUploadTestMutation.isPending ? (
-                                <>
-                                  <span
-                                    className="spinner-border spinner-border-sm me-2"
-                                    role="status"
-                                  />
-                                  Testando...
-                                </>
-                              ) : (
-                                "Testar vídeo"
-                              )}
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => handleDeleteAccount(id)}
-                              disabled={deleteAccountMutation.isPending}
-                            >
-                              {isDeletingThisAccount ? (
-                                <>
-                                  <span
-                                    className="spinner-border spinner-border-sm me-2"
-                                    role="status"
-                                  />
-                                  Excluindo...
-                                </>
-                              ) : (
-                                "Excluir"
-                              )}
-                            </button>
+                          <td className="text-end">
+                            <div className="d-flex flex-wrap justify-content-end gap-2">
+                              <button
+                                className="btn btn-sm btn-primary"
+                                disabled={
+                                  isDeletingThisAccount || Boolean(tokenAccount)
+                                }
+                                onClick={() => {
+                                  setTokenSavedMessage("");
+                                  setTokenAccount(account);
+                                }}
+                              >
+                                Atualizar token
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => {
+                                  const strategyForm =
+                                    toFinancialStrategyForm(account);
+                                  setAccountForm({
+                                    id,
+                                    name,
+                                    authorizedUserId:
+                                      account.authorizedUserId ?? "",
+                                    authorizedUserName:
+                                      account.authorizedUserName ?? "",
+                                    authorizedUserEmail:
+                                      account.authorizedUserEmail ?? "",
+                                    appId: account.appId ?? "",
+                                    appSecret: "",
+                                    appSecretKept: Boolean(
+                                      account.hasAppSecret,
+                                    ),
+                                    tokenRenewalEnabled: Boolean(
+                                      account.tokenRenewalEnabled,
+                                    ),
+                                    adAccountId: account.adAccountId ?? "",
+                                    defaultPixelId:
+                                      account.defaultPixelId ?? "",
+                                    defaultWebsiteUrl:
+                                      account.defaultWebsiteUrl ?? "",
+                                    defaultLeadGenFormId:
+                                      account.defaultLeadGenFormId ?? "",
+                                    defaultCreativeMessageTemplate:
+                                      account.defaultCreativeMessageTemplate ??
+                                      "%s",
+                                    defaultCallToActionType:
+                                      account.defaultCallToActionType ??
+                                      "LEARN_MORE",
+                                    financialStrategy: strategyForm,
+                                    workerEnabled: Boolean(
+                                      account.workerEnabled,
+                                    ),
+                                    clearAppSecret: false,
+                                  });
+                                }}
+                                disabled={isDeletingThisAccount}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={() => setSelectedAccountId(id)}
+                                disabled={isDeletingThisAccount}
+                              >
+                                Páginas
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-info"
+                                onClick={() => handleRunDiagnostics(id)}
+                                disabled={
+                                  isDeletingThisAccount ||
+                                  tokenDiagnosticsMutation.isPending ||
+                                  videoUploadTestMutation.isPending
+                                }
+                              >
+                                {isRunningDiagnostics &&
+                                tokenDiagnosticsMutation.isPending ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                    />
+                                    Validando...
+                                  </>
+                                ) : (
+                                  "Validar token"
+                                )}
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-warning"
+                                onClick={() => handleRunVideoUploadTest(id)}
+                                disabled={
+                                  isDeletingThisAccount ||
+                                  tokenDiagnosticsMutation.isPending ||
+                                  videoUploadTestMutation.isPending
+                                }
+                              >
+                                {isRunningDiagnostics &&
+                                videoUploadTestMutation.isPending ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                    />
+                                    Testando...
+                                  </>
+                                ) : (
+                                  "Testar vídeo"
+                                )}
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleDeleteAccount(id)}
+                                disabled={deleteAccountMutation.isPending}
+                              >
+                                {isDeletingThisAccount ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                    />
+                                    Excluindo...
+                                  </>
+                                ) : (
+                                  "Excluir"
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

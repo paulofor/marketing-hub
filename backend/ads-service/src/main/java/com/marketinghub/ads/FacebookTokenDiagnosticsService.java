@@ -48,12 +48,17 @@ public class FacebookTokenDiagnosticsService {
   private final String graphApiBaseUrl;
   private final String graphApiVersion;
 
+  /** Configura consultas limitadas em tempo para diagnóstico da conta Meta. */
   public FacebookTokenDiagnosticsService(
       RestTemplateBuilder restTemplateBuilder,
       ObjectMapper objectMapper,
       @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String graphApiBaseUrl,
       @Value("${facebook.graph-api.version:v23.0}") String graphApiVersion) {
-    this.restTemplate = restTemplateBuilder.build();
+    this.restTemplate =
+        restTemplateBuilder
+            .setConnectTimeout(java.time.Duration.ofSeconds(5))
+            .setReadTimeout(java.time.Duration.ofSeconds(10))
+            .build();
     this.objectMapper = objectMapper;
     this.graphApiBaseUrl = trimTrailingSlash(graphApiBaseUrl);
     this.graphApiVersion = trimSlashes(graphApiVersion);
@@ -160,8 +165,8 @@ public class FacebookTokenDiagnosticsService {
           account.getId(),
           endpoint,
           ex.getRawStatusCode(),
-          sanitizeBody(ex.getResponseBodyAsString()),
-          ex);
+          "[corpo omitido]",
+          safeFailure(ex));
       return new FacebookVideoUploadTestResponse(
           account.getId(),
           account.getName(),
@@ -174,27 +179,39 @@ public class FacebookTokenDiagnosticsService {
           "Falha de integracao no teste de upload de video Meta: accountId={}, endpoint={}",
           account.getId(),
           endpoint,
-          ex);
+          safeFailure(ex));
       return new FacebookVideoUploadTestResponse(
           account.getId(),
           account.getName(),
           checkedAt,
           false,
           null,
-          GraphCallResult.failed("advideos_upload", null, ex.getMessage(), null, null, null));
+          GraphCallResult.failed(
+              "advideos_upload",
+              null,
+              "Consulta Meta indisponível; tente novamente",
+              null,
+              null,
+              null));
     } catch (RuntimeException ex) {
       log.error(
           "Falha inesperada no teste de upload de video Meta: accountId={}, endpoint={}",
           account.getId(),
           endpoint,
-          ex);
+          safeFailure(ex));
       return new FacebookVideoUploadTestResponse(
           account.getId(),
           account.getName(),
           checkedAt,
           false,
           null,
-          GraphCallResult.failed("advideos_upload", null, ex.getMessage(), null, null, null));
+          GraphCallResult.failed(
+              "advideos_upload",
+              null,
+              "Consulta Meta indisponível; tente novamente",
+              null,
+              null,
+              null));
     }
   }
 
@@ -212,10 +229,14 @@ public class FacebookTokenDiagnosticsService {
     try {
       ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
       JsonNode data = parseJson(response.getBody()).path("data");
-      Boolean valid = data.has("is_valid") ? data.path("is_valid").asBoolean() : null;
+      Boolean valid =
+          data.path("is_valid").isBoolean() ? data.path("is_valid").booleanValue() : null;
       String message =
           Boolean.TRUE.equals(valid) ? "Token valido na Meta" : "Token invalido na Meta";
-      return GraphCallResult.success("debug_token", response.getStatusCode().value(), message)
+      return (Boolean.TRUE.equals(valid)
+              ? GraphCallResult.success("debug_token", response.getStatusCode().value(), message)
+              : GraphCallResult.failed(
+                  "debug_token", response.getStatusCode().value(), message, null, null, null))
           .withTokenDebug(
               new TokenDebugDetails(
                   valid,
@@ -230,15 +251,16 @@ public class FacebookTokenDiagnosticsService {
           "Falha ao consultar debug_token da Meta: accountId={}, status={}, response={}",
           account.getId(),
           ex.getRawStatusCode(),
-          sanitizeBody(ex.getResponseBodyAsString()),
-          ex);
+          "[corpo omitido]",
+          safeFailure(ex));
       return resultFromGraphError("debug_token", ex);
     } catch (RestClientException ex) {
       log.error(
           "Falha de integracao ao consultar debug_token da Meta: accountId={}",
           account.getId(),
-          ex);
-      return GraphCallResult.failed("debug_token", null, ex.getMessage(), null, null, null);
+          safeFailure(ex));
+      return GraphCallResult.failed(
+          "debug_token", null, "Consulta Meta indisponível; tente novamente", null, null, null);
     }
   }
 
@@ -267,16 +289,19 @@ public class FacebookTokenDiagnosticsService {
       log.error(
           "Falha ao listar permissoes Meta: status={}, response={}",
           ex.getRawStatusCode(),
-          sanitizeBody(ex.getResponseBodyAsString()),
-          ex);
+          "[corpo omitido]",
+          safeFailure(ex));
       return List.of(
           new PermissionDiagnostic(
               "permissions_lookup", "FAILED: " + graphMessage(ex), false, false));
     } catch (RestClientException ex) {
-      log.error("Falha de integracao ao listar permissoes Meta", ex);
+      log.error("Falha de integracao ao listar permissoes Meta", safeFailure(ex));
       return List.of(
           new PermissionDiagnostic(
-              "permissions_lookup", "FAILED: " + ex.getMessage(), false, false));
+              "permissions_lookup",
+              "FAILED: " + "Consulta Meta indisponível; tente novamente",
+              false,
+              false));
     }
   }
 
@@ -302,16 +327,17 @@ public class FacebookTokenDiagnosticsService {
           account.getId(),
           endpoint,
           ex.getRawStatusCode(),
-          sanitizeBody(ex.getResponseBodyAsString()),
-          ex);
+          "[corpo omitido]",
+          safeFailure(ex));
       return resultFromGraphError("ad_account", ex);
     } catch (RestClientException ex) {
       log.error(
           "Falha de integracao ao validar conta de anuncios Meta: accountId={}, endpoint={}",
           account.getId(),
           endpoint,
-          ex);
-      return GraphCallResult.failed("ad_account", null, ex.getMessage(), null, null, null);
+          safeFailure(ex));
+      return GraphCallResult.failed(
+          "ad_account", null, "Consulta Meta indisponível; tente novamente", null, null, null);
     }
   }
 
@@ -338,16 +364,17 @@ public class FacebookTokenDiagnosticsService {
           account.getId(),
           endpoint,
           ex.getRawStatusCode(),
-          sanitizeBody(ex.getResponseBodyAsString()),
-          ex);
+          "[corpo omitido]",
+          safeFailure(ex));
       return resultFromGraphError("advideos_read", ex);
     } catch (RestClientException ex) {
       log.error(
           "Falha de integracao ao validar biblioteca de videos Meta: accountId={}, endpoint={}",
           account.getId(),
           endpoint,
-          ex);
-      return GraphCallResult.failed("advideos_read", null, ex.getMessage(), null, null, null);
+          safeFailure(ex));
+      return GraphCallResult.failed(
+          "advideos_read", null, "Consulta Meta indisponível; tente novamente", null, null, null);
     }
   }
 
@@ -373,10 +400,20 @@ public class FacebookTokenDiagnosticsService {
         text(error, "fbtrace_id"));
   }
 
-  /** Extrai a mensagem principal de erro retornada pela Meta. */
+  /** Traduz o código oficial sem ecoar mensagens externas que podem conter credenciais. */
   private String graphMessage(RestClientResponseException ex) {
-    String message = text(parseJson(ex.getResponseBodyAsString()).path("error"), "message");
-    return StringUtils.hasText(message) ? message : "HTTP " + ex.getRawStatusCode();
+    JsonNode error = parseJson(ex.getResponseBodyAsString()).path("error");
+    return error.path("code").asInt() == 190
+        ? "Credencial recusada ou expirada; atualize o token de usuário"
+        : "Consulta recusada pela Meta; confira as permissões e o acesso à conta";
+  }
+
+  /** Preserva a pilha de falha sem registrar URL, corpo ou cabeçalhos com credenciais. */
+  private RuntimeException safeFailure(Exception ex) {
+    RuntimeException safe =
+        new IllegalStateException("Falha Meta: " + ex.getClass().getSimpleName());
+    safe.setStackTrace(ex.getStackTrace());
+    return safe;
   }
 
   /** Monta uma URL da Graph API com versao configuravel. */
@@ -392,7 +429,7 @@ public class FacebookTokenDiagnosticsService {
     return trimmed.startsWith("act_") ? trimmed.substring(4) : trimmed;
   }
 
-  /** Le JSON de resposta sem propagar erro de parse para a tela. */
+  /** Lê JSON sem propagar conteúdo ou erros com credenciais para logs e tela. */
   private JsonNode parseJson(String body) {
     if (!StringUtils.hasText(body)) {
       return objectMapper.createObjectNode();
@@ -400,7 +437,7 @@ public class FacebookTokenDiagnosticsService {
     try {
       return objectMapper.readTree(body);
     } catch (Exception ex) {
-      log.debug("Nao foi possivel ler JSON da resposta Meta: {}", sanitizeBody(body), ex);
+      log.warn("Resposta Meta inválida; corpo omitido", safeFailure(ex));
       return objectMapper.createObjectNode();
     }
   }
@@ -435,18 +472,6 @@ public class FacebookTokenDiagnosticsService {
       return null;
     }
     return LocalDateTime.ofInstant(Instant.ofEpochSecond(value), ZoneOffset.UTC);
-  }
-
-  /** Mascara corpo muito grande antes de registrar log. */
-  private String sanitizeBody(String body) {
-    if (!StringUtils.hasText(body)) {
-      return "<empty>";
-    }
-    String trimmed = body.trim();
-    if (trimmed.length() > 2048) {
-      return trimmed.substring(0, 2048) + "...";
-    }
-    return trimmed;
   }
 
   /** Remove barra final da URL base configurada. */

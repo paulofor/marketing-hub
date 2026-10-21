@@ -34,9 +34,12 @@ transferência de aprovação comercial. Impacto em vendas não foi medido.
 ## Resultados
 
 - Regressão vermelha reproduzida em duas identidades: o executor buscava a landing.
-- 46 testes da jornada, 21 do produtor de prova e 3 do retorno de subprocessos passaram.
+- 47 testes da jornada, 21 do produtor de prova e 3 do retorno de subprocessos passaram.
 - Replay offline dos contratos e registros de Alcyone passou até destino e integração,
   com peça #770, aprovação #723 e bytes técnicos originais; zero modelo e zero escrita produtiva.
+- A revisão final reproduziu uma falsa invalidação ao permutar campos equivalentes
+  da autorização. A evidência agora usa ordem canônica; a regressão exige replay
+  idempotente e preservação de ambos os aceites após essa permutação.
 - 52 testes JPA do conciliador passaram, incluindo o novo caso de encerramento da
   landing dispensada após aguardar uma tarefa real; custo e histórico preservados.
 - A extensão do replay exige atestação de compatibilidade v36 de Mira: somente o

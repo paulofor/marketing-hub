@@ -354,6 +354,24 @@ class PrivateCommunicationJourneyTest {
     verifyNoInteractions(processes);
   }
 
+  /** Mantém a mesma prova quando o produtor serializa os campos autorizados em outra ordem. */
+  @Test
+  void preservesInitialProofWhenAuthorizationFieldOrderChanges() throws Exception {
+    configureInitialExperiment(92097L);
+    journey.complete(parent, destinationActivity, product, REFERENCE);
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    var original = input.remove("visualProofAuthorization");
+    var reordered = input.putObject("visualProofAuthorization");
+    var keys = new ArrayList<String>();
+    original.fieldNames().forEachRemaining(keys::add);
+    keys.sort(java.util.Comparator.reverseOrder());
+    keys.forEach(key -> reordered.set(key, original.path(key)));
+    assertThat(journey.stale(parent, destinationActivity, product, REFERENCE)).isFalse();
+    assertThat(journey.stale(parent, integrationActivity, product, REFERENCE)).isFalse();
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    assertThat(persisted).hasSize(5);
+  }
+
   /** Preserva evidências já aceitas quando o primeiro experimento sai da preparação. */
   @Test
   void preservesInitialPrivateHistoryAfterLaunch() throws Exception {

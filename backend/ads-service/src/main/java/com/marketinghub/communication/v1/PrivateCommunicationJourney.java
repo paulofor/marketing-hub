@@ -373,7 +373,18 @@ public class PrivateCommunicationJourney {
     evidence.set("technicalResultSha256", technical.path("resultSha256"));
     if (isInitialExperiment(input)) {
       evidence.set("technicalSourceReference", technical.path("result").path("sourceReference"));
-      evidence.set("visualProofAuthorization", input.path("visualProofAuthorization"));
+      var authorization = evidence.putObject("visualProofAuthorization");
+      // Mantém a identidade da prova estável mesmo quando Map.of altera a ordem entre JVMs.
+      for (String key :
+          List.of(
+              "contractVersion",
+              "proofSourceReference",
+              "targetSourceReference",
+              "productId",
+              "prototypeVersion",
+              "gateInstanceId",
+              "publicUrl"))
+        authorization.set(key, input.path("visualProofAuthorization").path(key));
     }
     evidence.set("validatedChecks", technical.path("result").path("checks"));
     evidence.put("trafficClass", "AGENT_VALIDATION");

@@ -13,8 +13,8 @@ public class FacebookTokenRenewalScheduler {
         this.renewalService = renewalService;
     }
 
-    /** Confere as contas elegíveis em fila exclusiva, sem alterar o limite operacional vigente. */
-    @Scheduled(fixedDelayString = "${facebook.token-renewal.scheduler.delay:21600000}",
+    /** Confere as contas elegíveis em fila exclusiva, detectando também credenciais curtas recém-salvas. */
+    @Scheduled(fixedDelayString = "${facebook.token-renewal.scheduler.delay:300000}",
             scheduler = "facebookTokenRenewalTaskScheduler")
     public void scheduleRenewal() {
         renewalService.renewTokensIfNeeded();

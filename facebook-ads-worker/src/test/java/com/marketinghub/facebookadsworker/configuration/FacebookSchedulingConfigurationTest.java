@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalScheduler;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalService;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -16,6 +17,8 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
+import org.springframework.scheduling.config.IntervalTask;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 /** Comprova isolamento da renovação sem introduzir concorrência entre operações de campanha. */
@@ -63,6 +66,20 @@ class FacebookSchedulingConfigurationTest {
             assertThat(secondOperation.await(2, TimeUnit.SECONDS)).isTrue();
         } finally {
             release.countDown();
+        }
+    }
+
+    /** O agendamento real precisa detectar token de uma hora antes de ele vencer. */
+    @Test
+    void defaultRenewalCadenceFitsShortLivedToken() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(FacebookTokenRenewalService.class, () -> mock(FacebookTokenRenewalService.class));
+            context.register(SchedulingEnabled.class, FacebookSchedulingConfiguration.class, FacebookTokenRenewalScheduler.class);
+            context.refresh();
+            var tasks = context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks();
+            assertThat(tasks).hasSize(1);
+            IntervalTask task = (IntervalTask) tasks.iterator().next().getTask();
+            assertThat(task.getIntervalDuration()).isPositive().isLessThanOrEqualTo(Duration.ofMinutes(5));
         }
     }
 

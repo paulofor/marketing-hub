@@ -1,0 +1,18 @@
+{
+  "cardKey": "acao-dirigida-modulacao-integracao-audiovisual",
+  "collection": "prazer-audio-visual",
+  "title": "Ação dirigida modula a percepção audiovisual",
+  "finding": "Experimentos com movimentos de apontar observaram mudanças de precisão e de ilusão de fusão audiovisual perto do alvo, com efeito dependente da ação e não replicado na ilusão de fissão.",
+  "mechanism": "A finalidade da ação parece modificar seletivamente a integração entre informação auditiva e visual nas posições relevantes.",
+  "commercialApplication": "Comparar pistas audiovisuais perto do elemento a ser acionado com pistas periféricas em uma interface interativa.",
+  "evidenceStrength": "Moderada para a tarefa de percepção de flashes; sem demonstração de prazer, memorização de anúncios ou vendas.",
+  "publishedOn": "2026-10-21",
+  "validUntil": "2026-12-05",
+  "experimentHypothesis": "Sinais audiovisuais colocados no alvo de ação poderão alterar a detecção correta e os erros perceptivos em relação a sinais periféricos; medir esforço e acessibilidade.",
+  "risks": "Indução de ilusões perceptivas, distração, menor acessibilidade ou sobrecarga audiovisual.",
+  "limits": "Resultados variaram entre fusão e fissão; tarefa de flashes e ações de apontar não equivale a interação comercial real.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-21-acao-dirigida-modulacao-integracao-audiovisual.md",
+  "sourceTitle": "Fonte revisada v1 — Ação dirigida modula a percepção audiovisual",
+  "sourceSha256": "ddb306cbf88aa9119cecf82f0de3a54b15bb2906ba9b223e696f487650f81a7b"
+}

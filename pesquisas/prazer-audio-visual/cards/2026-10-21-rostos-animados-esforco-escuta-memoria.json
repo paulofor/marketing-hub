@@ -1,0 +1,18 @@
+{
+  "cardKey": "rostos-animados-esforco-escuta-memoria",
+  "collection": "prazer-audio-visual",
+  "title": "Mais animação facial não garante melhor compreensão",
+  "finding": "Em dois experimentos de conversas com dois locutores (n=30; n=28), rostos estáticos reduziram esforço de escuta e rostos animados aumentaram esforço, sem melhoria de memória de curto prazo.",
+  "mechanism": "A orientação visual de locutores pode reduzir esforço, enquanto pistas faciais dinâmicas podem exigir processamento adicional.",
+  "commercialApplication": "Comparar versões com áudio apenas, rosto estático e locutor animado do mesmo roteiro, medindo compreensão e carga cognitiva.",
+  "evidenceStrength": "Moderada para a tarefa específica; experimentos pequenos e sem medição de prazer ou conversão.",
+  "publishedOn": "2026-10-21",
+  "validUntil": "2026-12-05",
+  "experimentHypothesis": "Rostos estáticos poderão reduzir esforço em conversas com alternância de locutores, enquanto animações poderão aumentar esforço, sem vantagem garantida em memória.",
+  "risks": "Distração causada por animação, generalização indevida e prejuízo de acessibilidade.",
+  "limits": "Conversa sem ruído, estudo de curta duração e modalidades comparadas em experimentos separados; nenhuma prova de resultado comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-21-rostos-animados-esforco-escuta-memoria.md",
+  "sourceTitle": "Fonte revisada v1 — Mais animação facial não garante melhor compreensão",
+  "sourceSha256": "cf6ec7c184ab964358177e61cec408db7d9a7f9e83ef9faba718e033c29d609d"
+}

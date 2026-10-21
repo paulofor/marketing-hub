@@ -199,6 +199,7 @@ public class OpalaCommercialContext {
     snapshot.put("description", creative.getDescription());
     snapshot.put("cta", creative.getCta());
     snapshot.put("videoUrl", creative.getVideoUrl());
+    if ("IMAGE".equals(creative.getFormat())) snapshot.put("imageUrl", creative.getImageUrl());
     snapshot.put("destinationUrl", creative.getDestinationUrl());
     snapshot.put("agentReviewStatus", Objects.toString(creative.getAgentReviewStatus(), ""));
     if (creative.getAgentReviewJson() != null && !creative.getAgentReviewJson().isBlank())

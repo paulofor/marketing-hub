@@ -422,6 +422,21 @@
       "sha256": "1ae4cc4cb7bde08c8e8941a85f864760ba1a6b798e3f5e952ca8a12f1cc9c4a7",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Formato explícito da mesma versão; preserva os gates e o percurso audiovisual quando há briefing."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContext.java",
+      "sha256": "93115595199f2c826f8fb51dbbde7806b9417c7a693cf243114ff6a4e1c99e8d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialMaterialization.java",
+      "sha256": "b03357bfaac6d33270c5202a39d2c219279b12f707de38fe3cfc33bf2ab40b9f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-10-21-opala-static-creative-v2.sql",
+      "sha256": "8eda7eacb12b72eb522e4c225981f6ab4edf72d3bd58ba6544cfb85c45cc91d3",
+      "promptMode": "FULL"
     }
   ],
   "executableEvidence": [
@@ -640,15 +655,40 @@
       "sha256": "8de5eb9aa2d01d710349c92eb34bae14da812e4296ac3233093aba5a8ff52487",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Regressão da correção após rejeição, duas identidades, aceite humano, isolamento e recibo estável."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContextTest.java",
+      "sha256": "da4e2cb83189adad4ce11560078730045999f589eb9602b76dcb485098b0a3ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialMaterializationTest.java",
+      "sha256": "37cea8d37a15f8abbea11ae7c438f4d0958abea7a47e712fe0b16f516ee4c157",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleOptionalAudiovisualTest.java",
+      "sha256": "edfd21f47ac01da7cee18df3c520fe3207e69343a99f682883e731dfcb34e52b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleWithoutAudiovisualTest.java",
+      "sha256": "d6af31c037731d30f07219860e977d91d223cccadddad71557926b901d86f728",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/cycle-commercial/static-route.py",
+      "sha256": "8d5127eafbdfad6abb3c48662452c013f2ae78b77106636324467021ed814426",
+      "promptMode": "FULL"
     }
   ],
-  "validationReport": "docs/homologacao/alcyone-private-handoff-2026-10-20.md",
+  "validationReport": "docs/homologacao/vega-ciclo13-percurso-estatico-v1.md",
   "limitations": [
     "Somente organização determinística; não comprova integração ou custo de modelo de IA.",
     "Emulação mobile usa Chromium; não comprova Safari nativo.",
     "Candidata precisa de Psique e Têmis independentes; não autoriza oferta ou aquisição."
   ],
-  "changeScope": "Extensão do replay offline para o primeiro experimento privado. O caminho de ciclos permanece preservado; sem mudança na experiência, pareceres ou autorização comercial.",
+  "changeScope": "Compatibilidade da coordenação e preparação compartilhadas: formato estático explícito, seleção IMAGE sem aprovação implícita e preservação do caminho audiovisual. Experiência e autorizações de Mira preservadas.",
   "homologationEvidence": [
     {
       "path": "docs/registros/mira-gate-matriz-v3-2026-10-07.md",

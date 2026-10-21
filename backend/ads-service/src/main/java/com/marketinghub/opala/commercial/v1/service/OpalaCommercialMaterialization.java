@@ -87,6 +87,8 @@ public class OpalaCommercialMaterialization {
                           .map(JsonNode::asLong)
                           .collect(java.util.stream.Collectors.toSet()));
       case "creative" -> {
+        if (instruction.path("videoAssetId").isNull())
+          yield staticCreative(snapshot, scope, instruction).isPresent();
         String media = null;
         for (var video : snapshot.path("approvedVideos"))
           if (video.path("id").asLong() == instruction.path("videoAssetId").asLong())
@@ -178,8 +180,16 @@ public class OpalaCommercialMaterialization {
             null));
   }
 
-  /** Reutiliza vídeo aprovado e cria o anúncio em rascunho, preservando a aprovação final. */
+  /** Reutiliza a peça estática exata ou cria o rascunho do vídeo, sem conceder aprovação. */
   private void creative(OpalaCommercialContext.Scope scope, JsonNode instruction) {
+    if (instruction.path("videoAssetId").isNull()) {
+      require(
+          staticCreative(
+                  context.snapshot("experiment:" + scope.experiment().getId()), scope, instruction)
+              .isPresent(),
+          "Selecione uma única peça IMAGE vigente deste experimento, com imagem HTTPS, destino e copy exatos; a revisão comercial continua obrigatória.");
+      return;
+    }
     long videoId = instruction.path("videoAssetId").asLong();
     require(
         context
@@ -217,6 +227,72 @@ public class OpalaCommercialMaterialization {
           new VideoCreativeRequest(headline, text, description, null));
     } finally {
       com.marketinghub.salesvideo.tenant.TenantContextHolder.set(original);
+    }
+  }
+
+  /**
+   * Identifica a peça estática por conteúdo exato, recusando ambiguidade e versões substituídas.
+   */
+  private java.util.Optional<JsonNode> staticCreative(
+      JsonNode snapshot, OpalaCommercialContext.Scope scope, JsonNode instruction) {
+    var matches = new java.util.ArrayList<JsonNode>();
+    var replaced =
+        snapshot.path("creatives").findValues("sourceCreativeId").stream()
+            .filter(JsonNode::isIntegralNumber)
+            .map(JsonNode::asLong)
+            .collect(java.util.stream.Collectors.toSet());
+    for (var creative : snapshot.path("creatives")) {
+      if (!"IMAGE".equals(creative.path("format").asText())
+          || !creative.path("id").isIntegralNumber()
+          || creative.path("id").asLong() <= 0
+          || replaced.contains(creative.path("id").asLong())
+          || !Set.of("DRAFT", "READY").contains(creative.path("status").asText())
+          || !Set.of("PENDING", "PROCESSING", "APPROVED")
+              .contains(creative.path("agentReviewStatus").asText())
+          || !creative.path("videoUrl").asText("").isBlank()
+          || !secureImage(creative.path("imageUrl").asText(""))
+          || scope.experiment().getFollowUpActionUrl() == null
+          || !scope
+              .experiment()
+              .getFollowUpActionUrl()
+              .equals(creative.path("destinationUrl").asText())
+          || !sameCopy(instruction, creative)) continue;
+      matches.add(creative);
+    }
+    return matches.size() == 1
+        ? java.util.Optional.of(matches.getFirst())
+        : java.util.Optional.empty();
+  }
+
+  /** Exige copy integral já persistida; preparar a peça não reescreve promessa nem oferta. */
+  private boolean sameCopy(JsonNode instruction, JsonNode creative) {
+    String headline = instruction.path("headline").asText("").trim();
+    String text = instruction.path("primaryText").asText("").trim();
+    String description = instruction.path("description").asText("").trim();
+    return !headline.isBlank()
+        && headline.length() <= 255
+        && !text.isBlank()
+        && text.length() <= 5000
+        && description.length() <= 255
+        && headline.equals(creative.path("headline").asText())
+        && text.equals(creative.path("primaryText").asText())
+        && description.equals(creative.path("description").asText(""));
+  }
+
+  /** Aceita somente URL absoluta HTTPS sem credencial embutida para a imagem existente. */
+  private boolean secureImage(String image) {
+    try {
+      URI uri = URI.create(image);
+      return "https".equals(uri.getScheme())
+          && uri.getHost() != null
+          && uri.getUserInfo() == null
+          && uri.getFragment() == null;
+    } catch (IllegalArgumentException ex) {
+      // A mensagem de validação de URI pode conter assinatura ou credencial da URL recebida.
+      log.warn(
+          "Imagem inválida na preparação estática Opala. validationType={}",
+          ex.getClass().getSimpleName());
+      return false;
     }
   }
 

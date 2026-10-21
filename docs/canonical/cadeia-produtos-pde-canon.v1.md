@@ -748,6 +748,15 @@ Para o tipo Opala, **5.1** contém:
 | **5.1.7** | Revisar integridade da jornada                 | Têmis                              |
 | **5.1.8** | Consolidar preparação e retornar ao Processo 5 | Backend                            |
 
+Na preparação **5.1.2**, o formato aprovado pode ser estático. O contrato `creative`
+v2 do Catálogo Vivo mantém o schema existente: `videoAssetId: null` seleciona uma
+única peça `IMAGE` do próprio experimento pela copy integral e pelo destino exatos.
+Imagem HTTPS, identidade, linhagem e parecer vigente permanecem verificáveis.
+Ambiguidade, peça substituída ou reprovada bloqueiam a seleção. Preparar um rascunho
+não o aprova; revisão comercial, economia, homologação e limites continuam obrigatórios.
+O caminho de vídeo aprovado permanece compatível. A dispensa explícita de audiovisual
+nos formatos não pode ser substituída por exigência genérica de produzir dois vídeos.
+
 Para o tipo Safira, **5.1** chama `safira-commercial-preparation-v1` v2 e contém:
 
 | Ordem | Atividade | Responsável |

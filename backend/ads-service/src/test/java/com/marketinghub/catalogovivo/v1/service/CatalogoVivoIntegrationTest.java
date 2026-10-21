@@ -52,7 +52,7 @@ class CatalogoVivoIntegrationTest {
     if (app != null) app.close();
   }
 
-  /** Comprova o conjunto completo do SQL e recusa texto vazio antes de persistir. */
+  /** Confere versões ativas, preservação do prompt histórico e recusa texto vazio pela API. */
   @Test
   @Order(1)
   void loadsCompleteCatalogAndRejectsInvalidTextThroughHttp() {
@@ -72,6 +72,20 @@ class CatalogoVivoIntegrationTest {
         .hasMessageContaining("400");
     assertThat(result.items())
         .allSatisfy(i -> assertThat(i.versions().getFirst().status()).isEqualTo("REVIEWED"));
+    var creative =
+        result.items().stream()
+            .filter(i -> "creative".equals(i.binding().activityId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(creative.versions()).hasSize(2);
+    assertThat(creative.binding().activeVersionId()).isEqualTo(creative.versions().getFirst().id());
+    assertThat(creative.versions().getFirst().versionNumber()).isEqualTo(2);
+    assertThat(creative.versions().getFirst().text())
+        .contains("videoAssetId: null", "imageUrl HTTPS", "revisão comercial independente");
+    assertThat(creative.versions().get(1).sha256())
+        .isEqualTo("cf98b9ce37ac0ff2293e8e55a3a0686d16f1a9efc88e5d87248b9c497ef0fa25");
+    assertThat(creative.binding().schemaSha256())
+        .isEqualTo("128d45becffeabb4f303699cd781285b2b3f522c6b960a0f21e4085d6f2c3fbd");
     var economics =
         result.items().stream()
             .filter(i -> "economics".equals(i.binding().activityId()))

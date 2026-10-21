@@ -44,7 +44,17 @@ não substitui essas entregas nem autoriza ampliar os limites.
 
 ## Validação executada
 
-- Relatórios locais: 836 casos, 835 executados sem falha e um teste opcional não
+- A passagem comercial também tinha exigência exclusiva de vídeo. O materializador
+  agora reutiliza uma única peça estática própria, com imagem HTTPS, copy e destino
+  exatos, sem alterar status ou conceder revisão. O prompt `creative` v2 segue o
+  Catálogo Vivo e preserva schema e tarefas já fixadas. A alternativa de criar outro
+  contrato de saída exigiria migração do executor sem benefício para esse aceite;
+  reutilizar peça de outro experimento ou promover o aceite privado foi descartado.
+- Testes de seleção cobrem Vega/106, outra execução, replay, ambiguidades, imagem
+  ausente/inválida, conteúdo alterado, rejeição e substituição. O caminho válido de
+  vídeo continua coberto. MySQL 5.7 e API do catálogo: 20 testes aprovados, incluindo
+  ativação da v2 e preservação do hash da v1 e do schema do executor.
+- Relatórios locais: 873 casos, 872 executados sem falha e um teste opcional não
   aplicável; a cobertura foi ampliada somente nas proteções alteradas.
 - API e MySQL 5.7: dois produtos/experimentos sintéticos percorrem `VIDEO_BRIEF` →
   `VALIDATION` → `AUTHORIZATION`. Sem gate, a validação não avança; repetir a

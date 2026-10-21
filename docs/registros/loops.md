@@ -1,5 +1,9 @@
 ## LOOP-CICLO-EXIGE-VIDEO-DISPENSADO — 21/10/2026
 
+- A mesma limitação aparecia na preparação comercial Opala: `creative` só aceitava
+  vídeo AD. A correção inclui seleção estática pelo contrato existente e prompt
+  versionado no Catálogo Vivo. Regressões usam dois experimentos e preservam o
+  caminho audiovisual. Não há promoção automática do aceite privado para comercial.
 - **Evidência:** Vega #106, ciclo #13, ficou em `VIDEO_BRIEF` depois da comunicação
   estática #786/#788 aceita. Formatos #718 e dispensa #719 declaram vídeo não
   previsto nem adiado; seleção humana #728 e integração #731 preservadas.

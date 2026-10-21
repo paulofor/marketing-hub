@@ -3,6 +3,7 @@ package com.marketinghub.opala.commercial.v1.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.creative.service.video.VideoCreativeService;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 /**
@@ -230,6 +232,94 @@ class OpalaCommercialMaterializationTest {
     assertThat(com.marketinghub.salesvideo.tenant.TenantContextHolder.getContext())
         .isEqualTo(original);
     com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
+  }
+
+  /** Peça estática exata evita vídeo obrigatório e preserva o parecer independente pendente. */
+  @ParameterizedTest
+  @ValueSource(longs = {106L, 91006L})
+  void reusesStaticDraftWithoutPublishingOrApproving(long experimentId) throws Exception {
+    experiment.setId(experimentId);
+    var snapshot = staticSnapshot();
+    when(context.snapshot("experiment:" + experimentId)).thenReturn(snapshot);
+    var instruction = staticInstruction();
+
+    materialization.apply("creative", scope, instruction);
+    materialization.apply("creative", scope, instruction);
+
+    assertThat(materialization.current("creative", scope, instruction)).isTrue();
+    assertThat(snapshot.path("creatives").get(0).path("agentReviewStatus").asText())
+        .isEqualTo("PENDING");
+    assertThat(snapshot.path("creatives").get(0).path("status").asText()).isEqualTo("DRAFT");
+    verifyNoInteractions(creatives, videos, experiments, slotService);
+  }
+
+  /** Dados ausentes, alterados ou reprovados não se transformam em conclusão estática. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "missing",
+        "ambiguous",
+        "replaced",
+        "copy",
+        "destination",
+        "http",
+        "credentials",
+        "malformed",
+        "missingImage",
+        "video",
+        "rejected",
+        "reviewRejected",
+        "missingVideoChoice"
+      })
+  void rejectsUnusableStaticCreative(String defect) throws Exception {
+    var snapshot = staticSnapshot();
+    var item = (com.fasterxml.jackson.databind.node.ObjectNode) snapshot.path("creatives").get(0);
+    var instruction = (com.fasterxml.jackson.databind.node.ObjectNode) staticInstruction();
+    switch (defect) {
+      case "missing" -> snapshot.putArray("creatives");
+      case "ambiguous" -> snapshot.withArray("creatives").add(item.deepCopy().put("id", 1201));
+      case "replaced" ->
+          snapshot.withArray("creatives").addObject().put("id", 1201).put("sourceCreativeId", 1200);
+      case "copy" -> item.put("headline", "Outra promessa");
+      case "destination" -> item.put("destinationUrl", "https://other.sandbox.local");
+      case "http" -> item.put("imageUrl", "http://media.sandbox.local/image.png");
+      case "credentials" -> item.put("imageUrl", "https://user:fixture@media.sandbox.local/a.png");
+      case "malformed" -> item.put("imageUrl", "not an image URL");
+      case "missingImage" -> item.remove("imageUrl");
+      case "video" -> item.put("videoUrl", "https://media.sandbox.local/other.mp4");
+      case "rejected" -> item.put("status", "REJECTED");
+      case "reviewRejected" -> item.put("agentReviewStatus", "ADJUST");
+      case "missingVideoChoice" -> instruction.remove("videoAssetId");
+      default -> throw new IllegalArgumentException("Cenário de regressão desconhecido");
+    }
+    when(context.snapshot("experiment:92")).thenReturn(snapshot);
+
+    assertThat(materialization.current("creative", scope, instruction)).isFalse();
+    assertThatThrownBy(() -> materialization.apply("creative", scope, instruction))
+        .isInstanceOf(IllegalStateException.class);
+    verifyNoInteractions(creatives, videos, experiments, slotService);
+  }
+
+  /** Monta somente um anúncio sintético do experimento consultado, ainda sem revisão comercial. */
+  private com.fasterxml.jackson.databind.node.ObjectNode staticSnapshot() throws Exception {
+    return (com.fasterxml.jackson.databind.node.ObjectNode)
+        json.readTree(
+            """
+        {"approvedVideos":[],"creatives":[{"id":1200,"format":"IMAGE",
+         "imageUrl":"https://media.sandbox.local/static.png","status":"DRAFT",
+         "agentReviewStatus":"PENDING","headline":"Experiência de teste",
+         "primaryText":"Valor útil no dia a dia","description":"",
+         "destinationUrl":"https://opala.sandbox.local/entry"}]}
+        """);
+  }
+
+  /** Usa o contrato já versionado: vídeo explicitamente nulo e copy integral da peça escolhida. */
+  private JsonNode staticInstruction() throws Exception {
+    return json.readTree(
+        """
+        {"videoAssetId":null,"headline":"Experiência de teste",
+         "primaryText":"Valor útil no dia a dia","description":"","targetingElementIds":[]}
+        """);
   }
 
   /** Revogar um elemento antes aprovado reabre a preparação em vez de perpetuar o vínculo. */

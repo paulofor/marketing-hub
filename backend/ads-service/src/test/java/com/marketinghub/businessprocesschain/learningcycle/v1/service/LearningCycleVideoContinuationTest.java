@@ -75,6 +75,17 @@ class LearningCycleVideoContinuationTest {
   final List<AgentTask> history = new ArrayList<>();
   final Instant integratedAt = Instant.parse("2026-09-14T22:50:00Z");
 
+  /** Rota estática usa o comando canônico e preserva os revisores e orçamentos de vídeo. */
+  @Test
+  void resumesStaticRouteWithoutProducingOrReviewingVideos() {
+    cycle.setStage("VIDEO_BRIEF");
+    when(service.continueWithoutAudiovisual(product.getId(), cycle.getId())).thenReturn(true);
+    assertEquals("WAITING_ACTIVITY", flow.advance(run).status());
+    verify(service).continueWithoutAudiovisual(product.getId(), cycle.getId());
+    verifyNoInteractions(dispatch);
+    verify(service, never()).integrateApprovedVideos(anyLong(), anyLong());
+  }
+
   /** Instala identidade isolada e callbacks simulados, sem chamadas pagas ou publicação. */
   @BeforeEach
   void setup() {

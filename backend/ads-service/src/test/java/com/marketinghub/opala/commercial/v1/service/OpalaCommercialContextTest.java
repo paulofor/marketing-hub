@@ -96,6 +96,53 @@ class OpalaCommercialContextTest {
         .isEqualTo("fixture-v12");
   }
 
+  /** A revisão comercial recebe a imagem exata sem transformar o rascunho em candidata aprovada. */
+  @Test
+  void exposesStaticMediaIdentityWithPendingReview() {
+    when(creatives.findByExperimentId(92L))
+        .thenReturn(
+            List.of(
+                Creative.builder()
+                    .id(1200L)
+                    .experiment(experiment)
+                    .format("IMAGE")
+                    .imageUrl("https://media.sandbox.local/static.png")
+                    .status(CreativeStatus.DRAFT)
+                    .agentReviewStatus(CreativeAgentReviewStatus.PENDING)
+                    .build()));
+    var item = context.snapshot("experiment:92").path("creatives").get(0);
+    assertThat(item.path("imageUrl").asText()).isEqualTo("https://media.sandbox.local/static.png");
+    assertThat(item.path("finalCandidate").asBoolean()).isFalse();
+    assertThat(item.path("agentReviewStatus").asText()).isEqualTo("PENDING");
+    verifyNoInteractions(mediaGovernanceEvidence);
+  }
+
+  /** Trocar apenas a imagem depois do parecer invalida o mesmo conjunto de ativos revisado. */
+  @Test
+  void invalidatesCommercialReviewAfterStaticImageChanges() {
+    experiment.setUnitPrice(new java.math.BigDecimal("67"));
+    cycle.setBudgetLimitBrl(new java.math.BigDecimal("100"));
+    var creative =
+        Creative.builder()
+            .id(1200L)
+            .experiment(experiment)
+            .format("IMAGE")
+            .imageUrl("https://media.sandbox.local/original.png")
+            .status(CreativeStatus.READY)
+            .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
+            .build();
+    when(creatives.findByExperimentId(92L)).thenReturn(List.of(creative));
+    var reviewed = context.snapshot("experiment:92");
+    reviewed.putObject("financialPlan").put("id", 12).put("revision", 2).put("status", "READY");
+    assertThat(OpalaCommercialAssetComparator.sameReviewableAssets(reviewed, reviewed.deepCopy()))
+        .isTrue();
+
+    creative.setImageUrl("https://media.sandbox.local/replaced.png");
+    var changed = context.snapshot("experiment:92");
+    changed.set("financialPlan", reviewed.path("financialPlan"));
+    assertThat(OpalaCommercialAssetComparator.sameReviewableAssets(reviewed, changed)).isFalse();
+  }
+
   /** Destino explícito divergente permanece visível para o gate, sem correção silenciosa. */
   @Test
   void preservesExplicitDestinationForMismatchDetection() {

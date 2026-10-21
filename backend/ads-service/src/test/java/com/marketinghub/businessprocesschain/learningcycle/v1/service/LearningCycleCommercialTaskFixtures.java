@@ -15,7 +15,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.web.bind.annotation.*;
 
-/** Responsabilidade: simular o ledger dos revisores sem chamar modelo ou gerar cobrança. */
+/**
+ * Responsabilidade: simular entregas e pareceres dos agentes sem chamar modelo ou gerar cobrança.
+ */
 @TestConfiguration
 @Profile("learning-cycles-fixture")
 @Import(LearningCycleCommercialTaskFixtures.Controller.class)
@@ -81,6 +83,33 @@ public class LearningCycleCommercialTaskFixtures {
             call ->
                 filteredTasks(call.getArgument(0), call.getArgument(1)).stream()
                     .map(LearningCycleCommercialTaskFixtures::summary)
+                    .toList());
+    when(repository.findFunctionalSnapshots(anyString(), anyCollection(), any()))
+        .thenAnswer(
+            call ->
+                TASKS.values().stream()
+                    .filter(
+                        task ->
+                            task.getSourceReference().equals(call.getArgument(0))
+                                && ((Collection<?>) call.getArgument(1))
+                                    .contains(task.getProcessDefinition().getProcessCode()))
+                    .filter(
+                        task ->
+                            call.getArgument(2) == null
+                                || !task.getCreatedAt().isBefore(call.getArgument(2)))
+                    .sorted(Comparator.comparing(AgentTask::getId).reversed())
+                    .map(
+                        task ->
+                            new AgentTaskFunctionalSnapshot(
+                                task.getId(),
+                                task.getProcessDefinition().getId(),
+                                task.getProcessDefinition().getProcessCode(),
+                                task.getProcessActivityId(),
+                                task.getAssignedAgent().getAgentKey(),
+                                task.getStatus(),
+                                task.getCreatedAt(),
+                                task.getDeliveredAt(),
+                                task.getResultJson()))
                     .toList());
     return repository;
   }
@@ -182,6 +211,42 @@ public class LearningCycleCommercialTaskFixtures {
   @RestController
   @Profile("learning-cycles-fixture")
   static class Controller {
+    @org.springframework.beans.factory.annotation.Autowired private LearningCycleService cycles;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private BusinessProcessDefinitionRepository definitions;
+
+    /** Instala somente o resultado sintético de Íris para a matriz estática, sem inferência. */
+    @PostMapping("/fixture/static-communication/{experimentId}")
+    Map<String, Object> staticCommunication(
+        @PathVariable long experimentId, @RequestBody Map<String, Object> input) {
+      var task = new AgentTask();
+      task.setId(((Number) input.get("taskId")).longValue());
+      task.setSourceReference("experiment:" + experimentId);
+      task.setProcessDefinition(definitions.findById(4L).orElseThrow());
+      task.setProcessActivityId("communicationContract");
+      task.setProcessActivityName("Contrato estático sintético");
+      task.setTitle("Íris · fixture estática");
+      task.setStatus("COMPLETED");
+      var agent = new Agent();
+      agent.setAgentKey("communication-director");
+      agent.setNickname("Íris");
+      task.setAssignedAgent(agent);
+      task.setCreatedAt(Instant.parse(input.get("createdAt").toString()));
+      task.setDeliveredAt(task.getCreatedAt());
+      task.setUpdatedAt(task.getCreatedAt());
+      task.setResultJson("{\"functionalOutput\":{\"audiovisualBrief\":null}}");
+      TASKS.put(task.getId(), task);
+      return Map.of("simulated", true, "taskId", task.getId());
+    }
+
+    /** Executa o mesmo coordenador interno usando banco local e portas externas simuladas. */
+    @PostMapping("/fixture/static-communication/{productId}/{cycleId}/advance")
+    Map<String, Object> advanceStatic(@PathVariable long productId, @PathVariable long cycleId) {
+      return Map.of(
+          "advanced", cycles.continueWithoutAudiovisual(productId, cycleId), "simulated", true);
+    }
+
     /** Expõe recibos locais para verificar deduplicação, correlação e estados intermediários. */
     @GetMapping("/fixture/commercial-tasks")
     List<Map<String, Object>> tasks() {

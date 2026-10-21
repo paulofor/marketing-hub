@@ -1,5 +1,23 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Formato estático sem produção audiovisual — 21/10/2026
+
+O ciclo respeita a decisão vigente de Íris: quando a tarefa concluída e as ocorrências
+de formato da mesma versão declaram explicitamente que nenhum vídeo foi previsto nem
+adiado, não exigir orçamento ou produção de dois vídeos. A preparação dos processos
+precisa estar aceita. O backend recupera também a espera já aberta em `VIDEO_BRIEF`,
+registra `RESOLVE_OPTIONAL_AUDIOVISUAL` com tarefa/ocorrências/versão e fecha essa
+ocorrência como `NOT_APPLICABLE`, sem declarar seu objetivo audiovisual atingido.
+
+Isso não migra o BPM histórico nem herda aprovações de outras versões. Briefing existente,
+produção adiada, nova tarefa, versão/fonte divergente ou ausência de prova mantêm o
+percurso audiovisual. STOP, pausa e experimento já liberado impedem a recuperação.
+A homologação vigente continua obrigatória; a continuação permanece em preparação
+comercial até destino, oferta, checkout, criativo, finanças, medição e autorização
+próprios estarem aceitos. Nenhuma leitura da tela produz efeito externo.
+
+Evidência e matriz: [percurso estático de Vega](../homologacao/vega-ciclo13-percurso-estatico-v1.md).
+
 ## Continuidade do inconclusivo aprovado — decisão de 06/10/2026
 
 Aprovar um resultado inconclusivo com proposta vigente de novo teste no mesmo foco

@@ -34,11 +34,26 @@ public class LearningCycleWorkResolver {
     return resolvePreparation(cycle).nextWork();
   }
 
-  /** Confere todos os trabalhos delegados antes de orientar o registro da etapa no ciclo. */
+  /**
+   * Confere trabalhos delegados também na recuperação do formato, sem aprovar etapas comerciais.
+   */
   public Resolution resolvePreparation(LearningSalesCycle cycle) {
+    return resolvePreparation(cycle, false);
+  }
+
+  /** Reconfere a comunicação completa, inclusive seu aceite, antes da homologação sem vídeos. */
+  public Resolution resolveStaticPreparation(LearningSalesCycle cycle) {
+    return resolvePreparation(cycle, true);
+  }
+
+  /** Preserva o recorte histórico e inclui comunicação somente quando a continuação a exige. */
+  private Resolution resolvePreparation(LearningSalesCycle cycle, boolean includeCommunication) {
     if (!"OPEN".equals(cycle.getStatus())
-        || !Set.of("PLANNING", "ADJUSTMENT", "VALIDATION").contains(cycle.getStage()))
-      return new Resolution(null, false);
+        || !Set.of("PLANNING", "ADJUSTMENT", "VIDEO_BRIEF", "VALIDATION")
+            .contains(cycle.getStage())) return new Resolution(null, false);
+    boolean adjustment =
+        Set.of("ADJUSTMENT", "VIDEO_BRIEF").contains(cycle.getStage())
+            || includeCommunication && "VALIDATION".equals(cycle.getStage());
     var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
     String initialCode =
         "PLANNING".equals(cycle.getStage())
@@ -48,14 +63,14 @@ public class LearningCycleWorkResolver {
         chain.getItems().stream()
             .filter(
                 item ->
-                    "ADJUSTMENT".equals(cycle.getStage()) && cycle.getReturnProcessId() != null
+                    adjustment && cycle.getReturnProcessId() != null
                         ? cycle.getReturnProcessId().equals(item.getProcessDefinition().getId())
                         : initialCode.equals(item.getProcessDefinition().getProcessCode()))
             .findFirst()
             .orElse(null);
     if (initial == null) return new Resolution(null, false);
     var allowed =
-        "ADJUSTMENT".equals(cycle.getStage())
+        adjustment
             ? Set.of(
                 "pde-commercial-plan-offer",
                 "pde-construction-approval",

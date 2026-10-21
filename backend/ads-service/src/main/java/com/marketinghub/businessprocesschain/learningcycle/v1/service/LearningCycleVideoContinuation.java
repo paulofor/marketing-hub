@@ -73,7 +73,10 @@ public class LearningCycleVideoContinuation {
   /** Explica somente trabalho efetivamente enfileirado ou uma pendência comprovada. */
   public record Progress(String status, String reason) {}
 
-  /** Executa no máximo uma nova tarefa por conciliação, preservando pausa, STOP e versões. */
+  /**
+   * Executa uma passagem de formato ou uma tarefa por conciliação, preservando pausa, STOP e
+   * versões.
+   */
   public Progress advance(ProcessRun run) {
     if (run.getLearningCycleId() == null
         || Set.of("PAUSING", "PAUSED", "CLOSED", "COMPLETED", "ERROR").contains(run.getStatus()))
@@ -87,12 +90,19 @@ public class LearningCycleVideoContinuation {
             && Objects.equals(run.getSourceReference(), "experiment:" + cycle.getExperimentId()),
         "A continuidade pertence a outro contexto de processo.");
     if (!"OPEN".equals(cycle.getStatus())
-        || !Set.of("VIDEO_APPROVAL", "VALIDATION").contains(cycle.getStage())
-        || !binding.supports(cycle)) return null;
+        || !Set.of("VIDEO_BRIEF", "VIDEO_APPROVAL", "VALIDATION").contains(cycle.getStage()))
+      return null;
     var product = products.findById(cycle.getProductId()).orElseThrow();
     if (Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()))
       return new Progress(
           "WAITING_INPUT", "O produto está em STOP. Aprovações e resultados foram preservados.");
+    if (Set.of("VIDEO_BRIEF", "VALIDATION").contains(cycle.getStage())
+        && service.continueWithoutAudiovisual(cycle.getProductId(), cycle.getId()))
+      return new Progress(
+          "WAITING_ACTIVITY",
+          "Comunicação estática preservada; seguindo para homologação e preparação comercial, sem produzir vídeos ou liberar mídia.");
+    if (!Set.of("VIDEO_APPROVAL", "VALIDATION").contains(cycle.getStage())
+        || !binding.supports(cycle)) return null;
     if ("VIDEO_APPROVAL".equals(cycle.getStage())) {
       if (binding.awaitingApproval(cycle)) return null;
       service.integrateApprovedVideos(cycle.getProductId(), cycle.getId());

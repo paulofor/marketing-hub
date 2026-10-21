@@ -115,10 +115,14 @@ ACTUATOR_CODE="$(compose exec -T harness-library-api \
 
 SOURCE_CONTENT="Fonte sintética segregada para homologar o cadastro externo do Harness v1."
 SOURCE_SHA="$(printf '%s' "${SOURCE_CONTENT}" | sha256sum | awk '{print $1}')"
+PUBLISHED_ON="$(date -u +%F)"
+VALID_UNTIL="$(date -u -d '+45 days' +%F)"
 PAYLOAD="$(jq -nc \
   --arg cardKey "${CARD_KEY}" \
   --arg sourceSha "${SOURCE_SHA}" \
-  '{cardKey:$cardKey,collection:"video",title:"Demonstração do produto reduz ambiguidade",finding:"Mostrar a experiência real torna o valor mais concreto.",mechanism:"A demonstração reduz o esforço mental para compreender a oferta.",commercialApplication:"Comparar um vídeo demonstrativo contra uma peça apenas narrativa.",evidenceStrength:"Hipótese externa que exige experimento controlado.",publishedOn:"2026-09-04",validUntil:"2026-10-19",experimentHypothesis:"A demonstração elevará cliques qualificados sem aumentar rejeição.",risks:"Não generalizar o achado para públicos não observados.",limits:"Somente pagamentos reconciliados comprovam vendas.",sourceKind:"TEXT",sourceUri:"urn:marketing-hub:homologacao:harness-api-e2e",sourceTitle:"Fonte sintética segregada de homologação",sourceSha256:$sourceSha}')"
+  --arg publishedOn "${PUBLISHED_ON}" \
+  --arg validUntil "${VALID_UNTIL}" \
+  '{cardKey:$cardKey,collection:"video",title:"Demonstração do produto reduz ambiguidade",finding:"Mostrar a experiência real torna o valor mais concreto.",mechanism:"A demonstração reduz o esforço mental para compreender a oferta.",commercialApplication:"Comparar um vídeo demonstrativo contra uma peça apenas narrativa.",evidenceStrength:"Hipótese externa que exige experimento controlado.",publishedOn:$publishedOn,validUntil:$validUntil,experimentHypothesis:"A demonstração elevará cliques qualificados sem aumentar rejeição.",risks:"Não generalizar o achado para públicos não observados.",limits:"Somente pagamentos reconciliados comprovam vendas.",sourceKind:"TEXT",sourceUri:"urn:marketing-hub:homologacao:harness-api-e2e",sourceTitle:"Fonte sintética segregada de homologação",sourceSha256:$sourceSha}')"
 
 UNKNOWN_COLLECTION_PAYLOAD="$(jq -c '.cardKey="homologacao-colecao-invalida" | .collection="inventada"' <<<"${PAYLOAD}")"
 invoke_gateway POST /v1/cards e2e-invalid-collection-0001 "${UNKNOWN_COLLECTION_PAYLOAD}"
@@ -207,7 +211,9 @@ jq -e --arg source "urn:marketing-hub:homologacao:harness-api-e2e" \
   || fail "cartão arquivado permaneceu no catálogo global"
 
 EXPIRED_PAYLOAD="$(jq -c --arg cardKey "${EXPIRED_CARD_KEY}" \
-  '.cardKey=$cardKey | .publishedOn="2026-08-01" | .validUntil="2026-08-31" | .sourceUri="urn:marketing-hub:homologacao:harness-api-expired"' <<<"${PAYLOAD}")"
+  --arg publishedOn "$(date -u -d '-50 days' +%F)" \
+  --arg validUntil "$(date -u -d '-5 days' +%F)" \
+  '.cardKey=$cardKey | .publishedOn=$publishedOn | .validUntil=$validUntil | .sourceUri="urn:marketing-hub:homologacao:harness-api-expired"' <<<"${PAYLOAD}")"
 invoke_gateway POST /v1/cards e2e-register-expired-000001 "${EXPIRED_PAYLOAD}"
 assert_code 201 "cadastro vencido auditável"
 invoke_gateway POST "/v1/cards/${EXPIRED_CARD_KEY}/versions/1/submit-review" e2e-review-expired-0000001 "${TRANSITION}"
@@ -215,6 +221,8 @@ assert_code 200 "revisão do cartão vencido"
 invoke_gateway POST "/v1/cards/${EXPIRED_CARD_KEY}/versions/1/activate" e2e-activate-expired-00001 "${TRANSITION}"
 assert_code 409 "bloqueio do cartão vencido"
 
+# A variável é expandida pelo shell do container, preservando seu relógio para a assinatura.
+# shellcheck disable=SC2016
 DIRECT_CODE="$(compose exec -T harness-library-api sh -c \
   'timestamp=$(date +%s); curl -sS -o /dev/null -w "%{http_code}" "http://backend:8000/api/internal/research-intelligence/v1/cards?limit=1" -H "X-Actor: codex-homologacao" -H "X-Harness-Request-Id: 00000000-0000-4000-8000-000000000002" -H "X-Harness-Timestamp: ${timestamp}" -H "X-Harness-Content-SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" -H "X-Harness-Signature: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"')"
 [[ "${DIRECT_CODE}" == "401" ]] || fail "backend aceitou HMAC inválido"

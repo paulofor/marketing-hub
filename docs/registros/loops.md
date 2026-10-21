@@ -1,3 +1,24 @@
+## LOOP-CICLO-EXIGE-VIDEO-DISPENSADO — 21/10/2026
+
+- A mesma limitação aparecia na preparação comercial Opala: `creative` só aceitava
+  vídeo AD. A correção inclui seleção estática pelo contrato existente e prompt
+  versionado no Catálogo Vivo. Regressões usam dois experimentos e preservam o
+  caminho audiovisual. Não há promoção automática do aceite privado para comercial.
+- **Evidência:** Vega #106, ciclo #13, ficou em `VIDEO_BRIEF` depois da comunicação
+  estática #786/#788 aceita. Formatos #718 e dispensa #719 declaram vídeo não
+  previsto nem adiado; seleção humana #728 e integração #731 preservadas.
+- **Causa:** o ciclo escolhia o percurso audiovisual apenas pela versão do BPM,
+  ignorando a decisão de formato do mesmo contexto.
+- **Correção reutilizável:** conferir tarefa vigente de Íris, composição da cadeia,
+  ocorrências atuais, versão e negações booleanas explícitas. Recuperar a etapa sem
+  produzir mídia e sem substituir homologação, autorização ou preparação comercial.
+  Briefing adiado não é dispensa. Leitura permanece sem efeitos.
+- **Prevenção:** testes de identidade, reabertura, revogação, ausência de prova,
+  STOP/pausa e percurso antes válido. API/MySQL locais com dois produtos, sem
+  inferência, campanha ou resultados de mercado simulados como reais.
+- **Limite:** o gate privado não libera anúncio. Matriz e fontes em
+  `docs/homologacao/vega-ciclo13-percurso-estatico-v1.md`.
+
 ## LOOP-TEMIS-LEITURA-TRANSITORIA-BLOQUEIA-REVISAO — 20/10/2026
 
 - **Evidência:** Alcyone, tarefa 778, falhou antes do modelo ao ler 765/1047 por timeout.

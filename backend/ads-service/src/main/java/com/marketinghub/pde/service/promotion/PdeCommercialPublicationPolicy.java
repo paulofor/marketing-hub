@@ -31,6 +31,27 @@ public final class PdeCommercialPublicationPolicy {
                 && MIRA_LAYOUT_KEY.equals(slot.getLayoutKey())));
   }
 
+  /** Confere a candidata técnica antes do checkout, sem conceder homologação ou ativação. */
+  public static List<String> preparationBlockers(
+      PdeProductionSlot slot, Experiment experiment, JsonNode contract) {
+    List<String> blockers = new ArrayList<>();
+    validateContractIdentity(slot, contract, blockers);
+    validateExperiment(slot, experiment, contract, blockers, false);
+    if (!"paid-visual-v1".equals(slot.getLayoutKey())
+        || (slot.getStatus() != PdeProductionSlotStatus.CANDIDATE
+            && slot.getStatus() != PdeProductionSlotStatus.PLANNED)
+        || experiment == null
+        || experiment.getStatus() != com.marketinghub.experiment.ExperimentStatus.PLANNED
+        || experiment.getProductAiSubtype()
+            != com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY
+        || contract == null
+        || !com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy.VERSION.equals(
+            contract.path("paidVisualDelivery").path("contractVersion").asText())) {
+      blockers.add("Preparar a capacidade paga na candidata do próprio experimento planejado.");
+    }
+    return List.copyOf(blockers);
+  }
+
   /** Lista todas as divergências comerciais da candidata sem alterar seu estado. */
   public static List<String> blockers(
       PdeProductionSlot slot,
@@ -40,7 +61,7 @@ public final class PdeCommercialPublicationPolicy {
       boolean requireHomologation) {
     List<String> blockers = new ArrayList<>();
     validateContractIdentity(slot, contract, blockers);
-    validateExperiment(slot, experiment, contract, blockers);
+    validateExperiment(slot, experiment, contract, blockers, true);
     if ("paid-visual-v1".equals(slot.getLayoutKey())) {
       if (experiment == null
           || experiment.getProductAiSubtype()
@@ -76,9 +97,13 @@ public final class PdeCommercialPublicationPolicy {
     }
   }
 
-  /** Confere experimento, CTA, preço e checkout contra as fontes persistidas da oferta. */
+  /** Confere oferta e identidade; exige checkout somente na promoção comercial. */
   private static void validateExperiment(
-      PdeProductionSlot slot, Experiment experiment, JsonNode contract, List<String> blockers) {
+      PdeProductionSlot slot,
+      Experiment experiment,
+      JsonNode contract,
+      List<String> blockers,
+      boolean requireCheckout) {
     JsonNode binding = contract == null ? null : contract.path("commercialBinding");
     JsonNode checkout = contract == null ? null : contract.path("commercialCheckout");
     boolean sameExperiment =
@@ -98,21 +123,21 @@ public final class PdeCommercialPublicationPolicy {
     BigDecimal checkoutPrice = decimal(checkout, "priceBrl");
     boolean aligned =
         experiment.getUnitPrice() != null
-            && experiment
-                    .getUnitPrice()
-                    .compareTo(bindingPrice == null ? BigDecimal.ZERO : bindingPrice)
-                == 0
-            && experiment
-                    .getUnitPrice()
-                    .compareTo(checkoutPrice == null ? BigDecimal.ZERO : checkoutPrice)
-                == 0
+            && experiment.getUnitPrice().signum() > 0
+            && bindingPrice != null
+            && experiment.getUnitPrice().compareTo(bindingPrice) == 0
+            && StringUtils.hasText(experiment.getPrimaryCta())
             && Objects.equals(experiment.getPrimaryCta(), text(binding, "primaryCta"))
-            && StringUtils.hasText(experiment.getCommercialCheckoutUrl())
-            && Objects.equals(experiment.getCommercialCheckoutUrl(), text(checkout, "checkoutUrl"))
             && "ONE_TIME".equals(text(binding, "billingModel"))
-            && "ONE_TIME".equals(text(checkout, "billingModel"))
-            && "BRL".equals(text(checkout, "currency"))
-            && StringUtils.hasText(text(checkout, "provider"));
+            && (!requireCheckout
+                || (checkoutPrice != null
+                    && experiment.getUnitPrice().compareTo(checkoutPrice) == 0
+                    && StringUtils.hasText(experiment.getCommercialCheckoutUrl())
+                    && Objects.equals(
+                        experiment.getCommercialCheckoutUrl(), text(checkout, "checkoutUrl"))
+                    && "ONE_TIME".equals(text(checkout, "billingModel"))
+                    && "BRL".equals(text(checkout, "currency"))
+                    && StringUtils.hasText(text(checkout, "provider"))));
     if (!aligned) {
       blockers.add("Alinhar preço, CTA e checkout entre o experimento e a versão.");
     }

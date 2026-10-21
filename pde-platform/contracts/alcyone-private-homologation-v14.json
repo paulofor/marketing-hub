@@ -52,7 +52,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/alcyone-entrega-paga-v1.md",
-      "sha256": "ab4bfa01c4ffc622d36c2d3cd8b604a1d4b1827e353fad6494a918be8baa93be",
+      "sha256": "0fe41a8114c99a985f0bb0deec8f0e4c46b3b4cb0dfb76add372554e1ca07fc7",
       "promptMode": "FULL"
     },
     {
@@ -100,7 +100,17 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/promotion/PdeCommercialPublicationPolicy.java",
-      "sha256": "d688797d9d7c13d7ed813a7acc2efecf4289cdc221ee76779133e185a7318532",
+      "sha256": "ac234c6c18695c57c2242dc8f8d98edf90d26129ce5b2cc7df517fbb933628c0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/PdeProductionSlotService.java",
+      "sha256": "1c543b96aecce350adc7877641a1fa5bfef6e87775693c46e37dafa36ee625ae",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/versionoverview/PdeVersionOverviewService.java",
+      "sha256": "4033ba7cd27df4964a34501f029704e465c3edb85b7a2c2a44042c66dc40842a",
       "promptMode": "FULL"
     }
   ],
@@ -153,6 +163,16 @@
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPublicationTest.java",
       "sha256": "ea0095b47e375bb9926f9c3e1b2b8eaa5b4677aa384c5bab89932d0fe1170221",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdeProductionSlotServiceTest.java",
+      "sha256": "4107f7c825415b45046caa235ad2a8448b7429e36c1c00e45e21a8ca99fe75e8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/versionoverview/PdeVersionOverviewServiceTest.java",
+      "sha256": "9aecc71eb3284c4d9aad6ca0748ccc01995ed84f8f8e7db0e83d12a30bde1fa4",
       "promptMode": "FULL"
     }
   ],

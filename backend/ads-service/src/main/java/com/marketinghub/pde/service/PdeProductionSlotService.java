@@ -301,7 +301,7 @@ public class PdeProductionSlotService {
     rejectCommercialBlockers(blockers);
   }
 
-  /** Impede publicar um snapshot antes da homologação e da coerência ponta a ponta. */
+  /** Disponibiliza candidatas pagas para validação e exige homologação na publicação comercial. */
   private void validateCommercialPublication(PdeProductionSlot slot, String contractJson) {
     JsonNode contract = readPublicationContract(slot, contractJson);
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
@@ -311,7 +311,15 @@ public class PdeProductionSlotService {
     if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
       if ("paid-visual-v1".equals(slot.getLayoutKey())
           && (slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
-              || slot.getStatus() == PdeProductionSlotStatus.PLANNED)) return;
+              || slot.getStatus() == PdeProductionSlotStatus.PLANNED)) {
+        var experiment =
+            slot.getSourceExperimentId() == null
+                ? null
+                : experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+        rejectCommercialBlockers(
+            PdeCommercialPublicationPolicy.preparationBlockers(slot, experiment, contract));
+        return;
+      }
       rejectCommercialBlockers(commercialBlockers(slot, contract, true));
     }
   }

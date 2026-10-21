@@ -10,6 +10,7 @@ import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.pde.service.promotion.PdeCommercialPublicationPolicy;
 import com.marketinghub.pde.service.promotion.PdeV12PublicationPolicy;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
@@ -140,7 +141,10 @@ public class PdeVersionOverviewService {
     return experiments;
   }
 
-  /** Converte as evidências persistidas da versão em uma visão administrativa única. */
+  /**
+   * Consolida evidências e permite a candidata técnica paga antes do checkout, preservando gates
+   * comerciais.
+   */
   private ProductPdeVersionOverviewDto toOverview(
       Product product,
       PdeProductionSlot slot,
@@ -191,10 +195,15 @@ public class PdeVersionOverviewService {
             && pendingItems.size() == 1
             && ("Concluir a homologação comercial da v12.".equals(pendingItems.get(0))
                 || GENERIC_HOMOLOGATION_PENDING.equals(pendingItems.get(0)));
+    boolean canPublishPreparation =
+        "paid-visual-v1".equals(slot.getLayoutKey())
+            && PdeCommercialPublicationPolicy.preparationBlockers(slot, experiment, contract)
+                .isEmpty();
     boolean canPublishContract =
-        pendingItems.isEmpty()
-            && (slot.getStatus() == PdeProductionSlotStatus.READY
-                || slot.getStatus() == PdeProductionSlotStatus.ACTIVE);
+        canPublishPreparation
+            || pendingItems.isEmpty()
+                && (slot.getStatus() == PdeProductionSlotStatus.READY
+                    || slot.getStatus() == PdeProductionSlotStatus.ACTIVE);
     return new ProductPdeVersionOverviewDto(
         slot.getId(),
         slot.getSlotCode(),
@@ -266,6 +275,10 @@ public class PdeVersionOverviewService {
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
       pending.addAll(
           PdeV12PublicationPolicy.blockers(slot, experiment, experimentVideos, contract, true));
+    } else if ("paid-visual-v1".equals(slot.getLayoutKey())) {
+      pending.addAll(
+          PdeCommercialPublicationPolicy.blockers(
+              slot, experiment, experimentVideos, contract, true));
     } else {
       addGenericCommercialPendingItems(pending, slot, experiment, videoCount, approvedVideoCount);
     }

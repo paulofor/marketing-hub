@@ -51,3 +51,29 @@ transferência de aprovação comercial. Impacto em vendas não foi medido.
   atualizado gerado com 555 arquivos/128 manifestos. A compatibilidade não autoriza
   publicação de frontend.
 - Publicação e conferência operacional serão vinculadas ao PR; não se usa deploy como teste.
+
+## Complemento de integração — 21/10/2026
+
+O PR #5651 foi integrado em `7b1aba208e61675ce2eea94faebf7eacf5a7655e`, com
+os sete workflows do PR e quinze da publicação aprovados. O destino foi aceito
+automaticamente, mas o comando oficial da integração ainda exigiu um slot PDE.
+A suíte anterior comprovava o serviço privado, sem atravessar esse comando.
+
+Alternativas avaliadas: criar um slot para atender ao ramo comercial acrescentaria
+uma exigência incompatível; criar outro executor duplicaria a integração; consultar
+o regime privado existente no executor oficial preserva o fluxo e os gates.
+Adotada a terceira, apenas quando não há ciclo, conservando a autorização comercial
+dos ciclos e o bloqueio por provas privadas incompletas.
+
+O replay foi ampliado para chamar os executores reais de destino e integração.
+Antes da correção, falharam o replay de Alcyone, duas identidades de primeiro
+experimento e a preservação do bloqueio privado. A matriz inclui a tentativa
+comercial indevida preservada, a nova conclusão privada sem inferência e os
+caminhos anteriores de produto, ciclo privado e ciclo em autorização comercial.
+A compatibilidade v37 atualiza somente o hash desse replay, sem publicar Mira.
+
+Validação local do complemento: 116 testes Java passaram, com uma projeção de
+ciclo não aplicável à exportação inicial; 38 testes do pacote e do seletor de
+publicação passaram. O replay usa as 23 tarefas e 23 instâncias exportadas por
+leitura, sem chamar modelos nem gravar no ambiente produtivo. A comparação
+vermelho/verde cobre a causa do despacho, não apenas o texto da orientação.

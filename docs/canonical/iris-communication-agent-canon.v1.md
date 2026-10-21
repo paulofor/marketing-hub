@@ -572,6 +572,12 @@ sem reescrever bytes, renovar pareceres ou transferir autoridade comercial.
 Conclusões anteriores ficam preservadas ao sair da preparação. O conciliador
 existente encerra subprocessos dispensados somente sem trabalho em curso.
 
+O executor oficial de integração deve consultar esse regime antes de exigir um
+slot comercial quando não há ciclo. A autorização comercial de um ciclo mantém
+seu gate próprio. O replay de homologação deve chamar os executores reais de
+destino e integração, além de conferir suas provas; chamar somente o serviço
+compartilhado não comprova o despacho do comando.
+
 Regressão e evidência: [Alcyone — aceite e continuidade](../homologacao/alcyone-private-handoff-2026-10-20.md).
 
 ### Preservação da ressalva factual no template privado — 2026-10-09

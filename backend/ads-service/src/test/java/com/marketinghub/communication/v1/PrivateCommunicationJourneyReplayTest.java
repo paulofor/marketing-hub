@@ -228,6 +228,22 @@ class PrivateCommunicationJourneyReplayTest {
             tasks,
             new PrivateCommunicationCreativeProof(tasks, instances, json),
             json);
+    if (IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE.equals(
+        input.path("mode").asText())) {
+      var initial =
+          mock(com.marketinghub.agenttask.CommunicationMaterializationContextProvider.class);
+      when(initial.resolve(reference)).thenReturn(Optional.of(json.convertValue(input, Map.class)));
+      var experiment = new Experiment();
+      experiment.setId(input.path("experiment").path("id").asLong());
+      experiment.setProduct(product);
+      experiment.setStatus(ExperimentStatus.PLANNED);
+      var experiments = mock(ExperimentRepository.class);
+      when(experiments.findById(experiment.getId())).thenReturn(Optional.of(experiment));
+      org.springframework.test.util.ReflectionTestUtils.setField(
+          journey,
+          "initialExperiments",
+          new InitialExperimentPrivateJourneyContext(initial, experiments, cycles, json));
+    }
     for (String activityId : List.of("destination", "integration")) {
       var activity =
           definitions.values().stream()
@@ -252,6 +268,8 @@ class PrivateCommunicationJourneyReplayTest {
   void readsCurrentPrivateContextWithoutMutatingExportedHistory() throws Exception {
     var json = new ObjectMapper().findAndRegisterModules();
     var exported = json.readTree(Path.of(System.getenv("PRIVATE_JOURNEY_REPLAY")).toFile());
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        exported.has("cycle"), "A projeção de ciclo só se aplica a exportações de ciclos.");
     var tasks = mock(AgentTaskRepository.class);
     var instances = mock(BusinessProcessActivityInstanceRepository.class);
     var cycles = mock(LearningSalesCycleRepository.class);

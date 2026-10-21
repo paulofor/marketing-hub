@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.*;
@@ -183,7 +184,9 @@ class IrisPrivateProductContextTest {
     gate.setObjectiveEvidenceJson(proof.toString());
   }
 
-  /** Confere duas identidades com estratégia antiga preservada e planejamento novo aprovado. */
+  /**
+   * Confere duas identidades e o consumo real da prova técnica, preservando a estratégia antiga.
+   */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {91010, 92020})
   void initialPlanningUsesAcceptedSoftwareProofWithoutRewritingOrigin(long id) throws Exception {
@@ -207,6 +210,18 @@ class IrisPrivateProductContextTest {
         .containsEntry("publicationAuthorized", false)
         .containsEntry("paymentEnabled", false);
     assertThat(initial.get("prototypeVersion")).isEqualTo("local-mira-v3");
+    var journey = new PrivateCommunicationJourney(null, null, null, null, null, null, json);
+    JsonNode technical =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            journey,
+            "technical",
+            json.valueToTree(initial),
+            "experiment:88",
+            "local-mira-v3",
+            "https://mira.example/private");
+    assertThat(technical.path("result").path("sourceReference").asText()).isEqualTo(reference);
+    assertThat(technical.path("resultSha256").asText())
+        .isEqualTo(sha(reviews.getFirst().resultJson()));
     assertThat(
             json.readTree(origin.getFirst().resultJson())
                 .path("marketStrategicContract")
@@ -276,6 +291,22 @@ class IrisPrivateProductContextTest {
         .put("artifactId", id + 1)
         .put("sha256", "a".repeat(64))
         .put("sourceUrl", target.publicUrl());
+    var checks = technical.putObject("checks");
+    for (String check :
+        List.of(
+            "sameVersion",
+            "desktopAndMobile",
+            "happyResultWithinTenMinutes",
+            "recoveryPreserved",
+            "safetyBlocked",
+            "accessibilityBasic",
+            "responsiveLayout",
+            "privacyPreserved",
+            "internalTrafficSegregated",
+            "paymentDisabled",
+            "publicationDisabled",
+            "campaignDisabled",
+            "zeroMediaSpend")) checks.put(check, true);
     String raw = technical.toString();
     var previous = reviews.getFirst();
     reviews.set(

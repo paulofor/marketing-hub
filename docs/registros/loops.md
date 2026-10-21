@@ -6681,6 +6681,18 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   `VARCHAR(32)`, conforme o changelog canônico inicial e o contrato JPA, repara somente a candidata
   v8/experimento #92 ainda não publicada e acrescenta regressão física com o `ENUM` legado.
 
+### Recorrência no primeiro experimento — 20/10/2026
+
+Alcyone #11/experimento #97: aceite #723 da peça #770 concluiu o filho #68,
+mas o pai #44 abriu a landing #75. A seleção reconhecia os três regimes privados;
+`PrivateCommunicationJourney` reconhecia somente produto e ciclo. O consumidor
+agora usa o contexto inicial vigente, preservando a origem da prova técnica e
+validando seu vínculo ao alvo. Não é ausência de arte comercial a resolver por
+nova geração. Regressões: primeiro experimento e outra identidade, vínculos
+inválidos, histórico encerrado, produtor real, replay offline e recuperação do
+filho sem cancelar tarefa ativa. [Matriz e resultados](../homologacao/alcyone-private-handoff-2026-10-20.md).
+
+
 ### Recorrência — autoria omitida no contexto do ciclo, 09/10/2026
 
 - **Evidência:** Capella #7/ciclo #12/#105, execução #64 do Processo 4 #113/v11 em

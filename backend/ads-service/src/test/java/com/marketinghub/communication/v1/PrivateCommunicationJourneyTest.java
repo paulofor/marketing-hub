@@ -289,6 +289,174 @@ class PrivateCommunicationJourneyTest {
     verify(tasks, never()).save(any());
   }
 
+  /** Reproduz o primeiro experimento e outra identidade até a integração sem criar landing. */
+  @ParameterizedTest
+  @ValueSource(longs = {91092L, 92097L})
+  void completesInitialExperimentUsingProductProofWithoutCommercialLanding(long experimentId)
+      throws Exception {
+    configureInitialExperiment(experimentId);
+    var route = destination.readiness(parent, destinationActivity, product, REFERENCE);
+    assertThat(route.ready()).as(route.reason()).isTrue();
+    assertThat(route.targetProcessDefinitionId()).isNull();
+    assertThat(
+            destination
+                .execute(parent, destinationActivity, product, REFERENCE)
+                .objectiveAchieved())
+        .isTrue();
+    assertThat(
+            journey.complete(parent, integrationActivity, product, REFERENCE).objectiveAchieved())
+        .isTrue();
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    assertThat(persisted).hasSize(5);
+    var evidence = json.readTree(persisted.getLast().getObjectiveEvidenceJson());
+    assertThat(evidence.path("technicalSourceReference").asText())
+        .isEqualTo("product:" + product.getId() + "@agent-validation-v1");
+    assertThat(evidence.path("paymentEnabled").asBoolean()).isFalse();
+    assertThat(evidence.path("publicationAuthorized").asBoolean()).isFalse();
+    assertThat(evidence.path("mediaSpendAuthorized").asBoolean()).isFalse();
+    verify(tasks, never()).save(any());
+    verifyNoInteractions(processes);
+  }
+
+  /** Mantém ausências e divergências bloqueadas no mesmo regime privado, sem fallback comercial. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "planning",
+        "source",
+        "target",
+        "product",
+        "version",
+        "url",
+        "gate",
+        "technical",
+        "commercial"
+      })
+  void rejectsInvalidInitialExperimentProof(String failure) throws Exception {
+    configureInitialExperiment(92097L);
+    var authorization = (ObjectNode) input.path("visualProofAuthorization");
+    switch (failure) {
+      case "planning" -> input.put("inputReadiness", "BLOCKED");
+      case "source" -> authorization.put("proofSourceReference", "product:999@agent-validation-v1");
+      case "target" -> authorization.put("targetSourceReference", "experiment:999");
+      case "product" -> authorization.put("productId", 999);
+      case "version" -> authorization.put("prototypeVersion", "another-version");
+      case "url" -> authorization.put("publicUrl", "https://another.example");
+      case "gate" -> authorization.put("gateInstanceId", 999);
+      case "technical" -> input.putArray("approvedVisualArtifacts");
+      case "commercial" -> input.put("publicationAuthorized", true);
+      default -> throw new IllegalArgumentException(failure);
+    }
+    var route = destination.readiness(parent, destinationActivity, product, REFERENCE);
+    assertThat(route.ready()).isFalse();
+    assertThat(route.targetProcessDefinitionId()).isNull();
+    assertThat(persisted).hasSize(3);
+    verifyNoInteractions(processes);
+  }
+
+  /** Mantém a mesma prova quando o produtor serializa os campos autorizados em outra ordem. */
+  @Test
+  void preservesInitialProofWhenAuthorizationFieldOrderChanges() throws Exception {
+    configureInitialExperiment(92097L);
+    journey.complete(parent, destinationActivity, product, REFERENCE);
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    var original = input.remove("visualProofAuthorization");
+    var reordered = input.putObject("visualProofAuthorization");
+    var keys = new ArrayList<String>();
+    original.fieldNames().forEachRemaining(keys::add);
+    keys.sort(java.util.Comparator.reverseOrder());
+    keys.forEach(key -> reordered.set(key, original.path(key)));
+    assertThat(journey.stale(parent, destinationActivity, product, REFERENCE)).isFalse();
+    assertThat(journey.stale(parent, integrationActivity, product, REFERENCE)).isFalse();
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    assertThat(persisted).hasSize(5);
+  }
+
+  /** Preserva evidências já aceitas quando o primeiro experimento sai da preparação. */
+  @Test
+  void preservesInitialPrivateHistoryAfterLaunch() throws Exception {
+    var experiment = configureInitialExperiment(92097L);
+    journey.complete(parent, destinationActivity, product, REFERENCE);
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING);
+    assertThat(journey.stale(parent, integrationActivity, product, REFERENCE)).isFalse();
+    assertThat(journey.readiness(parent, integrationActivity, product, REFERENCE).ready())
+        .isFalse();
+    assertThat(persisted).hasSize(5);
+  }
+
+  /** Rejeita identidades e sucessores divergentes sem encaminhá-los à geração comercial. */
+  @ParameterizedTest
+  @ValueSource(strings = {"product", "successor", "cycle", "finished"})
+  void blocksMismatchedOrClosedInitialExperiment(String failure) throws Exception {
+    var experiment = configureInitialExperiment(92097L);
+    switch (failure) {
+      case "product" -> experiment.setProduct(Product.builder().id(93000L).build());
+      case "successor" ->
+          experiment.setSourceExperiment(new com.marketinghub.experiment.Experiment());
+      case "cycle" -> {
+        cycle.setBaseline(true);
+        when(cycles.findByExperimentId(92097L)).thenReturn(Optional.of(cycle));
+      }
+      case "finished" ->
+          experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.FINISHED);
+      default -> throw new IllegalArgumentException(failure);
+    }
+    var route = destination.readiness(parent, destinationActivity, product, REFERENCE);
+    assertThat(route.ready()).isFalse();
+    assertThat(route.targetProcessDefinitionId()).isNull();
+    assertThat(persisted).hasSize(3);
+    verifyNoInteractions(processes);
+  }
+
+  /**
+   * Monta a projeção canônica com prova técnica na referência de origem, sem alterar seus bytes.
+   */
+  private com.marketinghub.experiment.Experiment configureInitialExperiment(long id)
+      throws Exception {
+    REFERENCE = "experiment:" + id;
+    product.setId(id + 10);
+    persisted.clear();
+    creativeTasks.clear();
+    input.removeAll();
+    org.mockito.Mockito.reset(instances, tasks, context, cycles, processes);
+    fixture();
+    when(cycles.findByExperimentId(id)).thenReturn(Optional.empty());
+    input.remove("cycleId");
+    input.put(
+        "mode", IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE);
+    input.putObject("experiment").put("id", id);
+    ((ObjectNode) input.path("product")).put("publicUrl", "");
+    String source = "product:" + product.getId() + "@agent-validation-v1";
+    var technical = (ObjectNode) input.path("approvedUpstreamArtifacts").get(0).path("result");
+    technical.put("sourceReference", source).put("productId", product.getId());
+    input.set("approvedVisualArtifacts", input.remove("approvedUpstreamArtifacts"));
+    input.putArray("approvedUpstreamArtifacts");
+    input
+        .putObject("visualProofAuthorization")
+        .put("contractVersion", "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1")
+        .put("proofSourceReference", source)
+        .put("targetSourceReference", REFERENCE)
+        .put("productId", product.getId())
+        .put("prototypeVersion", VERSION)
+        .put("gateInstanceId", 910258L)
+        .put("publicUrl", URL);
+    var provider = mock(CommunicationMaterializationContextProvider.class);
+    when(provider.resolve(REFERENCE))
+        .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
+    var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(id);
+    experiment.setProduct(product);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    when(experiments.findById(id)).thenReturn(Optional.of(experiment));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        journey,
+        "initialExperiments",
+        new InitialExperimentPrivateJourneyContext(provider, experiments, cycles, json));
+    return experiment;
+  }
+
   /** Consome a projeção real do ciclo até a integração, sem acrescentar campos na fixture. */
   @ParameterizedTest
   @ValueSource(strings = {"MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4"})

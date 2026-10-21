@@ -710,6 +710,38 @@ class ProcessRunProjectedActivityPersistenceTest {
     verifyNoInteractions(activities);
   }
 
+  /** Encerra a landing substituída pelo destino comprovado somente depois da tarefa em curso. */
+  @Test
+  void closesUnneededLandingPreservingInflightWorkAndHistory() throws Exception {
+    authorized = true;
+    parent.setStatus("WAITING_SUBPROCESS");
+    parent.setChildRunId(next.getId());
+    next.setParentRunId(parent.getId());
+    next.setStatus("WAITING_ACTIVITY");
+    snapshot(96011L, "COMPLETED", false, true, false, true);
+    snapshot(96012L, "IN_PROGRESS", true, true, false, false);
+    when(navigation.children(parent))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.businessprocess.automation.v1.service.status
+                    .ProcessRunRelationResponse(
+                    96012L, "Landing sintética", 1, "a", "Destino", "/local")));
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("WAITING_SUBPROCESS");
+    assertThat(next.getStatus()).isEqualTo("WAITING_ACTIVITY");
+    snapshot(96012L, "NOT_STARTED", false, false, false, false);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("COMPLETED");
+    entityManager.flush();
+    entityManager.clear();
+    var closed = runs.findById(next.getId()).orElseThrow();
+    assertThat(closed.getStatus()).isEqualTo("CLOSED");
+    assertThat(closed.getKnownCostUsd()).isEqualByComparingTo("0.75");
+    assertThat(
+            events.findAll().stream()
+                .filter(e -> "SUBPROCESS_NOT_REQUIRED".equals(e.getEventType())))
+        .hasSize(2);
+    verifyNoInteractions(activities, subprocesses);
+  }
+
   /** Chamada autorizada reutiliza o filho existente, respeita seu gate e recebe a prova no pai. */
   @Test
   void delegatesProjectedCallWithoutDuplicatingChildAndReturnsProof() throws Exception {

@@ -557,6 +557,23 @@ para comprovar destino e integração privados, sem nova inferência.
 
 Evidência: [Mira — seleção criativa privada](../homologacao/mira-selecao-criativa-privada-2026-10-09.md).
 
+### Continuação privada no primeiro experimento — 2026-10-20
+
+O consumidor do destino e da integração reconhece também
+`INITIAL_EXPERIMENT_PRIVATE`, pelo mesmo contexto vigente usado na seleção.
+Ausência de prova mantém o bloqueio privado, sem encaminhar automaticamente à
+landing comercial. O primeiro experimento deve pertencer ao produto, não ter
+predecessor nem ciclo e estar `PLANNED` para novas conclusões.
+
+A prova técnica pode continuar na referência `product:<id>@agent-validation-v1`;
+seu vínculo `COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1` precisa conferir origem,
+alvo, produto, versão, URL e gate. A evidência da passagem registra essa origem
+sem reescrever bytes, renovar pareceres ou transferir autoridade comercial.
+Conclusões anteriores ficam preservadas ao sair da preparação. O conciliador
+existente encerra subprocessos dispensados somente sem trabalho em curso.
+
+Regressão e evidência: [Alcyone — aceite e continuidade](../homologacao/alcyone-private-handoff-2026-10-20.md).
+
 ### Preservação da ressalva factual no template privado — 2026-10-09
 
 O `footer` de `PROOF_CARD_V1` permanece obrigatório e impresso na validação privada,

@@ -28,7 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: comprovar e registrar a jornada privada na referência do produto ou ciclo. */
+/**
+ * Responsabilidade: comprovar e registrar a jornada privada do produto, ciclo ou primeiro
+ * experimento.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -62,10 +65,15 @@ public class PrivateCommunicationJourney {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private IrisPrivateProductContext privateProducts;
 
-  /** Reconhece produtos e ciclos privados mesmo bloqueados, sem fallback para plano histórico. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private InitialExperimentPrivateJourneyContext initialExperiments;
+
+  /** Reconhece os três regimes privados mesmo bloqueados, sem fallback para plano comercial. */
   @Transactional(readOnly = true)
   public boolean applies(String reference) {
-    return IrisPrivateProductContext.supports(reference) || privateCycle(reference).isPresent();
+    return IrisPrivateProductContext.supports(reference)
+        || privateCycle(reference).isPresent()
+        || initialContext(reference).isPresent();
   }
 
   /** Reconhece quando a referência privada não pode comprovar a política comercial publicada. */
@@ -231,16 +239,32 @@ public class PrivateCommunicationJourney {
         .filter(c -> !c.isBaseline());
   }
 
+  /** Consulta o contrato inicial sem alterar a entrada já aceita por Íris. */
+  private Optional<Map<String, Object>> initialContext(String reference) {
+    return initialExperiments == null ? Optional.empty() : initialExperiments.resolve(reference);
+  }
+
+  /** Resolve o contexto privado pelo regime que originou a seleção. */
+  private Optional<Map<String, Object>> context(String reference) {
+    if (IrisPrivateProductContext.supports(reference))
+      return privateProducts == null ? Optional.empty() : privateProducts.resolve(reference);
+    if (privateCycle(reference).isPresent()) return cycles.resolve(reference);
+    return initialContext(reference);
+  }
+
   /**
    * Preserva conclusões ao sair da preparação; reabrir essa fase volta a exigir provas vigentes.
    */
   private boolean preparationArchived(String reference) {
-    return privateCycle(reference)
-        .filter(
-            c ->
-                (c.getStatus() != null && !"OPEN".equals(c.getStatus()))
-                    || (c.getStage() != null
-                        && !Set.of("ADJUSTMENT", "VALIDATION").contains(c.getStage())))
+    var cycle = privateCycle(reference);
+    if (cycle.isPresent()) {
+      var current = cycle.orElseThrow();
+      return (current.getStatus() != null && !"OPEN".equals(current.getStatus()))
+          || (current.getStage() != null
+              && !Set.of("ADJUSTMENT", "VALIDATION").contains(current.getStage()));
+    }
+    return initialContext(reference)
+        .filter(input -> Boolean.TRUE.equals(input.get("initialPrivateJourneyArchived")))
         .isPresent();
   }
 
@@ -293,11 +317,7 @@ public class PrivateCommunicationJourney {
         "A validação privada é histórica e não comprova a jornada comercial para Instagram Ads. Use o experimento comercial vigente.");
     var input =
         json.valueToTree(
-            (IrisPrivateProductContext.supports(reference)
-                    ? privateProducts == null
-                        ? Optional.<Map<String, Object>>empty()
-                        : privateProducts.resolve(reference)
-                    : cycles.resolve(reference))
+            context(reference)
                 .orElseThrow(
                     () -> new IllegalStateException("O contexto privado não foi encontrado.")));
     require(
@@ -309,7 +329,10 @@ public class PrivateCommunicationJourney {
             && product.getId().equals(input.path("product").path("id").asLong()),
         "Produto ou referência divergente na jornada privada.");
     var destination = input.path("approvedDestination");
-    String url = input.path("product").path("publicUrl").asText();
+    String url =
+        isInitialExperiment(input)
+            ? destination.path("url").asText()
+            : input.path("product").path("publicUrl").asText();
     String version = input.path("prototypeVersion").asText();
     require(
         "PRIVATE_PDE_DESTINATION_V1".equals(destination.path("contractVersion").asText())
@@ -348,6 +371,21 @@ public class PrivateCommunicationJourney {
     evidence.set("communicationSha256", communication.artifact().path("resultSha256"));
     evidence.set("technicalTaskId", technical.path("taskId"));
     evidence.set("technicalResultSha256", technical.path("resultSha256"));
+    if (isInitialExperiment(input)) {
+      evidence.set("technicalSourceReference", technical.path("result").path("sourceReference"));
+      var authorization = evidence.putObject("visualProofAuthorization");
+      // Mantém a identidade da prova estável mesmo quando Map.of altera a ordem entre JVMs.
+      for (String key :
+          List.of(
+              "contractVersion",
+              "proofSourceReference",
+              "targetSourceReference",
+              "productId",
+              "prototypeVersion",
+              "gateInstanceId",
+              "publicUrl"))
+        authorization.set(key, input.path("visualProofAuthorization").path(key));
+    }
     evidence.set("validatedChecks", technical.path("result").path("checks"));
     evidence.put("trafficClass", "AGENT_VALIDATION");
     evidence.put("internalMarker", "mh_internal_test");
@@ -499,13 +537,19 @@ public class PrivateCommunicationJourney {
 
   /** Exige os controles de integração comprovados pelo executor técnico no gate vigente. */
   private JsonNode technical(JsonNode input, String reference, String version, String url) {
-    for (var artifact : input.path("approvedUpstreamArtifacts")) {
+    boolean initial = isInitialExperiment(input);
+    String proofReference =
+        initial ? initialProofReference(input, reference, version, url) : reference;
+    for (var artifact :
+        input.path(initial ? "approvedVisualArtifacts" : "approvedUpstreamArtifacts")) {
       if (!"technicalHomologation".equals(artifact.path("activityId").asText())) continue;
       var result = artifact.path("result");
       require(
           "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1".equals(result.path("contractVersion").asText())
               && "APPROVED".equals(result.path("decision").asText())
-              && reference.equals(result.path("sourceReference").asText())
+              && proofReference.equals(result.path("sourceReference").asText())
+              && (!initial
+                  || input.path("product").path("id").asLong() == result.path("productId").asLong())
               && version.equals(result.path("prototypeVersion").asText())
               && url.equals(result.path("publicUrl").asText())
               && TECHNICAL_CHECKS.stream()
@@ -514,6 +558,34 @@ public class PrivateCommunicationJourney {
       return artifact;
     }
     throw new IllegalStateException("A prova técnica da jornada privada está ausente.");
+  }
+
+  /** Distingue o regime inicial sem inferir autorização a partir de uma URL ou de um ID. */
+  private boolean isInitialExperiment(JsonNode input) {
+    return IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE.equals(
+        input.path("mode").asText());
+  }
+
+  /** Confere o vínculo autorizado da prova técnica sem reescrever a referência de origem. */
+  private String initialProofReference(
+      JsonNode input, String reference, String version, String url) {
+    var authorization = input.path("visualProofAuthorization");
+    long productId = input.path("product").path("id").asLong();
+    String source = "product:" + productId + "@agent-validation-v1";
+    require(
+        "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1"
+                .equals(authorization.path("contractVersion").asText())
+            && source.equals(authorization.path("proofSourceReference").asText())
+            && reference.equals(authorization.path("targetSourceReference").asText())
+            && productId > 0
+            && productId == authorization.path("productId").asLong()
+            && version.equals(authorization.path("prototypeVersion").asText())
+            && url.equals(authorization.path("publicUrl").asText())
+            && input.path("gateInstanceId").asLong() > 0
+            && input.path("gateInstanceId").asLong()
+                == authorization.path("gateInstanceId").asLong(),
+        "A autorização da prova técnica não corresponde ao produto, experimento, versão e gate atuais.");
+    return source;
   }
 
   /** Consulta a última ocorrência da referência sem exigir escrita para exibir seu histórico. */

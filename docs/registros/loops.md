@@ -10835,3 +10835,27 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
 ### 2026-10-21 — Inicialização do harness financeiro sem descoberta de prefixo Maven
 
 No job financeiro do PR #5660, `dependency:build-classpath` falhou antes dos testes com `NoPluginFoundForPrefixException`. O mesmo código havia passado no CI anterior. O runner financeiro e o runner da entrega paga agora usam a coordenada completa do plugin 3.6.1 já presente no projeto; a montagem de classpath foi executada offline na sandbox. A repetição do MySQL local foi limitada por disco cheio, com limpeza da topologia; a persistência continua obrigatória no runner dedicado do PR. Não se atribuiu a falha à lógica financeira nem se ignorou o check.
+
+
+## LOOP-OPALA-CANDIDATA-INVALIDA-DERRUBA-PENDING — 21/10/2026
+
+- **Evidência:** Vega produto 4, ciclo 13, experimento 106, tarefa 795; o worker Dédalo
+  consultava `opala-commercial-preparation-v1/entry` e recebia HTTP 500 antes de executar.
+  O contrato global ainda representava a v7; a v12 publicada pertencia ao experimento 92.
+  A v14 e seus aceites privados não forneciam candidata comercial dessa ocorrência.
+- **Causa:** a abertura dizia estar pronta sem executar o validador de versão usado pelo
+  alvo entregue no `pending`. A exceção ao montar a resposta revertia a reserva e a tarefa
+  permanecia PENDING sem motivo. Não era falta de saldo nem recusa do modelo.
+- **Histórico:** `OpalaCommercialVersionContractTest` preserva candidatas exatas antes válidas;
+  a rejeição do predecessor é correta. A comparação refutou flexibilizar a identidade ou
+  reutilizar o checkout como prova de versão. A proteção de claim já existia para correção
+  privada e foi reutilizada, sem segundo mecanismo de fila ou reserva.
+- **Correção:** `OpalaCommercialClaimPreparation` confere a mesma candidata na abertura e
+  na reserva. Espera `MISSING_EVIDENCE` persiste causa e ação sem inferência; falha de
+  infraestrutura permanece `TECHNICAL_FAILURE`. A fonte corrigida libera a tarefa existente.
+- **Regressão:** caso 4/106/13, outro produto/execução, candidata válida anterior, checkout
+  ausente, acesso divergente, destino ausente, ambiguidade e recuperação. O teste HTTP
+  usa o serviço real de fila com o validador real: o primeiro caso permanece pendente e
+  a próxima ocorrência válida é entregue com HTTP 200, sem bloqueio entre produtos.
+- **Limite:** não cria contrato comercial, escolhe margem, aprova artefato, libera mídia ou
+  importa autorização histórica. Matriz: `docs/homologacao/vega-ciclo13-retomada-comercial-v1.md`.

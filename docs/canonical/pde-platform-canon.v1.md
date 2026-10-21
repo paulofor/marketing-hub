@@ -762,6 +762,21 @@ GitHub Actions verde não é prova suficiente de publicação produtiva. Antes d
 - jornada principal validada em desktop e mobile;
 - eventos aparecendo no painel pós-deploy depois do tráfego real.
 
+### Candidata comercial antes da reserva de agentes — 21/10/2026
+
+As atividades de preparação Opala (`entry`, `creative`, `checkout`, `targeting`) usam o
+mesmo validador de candidata na abertura e imediatamente antes da reserva canônica
+`pending`. Versão, experimento, preço, checkout, acesso e destino HTTPS devem corresponder
+à ocorrência. Ausência, contrato predecessor ou candidata ambígua permanecem como espera
+persistida da própria tarefa, com causa e ação; não podem derrubar a fila com HTTP 500 nem
+iniciar inferência para diagnosticar uma entrada já comprovadamente inválida.
+
+Corrigir a fonte permite reservar a tarefa existente. Não reescrever o contrato histórico,
+não promover homologação privada a comercial, não duplicar tarefa/custo nem escolher outro
+produto como fallback. Falha de infraestrutura conserva categoria técnica própria. Economia,
+revisões independentes, STOP, orçamento, publicação e autorização comercial continuam com
+seus controles existentes. A proteção não materializa sozinha a versão comercial ausente.
+
 ### Publicação versionada simultânea de PDE
 
 Um mesmo produto PDE pode ter múltiplas versões produtivas simultâneas para teste controlado, como `v5.clubemusa.com.br` e `v6.clubemusa.com.br`.

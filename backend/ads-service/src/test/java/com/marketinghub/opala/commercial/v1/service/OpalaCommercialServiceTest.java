@@ -31,9 +31,16 @@ class OpalaCommercialServiceTest {
   private final LearningCycleCommercialReadiness readiness =
       mock(LearningCycleCommercialReadiness.class);
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+  private final OpalaCommercialClaimPreparation claimPreparation =
+      mock(OpalaCommercialClaimPreparation.class);
   private final OpalaCommercialService service =
       new OpalaCommercialService(
-          context, materialization, readiness, tasks, mock(OpalaCommercialRouting.class));
+          context,
+          materialization,
+          readiness,
+          tasks,
+          mock(OpalaCommercialRouting.class),
+          claimPreparation);
   private final LearningSalesCycle cycle = new LearningSalesCycle();
   private final Experiment experiment =
       Experiment.builder().id(92L).unitPrice(new BigDecimal("67")).build();

@@ -257,7 +257,20 @@ public class LeadPortalPaymentsClient {
       Long productId,
       Long experimentId,
       BigDecimal amount,
-      String deliveryPageUrl) {}
+      String deliveryPageUrl,
+      String deliveryContract,
+      String experienceVersion) {
+    /** Preserva a construção dos contratos comerciais anteriores. */
+    public CommercialProductCheckoutRequest(
+        String productKey,
+        String productName,
+        Long productId,
+        Long experimentId,
+        BigDecimal amount,
+        String deliveryPageUrl) {
+      this(productKey, productName, productId, experimentId, amount, deliveryPageUrl, null, null);
+    }
+  }
 
   /** Checkout comercial retornado pelo serviço oficial de pagamentos. */
   public record CommercialProductCheckoutResponse(

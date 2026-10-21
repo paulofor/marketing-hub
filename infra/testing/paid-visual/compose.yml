@@ -1,0 +1,14 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: local-test-password
+      MYSQL_DATABASE: paid_visual_test
+    ports:
+      - "127.0.0.1:53317:3306"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-plocal-test-password"]
+      interval: 3s
+      timeout: 3s
+      retries: 30

@@ -10,6 +10,16 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "pde.entitlement")
 public class PdeEntitlementProperties {
     private boolean enabled = true;
+    private String mainBackendToken;
+    /** Retorna a credencial da integração com o backend principal. */
+    public String getMainBackendToken() { return mainBackendToken; }
+    /** Define a credencial financeira sem reutilizar uma conexão pública. */
+    public void setMainBackendToken(String value) { mainBackendToken=value; }
+    private String mainBackendBaseUrl="http://191.252.181.168";
+    /** Retorna a origem principal para direitos de entregas visuais pagas. */
+    public String getMainBackendBaseUrl() { return mainBackendBaseUrl; }
+    /** Configura a origem principal sem alterar integrações legadas. */
+    public void setMainBackendBaseUrl(String value) { mainBackendBaseUrl=value; }
     private String backendBaseUrl = "http://pde-platform-backend:8096";
     private String notificationPath = "/api/internal/pde/mercado-pago/entitlements";
     private String internalToken;

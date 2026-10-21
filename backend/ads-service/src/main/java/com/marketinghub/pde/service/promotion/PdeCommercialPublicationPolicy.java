@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.util.StringUtils;
 
-/** Responsabilidade: bloquear a publicação PDE genérica quando oferta, vídeo e versão divergem. */
+/** Responsabilidade: bloquear a publicação PDE quando oferta, entrega e versão divergem. */
 public final class PdeCommercialPublicationPolicy {
   private static final String MIRA_PRODUCT_SLUG = "pde-planejado-36";
   private static final String MIRA_EXPERIENCE_VERSION = "mira-commercial-v1";
@@ -22,12 +22,13 @@ public final class PdeCommercialPublicationPolicy {
   /** Impede instanciação da política comercial sem estado. */
   private PdeCommercialPublicationPolicy() {}
 
-  /** Limita o gate novo à versão comercial de Mira sem alterar contratos PDE legados. */
+  /** Reconhece a entrega visual paga por capacidade e preserva o gate comercial de Mira. */
   public static boolean appliesTo(PdeProductionSlot slot) {
     return slot != null
-        && MIRA_PRODUCT_SLUG.equals(slot.getProductSlug())
-        && MIRA_EXPERIENCE_VERSION.equals(slot.getExperienceVersion())
-        && MIRA_LAYOUT_KEY.equals(slot.getLayoutKey());
+        && ("paid-visual-v1".equals(slot.getLayoutKey())
+            || (MIRA_PRODUCT_SLUG.equals(slot.getProductSlug())
+                && MIRA_EXPERIENCE_VERSION.equals(slot.getExperienceVersion())
+                && MIRA_LAYOUT_KEY.equals(slot.getLayoutKey())));
   }
 
   /** Lista todas as divergências comerciais da candidata sem alterar seu estado. */
@@ -40,7 +41,18 @@ public final class PdeCommercialPublicationPolicy {
     List<String> blockers = new ArrayList<>();
     validateContractIdentity(slot, contract, blockers);
     validateExperiment(slot, experiment, contract, blockers);
-    validateVideo(slot, videos, contract, blockers);
+    if ("paid-visual-v1".equals(slot.getLayoutKey())) {
+      if (experiment == null
+          || experiment.getProductAiSubtype()
+              != com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY
+          || contract == null
+          || !com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy.VERSION.equals(
+              contract.path("paidVisualDelivery").path("contractVersion").asText()))
+        blockers.add(
+            "Vincular a capacidade de entrega após compra ao contrato pago da própria oferta.");
+    } else {
+      validateVideo(slot, videos, contract, blockers);
+    }
     if (!"OK".equals(slot.getValidationStatus())) {
       blockers.add("Validar a URL e a jornada pública da própria versão.");
     }

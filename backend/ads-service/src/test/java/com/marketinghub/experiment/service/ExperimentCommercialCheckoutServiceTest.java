@@ -62,7 +62,9 @@ class ExperimentCommercialCheckoutServiceTest {
             pdeProductionSlotRepository,
             paymentsClient,
             new PdeCommercialCheckoutContractResolver(new ObjectMapper()),
-            new LowTicketCheckoutContract(new ObjectMapper()));
+            new LowTicketCheckoutContract(new ObjectMapper()),
+            org.mockito.Mockito.mock(
+                com.marketinghub.pde.paidvisual.v1.service.PaidVisualPolicy.class));
   }
 
   /** Prepara a compra única de dois kits sem inventar slot, alterar oferta ou liberar mídia. */
@@ -262,6 +264,57 @@ class ExperimentCommercialCheckoutServiceTest {
     verify(paymentsClient, never()).createCommercialProductCheckout(any());
     verify(productRepository).save(product);
     verify(experimentRepository).save(experiment);
+  }
+
+  /** Preserva a identidade da entrega paga e não reutiliza checkout legado sem seus metadados. */
+  @Test
+  void paidVisualCheckoutCarriesDeliveryIdentityForBothProducts() {
+    for (long id : new long[] {97L, 709L}) {
+      org.mockito.Mockito.reset(paymentsClient);
+      var product =
+          Product.builder()
+              .id(id + 100)
+              .slug("produto-" + id)
+              .name("Produto " + id)
+              .pdeExperienceJson(
+                  "{\"commercialCheckout\":{\"provider\":\"PEPPER\",\"checkoutUrl\":\"https://example.test/old\",\"offerReference\":\"old\",\"priceBrl\":79,\"currency\":\"BRL\",\"billingModel\":\"ONE_TIME\"}}")
+              .build();
+      var experiment =
+          Experiment.builder()
+              .id(id)
+              .product(product)
+              .status(ExperimentStatus.PLANNED)
+              .unitPrice(new BigDecimal("79"))
+              .productAiSubtype(
+                  com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY)
+              .build();
+      var slot =
+          activeSlot("paid-v1", "https://example.test/paid-visual.html?experiment=" + id, id);
+      slot.setExperienceVersion("paid-v1");
+      when(experimentRepository.findById(id)).thenReturn(Optional.of(experiment));
+      when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+          .thenReturn(List.of(slot));
+      when(paymentsClient.createCommercialProductCheckout(any()))
+          .thenAnswer(
+              invocation -> {
+                var input =
+                    invocation.getArgument(
+                        0, LeadPortalPaymentsClient.CommercialProductCheckoutRequest.class);
+                assertThat(input.deliveryContract()).isEqualTo("PDE_PAID_VISUAL_V1");
+                assertThat(input.experienceVersion()).isEqualTo("paid-v1");
+                assertThat(input.experimentId()).isEqualTo(id);
+                return new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                    input.productKey(),
+                    input.productId(),
+                    input.experimentId(),
+                    "preference",
+                    "https://example.test/checkout",
+                    input.amount(),
+                    "BRL",
+                    input.deliveryPageUrl());
+              });
+      assertThat(service.create(id).checkoutUrl()).isEqualTo("https://example.test/checkout");
+    }
   }
 
   /** Deve criar checkout de R$ 349 somente após existir uma entrega PDE validada. */

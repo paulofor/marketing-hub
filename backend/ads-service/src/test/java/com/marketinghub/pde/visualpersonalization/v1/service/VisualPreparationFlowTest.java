@@ -177,7 +177,8 @@ class VisualPreparationFlowTest {
             budget,
             new StudioCostLedgerService(ledgerRepository),
             new ImageGenerationUsageCost(pricing, json),
-            transactions);
+            transactions,
+            mock(com.marketinghub.pde.paidvisual.v1.service.PaidVisualService.class));
   }
 
   /**
@@ -419,6 +420,18 @@ class VisualPreparationFlowTest {
     when(pricing.estimateTaskCost(anyString(), anyString(), anyLong(), anyLong(), anyLong()))
         .thenReturn(Optional.of(new BigDecimal("0.01")));
     assertThat(execution.apply(job).path("status").asText()).isEqualTo("PDE_COMPLETED");
+  }
+
+  /** Preserva a chamada já auditada quando outro executor perde a disputa pela tentativa. */
+  @Test
+  void concurrentWorkerCannotEraseAnAuditedAttempt() throws Exception {
+    String job = register(501);
+    execution.claim(job);
+    execution.request(job, new RequestAudit(request(job)));
+    assertThatThrownBy(() -> execution.receive(job, new Result(response(job), 200, false)))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    assertThat(execution.receive(job, new Result(response(job), 200, true)).path("status").asText())
+        .isEqualTo("PDE_COMPLETED");
   }
 
   /** Um PNG apresentado sem chamada ao provedor não comprova geração personalizada real. */

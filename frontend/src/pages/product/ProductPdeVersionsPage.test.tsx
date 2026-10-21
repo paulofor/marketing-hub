@@ -122,6 +122,23 @@ describe("ProductPdeVersionsPage", () => {
     expect(screen.getByLabelText("Versão PDE *")).toHaveValue(
       "mira-commercial-v1",
     );
+    fireEvent.change(screen.getByLabelText("Endereço completo da entrega"), {
+      target: {
+        value:
+          "https://mira.digicomdigital.com.br/paid-visual.html?experiment=93",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar versão" }));
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/products/10/pde-production-slots",
+        expect.objectContaining({
+          publicUrl:
+            "https://mira.digicomdigital.com.br/paid-visual.html?experiment=93",
+        }),
+      ),
+    );
+
     expect(
       screen.getByLabelText("URL do backend de acesso e eventos", {
         selector: "#pde-slot-backend-url",

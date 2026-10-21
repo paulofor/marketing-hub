@@ -1,0 +1,160 @@
+{
+  "contractVersion": "alcyone-private-homologation.v14",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:11@experiment:97@paid-visual-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Look para a Ocasião",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v3",
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Publicação técnica da capacidade de entrega após compra, com superfície privada v3 preservada. Não é aceite independente, autorização financeira, publicação comercial, mídia ou lançamento.",
+  "operationalState": {
+    "verifiedAt": "2026-10-21",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v13.json",
+    "reason": "Completar a passagem entre pagamento, acesso e geração contratada, preservando a preparação privada.",
+    "includedChanges": [
+      "Entrega paga v1 vinculada ao pagamento e à versão; uma regeneração, prazo e recuperação",
+      "Transporte por backend principal e fila visual existente",
+      "Conferência de versão paga e URL completa pela tela",
+      "Homologação local isolada com casos válidos, falhas, outra identidade e três dispositivos"
+    ],
+    "excludedChanges": [
+      "Aceite independente fabricado",
+      "Alteração de histórico ou transferência de orçamento",
+      "Campanha, cobrança real ou nova geração paga durante a homologação"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "f75163a6de33bbb8ca88183fbc0d0ff0d60a3f99d405af3446048dfaab4cff16"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v3",
+      "experienceVersion": "alcyone-private-v3",
+      "frontendSourceSha256": "f75163a6de33bbb8ca88183fbc0d0ff0d60a3f99d405af3446048dfaab4cff16"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/alcyone-entrega-paga-v1.md",
+      "sha256": "6d19996e171ee42d6447e318b0f9b5b1fd89fefd9833f92e8518615434e1d655",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v13.json",
+      "sha256": "64af32f80a123d126352b2902b02302a8912a7579e9afafce49914fb1bb6c31c",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico preservado; não substitui os pareceres próprios da nova entrega."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualService.java",
+      "sha256": "0a10f2cdef648d7f43646c7d5733f2b38e02a5050200ae50ccade0cd1ef226a6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPolicy.java",
+      "sha256": "565581bee564a246233928de857ce89c442a4fd56595aee7f17d5701a4e1a656",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualReadiness.java",
+      "sha256": "bdc19be57399e44a99006770be2589675840cb45baf93fddd1be0e40e2bb3cd0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/visualpersonalization/v1/service/VisualPreparationExecution.java",
+      "sha256": "c2de9a7f2ee73d29c76ca43003550fa82b91197dc1d790e96f3db316a134b3bd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/visualpersonalization/v1/VisualPreparationGatewayService.java",
+      "sha256": "7ffd849c9a92e33b8d00a0212819a476d5aff2e5b04467b6cd1a5a55a4cb6cc0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/src/visual-personalization-v1.js",
+      "sha256": "8423e240c81bd48286b3faadf1615b0ab10ccea85a080b04a527ace30ff4c74d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/PaidVisualDelivery.tsx",
+      "sha256": "d94ed39bcd31c137b3e824a70003675982bc59a863a3d267c40bd75926462f1e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/promotion/PdeCommercialPublicationPolicy.java",
+      "sha256": "d688797d9d7c13d7ed813a7acc2efecf4289cdc221ee76779133e185a7318532",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualServiceTest.java",
+      "sha256": "ab0cbb534e2e555eee0317d92917dd4a221223222a7886f01ecea43b9bc4475c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPolicyTest.java",
+      "sha256": "2d9d5ffbae97682926173acc8ccda804c2284de027a10fe43804fbb2e4cc3fba",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualReadinessTest.java",
+      "sha256": "e8b2ba4df2577abb74cd5543bebf9f4e28ec9b9daa2f7f291ccb869f12e59fd2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/visualpersonalization/v1/service/VisualPreparationFlowTest.java",
+      "sha256": "f43440ed3e9974f964e383fa18450c8cb860187039583a6e3c935103f9602a4c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/test/visual-personalization-v1.test.js",
+      "sha256": "fe83136a823aad1ecf76879de7a2bdfc4a725d47204ecc05471bde0c84c7d56f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/test/paid-visual-v1.test.js",
+      "sha256": "0c5d10b77d75513327323fedc5bf575d200cf7f6aac7225096382e206255e27c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/paid-visual/run-local.py",
+      "sha256": "5692e4aaa0b484f94855e98e0616c20ba7ab4a03d28b90c1823bf89b2e0167f1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/paid-visual-local.cjs",
+      "sha256": "d49f39c648ac5b67d6e1ef82dcc37b7ee3c4ca089a92448ede1a5fa8b4837b4b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/source-fingerprint.test.mjs",
+      "sha256": "bc0a81afc2e11f705f4061b7ee30356010e094413644c9732207f720e1a620ef",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPublicationTest.java",
+      "sha256": "ea0095b47e375bb9926f9c3e1b2b8eaa5b4677aa384c5bab89932d0fe1170221",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-entrega-paga-v1.md"
+}

@@ -40,13 +40,20 @@ public class PdePaymentEntitlementClient {
         if (payment == null || !supports(payment)) {
             return;
         }
+        if (paidVisual(payment) && !livePayment(payment)) {
+            log.info("Pagamento visual de teste ou sem ambiente confirmado não libera entrega comercial; paymentId={}", payment.id());
+            return;
+        }
         if (!properties.isEnabled()) {
             throw new IllegalStateException("Publicação de entitlement PDE está desabilitada");
         }
-        if (!StringUtils.hasText(properties.getInternalToken())) {
+        String token=paidVisual(payment) ? properties.getMainBackendToken() : properties.getInternalToken();
+        if (!StringUtils.hasText(token)) {
             throw new IllegalStateException("Token interno do entitlement PDE não configurado");
         }
-        URI uri = endpoint();
+        URI uri = paidVisual(payment) ? URI.create(properties.getMainBackendBaseUrl()+"/api/pde/paid-visual/v1/internal/payments") : endpoint();
+        var metadata = new java.util.HashMap<String,Object>(payment.metadata()==null ? java.util.Map.of() : payment.metadata());
+        if (paidVisual(payment)) metadata.put("providerLiveMode", true);
         PdePaymentEntitlementNotification notification = new PdePaymentEntitlementNotification(
                 payment.id(),
                 payment.status(),
@@ -55,7 +62,7 @@ public class PdePaymentEntitlementClient {
                 payment.email(),
                 payment.externalReference(),
                 payment.dateApproved(),
-                payment.metadata());
+                metadata);
         log.info(
                 "Enviando estado financeiro ao PDE; paymentId={}, productSlug={}, status={}, endpoint={}",
                 payment.id(),
@@ -65,7 +72,8 @@ public class PdePaymentEntitlementClient {
         try {
             var response = restClient.post()
                     .uri(uri)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getInternalToken())
+                    .header(paidVisual(payment) ? "X-PDE-Internal-Token" : HttpHeaders.AUTHORIZATION,
+                            paidVisual(payment) ? token : "Bearer " + token)
                     .body(notification)
                     .retrieve()
                     .toBodilessEntity();
@@ -101,7 +109,23 @@ public class PdePaymentEntitlementClient {
                 .filter(StringUtils::hasText)
                 .map(this::normalize)
                 .anyMatch(externalReference::equals);
-        return legacyProduct || configuredProduct;
+        return legacyProduct || configuredProduct || paidVisual(payment);
+    }
+
+    /** Confirma o ambiente no recibo consultado no provedor, ignorando metadata escolhida pelo cliente. */
+    private boolean livePayment(MercadoPagoPaymentDetails payment) {
+        try {
+            var value = new com.fasterxml.jackson.databind.ObjectMapper().readTree(payment.rawPayload()).path("live_mode");
+            return value.isBoolean() && value.asBoolean();
+        } catch (Exception ex) {
+            log.error("Ambiente do pagamento visual não pôde ser conferido paymentId={}", payment.id(), ex);
+            throw new IllegalStateException("Não foi possível confirmar o ambiente financeiro",ex);
+        }
+    }
+
+    /** Identifica a capacidade contratada, sem exceção por nome ou identificador de produto. */
+    private boolean paidVisual(MercadoPagoPaymentDetails payment) {
+        return payment.metadata()!=null && "PDE_PAID_VISUAL_V1".equals(payment.metadata().get("deliveryContract"));
     }
 
     /** Monta e valida a URL absoluta usada na integração interna. */

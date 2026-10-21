@@ -47,8 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * Responsabilidade: integrar a jornada comercial PDE e avançar o produto somente com contratos
- * preparados e auditáveis.
+ * Responsabilidade: integrar a jornada no regime privado ou comercial e avançar o produto somente
+ * com contratos comerciais preparados e auditáveis.
  */
 @Service
 @Slf4j
@@ -150,7 +150,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         && ACTIVITY_ID.equals(activityDefinition.getActivityId());
   }
 
-  /** Bloqueia antecipação quando estratégia de comunicação ou subprocessos ainda não concluíram. */
+  /**
+   * Valida o regime privado antes das exigências comerciais, preservando os gates de cada ciclo.
+   */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -167,6 +169,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         return privateJourney.readiness(process, activityDefinition, product, sourceReference);
       }
       var cycle = scopedCycle(product, sourceReference);
+      if (cycle.isEmpty() && privateJourney.applies(sourceReference)) {
+        return privateJourney.readiness(process, activityDefinition, product, sourceReference);
+      }
       if (cycle.isEmpty()
           && !ELIGIBLE_COMMERCIAL_STATUSES.contains(product.getCommercialStatus())) {
         return new BackendProductProcessActivityReadiness(
@@ -198,7 +203,7 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         "Comunicação, criativos e destino estão aprovados; a jornada pode validar URL, checkout, acesso e eventos.");
   }
 
-  /** Registra a jornada no regime do ciclo; somente a integração comercial pode mover o produto. */
+  /** Registra o regime do produto, primeiro experimento ou ciclo; só o comercial move o produto. */
   @Override
   @Transactional
   public BackendProductProcessActivityExecutionResult execute(
@@ -215,7 +220,8 @@ public class PdeSalesJourneyIntegrationActivityExecutor
       return privateJourney.complete(process, activityDefinition, product, sourceReference);
     }
     var cycle = scopedCycle(product, sourceReference);
-    if (cycle.filter(this::requiresPrivatePreparation).isPresent()) {
+    if (cycle.filter(this::requiresPrivatePreparation).isPresent()
+        || (cycle.isEmpty() && privateJourney.applies(sourceReference))) {
       return privateJourney.complete(process, activityDefinition, product, sourceReference);
     }
     Experiment experiment = sourceExperiment(product, sourceReference);

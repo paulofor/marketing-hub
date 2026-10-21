@@ -6692,6 +6692,14 @@ nova geração. Regressões: primeiro experimento e outra identidade, vínculos
 inválidos, histórico encerrado, produtor real, replay offline e recuperação do
 filho sem cancelar tarefa ativa. [Matriz e resultados](../homologacao/alcyone-private-handoff-2026-10-20.md).
 
+Em 21/10, o destino concluiu automaticamente, mas o comando oficial de integração
+ainda reconhecia apenas produto privado e ciclo. O replay anterior chamava o
+serviço compartilhado diretamente e não exercitava esse despacho. A integração
+sem ciclo agora consulta o mesmo regime privado antes do slot; ciclos em
+autorização mantêm a exigência comercial. Regressões reproduzem o comando em duas
+identidades, preservam bloqueios privados e repetem a passagem pelos executores
+reais usando os registros exportados, inclusive a tentativa bloqueada.
+
 
 ### Recorrência — autoria omitida no contexto do ciclo, 09/10/2026
 

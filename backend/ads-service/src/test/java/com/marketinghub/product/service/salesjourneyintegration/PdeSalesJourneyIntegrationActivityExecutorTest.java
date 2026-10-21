@@ -36,9 +36,11 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
-/** Responsabilidade: comprovar o gate auditável que leva o Rigel ao processo de homologação. */
+/** Responsabilidade: comprovar o despacho privado e o gate auditável da integração comercial. */
 class PdeSalesJourneyIntegrationActivityExecutorTest {
   private static final Instant NOW = Instant.parse("2026-08-28T14:00:00Z");
   private final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
@@ -57,6 +59,8 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
   private final ProductRepository products = mock(ProductRepository.class);
   private final ProductProcessPeriodService periods = mock(ProductProcessPeriodService.class);
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final com.marketinghub.communication.v1.PrivateCommunicationJourney privateJourney =
+      mock(com.marketinghub.communication.v1.PrivateCommunicationJourney.class);
 
   private PdeSalesJourneyIntegrationActivityExecutor executor;
   private BusinessProcessDefinition process;
@@ -65,6 +69,54 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
   private Experiment experiment;
   private CommercialPlan plan;
   private PdeProductionSlot slot;
+
+  /** Encaminha o primeiro experimento privado sem consultar slot nem avançar comercialmente. */
+  @ParameterizedTest
+  @CsvSource({"11,97", "240,9701"})
+  void routesInitialPrivateExperimentWithoutCommercialFallback(long productId, long experimentId) {
+    rigel.setId(productId);
+    String reference = "experiment:" + experimentId;
+    when(privateJourney.applies(reference)).thenReturn(true);
+    when(privateJourney.readiness(process, integration, rigel, reference))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityReadiness(true, "Provas privadas vigentes."));
+    when(privateJourney.complete(process, integration, rigel, reference))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityExecutionResult(
+                reference, "COMPLETED", true, "Integração privada comprovada."));
+
+    assertThat(executor.readiness(process, integration, rigel, reference).ready()).isTrue();
+    assertThat(executor.execute(process, integration, rigel, reference).objectiveAchieved())
+        .isTrue();
+
+    verify(privateJourney).complete(process, integration, rigel, reference);
+    verifyNoInteractions(plans, experiments, slots, slotService, products, periods, measurements);
+    assertThat(rigel.getCommercialStatus()).isEqualTo("COMUNICACAO_E_JORNADA");
+  }
+
+  /** Mantém a falta de prova privada como bloqueio, sem convertê-la em caminho comercial. */
+  @Test
+  void preservesPrivateBlockerWithoutRequiringCommercialSlot() {
+    String reference = "experiment:97";
+    when(privateJourney.applies(reference)).thenReturn(true);
+    when(privateJourney.readiness(process, integration, rigel, reference))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityReadiness(false, "Parecer independente ausente."));
+
+    var readiness = executor.readiness(process, integration, rigel, reference);
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).isEqualTo("Parecer independente ausente.");
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> executor.execute(process, integration, rigel, reference))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Parecer independente ausente.");
+    verify(privateJourney, never()).complete(any(), any(), any(), any());
+    verifyNoInteractions(plans, experiments, slots, slotService, products, periods, measurements);
+  }
 
   /** Conclui a referência privada do produto sem fabricar experimento, plano ou slot comercial. */
   @Test
@@ -235,6 +287,8 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
             periods,
             objectMapper,
             Clock.fixed(NOW, ZoneOffset.UTC));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        executor, "privateJourney", privateJourney);
     process = process(55L, "pde-communication-sales-journey", "PUBLISHED");
     process.setDiagramJson(
         """

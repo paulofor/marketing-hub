@@ -36,7 +36,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 /** Responsabilidade: reproduzir offline contratos exportados por leitura, sem acesso ao runtime. */
 @EnabledIfEnvironmentVariable(named = "PRIVATE_JOURNEY_REPLAY", matches = ".+")
 class PrivateCommunicationJourneyReplayTest {
-  /** Confere contratos exportados e, quando disponível, sua projeção real antes da retomada. */
+  /**
+   * Confere contratos exportados pelos executores reais de destino e integração antes da retomada.
+   */
   @Test
   void completesUsingExportedEvidenceWithoutCallingProduction() throws Exception {
     var json = new ObjectMapper().findAndRegisterModules();
@@ -244,15 +246,26 @@ class PrivateCommunicationJourneyReplayTest {
           "initialExperiments",
           new InitialExperimentPrivateJourneyContext(initial, experiments, cycles, json));
     }
+    var integrationExecutor = integrationExecutor(journey, cycles, instances, tasks, json);
+    var destinationExecutor =
+        new CommunicationDestinationActivityExecutor(
+            journey,
+            mock(
+                com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                    .class));
     for (String activityId : List.of("destination", "integration")) {
       var activity =
           definitions.values().stream()
               .filter(a -> activityId.equals(a.getActivityId()))
               .findFirst()
               .orElseThrow();
-      var readiness = journey.readiness(parent, activity, product, reference);
+      com.marketinghub.businessprocess.execution.service.backendactivity
+              .BackendProductProcessActivityExecutor
+          executor = "destination".equals(activityId) ? destinationExecutor : integrationExecutor;
+      assertThat(executor.supports(parent, activity)).isTrue();
+      var readiness = executor.readiness(parent, activity, product, reference);
       assertThat(readiness.ready()).as(readiness.reason()).isTrue();
-      assertThat(journey.complete(parent, activity, product, reference).objectiveAchieved())
+      assertThat(executor.execute(parent, activity, product, reference).objectiveAchieved())
           .isTrue();
       assertThat(journey.stale(parent, activity, product, reference)).isFalse();
     }
@@ -261,6 +274,45 @@ class PrivateCommunicationJourneyReplayTest {
         .isEqualTo(exported.path("expectedProducerTaskId").asLong(406L));
     assertThat(finalProof.path("checkoutMode").asText()).isEqualTo("SIMULATED");
     verify(tasks, never()).save(any());
+  }
+
+  /**
+   * Monta o comando oficial de integração com repositórios locais, sem APIs ou escrita produtiva.
+   */
+  private com.marketinghub.product.service.salesjourneyintegration
+          .PdeSalesJourneyIntegrationActivityExecutor
+      integrationExecutor(
+          PrivateCommunicationJourney journey,
+          LearningSalesCycleRepository cycles,
+          BusinessProcessActivityInstanceRepository instances,
+          AgentTaskRepository tasks,
+          ObjectMapper json) {
+    var executor =
+        new com.marketinghub.product.service.salesjourneyintegration
+            .PdeSalesJourneyIntegrationActivityExecutor(
+            mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class),
+            mock(ExperimentRepository.class),
+            mock(
+                com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                    .class),
+            mock(
+                com.marketinghub.repository.jpa.businessprocess
+                    .BusinessProcessActivityDefinitionRepository.class),
+            tasks,
+            instances,
+            mock(
+                com.marketinghub.product.service.valuechainposition.ProductStageMeasurementResolver
+                    .class),
+            mock(com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository.class),
+            mock(com.marketinghub.pde.service.PdeProductionSlotService.class),
+            mock(com.marketinghub.repository.jpa.product.ProductRepository.class),
+            mock(
+                com.marketinghub.product.service.valuechainposition.ProductProcessPeriodService
+                    .class),
+            json);
+    org.springframework.test.util.ReflectionTestUtils.setField(executor, "privateJourney", journey);
+    org.springframework.test.util.ReflectionTestUtils.setField(executor, "learningCycles", cycles);
+    return executor;
   }
 
   /** Confere a leitura atual das provas exportadas sem exigir aceite humano das novas mídias. */

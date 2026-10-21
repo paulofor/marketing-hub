@@ -187,3 +187,12 @@ Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.
 
 - `FacebookSchedulingConfigurationTest` carrega o padrão do Compose no contexto
   Spring para impedir divergência de cadência entre Java e configuração publicada.
+
+## Validade Meta conferida — 21/10/2026
+
+Se a troca oficial omitir `expires_in` ou informar zero, inspecionar a candidata e
+a origem em `debug_token`; exigir mesma identidade/aplicativo, USER, escopos e
+horizonte futuro oficial. Usar o menor prazo positivo de token/dados, sem presumir
+sessenta dias. Zero explícito só é aceito com limite futuro de dados; ausência ou
+falha preserva a credencial anterior. Callback deve confirmar antes de qualquer
+alteração volátil. Consulte `docs/homologacao/meta-validade-confirmada-v1.md`.

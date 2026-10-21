@@ -3,6 +3,7 @@ package com.marketinghub.facebookadsworker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenValidityVerifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -3466,7 +3467,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return trimmed.startsWith("v") ? trimmed : "v" + trimmed;
     }
 
-    /** Troca a credencial e preserva erros oficiais sem registrar segredos presentes na URL. */
+    /** Troca a credencial e confirma pela inspeção oficial o prazo omitido, sem expor segredos. */
     public TokenRenewalResponse renewLongLivedToken(String appId, String appSecret, String currentToken) {
         Objects.requireNonNull(appId, "appId");
         Objects.requireNonNull(appSecret, "appSecret");
@@ -3503,6 +3504,17 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             long expiresInSeconds = response.path("expires_in").asLong(0L);
             if (newToken == null || newToken.isBlank()) {
                 throw new IllegalStateException("Facebook response does not contain access_token");
+            }
+
+            JsonNode duration = response.path("expires_in");
+            if (!duration.isMissingNode() && !duration.isNull()
+                    && (!duration.isIntegralNumber() || !duration.canConvertToLong() || expiresInSeconds < 0)) {
+                throw new IllegalStateException("Meta informou duração inválida; credencial anterior preservada");
+            }
+            if (expiresInSeconds == 0) {
+                var verified = new FacebookTokenValidityVerifier(webClient, buildVersionedPath("/debug_token"))
+                        .verify(appId, appSecret, currentToken, newToken);
+                return new TokenRenewalResponse(newToken, 0, verified);
             }
 
             LOGGER.info(
@@ -3638,7 +3650,19 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         Long audienceSize
     ) {}
 
-    public record TokenRenewalResponse(String accessToken, long expiresInSeconds) {}
+    /** Transporta duração ou horizonte absoluto confirmado, sem imprimir a credencial. */
+    public record TokenRenewalResponse(String accessToken, long expiresInSeconds, java.time.LocalDateTime verifiedExpiresAt) {
+        /** Preserva consumidores que recebem duração positiva no contrato histórico. */
+        public TokenRenewalResponse(String accessToken, long expiresInSeconds) {
+            this(accessToken, expiresInSeconds, null);
+        }
+        /** Evita exposição acidental da candidata em diagnóstico do resultado. */
+        @Override
+        public String toString() {
+            return "TokenRenewalResponse[accessToken=[OCULTO], expiresInSeconds=" + expiresInSeconds
+                    + ", verifiedExpiresAt=" + verifiedExpiresAt + "]";
+        }
+    }
 
     private void recordApiCallDebugInfo(String method,
                                         String path,

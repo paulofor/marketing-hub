@@ -10763,3 +10763,21 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
 - Limite: a prevenção não recupera o token que a Meta já recusou com 190/463,
   não inicia campanha nem altera orçamento. Matriz:
   `docs/homologacao/meta-token-curto-renovacao-v1.md`.
+
+## LOOP-META-TROCA-SEM-DURACAO-DESCARTA-CREDENCIAL-VALIDA — 21/10/2026
+
+- **Evidência:** Capella #105, conta #1: troca HTTP 200 com `access_token` e
+  `token_type`, sem `expires_in`. `debug_token` confirmou USER, mesmo app/titular,
+  escopos, `is_valid=true`, `expires_at=0` e `data_access_expires_at` futuro.
+  O worker registrou duração zero e descartou a candidata, conservando o token curto.
+- **Causa:** confundir falta de duração na troca com falta de qualquer prazo oficial,
+  sem consultar os metadados da credencial devolvida. O fallback fixo de sessenta dias
+  anterior também não seria prova válida.
+- **Correção reutilizável:** inspeção da candidata/origem no worker; verificação
+  canônica no backend para troca administrativa e envio por tela; menor horizonte
+  positivo oficial, identidade e escopos. Ausência, tipo incorreto, prazo negativo,
+  dados vencidos ou divergência recusam a troca. Credenciais não aparecem no log.
+- **Regressão:** callback HTTP real com Meta simulada, outra conta, duração antes
+  válida, negativo/ausente/zero sem horizonte, identidade, permissão, falha e
+  comando de tela/controller/banco H2. Não amplia orçamento nem promove RUNNING.
+- **Matriz e limites:** `docs/homologacao/meta-validade-confirmada-v1.md`.

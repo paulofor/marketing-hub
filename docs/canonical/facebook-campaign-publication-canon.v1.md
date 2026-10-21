@@ -39,8 +39,14 @@ frequência, timeout e isolamento do agendamento. A fila de renovação é indep
 da fila serial de campanhas, públicos e métricas. Uma consulta externa sem resposta
 não pode impedir a verificação antes do vencimento.
 
-Usar somente o prazo positivo devolvido pela Meta (`expires_in`), calculado em UTC;
-jamais inventar sessenta dias quando a resposta omite validade ou informa outro prazo.
+Usar o prazo positivo devolvido pela Meta (`expires_in`), calculado em UTC. Quando
+omitido ou zero, consultar `debug_token` da candidata e da origem: exigir validade,
+mesmo aplicativo, titular USER e permissões. Conservar o menor horizonte positivo
+oficial entre `expires_at` e `data_access_expires_at`. Zero explícito de expiração
+só é admitido com limite positivo de dados; não equivale a metadado ausente ou prazo
+inventado. Sem horizonte futuro comprovado, preservar a credencial anterior. Nunca
+presumir sessenta dias. O painel registra validade operacional, sujeita a revogação;
+ela pode ser limitada pelo acesso aos dados, mesmo sem expiração agendada do token.
 Resposta inválida ou callback não confirmado não comprova renovação. Não trocar a
 credencial de uma campanha em curso; os consumidores carregam a versão persistida
 no próximo ciclo. Manter segredos fora de logs, inclusive respostas dos callbacks.
@@ -87,6 +93,9 @@ e `renewal/eligible`. TLS do ingresso administrativo continua uma responsabilida
 operacional; ocultar o campo não substitui criptografia de transporte.
 
 Homologação: [envio pelo painel](../homologacao/meta-token-painel-v1.md).
+A troca sem `expires_in` e a recuperação do horizonte oficial estão documentadas em
+[validade confirmada](../homologacao/meta-validade-confirmada-v1.md). Essa inspeção
+não cria campanha nem substitui homologação, teto, janela ou autorização.
 
 ## 1. Propósito
 

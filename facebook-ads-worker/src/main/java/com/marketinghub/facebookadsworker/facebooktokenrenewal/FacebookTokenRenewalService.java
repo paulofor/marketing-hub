@@ -207,7 +207,7 @@ public class FacebookTokenRenewalService {
         return attempt;
     }
 
-    /** Executa a troca oficial e rejeita respostas sem validade verificável. */
+    /** Executa a troca e aceita duração positiva ou horizonte absoluto inspecionado na Meta. */
     private TokenRenewalAttemptResult performTokenRenewal(
         Long accountId,
         String appId,
@@ -222,7 +222,11 @@ public class FacebookTokenRenewalService {
                 currentToken
             );
             LocalDateTime renewedAt = attemptedAt;
-            LocalDateTime expiresAt = calculateExpiration(renewedAt, response.expiresInSeconds());
+            LocalDateTime expiresAt = response.verifiedExpiresAt() != null
+                    ? response.verifiedExpiresAt() : calculateExpiration(renewedAt, response.expiresInSeconds());
+            if (!expiresAt.isAfter(renewedAt)) {
+                throw new IllegalStateException("Meta não confirmou horizonte futuro; credencial anterior preservada");
+            }
             return new TokenRenewalAttemptResult(
                 FacebookTokenRenewalStatus.SUCCESS,
                 response.accessToken(),

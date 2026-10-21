@@ -159,10 +159,26 @@ class FacebookTokenReplacementTest {
         .doesNotContain(CANDIDATE, "synthetic-app-secret", "synthetic-old-token");
   }
 
+  /** Aceita expiração zero apenas com limite de dados futuro e mantém o menor prazo oficial. */
+  @ParameterizedTest
+  @ValueSource(longs = {0, 8640000})
+  void persistsVerifiedDataHorizon(long tokenSeconds) throws Exception {
+    long horizon = Instant.now().plusSeconds(7200000).getEpochSecond();
+    var data = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(validDebug()).path("data");
+    data.put("expires_at", tokenSeconds == 0 ? 0 : Instant.now().plusSeconds(tokenSeconds).getEpochSecond());
+    data.put("data_access_expires_at", horizon);
+    debug(json.writeValueAsString(Map.of("data", data)));
+    adAccount();
+    submit(CANDIDATE).andExpect(status().isOk());
+    meta.verify();
+    assertThat(repository.findById(account.getId()).orElseThrow().getTokenExpiresAt())
+        .isEqualTo(LocalDateTime.ofEpochSecond(horizon, 0, java.time.ZoneOffset.UTC));
+  }
+
   /** Rejeita validade falsa, titular/aplicativo trocado, tipo errado e permissões insuficientes. */
   @ParameterizedTest
   @ValueSource(
-      strings = {"invalid", "app", "user", "type", "expired", "scopes", "accessExpired", "missing"})
+      strings = {"invalid", "app", "user", "type", "expired", "scopes", "accessExpired", "missing", "zeroWithoutHorizon", "zeroWithExpiredData", "negative", "stringExpiry"})
   void refusesInvalidEvidence(String failure) throws Exception {
     var data =
         (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(validDebug()).path("data");
@@ -175,6 +191,10 @@ class FacebookTokenReplacementTest {
       case "scopes" -> data.putArray("scopes").add("ads_read");
       case "accessExpired" -> data.put("data_access_expires_at", 1);
       case "missing" -> data.remove("expires_at");
+      case "zeroWithoutHorizon" -> data.put("expires_at", 0);
+      case "zeroWithExpiredData" -> { data.put("expires_at", 0); data.put("data_access_expires_at", 1); }
+      case "negative" -> data.put("expires_at", -1);
+      case "stringExpiry" -> data.put("expires_at", "0");
     }
     debug(json.writeValueAsString(Map.of("data", data)));
     submit(CANDIDATE).andExpect(status().isUnprocessableEntity());

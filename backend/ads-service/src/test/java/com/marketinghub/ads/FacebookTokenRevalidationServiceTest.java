@@ -38,13 +38,15 @@ class FacebookTokenRevalidationServiceTest {
   @BeforeEach
   void setUp() {
     RestTemplate template = new RestTemplate();
-    RestTemplateBuilder builder = mock(RestTemplateBuilder.class);
+    RestTemplateBuilder builder = mock(RestTemplateBuilder.class, org.mockito.Answers.RETURNS_SELF);
     when(builder.build()).thenReturn(template);
     FacebookAccountRepository repository = mock(FacebookAccountRepository.class);
     when(repository.save(any(FacebookAccount.class))).thenAnswer(call -> call.getArgument(0));
     service =
         new FacebookTokenRevalidationService(
-            builder, repository, new ObjectMapper(), "https://graph.facebook.com", "v23.0");
+            builder, repository, new ObjectMapper(),
+            new FacebookTokenVerificationClient(builder, "https://graph.facebook.com", "v23.0"),
+            "https://graph.facebook.com", "v23.0");
     server = MockRestServiceServer.bindTo(template).build();
   }
 
@@ -81,6 +83,10 @@ class FacebookTokenRevalidationServiceTest {
         .andRespond(
             withSuccess(
                 "{\"access_token\":\"new-token\"" + expiration + "}", MediaType.APPLICATION_JSON));
+    if (!expiration.contains("-1")) {
+      server.expect(requestTo("https://graph.facebook.com/v23.0/debug_token?input_token=new-token"))
+          .andRespond(withSuccess("{\"data\":{\"is_valid\":false}}", MediaType.APPLICATION_JSON));
+    }
     FacebookAccount account = account(27L);
     LocalDateTime previous = account.getTokenExpiresAt();
     var result = service.revalidate(account);
@@ -89,6 +95,25 @@ class FacebookTokenRevalidationServiceTest {
     assertThat(account.getAccessToken()).isEqualTo("synthetic-old-token");
     assertThat(account.getTokenExpiresAt()).isEqualTo(previous);
     assertThat(account.getTokenRenewedAt()).isNull();
+  }
+
+  /** Inspeciona a troca sem duração e preserva o prazo absoluto mais restritivo informado pela Meta. */
+  @ParameterizedTest
+  @ValueSource(longs = {0, 8640000})
+  void verifiesMissingDuration(long tokenSeconds, CapturedOutput output) {
+    long dataEnd = java.time.Instant.now().plusSeconds(7200000).getEpochSecond();
+    long tokenEnd = tokenSeconds == 0 ? 0 : java.time.Instant.now().plusSeconds(tokenSeconds).getEpochSecond();
+    server.expect(requestTo(url())).andRespond(withSuccess("{\"access_token\":\"new-token\"}", MediaType.APPLICATION_JSON));
+    server.expect(requestTo("https://graph.facebook.com/v23.0/debug_token?input_token=new-token"))
+        .andRespond(withSuccess("{\"data\":{\"is_valid\":true,\"type\":\"USER\",\"app_id\":\"test-app\",\"user_id\":\"profile\",\"expires_at\":"
+            + tokenEnd + ",\"data_access_expires_at\":" + dataEnd + ",\"scopes\":[\"ads_read\",\"ads_management\"]}}", MediaType.APPLICATION_JSON));
+    server.expect(requestTo("https://graph.facebook.com/v23.0/act_7777?fields=id,account_id"))
+        .andRespond(withSuccess("{\"id\":\"act_7777\",\"account_id\":\"7777\"}", MediaType.APPLICATION_JSON));
+    var result = service.revalidate(account(31L));
+    server.verify();
+    assertThat(result.status()).isEqualTo(FacebookTokenRenewalStatus.SUCCESS);
+    assertThat(result.tokenExpiresAt()).isEqualTo(LocalDateTime.ofEpochSecond(dataEnd, 0, ZoneOffset.UTC));
+    assertThat(output.getAll()).doesNotContain("synthetic-old-token", "synthetic-app-secret", "new-token");
   }
 
   /** Mantém a automação ligada e preserva a causa da recusa sem expor segredo ou token em logs. */
@@ -119,6 +144,8 @@ class FacebookTokenRevalidationServiceTest {
         .accessToken("synthetic-old-token")
         .appId("test-app")
         .appSecret("synthetic-app-secret")
+        .authorizedUserId("profile")
+        .adAccountId("7777")
         .tokenExpiresAt(LocalDateTime.now(ZoneOffset.UTC).plusDays(2))
         .tokenRenewalEnabled(true)
         .build();

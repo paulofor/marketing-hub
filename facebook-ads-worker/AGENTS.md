@@ -179,3 +179,11 @@ Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.
   limpa a tentativa no backend, permitindo recuperar sem reiniciar o worker.
 - Nunca inventar validade ou aprovar campanha por renovação. Fonte e testes em
   `docs/homologacao/meta-token-curto-renovacao-v1.md`.
+
+- A cadência padrão de cinco minutos deve permanecer alinhada entre a anotação
+  Java e `docker-compose.yml`. Antes de concluir uma alteração de agendamento,
+  validar a mesclagem Compose e conferir somente a variável correspondente no
+  container publicado, sem imprimir o ambiente completo ou credenciais.
+
+- `FacebookSchedulingConfigurationTest` carrega o padrão do Compose no contexto
+  Spring para impedir divergência de cadência entre Java e configuração publicada.

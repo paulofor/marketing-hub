@@ -12,9 +12,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -30,6 +30,7 @@ public class FacebookTokenRenewalService {
     private final FacebookTokenRenewalClient tokenRenewalClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
+    private Clock clock = Clock.systemUTC();
 
     @Value("${facebook.token-renewal.backend-retry-delay-ms:10000}")
     private long backendRetryDelayMs = 10000;
@@ -49,7 +50,7 @@ public class FacebookTokenRenewalService {
         this.apiPrefix = apiPrefix;
     }
 
-    /** Consulta e renova as contas elegíveis sem interferir no token de campanhas em curso. */
+    /** Consulta elegíveis, respeita o espaçamento e preserva o token de campanhas em curso. */
     public void renewTokensIfNeeded() {
         List<FacebookAccountRenewalCandidate> candidates = fetchEligibleAccounts();
         if (candidates.isEmpty()) {
@@ -58,6 +59,9 @@ public class FacebookTokenRenewalService {
         }
 
         for (FacebookAccountRenewalCandidate candidate : candidates) {
+            if (!isRenewalDue(candidate, LocalDateTime.now(clock))) {
+                continue;
+            }
             try {
                 renewCandidateToken(candidate);
             } catch (RuntimeException ex) {
@@ -66,7 +70,7 @@ public class FacebookTokenRenewalService {
         }
     }
 
-    /** Busca o contrato e recupera indisponibilidade transitória antes do próximo ciclo de seis horas. */
+    /** Busca o contrato e recupera indisponibilidade transitória antes da próxima consulta periódica. */
     private List<FacebookAccountRenewalCandidate> fetchEligibleAccounts() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/renewal/eligible");
         LOGGER.info(
@@ -117,6 +121,21 @@ public class FacebookTokenRenewalService {
     private boolean isTransientBackendRead(Throwable failure) {
         return failure instanceof WebClientRequestException
                 || failure instanceof WebClientResponseException response && response.getStatusCode().is5xxServerError();
+    }
+
+    /** Espaça trocas sem deixar uma credencial nova curta expirar entre consultas. */
+    private boolean isRenewalDue(FacebookAccountRenewalCandidate candidate, LocalDateTime now) {
+        LocalDateTime lastAttempt = candidate.tokenRenewalLastAttemptAt();
+        if (lastAttempt == null) {
+            return true;
+        }
+        if (!lastAttempt.plusHours(6).isAfter(now)) {
+            return true;
+        }
+        return "SUCCESS".equals(candidate.tokenRenewalStatus())
+                && candidate.tokenExpiresAt() != null
+                && !candidate.tokenExpiresAt().isAfter(now.plusMinutes(30))
+                && !lastAttempt.plusMinutes(15).isAfter(now);
     }
 
     /** Renova uma conta e deixa os consumidores carregarem a nova credencial do backend. */
@@ -195,7 +214,7 @@ public class FacebookTokenRenewalService {
         String appSecret,
         String currentToken
     ) {
-        LocalDateTime attemptedAt = LocalDateTime.now(ZoneOffset.UTC);
+        LocalDateTime attemptedAt = LocalDateTime.now(clock);
         try {
             FacebookAdsService.TokenRenewalResponse response = facebookAdsService.renewLongLivedToken(
                 appId,
@@ -245,7 +264,9 @@ public class FacebookTokenRenewalService {
         String appId,
         String appSecret,
         String accessToken,
-        LocalDateTime tokenExpiresAt
+        LocalDateTime tokenExpiresAt,
+        String tokenRenewalStatus,
+        LocalDateTime tokenRenewalLastAttemptAt
     ) {}
 
     /** Resultado da troca, com datas oficiais ou falha sem nova credencial. */

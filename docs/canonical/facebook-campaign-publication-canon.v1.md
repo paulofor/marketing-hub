@@ -54,6 +54,20 @@ campanha: gates, seleção, orçamento e janela do experimento continuam obrigat
 
 Evidências, alternativas e regressões: [renovação automática Meta](../homologacao/meta-renovacao-automatica-v1.md).
 
+## Detecção de credenciais curtas — 21/10/2026
+
+O worker verifica elegíveis a cada cinco minutos para evitar que um token curto
+recém-salvo expire entre consultas. O backend continua expondo o contrato e
+persistindo o resultado, sem controlar o agendamento. O executor conserva seis
+horas entre tentativas já registradas; sucesso ainda a até trinta minutos do
+vencimento permite nova tentativa depois de quinze minutos. Falha recente não
+entra em loop de cinco minutos. A troca manual validada limpa o estado da
+tentativa, como já previsto no contrato do painel.
+
+A validade informada pela Meta e todos os gates comerciais permanecem obrigatórios.
+Token já recusado como expirado exige recuperação do titular. Evidência e limites:
+[renovação de token curto](../homologacao/meta-token-curto-renovacao-v1.md).
+
 ## Recuperação de credencial pelo painel — decisão de 21/10/2026
 
 O titular pode enviar o novo token de usuário em `/accounts/facebook` pelo comando

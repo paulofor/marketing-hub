@@ -10748,3 +10748,18 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
 - **Prevenção:** `FacebookTokenReplacementTest` e `FacebookTokenUpdateDialog.test.tsx`, incluindo outra identidade, recusa, sigilo, duplo envio e alteração concorrente. Diagnóstico não aprova somente por HTTP 200.
 - **Limites:** precisa de credencial emitida pelo titular; não inicia campanha, não amplia gastos nem muda gates. Transporte do painel herda o ingresso existente.
 - **Evidência:** `docs/homologacao/meta-token-painel-v1.md`.
+
+### Complemento de LOOP-META-RENOVACAO-BLOQUEADA-POR-FILA — 21/10/2026
+
+- Nova causa comprovada após a recuperação da fila: token salvo às 02:56:51 UTC,
+  vencimento oficial às 04:00 UTC, `NEVER_ATTEMPTED`. O intervalo de seis horas
+  não detecta uma credencial que nasce e expira entre duas consultas.
+- Consulta no worker a cada cinco minutos; trocas continuam espaçadas pelos
+  metadados persistidos. Credencial nova entra sem espera; falha recente não
+  repete; sucesso curto tem proteção próxima ao vencimento.
+- Prevenção: `FacebookTokenRenewalCadenceTest` e
+  `FacebookSchedulingConfigurationTest`, com duas identidades, compatibilidade,
+  limites temporais, fila isolada e callbacks HTTP locais.
+- Limite: a prevenção não recupera o token que a Meta já recusou com 190/463,
+  não inicia campanha nem altera orçamento. Matriz:
+  `docs/homologacao/meta-token-curto-renovacao-v1.md`.

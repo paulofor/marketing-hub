@@ -167,3 +167,15 @@ Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.
 - Indisponibilidade transitória do backend na inicialização deve recuperar a
   consulta de elegíveis com retentativas limitadas. Não esperar seis horas pela
   primeira recuperação, nem aplicar esse retry à troca Meta, callback ou HTTP 4xx.
+
+## Credenciais curtas — 21/10/2026
+
+- Consultar elegíveis a cada cinco minutos no agendador exclusivo. A consulta
+  frequente não autoriza trocar a mesma credencial a cada passagem: usar o status
+  e o horário persistidos pelo backend para manter seis horas entre tentativas.
+- Sem tentativa anterior, a credencial recém-salva é processada na próxima
+  consulta. Sucesso com até trinta minutos restantes pode renovar após quinze
+  minutos; falha recente mantém a espera de seis horas. Troca manual válida
+  limpa a tentativa no backend, permitindo recuperar sem reiniciar o worker.
+- Nunca inventar validade ou aprovar campanha por renovação. Fonte e testes em
+  `docs/homologacao/meta-token-curto-renovacao-v1.md`.

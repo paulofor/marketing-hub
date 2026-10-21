@@ -86,7 +86,7 @@ public class SafiraCommercialService
     return true;
   }
 
-  /** Orienta entrada e histórico, conferindo fontes somente antes de novas provas ou revisões. */
+  /** Orienta entrada, histórico e correção na fonte canônica antes de novas provas ou revisões. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -146,13 +146,15 @@ public class SafiraCommercialService
       return new BackendProductProcessActivityReadiness(
           false,
           ex.getMessage(),
-          "Resolver pendência Safira",
+          ex instanceof SafiraCommercialBlocker blocker
+              ? blocker.actionLabel()
+              : "Resolver pendência Safira",
           "Corrija a fonte indicada e retome a mesma execução; provas privadas e atividades válidas permanecem preservadas.",
           null,
           null,
           List.of(),
           null,
-          url);
+          ex instanceof SafiraCommercialBlocker blocker ? blocker.navigationUrl() : url);
     }
   }
 

@@ -1,5 +1,6 @@
 package com.marketinghub.safira.commercial.v1.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -157,6 +158,35 @@ class SafiraCommercialChecksTest {
 
     assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
         .hasMessageContaining("conclua o parecer de Plutus");
+  }
+
+  /** Direciona versão ausente ao editor de versões, preservando o bloqueio comercial. */
+  @Test
+  void missingCommercialVersionUsesProductVersionWorkspace() {
+    var withoutSlot =
+        new SafiraCommercialContext.Scope(
+            experiment, scope.product(), scope.productVersion(), null, null, null, plan);
+    assertThatThrownBy(() -> checks.check("journey", withoutSlot, snapshot))
+        .isInstanceOfSatisfying(
+            SafiraCommercialBlocker.class,
+            blocker -> {
+              assertThat(blocker.navigationUrl()).isEqualTo("/products/44/pde-versions");
+              assertThat(blocker.actionLabel()).isEqualTo("Preparar versão comercial");
+              assertThat(blocker.getMessage()).contains("privada não libera venda");
+            });
+  }
+
+  /** Encaminha checkout inválido à oferta do mesmo experimento, sem aceitá-lo. */
+  @Test
+  void missingCheckoutUsesExperimentWorkspace() {
+    snapshot.remove("checkoutUrl");
+    assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
+        .isInstanceOfSatisfying(
+            SafiraCommercialBlocker.class,
+            blocker -> {
+              assertThat(blocker.navigationUrl()).isEqualTo("/experiments/710/edit");
+              assertThat(blocker.actionLabel()).isEqualTo("Preparar checkout no experimento");
+            });
   }
 
   /** Monta o contrato financeiro mínimo usado pelas regressões do gate econômico. */

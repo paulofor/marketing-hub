@@ -1,5 +1,6 @@
 package com.marketinghub.safira.commercial.v1.service;
 
+import static com.marketinghub.safira.commercial.v1.service.SafiraCommercialBlocker.requireAt;
 import static com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext.require;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,16 +49,18 @@ public class SafiraCommercialChecks {
   }
 
   /**
-   * Exige experiência comercial, cinco pontos e controles do canal aprovado no mesmo experimento.
+   * Exige provas comerciais do mesmo experimento e aponta a fonte de correção das pendências.
    */
   private void journey(SafiraCommercialContext.Scope scope, JsonNode snapshot) {
     var experiment = scope.experiment();
     require(
         experiment.getPlatform() == ExperimentPlatform.FACEBOOK,
         "Safira aceita somente aquisição paga no Instagram; crie uma candidata Meta/Instagram.");
-    require(
+    requireAt(
         experiment.getInstagramAccount() != null,
-        "Selecione a identidade pública do Instagram que representará esta oferta.");
+        "Selecione a identidade pública do Instagram que representará esta oferta.",
+        "Selecionar Instagram no experimento",
+        "/experiments/" + experiment.getId() + "/edit#instagramAccountId");
     require(
         !snapshot.path("singlePain").asText().isBlank()
             && !snapshot.path("funnelPromise").asText().isBlank()
@@ -71,16 +74,22 @@ public class SafiraCommercialChecks {
     require(
         !snapshot.path("freeReward").asText().isBlank(),
         "Defina a demonstração inicial de valor antes do compromisso pago.");
-    require(
+    requireAt(
         scope.slot() != null,
-        "Publique a experiência comercial no slot vinculado ao próprio experimento.");
-    require(
+        "Prepare a versão comercial vinculada ao próprio experimento. A homologação privada não libera venda.",
+        "Preparar versão comercial",
+        "/products/" + scope.product().getId() + "/pde-versions");
+    requireAt(
         List.of(PdeProductionSlotStatus.READY, PdeProductionSlotStatus.ACTIVE)
             .contains(scope.slot().getStatus()),
-        "O slot Safira precisa estar READY ou ACTIVE.");
-    require(
+        "O slot Safira precisa estar READY ou ACTIVE.",
+        "Conferir versão comercial",
+        "/products/" + scope.product().getId() + "/pde-versions");
+    requireAt(
         "OK".equals(scope.slot().getValidationStatus()),
-        "Valide a URL pública da experiência Safira.");
+        "Valide a URL pública da experiência Safira.",
+        "Validar versão comercial",
+        "/products/" + scope.product().getId() + "/pde-versions");
     require(
         http(snapshot.path("publicUrl").asText())
             && !snapshot.path("backendUrl").asText().isBlank(),
@@ -93,12 +102,14 @@ public class SafiraCommercialChecks {
             && snapshot.path("publishedExperience").isObject()
             && !snapshot.path("publishedExperience").isEmpty(),
         "A experiência publicada precisa ter contrato e SHA-256 verificáveis.");
-    require(
+    requireAt(
         http(snapshot.path("checkoutUrl").asText())
             && snapshot.path("checkoutPriceBrl").isNumber()
             && snapshot.path("checkoutPriceBrl").decimalValue().compareTo(experiment.getUnitPrice())
                 == 0,
-        "O checkout canônico precisa usar HTTPS e o mesmo preço da oferta.");
+        "O checkout canônico precisa usar HTTPS e o mesmo preço da oferta.",
+        "Preparar checkout no experimento",
+        "/experiments/" + experiment.getId() + "/edit");
     for (String field :
         List.of(
             "deliverable",

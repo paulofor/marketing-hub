@@ -226,6 +226,35 @@ class SafiraCommercialServiceTest {
     verifyNoInteractions(checks, instances, tasks, predecessors);
   }
 
+  /** Reproduz Alcyone e outra candidata usando o validador real, sem inferência ou gravação. */
+  @Test
+  void missingInstagramNavigatesToValidatedExperimentInsteadOfProduct() {
+    var realChecks =
+        new SafiraCommercialChecks(
+            mock(com.marketinghub.experiment.service.ExperimentReadinessService.class));
+    var actual =
+        new SafiraCommercialService(
+            context, realChecks, instances, definitions, processes, tasks, predecessors);
+    product.setCurrentPriceBrl(new java.math.BigDecimal("79"));
+    experiment.setUnitPrice(new java.math.BigDecimal("79"));
+    experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
+    for (long[] identity : List.of(new long[] {11, 97}, new long[] {44, 710})) {
+      product.setId(identity[0]);
+      experiment.setId(identity[1]);
+      String source = "experiment:" + identity[1];
+      when(context.snapshot(source)).thenReturn(snapshot);
+      var entry = actual.readiness(process, activities.get("journey"), product, source);
+      assertThat(entry.ready()).isFalse();
+      assertThat(entry.reason()).contains("identidade pública do Instagram");
+      assertThat(entry.actionLabel()).isEqualTo("Selecionar Instagram no experimento");
+      assertThat(entry.navigationUrl())
+          .isEqualTo("/experiments/" + identity[1] + "/edit#instagramAccountId");
+      assertThatThrownBy(() -> actual.execute(process, activities.get("journey"), product, source))
+          .hasMessageContaining("identidade pública do Instagram");
+    }
+    verifyNoInteractions(instances, tasks);
+  }
+
   /** Persiste um parecer aprovado sintético como se tivesse retornado do agente responsável. */
   private void completeReview(String activity) throws Exception {
     var task = task(activity);

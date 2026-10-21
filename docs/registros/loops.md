@@ -10809,3 +10809,14 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
 - Causa: upload preferia a credencial dedicada obsoleta; a troca temporária do token global ainda podia desfazer uma renovação concorrente. Os caminhos sem credencial dedicada e com credencial válida passavam, descartando falha geral de conexão da Meta.
 - Correção: credencial local estável por tentativa; recuperar apenas expiração explícita com a principal da mesma conta, uma vez; preservar recibo rejeitado. Não trocar configuração global, orçamento ou vídeo.
 - Prevenção: `FacebookVideoCredentialRecoveryTest` reproduz o caso com duas contas, concorrência, credencial válida/ausente, dupla expiração, permissão e protocolo legado. Antes: quatro falhas/erros entre nove casos. Limites e adoção em `docs/homologacao/meta-video-credencial-vigente-v1.md`.
+# LOOP-SAFIRA-PENDENCIA-ABRE-CADASTRO-ERRADO — 21/10/2026
+
+- **Evidência:** Alcyone 11 / experimento 97, na preparação comercial, pediu identidade
+  do Instagram mas abriu o cadastro do produto. O campo usado pelo gate pertence ao experimento.
+- **Causa:** `SafiraCommercialService.readiness` encaminhava todas as falhas de jornada
+  para `/products/{id}/edit`, descartando o destino da fonte efetivamente validada.
+- **Correção:** bloqueio tipado conserva motivo e destino para Instagram, versão e checkout;
+  não promove prova privada nem aceita requisito ausente.
+- **Prevenção:** testes com o validador real para 11/97 e 44/710, versão ausente, checkout
+  ausente, jornada válida e referências históricas. Critério: corrigir a fonte no mesmo contexto
+  sem criar tarefa paga ou aceite. [Matriz e limites](../homologacao/alcyone-preparacao-comercial-2026-10-21.md).

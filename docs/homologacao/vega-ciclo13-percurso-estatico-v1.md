@@ -68,6 +68,11 @@ não substitui essas entregas nem autoriza ampliar os limites.
   experiência, renovar parecer ou publicar a superfície de outro produto.
 - Os scripts shell consultados passaram em `bash -n` e ShellCheck. Python e
   JavaScript da matriz passaram nas verificações sintáticas; diff e Spotless válidos.
+- O CI da biblioteca revelou uma fixture positiva com validade fixa em 19/10,
+  corretamente recusada em 21/10. A fixture usa agora datas relativas em UTC, sem
+  alterar a regra do backend. O fluxo completo local de cadastro, revisão, ativação,
+  substituição, arquivamento, expiração, segurança, reinício e observabilidade passou.
+  A topologia foi removida com seus volumes; o script passou em `bash -n` e ShellCheck.
 
 As portas externas são simuladas na matriz. Nenhum teste comprova demanda, compra,
 margem real ou a futura qualidade de um parecer comercial. A adoção depende da

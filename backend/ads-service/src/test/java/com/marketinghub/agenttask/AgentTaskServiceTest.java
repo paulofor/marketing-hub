@@ -1700,6 +1700,95 @@ class AgentTaskServiceTest {
     verify(repository).save(task);
   }
 
+  /**
+   * A candidata antiga de um produto não derruba a fila HTTP nem impede outra ocorrência válida.
+   */
+  @Test
+  void skipsInvalidOpalaCandidateWithoutBlockingAnotherProduct() throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var dedalo = agent(7L, "landing-generator", "Dédalo");
+    var process = process("PUBLISHED", "Dédalo");
+    process.setProcessCode(
+        com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.CODE);
+    var waiting = processTask(795L, dedalo, process, "entry", "PENDING");
+    waiting.setSourceReference("experiment:106");
+    var valid = processTask(1795L, dedalo, process, "entry", "PENDING");
+    valid.setSourceReference("experiment:710");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of(waiting, valid));
+    when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+    var context = mock(com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.class);
+    for (var task : List.of(waiting, valid)) {
+      long productId = task == waiting ? 4L : 44L;
+      long experimentId = task == waiting ? 106L : 710L;
+      var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+      cycle.setProductId(productId);
+      cycle.setProductVersion("current-version");
+      var experiment =
+          com.marketinghub.experiment.Experiment.builder()
+              .id(experimentId)
+              .product(com.marketinghub.product.Product.builder().id(productId).build())
+              .unitPrice(new java.math.BigDecimal("67"))
+              .build();
+      var scope =
+          new com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.Scope(
+              cycle, experiment);
+      var contract =
+          new ObjectMapper()
+              .readTree(
+                  """
+          {"experienceVersion":"%s",
+           "commercialBinding":{"experimentId":%d,"priceBrl":67,"billingModel":"ONE_TIME"},
+           "commercialCheckout":{"provider":"LOCAL_TEST","checkoutUrl":"https://checkout.sandbox.local/offer","offerReference":"fixture","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"},
+           "commercialAccess":{"experienceVersion":"current-version","accessDays":90,"renewal":false,"activationTrigger":"PAYMENT_APPROVED","scope":"SYNTHETIC_PAID_DELIVERY"}}
+          """
+                      .formatted(
+                          task == waiting ? "previous-version" : "current-version", experimentId));
+      when(context.scope(task.getSourceReference())).thenReturn(scope);
+      when(context.candidate(scope))
+          .thenReturn(
+              new com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.Candidate(
+                  List.of(), "https://pde.sandbox.local", "VERSION_SLOT", contract));
+    }
+    var preparation =
+        new com.marketinghub.opala.commercial.v1.service.OpalaCommercialClaimPreparation(
+            context,
+            new com.marketinghub.opala.commercial.v1.service.OpalaCommercialVersionContract(
+                new com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver(
+                    new ObjectMapper())));
+    var service = service(repository, agents, Clock.systemUTC());
+    ReflectionTestUtils.setField(service, "claimPreparationHooks", List.of(preparation));
+    var mvc =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new InternalAgentTaskExecutionController(
+                    service, mock(AgentTaskVisualEvidenceService.class)))
+            .build();
+
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/internal/agent-tasks/landing-generator/stage-executions/pending")
+                .param("processCode", "opala-commercial-preparation-v1")
+                .param("activityId", "entry"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
+                    "$[0].taskId")
+                .value(1795));
+
+    assertThat(waiting.getStatus()).isEqualTo("PENDING");
+    assertThat(waiting.getReceivedAt()).isNull();
+    assertThat(waiting.getEstimatedCostUsd()).isNull();
+    assertThat(waiting.getBlockerCategory()).isEqualTo("MISSING_EVIDENCE");
+    assertThat(waiting.getBlockerAction()).contains("versão vigente");
+    assertThat(valid.getStatus()).isEqualTo("IN_PROGRESS");
+    verify(repository).save(waiting);
+    verify(repository).save(valid);
+  }
+
   /** Limpa a espera técnica e reserva a tarefa assim que a preparação comprova o runtime. */
   @Test
   void claimsTaskAfterPreparationBecomesReady() {

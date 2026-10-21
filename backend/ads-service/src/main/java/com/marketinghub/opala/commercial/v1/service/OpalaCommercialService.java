@@ -40,6 +40,7 @@ public class OpalaCommercialService
   private final LearningCycleCommercialReadiness commercialReadiness;
   private final AgentTaskRepository tasks;
   private final OpalaCommercialRouting routing;
+  private final OpalaCommercialClaimPreparation claimPreparation;
 
   /**
    * Resolve integrações sob demanda para preservar a composição dos validadores e callbacks BPM.
@@ -49,12 +50,14 @@ public class OpalaCommercialService
       @Lazy OpalaCommercialMaterialization materialization,
       @Lazy LearningCycleCommercialReadiness commercialReadiness,
       AgentTaskRepository tasks,
-      OpalaCommercialRouting routing) {
+      OpalaCommercialRouting routing,
+      OpalaCommercialClaimPreparation claimPreparation) {
     this.context = context;
     this.materialization = materialization;
     this.commercialReadiness = commercialReadiness;
     this.tasks = tasks;
     this.routing = routing;
+    this.claimPreparation = claimPreparation;
   }
 
   /** Reconhece apenas tarefas pertencentes ao subprocesso versionado. */
@@ -74,7 +77,7 @@ public class OpalaCommercialService
         && OpalaCommercialContext.CODE.equals(process.getProcessCode());
   }
 
-  /** Verifica identidade e insumos antes de iniciar revisões que consumam modelo. */
+  /** Confere a candidata antes da materialização e os insumos das revisões que consumam modelo. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -86,6 +89,11 @@ public class OpalaCommercialService
       require(
           product != null && Objects.equals(product.getId(), scope.cycle().getProductId()),
           "O subprocesso pertence a outro produto.");
+      if (claimPreparation.supportsActivity(activity.getActivityId())) {
+        var preparation = claimPreparation.inspect(source, product.getId());
+        if (!preparation.ready())
+          return new AgentProductProcessActivityReadiness(false, preparation.reason());
+      }
       if ("economics".equals(activity.getActivityId())) {
         var financialPlan = context.snapshot(source).path("financialPlan");
         require(

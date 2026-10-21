@@ -15,7 +15,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.web.bind.annotation.*;
 
-/** Responsabilidade: simular entregas e pareceres dos agentes sem chamar modelo ou gerar cobrança. */
+/**
+ * Responsabilidade: simular entregas e pareceres dos agentes sem chamar modelo ou gerar cobrança.
+ */
 @TestConfiguration
 @Profile("learning-cycles-fixture")
 @Import(LearningCycleCommercialTaskFixtures.Controller.class)

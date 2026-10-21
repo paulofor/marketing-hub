@@ -1,3 +1,15 @@
+## 2026-10-21 — Vega #106: respeitar o formato estático aceito
+
+- Ciclo #13, cadeia #26, produto #4: comunicação privada e seleção humana concluídas,
+  mas a etapa audiovisual ignorava a dispensa explícita do mesmo contrato.
+- Correção compartilhada preserva Íris #786, peça #788, Psique #789, Têmis #790 e
+  seleção #728. Dispensa audiovisual não comprova objetivo audiovisual, venda ou lucro.
+- A matriz local percorre recuperação e homologação até a preparação comercial,
+  com outro produto, API/MySQL e portas externas simuladas. Campanha exige seus gates.
+- US$ 15 cumulativos de preparação e R$ 100 por cinco dias após homologação mantidos,
+  sem vídeos pagos. Consumo e reserva continuam separados; não ampliar o teto por inferência.
+- [Matriz, evidência e limitações](../homologacao/vega-ciclo13-percurso-estatico-v1.md).
+
 ## 2026-10-05 — Retomada de Alcyone #97 preserva o contexto dos subprocessos
 
 - Execução #44, processo #113 v11, cadeia #26 e plano #34 continuam 0/4. A proteção

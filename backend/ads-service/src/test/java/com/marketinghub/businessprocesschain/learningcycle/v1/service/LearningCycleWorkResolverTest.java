@@ -115,6 +115,36 @@ class LearningCycleWorkResolverTest {
     assertThat(cycle.getReturnProcessId()).isEqualTo(67L);
   }
 
+  /** Recuperação do formato revalida a preparação inteira, preservando uma pendência real. */
+  @Test
+  void videoBriefRechecksPreparationBeforeOmittingVideo() {
+    cycle.setStage("VIDEO_BRIEF");
+    state(67, true, null);
+    state(70, false, "BLOCKED");
+    assertThat(resolver.resolvePreparation(cycle).completed()).isFalse();
+    assertThat(resolver.resolvePreparation(cycle).nextWork().state()).isEqualTo("BLOCKED");
+    state(70, true, null);
+    assertThat(resolver.resolvePreparation(cycle).completed()).isTrue();
+    assertThat(cycle.getStage()).isEqualTo("VIDEO_BRIEF");
+  }
+
+  /** Reabertura da comunicação impede homologação estática sem mudar o percurso anterior. */
+  @Test
+  void staticValidationRechecksCommunicationAcceptance() {
+    var chain = chains.findById(14L).orElseThrow();
+    chain.getItems().add(item(71, 4, "pde-communication-sales-journey"));
+    cycle.setStage("VALIDATION");
+    state(67, true, null);
+    state(70, true, null);
+    state(71, false, "WAITING_HUMAN");
+    assertThat(resolver.resolvePreparation(cycle).completed()).isTrue();
+    assertThat(resolver.resolveStaticPreparation(cycle).completed()).isFalse();
+    assertThat(resolver.resolveStaticPreparation(cycle).nextWork().state())
+        .isEqualTo("WAITING_HUMAN");
+    state(71, true, null);
+    assertThat(resolver.resolveStaticPreparation(cycle).completed()).isTrue();
+  }
+
   /** Uma cadeia sem o destino original não pode apresentar a preparação como concluída. */
   @Test
   void missingReturnIsNotCompletedPreparation() {

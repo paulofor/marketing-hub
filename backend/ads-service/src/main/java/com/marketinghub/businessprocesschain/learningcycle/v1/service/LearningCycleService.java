@@ -70,6 +70,8 @@ public class LearningCycleService {
 
   @Autowired private LearningCycleExecutionContext executionContext;
 
+  @Autowired private LearningCycleOptionalAudiovisual optionalAudiovisual;
+
   @Autowired(required = false)
   private LearningCycleValueFlowProjection valueFlow;
 
@@ -636,6 +638,88 @@ public class LearningCycleService {
     event.setEvidenceJson(json.write(publication));
     event.setCreatedAt(now);
     events.saveAndFlush(event);
+  }
+
+  /**
+   * Recupera o percurso estático aprovado sem produzir vídeos, aprovar venda ou alterar o
+   * histórico.
+   */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public boolean continueWithoutAudiovisual(Long productId, Long cycleId) {
+    requireProduct(productId, true);
+    if (!Boolean.TRUE.equals(
+        products.findById(productId).orElseThrow().getAutomaticExecutionEnabled())) return false;
+    var cycle =
+        cycles.findLocked(productId, cycleId).orElseThrow(() -> notFound("Ciclo não encontrado."));
+    if (!"OPEN".equals(cycle.getStatus())
+        || !Set.of("VIDEO_BRIEF", "VALIDATION").contains(cycle.getStage())
+        || optionalAudiovisual == null) return false;
+    var proof = optionalAudiovisual.proof(cycle).orElse(null);
+    if (proof == null || !workResolver.resolveStaticPreparation(cycle).completed()) return false;
+    var experiment = requiredExperiment(productId, cycle.getExperimentId());
+    if (experiment.getStatus() != ExperimentStatus.PLANNED
+        || experiment.getFacebookReleaseRequestedAt() != null) return false;
+    if ("VALIDATION".equals(cycle.getStage())) {
+      var approvals = evidence.approvals(cycle);
+      if (approvals.isEmpty()) return false;
+      proof.put("approvalInstanceId", approvals.getFirst().id());
+      proof.put(
+          "journeyEvidence",
+          "Gate multiagente vigente #"
+              + approvals.getFirst().id()
+              + "; comunicação estática aprovada.");
+      proof.put("instrumentationVerified", true);
+      command(
+          productId,
+          cycleId,
+          new LearningCycleCommand(
+              UUID.nameUUIDFromBytes(
+                  ("static-validation:" + cycleId + ":" + cycle.getRevision())
+                      .getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+              cycle.getRevision(),
+              Action.COMPLETE,
+              "Marketing Hub · continuidade entre processos",
+              "Homologação vigente da mesma versão preservada. Preparação e autorização comerciais continuam obrigatórias.",
+              "business_process_activity_instance:" + approvals.getFirst().id(),
+              proof),
+          true);
+      return true;
+    }
+    Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycleId);
+    event.setRequestKey(
+        UUID.nameUUIDFromBytes(
+                ("optional-audiovisual:" + cycleId + ":" + cycle.getRevision())
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            .toString());
+    event.setRequestJson(json.write(proof));
+    event.setRevision(cycle.getRevision() + 1);
+    event.setFromStage("VIDEO_BRIEF");
+    event.setToStage("VALIDATION");
+    event.setAction("RESOLVE_OPTIONAL_AUDIOVISUAL");
+    event.setOperatorName("Marketing Hub · continuidade entre processos");
+    event.setSummary(
+        "O contrato vigente escolheu comunicação estática. Audiovisual não se aplica; homologação e gates comerciais permanecem obrigatórios.");
+    event.setEvidenceReference(
+        "business_process_activity_instance:" + proof.path("omissionInstanceId").asLong());
+    event.setEvidenceJson(json.write(proof));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
+    ledger.finishAutomaticMeasurement(
+        cycle, json.write(proof), "NOT_APPLICABLE", event.getSummary(), now);
+    cycle.setRevision(event.getRevision());
+    cycle.setStage("VALIDATION");
+    cycle.setUpdatedAt(now);
+    ledger.open(cycle, now);
+    cycles.saveAndFlush(cycle);
+    log.info(
+        "Percurso estático recuperado productId={} cycleId={} experimentId={} omissionInstanceId={}",
+        productId,
+        cycleId,
+        cycle.getExperimentId(),
+        proof.path("omissionInstanceId").asLong());
+    return true;
   }
 
   /** Integra as aprovações existentes sem pedir transcrição humana nem concluir homologação. */
@@ -1754,7 +1838,10 @@ public class LearningCycleService {
       nextAction =
           "As atividades delegadas desta etapa já comprovaram seus objetivos. "
               + "Registre as evidências neste ciclo para seguir para "
-              + label(next(cycle.getStage(), videoWorkflow(cycle)))
+              + label(
+                  "VIDEO_BRIEF".equals(cycle.getStage()) && !videoWorkflow(cycle)
+                      ? "VALIDATION"
+                      : next(cycle.getStage(), videoWorkflow(cycle)))
               + ". Esse registro não autoriza publicação, campanha ou cobrança.";
       responsible = "Operador do ciclo · registro das evidências";
     }
@@ -2073,9 +2160,10 @@ public class LearningCycleService {
         .orElseThrow(() -> notFound("O BPM de ciclos ainda não possui versão publicada."));
   }
 
-  /** Lê a versão exata do BPM persistido no ciclo, sem migrar ocorrências em andamento. */
+  /** Preserva o BPM histórico e aplica somente a dispensa explícita do formato da mesma versão. */
   private boolean videoWorkflow(LearningSalesCycle cycle) {
-    return processes.findById(cycle.getProcessDefinitionId()).orElseThrow().getVersionNumber() >= 2;
+    return processes.findById(cycle.getProcessDefinitionId()).orElseThrow().getVersionNumber() >= 2
+        && (optionalAudiovisual == null || optionalAudiovisual.proof(cycle).isEmpty());
   }
 
   /** Aplica a política vigente às próximas mudanças sem reescrever o BPM ou eventos históricos. */

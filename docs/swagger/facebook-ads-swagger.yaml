@@ -127,7 +127,7 @@ paths:
                 type: object
                 properties:
                   accountId: { type: integer, format: int64 }
-                  tokenExpiresAt: { type: string, format: date-time }
+                  tokenExpiresAt: { type: string, format: date-time, description: "Validade operacional UTC: menor limite positivo oficial do token ou acesso a dados, confirmado na Meta; não é prazo presumido de sessenta dias." }
                   validatedAt: { type: string, format: date-time }
                   tokenRenewalEnabled: { type: boolean }
         '400': { description: Formato inválido; nenhum segredo é ecoado. }

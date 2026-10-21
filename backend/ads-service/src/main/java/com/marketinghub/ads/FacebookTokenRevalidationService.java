@@ -27,23 +27,26 @@ public class FacebookTokenRevalidationService {
   private final ObjectMapper objectMapper;
   private final String graphApiBaseUrl;
   private final String graphApiVersion;
+  private final FacebookTokenVerificationClient tokenVerifier;
 
   /** Inicializa transporte, persistência e contrato de versão da Graph API. */
   public FacebookTokenRevalidationService(
       RestTemplateBuilder restTemplateBuilder,
       FacebookAccountRepository repository,
       ObjectMapper objectMapper,
+      FacebookTokenVerificationClient tokenVerifier,
       @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String graphApiBaseUrl,
       @Value("${facebook.graph-api.version:v23.0}") String graphApiVersion) {
     this.restTemplate = restTemplateBuilder.build();
     this.repository = repository;
     this.objectMapper = objectMapper;
+    this.tokenVerifier = tokenVerifier;
     this.graphApiBaseUrl = trimTrailingSlash(graphApiBaseUrl);
     this.graphApiVersion = trimSlashes(graphApiVersion);
   }
 
   /**
-   * Troca a credencial sem presumir validade e preserva a anterior quando a resposta é inválida.
+   * Troca a credencial, inspeciona duração omitida e preserva a anterior sem prazo oficial verificável.
    */
   public RevalidationResult revalidate(FacebookAccount account) {
     LocalDateTime attemptedAt = LocalDateTime.now(ZoneOffset.UTC);
@@ -68,12 +71,13 @@ public class FacebookTokenRevalidationService {
             "Facebook returned an empty token while generating a new access token");
       }
 
-      if (response.expiresIn() == null || response.expiresIn() <= 0) {
-        throw new IllegalStateException(
-            "Meta não informou prazo de validade positivo; credencial anterior preservada");
+      if (response.expiresIn() != null && response.expiresIn() < 0) {
+        throw new IllegalStateException("Meta informou duração negativa; credencial anterior preservada");
       }
       LocalDateTime renewedAt = attemptedAt;
-      LocalDateTime expiresAt = attemptedAt.plusSeconds(response.expiresIn());
+      LocalDateTime expiresAt = response.expiresIn() != null && response.expiresIn() > 0
+          ? attemptedAt.plusSeconds(response.expiresIn())
+          : tokenVerifier.verify(account, response.accessToken());
 
       account.setAccessToken(response.accessToken());
       account.setTokenExpiresAt(expiresAt);

@@ -1,7 +1,6 @@
-package com.marketinghub.facebookads.service.token;
+package com.marketinghub.ads;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.marketinghub.ads.FacebookAccount;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -45,7 +44,7 @@ public class FacebookTokenVerificationClient {
     this.version = version;
   }
 
-  /** Exige validade, aplicativo, titular, permissões e acesso à conta de anúncios cadastrada. */
+  /** Exige identidade, permissões, conta e o menor horizonte positivo oficial de token ou dados. */
   public LocalDateTime verify(FacebookAccount account, String candidate) {
     URI debugUrl = url("debug_token").queryParam("input_token", candidate).build().encode().toUri();
     JsonNode data =
@@ -70,15 +69,14 @@ public class FacebookTokenVerificationClient {
           "O token pertence a outro usuário. Autentique o titular cadastrado nesta conta.");
     }
     long now = java.time.Instant.now().getEpochSecond();
-    require(
-        data.path("expires_at").canConvertToLong() && data.path("expires_at").asLong() > now,
-        "O token expirou ou não tem validade verificável. Gere um novo token de usuário.");
-    require(
-        !data.has("data_access_expires_at")
-            || (data.path("data_access_expires_at").canConvertToLong()
-                && (data.path("data_access_expires_at").asLong() == 0
-                    || data.path("data_access_expires_at").asLong() > now)),
+    long expires = verifiedTimestamp(data, "expires_at");
+    long dataExpires = data.has("data_access_expires_at")
+        ? verifiedTimestamp(data, "data_access_expires_at") : 0;
+    require(expires == 0 || expires > now, "O token expirou. Gere um novo token de usuário.");
+    require(dataExpires == 0 || dataExpires > now,
         "O acesso aos dados expirou. Autorize novamente o aplicativo na Meta.");
+    long horizon = expires == 0 ? dataExpires : dataExpires == 0 ? expires : Math.min(expires, dataExpires);
+    require(horizon > now, "A Meta não informou um horizonte positivo verificável para esta credencial.");
     Set<String> scopes = new HashSet<>();
     data.path("scopes").forEach(scope -> scopes.add(scope.asText()));
     require(
@@ -95,7 +93,17 @@ public class FacebookTokenVerificationClient {
         adId.equals(ad.path("account_id").asText())
             && ("act_" + adId).equals(ad.path("id").asText()),
         "O token não comprovou acesso à conta de anúncios cadastrada.");
-    return LocalDateTime.ofEpochSecond(data.path("expires_at").asLong(), 0, ZoneOffset.UTC);
+    log.info("Meta: validade operacional conferida; accountId={}, horizonteUtc={}",
+        account.getId(), java.time.Instant.ofEpochSecond(horizon));
+    return LocalDateTime.ofEpochSecond(horizon, 0, ZoneOffset.UTC);
+  }
+
+  /** Exige prazo inteiro explícito e não confunde metadado ausente com expiração zero. */
+  private long verifiedTimestamp(JsonNode data, String field) {
+    JsonNode value = data.path(field);
+    require(value.isIntegralNumber() && value.canConvertToLong() && value.longValue() >= 0,
+        "A Meta não informou validade verificável. A credencial anterior foi preservada.");
+    return value.longValue();
   }
 
   /** Consulta a Meta e transforma erros externos em mensagens que nunca contêm credenciais. */

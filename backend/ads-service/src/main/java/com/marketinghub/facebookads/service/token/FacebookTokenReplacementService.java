@@ -1,6 +1,7 @@
 package com.marketinghub.facebookads.service.token;
 
 import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.ads.FacebookTokenVerificationClient;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

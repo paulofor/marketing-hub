@@ -911,3 +911,14 @@ horizonte futuro oficial. Usar o menor prazo positivo de token/dados, sem presum
 sessenta dias. Zero explícito só é aceito com limite futuro de dados; ausência ou
 falha preserva a credencial anterior. Callback deve confirmar antes de qualquer
 alteração volátil. Consulte `docs/homologacao/meta-validade-confirmada-v1.md`.
+
+## Recuperação da credencial de vídeo — 21/10/2026
+
+A credencial dedicada de vídeo pode estar vencida mesmo com a conexão principal
+renovada. Use uma credencial local por upload, estável em início, transferência e
+conclusão; nunca troque/restaure o token global para uma operação. Somente a rejeição
+explícita de expiração permite uma recuperação com a conexão principal da mesma
+conta, se distinta. Preserve o recibo rejeitado no job antes da nova chamada, limite
+a recuperação a uma e mantenha bloqueios de permissão. Não altere orçamento,
+criativo aprovado ou conexão persistida. Regressão HTTP e limites em
+`docs/homologacao/meta-video-credencial-vigente-v1.md`.

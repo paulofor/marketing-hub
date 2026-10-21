@@ -2003,6 +2003,8 @@ public class FacebookCampaignService {
                     experimentId,
                     ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
                     () -> uploadVideoWithOfficialFlowOrLegacyFallback(
+                        publicationJobId,
+                        experimentId,
                         adAccountId,
                         videoUploadAccessToken,
                         normalizedVideo.bytes(),
@@ -2042,35 +2044,58 @@ public class FacebookCampaignService {
         return resolvedPayloads;
     }
 
-    /** Publica o vídeo pelo fluxo oficial Video Ads e usa advideos apenas como fallback legado. */
-    private String uploadVideoWithOfficialFlowOrLegacyFallback(String adAccountId,
+    /** Recupera somente a expiração da credencial dedicada usando a conexão vigente da mesma conta. */
+    private String uploadVideoWithOfficialFlowOrLegacyFallback(String publicationJobId,
+                                                              long experimentId,
+                                                              String adAccountId,
                                                               String videoUploadAccessToken,
                                                               byte[] videoBytes,
                                                               String fileName,
                                                               String contentType) {
-        String previousToken = facebookAdsService.getCurrentAccessToken();
-        boolean shouldUseDedicatedVideoToken = StringUtils.hasText(videoUploadAccessToken)
-            && !Objects.equals(videoUploadAccessToken.trim(), previousToken);
+        String currentToken = facebookAdsService.getCurrentAccessToken();
+        String uploadToken = StringUtils.hasText(videoUploadAccessToken)
+            ? videoUploadAccessToken.trim() : currentToken;
         try {
-            if (shouldUseDedicatedVideoToken) {
-                facebookAdsService.updateAccessToken(videoUploadAccessToken.trim());
+            return uploadVideoUsingCredential(publicationJobId, experimentId, adAccountId,
+                uploadToken, videoBytes, fileName, contentType);
+        } catch (FacebookAccessTokenExpiredException ex) {
+            LOGGER.warn("Credencial de vídeo expirada: experimentId={}, adAccountId={}, filename={}",
+                experimentId, adAccountId, fileName, ex);
+            if (!StringUtils.hasText(currentToken) || Objects.equals(uploadToken, currentToken)) {
+                throw ex;
             }
-            return facebookAdsService.uploadVideoAdFromBytes(adAccountId, videoBytes, fileName, contentType);
-        } catch (WebClientResponseException ex) {
-            LOGGER.warn(
-                "Official Meta video_ads upload failed; retrying with legacy advideos upload: adAccountId={}, filename={}, status={}, message={}",
-                adAccountId,
-                fileName,
-                ex.getRawStatusCode(),
-                ex.getMessage(),
-                ex
-            );
-            return facebookAdsService.uploadAdVideoFromBytes(adAccountId, videoBytes, fileName, contentType);
-        } finally {
-            if (shouldUseDedicatedVideoToken && StringUtils.hasText(previousToken)) {
-                facebookAdsService.updateAccessToken(previousToken);
-            }
+            recordVideoUploadFallback(publicationJobId, experimentId, "CAMPAIGN_VIDEO_CREDENTIAL_REJECTED");
+            return uploadVideoUsingCredential(publicationJobId, experimentId, adAccountId,
+                currentToken, videoBytes, fileName, contentType);
         }
+    }
+
+    /** Preserva a credencial por tentativa e mantém advideos como alternativa de protocolo. */
+    private String uploadVideoUsingCredential(String publicationJobId,
+                                             long experimentId,
+                                             String adAccountId,
+                                             String uploadToken,
+                                             byte[] videoBytes,
+                                             String fileName,
+                                             String contentType) {
+        try {
+            return facebookAdsService.uploadVideoAdFromBytes(adAccountId, videoBytes, fileName,
+                contentType, uploadToken);
+        } catch (WebClientResponseException ex) {
+            LOGGER.warn("Fluxo oficial de vídeo indisponível; tentando advideos: experimentId={}, adAccountId={}, filename={}, status={}",
+                experimentId, adAccountId, fileName, ex.getStatusCode().value(), ex);
+            recordVideoUploadFallback(publicationJobId, experimentId, "CAMPAIGN_VIDEO_OFFICIAL_FALLBACK");
+            return facebookAdsService.uploadAdVideoFromBytes(adAccountId, videoBytes, fileName,
+                contentType, uploadToken);
+        }
+    }
+
+    /** Preserva o recibo rejeitado antes que a recuperação produza uma nova resposta. */
+    private void recordVideoUploadFallback(String publicationJobId, long experimentId, String stepName) {
+        FacebookAdsService.FacebookApiCallDebugInfo rejected = facebookAdsService.consumeLastApiCallDebugInfo();
+        experimentFacebookApiLogClient.logCall(experimentId,
+            ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE, rejected);
+        experimentFacebookApiLogClient.logPublicationJobStep(publicationJobId, experimentId, stepName, rejected);
     }
 
     private record CanonicalImageHashUpsertRequest(

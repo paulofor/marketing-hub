@@ -429,3 +429,15 @@ saldo acumulado e à capacidade diária restante. Campanha sem teto anterior omi
 antes de qualquer escrita. A resposta real `100/1885630` comprova que a Meta não permite
 converter o tipo de orçamento da campanha existente. Prazo, criativos, gasto, métricas e
 atribuição anteriores são preservados por vínculos explícitos entre origem e substituta.
+
+### Credencial de upload estável e recuperação — 21/10/2026
+
+A conexão de usuário validada não comprova a validade da credencial dedicada de
+vídeo. O executor mantém a preferência dedicada, mas fixa a credencial nas três
+fases do upload, sem substituir a conexão global. Rejeição explícita de expiração
+permite uma única tentativa com a conexão principal distinta da mesma conta; erros
+de permissão não permitem troca de identidade. O recibo rejeitado deve permanecer
+no job, separado da resposta recuperada. A alternativa de protocolo `advideos`
+continua usando a credencial daquela tentativa. Falha final bloqueia a campanha e
+nunca converte o vídeo aprovado em imagem. Recuperar acesso não amplia autorização,
+janela, orçamento nem demonstra entrega de anúncio.

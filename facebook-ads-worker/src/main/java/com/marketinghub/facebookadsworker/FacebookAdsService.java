@@ -2356,6 +2356,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                                          byte[] videoBytes,
                                          String fileName,
                                          String contentType) {
+        return uploadVideoAdFromBytes(adAccountId, videoBytes, fileName, contentType, requireAccessToken());
+    }
+
+    /** Mantém a mesma credencial durante início, transferência e conclusão do vídeo. */
+    public String uploadVideoAdFromBytes(String adAccountId,
+                                         byte[] videoBytes,
+                                         String fileName,
+                                         String contentType,
+                                         String accessTokenOverride) {
+        String uploadToken = resolveAccessToken(accessTokenOverride);
         Objects.requireNonNull(adAccountId, "adAccountId");
         if (videoBytes == null || videoBytes.length == 0) {
             throw new IllegalArgumentException("videoBytes must not be empty");
@@ -2364,7 +2374,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
         Map<String, Object> startBody = new HashMap<>();
         startBody.put("upload_phase", "start");
-        startBody.put("access_token", requireAccessToken());
+        startBody.put("access_token", uploadToken);
         String videoAdsPath = buildVersionedPath("/act_" + adAccountId + "/video_ads");
         JsonNode startResponse = executePost(videoAdsPath, startBody);
         String videoId = firstText(startResponse, "video_id", "id");
@@ -2373,12 +2383,12 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             throw new IllegalStateException("Facebook video_ads start response did not contain video_id and upload_url");
         }
 
-        JsonNode uploadResponse = executeVideoAdsBinaryUpload(uploadUrl, videoBytes, resolvedFileName, contentType);
+        JsonNode uploadResponse = executeVideoAdsBinaryUpload(uploadUrl, videoBytes, resolvedFileName, contentType, uploadToken);
 
         Map<String, Object> finishBody = new HashMap<>();
         finishBody.put("upload_phase", "finish");
         finishBody.put("video_id", videoId);
-        finishBody.put("access_token", requireAccessToken());
+        finishBody.put("access_token", uploadToken);
         JsonNode finishResponse = executePost(videoAdsPath, finishBody);
 
         Map<String, Object> auditRequest = new HashMap<>();
@@ -2409,6 +2419,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                                          byte[] videoBytes,
                                          String fileName,
                                          String contentType) {
+        return uploadAdVideoFromBytes(adAccountId, videoBytes, fileName, contentType, requireAccessToken());
+    }
+
+    /** Envia o vídeo legado com credencial local, sem alterar a conexão de outras rotinas. */
+    public String uploadAdVideoFromBytes(String adAccountId,
+                                         byte[] videoBytes,
+                                         String fileName,
+                                         String contentType,
+                                         String accessTokenOverride) {
+        String uploadToken = resolveAccessToken(accessTokenOverride);
         Objects.requireNonNull(adAccountId, "adAccountId");
         if (videoBytes == null || videoBytes.length == 0) {
             throw new IllegalArgumentException("videoBytes must not be empty");
@@ -2419,7 +2439,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 : MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("access_token", requireAccessToken());
+        builder.part("access_token", uploadToken);
         builder.part("source", new ByteArrayResource(videoBytes) {
             @Override
             public String getFilename() {
@@ -2436,11 +2456,12 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return response.path("id").asText();
     }
 
-    /** Envia o binário do vídeo para a URL resumable retornada pela Meta. */
+    /** Envia o binário para a URL oficial mantendo a credencial fixada no início do upload. */
     private JsonNode executeVideoAdsBinaryUpload(String uploadUrl,
                                                  byte[] videoBytes,
                                                  String fileName,
-                                                 String contentType) {
+                                                 String contentType,
+                                                 String uploadToken) {
         Instant startedAt = Instant.now();
         if (!hasText(uploadUrl)) {
             throw new IllegalArgumentException("uploadUrl must not be blank");
@@ -2459,7 +2480,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             FacebookApiResponse apiResponse = webClient
                 .post()
                 .uri(URI.create(uploadUrl))
-                .header(HttpHeaders.AUTHORIZATION, "OAuth " + requireAccessToken())
+                .header(HttpHeaders.AUTHORIZATION, "OAuth " + uploadToken)
                 .header("offset", "0")
                 .header("file_size", String.valueOf(videoBytes.length))
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)

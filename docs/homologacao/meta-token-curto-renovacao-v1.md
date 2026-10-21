@@ -67,3 +67,18 @@ nunca desabilitar a renovação ou fabricar validade para destravar campanha.
   frontend, orçamento, janela, mídia ou estado comercial de Capella.
 
 A confirmação publicada e os links de entrega serão registrados no PR.
+
+## Paridade de configuração — complemento observado na conferência
+
+Antes de encerrar a entrega, a inspeção seletiva do container confirmou
+`FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY=21600000`. A fonte era também o padrão
+antigo no Compose versionado, que prevalece sobre o valor padrão da anotação.
+O Compose foi alinhado para `300000` ms no mesmo módulo executor.
+
+A mesclagem real dos dois arquivos Compose com credenciais sintéticas e sem
+iniciar containers reproduziu seis horas antes da alteração (aceite falhou).
+Depois da mudança, a mesma validação confirmou cinco minutos e a imagem de
+deploy solicitada, preservando os demais contratos. O teste usa o projeto
+Compose exclusivo da sandbox; nenhum serviço de produção foi usado como teste.
+Não há override da cadência em `.env` no diretório publicado, conforme consulta
+seletiva. A confirmação no container publicado continua obrigatória.

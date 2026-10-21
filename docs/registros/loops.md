@@ -10781,3 +10781,10 @@ de tentativas e recusa permanente, com Meta chamada uma única vez.
   válida, negativo/ausente/zero sem horizonte, identidade, permissão, falha e
   comando de tela/controller/banco H2. Não amplia orçamento nem promove RUNNING.
 - **Matriz e limites:** `docs/homologacao/meta-validade-confirmada-v1.md`.
+
+## LOOP-META-VIDEO-USAVA-CREDENCIAL-ANTIGA — 21/10/2026
+
+- Evidência: Capella/105, job `b7565fa9c12eb4d9d692633f5e20ae99604fffd9a2de50fb738fbb49ab05c840`, passos849–854. Conta1 validada e alcance/thumbnail HTTP200, mas `/video_ads` retornou190/463 com vencimento19/10. O banco confirma credencial dedicada distinta da principal.
+- Causa: upload preferia a credencial dedicada obsoleta; a troca temporária do token global ainda podia desfazer uma renovação concorrente. Os caminhos sem credencial dedicada e com credencial válida passavam, descartando falha geral de conexão da Meta.
+- Correção: credencial local estável por tentativa; recuperar apenas expiração explícita com a principal da mesma conta, uma vez; preservar recibo rejeitado. Não trocar configuração global, orçamento ou vídeo.
+- Prevenção: `FacebookVideoCredentialRecoveryTest` reproduz o caso com duas contas, concorrência, credencial válida/ausente, dupla expiração, permissão e protocolo legado. Antes: quatro falhas/erros entre nove casos. Limites e adoção em `docs/homologacao/meta-video-credencial-vigente-v1.md`.

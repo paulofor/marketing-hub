@@ -184,3 +184,6 @@ Regressões e causa: `docs/homologacao/meta-renovacao-automatica-v1.md`.
   Java e `docker-compose.yml`. Antes de concluir uma alteração de agendamento,
   validar a mesclagem Compose e conferir somente a variável correspondente no
   container publicado, sem imprimir o ambiente completo ou credenciais.
+
+- `FacebookSchedulingConfigurationTest` carrega o padrão do Compose no contexto
+  Spring para impedir divergência de cadência entre Java e configuração publicada.

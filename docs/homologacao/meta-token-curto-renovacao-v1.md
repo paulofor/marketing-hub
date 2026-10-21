@@ -82,3 +82,11 @@ deploy solicitada, preservando os demais contratos. O teste usa o projeto
 Compose exclusivo da sandbox; nenhum serviço de produção foi usado como teste.
 Não há override da cadência em `.env` no diretório publicado, conforme consulta
 seletiva. A confirmação no container publicado continua obrigatória.
+
+A proteção é também automatizada em
+`FacebookSchedulingConfigurationTest.composedDeploymentCadenceFitsShortLivedToken`:
+carrega o YAML versionado, aplica seu ambiente ao contexto Spring real e verifica
+o intervalo efetivamente registrado. Com o Compose anterior, a regressão falhou;
+restaurada a correção, os três testes de cadência/isolamento passaram. Essa
+validação complementar evita repetir a suíte completa já aprovada sem mudança
+no código funcional Java.

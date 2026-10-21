@@ -6,6 +6,8 @@ import static org.mockito.Mockito.mock;
 
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalScheduler;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalService;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -16,12 +18,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
+import org.yaml.snakeyaml.Yaml;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 import org.springframework.scheduling.config.IntervalTask;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-/** Comprova isolamento da renovação sem introduzir concorrência entre operações de campanha. */
+/** Comprova cadência e isolamento da renovação sem paralelizar operações de campanha. */
 class FacebookSchedulingConfigurationTest {
     /** Ocupa a fila padrão e exige execução real da anotação de renovação em outra thread. */
     @Test
@@ -73,6 +77,30 @@ class FacebookSchedulingConfigurationTest {
     @Test
     void defaultRenewalCadenceFitsShortLivedToken() {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(FacebookTokenRenewalService.class, () -> mock(FacebookTokenRenewalService.class));
+            context.register(SchedulingEnabled.class, FacebookSchedulingConfiguration.class, FacebookTokenRenewalScheduler.class);
+            context.refresh();
+            var tasks = context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks();
+            assertThat(tasks).hasSize(1);
+            IntervalTask task = (IntervalTask) tasks.iterator().next().getTask();
+            assertThat(task.getIntervalDuration()).isPositive().isLessThanOrEqualTo(Duration.ofMinutes(5));
+        }
+    }
+
+    /** Carrega o ambiente padrão do Compose para impedir que ele atrase a renovação real. */
+    @Test
+    void composedDeploymentCadenceFitsShortLivedToken() throws Exception {
+        Path compose = Path.of(System.getProperty("basedir", "."), "docker-compose.yml");
+        Map<?, ?> document = new Yaml().load(Files.readString(compose));
+        Map<?, ?> services = (Map<?, ?>) document.get("services");
+        Map<?, ?> worker = (Map<?, ?>) services.get("facebook-ads-worker");
+        Map<?, ?> environment = (Map<?, ?>) worker.get("environment");
+        String expression = environment.get("FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY").toString();
+        assertThat(expression).matches("\\$\\{FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY:-[0-9]+}");
+        String defaultDelay = expression.substring(expression.lastIndexOf(":-") + 2, expression.length() - 1);
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.getEnvironment().getPropertySources().addFirst(new SystemEnvironmentPropertySource("compose",
+                    Map.of("FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY", defaultDelay)));
             context.registerBean(FacebookTokenRenewalService.class, () -> mock(FacebookTokenRenewalService.class));
             context.register(SchedulingEnabled.class, FacebookSchedulingConfiguration.class, FacebookTokenRenewalScheduler.class);
             context.refresh();

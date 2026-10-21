@@ -1,0 +1,8 @@
+npm error code ENOENT
+npm error syscall open
+npm error path /root/ai-hub/src/ai-hub-6a097098-749b-4035-b70b-5cdf20958230-SfdR1Y/repo/artifacts/alcyone-current/worktree/package.json
+npm error errno -2
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/root/ai-hub/src/ai-hub-***-SfdR1Y/repo/artifacts/alcyone-current/worktree/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-10-21T20_25_29_954Z-debug-0.log

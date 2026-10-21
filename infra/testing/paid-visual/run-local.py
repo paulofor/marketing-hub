@@ -47,7 +47,7 @@ def ready(url, process):
 try:
     backend = ROOT / "backend" / "ads-service"
     frontend = ROOT / "pde-platform" / "frontend"
-    run(["mvn", "-q", "test-compile", "dependency:build-classpath", "-Dmdep.outputFile=target/paid-test-classpath.txt"], backend)
+    run(["mvn", "-q", "test-compile", "org.apache.maven.plugins:maven-dependency-plugin:3.6.1:build-classpath", "-Dmdep.outputFile=target/paid-test-classpath.txt"], backend)
     classpath = "target/test-classes:target/classes:" + (backend / "target/paid-test-classpath.txt").read_text().strip()
     app = start(["java", "-cp", classpath, "com.marketinghub.pde.paidvisual.v1.service.PaidVisualLocalApplication"], backend, "backend.log")
     ready("http://127.0.0.1:8189/_fixture/image", app)

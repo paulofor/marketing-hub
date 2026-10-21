@@ -81,7 +81,7 @@ for round in range(1,args.rounds+1):
             run(['npm','run','typecheck'],folder/'typecheck.log',ROOT/'frontend')
             run(['npm','test','--','--run',*FRONT_TESTS],folder/'frontend-tests.log',ROOT/'frontend')
             run(['npm','run','build'],folder/'frontend-build.log',ROOT/'frontend',env=dict(os.environ,VITE_API_URL='http://127.0.0.1:15175'))
-        run(['mvn','-q','-DskipTests','test-compile','dependency:build-classpath','-DincludeScope=test','-Dmdep.outputFile=target/financial-plan.classpath'],folder/'fixture-compile.log',ROOT/'backend/ads-service')
+        run(['mvn','-q','-DskipTests','test-compile','org.apache.maven.plugins:maven-dependency-plugin:3.6.1:build-classpath','-DincludeScope=test','-Dmdep.outputFile=target/financial-plan.classpath'],folder/'fixture-compile.log',ROOT/'backend/ads-service')
         classpath=os.pathsep.join([str(ROOT/'backend/ads-service/target/test-classes'),str(ROOT/'backend/ads-service/target/classes'),(ROOT/'backend/ads-service/target/financial-plan.classpath').read_text().strip()])
         run(COMPOSE+['down','--volumes','--remove-orphans'],folder/'cleanup-before.log')
         run(COMPOSE+['up','-d','--wait'],folder/'mysql.log')

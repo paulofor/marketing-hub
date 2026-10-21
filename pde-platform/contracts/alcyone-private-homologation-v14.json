@@ -52,7 +52,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/alcyone-entrega-paga-v1.md",
-      "sha256": "73c31839455e9e148aa2a68197ef191664c4403d1f59afaa7fa8e0cdba88c227",
+      "sha256": "ab4bfa01c4ffc622d36c2d3cd8b604a1d4b1827e353fad6494a918be8baa93be",
       "promptMode": "FULL"
     },
     {
@@ -137,7 +137,7 @@
     },
     {
       "path": "infra/testing/paid-visual/run-local.py",
-      "sha256": "5692e4aaa0b484f94855e98e0616c20ba7ab4a03d28b90c1823bf89b2e0167f1",
+      "sha256": "1373a334c19c9ed866efb2c0b91b1491aee1d6f8eaa05a2d912a3b75949280a7",
       "promptMode": "FULL"
     },
     {

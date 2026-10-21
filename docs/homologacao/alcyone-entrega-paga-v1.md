@@ -39,3 +39,9 @@ Causa observada: a homologação privada provava geração e revisão, mas não 
 Um segundo achado local foi a disputa entre executores: uma recusa de auditoria não pode sobrescrever a tentativa já iniciada. O request auditado e o recibo preservado são reutilizados, com regressão privada e paga.
 
 Adotar somente após o PR, a publicação técnica e os pareceres financeiros/comerciais da versão. Reverter a liberação de novas compras diante de falha de acesso, divergência de identidade ou custo sem evidência, preservando compras e artefatos anteriores. Acompanhamento real deve medir tempo compra→entrega, recuperação, custos e contribuição; nenhum aumento de venda foi demonstrado nesta homologação.
+
+## Condições da entrega
+
+As páginas de termos, privacidade e reembolso usam preço e suporte do contrato, sem consumir a sessão da compradora. A identidade empresarial e os contatos foram conferidos em https://www.digicomdigital.com.br/ e a política institucional em https://www.digicomdigital.com.br/privacy-policy/ em 21/10/2026. O texto preserva os direitos de arrependimento do CDC (https://www.planalto.gov.br/ccivil_03/leis/l8078compilado.htm), sem exigir renúncia pela geração. Trata-se de conteúdo preparado para a revisão comercial independente, não de parecer jurídico emitido por um agente.
+
+A navegação local das três políticas foi conferida nos mesmos dispositivos, inclusive com uma sessão de compra no navegador: as páginas consultam apenas a oferta pública, não enviam o bearer, não consultam dados da cliente e não iniciam geração.

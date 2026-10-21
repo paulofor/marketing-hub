@@ -40,19 +40,19 @@
     "automaticDeployOnMerge": true,
     "frontendVersion": "alcyone",
     "publicUrl": "https://alcyone.digicomdigital.com.br",
-    "requiredFrontendSourceSha256": "f75163a6de33bbb8ca88183fbc0d0ff0d60a3f99d405af3446048dfaab4cff16"
+    "requiredFrontendSourceSha256": "30d36579d079ed6a8746d9529a5ed3f461f3a02407414f857fa663e022cad87e"
   },
   "liveVisualContract": {
     "runtimeIdentity": {
       "version": "alcyone-private-v3",
       "experienceVersion": "alcyone-private-v3",
-      "frontendSourceSha256": "f75163a6de33bbb8ca88183fbc0d0ff0d60a3f99d405af3446048dfaab4cff16"
+      "frontendSourceSha256": "30d36579d079ed6a8746d9529a5ed3f461f3a02407414f857fa663e022cad87e"
     }
   },
   "homologationEvidence": [
     {
       "path": "docs/homologacao/alcyone-entrega-paga-v1.md",
-      "sha256": "6d19996e171ee42d6447e318b0f9b5b1fd89fefd9833f92e8518615434e1d655",
+      "sha256": "73c31839455e9e148aa2a68197ef191664c4403d1f59afaa7fa8e0cdba88c227",
       "promptMode": "FULL"
     },
     {
@@ -95,7 +95,7 @@
     },
     {
       "path": "pde-platform/frontend/src/PaidVisualDelivery.tsx",
-      "sha256": "d94ed39bcd31c137b3e824a70003675982bc59a863a3d267c40bd75926462f1e",
+      "sha256": "e8b5ef886f4be6a9c2cf46c6ff0beb5d6ff88298ad6181dc87dec5de20df44a8",
       "promptMode": "FULL"
     },
     {
@@ -142,7 +142,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/paid-visual-local.cjs",
-      "sha256": "d49f39c648ac5b67d6e1ef82dcc37b7ee3c4ca089a92448ede1a5fa8b4837b4b",
+      "sha256": "eea2df85acdfed8c50505421ce120d1d9872e04bf324f9b4f6a3b1a900a4463b",
       "promptMode": "FULL"
     },
     {

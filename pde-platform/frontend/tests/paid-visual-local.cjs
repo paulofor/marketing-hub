@@ -43,7 +43,20 @@ const {pathToFileURL}=require("node:url");
    await page.getByRole('button',{name:'Gerar meu ajuste'}).click();await page.getByText('Estamos preparando suas combinações.',{exact:false}).waitFor();
    await worker.processNextPending();await page.getByRole('link',{name:'Baixar minhas combinações'}).nth(1).waitFor();
    assert.equal(calls,before+1);assert.equal(await page.getByRole('button',{name:'Usar minha regeneração'}).count(),0);
-   await context.close();console.log(name+': compra → e-mail → entrada → worker → resultado → recuperação → regeneração PASS');
+   const policyRequests=[];
+   page.on('request',request=>{if(request.url().includes('/api/pde/paid-visual/')) policyRequests.push({url:request.url(),method:request.method(),access:request.headers()['x-pde-access-token']});});
+   for(const [policy,title] of [['terms','Condições da entrega'],['privacy','Privacidade da personalização'],['refund','Cancelamento e reembolso']]) {
+    await page.goto(url+'&policy='+policy);
+    await page.getByRole('heading',{name:title,exact:true}).waitFor();
+    await page.getByText('Digicom Digital · PAULO', {exact:false}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Receber meu acesso'}).count(),0);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   }
+   assert.ok(policyRequests.length>=3);
+   assert.ok(policyRequests.every(r=>r.method==='GET'&&r.url.endsWith('/offer')&&!r.access));
+   assert.equal(calls,before+1);
+   await page.screenshot({path:path.join(output,name+'-policy.png'),fullPage:true});
+   await context.close();console.log(name+': compra → e-mail → entrada → worker → resultado → recuperação → regeneração e condições públicas sem credencial PASS');
   }
   assert.equal(calls,6);console.log('6 gerações locais simuladas; 0 chamadas externas.');
  } finally {await browser.close();await fs.rm(spoolDir,{recursive:true,force:true});}

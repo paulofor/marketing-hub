@@ -36,6 +36,82 @@ type Offer = Conditions & {
 };
 const api = "/api/pde/paid-visual/v1";
 
+type Policy = "terms" | "privacy" | "refund";
+
+/** Explica as condições da entrega usando o preço e o suporte do contrato publicado. */
+function DeliveryPolicy({
+  policy,
+  offer,
+  experiment,
+  error,
+}: {
+  policy: Policy;
+  offer: Offer | null;
+  experiment: string;
+  error: string;
+}) {
+  const titles = {
+    terms: "Condições da entrega",
+    privacy: "Privacidade da personalização",
+    refund: "Cancelamento e reembolso",
+  };
+  const paragraphs =
+    policy === "terms"
+      ? [
+          `Um pagamento único de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(offer?.priceBrl || 0)} inclui um painel com três combinações visuais para a ocasião e as peças descritas, com justificativas práticas e uma regeneração opcional.`,
+          "O acesso começa após a confirmação do pagamento e dura até sete dias, encerrando antes se chegar o horário da ocasião informado. Salve sua imagem enquanto o acesso estiver disponível. O suporte da compra permanece disponível por sete dias.",
+          "As imagens são ilustrações produzidas com inteligência artificial. Não são prova de caimento no seu corpo nem reprodução exata dos tecidos. Confira se as sugestões correspondem às peças que você possui.",
+          "Uma falha técnica não exige uma nova compra. Procure o suporte para recuperar a entrega ou resolver a contratação. O pagamento e o acesso pertencem ao e-mail usado na compra.",
+        ]
+      : policy === "privacy"
+        ? [
+            "Usamos o e-mail da compra, os dados do pagamento e as informações fornecidas sobre ocasião, roupas e preferências para confirmar seu direito de acesso, gerar as combinações, recuperar resultados e prestar suporte.",
+            "O processamento envolve os serviços de pagamento, e-mail, armazenamento e inteligência artificial utilizados na entrega. Não envie fotos do corpo, dados de saúde, documentos ou informações identificáveis de terceiros.",
+            "O navegador guarda a credencial de acesso na sessão local. Não compartilhe o link de acesso recebido por e-mail. Registros de compra, geração e reembolso são preservados para cumprimento do contrato, auditoria e obrigações aplicáveis.",
+            "Para solicitar acesso, correção ou exclusão de dados quando cabível, use o contato abaixo. Consulte também a política institucional da Digicom Digital.",
+          ]
+        : [
+            "Compras a distância preservam o direito de arrependimento no prazo legal aplicável. Iniciar a geração ou acessar a imagem não exige renúncia a esse direito.",
+            "Solicite cancelamento ou relate uma falha ao suporte abaixo, informando o e-mail usado na compra e a referência do pagamento. Não envie dados completos do cartão.",
+            "Se a entrega não funcionar conforme contratado, procure o suporte para correção ou reembolso, respeitados seus direitos. A confirmação de reembolso ou chargeback encerra o acesso pago e novas gerações, sem impedir atendimento ou pedidos de privacidade.",
+          ];
+  return (
+    <main className="visual-paid">
+      <a
+        href={`/paid-visual.html?experiment=${encodeURIComponent(experiment)}`}
+      >
+        ← Voltar para a entrega
+      </a>
+      <h1>{titles[policy]}</h1>
+      {offer ? (
+        <>
+          <p>{offer.productName}</p>
+          {paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+          <p>
+            Suporte:{" "}
+            <a href={"mailto:" + offer.supportEmail}>{offer.supportEmail}</a>
+          </p>
+          <p>
+            Digicom Digital · PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA ·
+            CNPJ 25.215.414/0001-69.
+          </p>
+          <a
+            href="https://www.digicomdigital.com.br/privacy-policy/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Política de privacidade institucional
+          </a>
+        </>
+      ) : (
+        <p role="status">{error || "Carregando as condições da oferta…"}</p>
+      )}
+    </main>
+  );
+}
+
 /** Mantém a credencial somente no fragmento recebido e na sessão local desta oferta. */
 function readToken(experiment: string) {
   const fragment = new URLSearchParams(location.hash.slice(1));
@@ -51,7 +127,14 @@ function readToken(experiment: string) {
 export function PaidVisualDelivery() {
   const experiment =
     new URLSearchParams(location.search).get("experiment") || "";
-  const [token, setToken] = useState(() => readToken(experiment));
+  const requestedPolicy = new URLSearchParams(location.search).get("policy");
+  const policy = ["terms", "privacy", "refund"].includes(requestedPolicy || "")
+    ? (requestedPolicy as Policy)
+    : null;
+  const [token, setToken] = useState(() => {
+    const access = readToken(experiment);
+    return policy ? "" : access;
+  });
   const [offer, setOffer] = useState<Offer | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState("");
@@ -67,10 +150,13 @@ export function PaidVisualDelivery() {
   const [operation, setOperation] = useState(() => crypto.randomUUID());
   const [revision, setRevision] = useState(0);
   useEffect(() => {
-    const changed = () => setToken(readToken(experiment));
+    const changed = () => {
+      const access = readToken(experiment);
+      setToken(policy ? "" : access);
+    };
     window.addEventListener("hashchange", changed);
     return () => window.removeEventListener("hashchange", changed);
-  }, [experiment]);
+  }, [experiment, policy]);
   async function request(path: string, body?: unknown) {
     const response = await fetch(api + path, {
       method: body === undefined ? "GET" : "POST",
@@ -80,11 +166,9 @@ export function PaidVisualDelivery() {
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const data = await response
-      .json()
-      .catch(() => ({
-        message: "Não foi possível concluir agora. Seu pedido foi preservado.",
-      }));
+    const data = await response.json().catch(() => ({
+      message: "Não foi possível concluir agora. Seu pedido foi preservado.",
+    }));
     if (!response.ok)
       throw new Error(
         data.detail ||
@@ -195,6 +279,15 @@ export function PaidVisualDelivery() {
       setBusy(false);
     }
   }
+  if (policy)
+    return (
+      <DeliveryPolicy
+        policy={policy}
+        offer={offer}
+        experiment={experiment}
+        error={error}
+      />
+    );
   return (
     <main className="visual-paid">
       <header>

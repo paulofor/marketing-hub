@@ -20,12 +20,14 @@ public class CommercialOfferController {
         this.service = service;
     }
 
-    /** Retorna a oferta que a superfície pré-compra deve renderizar. */
+    /** Retorna a oferta do slot ou da versão explícita preservando o contrato legado sem seletor. */
     @GetMapping("/{productSlug}/commercial-offer")
     public CommercialOfferResponse getOffer(
             @PathVariable("productSlug") String productSlug,
             @RequestHeader(value = "Host", required = false) String host,
-            @RequestParam(value = "slotCode", required = false) String slotCode) {
-        return service.getOffer(productSlug, host, slotCode);
+            @RequestParam(value = "slotCode", required = false) String slotCode,
+            @RequestParam(value = "experienceVersion", required = false) String experienceVersion) {
+        return experienceVersion == null ? service.getOffer(productSlug, host, slotCode)
+                : service.getOffer(productSlug, host, slotCode, experienceVersion);
     }
 }

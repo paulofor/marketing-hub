@@ -11,6 +11,7 @@ const TARGETS = new Set([
   "v6",
   "v7",
   "v8",
+  "v9",
   "mira",
   "mira-commercial",
   "kit-whatsapp",

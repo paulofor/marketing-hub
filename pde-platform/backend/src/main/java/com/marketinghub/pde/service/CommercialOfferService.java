@@ -52,9 +52,15 @@ public class CommercialOfferService {
     /** Usa o slot explícito do contrato quando o domínio comercial não carrega um número. */
     public CommercialOfferResponse getOffer(
             String productSlug, String host, String requestedSlotCode) {
+        return getOffer(productSlug, host, requestedSlotCode, "");
+    }
+
+    /** Resolve a versão explícita sem herdar o slot padrão de outra experiência no mesmo host. */
+    public CommercialOfferResponse getOffer(
+            String productSlug, String host, String requestedSlotCode, String experienceVersion) {
         String slotCode = StringUtils.hasText(requestedSlotCode)
                 ? requestedSlotCode.trim().toLowerCase()
-                : resolveSlotCode(host);
+                : StringUtils.hasText(experienceVersion) ? "" : resolveSlotCode(host);
         for (String baseUrl : marketingHubBaseUrls) {
             try {
                 CommercialOfferResponse offer = restClientBuilder.clone()
@@ -66,6 +72,7 @@ public class CommercialOfferService {
                             if (StringUtils.hasText(slotCode)) {
                                 uri.queryParam("slotCode", slotCode);
                             }
+                            if (StringUtils.hasText(experienceVersion)) uri.queryParam("experienceVersion", experienceVersion);
                             return uri.build(productSlug);
                         })
                         .retrieve()
@@ -80,7 +87,7 @@ public class CommercialOfferService {
                         baseUrl,
                         ex);
                 Optional<CommercialOfferResponse> candidate =
-                        loadValidationOffer(baseUrl, productSlug, slotCode);
+                        loadValidationOffer(baseUrl, productSlug, slotCode, experienceVersion);
                 if (candidate.isPresent()) {
                     return candidate.get();
                 }
@@ -96,8 +103,8 @@ public class CommercialOfferService {
      * promovida.
      */
     private Optional<CommercialOfferResponse> loadValidationOffer(
-            String baseUrl, String productSlug, String slotCode) {
-        if (!StringUtils.hasText(slotCode) || !StringUtils.hasText(internalToken)) {
+            String baseUrl, String productSlug, String slotCode, String experienceVersion) {
+        if ((!StringUtils.hasText(slotCode) && !StringUtils.hasText(experienceVersion)) || !StringUtils.hasText(internalToken)) {
             return Optional.empty();
         }
         try {
@@ -105,10 +112,12 @@ public class CommercialOfferService {
                     .baseUrl(baseUrl)
                     .build()
                     .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/internal/pde-validation-contract/v1/products/{slug}/commercial-offer")
-                            .queryParam("slotCode", slotCode)
-                            .build(productSlug))
+                    .uri(uriBuilder -> {
+                        var uri = uriBuilder.path("/api/internal/pde-validation-contract/v1/products/{slug}/commercial-offer");
+                        if (StringUtils.hasText(slotCode)) uri.queryParam("slotCode", slotCode);
+                        if (StringUtils.hasText(experienceVersion)) uri.queryParam("experienceVersion", experienceVersion);
+                        return uri.build(productSlug);
+                    })
                     .header("X-PDE-Internal-Token", internalToken)
                     .retrieve()
                     .body(CommercialOfferResponse.class);

@@ -277,7 +277,13 @@ def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str
 
     validate_release_contract(surface, contract, source)
     mode = contract.get("deploymentValidation", {}).get("mode", "COMMERCIAL")
-    if mode != "COMMERCIAL":
+    if mode == "COMMERCIAL_CANDIDATE_READ_ONLY":
+        validation = contract.get("deploymentValidation", {})
+        if (surface["deployTarget"] != "v9" or validation.get("readOnly") is not True
+                or validation.get("checkoutRequiresRunning") is not True
+                or validation.get("commercialLaunchClaimed") is not False):
+            raise ValueError("Candidata comercial exige isolamento e gates preservados")
+    elif mode != "COMMERCIAL":
         validate_private_boundary(surface, contract)
     return mode
 

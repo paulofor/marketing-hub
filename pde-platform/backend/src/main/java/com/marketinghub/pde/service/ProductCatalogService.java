@@ -37,6 +37,7 @@ public class ProductCatalogService {
             "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
     private static final String MUSA_V7_CONTRACT_RESOURCE = "/contracts/musa-v7-product-v1.json";
     private static final String MUSA_V12_CONTRACT_RESOURCE = "/contracts/musa-v12-product-v1.json";
+    private static final String MUSA_V14_CONTRACT_RESOURCE = "/contracts/musa-v14-product-v1.json";
     private static final Map<String, String> MUSA_VERSIONED_HOST_EXPERIENCES = Map.of(
             "v1.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
             "v2.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
@@ -44,7 +45,7 @@ public class ProductCatalogService {
             "v6.clubemusa.com.br", MUSA_V6_EXPERIENCE_VERSION,
             "v7.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
             "v8.clubemusa.com.br", MUSA_V12_EXPERIENCE_VERSION,
-            "v9.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
+            "v9.clubemusa.com.br", MusaV14EntryContract.VERSION,
             "v10.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION);
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
@@ -149,7 +150,7 @@ public class ProductCatalogService {
         return applyExperienceVersionOverride(product, host, "");
     }
 
-    /** Aplica versão solicitada, override operacional ou versão derivada do hostname sem alterar o contrato base. */
+    /** Resolve a rota comercial v14 explícita e preserva os padrões dos hosts e contratos anteriores. */
     private ProductExperienceResponse applyExperienceVersionOverride(
             ProductExperienceResponse product,
             String host,
@@ -157,7 +158,8 @@ public class ProductCatalogService {
         if (!"metodo-musa-7-dias".equals(product.slug())) {
             return product;
         }
-        String selectedExperienceVersion = resolveHostExperienceVersion(host);
+        String selectedExperienceVersion = MusaV14EntryContract.VERSION.equals(requestedExperienceVersion)
+                ? requestedExperienceVersion : resolveHostExperienceVersion(host);
         if (!StringUtils.hasText(selectedExperienceVersion)) {
             selectedExperienceVersion = requestedExperienceVersion;
         }
@@ -171,6 +173,8 @@ public class ProductCatalogService {
             product = createMusaV7Product();
         } else if (MUSA_V12_EXPERIENCE_VERSION.equals(selectedExperienceVersion.trim())) {
             product = createMusaV12Product();
+        } else if (MusaV14EntryContract.VERSION.equals(selectedExperienceVersion.trim())) {
+            product = readVersionedMusaContract(MUSA_V14_CONTRACT_RESOURCE, "v14");
         }
         return new ProductExperienceResponse(
                 product.slug(),
@@ -259,7 +263,7 @@ public class ProductCatalogService {
         return MUSA_VERSIONED_HOST_EXPERIENCES.getOrDefault(normalizedHost, "");
     }
 
-    /** Carrega o contrato publicado; recusas de versão do Hub nunca viram catálogo local. */
+    /** Carrega a versão explícita sem inferir outro slot; recusas do Hub não viram catálogo local. */
     private Optional<ProductExperienceResponse> loadMarketingHubProduct(
             String slug,
             String host,
@@ -268,7 +272,8 @@ public class ProductCatalogService {
         if (marketingHubBaseUrls.isEmpty()) {
             return Optional.empty();
         }
-        String slotCode = StringUtils.hasText(requestedSlotCode) ? requestedSlotCode.trim() : resolveHostSlotCode(host);
+        String slotCode = StringUtils.hasText(requestedSlotCode) ? requestedSlotCode.trim()
+                : StringUtils.hasText(requestedExperienceVersion) ? "" : resolveHostSlotCode(host);
         String experienceVersion = StringUtils.hasText(requestedExperienceVersion) ? requestedExperienceVersion.trim() : "";
         for (String baseUrl : marketingHubBaseUrls) {
             try {

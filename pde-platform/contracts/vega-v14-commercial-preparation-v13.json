@@ -1,0 +1,169 @@
+{
+  "contractVersion": "vega-v14-commercial-preparation.v13",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "processCode": "opala-commercial-preparation-v1",
+  "processVersion": 1,
+  "activityId": "entry",
+  "sourceReference": "experiment:106",
+  "learningCycleId": 13,
+  "chainDefinitionId": 26,
+  "experimentId": 106,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v9.clubemusa.com.br"
+  },
+  "boundary": "Implementação comercial candidata, com prova técnica local. Preserva a v12 em v8 e a v14 privada; não herda seus pareceres e ainda não autoriza lançamento.",
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v9",
+    "publicUrl": "https://v9.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "0c05a1c275ab3ed21578498c745760ceefd5c0899e41d2fb02c9c60c49bad876"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v9",
+      "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "0c05a1c275ab3ed21578498c745760ceefd5c0899e41d2fb02c9c60c49bad876"
+    }
+  },
+  "deploymentValidation": {
+    "mode": "COMMERCIAL_CANDIDATE_READ_ONLY",
+    "readOnly": true,
+    "checkoutRequiresRunning": true,
+    "commercialLaunchClaimed": false
+  },
+  "operationalState": {
+    "experimentStatus": "PLANNED",
+    "commercialLaunchClaimed": false,
+    "minimumContributionTargetPercent": null
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": 20,
+    "includesPreviousConsumption": true,
+    "mediaTotalLimitBrl": 100,
+    "mediaDurationDays": 5,
+    "mediaCondition": "Somente após homologação e liberações comerciais vigentes",
+    "paidVideoAuthorized": false,
+    "source": "Autorização #3709 e limites de Vega ciclo 13 preservados; este manifesto não amplia gastos."
+  },
+  "validationReport": "docs/homologacao/vega-v14-continuidade-comercial-v1.md",
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/vega-v14-continuidade-comercial-v1.md",
+      "sha256": "d9e659050f83ca66d4272c2b54f24fad8c020b4733943d3df149ec1122b204e7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json",
+      "sha256": "a8488bb80dbfa9dbd6b906763e664f7c3cd292381260304dfa2092067f4d4a1c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-private-safety-preparation-v12.json",
+      "sha256": "ffcf3c6f370b2e8fedd44c4857c4336662b132e47aa23d86c8898e95a2a20dec",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Implementação privada e pareceres anteriores preservados; não são aceite da candidata comercial."
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v10.json",
+      "sha256": "6c3e4fa0816fe8b225ee01d321457f62504e544c0d38ea353a04dd8f6387441e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico e rejeição do predecessor preservados; sem herança de aprovação ou autorização."
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14-comercial/desktop-primeiro-valor.png",
+      "sha256": "faa7fa30ff1ece9741a667ec2eed64150c4a241fb7bc1d90dc1bb06bec53a48c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14-comercial/iphone-primeiro-valor.png",
+      "sha256": "f6e0321b75d132909ab2623b9c4867247b4b8c83f1937c4fd0eaf6d6d43d8775",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14-comercial/pixel-primeiro-valor.png",
+      "sha256": "ea1128458f7e91412bbdc049ace9bf2c17330e63cd78592f90baa1904f966672",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v14-product-v1.json",
+      "sha256": "3a613cbc81b413e8b0f0f578a1e74a66d44324c9fa88ae82f03638896ffe5c45",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/MusaV14EntryContract.java",
+      "sha256": "1c0dd4bc959cecdbf286ac5f2f0c9aab516605986c937c3afabb2e5e5a942f12",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "e519042f2cdc9581620da3563f01b1b037f7a21da7054ef17657bfaf4d3113f8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "cc53bb3167708889bf3fcc1f51aa64fc549cb08e420e4eb5c098a38986bd2637",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AiGuidanceService.java",
+      "sha256": "c304406f36cbb7a5cf5f65d95c77eaf6371d0be4335b03d99dbabe2a2492b88e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaV14CommercialJourneyTest.java",
+      "sha256": "11c19a67dd991fd08441b6f9a1cf3a4663738174ac86da2d23262696695b2d3b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "13a22578181d1f7f631f784d12b52d3fa5bfba6462b6b2b5545147c80dba331f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/musaExperiences.ts",
+      "sha256": "d74071b535f6a8d3833b943b05a0c637e884843248bd56b95c2fef23c549ae6d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-v14-commercial.spec.ts",
+      "sha256": "ffa71456bcfbbad67827ccedf320a1d663e1ed0cbb4dd1a01a62a7ff3e48b4c0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-v14-route-public.smoke.spec.ts",
+      "sha256": "8052b1ca660e775854e8332631fc64fc63b251abdc56052fbbd15b593224842d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "2beb254b17edbeb62d38faf0205127600b3a0510f19db3a722ff85f926131e9a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/docker-compose.deploy.yml",
+      "sha256": "395ed032144a6e0595614b1be4f7734c8737d65b22b38be55e1136f79fff437e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "lead-portal-payments-service/nginx.conf",
+      "sha256": "8f2bdf7c0af0d36d42a0c96124dff2f385bce964b42d95876f8be6d31381bda6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-isolation-contract.mjs",
+      "sha256": "2b811cc845ad69df62098ff43a029f65bbf9bd738c34c8507566580dc572bf5b",
+      "promptMode": "FULL"
+    }
+  ]
+}

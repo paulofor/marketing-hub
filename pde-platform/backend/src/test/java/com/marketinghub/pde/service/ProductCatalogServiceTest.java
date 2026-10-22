@@ -326,9 +326,9 @@ class ProductCatalogServiceTest {
         assertThat(product.funnelVersion()).isEqualTo("musa-membership-funnel-v1");
     }
 
-    /** Confirma que v8 possui identidade v12 e os slots seguintes continuam reservados na v7. */
+    /** Confirma que v8 preserva v12, v9 serve v14 e v10 continua reservado na v7. */
     @Test
-    void appliesStableExperienceForReservedFutureHosts() {
+    void preservesPreviousHostsAndSelectsV14ForV9() {
         ProductCatalogService service = new ProductCatalogService(
                 RestClient.builder(),
                 "",
@@ -337,7 +337,7 @@ class ProductCatalogServiceTest {
         assertThat(service.getProductForHost("metodo-musa-7-dias", "v8.clubemusa.com.br").experienceVersion())
                 .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
         assertThat(service.getProductForHost("metodo-musa-7-dias", "v9.clubemusa.com.br").experienceVersion())
-                .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+                .isEqualTo(MusaV14EntryContract.VERSION);
         assertThat(service.getProductForHost("metodo-musa-7-dias", "v10.clubemusa.com.br").experienceVersion())
                 .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
     }

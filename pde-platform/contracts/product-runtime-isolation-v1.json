@@ -90,6 +90,21 @@
           "hostPort": 5181,
           "publicUrl": "https://v8.clubemusa.com.br",
           "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
+        },
+        {
+          "deployTarget": "v9",
+          "versionId": "v9",
+          "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "serviceName": "pde-platform-frontend-v9",
+          "containerName": "pde-platform-frontend-v9",
+          "imageName": "pde-platform-frontend-v9",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_V9_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_V9_PORT",
+          "hostPort": 5185,
+          "publicUrl": "https://v9.clubemusa.com.br",
+          "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
         }
       ]
     },

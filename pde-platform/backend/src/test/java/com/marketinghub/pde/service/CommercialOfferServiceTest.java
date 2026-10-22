@@ -15,6 +15,19 @@ import org.springframework.web.client.RestClient;
 
 /** Valida a integração da superfície PDE com a oferta canônica do Marketing Hub. */
 class CommercialOfferServiceTest {
+    /** A rota comercial explícita não herda a oferta antiga do host nem troca o experimento. */
+    @Test
+    void resolvesExplicitVersionBeforeHostSlot() {
+        var builder = RestClient.builder();
+        var server = MockRestServiceServer.bindTo(builder).build();
+        var service = new CommercialOfferService(builder, "http://marketing-hub");
+        server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/commercial-offer?experienceVersion=" + MusaV14EntryContract.VERSION))
+                .andRespond(withSuccess("{\"experienceVersion\":\"" + MusaV14EntryContract.VERSION + "\",\"experimentId\":106}", MediaType.APPLICATION_JSON));
+        var result = service.getOffer("metodo-musa-7-dias", "v8.clubemusa.com.br", null, MusaV14EntryContract.VERSION);
+        assertThat(result.experienceVersion()).isEqualTo(MusaV14EntryContract.VERSION);
+        assertThat(result.experimentId()).isEqualTo(106L);
+        server.verify();
+    }
 
     /** Deve preservar experimento, preço e checkout recebidos do backend principal. */
     @Test

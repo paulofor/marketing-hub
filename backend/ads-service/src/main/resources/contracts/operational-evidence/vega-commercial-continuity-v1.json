@@ -1,0 +1,61 @@
+{
+  "evidenceVersion": "vega-v14-commercial-local.v1",
+  "status": "LOCAL_TESTS_PASSED",
+  "verifiedAt": "2026-10-22",
+  "productId": 4,
+  "chainId": 26,
+  "cycleId": 13,
+  "experimentId": 106,
+  "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+  "deployTarget": "v9",
+  "publicUrl": "https://v9.clubemusa.com.br",
+  "segregation": "Somente dados sintéticos e pagamentos locais simulados; nenhuma venda ou contribuição comercial comprovada.",
+  "java": {
+    "tests": 221,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "newJourneyCases": 4,
+    "devices": [
+      "desktop",
+      "iPhone 15 Pro Chromium",
+      "Pixel 7 Chromium"
+    ],
+    "newJourneyPassed": 12,
+    "legacyVersionRegressionsPassed": 3,
+    "releaseReadOnlySmokesPassed": 3,
+    "smtpDelivery": "SENT pelo sandbox-mail com destinatários teste+...@sandbox.local; sem credenciais reais"
+  },
+  "harness": {
+    "nodeTestsPassed": 56,
+    "pythonReleaseContractTestsPassed": 25,
+    "freshnessTestsPassed": 35,
+    "ciProfileAffectedBrowserTestsPassed": 6,
+    "shellSyntaxAndShellcheck": "PASS",
+    "proxyLifecycleContract": "PASS",
+    "actualLocalTlsProxy": {
+      "v8": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "v9": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "testCertificateOnly": true
+    },
+    "mysql57RestartPersistence": "Persistência após reinício: versão v14, progresso 1/7, orientação COMPLETED",
+    "mysqlStorageBoundary": "MySQL 5.7 real em tmpfs na engine isolada; persistência testada após reiniciar somente o backend. Não é prova de recuperação do host/backup."
+  },
+  "providerCost": "A jornada local v14 não consulta modelo externo e registra zero custo incremental de provedor; infraestrutura, suporte e a preparação por Codex continuam custos separados.",
+  "budgets": {
+    "preparationCumulativeUsd": 20,
+    "includesPreviousConsumption": true,
+    "mediaTotalBrl": 100,
+    "mediaDays": 5,
+    "mediaCondition": "Após homologação e liberação comercial",
+    "paidVideoAuthorized": false
+  },
+  "pending": [
+    "Meta mínima de contribuição da v14 depende do usuário",
+    "Cadastro da candidata na tela após publicação verificada",
+    "Pareceres e gates comerciais próprios; nenhum parecer privado é convertido em comercial"
+  ],
+  "commercialLaunchClaimed": false
+}

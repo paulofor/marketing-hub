@@ -48,6 +48,12 @@ curl_v8() {
     "https://v8.clubemusa.com.br$1"
 }
 
+curl_v9() {
+  compose exec -T proxy curl --fail --silent --show-error --insecure \
+    --resolve "v9.clubemusa.com.br:443:127.0.0.1" \
+    "https://v9.clubemusa.com.br$1"
+}
+
 curl_mira_commercial() {
   compose exec -T proxy curl --fail --silent --show-error --insecure \
     --resolve "mira.digicomdigital.com.br:443:127.0.0.1" \
@@ -104,6 +110,11 @@ grep -q '"imageVersionId": "v8"' <<<"${vega_v12_diagnostics}"
 grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"' \
   <<<"${vega_v12_diagnostics}"
 grep -q '"publicUrl": "https://v8.clubemusa.com.br"' <<<"${vega_v12_diagnostics}"
+
+vega_v14_diagnostics="$(curl_v9 /version-diagnostics.json)"
+grep -q '"imageVersionId": "v9"' <<<"${vega_v14_diagnostics}"
+grep -q '"experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel"' <<<"${vega_v14_diagnostics}"
+grep -q '"publicUrl": "https://v9.clubemusa.com.br"' <<<"${vega_v14_diagnostics}"
 
 # A API privada passa pelo backend PDE mesmo sem o frontend histórico na topologia.
 vega_private_contract="$(curl_v8 /api/pde/vega/private/v1/contract)"
@@ -183,6 +194,7 @@ vega_v5_container_id_before="$(compose ps -q pde-platform-frontend-v5)"
 vega_v6_container_id_before="$(compose ps -q pde-platform-frontend-v6)"
 vega_container_id_before="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_before="$(compose ps -q pde-platform-frontend-v8)"
+vega_v14_container_id_before="$(compose ps -q pde-platform-frontend-v9)"
 mira_container_id_before="$(compose ps -q pde-platform-frontend-mira)"
 mira_commercial_container_id_before="$(compose ps -q pde-platform-frontend-mira-commercial)"
 alcyone_container_id_before="$(compose ps -q pde-platform-frontend-alcyone)"
@@ -191,6 +203,7 @@ vega_v5_container_id_after="$(compose ps -q pde-platform-frontend-v5)"
 vega_v6_container_id_after="$(compose ps -q pde-platform-frontend-v6)"
 vega_container_id_after="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_after="$(compose ps -q pde-platform-frontend-v8)"
+vega_v14_container_id_after="$(compose ps -q pde-platform-frontend-v9)"
 mira_container_id_after="$(compose ps -q pde-platform-frontend-mira)"
 mira_commercial_container_id_after="$(compose ps -q pde-platform-frontend-mira-commercial)"
 alcyone_container_id_after="$(compose ps -q pde-platform-frontend-alcyone)"
@@ -199,6 +212,7 @@ test "${vega_v5_container_id_before}" = "${vega_v5_container_id_after}"
 test "${vega_v6_container_id_before}" = "${vega_v6_container_id_after}"
 test "${vega_container_id_before}" = "${vega_container_id_after}"
 test "${vega_v12_container_id_before}" = "${vega_v12_container_id_after}"
+test "${vega_v14_container_id_before}" = "${vega_v14_container_id_after}"
 test "${mira_container_id_before}" = "${mira_container_id_after}"
 test "${mira_commercial_container_id_before}" != "${mira_commercial_container_id_after}"
 test "${alcyone_container_id_before}" = "${alcyone_container_id_after}"

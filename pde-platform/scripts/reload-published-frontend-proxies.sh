@@ -5,7 +5,7 @@ set -euo pipefail
 network="${PDE_PLATFORM_NETWORK:?Informe a rede canônica dos frontends PDE}"
 reloaded=0
 for service in pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7 \
-  pde-platform-frontend-v8 \
+  pde-platform-frontend-v8 pde-platform-frontend-v9 \
   pde-platform-frontend-mira pde-platform-frontend-mira-commercial \
   pde-platform-frontend-kit-whatsapp pde-platform-frontend-alcyone; do
   containers=$(docker ps --filter "network=$network" \

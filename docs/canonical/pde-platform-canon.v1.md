@@ -946,3 +946,22 @@ auditoria de imagem e ledger; não promove fixtures históricas a personalizaç�
 Uma imagem íntegra com custo auditável continua pendente de revisão independente.
 Meta econômica, estratégia, comunicação, mídia e escala conservam autoridades vigentes.
 Contrato e limites: [API visual privada v1](../backend/visual-personalization-v1.md).
+
+
+### Vega v14 — continuidade comercial isolada (22/10/2026)
+
+A experiência `musa-pde-entry-v14-primeiro-ajuste-aplicavel` utiliza o endereço
+produtivo reservado `https://v9.clubemusa.com.br`, target/imagem/container `v9`
+e porta 5185. O inventário continua distinguindo a experiência do identificador
+do runtime: v8 preserva a experiência v12 e sua história. A publicação do software
+não aprova o experimento 106 nem transfere os pareceres privados para o comercial.
+
+A entrada recebe ocasião e combinação possuída, entrega três ações aplicáveis
+antes de cadastro e permite baixar a orientação. A continuidade preserva Dia 1
+gratuito, sete missões, três materiais protegidos e 90 dias por pagamento único.
+A recuperação conserva a versão concedida. O checkout exige o experimento vigente
+RUNNING e vínculo idêntico de versão, experimento, preço e URL; mídia só segue
+após os gates vigentes. Codex permanece com estimativa auditável, sem extrato de API.
+
+Matriz, fontes, versões anteriores e limites da prova:
+[continuidade comercial v14](../homologacao/vega-v14-continuidade-comercial-v1.md).

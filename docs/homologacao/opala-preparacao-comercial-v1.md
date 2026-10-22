@@ -143,7 +143,34 @@ e arquitetura, e 103 do executor Dédalo. Dois replays opcionais preexistentes d
 contexto privado exportado não foram habilitados por ausência de arquivo; o verificador
 real e a nova passagem são exercitados pelos testes locais independentes desse export.
 
+### Domínio real e versão enviada — matriz de regressão
+
+A conferência publicada detectou um descompasso: o domínio v9 já servia o contrato
+v14, mas uma reserva legada do navegador sobrescrevia sua identidade com v7.
+O primeiro resultado recusava os dois campos novos porque recebia a versão antiga.
+A chamada explícita à v14 concluiu pelas regras locais, sem provedor, confirmando a
+diferença entre rota explícita e raiz do domínio.
+
+A rodada local deve reproduzir a raiz pelo hostname real, sem rede produtiva, e
+conferir versão do POST, resultado útil, execução local e custo de provedor zero.
+Cobrir desktop, iPhone e Pixel, todos os domínios declarados, reserva ainda válida,
+domínio de outro produto, rota explícita, falha recuperável e compra simulada já
+prevista na matriz. Nenhuma simulação comprova demanda ou venda.
+
+Foram comparados corrigir somente o endereço, derivar o contexto apenas no backend
+e preservar no registro do frontend a prioridade das versões explicitamente
+atribuídas. A terceira opção fecha a sobrescrita e mantém a reserva restante e os
+clientes anteriores, com o menor alcance. A mesma lista de domínios passa a ser
+conferida de forma executável contra o resolvedor.
+
 A ampliação inclui compatibilidade de pagamento visual e roteamento de Mira/Alcyone.
 As fontes compartilhadas alteradas ganharam novas atestações imutáveis, limitadas à
 compatibilidade e com publicação automática desabilitada; os pareceres anteriores não
 foram renovados. O pacote de evidências foi reconstruído e validado localmente.
+
+Resultado: 18 cenários funcionais únicos aprovados nos três perfis. Os três casos
+da prévia legada foram repetidos após usar o hostname local permitido na fixture;
+os quinze demais já estavam aprovados. A reprodução anterior falhou tanto no
+registro quanto no POST da raiz, e ambos passaram após a correção. O bundle
+revalidou 609 arquivos e 141 manifestos; a nova atestação não altera os aceites
+privados nem configura margem, mídia ou campanha.

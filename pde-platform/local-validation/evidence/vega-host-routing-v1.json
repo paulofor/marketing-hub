@@ -1,0 +1,45 @@
+{
+  "evidenceVersion": "vega-host-routing-local.v1",
+  "status": "LOCAL_TESTS_PASSED",
+  "validatedAt": "2026-10-22T04:13:55.014895+00:00",
+  "productId": 4,
+  "cycleId": 13,
+  "experimentId": 106,
+  "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+  "cause": "Reserva legada do frontend sobrescrevia a versão explicitamente atribuída ao domínio v9. A tela exibia campos v14, mas enviava v7.",
+  "before": {
+    "registryTest": "FAILED_EXPECTED_V14_RECEIVED_V7",
+    "rootDomainBrowser": "FAILED_EXPECTED_V14_RECEIVED_V7",
+    "explicitV14Request": "COMPLETED_LOCAL_RULES"
+  },
+  "after": {
+    "uniqueBrowserScenariosPassed": 18,
+    "devices": [
+      "Chromium desktop",
+      "iPhone 15 Pro emulado no Chromium",
+      "Pixel 7 emulado no Chromium"
+    ],
+    "coverage": [
+      "registro de todos os domínios e reserva restante",
+      "domínio de outro produto sem inferência MUSA",
+      "raiz v9 com contrato e POST v14, HTTP201 e resultado útil",
+      "raiz legada v12 e rota explícita v14",
+      "validação e recuperação sem falso sucesso",
+      "compra simulada, entrega, recuperação e reembolso",
+      "checkout bloqueado sem liberação exata"
+    ],
+    "fixtureAdjustment": "A verificação da prévia legada usa hostname local permitido. Os três casos afetados passaram após corrigir o endereço da fixture; os demais quinze já estavam aprovados."
+  },
+  "providerCallsForPublicValue": 0,
+  "commercialEvidence": false,
+  "financialMarginSelected": false,
+  "mediaActivated": false,
+  "limits": "Prova de funcionamento local, sem novas revisões independentes, campanha, compra ou margem real.",
+  "harnessTests": {
+    "nodePassed": 47,
+    "freshnessPythonPassed": 35,
+    "shellSyntaxAndShellcheck": "PASS: scripts/detect-deployment-changes.sh",
+    "frontendTypecheckAndBuild": "PASS via Dockerfile versionado local"
+  },
+  "frontendSourceSha256": "c96d625823f50761241d5aeb61809a3fea0bd0434b92c573d29285e70db43ed9"
+}

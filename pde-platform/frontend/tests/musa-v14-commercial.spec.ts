@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import {
+  MUSA_POINTED_DOMAINS,
+  resolveMusaVersionedHostConfig,
+} from "../src/musaExperiences";
 
 const version = "musa-pde-entry-v14-primeiro-ajuste-aplicavel";
 const slug = "metodo-musa-7-dias";
@@ -9,6 +13,66 @@ const contract =
   process.env.PDE_TEST_CONTRACT_SERVER_URL ?? "http://127.0.0.1:57181";
 const path = `/experiences/${version}`;
 const headers = (token: string) => ({ "X-PDE-Access-Token": token });
+
+test("domínios preservam a versão declarada, incluindo reservas e legado", () => {
+  for (const domain of MUSA_POINTED_DOMAINS) {
+    expect(
+      resolveMusaVersionedHostConfig(domain.host)?.experienceVersion,
+      domain.host,
+    ).toBe(domain.experienceVersion);
+  }
+  expect(
+    resolveMusaVersionedHostConfig("alcyone.digicomdigital.com.br"),
+  ).toBeUndefined();
+});
+
+test("raiz do domínio da candidata envia a mesma versão e entrega o primeiro valor", async ({
+  page,
+}) => {
+  await page.route("http://v9.clubemusa.com.br/**", async (route) => {
+    const url = new URL(route.request().url());
+    const response = await route.fetch({
+      url: `${frontend}${url.pathname}${url.search}`,
+    });
+    await route.fulfill({ response });
+  });
+  await page.goto(
+    "http://v9.clubemusa.com.br/?mh_preview=qa&pde_analytics=off",
+  );
+  await expect(
+    page.getByRole("heading", {
+      name: "A roupa está escolhida. Qual ajuste fazer primeiro?",
+    }),
+  ).toBeVisible();
+  const form = page.getByRole("region", {
+    name: "Primeiro ajuste MUSA",
+    exact: true,
+  });
+  await form
+    .locator("textarea")
+    .first()
+    .fill("SIMULAÇÃO LOCAL — reunião pela manhã");
+  await form.getByRole("button", { name: "Continuar", exact: true }).click();
+  await form.locator("textarea").first().fill("camisa azul e calça preta");
+  const receiving = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith("/api/pde/public/presence-diagnostic"),
+  );
+  await form
+    .getByRole("button", { name: "Descobrir meu primeiro ajuste", exact: true })
+    .click();
+  const response = await receiving;
+  expect(response.request().postDataJSON().experienceVersion).toBe(version);
+  expect(response.status()).toBe(201);
+  const result = await response.json();
+  expect(result.status).toBe("COMPLETED");
+  expect(result.serviceTier).toBe("LOCAL");
+  expect(result.costUsd).toBe(0);
+  await expect(page.locator(".public-diagnostic-result")).toContainText(
+    "camisa azul e calça preta",
+  );
+});
 
 test("v14 entrega valor com dois campos antes de cadastro e preserva a raiz v12", async ({
   page,

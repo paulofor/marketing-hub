@@ -10902,3 +10902,11 @@ estático. A entrada reutiliza os pixels e a copy exatos como DRAFT auditável, 
 geração ou herança de aprovação comercial. A revisão independente só é solicitada
 depois de materializar o checkout. Provas e limites em
 `docs/homologacao/opala-preparacao-comercial-v1.md`.
+
+
+## LOOP-PDE-RESERVA-SOBRESCREVE-VERSAO — 22/10/2026
+
+- Evidência: a raiz v9 apresentou o contrato v14, mas o POST do primeiro resultado informou v7 e foi recusado. A mesma entrada com versão v14 explícita concluiu por regras locais. Dois testes locais reproduziram a divergência antes da correção.
+- Causa: a lista antiga de reservas era aplicada depois dos domínios explicitamente atribuídos e sobrescrevia sua versão. A prova de instalação somente lia HTML/identidade; a navegação local anterior usava rota explícita.
+- Correção: reservas e aliases legados só preenchem entradas ausentes; v9 deixou a reserva v7. O teste confere todos os domínios declarados, a reserva restante e outro produto, além do POST real pela raiz.
+- Prevenção: `musa-v14-commercial.spec.ts` reproduz o hostname sem acessar produção e comprova versão, HTTP 201 e primeiro valor nos três perfis. Dezoito cenários funcionais únicos aprovados, incluindo legado, falha, entrega e recuperação. Recibo `pde-platform/local-validation/evidence/vega-host-routing-v1.json`; manifesto v14 novo preserva o histórico. Não concede parecer comercial, margem ou mídia.

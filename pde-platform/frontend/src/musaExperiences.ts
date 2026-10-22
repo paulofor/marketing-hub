@@ -1,3 +1,4 @@
+import { MUSA_V14_EXPERIENCE_VERSION } from "./musaCommercialRoutes";
 export type Theme = {
   primary: string;
   accent: string;
@@ -456,6 +457,21 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
       "cta_reinforcement",
     ],
   },
+  [MUSA_V14_EXPERIENCE_VERSION]: {
+    experienceVersion: MUSA_V14_EXPERIENCE_VERSION,
+    primaryHost: "v9.clubemusa.com.br",
+    layoutKey: "espelho-antes-de-sair",
+    publicDiagnosticQuestions: ["occasion", "existingSelection"].map((key) => ({
+      ...musaV12PublicDiagnosticQuestions.find(
+        (question) => question.key === key,
+      )!,
+      options: [],
+    })),
+    usesDesireRoad: true,
+    supportsPublishedPublicDiagnosticVideoHero: false,
+    usesMotivationalTimelineVideo: false,
+    videoPlacements: [],
+  },
   [MUSA_V12_EXPERIENCE_VERSION]: {
     experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
     layoutKey: "espelho-antes-de-sair",
@@ -552,9 +568,9 @@ export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [
     host: "v9.clubemusa.com.br",
     url: "https://v9.clubemusa.com.br",
     observedAddress: "163.245.200.7",
-    label: "Reservado v7",
-    role: "reserved",
-    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+    label: "Domínio apontado v14",
+    role: "pointed",
+    experienceVersion: MUSA_V14_EXPERIENCE_VERSION,
   },
   {
     host: "v10.clubemusa.com.br",
@@ -853,6 +869,24 @@ export const musaV12FallbackProduct: ProductExperience = {
 };
 
 export function resolveMusaFallbackProduct(experienceVersion = "") {
+  if (experienceVersion === MUSA_V14_EXPERIENCE_VERSION) {
+    return {
+      ...musaV12FallbackProduct,
+      experienceVersion: MUSA_V14_EXPERIENCE_VERSION,
+      missions: [],
+      supportMaterials: [],
+      heroVideos: [],
+      publicDiagnosticQuestions:
+        musaExperienceContracts[MUSA_V14_EXPERIENCE_VERSION]
+          .publicDiagnosticQuestions,
+      commercialBinding: undefined,
+      commercialCheckout: undefined,
+      publicFirstFold: {
+        headline: "A roupa está escolhida. Qual ajuste fazer primeiro?",
+        supportingText: "Conte a ocasião e a combinação que você já tem.",
+      },
+    };
+  }
   if (experienceVersion === MUSA_V12_EXPERIENCE_VERSION) {
     return musaV12FallbackProduct;
   }
@@ -862,9 +896,11 @@ export function resolveMusaFallbackProduct(experienceVersion = "") {
 }
 
 export function isMusaPublicRulesExperience(experienceVersion: string) {
-  return [MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION].includes(
-    experienceVersion,
-  );
+  return [
+    MUSA_V7_EXPERIENCE_VERSION,
+    MUSA_V12_EXPERIENCE_VERSION,
+    MUSA_V14_EXPERIENCE_VERSION,
+  ].includes(experienceVersion);
 }
 
 export function resolveMusaVersionedHostConfig(hostname: string) {

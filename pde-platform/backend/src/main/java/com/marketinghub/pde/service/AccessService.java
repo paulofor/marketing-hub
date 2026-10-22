@@ -73,6 +73,8 @@ public class AccessService {
     private static final String DELIVERY_CREATED_AT_KEY = "operatorDeliveryCreatedAt";
     private static final String MUSA_PRODUCT_SLUG = "metodo-musa-7-dias";
     private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    @Value("${pde.access.musa-commercial-base-url:https://v9.clubemusa.com.br}")
+    private String musaCommercialBaseUrl = "https://v9.clubemusa.com.br";
     private static final String MUSA_V12_EXPERIENCE_VERSION =
             "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
     private static final long MUSA_PAID_ACCESS_DAYS = 90L;
@@ -536,7 +538,7 @@ public class AccessService {
                     Map.of(
                             "method", "existing_customer_magic_link",
                             "experienceVersion", grant.getExperienceVersion())));
-        return sendAccessLink(productSlug, grant.getEmail(), clientAccessUrl(grant.getToken()));
+        return sendAccessLink(productSlug, grant.getEmail(), clientAccessUrl(grant));
     }
 
     /** Autentica ou cria acesso da cliente validada pelo Google. */
@@ -1569,11 +1571,11 @@ public class AccessService {
         }
     }
 
-    /** Aplica o mesmo contrato categórico de baixo custo às experiências públicas v7 e v12. */
+    /** Aplica as missões categoriais de baixo custo às versões MUSA compatíveis, inclusive v14. */
     private boolean usesMusaCategoricalJourney(ProductExperienceResponse product) {
         return product != null
                 && MUSA_PRODUCT_SLUG.equals(product.slug())
-                && Set.of(MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION)
+                && Set.of(MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION, MusaV14EntryContract.VERSION)
                         .contains(product.experienceVersion());
     }
 
@@ -1635,14 +1637,20 @@ public class AccessService {
                 .orElse(null);
     }
 
-    /** Monta a resposta pública de acesso a partir do registro persistido. */
+    /** Monta o acesso persistido preservando a rota da candidata comercial v14. */
     private AccessResponse toAccessResponse(AccessGrant grant) {
         return new AccessResponse(
                 grant.getToken(),
                 grant.getProductSlug(),
                 grant.getEmail(),
                 grant.getSource(),
-                clientAccessUrl(grant.getToken()));
+                clientAccessUrl(grant));
+    }
+
+    /** Preserva a rota e a versão na entrada inicial e na recuperação do mesmo acesso. */
+    private String clientAccessUrl(AccessGrant grant) {
+        return (MusaV14EntryContract.VERSION.equals(grant.getExperienceVersion())
+                ? "/experiences/" + MusaV14EntryContract.VERSION : "") + clientAccessUrl(grant.getToken());
     }
 
     /** Mantém o bearer no fragmento, que não é enviado ao servidor, ao referrer ou ao proxy. */
@@ -1773,8 +1781,9 @@ public class AccessService {
         ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), experienceVersion);
         var access = product.commercialAccess();
         if (access == null) {
-            if (MUSA_V12_EXPERIENCE_VERSION.equals(experienceVersion)) {
-                throw new IllegalStateException("A versão v12 não possui contrato comercial de acesso");
+            if (MUSA_V12_EXPERIENCE_VERSION.equals(experienceVersion)
+                    || MusaV14EntryContract.VERSION.equals(experienceVersion)) {
+                throw new IllegalStateException("A versão comprada não possui contrato comercial de acesso");
             }
             return MUSA_PAID_ACCESS_DAYS;
         }
@@ -1825,10 +1834,12 @@ public class AccessService {
         return value == null || value.isBlank() ? null : Instant.parse(value);
     }
 
-    /** Converte URL relativa em URL absoluta usando o domínio público do produto correto. */
+    /** Converte o acesso em URL da superfície correta, inclusive a rota comercial v14 isolada. */
     private String buildAbsoluteAccessUrl(String productSlug, String accessUrl) {
         String normalizedBase;
-        if (RigelPaidEntitlementService.MIRA_PRODUCT_SLUG.equals(productSlug)) {
+        if (MUSA_PRODUCT_SLUG.equals(productSlug) && accessUrl.startsWith("/experiences/" + MusaV14EntryContract.VERSION + "/")) {
+            normalizedBase = musaCommercialBaseUrl.replaceAll("/+$", "");
+        } else if (RigelPaidEntitlementService.MIRA_PRODUCT_SLUG.equals(productSlug)) {
             normalizedBase = "https://mira.digicomdigital.com.br";
         } else if (StringUtils.hasText(productSlug) && !"metodo-musa-7-dias".equals(productSlug)) {
             normalizedBase = "https://" + productSlug.trim().toLowerCase() + ".digicomdigital.com.br";

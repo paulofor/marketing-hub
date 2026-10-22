@@ -14,10 +14,11 @@ const launchOptions = {
   ],
 };
 const mysqlPort = process.env.PDE_LOCAL_MYSQL_PORT ?? "33067";
+const mysqlHost = process.env.PDE_LOCAL_MYSQL_HOST ?? "127.0.0.1";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: /musa-local-integration\.spec\.ts/,
+  testMatch: /(musa-local-integration|musa-v14-commercial)\.spec\.ts/,
   workers: 1,
   timeout: 60_000,
   expect: {
@@ -40,7 +41,7 @@ export default defineConfig({
       command: [
         "env",
         "PDE_MARKETING_HUB_BASE_URL=http://127.0.0.1:57181",
-        `PDE_ACCESS_JDBC_URL="jdbc:mysql://127.0.0.1:${mysqlPort}/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"`,
+        `PDE_ACCESS_JDBC_URL="jdbc:mysql://${mysqlHost}:${mysqlPort}/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"`,
         "PDE_ACCESS_JDBC_USERNAME=pde",
         "PDE_ACCESS_JDBC_PASSWORD=pde",
         "PDE_ACCESS_REQUIRE_JDBC=true",
@@ -53,9 +54,10 @@ export default defineConfig({
         "PDE_ACCESS_STORAGE_PATH=/tmp/pde-local-access-grants.json",
         "PDE_AI_STORAGE_PATH=/tmp/pde-local-ai-guidance-requests.json",
         "PDE_APP_BASE_URL=http://localhost:57180",
+        "PDE_MUSA_COMMERCIAL_BASE_URL=http://localhost:57180",
         "PDE_MAIL_TRANSPORT=smtp",
-        "PDE_SMTP_HOST=sandbox-mail",
-        "PDE_SMTP_PORT=1025",
+        `PDE_SMTP_HOST=${process.env.PDE_TEST_SMTP_HOST ?? "sandbox-mail"}`,
+        `PDE_SMTP_PORT=${process.env.PDE_TEST_SMTP_PORT ?? "1025"}`,
         "mvn -f ../backend/pom.xml spring-boot:run",
       ].join(" "),
       url: "http://127.0.0.1:8096/actuator/health",

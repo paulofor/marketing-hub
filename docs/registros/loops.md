@@ -10859,3 +10859,18 @@ No job financeiro do PR #5660, `dependency:build-classpath` falhou antes dos tes
   a próxima ocorrência válida é entregue com HTTP 200, sem bloqueio entre produtos.
 - **Limite:** não cria contrato comercial, escolhe margem, aprova artefato, libera mídia ou
   importa autorização histórica. Matriz: `docs/homologacao/vega-ciclo13-retomada-comercial-v1.md`.
+
+
+### Continuação da correção — 22/10/2026
+
+A guarda do `pending` resolveu o erro técnico, mas a v14 ainda era apenas uma
+especificação/protótipo privado. A entrega comercial foi implementada no executor
+PDE, com entrada real, sete missões, materiais, 90 dias e recuperação. Usa o target
+v9 reservado, isolado da v8/v12. A comparação histórica preservou o que já funcionava
+na jornada paga anterior; não converteu aprovação privada em liberação comercial.
+
+A regressão executa entrada, falha e recuperação, transação simulada, sete dias,
+materiais protegidos, reembolso, métricas sintéticas e a trava do checkout por
+status/identidade, em três dispositivos. O resultado de uma tarefa só deve apontar
+uma entrega efetivamente utilizável. Margem escolhida pelo usuário e gates comerciais
+continuam necessários. Evidências: `docs/homologacao/vega-v14-continuidade-comercial-v1.md`.

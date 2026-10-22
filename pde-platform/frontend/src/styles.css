@@ -4652,3 +4652,28 @@ h3 {
     height: 34px;
   }
 }
+.musa-context-input {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  text-align: left;
+}
+
+.musa-context-input textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #c6acb6;
+  border-radius: 0.7rem;
+  background: #fff;
+  color: #39212a;
+  font: inherit;
+  resize: vertical;
+}
+
+.musa-context-input > span {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

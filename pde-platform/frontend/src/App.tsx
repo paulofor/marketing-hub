@@ -37,6 +37,10 @@ import {
   selectApprovedHeroVideo,
 } from "./musaExperiences";
 import "./styles.css";
+import {
+  MUSA_V14_EXPERIENCE_VERSION,
+  resolveMusaCommercialRoute,
+} from "./musaCommercialRoutes";
 
 const VegaPrivatePrototype = React.lazy(
   () => import("../vega-private/component"),
@@ -560,9 +564,11 @@ function resolveDeviceType() {
 function MusaV7PrivacyNotice({
   compact = false,
   collapsible = false,
+  contextualEntry = false,
 }: {
   compact?: boolean;
   collapsible?: boolean;
+  contextualEntry?: boolean;
 }) {
   const dataRights = (
     <ul>
@@ -594,7 +600,10 @@ function MusaV7PrivacyNotice({
           <>
             <p>
               Usamos apenas os dados necessários para entregar, retomar e apoiar
-              seu ajuste. As missões não pedem foto, voz ou texto livre.
+              seu ajuste.{" "}
+              {contextualEntry
+                ? "A entrada recebe uma descrição curta da ocasião e das peças, com nota opcional. Não pedimos foto, voz ou dados sensíveis."
+                : "As missões não pedem foto, voz ou texto livre."}
             </p>
             <details className="musa-privacy-details">
               <summary>
@@ -606,12 +615,16 @@ function MusaV7PrivacyNotice({
                 </span>
               </summary>
               <p>
-                Usamos seu e-mail, escolhas categoriais, progresso, estado do
-                acesso e eventos técnicos somente para entregar, retomar, apoiar
-                e medir o Método MUSA. As sete missões não pedem foto nem texto
-                livre e não enviam suas respostas para OpenAI ou gerador de
-                vídeo. Se você procurar suporte, poderá escrever voluntariamente
-                uma mensagem breve, usada somente para atender seu pedido.
+                Usamos seu e-mail,{" "}
+                {contextualEntry
+                  ? "descrições fornecidas na entrada, escolhas categoriais"
+                  : "escolhas categoriais"}
+                , progresso, estado do acesso e eventos técnicos somente para
+                entregar, retomar, apoiar e medir o Método MUSA. As sete missões
+                não pedem foto nem texto livre e não enviam suas respostas para
+                OpenAI ou gerador de vídeo. Se você procurar suporte, poderá
+                escrever voluntariamente uma mensagem breve, usada somente para
+                atender seu pedido.
               </p>
               {dataRights}
             </details>
@@ -769,7 +782,11 @@ function resolveCurrentMusaVersionedHostConfig() {
 }
 
 function resolveHostExperienceVersionOverride() {
-  return resolveCurrentMusaVersionedHostConfig()?.experienceVersion ?? "";
+  return (
+    resolveMusaCommercialRoute(window.location.pathname) ||
+    resolveCurrentMusaVersionedHostConfig()?.experienceVersion ||
+    ""
+  );
 }
 
 function resolvePreviewExperienceVersionOverride() {
@@ -787,9 +804,12 @@ function resolvePreviewExperienceVersionOverride() {
 function resolvePublicProductUrl() {
   const query = new URLSearchParams();
   const hostConfig = resolveCurrentMusaVersionedHostConfig();
+  const routeVersion = resolveMusaCommercialRoute(window.location.pathname);
   const hostExperienceVersion =
-    hostConfig?.experienceVersion ?? resolvePreviewExperienceVersionOverride();
-  if (hostConfig?.slotCode) {
+    routeVersion ||
+    hostConfig?.experienceVersion ||
+    resolvePreviewExperienceVersionOverride();
+  if (hostConfig?.slotCode && !routeVersion) {
     query.set("slotCode", hostConfig.slotCode);
   }
   if (hostExperienceVersion) {
@@ -803,6 +823,7 @@ function applyExperienceOverrides(
   productExperience: ProductExperience,
   allowHostOverride = true,
 ) {
+  if (!allowHostOverride) return productExperience;
   const experienceVersionOverride = readRuntimeConfigValue(
     "VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE",
     (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as
@@ -942,6 +963,7 @@ function App() {
   const currentProduct = workspace?.product ?? product;
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const isMusaV7 = isMusaPublicRulesExperience(currentExperienceVersion);
+  const isMusaV14 = currentExperienceVersion === MUSA_V14_EXPERIENCE_VERSION;
   const currentMusaExperience = resolveMusaExperienceContract(
     currentExperienceVersion,
     currentProduct.layoutKey,
@@ -954,10 +976,46 @@ function App() {
     "VITE_GOOGLE_CLIENT_ID",
     (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "",
   );
-  const checkoutUrl = readRuntimeConfigValue(
-    "VITE_MUSA_CHECKOUT_URL",
-    (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? "",
-  );
+  const [versionedCheckoutUrl, setVersionedCheckoutUrl] = useState("");
+  useEffect(() => {
+    if (!isMusaV14) return;
+    let active = true;
+    setVersionedCheckoutUrl("");
+    fetch(
+      `/api/pde/products/metodo-musa-7-dias/commercial-offer?experienceVersion=${encodeURIComponent(currentExperienceVersion)}`,
+    )
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((offer) => {
+        if (
+          active &&
+          offer?.experienceVersion === currentExperienceVersion &&
+          offer?.experimentStatus === "RUNNING" &&
+          offer?.experimentId ===
+            currentProduct.commercialBinding?.experimentId &&
+          offer?.priceBrl === currentProduct.commercialBinding?.priceBrl &&
+          offer?.checkoutUrl === currentProduct.commercialCheckout?.checkoutUrl
+        )
+          setVersionedCheckoutUrl(offer.checkoutUrl);
+      })
+      .catch(() => {
+        if (active) setVersionedCheckoutUrl("");
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    isMusaV14,
+    currentExperienceVersion,
+    currentProduct.commercialBinding?.experimentId,
+    currentProduct.commercialBinding?.priceBrl,
+    currentProduct.commercialCheckout?.checkoutUrl,
+  ]);
+  const checkoutUrl = isMusaV14
+    ? versionedCheckoutUrl
+    : readRuntimeConfigValue(
+        "VITE_MUSA_CHECKOUT_URL",
+        (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? "",
+      );
   const heroStreamOverride = readRuntimeConfigValue(
     "VITE_MUSA_HERO_STREAM_URL",
     (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? "",
@@ -2683,10 +2741,14 @@ function App() {
       answeredQuestionIndex >= 0 &&
       answeredQuestionIndex < publicDiagnosticQuestions.length - 1
     ) {
-      window.setTimeout(
-        () => goToPublicDiagnosticStep(answeredQuestionIndex + 1),
-        180,
-      );
+      if (answeredQuestion?.options.length === 0) {
+        goToPublicDiagnosticStep(answeredQuestionIndex + 1);
+      } else {
+        window.setTimeout(
+          () => goToPublicDiagnosticStep(answeredQuestionIndex + 1),
+          180,
+        );
+      }
     }
   }
 
@@ -2762,7 +2824,11 @@ function App() {
                 Começar meu ajuste gratuito
               </button>
               <p>
-                <strong>4 escolhas rápidas, sem compra de roupa.</strong>{" "}
+                <strong>
+                  {isMusaV14
+                    ? "Duas informações, sem compra de roupa."
+                    : "4 escolhas rápidas, sem compra de roupa."}
+                </strong>{" "}
                 Primeiro ajuste grátis. Continuação de 7 dias por R$ 67,
                 pagamento único. Acesso por 90 dias, sem assinatura ou
                 renovação.
@@ -2926,26 +2992,89 @@ function App() {
                     <strong>{activePublicDiagnosticQuestion.question}</strong>
                   </legend>
                   <div className="public-option-grid">
-                    {activePublicDiagnosticQuestion.options.map((option) => (
-                      <button
-                        key={option}
-                        className={
-                          activePublicDiagnosticAnswer === option
-                            ? "selected"
-                            : ""
-                        }
-                        type="button"
-                        onClick={() =>
-                          updatePublicDiagnosticAnswer(
-                            activePublicDiagnosticQuestion.key,
-                            option,
-                          )
-                        }
-                      >
-                        {option}
-                        <ChevronRight size={17} />
-                      </button>
-                    ))}
+                    {activePublicDiagnosticQuestion.options.length === 0 ? (
+                      <label className="musa-context-input">
+                        {activePublicDiagnosticQuestion.question}
+                        <textarea
+                          value={activePublicDiagnosticAnswer || ""}
+                          maxLength={
+                            activePublicDiagnosticQuestion.key === "occasion"
+                              ? 160
+                              : 300
+                          }
+                          rows={3}
+                          onChange={(event) =>
+                            setPublicDiagnosticAnswers((answers) => ({
+                              ...answers,
+                              [activePublicDiagnosticQuestion.key]:
+                                event.target.value,
+                            }))
+                          }
+                        />
+                        <span>
+                          Use uma descrição curta, sem nome, documentos ou dados
+                          sensíveis.
+                        </span>
+                        {publicDiagnosticStep <
+                          publicDiagnosticQuestions.length - 1 && (
+                          <button
+                            type="button"
+                            disabled={!activePublicDiagnosticAnswer?.trim()}
+                            onClick={() =>
+                              updatePublicDiagnosticAnswer(
+                                activePublicDiagnosticQuestion.key,
+                                activePublicDiagnosticAnswer,
+                              )
+                            }
+                          >
+                            Continuar <ChevronRight size={17} />
+                          </button>
+                        )}
+                      </label>
+                    ) : (
+                      activePublicDiagnosticQuestion.options.map((option) => (
+                        <button
+                          key={option}
+                          className={
+                            activePublicDiagnosticAnswer === option
+                              ? "selected"
+                              : ""
+                          }
+                          type="button"
+                          onClick={() =>
+                            updatePublicDiagnosticAnswer(
+                              activePublicDiagnosticQuestion.key,
+                              option,
+                            )
+                          }
+                        >
+                          {option}
+                          <ChevronRight size={17} />
+                        </button>
+                      ))
+                    )}
+                    {isMusaV14 &&
+                      publicDiagnosticStep ===
+                        publicDiagnosticQuestions.length - 1 && (
+                        <label className="musa-context-input">
+                          Observação (opcional)
+                          <textarea
+                            maxLength={300}
+                            rows={2}
+                            value={publicDiagnosticAnswers.optionalNote || ""}
+                            onChange={(event) =>
+                              setPublicDiagnosticAnswers((answers) => ({
+                                ...answers,
+                                optionalNote: event.target.value,
+                              }))
+                            }
+                          />
+                          <span>
+                            A observação fica registrada; ela não muda a
+                            orientação inicial de caimento e conforto.
+                          </span>
+                        </label>
+                      )}
                   </div>
                 </fieldset>
                 <div className="public-question-navigation">
@@ -2991,9 +3120,11 @@ function App() {
                   </span>
                 </div>
                 <h2>
-                  {isMusaV7
-                    ? "Em 4 escolhas rápidas, você organiza um ajuste pequeno para testar hoje com o que já possui."
-                    : "Em 4 respostas rápidas, você descobre o detalhe que mais enfraquece sua presença e recebe uma ação simples para testar hoje."}
+                  {isMusaV14
+                    ? "Duas informações para um pequeno ajuste com as peças que você já tem."
+                    : isMusaV7
+                      ? "Em 4 escolhas rápidas, você organiza um ajuste pequeno para testar hoje com o que já possui."
+                      : "Em 4 respostas rápidas, você descobre o detalhe que mais enfraquece sua presença e recebe uma ação simples para testar hoje."}
                 </h2>
                 <div
                   className="public-road-steps"
@@ -3112,37 +3243,81 @@ function App() {
                   aria-label="Seu sinal principal de presença"
                 >
                   <span>
-                    {isMusaV7
-                      ? "Sua escolha principal hoje"
-                      : "Seu sinal principal hoje"}
+                    {isMusaV14
+                      ? "Sua ocasião"
+                      : isMusaV7
+                        ? "Sua escolha principal hoje"
+                        : "Seu sinal principal hoje"}
                   </span>
                   <strong>
-                    {resolvePrincipalPresenceSignal(publicDiagnosticGuidance)}
+                    {isMusaV14
+                      ? publicDiagnosticAnswers.occasion
+                      : resolvePrincipalPresenceSignal(
+                          publicDiagnosticGuidance,
+                        )}
                   </strong>
                 </div>
               </div>
 
               <div className="public-consultation-grid">
-                {resolveFreeInsightBullets(publicDiagnosticGuidance).map(
-                  (insight) => (
-                    <article key={insight} className="public-insight-card">
-                      <Check size={17} />
-                      <p>{insight}</p>
-                    </article>
-                  ),
-                )}
+                {(isMusaV14
+                  ? publicDiagnosticGuidance.microActions
+                  : resolveFreeInsightBullets(publicDiagnosticGuidance)
+                ).map((insight) => (
+                  <article key={insight} className="public-insight-card">
+                    <Check size={17} />
+                    <p>{insight}</p>
+                  </article>
+                ))}
               </div>
 
-              <article
-                className="public-today-action"
-                aria-label="Microação prática para hoje"
-              >
-                <span>
-                  <Sparkles size={18} />
-                  Microação para hoje
-                </span>
-                <p>{resolveTodayMicroAction(publicDiagnosticGuidance)}</p>
-              </article>
+              {!isMusaV14 && (
+                <article
+                  className="public-today-action"
+                  aria-label="Microação prática para hoje"
+                >
+                  <span>
+                    <Sparkles size={18} />
+                    Microação para hoje
+                  </span>
+                  <p>{resolveTodayMicroAction(publicDiagnosticGuidance)}</p>
+                </article>
+              )}
+              {isMusaV14 && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => {
+                    const content = [
+                      publicDiagnosticGuidance.headline,
+                      ...publicDiagnosticGuidance.microActions,
+                      ...(publicDiagnosticAnswers.optionalNote
+                        ? [
+                            "Nota pessoal: " +
+                              publicDiagnosticAnswers.optionalNote,
+                          ]
+                        : []),
+                      publicDiagnosticGuidance.caution,
+                    ].join("\n\n");
+                    const url = URL.createObjectURL(
+                      new Blob([content], { type: "text/plain;charset=utf-8" }),
+                    );
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "meu-primeiro-ajuste-musa.txt";
+                    link.click();
+                    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    void trackEvent("READY_RESULT_USED", {
+                      metadata: {
+                        actionName: "public_adjustment_downloaded",
+                        diagnosticRequestId: publicDiagnosticGuidance.requestId,
+                      },
+                    });
+                  }}
+                >
+                  Baixar meu primeiro ajuste
+                </button>
+              )}
 
               <div
                 className="public-locked-plan"
@@ -3180,12 +3355,18 @@ function App() {
                 data-analytics-section="public_diagnostic_email_capture"
               >
                 <p className="section-kicker">Salvar seu Dia 1</p>
-                <h3>Salve este resultado gratuito e comece o Dia 1.</h3>
+                <h3>
+                  {isMusaV14
+                    ? "Continue gratuitamente no Dia 1."
+                    : "Salve este resultado gratuito e comece o Dia 1."}
+                </h3>
                 <p>
-                  Seu e-mail salva o resultado e libera gratuitamente apenas o
-                  Dia 1. Os Dias 2 a 7 e os materiais ficam disponíveis por 90
-                  dias após o pagamento único de R$ 67, sem assinatura ou
-                  renovação automática.
+                  {isMusaV14
+                    ? "Você pode baixar a orientação acima sem cadastro. Seu e-mail libera gratuitamente o Dia 1."
+                    : "Seu e-mail salva o resultado e libera gratuitamente apenas o Dia 1."}{" "}
+                  Os Dias 2 a 7 e os materiais ficam disponíveis por 90 dias
+                  após o pagamento único de R$ 67, sem assinatura ou renovação
+                  automática.
                 </p>
                 <label className="email-box public-email-box">
                   E-mail para salvar seu plano
@@ -3225,15 +3406,19 @@ function App() {
                   >
                     <Mail size={18} />
                     {loading
-                      ? "Salvando resultado..."
-                      : "Salvar resultado e liberar o Dia 1"}
+                      ? "Enviando acesso..."
+                      : isMusaV14
+                        ? "Receber acesso gratuito ao Dia 1"
+                        : "Salvar resultado e liberar o Dia 1"}
                   </button>
                 )}
               </div>
             </section>
           )}
         </section>
-        {isMusaV7 && <MusaV7PrivacyNotice collapsible />}
+        {isMusaV7 && (
+          <MusaV7PrivacyNotice collapsible contextualEntry={isMusaV14} />
+        )}
       </main>
     );
   }
@@ -4209,7 +4394,7 @@ function App() {
         </section>
       )}
 
-      {isMusaV7 && <MusaV7PrivacyNotice compact />}
+      {isMusaV7 && <MusaV7PrivacyNotice compact contextualEntry={isMusaV14} />}
 
       {isMusaV7 && (
         <section
@@ -4326,6 +4511,15 @@ root.render(
     <ConsultantSdkQaPreview />
   ) : window.location.pathname.startsWith("/transition-pause") ? (
     <TransitionPauseExperiment />
+  ) : configuredProductSlug === "metodo-musa-7-dias" &&
+    window.location.pathname.startsWith("/experiences/") &&
+    !resolveMusaCommercialRoute(window.location.pathname) ? (
+    <main>
+      <h1>Experiência indisponível</h1>
+      <p>
+        Confira o endereço recebido. Nenhum resultado ou compra foi iniciado.
+      </p>
+    </main>
   ) : configuredProductSlug === "metodo-musa-7-dias" ? (
     <App />
   ) : (

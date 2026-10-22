@@ -40,12 +40,33 @@ class PdeReleaseContractTest(unittest.TestCase):
                 "v6",
                 "v7",
                 "v8",
+                "v9",
                 "mira",
                 "mira-commercial",
                 "kit-whatsapp",
                 "alcyone",
             },
         )
+
+    def test_commercial_candidate_requires_read_only_and_preserves_gates(self):
+        surface = MODULE.select_surface(self.inventory, "v9")
+        contract = {
+            "status": "READY_FOR_INDEPENDENT_REVIEW",
+            "product": {"id": 4, "slug": surface["productSlug"], "experienceVersion": surface["experienceVersion"], "publicUrl": surface["publicUrl"]},
+            "publicationContract": {"automaticDeployOnMerge": True, "frontendVersion": "v9", "publicUrl": surface["publicUrl"], "requiredFrontendSourceSha256": "a" * 64},
+            "liveVisualContract": {"runtimeIdentity": {"version": "v9", "experienceVersion": surface["experienceVersion"], "frontendSourceSha256": "a" * 64}},
+            "deploymentValidation": {"mode": "COMMERCIAL_CANDIDATE_READ_ONLY", "readOnly": True, "checkoutRequiresRunning": True, "commercialLaunchClaimed": False},
+        }
+        self.assertEqual(MODULE.smoke_profile(surface, contract, "a" * 64), "COMMERCIAL_CANDIDATE_READ_ONLY")
+        for field in ("readOnly", "checkoutRequiresRunning"):
+            unsafe = copy.deepcopy(contract)
+            unsafe["deploymentValidation"][field] = False
+            with self.assertRaisesRegex(ValueError, "gates preservados"):
+                MODULE.smoke_profile(surface, unsafe, "a" * 64)
+        unsafe = copy.deepcopy(contract)
+        unsafe["deploymentValidation"]["commercialLaunchClaimed"] = True
+        with self.assertRaisesRegex(ValueError, "gates preservados"):
+            MODULE.smoke_profile(surface, unsafe, "a" * 64)
 
     def test_commercial_mira_has_its_own_runtime_identity(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")

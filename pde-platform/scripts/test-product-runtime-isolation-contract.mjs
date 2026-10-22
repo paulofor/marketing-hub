@@ -274,3 +274,22 @@ test("a regra está na fonte canônica e na homologação técnica", async () =>
   assert.match(chainCanon, /imagem, container, porta, proxy, diagnóstico e deploy/);
   assert.match(validationCanon, /imagem, container, porta, proxy e ciclo de deploy exclusivos/);
 });
+
+test("Vega v14 ocupa o endereço reservado com runtime próprio e preserva a v12", async () => {
+  const definition = await contract();
+  const vega = definition.products.find((p) => p.productId === 4);
+  const previous = vega.surfaces.find((s) => s.deployTarget === "v8");
+  const candidate = vega.surfaces.find((s) => s.deployTarget === "v9");
+  assert.equal(
+    previous.experienceVersion,
+    "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  );
+  assert.equal(
+    candidate.experienceVersion,
+    "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+  );
+  assert.notEqual(previous.containerName, candidate.containerName);
+  const proxy = await source("lead-portal-payments-service/nginx.conf");
+  assert.match(proxy, /v9\.clubemusa\.com\.br pde-platform-frontend-v9:80;/);
+  assert.match(proxy, /v8\.clubemusa\.com\.br pde-platform-frontend-v8:80;/);
+});

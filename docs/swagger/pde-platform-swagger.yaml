@@ -19,6 +19,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: experienceVersion
+          in: query
+          required: false
+          description: Seleção explícita da candidata; prevalece sobre o slot inferido do host, preservando a raiz histórica.
+          schema:
+            type: string
       responses:
         "200":
           description: Oferta vinculada ao produto, slot, experimento e nicho vigentes.
@@ -28,6 +34,37 @@ paths:
                 $ref: "#/components/schemas/CommercialOffer"
         "503":
           description: Oferta canônica indisponível no Marketing Hub.
+  /api/pde/public/presence-diagnostic:
+    post:
+      summary: Entrega o primeiro ajuste público antes do cadastro
+      description: Na experiência musa-pde-entry-v14-primeiro-ajuste-aplicavel, exige occasion (até 160 caracteres) e existingSelection (até 300); optionalNote admite até 300. Campos estranhos são recusados. A execução usa regras locais, preserva a entrada e não abre fila externa. Contratos anteriores são preservados.
+      operationId: createPublicPresenceDiagnostic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              properties:
+                experienceVersion:
+                  type: string
+                answers:
+                  type: object
+                  additionalProperties:
+                    type: string
+            example:
+              experienceVersion: musa-pde-entry-v14-primeiro-ajuste-aplicavel
+              answers:
+                occasion: Reunião pela manhã
+                existingSelection: Camisa azul e calça preta
+      responses:
+        "200":
+          description: Orientação estruturada com identificador recuperável, ações, status e custo incremental de provedor; não representa venda ou parecer comercial.
+        "400":
+          description: Contextos ausentes, campos não contratados ou limites excedidos.
+        "503":
+          description: Contrato ou executor indisponível; não exibir resultado inexistente.
   /api/pde/products/{productSlug}/integration-contract:
     get:
       summary: Consulta o contrato preparado da jornada comercial PDE

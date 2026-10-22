@@ -152,6 +152,16 @@ validate_v8() {
     v8
 }
 
+validate_v9() {
+  (
+    cd "${frontend_dir}"
+    PDE_PUBLIC_HEALTH_URL=https://v9.clubemusa.com.br \
+      PDE_EXPECTED_FRONTEND_SOURCE_SHA256="${frontend_source_sha256}" \
+      PDE_EXPECTED_COMMIT="${IMAGE_TAG:?A prova da candidata exige o commit publicado}" \
+      "${npm_command}" exec -- playwright test tests/musa-v14-route-public.smoke.spec.ts --config=playwright.public.config.ts
+  )
+}
+
 validate_mira() {
   run_mira_private "${MIRA_PUBLIC_BASE_URL:-https://v7.clubemusa.com.br}"
 }
@@ -183,6 +193,9 @@ case "${target_frontend}" in
   v8)
     validate_v8
     ;;
+  v9)
+    validate_v9
+    ;;
   mira)
     validate_mira
     ;;
@@ -200,6 +213,7 @@ case "${target_frontend}" in
     validate_v6
     validate_v7
     validate_v8
+    validate_v9
     validate_mira
     validate_mira_commercial
     validate_kit_whatsapp

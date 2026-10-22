@@ -15,6 +15,21 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Responsabilidade: validar o contrato HTTP público que entrega a oferta canônica ao frontend PDE. */
 class CommercialOfferControllerTest {
+    /** Encaminha o seletor versionado pelo mesmo endpoint, sem inferir outro slot pelo Host. */
+    @Test
+    void acceptsExplicitExperienceVersion() throws Exception {
+        var service = mock(CommercialOfferService.class);
+        String version = "musa-pde-entry-v14-primeiro-ajuste-aplicavel";
+        var response = new com.fasterxml.jackson.databind.ObjectMapper().readValue(
+                "{\"productSlug\":\"metodo-musa-7-dias\",\"experienceVersion\":\"" + version + "\",\"experimentId\":106}", CommercialOfferResponse.class);
+        when(service.getOffer("metodo-musa-7-dias", "v8.clubemusa.com.br", null, version)).thenReturn(response);
+        var mvc = MockMvcBuilders.standaloneSetup(new CommercialOfferController(service)).build();
+        mvc.perform(get("/api/pde/products/metodo-musa-7-dias/commercial-offer")
+                        .header("Host", "v8.clubemusa.com.br").param("experienceVersion", version))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experienceVersion").value(version))
+                .andExpect(jsonPath("$.experimentId").value(106));
+    }
 
     /** Preserva o nome explícito do produto na rota mesmo quando o bytecode não retém parâmetros. */
     @Test

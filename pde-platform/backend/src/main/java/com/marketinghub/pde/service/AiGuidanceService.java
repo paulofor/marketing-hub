@@ -126,7 +126,7 @@ public class AiGuidanceService {
                 previousMissionAnswers(workspace, missionId),
                 Instant.now().toString());
         if (useLocalRules) {
-            stored = completeWithLocalRules(stored);
+            stored = completeWithLocalRules(stored, workspace.product().experienceVersion());
         }
         requestsById.put(requestId, stored);
         persistRequest(stored);
@@ -149,9 +149,11 @@ public class AiGuidanceService {
         ProductExperienceResponse product = productCatalogService.getProductForRequest(
                 MUSA_PRODUCT_SLUG,
                 v12 ? "v8.clubemusa.com.br" : "v7.clubemusa.com.br",
-                v12 ? "v8" : "v7",
+                MusaV14EntryContract.VERSION.equals(request.experienceVersion()) ? "" : v12 ? "v8" : "v7",
                 request.experienceVersion());
-        if (usesMusaLocalRules(request.experienceVersion(), product.experienceVersion())) {
+        if (MusaV14EntryContract.VERSION.equals(request.experienceVersion())) {
+            MusaV14EntryContract.validate(request.answers());
+        } else if (usesMusaLocalRules(request.experienceVersion(), product.experienceVersion())) {
             MusaV7CategoricalContract.validatePublicDiagnostic(product.publicDiagnosticQuestions(), request.answers());
         }
         String requestId = UUID.randomUUID().toString();
@@ -166,7 +168,7 @@ public class AiGuidanceService {
                 Map.of(),
                 Instant.now().toString());
         if (usesMusaLocalRules(request.experienceVersion(), null)) {
-            stored = completeWithLocalRules(stored);
+            stored = completeWithLocalRules(stored, request.experienceVersion());
         }
         requestsById.put(requestId, stored);
         persistRequest(stored);
@@ -247,11 +249,13 @@ public class AiGuidanceService {
         return MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(requestedVersion))
                 || MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion))
                 || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(requestedVersion))
-                || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion));
+                || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion))
+                || MusaV14EntryContract.VERSION.equals(nullToBlank(requestedVersion))
+                || MusaV14EntryContract.VERSION.equals(nullToBlank(workspaceVersion));
     }
 
-    /** Conclui a orientação por regras determinísticas, sem fila, tokens ou chamada externa. */
-    private StoredAiGuidance completeWithLocalRules(StoredAiGuidance pending) {
+    /** Conclui por regras locais e audita a versão v14 sem fila, tokens ou chamada externa. */
+    private StoredAiGuidance completeWithLocalRules(StoredAiGuidance pending, String experienceVersion) {
         boolean neutralPath = pending.answers().values().stream()
                 .anyMatch(value -> MUSA_NEUTRAL_CHOICE.equals(value)
                         || "Minha imagem está coerente; quero apenas organizar minhas escolhas".equals(value));
@@ -286,7 +290,9 @@ public class AiGuidanceService {
                 "A orientação não avalia corpo, emoção, personalidade ou reação de terceiros.",
                 LOCAL_RULES_MODEL,
                 "LOCAL",
-                serializeJson(Map.of("answers", pending.answers())),
+                serializeJson(MusaV14EntryContract.VERSION.equals(experienceVersion)
+                        ? Map.of("experienceVersion", experienceVersion, "answers", pending.answers())
+                        : Map.of("answers", pending.answers())),
                 responseJson,
                 0,
                 0,
@@ -333,8 +339,14 @@ public class AiGuidanceService {
         };
     }
 
-    /** Monta o primeiro ajuste tanto para o contrato v7 quanto para a entrada comercial v12. */
+    /** Monta o ajuste das entradas categoriais e da entrada curta v14 com as mesmas peças. */
     private List<String> firstAdjustmentActions(Map<String, String> answers) {
+        if (answers.containsKey("existingSelection") && !answers.containsKey("adjustmentResource")) {
+            return List.of(
+                    "Separe a combinação informada: " + answers.get("existingSelection").trim() + ".",
+                    "Para " + answers.get("occasion").trim() + ", ajuste o caimento com as mesmas peças e teste sentar, caminhar e levantar os braços.",
+                    "Compare conforto e caimento antes e depois. Salve apenas o ajuste que funcionar para você; não é necessário comprar peças.");
+        }
         if (answers.containsKey("existingSelection")) {
             return List.of(
                     "Use " + lowerAnswer(answers, "existingSelection") + " em "

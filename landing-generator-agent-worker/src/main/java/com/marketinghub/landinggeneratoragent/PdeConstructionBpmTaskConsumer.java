@@ -235,13 +235,13 @@ public class PdeConstructionBpmTaskConsumer {
     return original.isBlank() ? null : original;
   }
 
-  /** Executa o prompt específico da atividade e preserva os contadores oficiais do Codex. */
+  /** Valida antes de criar temporários e executa o prompt com os contadores oficiais do Codex. */
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
     BpmContract contract = contractFor(task);
+    PromptComposition prompt = promptComposition(task);
     Path output = Files.createTempFile("dedalo-pde-result-", ".json");
     Path processLog = Files.createTempFile("dedalo-pde-process-", ".jsonl");
     Path schema = materialize(contract.schemaResource(), ".json");
-    PromptComposition prompt = promptComposition(task);
     try {
       recordExecutionStart(
           task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());

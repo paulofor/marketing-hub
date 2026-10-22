@@ -53,7 +53,8 @@ class OpalaCommercialMaterializationTest {
           versionContract,
           experiments,
           selections,
-          mock(TargetingElementRepository.class));
+          mock(TargetingElementRepository.class),
+          mock(OpalaPrivateCreativeMaterialization.class));
   private final Product product = Product.builder().id(4L).slug("fixture-opala").build();
   private final Experiment experiment =
       Experiment.builder().id(92L).product(product).unitPrice(new BigDecimal("67")).build();
@@ -250,6 +251,18 @@ class OpalaCommercialMaterializationTest {
     assertThat(snapshot.path("creatives").get(0).path("agentReviewStatus").asText())
         .isEqualTo("PENDING");
     assertThat(snapshot.path("creatives").get(0).path("status").asText()).isEqualTo("DRAFT");
+    verifyNoInteractions(creatives, videos, experiments, slotService);
+  }
+
+  /** Aceita a peça ainda sem solicitar revisão para não antecipar o modelo ao checkout. */
+  @Test
+  void selectsDraftBeforeIndependentReviewIsRequested() throws Exception {
+    var snapshot = staticSnapshot();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) snapshot.path("creatives").get(0))
+        .put("agentReviewStatus", "");
+    when(context.snapshot("experiment:92")).thenReturn(snapshot);
+    materialization.apply("creative", scope, staticInstruction());
+    assertThat(materialization.current("creative", scope, staticInstruction())).isTrue();
     verifyNoInteractions(creatives, videos, experiments, slotService);
   }
 

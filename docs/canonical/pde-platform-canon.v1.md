@@ -965,3 +965,17 @@ após os gates vigentes. Codex permanece com estimativa auditável, sem extrato 
 
 Matriz, fontes, versões anteriores e limites da prova:
 [continuidade comercial v14](../homologacao/vega-v14-continuidade-comercial-v1.md).
+
+### Preparação do contrato e da peça antes da liberação — 22/10/2026
+
+Uma candidata com compra única, continuidade de sete dias e materiais pode ter seu
+contrato disponibilizado para revisão enquanto o experimento está PLANNED, sem
+promovê-la a READY/ACTIVE nem abrir o checkout. O contrato exige identidade, preço,
+acesso e entrega da própria versão; a promoção mantém validação e vínculos comerciais.
+Essa capacidade não obriga vídeo quando a comunicação aceita é estática.
+
+A entrada Opala pode preparar um anúncio DRAFT a partir da única peça privada vigente,
+com os mesmos bytes, SHA-256, texto, pareceres e decisão privada auditados. Esse
+reaproveitamento não transfere aprovação comercial. A revisão do anúncio só é
+solicitada depois de materializar o checkout; revisão independente, aceite humano,
+economia e liberação da campanha continuam próprios do novo contexto.

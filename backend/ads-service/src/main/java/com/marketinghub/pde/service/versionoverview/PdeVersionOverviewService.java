@@ -11,6 +11,7 @@ import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.pde.service.promotion.PdeCommercialPublicationPolicy;
+import com.marketinghub.pde.service.promotion.PdeOneTimeAccessPublicationPolicy;
 import com.marketinghub.pde.service.promotion.PdeV12PublicationPolicy;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
@@ -196,9 +197,12 @@ public class PdeVersionOverviewService {
             && ("Concluir a homologação comercial da v12.".equals(pendingItems.get(0))
                 || GENERIC_HOMOLOGATION_PENDING.equals(pendingItems.get(0)));
     boolean canPublishPreparation =
-        "paid-visual-v1".equals(slot.getLayoutKey())
-            && PdeCommercialPublicationPolicy.preparationBlockers(slot, experiment, contract)
-                .isEmpty();
+        ("paid-visual-v1".equals(slot.getLayoutKey())
+                && PdeCommercialPublicationPolicy.preparationBlockers(slot, experiment, contract)
+                    .isEmpty())
+            || (PdeOneTimeAccessPublicationPolicy.appliesTo(slot, contract)
+                && PdeOneTimeAccessPublicationPolicy.preparationBlockers(slot, experiment, contract)
+                    .isEmpty());
     boolean canPublishContract =
         canPublishPreparation
             || pendingItems.isEmpty()
@@ -275,6 +279,8 @@ public class PdeVersionOverviewService {
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
       pending.addAll(
           PdeV12PublicationPolicy.blockers(slot, experiment, experimentVideos, contract, true));
+    } else if (PdeOneTimeAccessPublicationPolicy.appliesTo(slot, contract)) {
+      pending.addAll(PdeOneTimeAccessPublicationPolicy.blockers(slot, experiment, contract, true));
     } else if ("paid-visual-v1".equals(slot.getLayoutKey())) {
       pending.addAll(
           PdeCommercialPublicationPolicy.blockers(

@@ -10893,3 +10893,12 @@ A regressão cobre 4/106, outro produto e experimento, entrada e checkout, três
 formas de ausência, caminho previamente válido, conflito e candidata sem URL
 canônica. A tarefa interrompida conserva sua auditoria; a correção não concede
 aprovação comercial nem escolhe margem. Não houve inferência informada nessa falha.
+
+A leitura do endereço público também confirmou duas passagens incompletas: o
+contrato candidato ainda não podia ser disponibilizado pelo painel, e a peça privada
+aceita não estava vinculada como anúncio desse experimento. A publicação preparatória
+agora preserva CANDIDATE/PLANNED e os gates comerciais; não exige vídeo em um percurso
+estático. A entrada reutiliza os pixels e a copy exatos como DRAFT auditável, sem nova
+geração ou herança de aprovação comercial. A revisão independente só é solicitada
+depois de materializar o checkout. Provas e limites em
+`docs/homologacao/opala-preparacao-comercial-v1.md`.

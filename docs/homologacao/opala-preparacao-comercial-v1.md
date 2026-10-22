@@ -116,3 +116,29 @@ avança o pipeline; o backend continua responsável por materialização e sequ�
 O teste local reproduziu a falha original antes da alteração. As regressões incluem
 outro produto/experimento, as atividades de entrada e checkout e um caminho antes
 válido. São provas de contrato, sem chamada externa ou comprovação comercial.
+
+### Passagens preparatórias sem vídeo obrigatório
+
+A conferência do endereço v9 mostrou que instalar o software não publicava o contrato
+candidato: a consulta ainda recebia o contrato global anterior. A política de preparação
+agora reconhece compra única com sete dias e materiais. O botão existente pode publicar
+essa candidata PLANNED sem promover o slot ou ativar o experimento. A promoção exige
+checkout/destino materializados e preflight; o gate comercial permanece independente.
+
+Também faltava ligar a peça privada aceita ao anúncio do experimento. A entrada do
+backend preserva os pixels e o texto de Íris em DRAFT, com origem, SHA, pareceres e
+aceite privado no histórico. Ela não concede aprovação comercial. A revisão só é
+enfileirada após configurar o checkout, evitando parecer pago sobre entrada incompleta.
+Callbacks repetidos conservam o anúncio existente; outra ocorrência não herda as provas.
+
+Os testes percorrem publicação e visão do painel com os serviços reais, preservando
+PLANNED; rejeitam contexto/preço/acesso divergentes e campanha já liberada. A passagem
+criativa usa armazenamento simulado, verifica pixels, ambiguidade, origem e aceite,
+e mantém os gates comerciais pendentes. Testes sintéticos não comprovam vendas.
+
+O fluxo integrado local usa o verificador real de identidade, pareceres e aceite
+privado antes da cópia, com armazenamento e inferência substituídos por doubles.
+Foram aprovados 317 testes relacionados do backend, incluindo inicialização completa
+e arquitetura, e 103 do executor Dédalo. Dois replays opcionais preexistentes de
+contexto privado exportado não foram habilitados por ausência de arquivo; o verificador
+real e a nova passagem são exercitados pelos testes locais independentes desse export.

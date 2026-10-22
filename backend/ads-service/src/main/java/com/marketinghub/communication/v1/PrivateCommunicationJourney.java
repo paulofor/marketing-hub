@@ -68,12 +68,16 @@ public class PrivateCommunicationJourney {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private InitialExperimentPrivateJourneyContext initialExperiments;
 
-  /** Reconhece os três regimes privados mesmo bloqueados, sem fallback para plano comercial. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private InitialExperimentCommercialJourney initialCommercialJourney;
+
+  /** Preserva regimes privados bloqueados e libera a passagem inicial explicitamente preparada. */
   @Transactional(readOnly = true)
   public boolean applies(String reference) {
     return IrisPrivateProductContext.supports(reference)
         || privateCycle(reference).isPresent()
-        || initialContext(reference).isPresent();
+        || (initialContext(reference).isPresent()
+            && (initialCommercialJourney == null || !initialCommercialJourney.applies(reference)));
   }
 
   /** Reconhece quando a referência privada não pode comprovar a política comercial publicada. */

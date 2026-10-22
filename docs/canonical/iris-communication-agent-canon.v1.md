@@ -580,6 +580,17 @@ compartilhado não comprova o despacho do comando.
 
 Regressão e evidência: [Alcyone — aceite e continuidade](../homologacao/alcyone-private-handoff-2026-10-20.md).
 
+Quando o primeiro experimento ainda `PLANNED`, sem ciclo ou predecessor, possui
+slot comercial explicitamente preparado (`READY`/`ACTIVE`), destino e integração
+usam o contrato comercial próprio. A comunicação privada concluída permanece
+histórica e não é refeita por alterações operacionais do plano. A integração
+privada não comprova a comercial: registrar nova ocorrência pelos executores
+canônicos, conferindo identidade, URL e checkout. Inconsistência do destino mantém
+o bloqueio, sem voltar silenciosamente à rota privada. Peças comerciais continuam
+sujeitas a revisões próprias; esta passagem não concede publicação nem mídia.
+
+Regressão: [Passagem comercial inicial](../homologacao/alcyone-passagem-comercial-2026-10-22.md).
+
 ### Preservação da ressalva factual no template privado — 2026-10-09
 
 O `footer` de `PROOF_CARD_V1` permanece obrigatório e impresso na validação privada,

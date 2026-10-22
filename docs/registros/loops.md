@@ -10918,3 +10918,24 @@ depois de materializar o checkout. Provas e limites em
 - Mudança reutilizável: Dédalo captura o primeiro valor local atual com entrada de demonstração; backend preserva a copy de Íris e cria versão própria do anúncio. Origem, pixels e configuração candidata do checkout são tipados e conferidos; link real falso continua falso. Nenhuma aprovação, margem ou autorização comercial é herdada.
 - Prevenção: matriz e regressões em `docs/homologacao/opala-prova-comercial-interface-v1.md`, incluindo outra identidade, caminho anterior, falha de origem, preço, versão, provedor e hash. O capturador usa o Chromium empacotado, sem IA ou produção paga de imagens.
 - Limites: adaptador por capacidade, sem exceção por nome/ID; não fornece licença para imagens externas nem comprova compra, demanda ou contribuição. A melhoria acompanha o produto e não substitui o aceite comercial.
+
+
+## LOOP-PRIMEIRO-EXPERIMENTO-PRESO-NA-JORNADA-PRIVADA — 22/10/2026
+
+- Evidência: Alcyone/97, slot paid-v1 READY/OK pelo comando oficial; destino
+  invalidado, mas o executor ainda oferecia confirmação da experiência privada.
+  Safira exigia corretamente integração comercial, enquanto a integração antiga
+  permanecia concluída em modo privado.
+- Causa: o primeiro experimento não tem a fase explícita do ciclo sucessor.
+  A presença histórica da estratégia privada mantinha o despacho privado após
+  a preparação do destino comercial. Mudanças de orçamento/perfil ainda reabriam
+  a comunicação privada, sem corrigir essa escolha.
+- Correção: reconhecer o destino preparado da mesma referência, preservar a
+  comunicação privada histórica e executar/reabrir somente a integração própria.
+  Validação inconsistente bloqueia; não é convertida em aprovação privada.
+- Prevenção: executores reais de destino/integração e leitor de evidência de
+  Safira com duas identidades, replay, candidato ainda não preparado, ciclo,
+  sucessor, STOP, encerramento, checkout e produto divergentes.
+- Limites: nenhuma aprovação comercial é herdada; não altera teto, peça, cobrança,
+  campanha ou contrato de ciclos. Testes não são evidência comercial.
+- Registro: [matriz e resultados](../homologacao/alcyone-passagem-comercial-2026-10-22.md).

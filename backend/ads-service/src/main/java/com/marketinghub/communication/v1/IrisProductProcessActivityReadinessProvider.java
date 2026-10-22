@@ -32,6 +32,9 @@ public class IrisProductProcessActivityReadinessProvider
   private com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository
       instances;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private InitialExperimentCommercialJourney initialCommercialJourney;
+
   /** Configura os mesmos contextos estratégicos e funcionais entregues ao worker de Íris. */
   public IrisProductProcessActivityReadinessProvider(
       MarketStrategicContextProvider marketStrategy,
@@ -139,7 +142,7 @@ public class IrisProductProcessActivityReadinessProvider
         true, "Estratégia, economia, PDE e provas estão prontos para Íris.");
   }
 
-  /** Reabre a mensagem do produto quando o novo gate ou contrato substitui a prova usada. */
+  /** Reabre entradas privadas alteradas, preservando o histórico ao preparar a fase comercial. */
   @Override
   public boolean requiresFreshExecution(
       BusinessProcessDefinition process,
@@ -154,6 +157,9 @@ public class IrisProductProcessActivityReadinessProvider
     var context = communicationContext.resolve(reference).orElse(Map.of());
     if (IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE.equals(
         context.get("mode"))) {
+      // O material comercial recebe revisão própria; não refazer a aprovação privada histórica.
+      if (initialCommercialJourney != null && initialCommercialJourney.applies(reference))
+        return false;
       return initialExperimentInputChanged(process, reference, context);
     }
     if (!IrisPrivateProductContext.supports(reference)) return false;

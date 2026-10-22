@@ -351,7 +351,9 @@ public class PdeConstructionBpmTaskConsumer {
     command.addAll(
         List.of(
             "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
-    command.addAll(List.of("--model", properties.modelForActivity(contract.processCode(), contract.activityId())));
+    command.addAll(
+        List.of(
+            "--model", properties.modelForActivity(contract.processCode(), contract.activityId())));
     return command;
   }
 
@@ -777,8 +779,8 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /**
-   * Recusa antes do modelo qualquer preparação Opala que misture candidata, checkout ou acesso de
-   * versões diferentes.
+   * Recusa misturas de versão antes do modelo e permite materializar o checkout canônico ainda
+   * ausente no experimento, sem aceitar um vínculo persistido divergente.
    */
   private static void validateOpalaTaskContext(Map<String, Object> task, ObjectMapper json) {
     try {
@@ -822,8 +824,7 @@ public class PdeConstructionBpmTaskConsumer {
               && Objects.equals(
                   target.path("commercialCheckoutUrl").asText(),
                   checkout.path("checkoutUrl").asText())
-              && Objects.equals(
-                  opala.path("checkoutUrl").asText(), checkout.path("checkoutUrl").asText())
+              && compatiblePreparedCheckout(opala.path("checkoutUrl"), checkout.path("checkoutUrl"))
               && sameAmount(target.path("unitPriceBrl"), checkout.path("priceBrl"))
               && sameAmount(opala.path("priceBrl"), checkout.path("priceBrl"))
               && sameAmount(binding.path("priceBrl"), checkout.path("priceBrl"))
@@ -849,6 +850,15 @@ public class PdeConstructionBpmTaskConsumer {
       throw new IllegalArgumentException(
           "Contexto Opala ilegível antes da execução de Dédalo.", ex);
     }
+  }
+
+  /** Distingue uma preparação ainda ausente de um checkout conflitante com a candidata validada. */
+  private static boolean compatiblePreparedCheckout(JsonNode prepared, JsonNode canonical) {
+    if (!canonical.isTextual() || canonical.asText().isBlank()) return false;
+    return prepared.isNull()
+        || prepared.isMissingNode()
+        || (prepared.isTextual()
+            && (prepared.asText().isBlank() || prepared.asText().equals(canonical.asText())));
   }
 
   /** Compara valores monetários sem depender da escala decimal serializada. */

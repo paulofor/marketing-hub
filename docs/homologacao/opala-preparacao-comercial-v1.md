@@ -95,3 +95,24 @@ mantém sua cadeia e aprovações, sem migração silenciosa.
 
 Ao encerrar, Vite e a topologia MySQL temporária foram removidos. Não foram criados
 artefatos operacionais no Marketing Hub pela API ou por acesso ao banco.
+
+## Alinhamento da primeira preparação — 22/10/2026
+
+Vega 4/106 recebeu a candidata v14, mas o executor rejeitou a tarefa 795 antes do
+modelo: o checkout canônico estava completo no contrato e ainda não estava gravado
+no experimento. No caminho histórico 92, esse vínculo já existia. O backend e o
+executor interpretavam de modo diferente a ausência esperada antes da materialização.
+
+Foram comparados três caminhos: gravar o checkout antecipadamente pela operação
+apenas contornaria a divergência; bloquear a abertura até haver checkout impediria
+a atividade que deve prepará-lo; distinguir candidata completa de vínculo ainda
+ausente preserva a ordem do processo e os controles. Foi escolhido o terceiro.
+
+A validação anterior ao modelo aceita vínculo persistido nulo, ausente ou em branco
+somente quando o checkout canônico continua declarado. Um vínculo diferente e uma
+candidata sem checkout continuam recusados. O executor não grava checkout nem
+avança o pipeline; o backend continua responsável por materialização e sequência.
+
+O teste local reproduziu a falha original antes da alteração. As regressões incluem
+outro produto/experimento, as atividades de entrada e checkout e um caminho antes
+válido. São provas de contrato, sem chamada externa ou comprovação comercial.

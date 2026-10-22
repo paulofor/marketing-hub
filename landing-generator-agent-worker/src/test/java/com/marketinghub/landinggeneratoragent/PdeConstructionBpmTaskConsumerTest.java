@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -521,6 +522,87 @@ class PdeConstructionBpmTaskConsumerTest {
         new PdeConstructionBpmTaskConsumer.BpmContract(
             "opala-commercial-preparation-v1", "checkout", "prompt", "schema", "v1", "READY"),
         json);
+  }
+
+  /** Aceita a primeira preparação quando o checkout canônico ainda não foi materializado. */
+  @Test
+  void acceptsOpalaPreparationBeforeCheckoutMaterialization() throws Exception {
+    for (long productId : List.of(4L, 407L)) {
+      for (String activity : List.of("entry", "checkout")) {
+        for (String state : List.of("NULL", "MISSING", "BLANK")) {
+          String version =
+              productId == 4L ? "musa-pde-entry-v14-primeiro-ajuste-aplicavel" : "pde-v18";
+          Map<String, Object> task = opalaTask(productId, productId + 102L, version, "oferta");
+          var context = (ObjectNode) json.readTree(String.valueOf(task.get("processContextJson")));
+          var opala = (ObjectNode) context.path("opalaCommercial");
+          if ("NULL".equals(state)) opala.putNull("checkoutUrl");
+          else if ("MISSING".equals(state)) opala.remove("checkoutUrl");
+          else opala.put("checkoutUrl", "  ");
+          task.put("processContextJson", json.writeValueAsString(context));
+
+          PdeConstructionBpmTaskConsumer.validateTaskContext(
+              task,
+              new PdeConstructionBpmTaskConsumer.BpmContract(
+                  "opala-commercial-preparation-v1", activity, "prompt", "schema", "v1", "READY"),
+              json);
+        }
+      }
+    }
+  }
+
+  /** Preserva um checkout já persistido divergente para revisão, sem sobrescrevê-lo pelo modelo. */
+  @Test
+  void rejectsConflictingPreparedOpalaCheckoutBeforeModel() throws Exception {
+    Map<String, Object> task = opalaTask(407L, 922L, "pde-v18", "oferta");
+    var context = (ObjectNode) json.readTree(String.valueOf(task.get("processContextJson")));
+    ((ObjectNode) context.path("opalaCommercial"))
+        .put("checkoutUrl", "https://go.pepper.com.br/outro");
+    task.put("processContextJson", json.writeValueAsString(context));
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateTaskContext(
+                    task,
+                    new PdeConstructionBpmTaskConsumer.BpmContract(
+                        "opala-commercial-preparation-v1",
+                        "checkout",
+                        "prompt",
+                        "schema",
+                        "v1",
+                        "READY"),
+                    json))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Contrato Opala mistura");
+  }
+
+  /** Exige o checkout da candidata mesmo quando nenhum vínculo comercial foi persistido ainda. */
+  @Test
+  void rejectsMissingCanonicalCheckoutDuringOpalaPreparation() throws Exception {
+    Map<String, Object> task = opalaTask(407L, 922L, "pde-v18", "oferta");
+    var target = (ObjectNode) json.valueToTree(task.get("taskTarget"));
+    ((ObjectNode) target.path("pdeContext").path("commercialCheckout")).putNull("checkoutUrl");
+    target.putNull("commercialCheckoutUrl");
+    var context = (ObjectNode) json.readTree(String.valueOf(task.get("processContextJson")));
+    var opala = (ObjectNode) context.path("opalaCommercial");
+    opala.putNull("checkoutUrl");
+    opala.set("productContract", target.path("pdeContext"));
+    task.put("taskTarget", json.convertValue(target, Map.class));
+    task.put("processContextJson", json.writeValueAsString(context));
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateTaskContext(
+                    task,
+                    new PdeConstructionBpmTaskConsumer.BpmContract(
+                        "opala-commercial-preparation-v1",
+                        "entry",
+                        "prompt",
+                        "schema",
+                        "v1",
+                        "READY"),
+                    json))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Contrato Opala mistura");
   }
 
   /** Recusa a predecessora mesmo quando ela reutiliza o mesmo checkout da candidata. */

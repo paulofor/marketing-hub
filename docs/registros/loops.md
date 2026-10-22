@@ -10874,3 +10874,22 @@ materiais protegidos, reembolso, métricas sintéticas e a trava do checkout por
 status/identidade, em três dispositivos. O resultado de uma tarefa só deve apontar
 uma entrega efetivamente utilizável. Margem escolhida pelo usuário e gates comerciais
 continuam necessários. Evidências: `docs/homologacao/vega-v14-continuidade-comercial-v1.md`.
+
+### Checkout candidato e vínculo ainda não materializado — 22/10/2026
+
+A tarefa 795 finalmente recebeu a candidata exata, mas a validação local de Dédalo
+recusou a entrada antes da inferência. O backend permitia corretamente preparar um
+checkout ainda não vinculado ao experimento; o executor exigia igualdade imediata
+entre a URL persistida nula e a URL canônica da candidata. O histórico do experimento
+92, com checkout já vinculado, explica por que o caminho anterior passava.
+
+O teste `acceptsOpalaPreparationBeforeCheckoutMaterialization` reproduziu a mesma
+exceção antes da correção. O executor agora permite vínculo ausente, nulo ou em
+branco, mantendo obrigatório o checkout canônico íntegro da candidata. Vínculo
+persistido divergente continua bloqueado. Nenhum checkout é criado pelo executor;
+a materialização permanece no backend, na atividade própria.
+
+A regressão cobre 4/106, outro produto e experimento, entrada e checkout, três
+formas de ausência, caminho previamente válido, conflito e candidata sem URL
+canônica. A tarefa interrompida conserva sua auditoria; a correção não concede
+aprovação comercial nem escolhe margem. Não houve inferência informada nessa falha.

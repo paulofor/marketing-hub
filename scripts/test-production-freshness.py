@@ -540,16 +540,30 @@ class MusaPdeWatchdogTest(unittest.TestCase):
         current = next(surface for surface in selected if surface.target == "v8")
         self.assertEqual(current.experience_version, "musa-pde-entry-v12-primeiro-ajuste-aplicavel")
         self.assertIsNotNone(current.release_contract)
-        self.assertEqual([surface.target for surface in selected], ["v5", "v6", "v7", "v8"])
+        inventory = json.loads((ROOT / "pde-platform/contracts/product-runtime-isolation-v1.json").read_text())
+        expected = sorted(surface["deployTarget"] for product in inventory["products"] if product["productId"] == 4
+                          for surface in product["surfaces"] if surface["watchdogRequired"] and surface["lifecycleStatus"] == "SUPPORTED")
+        self.assertEqual(sorted(surface.target for surface in selected), expected)
+        candidate = next(surface for surface in selected if surface.target == "v9")
+        self.assertEqual(candidate.experience_version, "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
+        self.assertIsNotNone(candidate.source_sha256)
+        self.assertIsNotNone(candidate.release_contract)
 
     def private_documents(self):
-        return {
+        # A fixture histórica contém sua publicação e os legados, sem novas superfícies sem manifesto.
+        documents = {
             path: json.loads((ROOT / path).read_text())
             for path in (
                 "pde-platform/contracts/product-runtime-isolation-v1.json",
                 "pde-platform/contracts/vega-cycle10-preparation-v4.json",
             )
         }
+        frontend = documents["pde-platform/contracts/vega-cycle10-preparation-v4.json"]["publicationContract"]["frontendVersion"]
+        for product in documents["pde-platform/contracts/product-runtime-isolation-v1.json"]["products"]:
+            if product["productId"] == 4:
+                product["surfaces"] = [surface for surface in product["surfaces"]
+                                       if surface.get("legacyMinimumRevision") or surface["deployTarget"] == frontend]
+        return documents
 
     def test_private_candidate_uses_validated_public_root_and_source(self):
         documents = self.private_documents()

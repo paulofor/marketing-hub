@@ -58,7 +58,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/vega-v14-continuidade-comercial-v1.md",
-      "sha256": "2fc29e4985fb97a610ff0cd14976b58f16cace57206c4ed555fdd5c591f8be1c",
+      "sha256": "12ed176da0ce25b459a50a93c59e7fba65cacce1d6884fd580b1546b8eabf01f",
       "promptMode": "FULL"
     },
     {
@@ -74,7 +74,7 @@
     },
     {
       "path": "pde-platform/contracts/vega-cycle10-preparation-v10.json",
-      "sha256": "590e706cc87de2699288c992b078790b43deb156b22a3aee056ec96c3037c84c",
+      "sha256": "4cd3f1810a96d85f1d2e1edf9600583042f9c04ee5747b6637a064c4ed4d6df8",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Histórico e rejeição do predecessor preservados; sem herança de aprovação ou autorização."
     },

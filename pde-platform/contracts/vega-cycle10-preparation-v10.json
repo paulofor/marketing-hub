@@ -163,7 +163,7 @@
     },
     {
       "path": "scripts/test-production-freshness.py",
-      "sha256": "acacba9eb2b21d73a4ed0895408bcd534870250fc7d379268796ac3eb14b550b",
+      "sha256": "66c9475f6ba010bc70613188dd73227452b6f258eac2c413af600130be4dfdf2",
       "promptMode": "FULL"
     },
     {
@@ -217,7 +217,8 @@
       "pde-platform/scripts/run-targeted-production-smokes.sh",
       "pde-platform/scripts/test_pde_release_contract.py",
       "pde-platform/scripts/test-targeted-production-smokes.sh",
-      ".github/workflows/pde-platform-metodo-musa-ci.yml"
+      ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "scripts/test-production-freshness.py"
     ],
     "validationReport": "docs/homologacao/vega-v14-continuidade-comercial-v1.md"
   }

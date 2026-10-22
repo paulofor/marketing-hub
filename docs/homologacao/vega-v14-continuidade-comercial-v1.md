@@ -82,3 +82,11 @@ As evidências estruturadas ficam em
 `backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json`.
 Essas provas demonstram funcionamento técnico e recuperação; não comprovam demanda,
 receita, margem realizada nem aceitação dos especialistas da candidata comercial.
+
+
+O CI do primeiro HEAD apontou que a fixture histórica do monitor ainda assumia
+quatro superfícies e não fornecia o manifesto da nova v9. A falha foi reproduzida
+localmente. O teste corrente passa a conferir todas as superfícies do inventário;
+a fixture histórica permanece delimitada à sua publicação e aos legados que contém.
+Nenhum `legacyMinimumRevision` foi inventado para contornar o controle. Os 35 testes
+de freshness passaram localmente após esse ajuste.

@@ -153,7 +153,10 @@ public class OpalaCommercialService
       require(
           "READY".equals(result.path("decision").asText()),
           "Preparação ainda não concluída pelo agente.");
-      materialization.apply(activity, scope, result.path("instruction"));
+      if ("creative".equals(activity) && evidence.has("commercialUiProof"))
+        materialization.applyUiProof(
+            scope, task, result.path("instruction"), evidence.path("commercialUiProof"));
+      else materialization.apply(activity, scope, result.path("instruction"));
     } else {
       require(
           REVIEWS.contains(activity)

@@ -90,6 +90,9 @@ public class CreativeService {
       "Aprovação bloqueada: Têmis, Agente Especialista em Anúncios, ainda não aprovou o anúncio. "
           + "Reenvie-o para a revisão independente.";
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private CreativePreparationEvidenceResolver preparationEvidence;
+
   private final CreativeRepository repository;
   private final ExperimentRepository experimentRepository;
   private final AngleRepository angleRepository;
@@ -503,6 +506,7 @@ public class CreativeService {
             : creative.getImageUrl();
     Product desireMapProduct = niche == null ? null : uniqueProductForDesireMap(niche.getId());
     String destinationUrl = resolveAgentReviewDestinationUrl(creative, experiment);
+    var preparation = preparationEvidence == null ? null : preparationEvidence.resolve(creative);
     return new CreativeAgentReviewPendingDto(
         creative.getId(),
         experiment.getId(),
@@ -520,7 +524,9 @@ public class CreativeService {
         commercialLineageEvidenceService.resolve(creative, destinationUrl),
         mediaGovernanceEvidenceService.resolve(creative),
         desireMapProduct != null ? desireMapProduct.getDesireAssociationMapVersion() : null,
-        desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);
+        desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null,
+        preparation == null ? null : preparation.staticUiProof(),
+        preparation == null ? null : preparation.preparedCheckout());
   }
 
   /** Resolve a landing pública do experimento quando o criativo legado não gravou seu destino. */

@@ -1,0 +1,121 @@
+{
+  "contractVersion": "opala-commercial-ui-proof.v1",
+  "status": "LOCAL_VALIDATION_ONLY",
+  "validatedAt": "2026-10-22T06:48:32.207679+00:00",
+  "scope": "Prova comercial da interface por capacidade; preserva revisão independente, decisões humanas e limites financeiros. Não autoriza compra ou anúncio.",
+  "before": "Imagem privada 541 contradizia a continuidade oferecida; revisão preparatória exigia link ativo antes da homologação.",
+  "after": "Nova captura real com copy de Íris preservada, origem conferida e configuração de checkout separada da ativação.",
+  "modelCalls": 0,
+  "providerCalls": 0,
+  "commercialImpactMeasured": false,
+  "localRuntime": {
+    "workerImageSha256": "75c758e285dee1c366815b5aab4f19efdada317aca20788c1608e12f2f1bc39f",
+    "fixtureBrowserTests": 3,
+    "actualProductCapture": {
+      "contractVersion": "OPALA_COMMERCIAL_UI_PROOF_V1",
+      "adapter": "MUSA_LOCAL_FIRST_VALUE_V1",
+      "adapterContractSha256": "b219efa42bb45b0992fa7e96994263bb547227b99cfc1696a0e7cddd90697a76",
+      "adapterExperienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "productId": 4,
+      "cycleId": 13,
+      "experimentId": 106,
+      "productVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "copySourceTaskId": 788,
+      "copySourceArtifactId": 1118,
+      "destinationUrl": "http://v9.clubemusa.com.br",
+      "responseSha256": "0d4165965a446da6adc9b6d483d5fb320863e9cd2d2d80df43e61c5d3357c6a7",
+      "sampleInput": {
+        "occasion": "DEMONSTRAÇÃO — trabalho",
+        "existingSelection": "camisa azul e calça preta"
+      },
+      "functionalResult": {
+        "requestId": "42019a38-dc59-4c6c-87fe-7df7b70f7356",
+        "productSlug": "metodo-musa-7-dias",
+        "missionId": "diagnostico-presenca-publico",
+        "guidanceType": "MUSA_PUBLIC_PRESENCE_DIAGNOSTIC",
+        "status": "COMPLETED",
+        "headline": "Sua mensagem visual e o primeiro ajuste estão organizados",
+        "summary": "Sua mensagem visual e o primeiro ajuste estão organizados. As escolhas foram combinadas por regras locais para você testar e avaliar por si mesma.",
+        "signals": [
+          "DEMONSTRAÇÃO — trabalho",
+          "camisa azul e calça preta"
+        ],
+        "microActions": [
+          "Separe a combinação informada: camisa azul e calça preta.",
+          "Para DEMONSTRAÇÃO — trabalho, ajuste o caimento com as mesmas peças e teste sentar, caminhar e levantar os braços.",
+          "Compare conforto e caimento antes e depois. Salve apenas o ajuste que funcionar para você; não é necessário comprar peças."
+        ],
+        "caution": "A orientação não avalia corpo, emoção, personalidade ou reação de terceiros.",
+        "model": "MUSA_LOCAL_RULES_V1",
+        "serviceTier": "LOCAL",
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "errorMessage": null
+      },
+      "model": "MUSA_LOCAL_RULES_V1",
+      "serviceTier": "LOCAL",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "costUsd": 0,
+      "testData": true,
+      "commercialEvidenceEligible": false,
+      "sha256": "4f3e055210ff36902505b00e827c250b6bfe215fd4cc32ee950907917d40f019",
+      "captureSessionId": "opala-ui-900801",
+      "evidenceKey": "COMMERCIAL-FIRST-VALUE",
+      "evidenceType": "FOLD",
+      "deviceProfile": "PDE_UI_480",
+      "pageNumber": 1,
+      "foldNumber": 1,
+      "viewportWidth": 480,
+      "viewportHeight": 900,
+      "captureMode": "DOM_REGION",
+      "captureRegion": "FIRST_VALUE_ACTIONS_AND_DOWNLOAD",
+      "captureBounds": {
+        "x": 10,
+        "y": 2221.515625,
+        "width": 460,
+        "height": 493.328125
+      },
+      "pixelWidth": 1035,
+      "pixelHeight": 1109,
+      "pageHeightPx": 4119,
+      "scrollY": 2222,
+      "sourceUrl": "http://v9.clubemusa.com.br",
+      "finalUrl": "http://v9.clubemusa.com.br",
+      "inspectedUrl": "http://v9.clubemusa.com.br/?mh_preview=qa&pde_analytics=off",
+      "capturedAt": "2026-10-22T06:36:14.518Z",
+      "sourceType": "OWN_PRODUCT_UI",
+      "externalImagesIncluded": false,
+      "rendererVersion": "OPALA_COMMERCIAL_UI_PROOF_V1",
+      "rendererSha256": "01593155927d739938304f6c140e9c1225dfcc66bac6d276029ae2b45982f520"
+    },
+    "imagePath": "docs/homologacao/evidencias/opala-first-value-v1.png",
+    "imageSha256": "4f3e055210ff36902505b00e827c250b6bfe215fd4cc32ee950907917d40f019"
+  },
+  "tests": {
+    "backendAccumulatedReports": {
+      "tests": 758,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 11,
+      "note": "Soma dos relatórios locais relevantes preservados; inclui execuções anteriores desta solicitação."
+    },
+    "dedaloUnitTests": 104,
+    "captureBrowserTests": 3,
+    "temisNodeTests": 5,
+    "transportRegression": "JSON roundtrip: falha reproduzida em IDs LongNode/IntNode e corrigida sem aceitar strings, frações ou overflow.",
+    "temisUnitTests": {
+      "tests": 135,
+      "failures": 0,
+      "errors": 0,
+      "optionalSkipped": 1
+    }
+  },
+  "limits": [
+    "Adaptador contratado MUSA_LOCAL_FIRST_VALUE_V1 e versão de software declarada; sem exceção por ID de produto.",
+    "Dado DEMONSTRAÇÃO não comprova resultado de cliente, compra ou margem.",
+    "Checkout observado em leitura; nenhuma compra ou mídia executada.",
+    "Compatibilidade dos demais manifestos não renova parecer nem autorização."
+  ]
+}

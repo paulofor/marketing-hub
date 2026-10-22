@@ -1,0 +1,9 @@
+{
+  "contractVersion": "MUSA_LOCAL_FIRST_VALUE_CAPTURE_V1",
+  "adapter": "MUSA_LOCAL_FIRST_VALUE_V1",
+  "supportedExperienceVersions": ["musa-pde-entry-v14-primeiro-ajuste-aplicavel"],
+  "providerCallsAuthorized": 0,
+  "model": "MUSA_LOCAL_RULES_V1",
+  "serviceTier": "LOCAL",
+  "purpose": "Capturar a interface própria com dados explícitos de demonstração, sem compra ou cadastro."
+}

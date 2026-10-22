@@ -10910,3 +10910,11 @@ depois de materializar o checkout. Provas e limites em
 - Causa: a lista antiga de reservas era aplicada depois dos domínios explicitamente atribuídos e sobrescrevia sua versão. A prova de instalação somente lia HTML/identidade; a navegação local anterior usava rota explícita.
 - Correção: reservas e aliases legados só preenchem entradas ausentes; v9 deixou a reserva v7. O teste confere todos os domínios declarados, a reserva restante e outro produto, além do POST real pela raiz.
 - Prevenção: `musa-v14-commercial.spec.ts` reproduz o hostname sem acessar produção e comprova versão, HTTP 201 e primeiro valor nos três perfis. Dezoito cenários funcionais únicos aprovados, incluindo legado, falha, entrega e recuperação. Recibo `pde-platform/local-validation/evidence/vega-host-routing-v1.json`; manifesto v14 novo preserva o histórico. Não concede parecer comercial, margem ou mídia.
+
+## LOOP-OPALA-PIXELS-PRIVADOS-COMO-ANUNCIO — 22/10/2026
+
+- Evidência: Vega/106, criativo541 e tarefa800. A combinação privada mantinha “Dias2a7 indisponíveis”, embora o software comercial v14 já entregasse a continuidade; Têmis pediu ajuste corretamente. O arquivo tinha hash íntegro e abria no navegador, descartando a hipótese de erro de storage.
+- Causa: a derivação copiava pixels privados sem materializar prova da candidata comercial. A origem da captura também não era projetada ao revisor. O gate exigia link de compra ativo antes de aprovar sua preparação.
+- Mudança reutilizável: Dédalo captura o primeiro valor local atual com entrada de demonstração; backend preserva a copy de Íris e cria versão própria do anúncio. Origem, pixels e configuração candidata do checkout são tipados e conferidos; link real falso continua falso. Nenhuma aprovação, margem ou autorização comercial é herdada.
+- Prevenção: matriz e regressões em `docs/homologacao/opala-prova-comercial-interface-v1.md`, incluindo outra identidade, caminho anterior, falha de origem, preço, versão, provedor e hash. O capturador usa o Chromium empacotado, sem IA ou produção paga de imagens.
+- Limites: adaptador por capacidade, sem exceção por nome/ID; não fornece licença para imagens externas nem comprova compra, demanda ou contribuição. A melhoria acompanha o produto e não substitui o aceite comercial.

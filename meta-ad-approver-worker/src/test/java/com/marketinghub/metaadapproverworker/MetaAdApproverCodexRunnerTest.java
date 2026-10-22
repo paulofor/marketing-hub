@@ -179,7 +179,7 @@ class MetaAdApproverCodexRunnerTest {
             "MCP_EXPERIMENT_ID",
             "StdioServerTransport",
             "/agent-review/context?experimentId=",
-            "captureCommercialLanding(browser, url, creative.commercialCheckoutUrl)",
+            "captureCommercialLanding(browser, url, creative.commercialCheckoutUrl, creative.preparedCheckoutEvidence)",
             "checkoutLinkedFromLanding: evidence.checkoutLinkedFromLanding",
             "checkoutObserved: Boolean(checkout)",
             "extractRemoteVideoFrames(url, {",

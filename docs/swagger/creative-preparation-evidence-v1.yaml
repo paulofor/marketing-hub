@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: Evidências preparatórias da revisão de criativos
+  version: v1
+  description: Extensão opcional dos contratos existentes; não concede aprovação ou ativação.
+paths:
+  /api/internal/creatives/{creativeId}/agent-review/context:
+    get:
+      summary: Consultar mídia e evidências da revisão independente
+      parameters:
+        - {name: creativeId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: experimentId, in: query, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Contexto existente acrescido das provas opcionais da mesma identidade.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staticUiProof: {$ref: '#/components/schemas/StaticUiProof'}
+                  preparedCheckoutEvidence: {$ref: '#/components/schemas/PreparedCheckout'}
+components:
+  schemas:
+    StaticUiProof:
+      type: object
+      nullable: true
+      description: Origem própria conferida contra tarefa, artefato e bytes; mídia ainda exige inspeção e decisão independentes.
+      properties:
+        contractVersion: {type: string, enum: [OPALA_COMMERCIAL_UI_PROOF_V1]}
+        verificationStatus: {type: string, enum: [VERIFIED]}
+        productId: {type: integer, format: int64}
+        cycleId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        productVersion: {type: string}
+        sourceTaskId: {type: integer, format: int64}
+        sourceArtifactId: {type: integer, format: int64}
+        copySourceTaskId: {type: integer, format: int64}
+        copySourceArtifactId: {type: integer, format: int64}
+        mediaUrl: {type: string, format: uri}
+        sha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+        rendererVersion: {type: string}
+        rendererSha256: {type: string}
+        sourceType: {type: string, enum: [OWN_PRODUCT_UI]}
+        testData: {type: boolean, enum: [true]}
+        commercialEvidenceEligible: {type: boolean, enum: [false]}
+        commercialApprovalGranted: {type: boolean, enum: [false]}
+    PreparedCheckout:
+      type: object
+      nullable: true
+      description: Contrato publicado da candidata conciliado no backend; MCP ainda observa oferta e checkout sem compra e sem afirmar link ativo.
+      properties:
+        contractVersion: {type: string, enum: [PDE_PREPARED_CHECKOUT_REVIEW_V1]}
+        verificationStatus: {type: string, enum: [VERIFIED]}
+        reviewMode: {type: string, enum: [PLANNED_PDE_PREPARATION]}
+        productId: {type: integer, format: int64}
+        cycleId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        productVersion: {type: string}
+        slotId: {type: integer, format: int64}
+        landingUrl: {type: string, format: uri}
+        checkoutUrl: {type: string, format: uri}
+        priceBrl: {type: number, minimum: 0.01}
+        billingModel: {type: string, enum: [ONE_TIME]}
+        activationAuthorized: {type: boolean, enum: [false]}

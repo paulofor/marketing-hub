@@ -331,11 +331,39 @@ public class CatalogoVivoService {
     }
   }
 
-  /** Impede conclusão de atividade de agente migrada sem comprovar o uso de seu prompt textual. */
+  /**
+   * Exige o prompt textual nas inferências e admite apenas a captura explícita sem modelo da
+   * atividade criativa.
+   */
   public void requireModelAudit(AgentTask task, String mode, boolean terminalCompletion) {
-    if (migrated(task) && terminalCompletion && !"MODEL".equals(mode))
+    if (migrated(task)
+        && terminalCompletion
+        && !"MODEL".equals(mode)
+        && !deterministicUiProof(task, mode))
       throw conflict(
           "A atividade Opala exige auditoria do modelo e da instrução fixada no catálogo.");
+  }
+
+  /**
+   * Reconhece o capturador versionado; o hook Opala ainda confere entrada, pixels e origem no
+   * callback.
+   */
+  private boolean deterministicUiProof(AgentTask task, String mode) {
+    if (!"DETERMINISTIC".equals(mode)
+        || !"creative".equals(task.getProcessActivityId())
+        || task.getAssignedAgent() == null
+        || !"landing-generator".equals(task.getAssignedAgent().getAgentKey())
+        || !"OPALA_COMMERCIAL_UI_PROOF_V1".equals(task.getExecutionModelCode())) return false;
+    try {
+      var input = json.readTree(task.getExecutionPrompt());
+      return input.isObject()
+          && "OPALA_COMMERCIAL_UI_PROOF_V1".equals(input.path("contractVersion").asText())
+          && ("experiment:" + input.path("experimentId").asLong())
+              .equals(task.getSourceReference());
+    } catch (Exception ex) {
+      log.warn("Captura comercial determinística inválida. taskId={}", task.getId(), ex);
+      return false;
+    }
   }
 
   /** Valida propriedade, estado, texto e schema empacotado do executor antes de ativar ou usar. */

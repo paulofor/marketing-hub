@@ -1,0 +1,291 @@
+{
+  "contractVersion": "alcyone-private-homologation.v17",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:11@experiment:97@paid-visual-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Look para a Ocasião",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v3",
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Compatibilidade das fontes e provas compartilhadas de Opala; experiência publicada e seus hashes preservados. Não renova parecer, autoriza mídia, compra, campanha ou novo gasto.",
+  "operationalState": {
+    "verifiedAt": "2026-10-21",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v13.json",
+    "reason": "Completar a passagem entre pagamento, acesso e geração contratada, preservando a preparação privada.",
+    "includedChanges": [
+      "Entrega paga v1 vinculada ao pagamento e à versão; uma regeneração, prazo e recuperação",
+      "Transporte por backend principal e fila visual existente",
+      "Conferência de versão paga e URL completa pela tela",
+      "Homologação local isolada com casos válidos, falhas, outra identidade e três dispositivos"
+    ],
+    "excludedChanges": [
+      "Aceite independente fabricado",
+      "Alteração de histórico ou transferência de orçamento",
+      "Campanha, cobrança real ou nova geração paga durante a homologação"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "30d36579d079ed6a8746d9529a5ed3f461f3a02407414f857fa663e022cad87e"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v3",
+      "experienceVersion": "alcyone-private-v3",
+      "frontendSourceSha256": "30d36579d079ed6a8746d9529a5ed3f461f3a02407414f857fa663e022cad87e"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/alcyone-entrega-paga-v1.md",
+      "sha256": "0fe41a8114c99a985f0bb0deec8f0e4c46b3b4cb0dfb76add372554e1ca07fc7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v13.json",
+      "sha256": "64af32f80a123d126352b2902b02302a8912a7579e9afafce49914fb1bb6c31c",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico preservado; não substitui os pareceres próprios da nova entrega."
+    },
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v14.json",
+      "sha256": "fb361f57349f138cc0175dbff57f170f5cf608eed47e2068ca9f01508899a8bd",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico e fronteiras preservados; somente as provas listadas nesta compatibilidade foram revalidadas."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json",
+      "sha256": "a8488bb80dbfa9dbd6b906763e664f7c3cd292381260304dfa2092067f4d4a1c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v15.json",
+      "sha256": "8650d1cf7cb5aa3ac74540a507351f33e4739f95bfc310077b51011524d9b586",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado; a compatibilidade atual se limita às fontes explicitamente revalidadas."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-opala-handoff-v1.json",
+      "sha256": "297681f72a0da3ce0cb490a6e6a1db33cc93440d50d0e63e782e63ac891f23a7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v16.json",
+      "sha256": "c6b60e220bad1e52ef03a0078a1e26c5d584cbfb3d94acd69b200b900bceeb94",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado; esta compatibilidade não renova seus aceites."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/opala-commercial-ui-proof-v1.json",
+      "sha256": "6eca24cf181013d81a3d53702c9d04d394f140bf9dd37336a4be2829ec383a8f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/opala-prova-comercial-interface-v1.md",
+      "sha256": "1f33b040ee197b591a263644c9f186fa3dcd667d5cb8fdd8addbd50b4ed79b41",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/opala-first-value-v1.png",
+      "sha256": "4f3e055210ff36902505b00e827c250b6bfe215fd4cc32ee950907917d40f019",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialUiProof.java",
+      "sha256": "0cc01edf479bf02966622964d87efaef7283045e9981b0e59735ed126d47160f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialUiProofMaterialization.java",
+      "sha256": "16fee7a2ca34782a909b5fef51f120f1d9c2ea73d84bf3f4681764c8701f6a28",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativePreparationEvidenceResolver.java",
+      "sha256": "cf19689a145cebc2b8f8cf552537c39cddaa9b61b8b3b856d2dcd9dc969260c5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialUiProofTest.java",
+      "sha256": "354a8b494435cc8b01197268c5d0d77a10628e561dd93fe39a5a2e90fe7d0435",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativePreparationEvidenceResolverTest.java",
+      "sha256": "14831c70f65fbf7477352d5596a392875179cf506af97a375e5e1136c806abc4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/proofs/opala/v1/capture-ui-proof.mjs",
+      "sha256": "01593155927d739938304f6c140e9c1225dfcc66bac6d276029ae2b45982f520",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/proofs/opala/v1/local-first-value-adapter.json",
+      "sha256": "b219efa42bb45b0992fa7e96994263bb547227b99cfc1696a0e7cddd90697a76",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/scripts/test-opala-ui-proof.mjs",
+      "sha256": "040e154cb0ee978712ced7c042394f4ebc9e788fafb8a23cc021afce7fa74356",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/scripts/prepared-checkout.test.mjs",
+      "sha256": "1b6a5cf1c004e8a4e2939ac2c7961c0bce75e44439d29736e7551102b9577af9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/scripts/static-ui-proof.test.mjs",
+      "sha256": "44fdaae9bb0f87d758fd30999effb24fbd4caa10c3c309892ea17fe8fe057d16",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualService.java",
+      "sha256": "0a10f2cdef648d7f43646c7d5733f2b38e02a5050200ae50ccade0cd1ef226a6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPolicy.java",
+      "sha256": "565581bee564a246233928de857ce89c442a4fd56595aee7f17d5701a4e1a656",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualReadiness.java",
+      "sha256": "bdc19be57399e44a99006770be2589675840cb45baf93fddd1be0e40e2bb3cd0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/visualpersonalization/v1/service/VisualPreparationExecution.java",
+      "sha256": "c2de9a7f2ee73d29c76ca43003550fa82b91197dc1d790e96f3db316a134b3bd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/visualpersonalization/v1/VisualPreparationGatewayService.java",
+      "sha256": "7ffd849c9a92e33b8d00a0212819a476d5aff2e5b04467b6cd1a5a55a4cb6cc0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/src/visual-personalization-v1.js",
+      "sha256": "8423e240c81bd48286b3faadf1615b0ab10ccea85a080b04a527ace30ff4c74d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/PaidVisualDelivery.tsx",
+      "sha256": "e8b5ef886f4be6a9c2cf46c6ff0beb5d6ff88298ad6181dc87dec5de20df44a8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/promotion/PdeCommercialPublicationPolicy.java",
+      "sha256": "ac234c6c18695c57c2242dc8f8d98edf90d26129ce5b2cc7df517fbb933628c0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/PdeProductionSlotService.java",
+      "sha256": "9147ed235da345165e9b031ab9f92fa52c8b24474444908fc43db9765f188459",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/versionoverview/PdeVersionOverviewService.java",
+      "sha256": "6fafca83e28295c40af9608db31a808979c3abc3ff48e27426471ce5a6c04596",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/promotion/PdeOneTimeAccessPublicationPolicy.java",
+      "sha256": "fb3c47f6dd54cb479544ee88b88db06ac8f695b2974d3c7cd04304ba67beb6a1",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualServiceTest.java",
+      "sha256": "ab0cbb534e2e555eee0317d92917dd4a221223222a7886f01ecea43b9bc4475c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPolicyTest.java",
+      "sha256": "2d9d5ffbae97682926173acc8ccda804c2284de027a10fe43804fbb2e4cc3fba",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualReadinessTest.java",
+      "sha256": "e8b2ba4df2577abb74cd5543bebf9f4e28ec9b9daa2f7f291ccb869f12e59fd2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/visualpersonalization/v1/service/VisualPreparationFlowTest.java",
+      "sha256": "f43440ed3e9974f964e383fa18450c8cb860187039583a6e3c935103f9602a4c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/test/visual-personalization-v1.test.js",
+      "sha256": "fe83136a823aad1ecf76879de7a2bdfc4a725d47204ecc05471bde0c84c7d56f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/test/paid-visual-v1.test.js",
+      "sha256": "0c5d10b77d75513327323fedc5bf575d200cf7f6aac7225096382e206255e27c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/paid-visual/run-local.py",
+      "sha256": "1373a334c19c9ed866efb2c0b91b1491aee1d6f8eaa05a2d912a3b75949280a7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/paid-visual-local.cjs",
+      "sha256": "eea2df85acdfed8c50505421ce120d1d9872e04bf324f9b4f6a3b1a900a4463b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/source-fingerprint.test.mjs",
+      "sha256": "bc0a81afc2e11f705f4061b7ee30356010e094413644c9732207f720e1a620ef",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/paidvisual/v1/service/PaidVisualPublicationTest.java",
+      "sha256": "ea0095b47e375bb9926f9c3e1b2b8eaa5b4677aa384c5bab89932d0fe1170221",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdeProductionSlotServiceTest.java",
+      "sha256": "4107f7c825415b45046caa235ad2a8448b7429e36c1c00e45e21a8ca99fe75e8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/versionoverview/PdeVersionOverviewServiceTest.java",
+      "sha256": "9aecc71eb3284c4d9aad6ca0748ccc01995ed84f8f8e7db0e83d12a30bde1fa4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/promotion/PdeOneTimeAccessPublicationPolicyTest.java",
+      "sha256": "552503505e13da15a13c91acbf98f9bc97726f7d1cfe220b9b24601edc334e05",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-entrega-paga-v1.md",
+  "compatibilityAttestation": {
+    "previousManifest": "pde-platform/contracts/alcyone-private-homologation-v16.json",
+    "previousManifestSha256": "c6b60e220bad1e52ef03a0078a1e26c5d584cbfb3d94acd69b200b900bceeb94",
+    "validatedAt": "2026-10-22T06:48:32.266231+00:00",
+    "scope": "Compatibilidade das fontes e provas compartilhadas de Opala; experiência publicada e seus hashes preservados. Não renova parecer, autoriza mídia, compra, campanha ou novo gasto.",
+    "changedEvidence": [],
+    "validationReport": "backend/ads-service/src/main/resources/contracts/operational-evidence/opala-commercial-ui-proof-v1.json"
+  }
+}

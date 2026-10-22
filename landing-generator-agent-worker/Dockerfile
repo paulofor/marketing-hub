@@ -28,6 +28,7 @@ RUN java -version \
     && useradd --create-home --uid 10001 --gid landingagent landingagent
 COPY --from=build /build/target/app.jar /app/app.jar
 COPY --from=build /build/src/main/resources/mcp/landing-generator.mjs /app/mcp/landing-generator.mjs
+COPY --from=build /build/src/main/resources/proofs /app/proofs
 COPY agent-health-report.mjs /app/agent-health-report.mjs
 USER landingagent
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

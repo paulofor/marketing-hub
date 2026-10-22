@@ -164,6 +164,8 @@
           <include>meta-ad-approver-worker/src/main/resources/prompts/**/*.json</include>
           <include>landing-generator-agent-worker/src/main/resources/prompts/**/*.md</include>
           <include>landing-generator-agent-worker/src/main/resources/prompts/**/*.json</include>
+          <include>landing-generator-agent-worker/src/main/resources/proofs/**/*.mjs</include>
+          <include>landing-generator-agent-worker/src/main/resources/proofs/**/*.json</include>
           <include>communication-agent-worker/src/main/resources/prompts/**/*.md</include>
           <include>communication-agent-worker/src/main/resources/prompts/**/*.json</include>
           <include>product-discovery-worker/prompts/**/*.md</include>

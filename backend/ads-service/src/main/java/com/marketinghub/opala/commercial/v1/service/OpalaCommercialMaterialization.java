@@ -46,6 +46,19 @@ public class OpalaCommercialMaterialization {
   private final TargetingElementRepository targeting;
   private final OpalaPrivateCreativeMaterialization privateCreatives;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private OpalaCommercialUiProofMaterialization uiProofMaterialization;
+
+  /** Materializa a prova de interface no callback reservado, sem publicar ou conceder parecer. */
+  public void applyUiProof(
+      OpalaCommercialContext.Scope scope,
+      com.marketinghub.agenttask.AgentTask task,
+      JsonNode instruction,
+      JsonNode receipt) {
+    require(uiProofMaterialization != null, "Materialização comercial da interface indisponível.");
+    uiProofMaterialization.apply(scope, context.candidate(scope), task, receipt, instruction);
+  }
+
   /** Aplica somente operações internas explicitamente previstas pelo contrato da atividade. */
   public void apply(String activity, OpalaCommercialContext.Scope scope, JsonNode instruction) {
     switch (activity) {

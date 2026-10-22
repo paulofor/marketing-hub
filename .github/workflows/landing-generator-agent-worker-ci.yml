@@ -73,6 +73,14 @@ jobs:
         working-directory: landing-generator-agent-worker
         run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -t marketing-hub/landing-generator-agent-worker:${{ github.sha }} .
 
+      - name: Validar captura comercial sem IA
+        working-directory: landing-generator-agent-worker
+        run: |
+          docker build -f Dockerfile.opala-proof-validation \
+            --build-arg OPALA_RUNTIME_IMAGE=marketing-hub/landing-generator-agent-worker:${{ github.sha }} \
+            -t marketing-hub/opala-proof-validation:${{ github.sha }} .
+          docker run --rm --init --network none marketing-hub/opala-proof-validation:${{ github.sha }}
+
       - name: Package tested images
         if: github.event_name != 'pull_request'
         run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/landing-generator-agent-worker:${{ github.sha }}

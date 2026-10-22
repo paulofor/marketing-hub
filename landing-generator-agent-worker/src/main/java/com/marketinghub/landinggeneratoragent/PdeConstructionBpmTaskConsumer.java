@@ -132,7 +132,10 @@ public class PdeConstructionBpmTaskConsumer {
     this.telemetry = telemetry;
   }
 
-  /** Reserva em PLAY uma única atividade liberada sem decidir o avanço do processo. */
+  /**
+   * Reserva uma atividade e executa modelo ou captura local explícita, sem decidir o avanço do
+   * processo.
+   */
   @Scheduled(cron = "20 */1 * * * *")
   public void processOne() {
     if (!automaticExecution.allowsAutomaticExecution()) return;
@@ -148,6 +151,12 @@ public class PdeConstructionBpmTaskConsumer {
         return;
       }
       validateTaskContext(task, contract, json);
+      var capture = new OpalaCommercialUiProofCapture(backend, json);
+      JsonNode proofInput = capture.input(task);
+      if (proofInput != null) {
+        capture.complete(task, proofInput);
+        return;
+      }
       execution = execute(task);
       validate(execution.result(), contract);
       validateCorrectionContext(task, execution.result(), contract, json);

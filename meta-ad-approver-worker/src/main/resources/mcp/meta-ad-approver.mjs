@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { chromium } from 'playwright-core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -87,8 +88,14 @@ async function inspectMedia(creative, toolName, startedAt) {
     const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error(`Mídia respondeu HTTP ${response.status}`);
     const mimeType = response.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
-    const data = Buffer.from(await response.arrayBuffer()).toString('base64');
-    return [text({ audit: audit(toolName, startedAt), mediaType: 'IMAGE', source: url }), { type: 'image', data, mimeType }];
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const digest = createHash('sha256').update(bytes).digest('hex');
+    const governedSha256 = creative.staticUiProof?.sha256 ?? null;
+    if (governedSha256 && digest !== governedSha256) throw new Error('Hash da captura estática diverge da origem governada.');
+    const data = bytes.toString('base64');
+    return [text({ audit: audit(toolName, startedAt), mediaType: 'IMAGE', source: url, sha256: digest,
+      governedSha256, sha256MatchesGovernance: Boolean(governedSha256) && digest === governedSha256,
+      staticUiProof: creative.staticUiProof ?? null }), { type: 'image', data, mimeType }];
   }
   const governance = creative.mediaGovernanceEvidence;
   const evidence = await extractRemoteVideoFrames(url, {
@@ -190,7 +197,7 @@ async function inspectApprovedVideoSourceMedia(sources, toolName, startedAt) {
 async function inspectLanding(creative, toolName, startedAt) {
   const url = httpUrl(creative.destinationUrl, 'URL de destino');
   return withBrowser(async browser => {
-    const evidence = await captureCommercialLanding(browser, url, creative.commercialCheckoutUrl);
+    const evidence = await captureCommercialLanding(browser, url, creative.commercialCheckoutUrl, creative.preparedCheckoutEvidence);
     const checkout = evidence.checkout ? { ...evidence.checkout, screenshot: undefined } : null;
     const result = [text({
       audit: audit(toolName, startedAt),
@@ -199,6 +206,7 @@ async function inspectLanding(creative, toolName, startedAt) {
       views: ['mobile', 'desktop'],
       expectedCheckoutUrl: evidence.expectedCheckoutUrl,
       checkoutLinkedFromLanding: evidence.checkoutLinkedFromLanding,
+      preparedCheckoutVerified: evidence.preparedCheckoutVerified,
       checkoutObserved: Boolean(checkout),
       checkout
     })];

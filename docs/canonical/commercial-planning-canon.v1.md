@@ -323,3 +323,23 @@ recebe identidade Codex e ferramentas de inspeção. O backend continua sendo a 
 fila, persistência e avanço. Fabricação, criativo, landing, homologação, otimização e entrega devem
 preservar essa segregação e a linhagem até o ativo-fonte da Biblioteca Audiovisual. Íris é autora da
 peça comercial, mas não do entregável nem da prova real de Dédalo.
+
+## Prova comercial de interface em preparação — 22/10/2026
+
+Na preparação Opala, pixels de um protótipo privado não comprovam automaticamente a
+oferta da candidata comercial. Dédalo pode capturar o primeiro valor da versão real
+pelo adaptador versionado e sem inferência; a copy de Íris permanece identificada.
+O backend forma uma nova candidata, preserva o histórico e solicita revisão própria.
+Uma captura de dados de teste demonstra comportamento, não clientes, eficácia ou demanda.
+
+`OPALA_COMMERCIAL_UI_PROOF_V1` identifica origem da interface própria, tarefa, artefato,
+código e SHA-256. Somente uma captura sem mídia externa verificada pode dispensar
+licença de gerador e consentimento pessoal que não se aplicam àquela fonte. Isso não
+concede direitos sobre conteúdo de terceiros ou aprovação comercial.
+
+`PDE_PREPARED_CHECKOUT_REVIEW_V1` permite revisar a configuração conciliada da candidata
+PLANNED, com checkout observado e link ainda bloqueado. A ferramenta preserva o estado
+real do link e distingue essa prova de uma compra disponível. Financeiro, revisão,
+decisão humana e homologação continuam necessários antes de ativar a venda ou a mídia.
+Inferências mantêm seus prompts e schemas do catálogo; a captura sem modelo registra
+entrada integral, código, artefatos, saída e custo incremental de modelo zero.

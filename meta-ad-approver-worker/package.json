@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node scripts/test-mcp-handshake.mjs",
+    "test": "node --test scripts/*.test.mjs && node scripts/test-mcp-handshake.mjs",
     "test:mcp-handshake": "node scripts/test-mcp-handshake.mjs"
   },
   "dependencies": {

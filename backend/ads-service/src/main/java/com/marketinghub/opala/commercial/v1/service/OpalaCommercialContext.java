@@ -41,6 +41,13 @@ public class OpalaCommercialContext {
   private final OpalaCommercialFinancialPlan financialPlan;
   private final CreativeMediaGovernanceEvidenceService mediaGovernanceEvidence;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  @org.springframework.context.annotation.Lazy
+  private OpalaCommercialUiProof commercialUiProof;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.creative.service.CreativePreparationEvidenceResolver preparationEvidence;
+
   /** Mantém o ciclo e o experimento como uma única identidade de preparação. */
   public record Scope(LearningSalesCycle cycle, Experiment experiment) {}
 
@@ -111,6 +118,8 @@ public class OpalaCommercialContext {
     result.put("budgetLimitBrl", cycle.getBudgetLimitBrl());
     result.put("windowEnd", Objects.toString(cycle.getWindowEnd(), ""));
     result.set("productContract", candidate.productContract());
+    if (commercialUiProof != null)
+      result.set("staticProofPreparation", commercialUiProof.input(scope, candidate));
     result.set("financialPlan", financialPlan.snapshot(scope));
     var allowedSlots = result.putArray("slots");
     candidate.slots().stream()
@@ -202,6 +211,11 @@ public class OpalaCommercialContext {
     if ("IMAGE".equals(creative.getFormat())) snapshot.put("imageUrl", creative.getImageUrl());
     snapshot.put("destinationUrl", creative.getDestinationUrl());
     snapshot.put("agentReviewStatus", Objects.toString(creative.getAgentReviewStatus(), ""));
+    if (preparationEvidence != null) {
+      var preparation = preparationEvidence.resolve(creative);
+      snapshot.set("staticUiProof", json.valueToTree(preparation.staticUiProof()));
+      snapshot.set("preparedCheckoutEvidence", json.valueToTree(preparation.preparedCheckout()));
+    }
     if (creative.getAgentReviewJson() != null && !creative.getAgentReviewJson().isBlank())
       snapshot.set("agentReview", read(creative.getAgentReviewJson()));
     if (finalCandidate) {

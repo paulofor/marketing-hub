@@ -3,7 +3,7 @@ const LANDING_TIMEOUT_MS = 120000;
 const MOBILE_SAFARI_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1';
 
 /** Captura landing e checkout em modo somente leitura, sem clicar ou enviar formulários. */
-export async function captureCommercialLanding(browser, destinationUrl, expectedCheckoutUrl) {
+export async function captureCommercialLanding(browser, destinationUrl, expectedCheckoutUrl, preparedCheckoutEvidence = null) {
   const landingUrl = inspectionUrl(destinationUrl);
   const expectedCheckout = optionalHttpUrl(expectedCheckoutUrl);
   const screenshots = [];
@@ -38,8 +38,28 @@ export async function captureCommercialLanding(browser, destinationUrl, expected
     screenshots,
     expectedCheckoutUrl: expectedCheckout,
     checkoutLinkedFromLanding,
+    preparedCheckoutVerified: preparedCheckoutVerified(preparedCheckoutEvidence, destinationUrl, expectedCheckout, uniqueNetworkOffers, Boolean(checkout)),
     checkout
   };
+}
+
+/** Confere configuração candidata sem transformar um checkout bloqueado em link comercial ativo. */
+export function preparedCheckoutVerified(evidence, landingUrl, expectedCheckout, offers, checkoutObserved) {
+  return Boolean(checkoutObserved && evidence
+    && evidence.contractVersion === 'PDE_PREPARED_CHECKOUT_REVIEW_V1'
+    && evidence.verificationStatus === 'VERIFIED'
+    && evidence.reviewMode === 'PLANNED_PDE_PREPARATION'
+    && evidence.activationAuthorized === false
+    && evidence.landingUrl === landingUrl && evidence.checkoutUrl === expectedCheckout
+    && Number.isSafeInteger(evidence.experimentId) && evidence.experimentId > 0
+    && typeof evidence.productVersion === 'string' && evidence.productVersion.length > 0
+    && typeof evidence.priceBrl === 'number' && evidence.priceBrl > 0
+    && evidence.billingModel === 'ONE_TIME'
+    && offers.some(offer => offer.checkoutUrl === expectedCheckout
+      && offer.productVersion === evidence.productVersion
+      && offer.experimentId === evidence.experimentId
+      && offer.priceBrl === evidence.priceBrl && offer.bindingPriceBrl === evidence.priceBrl
+      && offer.billingModel === evidence.billingModel && offer.bindingBillingModel === evidence.billingModel));
 }
 
 /** Percorre a página sem interagir com a oferta para materializar imagens carregadas sob demanda. */
@@ -131,7 +151,7 @@ function findCommercialOffers(value, sourceUrl, landingUrl, depth = 0) {
   }
   const offers = [];
   if (value.commercialCheckout && typeof value.commercialCheckout === 'object') {
-    const normalized = normalizeOffer(value.commercialCheckout, sourceUrl, landingUrl);
+    const normalized = normalizeOffer(value.commercialCheckout, sourceUrl, landingUrl, value);
     if (normalized) offers.push(normalized);
   }
   for (const [key, child] of Object.entries(value)) {
@@ -143,7 +163,7 @@ function findCommercialOffers(value, sourceUrl, landingUrl, depth = 0) {
 }
 
 /** Mantém somente os campos necessários para conferir oferta, preço e cobrança. */
-function normalizeOffer(value, sourceUrl, landingUrl) {
+function normalizeOffer(value, sourceUrl, landingUrl, parent = {}) {
   const rawUrl = value.checkoutUrl ?? value.url;
   if (typeof rawUrl !== 'string' || rawUrl.trim() === '') return null;
   let checkoutUrl;
@@ -155,6 +175,10 @@ function normalizeOffer(value, sourceUrl, landingUrl) {
   if (!/^https?:\/\//i.test(checkoutUrl)) return null;
   return {
     sourceUrl,
+    productVersion: stringValue(parent.experienceVersion),
+    experimentId: numberValue(parent.commercialBinding?.experimentId),
+    bindingPriceBrl: numberValue(parent.commercialBinding?.priceBrl),
+    bindingBillingModel: stringValue(parent.commercialBinding?.billingModel),
     provider: stringValue(value.provider),
     checkoutUrl,
     offerReference: stringValue(value.offerReference),

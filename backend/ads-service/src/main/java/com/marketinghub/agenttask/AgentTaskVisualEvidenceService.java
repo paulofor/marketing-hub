@@ -50,7 +50,7 @@ public class AgentTaskVisualEvidenceService {
   private static final Set<String> EVIDENCE_TYPES =
       Set.of("FULL_PAGE", "FOLD", "CREATIVE_RENDER", "VIDEO_FRAME");
   private static final Set<String> DEVICE_PROFILES =
-      Set.of("IPHONE_15_PRO", "PIXEL_7", "DESKTOP_1440", "CREATIVE_1080X1350");
+      Set.of("IPHONE_15_PRO", "PIXEL_7", "DESKTOP_1440", "CREATIVE_1080X1350", "PDE_UI_480");
   private static final Set<String> SENSITIVE_QUERY_PARAMETERS =
       Set.of(
           "accesstoken",
@@ -413,7 +413,8 @@ public class AgentTaskVisualEvidenceService {
         throw new IllegalArgumentException("PNG sem dimensões válidas.");
       }
       if ("VIDEO_FRAME".equals(request.evidenceType())
-          && (image.getWidth() != request.viewportWidth() || image.getHeight() != request.viewportHeight()))
+          && (image.getWidth() != request.viewportWidth()
+              || image.getHeight() != request.viewportHeight()))
         throw new IllegalArgumentException("Pixels do frame divergem do viewport auditado.");
       if ("CREATIVE_RENDER".equals(request.evidenceType())
           && (image.getWidth() != 1080 || image.getHeight() != 1350)) {
@@ -629,12 +630,14 @@ public class AgentTaskVisualEvidenceService {
   static AgentTaskVisualEvidenceResponse response(AgentTaskVisualEvidence value) {
     String label =
         "VIDEO_FRAME".equals(value.getEvidenceType())
-            ? "Vídeo final · frame em " + value.getEvidenceKey().substring(value.getEvidenceKey().lastIndexOf('-') + 1) + " ms"
+            ? "Vídeo final · frame em "
+                + value.getEvidenceKey().substring(value.getEvidenceKey().lastIndexOf('-') + 1)
+                + " ms"
             : "CREATIVE_RENDER".equals(value.getEvidenceType())
-            ? "Criativo estático " + value.getPageNumber() + " · 1080 × 1350"
-            : "FULL_PAGE".equals(value.getEvidenceType())
-                ? "Página " + value.getPageNumber() + " · visão completa"
-                : "Página " + value.getPageNumber() + " · dobra " + value.getFoldNumber();
+                ? "Criativo estático " + value.getPageNumber() + " · 1080 × 1350"
+                : "FULL_PAGE".equals(value.getEvidenceType())
+                    ? "Página " + value.getPageNumber() + " · visão completa"
+                    : "Página " + value.getPageNumber() + " · dobra " + value.getFoldNumber();
     return new AgentTaskVisualEvidenceResponse(
         value.getId(),
         value.getCaptureSessionId(),

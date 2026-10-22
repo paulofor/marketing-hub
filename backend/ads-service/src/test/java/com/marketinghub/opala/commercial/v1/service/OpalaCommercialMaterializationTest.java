@@ -43,6 +43,8 @@ class OpalaCommercialMaterializationTest {
   private final ExperimentTargetingSelectionService selections =
       mock(ExperimentTargetingSelectionService.class);
   private final ExperimentVideoAssetRepository videos = mock(ExperimentVideoAssetRepository.class);
+  private final OpalaPrivateCreativeMaterialization privateCreatives =
+      mock(OpalaPrivateCreativeMaterialization.class);
   private final OpalaCommercialMaterialization materialization =
       new OpalaCommercialMaterialization(
           context,
@@ -54,7 +56,7 @@ class OpalaCommercialMaterializationTest {
           experiments,
           selections,
           mock(TargetingElementRepository.class),
-          mock(OpalaPrivateCreativeMaterialization.class));
+          privateCreatives);
   private final Product product = Product.builder().id(4L).slug("fixture-opala").build();
   private final Experiment experiment =
       Experiment.builder().id(92L).product(product).unitPrice(new BigDecimal("67")).build();
@@ -88,6 +90,7 @@ class OpalaCommercialMaterializationTest {
     assertThat(request.getValue().status())
         .isEqualTo(com.marketinghub.pde.PdeProductionSlotStatus.PLANNED);
     assertThat(request.getValue().experienceVersion()).isEqualTo("fixture-v12");
+    verifyNoInteractions(privateCreatives);
     verifyNoMoreInteractions(slotService);
   }
 
@@ -233,6 +236,25 @@ class OpalaCommercialMaterializationTest {
     assertThat(com.marketinghub.salesvideo.tenant.TenantContextHolder.getContext())
         .isEqualTo(original);
     com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
+  }
+
+  /** Peça estática exata evita vídeo obrigatório e preserva o parecer independente pendente. */
+  @Test
+  void materializesPrivateDraftOnlyForStaticContinuedAccess() throws Exception {
+    var contract =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(product.getPdeExperienceJson());
+    contract.putObject("commercialAccess").put("scope", "DAYS_2_TO_7_AND_SUPPORT_MATERIALS");
+    when(context.candidate(scope))
+        .thenReturn(
+            new OpalaCommercialContext.Candidate(
+                List.of(), experiment.getFollowUpActionUrl(), "EXPERIMENT", contract));
+    materialization.apply("entry", scope, json.createObjectNode());
+    verify(privateCreatives).prepare(scope, experiment.getFollowUpActionUrl());
+    reset(privateCreatives);
+    contract.putArray("heroVideos").addObject().put("experimentVideoAssetId", 17L);
+    materialization.apply("entry", scope, json.createObjectNode());
+    verifyNoInteractions(privateCreatives);
   }
 
   /** Peça estática exata evita vídeo obrigatório e preserva o parecer independente pendente. */

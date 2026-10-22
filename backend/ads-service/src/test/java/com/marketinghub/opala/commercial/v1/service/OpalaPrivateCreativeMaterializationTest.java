@@ -153,7 +153,20 @@ class OpalaPrivateCreativeMaterializationTest {
   void queuesOnlyUnreviewedDraftAfterCheckout() {
     var scope = scope(4L, 106L, 13L);
     assertThatThrownBy(() -> service.requestReview(scope)).hasMessageContaining("checkout");
-    var draft = Creative.builder().id(500L).format("IMAGE").status(CreativeStatus.DRAFT).build();
+    var draft =
+        Creative.builder()
+            .id(500L)
+            .format("IMAGE")
+            .status(CreativeStatus.DRAFT)
+            .imageUrl("https://assets.sandbox.local/owned.png")
+            .build();
+    var unrelated =
+        Creative.builder()
+            .id(502L)
+            .format("IMAGE")
+            .status(CreativeStatus.DRAFT)
+            .imageUrl("https://assets.sandbox.local/another.png")
+            .build();
     var approved =
         Creative.builder()
             .id(501L)
@@ -161,11 +174,32 @@ class OpalaPrivateCreativeMaterializationTest {
             .status(CreativeStatus.READY)
             .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
             .build();
-    when(creatives.findByExperimentId(106L)).thenReturn(List.of(draft, approved));
+    when(creatives.findByExperimentId(106L)).thenReturn(List.of(draft, approved, unrelated));
+    var receipt =
+        json.createObjectNode()
+            .put("contractVersion", "OPALA_PRIVATE_CREATIVE_DRAFT_V1")
+            .put("experimentId", 106L)
+            .put("productId", 4L)
+            .put("cycleId", 13L)
+            .put("productVersion", scope.cycle().getProductVersion());
+    when(assets.findByUrlIn(any()))
+        .thenReturn(
+            List.of(
+                Asset.builder()
+                    .url(draft.getImageUrl())
+                    .model("IRIS_EXISTING_RENDER_NO_NEW_GENERATION")
+                    .payload(receipt.toString())
+                    .build(),
+                Asset.builder()
+                    .url(unrelated.getImageUrl())
+                    .model("IRIS_EXISTING_RENDER_NO_NEW_GENERATION")
+                    .payload(receipt.deepCopy().put("cycleId", 999).toString())
+                    .build()));
     scope.experiment().setCommercialCheckoutUrl("https://checkout.sandbox.local/oferta");
     service.requestReview(scope);
     verify(creativeService).requestAgentReview(500L);
     verify(creativeService, never()).requestAgentReview(501L);
+    verify(creativeService, never()).requestAgentReview(502L);
   }
 
   /** Conserva uma campanha já liberada e impede criação automática posterior. */

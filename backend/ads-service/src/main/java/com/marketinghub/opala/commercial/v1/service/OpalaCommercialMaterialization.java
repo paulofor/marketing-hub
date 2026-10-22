@@ -156,7 +156,7 @@ public class OpalaCommercialMaterialization {
         experiment.setFollowUpActionUrl(destination);
         experiments.save(experiment);
       }
-      privateCreatives.prepare(scope, destination);
+      if (staticPrivateDraftApplicable(contract)) privateCreatives.prepare(scope, destination);
       return;
     }
     String code = "opala-e" + experiment.getId() + "-c" + cycle.getId();
@@ -180,7 +180,18 @@ public class OpalaCommercialMaterialization {
             "Preparado pelo subprocesso Opala; publicação e homologação pendentes.",
             contract.toString(),
             null));
-    privateCreatives.prepare(scope, destination);
+    if (staticPrivateDraftApplicable(contract)) privateCreatives.prepare(scope, destination);
+  }
+
+  /**
+   * Restringe a derivação automática à continuidade estática contratada, preservando percursos de
+   * vídeo.
+   */
+  private boolean staticPrivateDraftApplicable(JsonNode contract) {
+    return contract != null
+        && "DAYS_2_TO_7_AND_SUPPORT_MATERIALS"
+            .equals(contract.path("commercialAccess").path("scope").asText())
+        && contract.path("heroVideos").size() == 0;
   }
 
   /** Reutiliza a peça estática exata ou cria o rascunho do vídeo, sem conceder aprovação. */
@@ -304,10 +315,12 @@ public class OpalaCommercialMaterialization {
   /** Vincula o checkout canônico e libera a revisão do rascunho, sem cobrança ou autoaprovação. */
   private void checkout(OpalaCommercialContext.Scope scope) {
     var experiment = scope.experiment();
-    var canonical = versionContract.resolve(scope, context.candidate(scope)).checkout();
+    var resolved = versionContract.resolve(scope, context.candidate(scope));
+    var canonical = resolved.checkout();
     experiment.setCommercialCheckoutUrl(canonical.checkoutUrl());
     experiments.save(experiment);
-    privateCreatives.requestReview(scope);
+    if (staticPrivateDraftApplicable(resolved.productContract()))
+      privateCreatives.requestReview(scope);
   }
 
   /** Revalida checkout e acesso da candidata antes de reaproveitar uma conclusão anterior. */

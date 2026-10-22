@@ -175,15 +175,56 @@ public class OpalaPrivateCreativeMaterialization {
   /** Enfileira a revisão independente somente após o backend vincular o checkout da candidata. */
   public void requestReview(OpalaCommercialContext.Scope scope) {
     require(
+        scope.experiment().getStatus() == ExperimentStatus.PLANNED
+            && scope.experiment().getFacebookReleaseRequestedAt() == null,
+        "A revisão preparatória só pode iniciar antes da liberação comercial.");
+    require(
         scope.experiment().getCommercialCheckoutUrl() != null
             && !scope.experiment().getCommercialCheckoutUrl().isBlank(),
         "Vincule o checkout antes da revisão do anúncio.");
-    creatives.findByExperimentId(scope.experiment().getId()).stream()
-        .filter(
-            c ->
-                "IMAGE".equals(c.getFormat())
-                    && c.getStatus() == CreativeStatus.DRAFT
-                    && c.getAgentReviewStatus() == null)
+    var drafts =
+        creatives.findByExperimentId(scope.experiment().getId()).stream()
+            .filter(
+                c ->
+                    "IMAGE".equals(c.getFormat())
+                        && c.getStatus() == CreativeStatus.DRAFT
+                        && c.getAgentReviewStatus() == null)
+            .toList();
+    if (drafts.isEmpty()) return;
+    var owned =
+        assets
+            .findByUrlIn(
+                drafts.stream()
+                    .map(c -> c.getImageUrl())
+                    .filter(java.util.Objects::nonNull)
+                    .toList())
+            .stream()
+            .filter(a -> owns(scope, a))
+            .map(Asset::getUrl)
+            .toList();
+    drafts.stream()
+        .filter(c -> owned.contains(c.getImageUrl()))
         .forEach(c -> creativeService.requestAgentReview(c.getId()));
+  }
+
+  /** Confirma a origem deste rascunho sem reenfileirar mídia de outro fluxo ou versão. */
+  private boolean owns(OpalaCommercialContext.Scope scope, Asset asset) {
+    if (!"IRIS_EXISTING_RENDER_NO_NEW_GENERATION".equals(asset.getModel())) return false;
+    try {
+      var receipt = json.readTree(asset.getPayload());
+      return receipt != null
+          && "OPALA_PRIVATE_CREATIVE_DRAFT_V1".equals(receipt.path("contractVersion").asText())
+          && receipt.path("experimentId").asLong() == scope.experiment().getId()
+          && receipt.path("productId").asLong() == scope.cycle().getProductId()
+          && receipt.path("cycleId").asLong() == scope.cycle().getId()
+          && scope.cycle().getProductVersion().equals(receipt.path("productVersion").asText());
+    } catch (Exception ex) {
+      log.error(
+          "Recibo do anúncio Opala inválido. experimentId={} assetId={}",
+          scope.experiment().getId(),
+          asset.getId(),
+          ex);
+      return false;
+    }
   }
 }

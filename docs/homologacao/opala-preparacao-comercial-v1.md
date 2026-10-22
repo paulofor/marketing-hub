@@ -138,7 +138,12 @@ e mantém os gates comerciais pendentes. Testes sintéticos não comprovam venda
 
 O fluxo integrado local usa o verificador real de identidade, pareceres e aceite
 privado antes da cópia, com armazenamento e inferência substituídos por doubles.
-Foram aprovados 317 testes relacionados do backend, incluindo inicialização completa
+Foram aprovados 363 testes relacionados do backend, incluindo inicialização completa
 e arquitetura, e 103 do executor Dédalo. Dois replays opcionais preexistentes de
 contexto privado exportado não foram habilitados por ausência de arquivo; o verificador
 real e a nova passagem são exercitados pelos testes locais independentes desse export.
+
+A ampliação inclui compatibilidade de pagamento visual e roteamento de Mira/Alcyone.
+As fontes compartilhadas alteradas ganharam novas atestações imutáveis, limitadas à
+compatibilidade e com publicação automática desabilitada; os pareceres anteriores não
+foram renovados. O pacote de evidências foi reconstruído e validado localmente.

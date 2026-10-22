@@ -1,3 +1,4 @@
+import ProductBigIdeaPage from "./pages/product/ProductBigIdeaPage";
 import CatalogoVivoOpalaPage from "./pages/catalogoVivo/CatalogoVivoOpalaPage";
 import LearningCyclesPage from "./pages/learningCycle/LearningCyclesPage";
 import {
@@ -286,6 +287,10 @@ export default function App() {
                 element={<ProductDiscoveryCycleDetailPage />}
               />
               <Route path="/products/new" element={<NewProductPage />} />
+              <Route
+                path="/products/:id/big-idea"
+                element={<ProductBigIdeaPage />}
+              />
               <Route path="/products/:id/edit" element={<EditProductPage />} />
               <Route
                 path="/products/:productId/financial"

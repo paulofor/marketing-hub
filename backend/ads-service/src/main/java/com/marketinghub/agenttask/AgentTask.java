@@ -47,6 +47,10 @@ public class AgentTask {
   @Column(name = "status", nullable = false, length = 30)
   private String status;
 
+  /** Fotografia da Big Idea na criação da tarefa, preservada nas retentativas. */
+  @Column(name = "product_big_idea_json", columnDefinition = "LONGTEXT")
+  private String productBigIdeaJson;
+
   @Column(name = "source_reference", length = 200)
   private String sourceReference;
 

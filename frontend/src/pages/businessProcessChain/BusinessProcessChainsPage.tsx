@@ -141,6 +141,13 @@ export default function BusinessProcessChainsPage() {
                   }
                 />
               ) : null}
+              <aside className="alert alert-primary">
+                <strong>Uma Big Idea orienta toda a cadeia.</strong> Atena
+                define a ideia central no planejamento; produto, oferta,
+                comunicação e revisões a utilizam como referência.{" "}
+                <Link to="/products/all">Definir ou evoluir por produto</Link>.
+                O histórico e as versões dos experimentos são preservados.
+              </aside>
               <section className="card card-body mb-3">
                 <div className="d-flex flex-wrap justify-content-between gap-2 align-items-start">
                   <div>

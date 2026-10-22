@@ -3,6 +3,8 @@ import axios from "axios";
 
 export interface Product {
   id: number;
+  bigIdea?: string | null;
+  bigIdeaRevision?: number | null;
   slug?: string;
   name?: string;
   internalName?: string;

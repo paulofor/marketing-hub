@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-22-product-big-idea-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sqlFile:
+            path: 2026-10-22-product-big-idea-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Preserve revisoes e tarefas; rollback operacional usa nova revisao da Big Idea.';

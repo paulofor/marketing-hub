@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-22-big-idea-value-chain-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: "1"
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=12 AND status='PUBLISHED' AND JSON_SEARCH(diagram_json,'one','marketStrategy',NULL,'$.nodes[*].id') IS NOT NULL
+        - sqlCheck:
+            expectedResult: "1"
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=26 AND status='PUBLISHED'
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=13
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=27
+      changes:
+        - sqlFile:
+            path: 2026-10-22-big-idea-value-chain-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Preserve historico; selecione uma versao anterior por fluxo governado.';

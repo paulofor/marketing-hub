@@ -31,6 +31,8 @@ jobs:
         run: cd frontend && npm ci
       - name: Testar atualização protegida do token Meta
         run: cd frontend && npm test -- --run src/components/FacebookTokenUpdateDialog.test.tsx
+      - name: Testar criação e evolução da Big Idea
+        run: cd frontend && npm test -- --run src/pages/product/ProductBigIdeaPage.test.tsx
       - name: Type-check
         run: cd frontend && npm run typecheck
       - name: Build

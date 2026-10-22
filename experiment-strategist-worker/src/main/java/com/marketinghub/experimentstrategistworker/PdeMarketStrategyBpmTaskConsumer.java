@@ -477,6 +477,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
   /** Valida identidade, entrada executável preservada e homologação multiagente do Processo 2. */
   static void validate(
       JsonNode result, String sourceReference, boolean requiresProductIdentity, JsonNode task) {
+    if (requiresBigIdea(task)) validateBigIdea(result, task);
     JsonNode contract = result.path("marketStrategicContract");
     boolean agentValidation = requiresAgentValidation(task);
     JsonNode validationPlan =
@@ -797,6 +798,8 @@ public class PdeMarketStrategyBpmTaskConsumer {
 
   /** Seleciona o prompt compatível com a versão persistida da definição BPM. */
   private String promptResource(Map<String, Object> task) {
+    if (requiresBigIdea(CONTRACT_MAPPER.valueToTree(task)))
+      return "prompts/pde-commercial-plan/v12/market-strategy.md";
     return requiresAgentValidation(task)
         ? AGENT_VALIDATION_PROMPT
         : requiresProductIdentity(task) ? IDENTITY_PROMPT : LEGACY_PROMPT;
@@ -804,9 +807,68 @@ public class PdeMarketStrategyBpmTaskConsumer {
 
   /** Seleciona o schema compatível com a versão persistida da definição BPM. */
   private String schemaResource(Map<String, Object> task) {
+    if (requiresBigIdea(CONTRACT_MAPPER.valueToTree(task)))
+      return "prompts/pde-commercial-plan/v12/market-strategy-schema.json";
     return requiresAgentValidation(task)
         ? AGENT_VALIDATION_SCHEMA
         : requiresProductIdentity(task) ? IDENTITY_SCHEMA : LEGACY_SCHEMA;
+  }
+
+  /** Reconhece novas tarefas pelo contrato persistido, preservando callbacks e filas anteriores. */
+  static boolean requiresBigIdea(JsonNode task) {
+    if (task == null || task.path("processVersion").asInt(0) < 10) return false;
+    try {
+      JsonNode context = task.path("processContextJson");
+      if (context.isTextual()) context = CONTRACT_MAPPER.readTree(context.asText());
+      return "PRODUCT_BIG_IDEA_V1"
+          .equals(context.path("productBigIdea").path("contractVersion").asText());
+    } catch (Exception ex) {
+      log.error(
+          "Contexto da Big Idea inválido na tarefa de Atena. taskId={}", task.path("taskId"), ex);
+      throw new IllegalArgumentException("Contexto da Big Idea inválido.", ex);
+    }
+  }
+
+  /** Recusa ideia vazia, tipos incorretos e mudança silenciosa da versão fixada. */
+  static void validateBigIdea(JsonNode result, JsonNode task) {
+    JsonNode idea = result.path("bigIdea");
+    Map<String, Integer> limits =
+        Map.of(
+            "centralIdea",
+            500,
+            "audience",
+            1500,
+            "desire",
+            1500,
+            "promise",
+            1500,
+            "mechanism",
+            2000,
+            "evidence",
+            3000,
+            "limits",
+            2000);
+    if (!idea.isObject() || idea.size() != limits.size())
+      throw new IllegalArgumentException("Big Idea incompleta.");
+    limits.forEach(
+        (field, max) -> {
+          var value = idea.path(field);
+          if (!value.isTextual() || value.asText().isBlank() || value.asText().length() > max)
+            throw new IllegalArgumentException("Campo inválido na Big Idea: " + field);
+        });
+    try {
+      JsonNode context = task.path("processContextJson");
+      if (context.isTextual()) context = CONTRACT_MAPPER.readTree(context.asText());
+      JsonNode pinned = context.path("productBigIdea").path("revision").path("content");
+      if ("APPROVE".equals(result.path("decision").asText())
+          && !pinned.isMissingNode()
+          && !pinned.equals(idea))
+        throw new IllegalArgumentException(
+            "Atena alterou a Big Idea fixada sem evolução explícita.");
+    } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+      log.error("Falha ao validar Big Idea de Atena. taskId={}", task.path("taskId"), ex);
+      throw new IllegalArgumentException("Contexto inválido.", ex);
+    }
   }
 
   /** Reconhece a versão do Processo 2 que tornou a identidade parte do contrato. */

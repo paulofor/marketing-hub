@@ -23,6 +23,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class LandingCommercialContextResolver {
   private static final Logger log = LoggerFactory.getLogger(LandingCommercialContextResolver.class);
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.bigidea.v1.service.BigIdeaService bigIdeas;
+
   private final ObjectMapper objectMapper;
   private final PublicProductCommercialOfferService publicOfferService;
 
@@ -33,14 +36,16 @@ public class LandingCommercialContextResolver {
     this.publicOfferService = publicOfferService;
   }
 
-  /**
-   * Expõe somente fatos comerciais persistidos e identifica quando o contrato público não existe.
-   */
+  /** Expõe fatos e Big Idea do contexto comercial, identificando ausência do contrato público. */
   public Map<String, Object> resolve(Experiment experiment) {
     Product product = experiment.getProduct();
     if (product == null) return Map.of();
 
     Map<String, Object> context = new LinkedHashMap<>();
+    if (bigIdeas != null) {
+      var idea = bigIdeas.reference(product, "experiment:" + experiment.getId());
+      context.put("productBigIdea", idea == null ? Map.of("status", "MISSING") : idea);
+    }
     putWhenPresent(context, "targetAudience", product.getTargetAudience());
     putWhenPresent(context, "productFormat", product.getProductFormat());
     putWhenPresent(context, "deliveryMode", product.getDeliveryMode());

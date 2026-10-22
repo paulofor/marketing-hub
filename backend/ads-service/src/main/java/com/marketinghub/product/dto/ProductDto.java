@@ -9,6 +9,8 @@ import lombok.Data;
 @Data
 public class ProductDto {
   private Long id;
+  private String bigIdea;
+  private Integer bigIdeaRevision;
   private String slug;
   private String name;
   private String internalName;

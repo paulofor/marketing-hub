@@ -10,6 +10,8 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
   /** Converte a entidade de produto para o contrato de leitura da API. */
+  @Mapping(target = "bigIdea", source = "bigIdea.centralIdea")
+  @Mapping(target = "bigIdeaRevision", source = "bigIdea.revision")
   @Mapping(target = "instagramAccountId", source = "instagramAccount.id")
   @Mapping(target = "marketNicheId", source = "marketNiche.id")
   @Mapping(target = "videoSeedImageAssetId", source = "videoSeedImageAsset.id")

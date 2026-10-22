@@ -901,6 +901,18 @@ class AgentTaskServiceTest {
     AgentTaskService service =
         new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
 
+    var bigIdeas = mock(com.marketinghub.product.bigidea.v1.service.BigIdeaTaskContext.class);
+    ReflectionTestUtils.setField(service, "bigIdeaContext", bigIdeas);
+    org.mockito.Mockito.doAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              assertThat(task.getId()).isNull();
+              task.setProductBigIdeaJson("{\"status\":\"DEFINED\",\"revision\":1}");
+              return null;
+            })
+        .when(bigIdeas)
+        .pin(any());
+
     AgentTaskResponse response =
         service.createByHuman(
             new CreateAgentTaskRequest(
@@ -915,6 +927,7 @@ class AgentTaskServiceTest {
                 false,
                 null));
 
+    verify(bigIdeas).pin(any(AgentTask.class));
     assertThat(response.processDefinitionId()).isEqualTo(9L);
     assertThat(response.processActivityName()).isEqualTo("Montar HTML");
     assertThat(response.exceptional()).isFalse();

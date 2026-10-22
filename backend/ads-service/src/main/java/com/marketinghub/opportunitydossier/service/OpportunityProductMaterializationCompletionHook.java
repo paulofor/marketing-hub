@@ -47,6 +47,10 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
           "READY_RESULT_USED",
           "PREFERRED_OVER_FREE",
           "CHECKOUT_STARTED");
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.bigidea.v1.service.BigIdeaService bigIdeas;
+
   private final OpportunityDossierRepository dossierRepository;
   private final AgentTaskRepository taskRepository;
   private final ProductTypeDefinitionRepository productTypeRepository;
@@ -84,7 +88,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
         && task.getSourceReference().startsWith(SOURCE_PREFIX);
   }
 
-  /** Consolida contratos aprovados e cria uma única versão planejada, sem publicar ou gastar. */
+  /** Consolida contratos e Big Idea de Atena numa versão planejada, sem publicar ou gastar. */
   @Override
   public CompletionDisposition apply(AgentTask task, CompleteAgentTaskRequest request) {
     try {
@@ -117,6 +121,21 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
               metrics,
               architecture,
               architectureResult);
+      if (bigIdeas != null && strategyResult.hasNonNull("bigIdea")) {
+        bigIdeas.initializeFromStrategy(
+            product.getId(),
+            objectMapper.treeToValue(
+                strategyResult.get("bigIdea"),
+                com.marketinghub.product.bigidea.v1.service.save.BigIdeaContent.class),
+            tasks.stream()
+                .filter(
+                    t ->
+                        "marketStrategy".equals(t.getProcessActivityId())
+                            && "COMPLETED".equals(t.getStatus()))
+                .map(AgentTask::getId)
+                .max(Long::compareTo)
+                .orElseThrow());
+      }
       dossier.setConvertedPlan(plan);
       dossier.setCreatedProduct(product);
       dossier.setProposedOffer(text(strategy, "offerThesis"));

@@ -1,3 +1,4 @@
+import ProductBigIdeaSummary from "./ProductBigIdeaSummary";
 import { Link } from "react-router-dom";
 import { useDeferredValue, useMemo, useState, type CSSProperties } from "react";
 import type { Product } from "../../api/product/useProducts";
@@ -455,6 +456,9 @@ export default function ProductListPage() {
                   </div>
                 </div>
 
+                <div className="px-3">
+                  <ProductBigIdeaSummary product={product} />
+                </div>
                 <ProductValueChainPosition
                   productId={product.id}
                   productName={

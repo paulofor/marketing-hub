@@ -193,7 +193,7 @@ export const MUSA_V12_EXPERIENCE_VERSION =
   "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
 
 const MUSA_V5_LEGACY_HOSTS = ["v1.clubemusa.com.br", "v2.clubemusa.com.br"];
-const MUSA_V7_RESERVED_HOSTS = ["v9.clubemusa.com.br", "v10.clubemusa.com.br"];
+const MUSA_V7_RESERVED_HOSTS = ["v10.clubemusa.com.br"];
 
 const MUSA_APPROVED_HERO_VIDEO_URL =
   "/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8";
@@ -507,12 +507,13 @@ const MUSA_VERSIONED_HOSTS: Record<string, string> = Object.values(
     return hosts;
   }, {});
 
+// Reservas e aliases legados não sobrescrevem uma versão explicitamente atribuída.
 MUSA_V7_RESERVED_HOSTS.forEach((host) => {
-  MUSA_VERSIONED_HOSTS[host] = MUSA_V7_EXPERIENCE_VERSION;
+  MUSA_VERSIONED_HOSTS[host] ??= MUSA_V7_EXPERIENCE_VERSION;
 });
 
 MUSA_V5_LEGACY_HOSTS.forEach((host) => {
-  MUSA_VERSIONED_HOSTS[host] = MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
+  MUSA_VERSIONED_HOSTS[host] ??= MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
 });
 
 export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [

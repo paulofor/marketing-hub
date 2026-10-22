@@ -1,0 +1,18 @@
+{
+  "cardKey": "duracao-ancora-ritmo-complexo",
+  "collection": "prazer-audio-visual",
+  "title": "Âncoras de duração podem apoiar sincronização com ritmos complexos",
+  "finding": "Em 36 adultos, variações de contorno temporal modificaram a precisão de batidas em compasso 7/8, mas não em 4/4; notas iniciais longas ajudaram mais que pistas de intensidade nas condições testadas.",
+  "mechanism": "Uma duração saliente no início da unidade rítmica pode funcionar como âncora temporal para atenção e previsão motora; o estudo não demonstrou prazer.",
+  "commercialApplication": "Em interfaces ou vídeos com instruções temporizadas, testar pistas sonoras de duração distinta versus volume reforçado para melhorar acompanhamento, sem aumentar a carga sensorial.",
+  "evidenceStrength": "Moderada para sincronização de dedos em laboratório; baixa para extrapolação a vídeos e eficácia comercial.",
+  "publishedOn": "2026-10-22",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "Quando a sequência de ações tem ritmo complexo, uma pista temporal mais longa no começo reduzirá erros de sincronização em comparação a um acento apenas mais alto; medir erro absoluto, omissões e conforto.",
+  "risks": "Volume alto pode incomodar; ritmos complexos podem aumentar esforço; não usar estímulos que prejudiquem acessibilidade auditiva.",
+  "limits": "N=36, tarefa de tapping e sequências artificiais, estudo não pré-registrado. Sem efeito observado no compasso simples, sem prazer, dopamina ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-22-duracao-ancora-ritmo-complexo.md",
+  "sourceTitle": "Fonte revisada v1 — Pistas de duração e sincronização de ritmos complexos",
+  "sourceSha256": "24b2b5baf46187f53cec67626800007938cbc11c5a8ab260a6f3b3b411d7b63f"
+}

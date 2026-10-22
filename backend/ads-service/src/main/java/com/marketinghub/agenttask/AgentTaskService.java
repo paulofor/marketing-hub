@@ -53,6 +53,9 @@ public class AgentTaskService {
       executionProfileContext;
 
   @Autowired(required = false)
+  private com.marketinghub.product.bigidea.v1.service.BigIdeaTaskContext bigIdeaContext;
+
+  @Autowired(required = false)
   private com.marketinghub.repository.jpa.businessprocess
           .IndependentBusinessProcessExecutionRepository
       independentExecutions;
@@ -1247,7 +1250,7 @@ public class AgentTaskService {
     return response(saved);
   }
 
-  /** Persiste a tarefa e fixa sua versão textual antes de disponibilizar o trabalho ao executor. */
+  /** Persiste a tarefa e fixa versões textual e de Big Idea antes de disponibilizá-la. */
   private AgentTaskResponse save(
       Agent assignee,
       Agent requester,
@@ -1279,6 +1282,7 @@ public class AgentTaskService {
     task.setReceivedAt(null);
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
+    if (bigIdeaContext != null) bigIdeaContext.pin(task);
     AgentTask saved = repository.save(task);
     if (catalogoVivo != null) catalogoVivo.pin(saved);
     synchronizeActivityInstance(saved, now);
@@ -2803,6 +2807,7 @@ public class AgentTaskService {
     }
     if (!targetOnly && creativeFinalVideoEvidence != null)
       taskTarget = creativeFinalVideoEvidence.project(task, taskTarget);
+    if (bigIdeaContext != null) taskTarget = bigIdeaContext.project(task, taskTarget);
     String processContextJson = targetOnly ? null : processContext(task);
     return new AgentTaskPendingResponse(
         task.getId(),
@@ -3021,6 +3026,7 @@ public class AgentTaskService {
       List<Map<String, Object>> completedHumanActivities = completedHumanActivities(task);
       Map<String, Object> context = new java.util.LinkedHashMap<>();
       context.put("handoffContractVersion", "AGENT_HANDOFF_CONTEXT_V1");
+      if (bigIdeaContext != null) context.put("productBigIdea", bigIdeaContext.snapshot(task));
       context.put("completedActivities", completedActivities);
       if (opalaCommercialContext != null
           && com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.CODE.equals(

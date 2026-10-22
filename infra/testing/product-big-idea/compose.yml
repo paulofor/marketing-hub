@@ -1,0 +1,14 @@
+services:
+  big-idea-mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: big_idea_local
+      MYSQL_ROOT_PASSWORD: big-idea-local-only
+    ports:
+      - "18529:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pbig-idea-local-only"]
+      interval: 2s
+      timeout: 2s
+      retries: 45

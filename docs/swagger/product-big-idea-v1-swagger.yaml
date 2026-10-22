@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: Big Idea do produto
+  version: '1.0'
+paths:
+  /api/products/{productId}/big-idea:
+    parameters:
+      - in: path
+        name: productId
+        required: true
+        schema: {type: integer, format: int64}
+    get:
+      summary: Consulta status, ideia vigente e histórico imutável do produto
+      responses:
+        '200':
+          description: Workspace; status MISSING ou DEFINED, current e history de revisões, guidance do backend
+        '404': {description: Produto inexistente}
+  /api/products/{productId}/big-idea/revisions:
+    parameters:
+      - in: path
+        name: productId
+        required: true
+        schema: {type: integer, format: int64}
+    post:
+      summary: Cria ou evolui Big Idea, sem inferência, publicação ou gasto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, content, changeReason]
+              properties:
+                expectedRevision: {type: integer, minimum: 0, description: Zero na criação; revisão lida nas evoluções}
+                changeReason: {type: string, minLength: 1, maxLength: 2000}
+                content: {$ref: '#/components/schemas/BigIdeaContent'}
+      responses:
+        '200': {description: Revisão com id, productId, revision, content, changeReason, createdBy, sourceTaskId e createdAt}
+        '400': {description: Conteúdo vazio ou inválido}
+        '404': {description: Produto inexistente}
+        '409': {description: Outra revisão foi gravada; atualizar antes de editar}
+components:
+  schemas:
+    BigIdeaContent:
+      type: object
+      required: [centralIdea, audience, desire, promise, mechanism, evidence, limits]
+      properties:
+        centralIdea: {type: string, minLength: 1, maxLength: 500}
+        audience: {type: string, minLength: 1, maxLength: 1500}
+        desire: {type: string, minLength: 1, maxLength: 1500}
+        promise: {type: string, minLength: 1, maxLength: 1500}
+        mechanism: {type: string, minLength: 1, maxLength: 2000}
+        evidence: {type: string, minLength: 1, maxLength: 3000}
+        limits: {type: string, minLength: 1, maxLength: 2000}

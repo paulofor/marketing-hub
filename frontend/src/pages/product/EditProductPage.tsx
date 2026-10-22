@@ -1,3 +1,4 @@
+import ProductBigIdeaSummary from "./ProductBigIdeaSummary";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useProduct } from "../../api/product/useProduct";
@@ -29,6 +30,7 @@ export default function EditProductPage() {
           Voltar
         </Link>
       </div>
+      <ProductBigIdeaSummary product={product} />
       <ProductForm
         initialProduct={product}
         isSaving={update.isPending}

@@ -294,3 +294,11 @@ não utiliza conta, credencial ou inferência produtiva.
 
 A fixture também aplica o seed de catálogo anterior aos templates em uma instalação
 sem o modelo, preservando preços existentes e a referência após rollback.
+
+## Big Idea do produto — v1
+
+O job `validate-product-big-idea` aplica as tabelas de revisões/referências e a cadeia v27
+no MySQL 5.7. Confere API real, concorrência, isolamento, histórico, fixação por experimento,
+reinício e reaplicação. Executar `python3 infra/testing/product-big-idea/run-local.py` com
+`BIG_IDEA_COMPOSE_PROJECT` exclusivo e `BIG_IDEA_DB_HOST=sandbox-docker` na sandbox.
+Dados sintéticos; a topologia é removida no encerramento.

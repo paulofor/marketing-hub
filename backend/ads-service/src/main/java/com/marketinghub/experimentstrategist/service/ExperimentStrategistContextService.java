@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ExperimentStrategistContextService {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.bigidea.v1.service.BigIdeaService bigIdeas;
+
   private final CommercialPlanService commercialPlanService;
   private final GrowthOperatorService growthOperatorService;
   private final JdbcTemplate jdbc;
@@ -90,10 +93,11 @@ public class ExperimentStrategistContextService {
     return portfolio;
   }
 
-  /** Expõe a definição comercial e o histórico auditável de um produto. */
+  /** Expõe a definição comercial, a Big Idea vigente e o histórico auditável do produto. */
   private Map<String, Object> productPortfolioItem(Product product) {
     LinkedHashMap<String, Object> item = new LinkedHashMap<>();
     item.put("productId", product.getId());
+    if (bigIdeas != null) item.put("productBigIdea", bigIdeas.view(product.getBigIdea()));
     item.put("productName", product.getName());
     item.put("productFormat", product.getProductFormat());
     item.put("deliveryMode", product.getDeliveryMode());

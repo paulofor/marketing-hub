@@ -32,6 +32,13 @@ public class Product {
   @Column(name = "slug", length = 191, unique = true)
   private String slug;
 
+  /** Referência vigente da Big Idea; revisões anteriores permanecem imutáveis. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "current_big_idea_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private com.marketinghub.product.bigidea.v1.ProductBigIdea bigIdea;
+
   /** Nome comercial público do produto. */
   @Column(name = "name", length = 191)
   private String name;

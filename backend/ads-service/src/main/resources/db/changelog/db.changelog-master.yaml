@@ -2231,3 +2231,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-21-pde-paid-visual-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-22-product-big-idea-v1.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-22-big-idea-value-chain-v1.yaml
+      relativeToChangelogFile: true

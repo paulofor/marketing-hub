@@ -126,3 +126,9 @@ são alterados. A correção PDE entre versões mantém o tratamento próprio de
 tentativas, sem misturar referências. Não há nova chamada de IA, autorização ou retomada
 por efeito dessa projeção. Validação e limites em
 `docs/homologacao/agentes-contexto-vigente-v1.md`.
+
+## Big Idea transversal — decisão de 22/10/2026
+
+A Big Idea versionada do produto orienta oferta, construção, comunicação, revisão e aprendizado.
+Atena cria na estratégia; o operador pode evoluir com motivo e histórico. Cada experimento preserva
+sua versão, sem reescrever aprovações ou herdar autorizações. Seguir [Big Idea v1](product-big-idea-canon.v1.md).

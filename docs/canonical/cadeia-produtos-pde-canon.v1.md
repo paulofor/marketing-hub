@@ -1227,3 +1227,9 @@ estruturado, quando presente em contrato compatível, mantém precedência e dev
 ser suportado. Contrato posterior bloqueado não herda aprovação anterior.
 Homologações locais devem usar o resolvedor real sobre snapshots sintéticos dos
 agentes; simular a capacidade como sempre disponível esconde falhas dessa passagem.
+
+## Big Idea transversal — decisão de 22/10/2026
+
+A Big Idea versionada do produto orienta oferta, construção, comunicação, revisão e aprendizado.
+Atena cria na estratégia; o operador pode evoluir com motivo e histórico. Cada experimento preserva
+sua versão, sem reescrever aprovações ou herdar autorizações. Seguir [Big Idea v1](product-big-idea-canon.v1.md).

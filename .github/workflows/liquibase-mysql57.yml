@@ -19,6 +19,10 @@ on:
       - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
       - "infra/testing/pde-version-contract/**"
       - "infra/testing/product-financial-plan/**"
+      - "infra/testing/product-big-idea/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/product/bigidea/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/product/bigidea/**"
+      - "backend/ads-service/src/test/resources/big-idea-fixture-changelog.yaml"
       - "infra/testing/opala-commercial/**"
       - "backend/ads-service/src/main/java/com/marketinghub/experiment/run/service/ExperimentTechnicalPreflightActivityExecutor.java"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/agenttask/BusinessProcessActivityInstanceRepository.java"
@@ -633,3 +637,32 @@ jobs:
         env:
           RUNWAY_PREFLIGHT_COMPOSE_PROJECT: liquibase-runway-preflight-${{ github.run_id }}
         run: bash backend/ads-service/scripts/validate-runway-plutus-provider-preflight-mysql57.sh
+
+  validate-product-big-idea:
+    name: Big Idea versionada com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Obter MySQL com recuperação transitória
+        run: bash scripts/docker-pull-with-transient-retry.sh mysql:5.7
+      - name: Validar API, concorrência, isolamento, versões e reaplicação
+        env:
+          BIG_IDEA_COMPOSE_PROJECT: aihub-big-idea-${{ github.run_id }}-${{ github.run_attempt }}
+          BIG_IDEA_DB_HOST: 127.0.0.1
+        run: python3 infra/testing/product-big-idea/run-local.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: product-big-idea-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/product-big-idea/persistence/
+          retention-days: 7

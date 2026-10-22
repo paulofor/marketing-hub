@@ -202,6 +202,12 @@ export default function AllProductsPage() {
 
             return (
               <article className="all-products-list__item" key={product.id}>
+                <Link
+                  className="btn btn-outline-primary"
+                  to={`/products/${product.id}/big-idea`}
+                >
+                  Big Idea
+                </Link>
                 <div className="all-products-list__identity">
                   <h2>
                     <Link to={`/products/${product.id}/edit`}>

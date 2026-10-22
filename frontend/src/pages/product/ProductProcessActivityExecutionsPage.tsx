@@ -220,6 +220,13 @@ export default function ProductProcessActivityExecutionsPage() {
 
   return (
     <div className="product-process-activity-executions">
+      <aside className="alert alert-light border mb-3">
+        A Big Idea orienta produto, oferta e comunicação. Cada tarefa preserva
+        sua referência.{" "}
+        <Link to={`/products/${productId}/big-idea`}>
+          Consultar ou evoluir Big Idea
+        </Link>
+      </aside>
       <header className="business-process-documents-toolbar mb-4">
         <div>
           {effectiveCycleId ? (

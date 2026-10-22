@@ -45,6 +45,7 @@ export default defineConfig({
         "PDE_ACCESS_JDBC_USERNAME=pde",
         "PDE_ACCESS_JDBC_PASSWORD=pde",
         "PDE_ACCESS_REQUIRE_JDBC=true",
+        "PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE=true",
         "PDE_PEPPER_API_BASE_URL=http://127.0.0.1:57181/public/v1",
         "PDE_PEPPER_API_TOKEN=pde-local-pepper-token",
         "PDE_PEPPER_OFFER_HASHES=owm6x",

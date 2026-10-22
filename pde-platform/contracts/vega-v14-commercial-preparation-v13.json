@@ -58,12 +58,12 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/vega-v14-continuidade-comercial-v1.md",
-      "sha256": "12ed176da0ce25b459a50a93c59e7fba65cacce1d6884fd580b1546b8eabf01f",
+      "sha256": "d9e659050f83ca66d4272c2b54f24fad8c020b4733943d3df149ec1122b204e7",
       "promptMode": "FULL"
     },
     {
       "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json",
-      "sha256": "11548634ad22e46a9c0fca3ab7a23a578f63104de2f9722ffd9bffaca816d535",
+      "sha256": "a8488bb80dbfa9dbd6b906763e664f7c3cd292381260304dfa2092067f4d4a1c",
       "promptMode": "FULL"
     },
     {
@@ -74,7 +74,7 @@
     },
     {
       "path": "pde-platform/contracts/vega-cycle10-preparation-v10.json",
-      "sha256": "4cd3f1810a96d85f1d2e1edf9600583042f9c04ee5747b6637a064c4ed4d6df8",
+      "sha256": "6c3e4fa0816fe8b225ee01d321457f62504e544c0d38ea353a04dd8f6387441e",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Histórico e rejeição do predecessor preservados; sem herança de aprovação ou autorização."
     },
@@ -162,7 +162,7 @@
     },
     {
       "path": "pde-platform/scripts/test-product-runtime-isolation-contract.mjs",
-      "sha256": "e3e57dd55a5c1f6b17fcaf13223147921ea1dc1387a57a8314ce2c4c536fc3ad",
+      "sha256": "2b811cc845ad69df62098ff43a029f65bbf9bd738c34c8507566580dc572bf5b",
       "promptMode": "FULL"
     }
   ]

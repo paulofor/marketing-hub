@@ -30,7 +30,7 @@
     },
     {
       "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json",
-      "sha256": "11548634ad22e46a9c0fca3ab7a23a578f63104de2f9722ffd9bffaca816d535",
+      "sha256": "a8488bb80dbfa9dbd6b906763e664f7c3cd292381260304dfa2092067f4d4a1c",
       "promptMode": "FULL"
     }
   ],

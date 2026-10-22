@@ -69,7 +69,7 @@ o SMTP atravessa um relay local para sandbox-mail:1025, sem credencial real.
 - 12 cenários novos passaram: entrada/valor, falha e recuperação, compra/entrega/reembolso e trava do checkout, nos três dispositivos.
 - As versões v5, v6, v7 e v12 passaram na regressão de contratos e navegação, nos três dispositivos.
 - A prova de instalação em leitura passou nos três dispositivos; o proxy TLS local real distinguiu v8/v12 de v9/v14.
-- 55 testes do harness Node e 25 do contrato Python passaram; sintaxe e ShellCheck dos scripts envolvidos passaram.
+- 56 testes do harness Node e 25 do contrato Python passaram; sintaxe e ShellCheck dos scripts envolvidos passaram.
 - Após reiniciar somente o backend, MySQL 5.7 restituiu versão v14, progresso 1/7 e orientação concluída. O banco temporário permaneceu ativo; não se simulou recuperação de host ou backup.
 - O SMTP de sandbox entregou os links de teste. Transações, e-mails e sessões sintéticos permanecem segregados das métricas humanas.
 
@@ -90,3 +90,17 @@ localmente. O teste corrente passa a conferir todas as superfícies do inventár
 a fixture histórica permanece delimitada à sua publicação e aos legados que contém.
 Nenhum `legacyMinimumRevision` foi inventado para contornar o controle. Os 35 testes
 de freshness passaram localmente após esse ajuste.
+
+
+A integração de CI também expôs diferença entre a topologia local usada na primeira
+rodada e a configuração versionada: esta não habilitava o retorno de links mágicos
+sintéticos, então os testes recebiam `accessUrl=null`, conforme a segurança padrão.
+A opção foi habilitada exclusivamente em `docker-compose.local-validation.yml` e
+na configuração Playwright local; a produção mantém o padrão falso. Um contrato
+preventivo impede exposição dessa opção na topologia produtiva. A correção não
+altera autenticação, concessão paga ou envio de e-mail de clientes reais.
+
+Os seis casos afetados foram executados novamente com a topologia versionada
+`docker-compose.yml` + `docker-compose.local-validation.yml`, passando nos três
+dispositivos. A única sobreposição usada na sandbox abriu a porta do test double
+para o Playwright externo à engine; as opções funcionais vieram do arquivo versionado.

@@ -29,8 +29,10 @@
     "smtpDelivery": "SENT pelo sandbox-mail com destinatários teste+...@sandbox.local; sem credenciais reais"
   },
   "harness": {
-    "nodeTestsPassed": 55,
+    "nodeTestsPassed": 56,
     "pythonReleaseContractTestsPassed": 25,
+    "freshnessTestsPassed": 35,
+    "ciProfileAffectedBrowserTestsPassed": 6,
     "shellSyntaxAndShellcheck": "PASS",
     "proxyLifecycleContract": "PASS",
     "actualLocalTlsProxy": {

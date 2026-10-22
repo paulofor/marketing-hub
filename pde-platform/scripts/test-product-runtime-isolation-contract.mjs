@@ -288,8 +288,18 @@ test("Vega v14 ocupa o endereço reservado com runtime próprio e preserva a v12
     candidate.experienceVersion,
     "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
   );
-  assert.notEqual(previous.containerName, candidate.containerName);
+  assert.notEqual(previous.containerName, candidate.containerName, "[ARQUITETURA] Cada experiência pública exige container próprio.");
   const proxy = await source("lead-portal-payments-service/nginx.conf");
-  assert.match(proxy, /v9\.clubemusa\.com\.br pde-platform-frontend-v9:80;/);
-  assert.match(proxy, /v8\.clubemusa\.com\.br pde-platform-frontend-v8:80;/);
+  assert.match(proxy, /v9\.clubemusa\.com\.br pde-platform-frontend-v9:80;/, "[ARQUITETURA] O proxy v9 deve encaminhar à candidata isolada.");
+  assert.match(proxy, /v8\.clubemusa\.com\.br pde-platform-frontend-v8:80;/, "[ARQUITETURA] O proxy v8 deve preservar a versão anterior.");
+});
+
+
+test("links de teste são expostos somente na topologia local, preservando a produção", async () => {
+  const local = await source("pde-platform/docker-compose.local-validation.yml");
+  const production = await source("pde-platform/docker-compose.deploy.yml");
+  const configuration = await source("pde-platform/backend/src/main/resources/application.yml");
+  assert.match(local, /PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE: "true"/, "[ARQUITETURA] A homologação local exige links sintéticos recuperáveis.");
+  assert.doesNotMatch(production, /PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:\s*["']?true/, "[ARQUITETURA] A produção não pode expor links mágicos na resposta.");
+  assert.match(configuration, /PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:false/, "[ARQUITETURA] A exposição de links deve nascer desabilitada.");
 });

@@ -12,6 +12,7 @@ import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.promotion.PdeCommercialPublicationPolicy;
+import com.marketinghub.pde.service.promotion.PdeOneTimeAccessPublicationPolicy;
 import com.marketinghub.pde.service.promotion.PdeV12PublicationPolicy;
 import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
@@ -225,6 +226,10 @@ public class PdeProductionSlotService {
     JsonNode contract = readPublicationContract(slot, slot.getDraftExperienceJson());
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
       rejectV12Blockers(v12Blockers(slot, contract, false));
+    } else if (PdeOneTimeAccessPublicationPolicy.appliesTo(slot, contract)) {
+      var experiment = experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+      rejectCommercialBlockers(
+          PdeOneTimeAccessPublicationPolicy.blockers(slot, experiment, contract, false));
     } else if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
       rejectCommercialBlockers(commercialBlockers(slot, contract, false));
     } else {
@@ -260,6 +265,10 @@ public class PdeProductionSlotService {
     JsonNode contract = readPublicationContract(slot, publishedContract);
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
       rejectV12Blockers(v12Blockers(slot, contract, true));
+    } else if (PdeOneTimeAccessPublicationPolicy.appliesTo(slot, contract)) {
+      var experiment = experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+      rejectCommercialBlockers(
+          PdeOneTimeAccessPublicationPolicy.blockers(slot, experiment, contract, true));
     } else if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
       rejectCommercialBlockers(commercialBlockers(slot, contract, true));
     } else {
@@ -291,6 +300,12 @@ public class PdeProductionSlotService {
       rejectV12Blockers(blockers);
       return;
     }
+    if (PdeOneTimeAccessPublicationPolicy.appliesTo(slot, contract)) {
+      var experiment = experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+      rejectCommercialBlockers(
+          PdeOneTimeAccessPublicationPolicy.blockers(slot, experiment, contract, false));
+      return;
+    }
     if (!PdeCommercialPublicationPolicy.appliesTo(slot)) return;
     List<String> blockers = commercialBlockers(slot, contract, false);
     if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
@@ -306,6 +321,17 @@ public class PdeProductionSlotService {
     JsonNode contract = readPublicationContract(slot, contractJson);
     if (PdeV12PublicationPolicy.appliesTo(slot)) {
       rejectV12Blockers(v12Blockers(slot, contract, true));
+      return;
+    }
+    if (PdeOneTimeAccessPublicationPolicy.appliesTo(slot, contract)) {
+      var experiment = experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+      if (slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
+          || slot.getStatus() == PdeProductionSlotStatus.PLANNED)
+        rejectCommercialBlockers(
+            PdeOneTimeAccessPublicationPolicy.preparationBlockers(slot, experiment, contract));
+      else
+        rejectCommercialBlockers(
+            PdeOneTimeAccessPublicationPolicy.blockers(slot, experiment, contract, true));
       return;
     }
     if (PdeCommercialPublicationPolicy.appliesTo(slot)) {

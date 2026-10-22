@@ -1,0 +1,230 @@
+{
+  "evidenceVersion": "vega-opala-handoff-local.v1",
+  "status": "LOCAL_TESTS_PASSED",
+  "validatedAt": "2026-10-22T03:04:08.129429+00:00",
+  "productId": 4,
+  "cycleId": 13,
+  "experimentId": 106,
+  "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+  "sourceBoundary": "A tarefa 795 recebeu a candidata, mas falhou na validação anterior ao modelo enquanto o vínculo de checkout persistido era nulo. O contrato canônico estava completo.",
+  "backendTests": {
+    "tests": 365,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "passed": 363,
+    "suites": [
+      {
+        "suite": "ArquiteturaTest",
+        "tests": 92,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "CreativeControllerTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "LearningCycleCommercialReadinessTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "LearningCycleOptionalAudiovisualTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "LearningCycleWithoutAudiovisualTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialClaimPreparationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialContextTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialFinancialPlanTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialGateTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialMaterializationTest",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialRoutingTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialServiceTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaCommercialVersionContractTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaPrivateCreativeMaterializationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "OpalaPrivateCreativeProofFlowTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PaidVisualPolicyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PaidVisualPublicationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PaidVisualReadinessTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PaidVisualServiceTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PdeOneTimeAccessPublicationPolicyTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PdeProductionSlotServiceTest",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PdeVersionOverviewServiceTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PrivateCommunicationJourneyReplayTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      {
+        "suite": "PrivateCommunicationJourneyTest",
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "PrivateCreativeSelectionTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "VisualPreparationFlowTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "dedaloTests": {
+    "tests": 103,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "optionalSkippedBoundary": "Dois replays preexistentes exigem PRIVATE_JOURNEY_REPLAY. A passagem nova integra o verificador real de pareceres e aceite sem depender desse export.",
+  "validatedBehaviors": [
+    "Checkout canônico obrigatório com vínculo persistido ainda ausente permitido na preparação; conflito continua bloqueado",
+    "Publicação e consulta da candidata pelo serviço real e estado do botão do painel, preservando CANDIDATE/PLANNED",
+    "Derivação dos pixels e copy privados exatos para DRAFT, com fonte, SHA-256, pareceres e aceite privado no histórico",
+    "Revisão solicitada após checkout somente para ativos com recibo do próprio produto/ciclo/experimento/versão",
+    "Percursos com vídeo e outras capacidades permanecem separados da derivação estática",
+    "Inicialização completa do backend, contratos HTTP de criativos, arquitetura e regressões de pagamento visual/roteamento existentes"
+  ],
+  "commercialBoundary": {
+    "grantsCommercialApproval": false,
+    "grantsHumanSelection": false,
+    "campaignPublished": false,
+    "choosesMargin": false,
+    "increasesBudget": false,
+    "marketEvidenceClaimed": false
+  },
+  "costBoundary": "Codex permanece com estimativa auditável, sem exigir extrato de API. Cópia dos pixels não chama outro modelo; armazenamento e suporte são custos separados.",
+  "sourceCompatibility": {
+    "report": "docs/homologacao/opala-preparacao-comercial-v1.md",
+    "mira": "Somente compatibilidade das fontes Opala alteradas; sem renovar parecer ou publicar experiência",
+    "alcyone": "Regressão dos serviços de publicação e entrega paga preservada; sem renovar parecer ou publicar experiência"
+  }
+}

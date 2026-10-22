@@ -43,6 +43,8 @@ class OpalaCommercialMaterializationTest {
   private final ExperimentTargetingSelectionService selections =
       mock(ExperimentTargetingSelectionService.class);
   private final ExperimentVideoAssetRepository videos = mock(ExperimentVideoAssetRepository.class);
+  private final OpalaPrivateCreativeMaterialization privateCreatives =
+      mock(OpalaPrivateCreativeMaterialization.class);
   private final OpalaCommercialMaterialization materialization =
       new OpalaCommercialMaterialization(
           context,
@@ -53,7 +55,8 @@ class OpalaCommercialMaterializationTest {
           versionContract,
           experiments,
           selections,
-          mock(TargetingElementRepository.class));
+          mock(TargetingElementRepository.class),
+          privateCreatives);
   private final Product product = Product.builder().id(4L).slug("fixture-opala").build();
   private final Experiment experiment =
       Experiment.builder().id(92L).product(product).unitPrice(new BigDecimal("67")).build();
@@ -87,6 +90,7 @@ class OpalaCommercialMaterializationTest {
     assertThat(request.getValue().status())
         .isEqualTo(com.marketinghub.pde.PdeProductionSlotStatus.PLANNED);
     assertThat(request.getValue().experienceVersion()).isEqualTo("fixture-v12");
+    verifyNoInteractions(privateCreatives);
     verifyNoMoreInteractions(slotService);
   }
 
@@ -235,6 +239,25 @@ class OpalaCommercialMaterializationTest {
   }
 
   /** Peça estática exata evita vídeo obrigatório e preserva o parecer independente pendente. */
+  @Test
+  void materializesPrivateDraftOnlyForStaticContinuedAccess() throws Exception {
+    var contract =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(product.getPdeExperienceJson());
+    contract.putObject("commercialAccess").put("scope", "DAYS_2_TO_7_AND_SUPPORT_MATERIALS");
+    when(context.candidate(scope))
+        .thenReturn(
+            new OpalaCommercialContext.Candidate(
+                List.of(), experiment.getFollowUpActionUrl(), "EXPERIMENT", contract));
+    materialization.apply("entry", scope, json.createObjectNode());
+    verify(privateCreatives).prepare(scope, experiment.getFollowUpActionUrl());
+    reset(privateCreatives);
+    contract.putArray("heroVideos").addObject().put("experimentVideoAssetId", 17L);
+    materialization.apply("entry", scope, json.createObjectNode());
+    verifyNoInteractions(privateCreatives);
+  }
+
+  /** Peça estática exata evita vídeo obrigatório e preserva o parecer independente pendente. */
   @ParameterizedTest
   @ValueSource(longs = {106L, 91006L})
   void reusesStaticDraftWithoutPublishingOrApproving(long experimentId) throws Exception {
@@ -250,6 +273,18 @@ class OpalaCommercialMaterializationTest {
     assertThat(snapshot.path("creatives").get(0).path("agentReviewStatus").asText())
         .isEqualTo("PENDING");
     assertThat(snapshot.path("creatives").get(0).path("status").asText()).isEqualTo("DRAFT");
+    verifyNoInteractions(creatives, videos, experiments, slotService);
+  }
+
+  /** Aceita a peça ainda sem solicitar revisão para não antecipar o modelo ao checkout. */
+  @Test
+  void selectsDraftBeforeIndependentReviewIsRequested() throws Exception {
+    var snapshot = staticSnapshot();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) snapshot.path("creatives").get(0))
+        .put("agentReviewStatus", "");
+    when(context.snapshot("experiment:92")).thenReturn(snapshot);
+    materialization.apply("creative", scope, staticInstruction());
+    assertThat(materialization.current("creative", scope, staticInstruction())).isTrue();
     verifyNoInteractions(creatives, videos, experiments, slotService);
   }
 

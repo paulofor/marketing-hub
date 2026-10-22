@@ -95,3 +95,55 @@ mantém sua cadeia e aprovações, sem migração silenciosa.
 
 Ao encerrar, Vite e a topologia MySQL temporária foram removidos. Não foram criados
 artefatos operacionais no Marketing Hub pela API ou por acesso ao banco.
+
+## Alinhamento da primeira preparação — 22/10/2026
+
+Vega 4/106 recebeu a candidata v14, mas o executor rejeitou a tarefa 795 antes do
+modelo: o checkout canônico estava completo no contrato e ainda não estava gravado
+no experimento. No caminho histórico 92, esse vínculo já existia. O backend e o
+executor interpretavam de modo diferente a ausência esperada antes da materialização.
+
+Foram comparados três caminhos: gravar o checkout antecipadamente pela operação
+apenas contornaria a divergência; bloquear a abertura até haver checkout impediria
+a atividade que deve prepará-lo; distinguir candidata completa de vínculo ainda
+ausente preserva a ordem do processo e os controles. Foi escolhido o terceiro.
+
+A validação anterior ao modelo aceita vínculo persistido nulo, ausente ou em branco
+somente quando o checkout canônico continua declarado. Um vínculo diferente e uma
+candidata sem checkout continuam recusados. O executor não grava checkout nem
+avança o pipeline; o backend continua responsável por materialização e sequência.
+
+O teste local reproduziu a falha original antes da alteração. As regressões incluem
+outro produto/experimento, as atividades de entrada e checkout e um caminho antes
+válido. São provas de contrato, sem chamada externa ou comprovação comercial.
+
+### Passagens preparatórias sem vídeo obrigatório
+
+A conferência do endereço v9 mostrou que instalar o software não publicava o contrato
+candidato: a consulta ainda recebia o contrato global anterior. A política de preparação
+agora reconhece compra única com sete dias e materiais. O botão existente pode publicar
+essa candidata PLANNED sem promover o slot ou ativar o experimento. A promoção exige
+checkout/destino materializados e preflight; o gate comercial permanece independente.
+
+Também faltava ligar a peça privada aceita ao anúncio do experimento. A entrada do
+backend preserva os pixels e o texto de Íris em DRAFT, com origem, SHA, pareceres e
+aceite privado no histórico. Ela não concede aprovação comercial. A revisão só é
+enfileirada após configurar o checkout, evitando parecer pago sobre entrada incompleta.
+Callbacks repetidos conservam o anúncio existente; outra ocorrência não herda as provas.
+
+Os testes percorrem publicação e visão do painel com os serviços reais, preservando
+PLANNED; rejeitam contexto/preço/acesso divergentes e campanha já liberada. A passagem
+criativa usa armazenamento simulado, verifica pixels, ambiguidade, origem e aceite,
+e mantém os gates comerciais pendentes. Testes sintéticos não comprovam vendas.
+
+O fluxo integrado local usa o verificador real de identidade, pareceres e aceite
+privado antes da cópia, com armazenamento e inferência substituídos por doubles.
+Foram aprovados 363 testes relacionados do backend, incluindo inicialização completa
+e arquitetura, e 103 do executor Dédalo. Dois replays opcionais preexistentes de
+contexto privado exportado não foram habilitados por ausência de arquivo; o verificador
+real e a nova passagem são exercitados pelos testes locais independentes desse export.
+
+A ampliação inclui compatibilidade de pagamento visual e roteamento de Mira/Alcyone.
+As fontes compartilhadas alteradas ganharam novas atestações imutáveis, limitadas à
+compatibilidade e com publicação automática desabilitada; os pareceres anteriores não
+foram renovados. O pacote de evidências foi reconstruído e validado localmente.

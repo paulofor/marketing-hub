@@ -44,6 +44,7 @@ public class OpalaCommercialMaterialization {
   private final ExperimentRepository experiments;
   private final ExperimentTargetingSelectionService selections;
   private final TargetingElementRepository targeting;
+  private final OpalaPrivateCreativeMaterialization privateCreatives;
 
   /** Aplica somente operações internas explicitamente previstas pelo contrato da atividade. */
   public void apply(String activity, OpalaCommercialContext.Scope scope, JsonNode instruction) {
@@ -121,7 +122,7 @@ public class OpalaCommercialMaterialization {
     };
   }
 
-  /** Prepara um slot próprio da ocorrência; contratos já publicados nunca são sobrescritos. */
+  /** Prepara o destino e, quando ausente, o anúncio pendente derivado da peça privada aceita. */
   private void entry(OpalaCommercialContext.Scope scope) {
     var cycle = scope.cycle();
     var experiment = scope.experiment();
@@ -155,6 +156,7 @@ public class OpalaCommercialMaterialization {
         experiment.setFollowUpActionUrl(destination);
         experiments.save(experiment);
       }
+      if (staticPrivateDraftApplicable(contract)) privateCreatives.prepare(scope, destination);
       return;
     }
     String code = "opala-e" + experiment.getId() + "-c" + cycle.getId();
@@ -178,6 +180,18 @@ public class OpalaCommercialMaterialization {
             "Preparado pelo subprocesso Opala; publicação e homologação pendentes.",
             contract.toString(),
             null));
+    if (staticPrivateDraftApplicable(contract)) privateCreatives.prepare(scope, destination);
+  }
+
+  /**
+   * Restringe a derivação automática à continuidade estática contratada, preservando percursos de
+   * vídeo.
+   */
+  private boolean staticPrivateDraftApplicable(JsonNode contract) {
+    return contract != null
+        && "DAYS_2_TO_7_AND_SUPPORT_MATERIALS"
+            .equals(contract.path("commercialAccess").path("scope").asText())
+        && contract.path("heroVideos").size() == 0;
   }
 
   /** Reutiliza a peça estática exata ou cria o rascunho do vídeo, sem conceder aprovação. */
@@ -247,8 +261,10 @@ public class OpalaCommercialMaterialization {
           || creative.path("id").asLong() <= 0
           || replaced.contains(creative.path("id").asLong())
           || !Set.of("DRAFT", "READY").contains(creative.path("status").asText())
-          || !Set.of("PENDING", "PROCESSING", "APPROVED")
-              .contains(creative.path("agentReviewStatus").asText())
+          || !(Set.of("PENDING", "PROCESSING", "APPROVED")
+                  .contains(creative.path("agentReviewStatus").asText())
+              || ("DRAFT".equals(creative.path("status").asText())
+                  && creative.path("agentReviewStatus").asText().isBlank()))
           || !creative.path("videoUrl").asText("").isBlank()
           || !secureImage(creative.path("imageUrl").asText(""))
           || scope.experiment().getFollowUpActionUrl() == null
@@ -296,12 +312,15 @@ public class OpalaCommercialMaterialization {
     }
   }
 
-  /** Vincula apenas o checkout já canônico, com preço e versão conferidos, sem criar cobrança. */
+  /** Vincula o checkout canônico e libera a revisão do rascunho, sem cobrança ou autoaprovação. */
   private void checkout(OpalaCommercialContext.Scope scope) {
     var experiment = scope.experiment();
-    var canonical = versionContract.resolve(scope, context.candidate(scope)).checkout();
+    var resolved = versionContract.resolve(scope, context.candidate(scope));
+    var canonical = resolved.checkout();
     experiment.setCommercialCheckoutUrl(canonical.checkoutUrl());
     experiments.save(experiment);
+    if (staticPrivateDraftApplicable(resolved.productContract()))
+      privateCreatives.requestReview(scope);
   }
 
   /** Revalida checkout e acesso da candidata antes de reaproveitar uma conclusão anterior. */

@@ -1,0 +1,61 @@
+{
+  "contractVersion": "PRODUCT_BIG_IDEA_RESEARCH_V1",
+  "productId": 99101,
+  "bigIdea": {
+    "centralIdea": "A ocasião vira uma escolha pronta com o que você já tem",
+    "audience": "Pessoa com compromisso e pouco tempo",
+    "desire": "Decidir com menos esforço",
+    "promise": "Receber opções organizadas para escolher",
+    "mechanism": "Relacionar ocasião e peças informadas",
+    "evidence": "Fontes sintéticas locais; hipótese sem vendas medidas",
+    "limits": "Não garante ajuste, aceitação social ou resultado financeiro"
+  },
+  "selectionReason": "A ideia aproxima a necessidade da entrega existente, com esforço inicial pequeno.",
+  "alternatives": [
+    {
+      "idea": "Escolha por ocasião",
+      "benefit": "Facilita uma decisão concreta",
+      "risk": "Disposição de pagar desconhecida",
+      "effort": "Baixo, dentro da entrega existente",
+      "fit": "Compatível com o contexto"
+    },
+    {
+      "idea": "Rotina de escolhas",
+      "benefit": "Facilita uma decisão concreta",
+      "risk": "Disposição de pagar desconhecida",
+      "effort": "Baixo, dentro da entrega existente",
+      "fit": "Compatível com o contexto"
+    },
+    {
+      "idea": "Organização do repertório",
+      "benefit": "Facilita uma decisão concreta",
+      "risk": "Disposição de pagar desconhecida",
+      "effort": "Baixo, dentro da entrega existente",
+      "fit": "Compatível com o contexto"
+    }
+  ],
+  "demandAssessment": {
+    "status": "HYPOTHESIS",
+    "frequencyAndUrgency": "Ocasião concreta; frequência ainda desconhecida",
+    "willingnessToPaySignals": "Oferta concorrente não prova venda própria",
+    "evidenceAgainst": "Alternativas gratuitas",
+    "gaps": "Não há compra conciliada",
+    "validationPlan": "Medir compras e contribuição no experimento autorizado, segregando testes"
+  },
+  "sources": [
+    {
+      "url": "https://industry.example/research",
+      "title": "Fonte setorial sintética",
+      "accessedAt": "2026-10-23",
+      "evidenceClass": "INDUSTRY_RESEARCH",
+      "learning": "Exemplo sintético sem valor de evidência comercial"
+    },
+    {
+      "url": "https://customers.example/discussion",
+      "title": "Relato sintético",
+      "accessedAt": "2026-10-23",
+      "evidenceClass": "CUSTOMER_LANGUAGE",
+      "learning": "Exemplo sintético sem valor de evidência comercial"
+    }
+  ]
+}

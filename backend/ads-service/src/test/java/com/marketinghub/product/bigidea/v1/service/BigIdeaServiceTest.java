@@ -145,4 +145,24 @@ class BigIdeaServiceTest {
     assertThatThrownBy(() -> service.initializeFromStrategy(701L, content("Direção B"), 502L))
         .hasMessageContaining("409");
   }
+
+  /**
+   * A adoção é idempotente, preserva a referência anterior e não sobrescreve edição concorrente.
+   */
+  @Test
+  void adoptsResearchWithoutOverwritingHistoryOrExperiments() {
+    var research = mock(BigIdeaResearch.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "research", research);
+    when(research.proposal(product, 880L)).thenReturn(content("Direção pesquisada"));
+    var first = service.adoptResearch(701L, 880L);
+    assertThat(service.adoptResearch(701L, 880L)).isEqualTo(first);
+    assertThat(first.createdBy()).isEqualTo("Atena — pesquisa #880");
+    assertThat(saved).hasSize(1);
+    verifyNoInteractions(bindings);
+    service.save(
+        701L, new SaveBigIdeaRequest(1, content("Evolução humana"), "Aprendizado"), "Operador");
+    assertThatThrownBy(() -> service.adoptResearch(701L, 880L)).hasMessageContaining("409");
+    assertThat(saved).hasSize(2);
+    assertThat(service.get(701L).current().content().centralIdea()).isEqualTo("Evolução humana");
+  }
 }

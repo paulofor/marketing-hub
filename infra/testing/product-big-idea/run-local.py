@@ -56,14 +56,20 @@ try:
     run(['mvn', '-q', '-DskipTests', 'test-compile', 'org.apache.maven.plugins:maven-dependency-plugin:3.6.1:build-classpath', '-DincludeScope=test', '-Dmdep.outputFile=target/big-idea.classpath'], 'compile.log', ROOT/'backend/ads-service')
     run(compose+['up','-d','--wait'], 'mysql.log')
     api = start()
+    query_checks = read('/fixture/research/queries')
+    assert query_checks['product'][0]['id'] == 99182, 'Pesquisa cruzou produtos'
+    assert query_checks['otherProduct'][0]['id'] == 99183, 'Outro produto sem pesquisa própria'
+    assert query_checks['strategy'][0]['id'] == 99181, 'Big Idea substituiu a estratégia vigente'
     run(['node','infra/testing/product-big-idea/api-matrix.mjs'], 'matrix.log')
     if os.environ.get('BIG_IDEA_BROWSER') == '1':
         run(['node', 'infra/testing/product-big-idea/browser.mjs'], 'browser.log')
     before = read('/api/products/99101/big-idea')
+    research_before = [read(f'/api/products/{product}/big-idea') for product in (99106,99107,99108)]
     stop(api)
     api = start()  # Reaplica Liquibase e valida recuperação sem alterar revisões.
     assert before == read('/api/products/99101/big-idea'), 'Reinício alterou o histórico'
-    (ART/'summary.json').write_text(json.dumps({'result':'PASS','restart':'PASS','liquibaseReapply':'PASS','commercialEvents':0})+'\n')
+    assert research_before == [read(f'/api/products/{product}/big-idea') for product in (99106,99107,99108)], 'Reinício alterou Big Ideas adotadas'
+    (ART/'summary.json').write_text(json.dumps({'result':'PASS','restart':'PASS','liquibaseReapply':'PASS','researchSqlIsolation':'PASS','commercialEvents':0})+'\n')
     print((ART/'summary.json').read_text())
 finally:
     stop(api)

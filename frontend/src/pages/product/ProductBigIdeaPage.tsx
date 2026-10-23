@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import ProductBigIdeaResearch from "./ProductBigIdeaResearch";
 import { useProduct } from "../../api/product/useProduct";
 import {
   useProductBigIdea,
@@ -87,6 +88,7 @@ function Editor({
       : undefined;
   return (
     <form
+      aria-label="Editar Big Idea"
       onSubmit={async (event) => {
         event.preventDefault();
         if (!valid || save.isPending) return;
@@ -213,6 +215,7 @@ export default function ProductBigIdeaPage() {
       )}
       {query.data && (
         <>
+          <ProductBigIdeaResearch key={productId} productId={productId} />
           <section className="alert alert-primary" aria-label="Direção vigente">
             <strong>
               {query.data.current

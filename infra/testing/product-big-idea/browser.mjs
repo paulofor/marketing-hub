@@ -1,5 +1,5 @@
 import {createRequire} from 'node:module';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const require=createRequire(new URL('../../../frontend/package.json',import.meta.url));
 const {chromium,devices}=require('@playwright/test');
@@ -44,7 +44,32 @@ for (const [index,device] of ['Desktop','iPhone 15 Pro','Pixel 7'].entries()) {
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),true,'Overflow '+device);
  assert.deepEqual(errors,[]);
  await page.screenshot({path:`${folder}/${device.replaceAll(' ','-')}.png`});
- results.push({device,create:true,evolve:true,history:true,horizontalOverflow:false});await context.close();
+ const researchProduct=99106+index;
+ await page.goto(`http://127.0.0.1:15179/products/${researchProduct}/big-idea`);
+ await page.getByRole('button',{name:'Pedir Big Idea a Atena'}).waitFor();
+ await page.getByText('Acrescentar contexto e fontes',{exact:true}).click();
+ await page.getByLabel('Orientação para Atena (opcional)').fill('Pesquisa sintética sem mercado real');
+ await page.getByRole('button',{name:'Pedir Big Idea a Atena'}).click();
+ await page.getByText(/Na fila de Atena/).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Aplicar Big Idea de Atena'}).count(),0);
+ const endpoint=`http://127.0.0.1:18099/api/products/${researchProduct}/big-idea/research`;
+ const research=await (await page.request.get(endpoint)).json();
+ const duplicate=await (await page.request.post(endpoint,{data:{brief:'Reenvio sintético'}})).json();
+ assert.equal(duplicate.executionId,research.executionId);
+ const result=JSON.parse(await readFile(new URL('./research-result.json',import.meta.url),'utf8'));result.productId=researchProduct;
+ const wrong={...result,productId:researchProduct+200};
+ assert.equal((await page.request.post(`http://127.0.0.1:18099/fixture/research/${research.executionId}/complete`,{data:wrong})).status(),400);
+ const response=await page.request.post(`http://127.0.0.1:18099/fixture/research/${research.executionId}/complete`,{data:result});
+ assert.equal(response.status(),200,await response.text());
+ await page.reload();await page.getByRole('button',{name:'Aplicar Big Idea de Atena'}).click();
+ await page.getByText('Versão vigente: v1').waitFor();
+ assert.equal((await page.request.post(endpoint+`/${research.executionId}/adopt`)).status(),200);
+ const saved=await (await page.request.get(`http://127.0.0.1:18099/api/products/${researchProduct}/big-idea`)).json();
+ assert.equal(saved.history.length,1);assert.equal(saved.current.content.centralIdea,result.bigIdea.centralIdea);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),true,'Overflow pesquisa '+device);
+ assert.deepEqual(errors,[]);
+ await page.screenshot({path:`${folder}/atena-${device.replaceAll(' ','-')}.png`});
+ results.push({device,create:true,evolve:true,history:true,research:true,duplicateReused:true,crossProductBlocked:true,adoptPersisted:true,horizontalOverflow:false});await context.close();
 }
 console.log(JSON.stringify({result:'PASS',results,commercialEvents:0}));
 } finally {await browser.close();}

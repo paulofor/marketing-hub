@@ -15,6 +15,29 @@ import org.springframework.web.bind.annotation.*;
 public class ProductBigIdeaController {
   private final BigIdeaService service;
 
+  /** Consulta a pesquisa de Atena desta identidade sem iniciar trabalho. */
+  @GetMapping("/research")
+  public com.marketinghub.product.bigidea.v1.service.research.BigIdeaResearchView research(
+      @PathVariable Long productId) {
+    return service.research(productId);
+  }
+
+  /** Solicita somente a primeira Big Idea, preservando planejamento e autorizações comerciais. */
+  @PostMapping("/research")
+  public com.marketinghub.product.bigidea.v1.service.research.BigIdeaResearchView requestResearch(
+      @PathVariable Long productId,
+      @Valid @RequestBody
+          com.marketinghub.product.bigidea.v1.service.research.StartBigIdeaResearchRequest
+              request) {
+    return service.requestResearch(productId, request);
+  }
+
+  /** Registra proposta concluída de Atena após comando explícito da gestão de produtos. */
+  @PostMapping("/research/{executionId}/adopt")
+  public BigIdeaView adopt(@PathVariable Long productId, @PathVariable Long executionId) {
+    return service.adoptResearch(productId, executionId);
+  }
+
   /** Lê ideia vigente e histórico do produto. */
   @GetMapping
   public BigIdeaWorkspace get(@PathVariable Long productId) {

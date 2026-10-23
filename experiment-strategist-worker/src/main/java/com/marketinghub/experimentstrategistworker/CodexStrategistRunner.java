@@ -42,15 +42,30 @@ public class CodexStrategistRunner {
 
   /** Executa pesquisa efêmera e devolve parecer e consumo cumulativo auditáveis. */
   public Map<String, Object> run(StrategistJob job) throws IOException, InterruptedException {
-    Path output = Files.createTempFile("experiment-strategist-", ".json");
-    Path log = Files.createTempFile("experiment-strategist-", ".log");
+    return run(job, null, null);
+  }
+
+  /** Preserva resposta e eventos em armazenamento durável quando a fila exige recuperação. */
+  Map<String, Object> run(StrategistJob job, Path preservedOutput, Path preservedEvents)
+      throws IOException, InterruptedException {
+    Path output =
+        preservedOutput == null
+            ? Files.createTempFile("experiment-strategist-", ".json")
+            : preservedOutput;
+    Path log =
+        preservedEvents == null
+            ? Files.createTempFile("experiment-strategist-", ".log")
+            : preservedEvents;
+    boolean bigIdea = BigIdeaResearchContract.MODE.equals(job.authorityMode());
     boolean clarityAvailable = isClarityApiTokenAvailable();
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
     Path schema =
         materialize(
-            assumptions
-                ? "prompts/experiment-strategist/v1/commercial-assumptions-schema.json"
-                : "prompts/experiment-strategist/v2/research-schema.json",
+            bigIdea
+                ? "prompts/product-big-idea/v1/research-schema.json"
+                : assumptions
+                    ? "prompts/experiment-strategist/v1/commercial-assumptions-schema.json"
+                    : "prompts/experiment-strategist/v2/research-schema.json",
             ".json");
     Path mcp = materialize("mcp/experiment-strategist.mjs", ".mjs");
     Path clarityMcp = materialize("mcp/clarity-aggregate.mjs", ".mjs");
@@ -62,10 +77,11 @@ public class CodexStrategistRunner {
       builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
       if (clarityAvailable)
         builder.environment().put("CLARITY_API_TOKEN_FILE", properties.getClarityApiTokenFile());
+      String renderedPrompt = prompt(job, clarityAvailable);
+      if (preservedOutput != null)
+        Files.writeString(output.resolveSibling("model-prompt.md"), renderedPrompt);
       Process process = builder.start();
-      process
-          .getOutputStream()
-          .write(prompt(job, clarityAvailable).getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(renderedPrompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       CodexTelemetryReporter.Session session =
           telemetry == null ? null : telemetry.monitor(job.id(), process, log);
@@ -79,49 +95,58 @@ public class CodexStrategistRunner {
         if (process.exitValue() != 0)
           throw new IllegalStateException(
               "Codex encerrou com codigo " + process.exitValue() + ": " + Files.readString(log));
-        String raw = Files.readString(output);
-        JsonNode result = json.readTree(raw);
-        validate(result, assumptions);
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
-        Map<String, Object> recommendation = new LinkedHashMap<>();
-        recommendation.put("diagnosis", result.get("diagnosis"));
-        if (!assumptions)
-          recommendation.put("behavioralAssessment", result.get("behavioralAssessment"));
-        recommendation.put(
-            assumptions ? "proposedAssumptions" : "marketIntelligence",
-            assumptions ? result.get("proposedAssumptions") : result.get("marketIntelligence"));
-        recommendation.put(
-            assumptions ? "evidenceQuality" : "portfolioAssessment",
-            assumptions ? result.get("evidenceQuality") : result.get("portfolioAssessment"));
-        if (!assumptions)
-          recommendation.put("marketStrategicContract", result.get("marketStrategicContract"));
-        recommendation.put("recommendation", result.get("recommendation"));
-        payload.put("recommendationJson", json.writeValueAsString(recommendation));
-        payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
-        payload.put("rawModelResponse", raw);
-        payload.put(
-            "modelName", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
-        payload.put("estimatedCost", null);
-        payload.put("effectiveServiceTier", "STANDARD");
-        TokenUsage usage = readTokenUsage(log);
-        if (usage != null) {
-          payload.put("inputTokens", usage.inputTokens());
-          payload.put("cachedInputTokens", usage.cachedInputTokens());
-          payload.put("outputTokens", usage.outputTokens());
-        }
+        Map<String, Object> payload = payload(job, output, log);
         if (session != null) session.success();
         return payload;
       } finally {
         if (session != null) session.close();
       }
     } finally {
-      Files.deleteIfExists(output);
-      Files.deleteIfExists(log);
+      if (preservedOutput == null) Files.deleteIfExists(output);
+      if (preservedEvents == null) Files.deleteIfExists(log);
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcp);
       Files.deleteIfExists(clarityMcp);
     }
+  }
+
+  /** Reconstrói o callback dos mesmos bytes preservados, sem nova inferência. */
+  Map<String, Object> payload(StrategistJob job, Path output, Path log) throws IOException {
+    String raw = Files.readString(output);
+    JsonNode result = json.readTree(raw);
+    boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
+    boolean bigIdea = BigIdeaResearchContract.MODE.equals(job.authorityMode());
+    if (bigIdea) BigIdeaResearchContract.validate(result, json.readTree(job.evidenceSnapshot()));
+    else validate(result, assumptions);
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
+    Map<String, Object> recommendation = new LinkedHashMap<>();
+    recommendation.put("diagnosis", result.get("diagnosis"));
+    if (!assumptions)
+      recommendation.put("behavioralAssessment", result.get("behavioralAssessment"));
+    recommendation.put(
+        assumptions ? "proposedAssumptions" : "marketIntelligence",
+        assumptions ? result.get("proposedAssumptions") : result.get("marketIntelligence"));
+    recommendation.put(
+        assumptions ? "evidenceQuality" : "portfolioAssessment",
+        assumptions ? result.get("evidenceQuality") : result.get("portfolioAssessment"));
+    if (!assumptions)
+      recommendation.put("marketStrategicContract", result.get("marketStrategicContract"));
+    recommendation.put("recommendation", result.get("recommendation"));
+    payload.put("recommendationJson", bigIdea ? raw : json.writeValueAsString(recommendation));
+    payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
+    payload.put("rawModelResponse", raw);
+    payload.put(
+        "modelName", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
+    payload.put("estimatedCost", null);
+    payload.put("effectiveServiceTier", "STANDARD");
+    TokenUsage usage = readTokenUsage(log);
+    if (usage != null) {
+      payload.put("inputTokens", usage.inputTokens());
+      payload.put("cachedInputTokens", usage.cachedInputTokens());
+      payload.put("outputTokens", usage.outputTokens());
+    }
+    return payload;
   }
 
   /** Lê o último total completo do Codex sem somar eventos cumulativos nem inventar tokens. */
@@ -241,9 +266,11 @@ public class CodexStrategistRunner {
   /** Resolve o prompt com evidencias e biblioteca comportamental versionadas. */
   private String prompt(StrategistJob job, boolean clarityAvailable) throws IOException {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
-    return read(assumptions
-            ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
-            : "prompts/experiment-strategist/v2/research.md")
+    return read(BigIdeaResearchContract.MODE.equals(job.authorityMode())
+            ? "prompts/product-big-idea/v1/research.md"
+            : assumptions
+                ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
+                : "prompts/experiment-strategist/v2/research.md")
         .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
         .replace("{{BEHAVIORAL_MEMORY}}", "Incluida no snapshot de evidencias.")
         .replace("{{BEHAVIORAL_SCIENCE_LIBRARY}}", read("behavioral-science/v1/library.md"))

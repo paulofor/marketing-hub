@@ -16,20 +16,28 @@ public class StrategistScheduler {
   private final CodexStrategistRunner runner;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
+  @Autowired(required = false)
+  private BigIdeaResearchDelivery bigIdeaDelivery;
+
   /** Configura a fila canônica e o executor somente leitura. */
   public StrategistScheduler(StrategistBackendClient backend, CodexStrategistRunner runner) {
     this.backend = backend;
     this.runner = runner;
   }
 
-  /** Processa em PLAY no máximo uma pesquisa por ciclo para preservar custo e rastreabilidade. */
+  /** Recupera recibo antes de reservar uma pesquisa em PLAY, preservando custo e rastreabilidade. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     StrategistJob job = null;
     try {
+      if (bigIdeaDelivery != null && bigIdeaDelivery.replay()) return;
       job = backend.claim();
       if (job == null) return;
+      if (BigIdeaResearchContract.MODE.equals(job.authorityMode())) {
+        bigIdeaDelivery.start(job);
+        return;
+      }
       if (!"READ_ONLY_RESEARCH".equals(job.authorityMode())
           && !"COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode()))
         throw new IllegalStateException("Autoridade da pesquisa não é somente leitura.");

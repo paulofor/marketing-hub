@@ -21,11 +21,46 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class BigIdeaService {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private BigIdeaResearch research;
+
   private final ProductRepository products;
   private final ProductBigIdeaRepository revisions;
   private final ProductBigIdeaBindingRepository bindings;
   private final ObjectMapper json;
   private final Validator validator;
+
+  /** Consulta pesquisa isolada de Atena, mantendo experimentos e revisões existentes. */
+  @Transactional(readOnly = true)
+  public com.marketinghub.product.bigidea.v1.service.research.BigIdeaResearchView research(
+      Long productId) {
+    return research.current(products.findById(productId).orElseThrow(() -> missing()));
+  }
+
+  /** Serializa o pedido para impedir pesquisas duplicadas por duplo clique. */
+  @Transactional
+  public com.marketinghub.product.bigidea.v1.service.research.BigIdeaResearchView requestResearch(
+      Long productId,
+      com.marketinghub.product.bigidea.v1.service.research.StartBigIdeaResearchRequest request) {
+    return research.start(products.findLockedById(productId).orElseThrow(() -> missing()), request);
+  }
+
+  /** Adota os mesmos bytes da proposta concluída, sem sobrescrever uma revisão concorrente. */
+  @Transactional
+  public BigIdeaView adoptResearch(Long productId, Long executionId) {
+    Product product = products.findLockedById(productId).orElseThrow(() -> missing());
+    BigIdeaContent content = research.proposal(product, executionId);
+    String reason = "Primeira Big Idea — pesquisa de Atena #" + executionId;
+    if (product.getBigIdea() != null) {
+      var existing = view(product.getBigIdea());
+      if (reason.equals(existing.changeReason()) && content.equals(existing.content()))
+        return existing;
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A Big Idea foi definida durante a pesquisa. Preserve a revisão e confira a evolução manualmente.");
+    }
+    return create(product, content, reason, "Atena — pesquisa #" + executionId, null);
+  }
 
   /** Consulta o registro persistido; ausência é explícita e nunca inventa uma ideia. */
   @Transactional(readOnly = true)
@@ -36,7 +71,7 @@ public class BigIdeaService {
         product.getBigIdea() == null ? "MISSING" : "DEFINED",
         view(product.getBigIdea()),
         revisions.findByProductIdOrderByRevisionDesc(productId).stream().map(this::view).toList(),
-        "Atena cria a primeira Big Idea no planejamento. Você pode definir ou evoluir aqui. Experimentos iniciados preservam sua versão; mudanças comerciais seguem um novo ciclo.");
+        "Você pode pedir a primeira Big Idea a Atena nesta tela ou durante o planejamento. Defina ou evolua a ideia com motivo e histórico. Experimentos iniciados preservam sua versão; mudanças comerciais seguem um novo ciclo.");
   }
 
   /** Grava uma nova versão somente quando o operador editou a revisão ainda vigente. */

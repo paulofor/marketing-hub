@@ -37,6 +37,9 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class ExperimentStrategistExecutionService {
+  @Autowired(required = false)
+  private com.marketinghub.product.bigidea.v1.service.BigIdeaResearch bigIdeaResearch;
+
   private static final Logger log =
       LoggerFactory.getLogger(ExperimentStrategistExecutionService.class);
   private static final long STALE_EXECUTION_SECONDS = 120L;
@@ -191,6 +194,9 @@ public class ExperimentStrategistExecutionService {
     for (ExperimentStrategistExecution value :
         repository.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
             ExperimentStrategistExecutionStatus.RUNNING, cutoff)) {
+      // A fila de Big Idea preserva seu recibo no executor e nunca reinicia inferência por lease.
+      if (com.marketinghub.product.bigidea.v1.service.BigIdeaResearch.MODE.equals(
+          value.getAuthorityMode())) continue;
       if (repository.countRecentActiveTelemetry(value.getId(), cutoff) > 0) continue;
       if (LEASE_RECOVERED.equals(value.getErrorMessage())) {
         value.setStatus(ExperimentStrategistExecutionStatus.FAILED);
@@ -286,9 +292,19 @@ public class ExperimentStrategistExecutionService {
     return behavioralSnapshotResponse(behavioralSnapshots.save(snapshot));
   }
 
-  /** Persiste parecer e custo estimável sem aplicar a recomendação estratégica. */
+  /** Persiste parecer e custo estimável; reenvio idêntico da Big Idea recupera o mesmo aceite. */
   @Transactional
   public ExecutionResponse complete(Long id, CompleteRequest request) {
+    var existing =
+        repository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (com.marketinghub.product.bigidea.v1.service.BigIdeaResearch.MODE.equals(
+            existing.getAuthorityMode())
+        && existing.getStatus() == ExperimentStrategistExecutionStatus.COMPLETED
+        && request != null
+        && java.util.Objects.equals(existing.getRawModelResponse(), request.rawModelResponse()))
+      return response(existing);
     ExperimentStrategistExecution value = running(id);
     if (request == null
         || blank(request.alternativesJson())
@@ -297,6 +313,9 @@ public class ExperimentStrategistExecutionService {
         || blank(request.rawModelResponse()))
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parecer estrategico incompleto.");
     validateMarketStrategicContract(value, request);
+    if (com.marketinghub.product.bigidea.v1.service.BigIdeaResearch.MODE.equals(
+        value.getAuthorityMode()))
+      bigIdeaResearch.validateResult(value, request.rawModelResponse());
     value.setAlternativesJson(request.alternativesJson());
     value.setRecommendationJson(request.recommendationJson());
     value.setPublicSourcesJson(request.publicSourcesJson());
@@ -373,9 +392,17 @@ public class ExperimentStrategistExecutionService {
     }
   }
 
-  /** Persiste a causa completa de uma falha tecnica. */
+  /** Persiste a falha; repetições da pesquisa isolada preservam o primeiro diagnóstico. */
   @Transactional
   public ExecutionResponse fail(Long id, FailRequest request) {
+    var existing =
+        repository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (com.marketinghub.product.bigidea.v1.service.BigIdeaResearch.MODE.equals(
+            existing.getAuthorityMode())
+        && existing.getStatus() == ExperimentStrategistExecutionStatus.FAILED)
+      return response(existing);
     ExperimentStrategistExecution value = running(id);
     value.setStatus(ExperimentStrategistExecutionStatus.FAILED);
     value.setErrorMessage(

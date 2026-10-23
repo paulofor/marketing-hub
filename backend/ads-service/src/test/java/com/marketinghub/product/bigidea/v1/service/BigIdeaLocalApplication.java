@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 @Import({
   BigIdeaService.class,
   ProductBigIdeaController.class,
+  BigIdeaResearchLocalFixture.class,
   BigIdeaLocalApplication.FixtureController.class
 })
 public class BigIdeaLocalApplication {
@@ -67,7 +68,7 @@ public class BigIdeaLocalApplication {
     var jdbc = new JdbcTemplate(source);
     jdbc.execute("CREATE TABLE IF NOT EXISTS product(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute("CREATE TABLE IF NOT EXISTS agent_task(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
-    for (long id = 99101; id <= 99105; id++)
+    for (long id = 99101; id <= 99109; id++)
       jdbc.update("INSERT IGNORE INTO product(id) VALUES (?)", id);
     jdbc.execute("INSERT IGNORE INTO agent_task(id) VALUES (90001)");
     jdbc.execute(
@@ -166,6 +167,7 @@ public class BigIdeaLocalApplication {
               var p = new Product();
               p.setId(id);
               p.setName("Produto sintético " + id);
+              p.setAutomaticExecutionEnabled(true);
               Object revision = rows.getFirst().get("current_big_idea_id");
               if (revision != null)
                 p.setBigIdea(revisions.findById(((Number) revision).longValue()).orElseThrow());

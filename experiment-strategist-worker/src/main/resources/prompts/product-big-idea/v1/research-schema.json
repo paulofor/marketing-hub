@@ -1,0 +1,208 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "productId",
+    "bigIdea",
+    "alternatives",
+    "selectionReason",
+    "demandAssessment",
+    "sources"
+  ],
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "const": "PRODUCT_BIG_IDEA_RESEARCH_V1"
+    },
+    "productId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bigIdea": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "centralIdea",
+        "audience",
+        "desire",
+        "promise",
+        "mechanism",
+        "evidence",
+        "limits"
+      ],
+      "properties": {
+        "centralIdea": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "desire": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "promise": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "mechanism": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "limits": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "idea",
+          "benefit",
+          "risk",
+          "effort",
+          "fit"
+        ],
+        "properties": {
+          "idea": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 900
+          },
+          "benefit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 900
+          },
+          "risk": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 900
+          },
+          "effort": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 900
+          },
+          "fit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 900
+          }
+        }
+      }
+    },
+    "selectionReason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1600
+    },
+    "demandAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "frequencyAndUrgency",
+        "willingnessToPaySignals",
+        "evidenceAgainst",
+        "gaps",
+        "validationPlan"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "HYPOTHESIS"
+        },
+        "frequencyAndUrgency": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1600
+        },
+        "willingnessToPaySignals": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1600
+        },
+        "evidenceAgainst": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1600
+        },
+        "gaps": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1600
+        },
+        "validationPlan": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1600
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "title",
+          "accessedAt",
+          "evidenceClass",
+          "learning"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "accessedAt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "evidenceClass": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "learning": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

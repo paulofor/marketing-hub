@@ -54,6 +54,20 @@ class RetirementContractTest(unittest.TestCase):
         self.assertIn('18096}:8096', hotmart)
         self.assertNotIn('"8096:8096"', hotmart)
 
+    def test_standalone_collector_descriptors_pass_real_compose_validation(self):
+        env = {**os.environ, "RADAR_META_TOKEN": "local-contract-only",
+               "MOIS_META_AD_LIBRARY_COLLECTOR_IMAGE": "test-only:local",
+               "MOIS_HOTMART_COLLECTOR_IMAGE": "test-only:local"}
+        for service in ["mois-meta-ad-library-collector", "mois-hotmart-collector"]:
+            result = subprocess.run(
+                ["docker", "compose", "-p", os.environ.get("PDE_LOCAL_COMPOSE_PROJECT", "retirement-schema"), "-f",
+                 str(ROOT / service / "docker-compose.deploy.yml"), "config", "--format", "json"],
+                env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            config = json.loads(result.stdout)["services"][service]
+            self.assertNotIn("build", config)
+            self.assertEqual(config["restart"], "no")
+
     def test_legacy_remains_explicit_and_no_cross_stack_cleanup(self):
         for name in ["mds-ci", "mois-ci", "oprm-ci"]:
             source = (ROOT / f".github/workflows/{name}.yml").read_text()

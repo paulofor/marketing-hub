@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-walkthrough-primeira-pessoa-contexto-concreto",
+  "collection": "video",
+  "title": "Testar vídeo contextualizado em primeira pessoa para explicar situações concretas",
+  "finding": "Em estudo não randomizado (N=100), um vídeo contextualizado em primeira pessoa gerou maiores avaliações imediatas de engajamento narrativo (5,54 vs 4,24/7) e empatia de estado (3,15 vs 2,21/4) que 27 slides estáticos. Os formatos diferiam em vários aspectos.",
+  "mechanism": "Continuidade audiovisual, contextualização espacial e apresentação sequencial podem facilitar a compreensão de acontecimentos. Essa é uma hipótese: o estudo não isolou movimento, áudio, ritmo, ponto de vista nem quantidade percebida de informação.",
+  "commercialApplication": "Para Apolo, comparar vídeo contextualizado de uma necessidade real e mecanismo do produto com sequência estática informacional equivalente. Usar contexto respeitoso e evidências verificáveis; não explorar vulnerabilidades.",
+  "evidenceStrength": "Estudo acadêmico com N=100, comparação não randomizada e medidas subjetivas imediatas; associação significativa nos grupos, sem prova de causalidade isolada ou resultado comercial.",
+  "publishedOn": "2026-10-23",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Em A/B randomizado com informação, duração e áudio controlados quando possível, vídeo contextualizado melhorará compreensão da situação e do produto sem elevar desconforto. Medir compreensão e conclusão; acompanhar CTA e pagamento separadamente.",
+  "risks": "Confundir engajamento com conversão ou empatia com intenção de compra; representação inadequada de deficiência, exagero emocional, diferenças de produção e seleção de audiência.",
+  "limits": "Pesquisa sobre educação para acessibilidade, não publicidade; formatos não equivalentes e grupos sequenciais. Sem dado de consumidores brasileiros, vendas, retenção publicitária ou eficácia do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-23-video-primeira-pessoa-contexto-concreto.md",
+  "sourceTitle": "Fonte revisada: narrativa em primeira pessoa versus slides para apresentar barreiras concretas",
+  "sourceSha256": "d3d42f6e1ee4035f6108b9d6b2a15b627777c58d753d3e6313ba3ede76619d16"
+}

@@ -2,7 +2,10 @@ services:
   mois-hotmart-collector:
     image: ${MOIS_HOTMART_COLLECTOR_IMAGE}
     container_name: mois-hotmart-collector
-    restart: unless-stopped
+    restart: "no"
+    mem_limit: 384m
+    cpus: "0.5"
+    pids_limit: 128
     environment:
       - COLLECTOR_HOTMART_USERNAME_FILE=/run/secrets/hotmart_username
       - COLLECTOR_HOTMART_PASSWORD_FILE=/run/secrets/hotmart_password
@@ -12,7 +15,7 @@ services:
       - COLLECTOR_SCHEDULER_MAX_PRODUCTS=${COLLECTOR_SCHEDULER_MAX_PRODUCTS:-400}
       - APP_LOG_FILE=${APP_LOG_FILE:-/app/logs/marketinghub-mois.log}
     ports:
-      - "8096:8096"
+      - "${MOIS_HOTMART_PORT:-18096}:8096"
     volumes:
       - ${MOIS_HOTMART_LOG_DIR:-/opt/marketinghub/mois-hotmart-collector/logs}:/app/logs
       - ${COLLECTOR_HOTMART_USERNAME_HOST_FILE:-/root/infra/marketplace-credentials/hotmart/username}:/run/secrets/hotmart_username:ro

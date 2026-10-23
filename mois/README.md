@@ -17,7 +17,7 @@ mvn spring-boot:run
 
 - Porta padrão: `8094` (configurável por `MOIS_PORT`)
 - Base URL local: `http://localhost:8094`
-- Base URL de deploy atual: `http://177.153.62.107:8094`
+- Executor suspenso; destino reservado para retomada autorizada: `163.245.200.7:8094`. Não há instância ativa. O workflow exige `activate=true`, após PR e conferência operacional.
 
 ## Endpoints de domínio disponíveis
 

@@ -73,15 +73,6 @@ if ! docker image inspect "${VIDEO_MGMT_IMAGE}:${VIDEO_MGMT_IMAGE_TAG}" >/dev/nu
   fi
 fi
 
-cleanup_previous_tags() {
-  local repository="$1"
-  local keep_tag="$2"
-
-  docker image ls "${repository}" --format '{{.Repository}}:{{.Tag}}' \
-    | awk -F':' -v keep_tag="${keep_tag}" '$2 != "<none>" && $2 != keep_tag {print $0}' \
-    | xargs -r docker image rm >/dev/null 2>&1 || true
-}
-
 # Atualiza somente o módulo de vídeo sem reiniciar backend/frontend
 # (backend/frontend permanecem no host 191.252.181.168)
 VIDEO_MGMT_IMAGE="${VIDEO_MGMT_IMAGE}" \
@@ -95,7 +86,5 @@ HEYGEN_API_KEY_HOST_FILE="${HEYGEN_API_KEY_HOST_FILE}" \
 RUNWAY_API_KEY_HOST_FILE="${RUNWAY_API_KEY_HOST_FILE}" \
 docker compose -f docker-compose.video.yml up -d --no-deps video-management
 
-cleanup_previous_tags "${VIDEO_MGMT_IMAGE}" "${VIDEO_MGMT_IMAGE_TAG}"
-
-docker image prune -f >/dev/null 2>&1 || true
-rm -f "${VIDEO_TAR}" >/dev/null 2>&1 || true
+# Imagens anteriores ficam disponíveis para rollback; limpeza exige avaliação separada.
+rm -f "${VIDEO_TAR}"

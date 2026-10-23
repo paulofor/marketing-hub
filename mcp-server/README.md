@@ -69,15 +69,15 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_FACEBOOK_ADS_PATH` (default `http://191.252.210.83:8082/public/runtime-logs/tail?lines=300`);
 - `MCP_LOG_EMAIL_SERVICE_PATH` (default `http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log`);
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `http://163.245.200.7:8092/api/v1/logs/runtime?lines=200`);
-- `MCP_LOG_MDS_PATH` (default `http://177.153.62.107:8091/actuator/logfile`);
+- `MCP_LOG_MDS_PATH` (default `http://163.245.200.7:8091/actuator/logfile`);
 - `MCP_LOG_MOIS_PATH` (default `http://191.252.120.96:8097/actuator/logfile`);
 - `MCP_LOG_MOIS_SALES_LIBRARY_WORKER_PATH` (MOIS Sales Library Worker; default `http://191.252.120.96:8097/actuator/logfile`);
-- `MCP_LOG_MOIS_HOTMART_PATH` (default `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`);
-- `MCP_LOG_CLICKBANK_COLETOR_MOIS_PATH` (default `http://177.153.62.107:9096/internal/ops-monitor/logfile`);
+- `MCP_LOG_MOIS_HOTMART_PATH` (default `http://163.245.200.7:18096/ops-monitor/mois-hotmart-log`);
+- `MCP_LOG_CLICKBANK_COLETOR_MOIS_PATH` (default `http://163.245.200.7:9096/internal/ops-monitor/logfile`);
 - `MCP_LOG_OPRM_COLETOR_RECEITA_PATH` (default `http://191.252.120.96:8094/actuator/logfile`);
 - `MCP_LOG_OPS_MONITOR_WORKER_PATH` (default `http://191.252.120.96:8098/actuator/logfile`).
 - `MCP_LOG_PDE_PLATFORM_BACKEND_PATH` (default `http://163.245.200.7:8096/actuator/logfile`);
-- `MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH` (default `http://177.153.62.107:8095/actuator/logfile`);
+- `MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH` (default `http://163.245.200.7:8095/actuator/logfile`);
 - `MCP_LOG_CUSTOMER_AGENT_WORKER_PATH` (default `http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log`);
 - `MCP_LOG_FINANCIAL_AGENT_WORKER_PATH` (default `http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log`);
 - `MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH` (default `http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile`);
@@ -183,7 +183,7 @@ O tool `vps_host_inventory` consulta inventário físico e operacional dos VPS p
 Configuração:
 
 - `MCP_VPS_HOST_INVENTORY_ENABLED` (default `false`);
-- `MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS` (default `191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7,163.245.202.80`);
+- `MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS` (default `191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,163.245.200.7,163.245.202.80`);
 - `MCP_VPS_HOST_INVENTORY_SSH_COMMAND` (default `ssh`);
 - `MCP_VPS_HOST_INVENTORY_USER` (default `root`);
 - `MCP_VPS_HOST_INVENTORY_IDENTITY_FILE` (default `/opt/marketinghub/mcp/ssh/id_ed25519`);

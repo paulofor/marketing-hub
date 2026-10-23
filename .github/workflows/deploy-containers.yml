@@ -19,7 +19,7 @@ concurrency:
 
 env:
   APP_VPS_IP: 191.252.181.168
-  VIDEO_VPS_IP: 177.153.62.107
+  VIDEO_VPS_IP: 163.245.200.7
   VPS_USER: root
   DEPLOY_DIR: /opt/marketinghub/containers
   BACKEND_IMAGE: marketinghub-backend
@@ -727,6 +727,10 @@ jobs:
             "printf '%s\\n' '${GIT_SHA}' > '${DEPLOY_DIR}/.deployed-app-revision.tmp' && mv '${DEPLOY_DIR}/.deployed-app-revision.tmp' '${DEPLOY_DIR}/.deployed-app-revision'"
 
   deploy-video-management:
+    concurrency:
+      group: deploy-vps-163-245-200-7
+      queue: max
+      cancel-in-progress: false
     name: Deploy video management
     runs-on: ubuntu-latest
     needs: [detect-changes, video-management-image]
@@ -795,12 +799,11 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
-          secret_file=/root/infra/openai-token/openai_api_key
-          if [[ -z "${OPENAI_API_KEY}" ]]; then
-            ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
-              "test -f '${secret_file}' && test -s '${secret_file}'"
+          secret_file=/root/infra/apollo-secrets/openai_api_key
+          if ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "test -f '${secret_file}' && test -s '${secret_file}'"; then
             exit 0
           fi
+          test -n "${OPENAI_API_KEY}" || { echo 'Credencial própria de Apolo ausente.' >&2; exit 1; }
           printf '%s' "${OPENAI_API_KEY}" | ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
             "OPENAI_API_KEY_HOST_FILE='${secret_file}' /bin/bash '${DEPLOY_DIR}/bin/reconcile-video-planner-secret.sh'"
 
@@ -822,7 +825,7 @@ jobs:
 
           retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-video-only.sh"
           retry timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} VIDEO_PULL=${{ needs.detect-changes.outputs.video }} VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"
+            "IMAGE_TAG=${GIT_SHA} VIDEO_PULL=${{ needs.detect-changes.outputs.video }} VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} OPENAI_API_KEY_HOST_FILE=/root/infra/apollo-secrets/openai_api_key GEMINI_API_KEY_HOST_FILE=/root/infra/apollo-secrets/gemini_api_key LUMA_API_KEY_HOST_FILE=/root/infra/apollo-secrets/luma_api_key KLING_API_KEY_HOST_FILE=/root/infra/apollo-secrets/kling_api_key HEYGEN_API_KEY_HOST_FILE=/root/infra/apollo-secrets/heygen_api_key RUNWAY_API_KEY_HOST_FILE=/root/infra/apollo-secrets/runway_api_key DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"
 
       - name: Require healthy video management revision
         env:

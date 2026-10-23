@@ -125,7 +125,7 @@ Com `management.endpoints.web.base-path=/internal/ops-monitor` e `management.end
 
 Exemplo em produção (mesmo host do MOIS):
 
-- `http://177.153.62.107:9096/internal/ops-monitor/logfile`
+- `http://163.245.200.7:9096/internal/ops-monitor/logfile`
 
 ## Operação e reativação (GitHub Actions)
 
@@ -145,7 +145,7 @@ Use o script central do repositório para build/push/deploy:
 
 ```bash
 cd /workspace/marketing-hub
-DEPLOY_HOST=ubuntu@177.153.62.107 \
+DEPLOY_HOST=ubuntu@163.245.200.7 \
 IMAGE_TAG=2026.05.06-1 \
 IMAGE_REPO=marketinghub/mois-clickbank-collector \
 bash ./scripts/deploy-mois-clickbank-collector.sh

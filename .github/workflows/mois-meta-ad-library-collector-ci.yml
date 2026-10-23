@@ -12,6 +12,19 @@ on:
       - "mois-meta-ad-library-collector/**"
       - ".github/workflows/mois-meta-ad-library-collector-ci.yml"
   workflow_dispatch:
+    inputs:
+      operation:
+        description: "Preparar parado ou ativar após conferir necessidade, fila e credenciais"
+        required: true
+        default: prepare
+        type: choice
+        options:
+          - prepare
+          - activate
+      recovery_sha:
+        description: "Revisão esperada pelo reconciliador"
+        required: false
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -23,6 +36,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        working-directory: ${{ github.workspace }}
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,12 +56,19 @@ jobs:
     name: Build and Push Image (MOIS Meta Ad Library Collector)
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        working-directory: ${{ github.workspace }}
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -71,17 +98,28 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
+    concurrency:
+      group: deploy-vps-163-245-200-7
+      queue: max
+      cancel-in-progress: false
     name: Deploy (MOIS Meta Ad Library Collector)
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     environment: production
     env:
-      DEPLOY_HOST: 177.153.62.107
+      DEPLOY_HOST: 163.245.200.7
       DEPLOY_USER: root
       REMOTE_PATH: /opt/marketinghub/mois-meta-ad-library-collector
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        working-directory: ${{ github.workspace }}
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Prepare SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}
@@ -95,10 +133,33 @@ jobs:
       - name: Sync project files
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
-          rsync -az --delete -e "ssh ${SSH_COMMON_ARGS}" --exclude target mois-meta-ad-library-collector/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
-      - name: Deploy with Docker Compose
+          rsync -az --delete -e "ssh ${SSH_COMMON_ARGS}" --exclude target --exclude logs --exclude .env mois-meta-ad-library-collector/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
+      - name: Copy lifecycle command
+        run: scp ${SSH_COMMON_ARGS} scripts/apply-on-demand-collector.sh "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}/apply-on-demand-collector.sh"
+
+      - name: Login to registry without exposing credential
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "${GHCR_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
+      - name: Preserve or provision dedicated collector credential
         env:
           RADAR_META_TOKEN: ${{ secrets.RADAR_META_TOKEN }}
         run: |
-          test -n "${RADAR_META_TOKEN}" || { echo "RADAR_META_TOKEN ausente." >&2; exit 1; }
-          printf '%s\n' "${RADAR_META_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "read -r RADAR_META_TOKEN && export RADAR_META_TOKEN && cd ${REMOTE_PATH} && export MOIS_META_AD_LIBRARY_COLLECTOR_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA} && export COMPOSE_PROJECT_NAME=marketinghub-mois-meta-ad-library-collector && printf '%s' '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin && (docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull || (sleep 10 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull) || (sleep 20 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull)) && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans && docker image prune -af"
+          set -euo pipefail
+          if ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "test -s '${REMOTE_PATH}/.env'"; then
+            exit 0
+          fi
+          test -n "${RADAR_META_TOKEN}" || { echo 'Credencial dedicada ausente.' >&2; exit 1; }
+          printf 'RADAR_META_TOKEN=%s\n' "${RADAR_META_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "umask 077; cat > '${REMOTE_PATH}/.env'"
+
+      - name: Prepare or explicitly activate collector
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "cd '${REMOTE_PATH}' && export MOIS_META_AD_LIBRARY_COLLECTOR_IMAGE='${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA}' && export COMPOSE_PROJECT_NAME='marketinghub-mois-meta-ad-library-collector' && docker compose -f docker-compose.deploy.yml pull && bash ./apply-on-demand-collector.sh '${OPERATION}' mois-meta-ad-library-collector"
+
+      - name: Remove registry credential
+        if: always()
+        run: ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'docker logout ghcr.io >/dev/null 2>&1 || true'

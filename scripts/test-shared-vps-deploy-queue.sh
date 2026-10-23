@@ -137,6 +137,13 @@ done < <(grep -rlF "${AGENT_QUEUE_GROUP}" "${QUEUE_TEST_ROOT}/.github/workflows"
 
 PUBLIC_HOST_QUEUE_GROUP="group: deploy-vps-163-245-200-7"
 PUBLIC_HOST_QUEUE_WORKFLOWS=(
+  ".github/workflows/deploy-containers.yml"
+  ".github/workflows/mois-meta-ad-library-collector-ci.yml"
+  ".github/workflows/mois-hotmart-collector-ci.yml"
+  ".github/workflows/mois-clickbank-collector-ci.yml"
+  ".github/workflows/mds-ci.yml"
+  ".github/workflows/mois-ci.yml"
+  ".github/workflows/oprm-ci.yml"
   ".github/workflows/harness-library-api-ci.yml"
   ".github/workflows/harness-library-api-publication.yml"
   ".github/workflows/lead-portal-payments-ci.yml"

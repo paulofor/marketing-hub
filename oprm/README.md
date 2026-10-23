@@ -155,21 +155,10 @@ Fluxo implementado:
 - heartbeat do worker publicado para `POST /api/oprm/heartbeat`
 - logs com `correlationId` via MDC no processamento de jobs
 
-## Deploy do container (host 177.153.62.107)
+## Execução suspensa
 
-Arquivos de deploy do módulo:
-
-- `oprm/docker-compose.deploy.yml` (override para uso com imagem publicada)
-- `deploy/docker-compose.yml` (stack consolidada com serviço `oprm-worker`)
-- `deploy/bin/apply-oprm-only.sh` (atualização sem reiniciar outros serviços)
-
-Fluxo resumido:
-
-```bash
-IMAGE_TAG=2026.04.15
-docker build -f oprm/Dockerfile -t marketinghub-oprm:${IMAGE_TAG} oprm
-docker save marketinghub-oprm:${IMAGE_TAG} -o /tmp/oprm-image.tar
-scp /tmp/oprm-image.tar deploy/bin/apply-oprm-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
-ssh <usuario>@177.153.62.107
-OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 IMAGE_TAG=${IMAGE_TAG} sudo /opt/marketinghub/containers/apply-oprm-only.sh
-```
+O executor permanece suspenso e seu estado está preservado no backup da retirada do
+VPS `177.153.62.107`. O destino preparado para eventual retomada é `163.245.200.7`.
+Não há container OPRM ativo nesse destino. A publicação deve passar por PR e pipeline
+`.github/workflows/oprm-ci.yml`, com `activate=true` somente após autorização e
+conferência de filas, credenciais e capacidade. Pushes executam testes, sem reativar.

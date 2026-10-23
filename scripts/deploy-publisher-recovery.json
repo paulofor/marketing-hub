@@ -33,6 +33,10 @@
     "inputs": {"operation": "retire"},
     "publication_job": "Retire idle runtime (MOIS Clickbank Collector)"
   },
-  "mds-ci.yml": {"publication_job": "deploy"},
-  "scientific-research-worker-ci.yml": {"publication_job": "deploy"}
+  "mds-ci.yml": {"inputs": {"activate": "false"}},
+  "scientific-research-worker-ci.yml": {"publication_job": "deploy"},
+  "mois-meta-ad-library-collector-ci.yml": {"inputs": {"operation": "prepare"}, "publication_job": "Deploy (MOIS Meta Ad Library Collector)"},
+  "mois-hotmart-collector-ci.yml": {"inputs": {"operation": "prepare"}, "publication_job": "Deploy (MOIS Hotmart Collector)"},
+  "mois-ci.yml": {"inputs": {"activate": "false"}},
+  "oprm-ci.yml": {"inputs": {"activate": "false"}}
 }

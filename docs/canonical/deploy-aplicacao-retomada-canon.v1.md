@@ -2,6 +2,25 @@
 
 ## Contrato operacional
 
+### Retirada do host de vídeo — decisão de 23/10/2026
+
+O host `177.153.62.107` deixa de receber publicações. Apolo passa a `163.245.200.7`,
+com limite de 2 CPUs e 1,5 GiB, sessão Codex própria e segredos em
+`/root/infra/apollo-secrets`, sem sobrescrever credenciais dos produtos.
+Meta Library e Hotmart ficam preservados suspensos nesse destino; Hotmart usa porta
+18096 para não colidir com o backend PDE. Suas publicações manuais usam `prepare`
+por padrão, criando containers parados; `activate` é escolha operacional explícita,
+após conferir fila, credenciais e autorização da coleta. Um push nunca os reativa.
+MDS, MOIS e OPRM legados continuam suspensos; não reativar publicadores já desativados.
+
+As publicações no destino compartilham `deploy-vps-163-245-200-7`, sem cancelamento
+de transações e sem prune global. Cópia de dados e segredos ocorre sob o coordenador,
+sem imprimir valores e com comprovação de integridade; publicação de código ocorre
+somente pelo pipeline após PR. Retomar os publicadores com `prepare-resume` depois
+da homologação local e da preparação de dados, sem iniciar duas cópias do executor.
+O cadastro do monitor precisa distinguir suspensão de falha e preservar o histórico.
+Matriz: [retirada do VPS](../homologacao/retirada-vps-video-2026-10-23.md).
+
 ### TLS do MCP — decisão e recuperação de 20/10/2026
 
 A renovação de `mcpserverdigi.shop` é mantida pelo workflow versionado do MCP,

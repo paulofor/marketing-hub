@@ -3,10 +3,15 @@ services:
     image: ${MOIS_META_AD_LIBRARY_COLLECTOR_IMAGE}
     build: null
     container_name: mois-meta-ad-library-collector
-    restart: unless-stopped
+    restart: "no"
+    mem_limit: 384m
+    cpus: "0.5"
+    pids_limit: 128
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://191.252.181.168}
       META_AD_LIBRARY_ACCESS_TOKEN: ${RADAR_META_TOKEN:?RADAR_META_TOKEN is required}
+    ports:
+      - "8104:8104"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8104/actuator/health/readiness | grep -q UP"]
       interval: 30s

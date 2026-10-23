@@ -10,7 +10,9 @@
     "communication-agent-worker-ci.yml",
     "deploy-containers.yml"
   ],
-  "mcp": ["mcp-server.yml"],
+  "mcp": [
+    "mcp-server.yml"
+  ],
   "pde": [
     "recover-public-proxy.yml",
     "pde-platform-metodo-musa-ci.yml"
@@ -60,5 +62,11 @@
   "scientific-research": [
     "scientific-research-worker-ci.yml"
   ],
-  "feo-legado": []
+  "feo-legado": [],
+  "coletores-kinghost": [
+    "mois-meta-ad-library-collector-ci.yml",
+    "mois-hotmart-collector-ci.yml",
+    "mois-ci.yml",
+    "oprm-ci.yml"
+  ]
 }

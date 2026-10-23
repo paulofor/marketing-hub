@@ -12,12 +12,12 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - Portal Pagamentos (Lead Portal): `http://163.245.200.7:8092/api/v1/logs/runtime?lines=200`
 - MOIS: `http://191.252.120.96:8097/actuator/logfile`
 - MOIS Sales Library Worker (`mois-sales-library-worker`): `http://191.252.120.96:8097/actuator/logfile`
-- Mois Coletor Hotmart: `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`
-- Clickbank Coletor Mois: `http://177.153.62.107:9096/internal/ops-monitor/logfile`
+- Mois Coletor Hotmart: `http://163.245.200.7:18096/ops-monitor/mois-hotmart-log`
+- Clickbank Coletor Mois: `http://163.245.200.7:9096/internal/ops-monitor/logfile`
 - OPRM Coletor Receita/MEI: `http://191.252.120.96:8094/actuator/logfile`
 - Ops Monitor Worker: `http://191.252.120.96:8098/actuator/logfile`
 - PDE Platform Backend: `http://163.245.200.7:8096/actuator/logfile`
-- Video Management Service: `http://177.153.62.107:8095/actuator/logfile`
+- Video Management Service: `http://163.245.200.7:8095/actuator/logfile`
 - Customer Agent Worker: `http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log`
 - Financial Agent Worker: `http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log`
 - Experiment Strategist Worker: `http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile`

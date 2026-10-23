@@ -3,7 +3,16 @@ services:
     image: ${VIDEO_MGMT_IMAGE:-marketinghub-video-management}:${VIDEO_MGMT_IMAGE_TAG:-latest}
     container_name: marketinghub-video-management
     restart: unless-stopped
+    cpus: "${VIDEO_CPU_LIMIT:-2.0}"
+    mem_limit: ${VIDEO_MEMORY_LIMIT:-1536m}
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
+      JAVA_OPTS: ${VIDEO_JAVA_OPTS:--Xmx768m -XX:ActiveProcessorCount=2}
       VIDEO_BACKEND_BASE_URL: ${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168}
       BACKEND_URL: ${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168}
       AGENT_HEALTH_KEY: videomaker

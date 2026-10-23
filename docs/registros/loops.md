@@ -4331,6 +4331,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   após receber o plano correto. Agora deriva o padrão do plano atual, preserva edição manual
   somente na mesma identidade e não oferece pesquisa para plano ausente. Testes de formulário
   e de carregamento impedem diagnóstico de outra identidade.
+- **Recorrência fechada localmente em 23/10/2026:** a pesquisa de Big Idea #21 encontrou
+  Chromium instalado, mas o Codex não repassava `PLAYWRIGHT_BROWSERS_PATH` ao MCP. A lista
+  mínima passa a incluir esse caminho e o executável opcional. Um teste exporta a configuração
+  real do comando Java e abre MCP + navegador em outro processo com ambiente restrito;
+  reproduziu a falha anterior e passou na sandbox e na base da imagem. Pesquisa e custo
+  anteriores foram preservados. Evidência: `docs/homologacao/atena-browser-environment-v1.md`.
 
 ## LOOP-DEDALO-PRODUTO-E-COMUNICACAO-SOBREPOSTOS — um agente otimiza pós e pré-compra
 

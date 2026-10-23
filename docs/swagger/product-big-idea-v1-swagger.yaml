@@ -39,6 +39,45 @@ paths:
         '400': {description: Conteúdo vazio ou inválido}
         '404': {description: Produto inexistente}
         '409': {description: Outra revisão foi gravada; atualizar antes de editar}
+  /api/products/{productId}/big-idea/research:
+    parameters:
+      - in: path
+        name: productId
+        required: true
+        schema: {type: integer, format: int64}
+    get:
+      summary: Consulta pesquisa de Atena, proposta, fontes, estimativa e ações permitidas
+      responses:
+        '200': {description: BigIdeaResearchView; status NOT_REQUESTED/PENDING/RUNNING/COMPLETED/FAILED; canRequest e canAdopt canônicos}
+    post:
+      summary: Solicita primeira Big Idea a Atena na fila existente, sem substituir estratégia do plano
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brief: {type: string, maxLength: 12000, description: Contexto e fontes opcionais}
+      responses:
+        '200': {description: Pesquisa criada ou existente reutilizada, sem duplicar inferência}
+        '409': {description: Produto parado, ideia já definida ou plano ausente}
+  /api/products/{productId}/big-idea/research/{executionId}/adopt:
+    parameters:
+      - in: path
+        name: productId
+        required: true
+        schema: {type: integer, format: int64}
+      - in: path
+        name: executionId
+        required: true
+        schema: {type: integer, format: int64}
+    post:
+      summary: Adota a proposta concluída da mesma identidade, preservando autoria de Atena e história
+      responses:
+        '200': {description: Primeira revisão persistida; reenvio idêntico reutiliza revisão}
+        '400': {description: Contrato da proposta inválido}
+        '409': {description: Outra identidade, pesquisa incompleta ou revisão concorrente}
 components:
   schemas:
     BigIdeaContent:

@@ -29,6 +29,42 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: validar fila e congelamento auditavel da pesquisa estrategica. */
 class ExperimentStrategistExecutionServiceTest {
+  /** Reenvio após perda de callback preserva a mesma resposta e custo, sem autorizar estratégia. */
+  @Test
+  void bigIdeaCompletionIsIdempotentAndLeaseCannotRepeatInference() throws Exception {
+    var repository = mock(ExperimentStrategistExecutionRepository.class);
+    var plan = new CommercialPlan();
+    plan.setId(42L);
+    var value = execution(91L, plan);
+    value.setAuthorityMode(com.marketinghub.product.bigidea.v1.service.BigIdeaResearch.MODE);
+    value.setEvidenceSnapshot("{\"bigIdeaResearch\":{\"productId\":99101}}");
+    value.setStartedAt(Instant.now().minusSeconds(600));
+    when(repository.findById(91L)).thenReturn(Optional.of(value));
+    when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+    when(repository.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(any(), any()))
+        .thenReturn(List.of(value));
+    var service = service(repository);
+    var validator =
+        new com.marketinghub.product.bigidea.v1.service.BigIdeaResearch(
+            repository,
+            mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class),
+            new ObjectMapper(),
+            jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator());
+    ReflectionTestUtils.setField(service, "bigIdeaResearch", validator);
+    org.assertj.core.api.Assertions.assertThatThrownBy(service::claim).hasMessageContaining("404");
+    assertThat(value.getStatus()).isEqualTo(ExperimentStrategistExecutionStatus.RUNNING);
+    var raw =
+        java.nio.file.Files.readString(
+            java.nio.file.Path.of("../../infra/testing/product-big-idea/research-result.json"));
+    var request =
+        new ExperimentStrategistExecutionService.CompleteRequest(
+            "[]", raw, "[]", raw, "gpt-6-astra", new BigDecimal("0.25"));
+    var first = service.complete(91L, request);
+    assertThat(service.complete(91L, request)).isEqualTo(first);
+    assertThat(value.getEstimatedCost()).isEqualByComparingTo("0.25");
+    org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(1)).save(value);
+  }
+
   /** Converte uso completo de Atena em custo da execução sem repetir a pesquisa. */
   @Test
   void pricesCompletedUsageAndPreservesLegacyCosts() {

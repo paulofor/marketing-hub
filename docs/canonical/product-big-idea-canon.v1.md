@@ -23,3 +23,26 @@ Lacuna observada: cadastro e contratos tinham hipótese, promessa e mecanismo, m
 Medir revisões por incoerência e tempo até entrega aceita; conversão e contribuição exigem mercado real. Reversão usa nova revisão, sem apagar auditoria.
 
 Homologação: [matriz local](../homologacao/product-big-idea-v1.md).
+
+## Criação nos produtos em PLAY — decisão de 23/10/2026
+
+A gestão da Big Idea também solicita a primeira proposta diretamente a **Atena**, sem repetir
+o Processo 2 nem criar outro agente. Reutiliza a fila estratégica em modo
+`PRODUCT_BIG_IDEA_RESEARCH`; essa pesquisa não se torna o contrato estratégico vigente do
+plano e não altera experimentos, campanhas, preços ou autorizações. A pesquisa pertence ao
+produto explícito; pedidos repetidos reutilizam seu registro. STOP continua impedindo abertura.
+
+Atena compara três ideias, pesquisa no mínimo duas classes de fontes públicas e explica
+desejo, circunstância de compra, transformação, mecanismo, provas e limites. “Alta demanda”
+é uma hipótese a examinar por recorrência/urgência, esforço das alternativas, sinais de
+disposição de pagar e acesso ao público; buscas, comentários e ofertas concorrentes não
+comprovam compras do produto. Registrar contrapontos, lacunas e teste comercial proposto.
+
+A adoção pela tela preserva autoria e número da pesquisa; a resposta precisa ser completa e
+pertencer à mesma identidade. Uma edição concorrente impede sobrescrita. Evoluções posteriores
+continuam explícitas com motivo e histórico. Novos contextos recebem a ideia; contextos fixados
+não são migrados. Codex registra estimativa de custo por tokens, sem exigir extrato da API.
+
+O executor preserva prompt, resposta e callback; retorno perdido reutiliza os mesmos bytes.
+Interrupção sem resultado ou duas recusas de callback impedem repetição automática de inferência.
+Homologação e fontes conceituais: [criação por Atena](../homologacao/product-big-idea-atena-v1.md).

@@ -15,10 +15,24 @@ import org.springframework.data.jpa.repository.Query;
 /** Responsabilidade: persistir e reservar execucoes auditaveis do Estrategista. */
 public interface ExperimentStrategistExecutionRepository
     extends JpaRepository<ExperimentStrategistExecution, Long> {
+  /** Consulta no SQL apenas a pesquisa de Big Idea da identidade solicitada. */
+  @Query(
+      value =
+          "SELECT * FROM experiment_strategist_execution WHERE authority_mode = 'PRODUCT_BIG_IDEA_RESEARCH' "
+              + "AND JSON_UNQUOTE(JSON_EXTRACT(evidence_snapshot, '$.bigIdeaResearch.productId')) = CAST(?1 AS CHAR) ORDER BY id DESC LIMIT 1",
+      nativeQuery = true)
+  Optional<ExperimentStrategistExecution> findLatestBigIdea(Long productId);
+
   /** Lista as pesquisas recentes de um planejamento. */
   List<ExperimentStrategistExecution> findByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
 
-  /** Busca o parecer mais recente do planejamento para coordenacao entre agentes. */
+  /** Busca o parecer do planejamento sem substituir sua coordenação pela pesquisa de Big Idea. */
+  @Query(
+      value =
+          "SELECT * FROM experiment_strategist_execution WHERE commercial_plan_id = ?1 "
+              + "AND (authority_mode IS NULL OR authority_mode <> 'PRODUCT_BIG_IDEA_RESEARCH') "
+              + "ORDER BY created_at DESC, id DESC LIMIT 1",
+      nativeQuery = true)
   Optional<ExperimentStrategistExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(
       Long planId);
 

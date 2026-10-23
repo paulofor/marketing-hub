@@ -13,6 +13,11 @@ on:
 
   workflow_dispatch:
     inputs:
+      activate:
+        description: "Reativar executor suspenso após conferir fila, credenciais e capacidade"
+        required: true
+        default: false
+        type: boolean
       recovery_sha:
         description: "Revisão esperada pelo reconciliador; vazio mantém a execução normal"
         required: false
@@ -44,7 +49,7 @@ jobs:
         run: mvn -B test
 
   docker:
-    if: github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.activate == true
     runs-on: ubuntu-latest
     needs:
       - test
@@ -98,7 +103,11 @@ jobs:
         run: echo "value=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-vps-163-245-200-7
+      queue: max
+      cancel-in-progress: false
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.activate == true
     needs:
       - test
       - docker
@@ -107,7 +116,7 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 177.153.62.107
+      DEPLOY_HOST: 163.245.200.7
       DEPLOY_USER: root
       IMAGE_REGISTRY: ghcr.io
       IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
@@ -154,4 +163,4 @@ jobs:
               -e MDS_SEARCH_RETRY_MAX_ATTEMPTS='${MDS_SEARCH_RETRY_MAX_ATTEMPTS}' \
               -e MDS_SEARCH_RETRY_BACKOFF_MS='${MDS_SEARCH_RETRY_BACKOFF_MS}' \
               \${IMAGE} \
-            && docker image prune -af"
+            && true"

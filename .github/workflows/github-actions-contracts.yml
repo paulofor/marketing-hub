@@ -96,6 +96,9 @@ on:
       - "scripts/test-docker-compose-up-with-transient-retry.sh"
       - "scripts/test-docker-login-with-transient-retry.sh"
       - "scripts/test-wait-for-shared-vps-docker-capacity.sh"
+      - "scripts/test-retired-video-host.py"
+      - "scripts/video-host-state.py"
+      - "scripts/apply-on-demand-collector.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
@@ -203,6 +206,9 @@ on:
       - "scripts/test-docker-compose-up-with-transient-retry.sh"
       - "scripts/test-docker-login-with-transient-retry.sh"
       - "scripts/test-wait-for-shared-vps-docker-capacity.sh"
+      - "scripts/test-retired-video-host.py"
+      - "scripts/video-host-state.py"
+      - "scripts/apply-on-demand-collector.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
@@ -358,6 +364,9 @@ jobs:
         env:
           PDE_LOCAL_COMPOSE_PROJECT: pde-contracts-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
+          python3 scripts/test-retired-video-host.py
+          bash -n scripts/apply-on-demand-collector.sh deploy/bin/apply-video-only.sh
+          shellcheck scripts/apply-on-demand-collector.sh deploy/bin/apply-video-only.sh
           bash scripts/test-shared-vps-deploy-queue.sh
           bash pde-platform/scripts/test-deploy-isolation-contract.sh
 

@@ -1,6 +1,6 @@
 # Deploy automatizado
 
-O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys estão separados: backend/frontend em `191.252.181.168` e video-management em `177.153.62.107`.
+O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys estão separados: backend/frontend em `191.252.181.168` e video-management em `163.245.200.7`.
 
 Os deploys isolados usam descritores próprios: `docker-compose.video.yml` e
 `docker-compose.mcp.yml`. Isso impede que o Compose interpole secrets obrigatórios
@@ -171,64 +171,23 @@ LIQUIBASE_VALIDATE_SCOPE=all scripts/validate-liquibase-mysql57.sh
 
 Essa auditoria pode apontar passivos antigos já versionados. O deploy seguro usa `changed` por padrão para bloquear recorrência no que está entrando agora.
 
-## Deploy apenas do módulo de vídeo
+## Publicação de Apolo e retirada do VPS antigo
 
-Quando for necessário atualizar **somente** o serviço `video-management` no host `177.153.62.107`, use o script abaixo.
+Apolo usa `163.245.200.7:8095`, com backend remoto em `http://191.252.181.168`.
+A publicação ocorre exclusivamente pelo job `Deploy video management` de
+`.github/workflows/deploy-containers.yml`, após testes, revisão e merge do PR.
+O job compartilha a fila do host com PDE e pagamentos, preserva imagens de recuperação
+ e usa segredos próprios em `/root/infra/apollo-secrets`. Não publicar por SSH.
 
-> Neste cenário, o `video-management` deve apontar para o backend remoto em `http://191.252.181.168` (porta pública `80`).
+O VPS `177.153.62.107` foi retirado dos alvos. OPRM, MOIS e MDS permanecem suspensos;
+seus workflows exigem despacho manual com `activate=true` após nova autorização
+operacional, conferência das filas e capacidade. Um push não os reativa.
+Os coletores Meta e Hotmart usam `operation=prepare` para preparar containers parados
+no destino; `activate` exige necessidade conferida. Hotmart usa porta `18096`, pois
+`8096` pertence ao backend PDE.
 
-1. Publique a imagem no GHCR com uma tag imutável:
-   ```bash
-   IMAGE_TAG=<sha-do-commit>
-   VIDEO_IMAGE=ghcr.io/<organizacao>/marketinghub-video-management
-   docker build -f video-management-service/Dockerfile -t "${VIDEO_IMAGE}:${IMAGE_TAG}" .
-   docker push "${VIDEO_IMAGE}:${IMAGE_TAG}"
-   ```
-2. Sincronize apenas os descritores de deploy com o servidor:
-   ```bash
-   rsync -az deploy/ <usuario>@177.153.62.107:/opt/marketinghub/containers/
-   ```
-3. No servidor, autentique-se no GHCR e rode o apply específico com a mesma tag:
-   ```bash
-   ssh <usuario>@177.153.62.107
-   docker login ghcr.io
-   VIDEO_IMAGE=ghcr.io/<organizacao>/marketinghub-video-management \
-   IMAGE_TAG=<sha-do-commit> \
-   VIDEO_PULL=true \
-   VIDEO_BACKEND_BASE_URL=http://191.252.181.168 \
-   sudo -E /opt/marketinghub/containers/bin/apply-video-only.sh
-   docker logout ghcr.io
-   ```
-
-O workflow oficial automatiza esse fluxo, usa cache de camadas do registry e remove a credencial temporária após o pull. O deploy atualiza só o container `marketinghub-video-management`, preservando `backend` e `frontend` em execução. O tar permanece disponível apenas como recuperação manual.
-
-## Deploy apenas do módulo OPRM
-
-Quando for necessário atualizar **somente** o serviço `oprm-worker` no host `177.153.62.107`, use o fluxo abaixo.
-
-> Neste cenário, o OPRM deve apontar para o backend remoto em `191.252.181.168` (porta `8000`).
-
-1. Gere a imagem do módulo OPRM e exporte para tar:
-   ```bash
-   IMAGE_TAG=2026.04.15
-   docker build -f oprm/Dockerfile -t marketinghub-oprm:${IMAGE_TAG} oprm
-   docker save marketinghub-oprm:${IMAGE_TAG} -o /tmp/oprm-image.tar
-   ```
-2. Copie o tar e os arquivos de deploy para o servidor:
-   ```bash
-   scp /tmp/oprm-image.tar deploy/bin/apply-oprm-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
-   ```
-3. No servidor, mova os arquivos para o diretório de deploy e rode o apply específico:
-   ```bash
-   ssh <usuario>@177.153.62.107
-   sudo mkdir -p /opt/marketinghub/containers
-   sudo mv /tmp/docker-compose.yml /opt/marketinghub/containers/docker-compose.yml
-   sudo mv /tmp/apply-oprm-only.sh /opt/marketinghub/containers/apply-oprm-only.sh
-   sudo chmod +x /opt/marketinghub/containers/apply-oprm-only.sh
-   OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 IMAGE_TAG=${IMAGE_TAG} sudo /opt/marketinghub/containers/apply-oprm-only.sh
-   ```
-
-Esse fluxo atualiza só o container `marketinghub-oprm`, preservando os demais serviços já em execução.
+A migração de estado usa o coordenador e `scripts/video-host-state.py`, sem publicar
+código. Consulte [evidências e recuperação](../docs/homologacao/retirada-vps-video-2026-10-23.md).
 
 ## Reemissão de certificado TLS do MCP (Let's Encrypt)
 

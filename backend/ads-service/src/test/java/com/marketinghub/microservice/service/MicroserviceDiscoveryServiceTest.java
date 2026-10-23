@@ -196,7 +196,7 @@ class MicroserviceDiscoveryServiceTest {
     assertEquals("manual", deployment.triggerMode());
   }
 
-  /** Deve usar o inventário fallback completo quando os workflows não estão disponíveis. */
+  /** Deve usar o inventário embarcado e impedir deploy no VPS retirado sem os workflows locais. */
   @Test
   void shouldUseFallbackDeploymentInventoryWhenWorkflowsAreUnavailable() {
     MicroserviceDiscoveryService service =
@@ -210,7 +210,13 @@ class MicroserviceDiscoveryServiceTest {
 
     assertEquals(10, deployments.size());
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
-    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
+    assertTrue(deployments.stream().noneMatch(dto -> dto.deployHost().equals("177.153.62.107")));
+    assertTrue(
+        deployments.stream()
+            .anyMatch(
+                dto ->
+                    dto.jobName().equals("deploy-video-management")
+                        && dto.deployHost().equals("163.245.200.7")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.210.83")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.102.54")));

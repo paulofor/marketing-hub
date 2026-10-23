@@ -10,7 +10,7 @@ hosts:
     billingCycle: null
     costEvidence: "Pendente: lista de planos KingHost de 04/10/2026 não informa preço, periodicidade ou fatura do ID 18306. Catálogo público de novos contratos não comprova o custo deste VPS de 1 GB. Custo desconhecido permanece nulo."
     physicalSpecsEvidence: "MCP vps_host_inventory em 04/10/2026: 1 vCPU, RAM total 957 MiB, disco raiz 47 GiB arredondados, Ubuntu 24.04.3 LTS. Plano de 1 GB confirmado pelo painel do titular."
-    notes: "loja.vps-kinghost.net, plano KingHost ID 18306. MCP em 04/10/2026 confirmou vídeo, coletor Meta Library e Hotmart ativos; MDS em reinício. Workflows/cadastro também contêm serviços legados; não presumir que todos estão ativos."
+    notes: "RETIRADA AUTORIZADA EM 23/10/2026: Apolo destinado a 163.245.200.7; coletores preservados suspensos no mesmo destino. Não usar como alvo de deploy. Estado histórico: loja.vps-kinghost.net, plano KingHost ID 18306. MCP em 04/10/2026 confirmou vídeo, coletor Meta Library e Hotmart ativos; MDS em reinício. Workflows/cadastro também contêm serviços legados; não presumir que todos estão ativos."
   - host: "189.126.106.93"
     providerName: "KingHost"
     providerEvidence: "Painel KingHost informado pelo titular em 04/10/2026: plano ID 555, d555d.vps-kinghost.net (189.126.106.93), VPS 4 GB Linux, contratado em 22/12/2020. DNS confirmou hostname e IP na mesma data."
@@ -111,7 +111,7 @@ deployments:
   - workflowFile: ".github/workflows/deploy-containers.yml"
     workflowName: "Deploy Containers"
     jobName: "deploy-video-management"
-    deployHost: "177.153.62.107"
+    deployHost: "163.245.200.7"
     deployUser: "root"
     remotePath: "/opt/marketinghub/containers"
     secretReferences:

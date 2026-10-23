@@ -25,7 +25,9 @@ public class StrategistScheduler {
     this.runner = runner;
   }
 
-  /** Recupera recibo antes de reservar uma pesquisa em PLAY, preservando custo e rastreabilidade. */
+  /**
+   * Recupera recibo antes de reservar uma pesquisa em PLAY, preservando custo e rastreabilidade.
+   */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;

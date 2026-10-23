@@ -66,6 +66,20 @@ Reprodução: runner existente `infra/testing/product-big-idea/run-local.py`, co
 exclusivo da sessão e `BIG_IDEA_BROWSER=1` quando houver preview local na porta 15179.
 Modelo, fontes e identidades dos testes são sintéticos; não constituem evidência de mercado.
 
+## Compatibilidade das provas compartilhadas
+
+O primeiro CI encontrou o catálogo anterior na atestação Mira v41. O teste de Têmis
+reproduziu localmente a mesma divergência; o histórico de
+`LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL` confirma essa dependência. A pesquisa nova
+acrescenta dois artefatos ao catálogo, sem alterar o produto homologado. A v42 preserva
+a v41 por hash, registra esse delta e mantém as demais provas e limites. Não renova
+pareceres comerciais nem autoriza publicação ou consumo de modelos.
+
+Validação de compatibilidade: catálogo do backend, contexto versionado e serviço privado
+de Mira (30 testes); carregadores de provas de Psique e Têmis; contrato e montagem do
+pacote imutável. Esses comandos complementam a matriz acima antes de atualizar o PR,
+evitando depender somente dos testes do módulo diretamente alterado.
+
 Adoção da capacidade: usar a pesquisa específica nos produtos sem Big Idea, conferir as fontes
 e aplicar a proposta na própria gestão. Se surgir inconsistência de identidade ou evidência,
 preservar o recibo, corrigir a causa e recuperar o resultado disponível. Evolução comercial usa

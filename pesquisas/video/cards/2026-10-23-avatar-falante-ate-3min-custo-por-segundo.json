@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-avatar-falante-ate-3min-custo-por-segundo",
+  "collection": "video",
+  "title": "Gerar versões narradas de até três minutos a partir de retrato e áudio",
+  "finding": "Em 22/10/2026 a Pruna lançou P-Video-2-Pro-Avatar, API ativa e proprietária baseada em MiniMax H3, capaz de criar um avatar falante com sincronização labial a partir de uma imagem e áudio/roteiro, até 180 segundos e 24 FPS. A documentação fornece preços por segundo desde US$0,02 em 480p e US$0,04 em 768p.",
+  "mechanism": "Separar o conteúdo do áudio da representação visual permite reutilizar retratos autorizados e gerar variações narradas controladas, com custos estimáveis pela duração. Voz gravada estabelece duração; 1080p, 2K e 4K usam upscaling de 768p, e não renderização nativa.",
+  "commercialApplication": "Testar no Marketing Hub vídeos explicativos de 30–60 segundos e criativos UGC identificados como sintéticos, com locução em português brasileiro e personagem licenciado/sintético. Orquestrar por API sem dependência de voz do próprio gerador.",
+  "evidenceStrength": "Forte para contrato de API, parâmetros e preços publicados pelo fornecedor; moderada para data de anúncio apoiada em cobertura datada; inexistente para maior conversão, realismo superior ou menor custo por vídeo aprovado.",
+  "publishedOn": "2026-10-22",
+  "validUntil": "2026-11-20",
+  "experimentHypothesis": "Com os mesmos roteiros e assets licenciados, a geração de avatares em lote pela Pruna reduzirá o custo por vídeo explicativo aprovado, mantendo compreensão e precisão do lipsync em português brasileiro, contra o fluxo multimodelo atual.",
+  "risks": "Direito de imagem/voz, possível confusão sobre identidade sintética, lip-sync insuficiente em português, alteração involuntária de fundo, dependência de API fechada, política de retenção dos arquivos e eventuais preços promocionais.",
+  "limits": "API publicada: 50 RPM e máximo 180 segundos; 4K limitado a 125 segundos e upscalado a partir de 768p. O fornecedor não comprova independemente qualidade, latência ou eficácia publicitária; direitos comerciais devem ser confirmados contratualmente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-23-pruna-avatar-roteiro-audio-3min.md",
+  "sourceTitle": "Fonte revisada — avatar falante com voz e custos observáveis (Pruna P-Video-2-Pro-Avatar)",
+  "sourceSha256": "b38d05022e5e05dd2c1c72755d669ed9c88f7b613379008cd676b4467e7748c0"
+}

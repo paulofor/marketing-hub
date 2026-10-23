@@ -215,9 +215,7 @@ public class CodexStrategistRunner {
     return command(output, schema, mcp, Path.of("clarity-aggregate.mjs"), false);
   }
 
-  /**
-   * Libera consultas anotadas do MCP com ambiente explícito; escritas continuam exigindo aprovação.
-   */
+  /** Repassa correlação e navegador ao MCP; mantém ambiente mínimo e aprovação para escritas. */
   List<String> command(
       Path output, Path schema, Path mcp, Path clarityMcp, boolean clarityAvailable) {
     List<String> command = new ArrayList<>();
@@ -247,7 +245,7 @@ public class CodexStrategistRunner {
     command.add("mcp_servers.experiment_strategist.args=[\"" + mcp.toAbsolutePath() + "\"]");
     command.add("--config");
     command.add(
-        "mcp_servers.experiment_strategist.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\"]");
+        "mcp_servers.experiment_strategist.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\",\"PLAYWRIGHT_BROWSERS_PATH\",\"PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH\"]");
     command.add("--config");
     command.add("mcp_servers.experiment_strategist.tool_timeout_sec=90");
     if (clarityAvailable) {

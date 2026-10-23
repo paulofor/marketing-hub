@@ -77,8 +77,33 @@ class CodexStrategistRunnerTest {
     assertThat(command).doesNotContain("danger-full-access");
     assertThat(command)
         .contains(
-            "mcp_servers.experiment_strategist.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\"]");
+            "mcp_servers.experiment_strategist.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\",\"PLAYWRIGHT_BROWSERS_PATH\",\"PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH\"]");
     assertThat(properties.getCodexTimeout().toMinutes()).isEqualTo(40);
+  }
+
+  /** Exporta a configuração real do MCP para exercitar o navegador em processo isolado. */
+  @Test
+  void exportsBrowserEnvironmentForIsolatedMcpSmoke() throws Exception {
+    var properties = new WorkerProperties();
+    properties.setCodexCommand("codex");
+    properties.setRepositoryPath("/workspace/marketing-hub");
+    var runner = new CodexStrategistRunner(properties, new ObjectMapper());
+    String prefix = "mcp_servers.experiment_strategist.env_vars=";
+    String configuration =
+        runner.command(Path.of("result.json"), Path.of("schema.json")).stream()
+            .filter(value -> value.startsWith(prefix))
+            .findFirst()
+            .orElseThrow();
+    var allowed = new ObjectMapper().readTree(configuration.substring(prefix.length()));
+    Files.createDirectories(Path.of("target"));
+    Files.writeString(Path.of("target/strategist-mcp-environment.json"), allowed.toString());
+    assertThat(allowed.toString())
+        .contains(
+            "MCP_EXECUTION_ID",
+            "MCP_BACKEND_URL",
+            "PLAYWRIGHT_BROWSERS_PATH",
+            "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
+    assertThat(allowed.toString()).doesNotContain("TOKEN", "SECRET", "API_KEY");
   }
 
   /**

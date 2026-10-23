@@ -68,3 +68,11 @@ imagens ou histórico para apenas reduzir o indicador de disco.
   contrato de deploy transacional aprovados. A engine dedicada não vê bind mounts
   locais; o smoke usou volumes efêmeros e docker cp, preservando isolamento.
 - Nenhum teste enviou dados comerciais, criou mídia paga ou alterou filas produtivas.
+
+## Compatibilidade confirmada após o primeiro deploy
+
+O deploy Meta recusou `build: null`, herdado do antigo override, ao validar o
+descritor agora independente. O mesmo erro foi reproduzido localmente com o Docker
+Compose; remover esse campo resolve a causa sem iniciar o coletor. O teste preventivo
+passa a executar `docker compose config` nos dois descritores reais, além do teste
+de ciclo de vida com Docker simulado. Hotmart concluiu a preparação suspensa.

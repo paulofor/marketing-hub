@@ -1,7 +1,6 @@
 services:
   mois-meta-ad-library-collector:
     image: ${MOIS_META_AD_LIBRARY_COLLECTOR_IMAGE}
-    build: null
     container_name: mois-meta-ad-library-collector
     restart: "no"
     mem_limit: 384m

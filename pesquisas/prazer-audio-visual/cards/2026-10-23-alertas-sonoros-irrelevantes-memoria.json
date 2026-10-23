@@ -1,0 +1,18 @@
+{
+  "cardKey": "alertas-sonoros-irrelevantes-memoria",
+  "collection": "prazer-audio-visual",
+  "title": "Não confundir alerta sonoro com consolidação da memória",
+  "finding": "Ruídos brancos irrelevantes geraram dilatação pupilar robusta, mas não melhoraram de forma consistente a recordação de palavras e imagens cerca de 24 h depois em experimento com amostra pequena.",
+  "mechanism": "O aumento pupilar provocado por estímulo externo pode refletir ativação diferente daquela mobilizada espontaneamente durante codificação bem-sucedida; resposta pupilar não é prazer nem memória.",
+  "commercialApplication": "Apolo e Psique podem testar remoção de efeitos sonoros irrelevantes em vídeos e medir compreensão, lembrança após 24 h, susto e abandono, preservando pistas com função narrativa.",
+  "evidenceStrength": "Média para dissociação arousal pupilar e memória em laboratório; baixa para aplicação direta a vídeos comerciais.",
+  "publishedOn": "2026-10-23",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Retirar alertas sonoros sem função informativa manterá ou melhorará compreensão, conforto e recordação factual após 24 h, relativamente a efeitos artificiais, sem reduzir a identificação de eventos importantes.",
+  "risks": "Usar ruídos altos ou assustadores para manipular atenção; extrapolar da pupila para dopamina ou vendas; confundir alerta informativo com irrelevante.",
+  "limits": "33 recrutados, n=29–30 nas tarefas; ruído branco de 75 dB; estímulos neutros, não vídeos; ganho pontual e fraco em imagens, sem benefício geral sustentado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-23-alertas-sonoros-irrelevantes-memoria.md",
+  "sourceTitle": "Fonte revisada v1 — Alerta sonoro, dilatação pupilar e memória",
+  "sourceSha256": "2477f980ee09fd470f4183d8e2ef6efa1429184b9c35b689d04ec300e4bebefd"
+}

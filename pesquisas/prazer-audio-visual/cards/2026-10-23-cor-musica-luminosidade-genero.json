@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-musica-luminosidade-genero",
+  "collection": "prazer-audio-visual",
+  "title": "Testar luminosidade visual coerente com emoção e gênero musical",
+  "finding": "Em estudo intraindivíduos com 278 pessoas e 15 trechos musicais, a luminosidade das cores escolhidas variou fortemente com o caráter emocional e o gênero; associações de brilho mais claro com alegria e mais escuro com tristeza foram proeminentes.",
+  "mechanism": "Correspondência intermodal entre significado emocional musical e aparência visual, condicionada pelo gênero; não foi demonstrada causalidade no prazer nem eficácia em vídeo.",
+  "commercialApplication": "Apolo pode produzir versões de um vídeo com diferentes níveis de luminosidade da paleta, preservando legibilidade, conteúdo, música e duração; Psique pode avaliar coerência percebida, compreensão e conforto.",
+  "evidenceStrength": "Média para correspondência música-cor no experimento; baixa para benefício emocional ou comercial de alterar a cor.",
+  "publishedOn": "2026-10-23",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Mantida a trilha fixa, uma paleta luminosa alinhada à emoção-alvo elevará a coerência percebida sem reduzir legibilidade e compreensão; verificar em A/B com espectadores e por gênero musical.",
+  "risks": "Estereotipar cor por emoção; sacrificar contraste/acessibilidade; inferir preferência ou compra a partir de escolha de cor.",
+  "limits": "278 participantes italianos, 15 trechos com um exemplar por combinação emoção-gênero; somente associação e correspondência subjetiva, sem mensurar vendas, dopamina ou prazer provocado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-23-cor-musica-luminosidade-genero.md",
+  "sourceTitle": "Fonte revisada v1 — Correspondências entre música, luminosidade e emoção",
+  "sourceSha256": "e61a11bef775c03ade0261cd98e5d29827a5b33832bb6bf230e811f90c50b8dd"
+}

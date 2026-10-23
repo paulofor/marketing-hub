@@ -9,7 +9,7 @@ Anúncio de 23/10/2026, distinto do Seedance 2.5 comum (API ativa em 480p, 720p 
 
 **Diferenciação comprovada:** a documentação pública de Seedance 2.5 continua listando até 1080p, 24 FPS e 4–30 s; não presumir 4K no ID público `doubao-seedance-2-5-260628`. A documentação já expõe um fluxo Draft com ID reutilizável por sete dias, porém a saída final pública a partir de Draft chega a 1080p. A tabela de preços de 22/10 não lista tarifa de Seedance 2.5 4K. O novo serviço não possui pesos abertos confirmados.
 
-**Comparação:** Kling 4.0 (aplicativo ativo; API em early access) também oferece até 30 s por tomada, referências e keyframes. Google Veo 3.1 (Google Cloud GA) permanece opção de renderização empresarial; Preview do Veo 3.1 na Gemini API está em transição/encerramento. O lançamento da ByteDance é promissor para cinema, publicidade e pós-produção, mas resultados de qualidade são alegações do fabricante e não demonstram superioridade geral.
+**Comparação:** Kling 4.0 (aplicativo ativo; API em early access) também oferece até 30 s por tomada, referências e keyframes. Google Veo 3.1 (Google Cloud GA) permanece opção de renderização empresarial; os endpoints Veo 3.1 Preview da Gemini API **foram desligados em 22/10/2026**, conforme página atual do modelo; as versões GA do Google Cloud são separadas. O lançamento da ByteDance é promissor para cinema, publicidade e pós-produção, mas resultados de qualidade são alegações do fabricante e não demonstram superioridade geral.
 
 **Fontes:** 
 - https://technode.com/2026/10/23/bytedance-launches-seedance-2-5-4k-video-model-for-film-production/
@@ -18,6 +18,8 @@ Anúncio de 23/10/2026, distinto do Seedance 2.5 comum (API ativa em 480p, 720p 
 - https://docs.volcengine.com/docs/ark/seedance-2-5?lang=en
 - https://console.volcengine.com/ark/region:cn-beijing/docs/create-video-generation-task-api
 - https://console.volcengine.com/ark/region:cn-beijing/docs/model-pricing
+- https://ai.google.dev/gemini-api/docs/models/veo-3.1-generate-preview
+- https://docs.cloud.google.com/vertex-ai/generative-ai/docs/release-notes
 
 ## 2. Pruna AI — P-Video-2-Pro-Avatar (Europa; base MiniMax H3 da China)
 **Status: ATIVO — API publicada e documentada; serviço proprietário, sem pesos próprios abertos confirmados.**

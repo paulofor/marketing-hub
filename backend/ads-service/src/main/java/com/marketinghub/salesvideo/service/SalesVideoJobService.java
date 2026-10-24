@@ -796,8 +796,8 @@ public class SalesVideoJobService {
   }
 
   /**
-   * Permite corrigir falha, parecer ou candidata ainda não revisada; a montagem exige voz
-   * preservada.
+   * Permite corrigir falha, parecer ou candidata ainda não revisada; voz nova exige texto alterado,
+   * confirmação explícita e limite financeiro da própria fonte.
    */
   private boolean isReplaceableFinalization(SalesVideoJob current) {
     if (current.getStatus() == SalesVideoStatus.VIDEO_FAILED) return true;
@@ -863,18 +863,20 @@ public class SalesVideoJobService {
           VideoModuleErrorCode.BAD_REQUEST,
           "Esta fonte já possui finalização em execução. Aguarde o resultado antes de alterar o texto.");
     }
-    boolean requiresPreservedVoice = validateFinalizationRecovery(sourceJob);
-    if (request.isNarrationRevisionConfirmed()
-        && existing
-            .map(
-                previous -> {
-                  JsonNode prior = readJobMetadata(previous);
-                  return !java.util.Objects.equals(
-                          prior.path("captionText").asText(), request.getCaptionText())
-                      || !java.util.Objects.equals(
-                          prior.path("voiceOverScript").asText(), request.getVoiceOverScript());
-                })
-            .orElse(true)) validateNarrationRevision(sourceJob);
+    boolean unreviewedCandidate = validateFinalizationRecovery(sourceJob);
+    boolean explicitNarrationChange =
+        request.isNarrationRevisionConfirmed()
+            && existing
+                .map(
+                    previous -> {
+                      JsonNode prior = readJobMetadata(previous);
+                      return !java.util.Objects.equals(
+                              prior.path("captionText").asText(), request.getCaptionText())
+                          || !java.util.Objects.equals(
+                              prior.path("voiceOverScript").asText(), request.getVoiceOverScript());
+                    })
+                .orElse(true);
+    if (explicitNarrationChange) validateNarrationRevision(sourceJob);
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
     SalesVideoJob postProductionJob =
         createJob(
@@ -892,13 +894,13 @@ public class SalesVideoJobService {
             ? VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper)
             : buildPostProductionMetadata(
                 sourceJob, sourceVideoUrl, request, existing.orElse(null)));
-    if (requiresPreservedVoice) {
+    if (unreviewedCandidate && !explicitNarrationChange) {
       JsonNode voice = readJobMetadata(postProductionJob).path("preservedNarration");
       if (!VideoNarrationRecovery.CONTRACT.equals(voice.path("contractVersion").asText())
           || voice.path("newTtsAuthorized").asBoolean(true))
         throw VideoModuleException.badRequest(
             VideoModuleErrorCode.BAD_REQUEST,
-            "A candidata sem parecer só pode ser remontada com a mesma voz auditada, sem nova síntese.");
+            "A candidata sem parecer exige a mesma voz auditada; texto alterado permite nova síntese somente com confirmação explícita e limite financeiro válido.");
     }
     postProductionJob.setAuditSnapshotJson(
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
@@ -918,7 +920,7 @@ public class SalesVideoJobService {
     return toDto(postProductionJob);
   }
 
-  /** Confere a tentativa vigente e exige voz preservada para corrigir candidata sem parecer. */
+  /** Confere a tentativa vigente e identifica candidata sem parecer para validar a correção. */
   private boolean validateFinalizationRecovery(SalesVideoJob source) {
     if (productionCycleRepository == null) return false;
     JsonNode metadata = readJobMetadata(source);

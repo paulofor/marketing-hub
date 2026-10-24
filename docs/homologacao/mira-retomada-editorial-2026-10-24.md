@@ -192,3 +192,7 @@ Vídeos #80/#81 foram remontados sem síntese nova e passaram na reprodução t�
 Psique #807 preservou a imagem 659, aprovou escuta #16 do anúncio e pediu correção da demonstração pelo recibo #15. Seu BLOCKED também comparou v3 à Big Idea #3, criada após o início do experimento. A primeira tarefa #620, de 07/10, não continha Big Idea; o vínculo tardio apareceu na retomada #802 em 24/10. A correção aplica o cânone existente de não migração histórica, sem mudar a pesquisa atual nem fabricar parecer favorável.
 
 A matriz local cobre ausência legada/explicitamente MISSING, contexto novo, criação legítima por Atena, fotografia inválida, alias/IDs parecidos no SQL, vínculo tardio, recuperação e regras arquiteturais. Os MP4s ainda devem receber encerramento breve e seus pareceres próprios; revisão sonora negativa segue bloqueando aprovação.
+
+## Correção de rascunho e custo conhecido
+
+Jobs #21303/#21304 foram concluídos e estimados em US$ 0,045179/0,054064. O convite de duas palavras produziu 7,056s/4,752s, acima do encerramento pedido. Uma nova formulação pela UI recebeu 400 porque a candidata só permitia mesma voz. A passagem passa a distinguir texto alterado e explicitamente confirmado de repetição da mesma síntese; o gate financeiro permanece obrigatório. Medições de áudio não substituem o parecer sonoro.

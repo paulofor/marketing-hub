@@ -11094,3 +11094,10 @@ depois de materializar o checkout. Provas e limites em
 - Regressões: BigIdeaHistoricalAuthorityTest executa SQL local para ordenação, alias e IDs semelhantes; BigIdeaServiceTest cobre vínculo tardio, contexto novo e isolamento; BigIdeaTaskContextTest preserva fotografia. ArquiteturaTest incluído.
 - O parecer BLOCKED/FINAL_VIDEO com déficit localizado também habilita correção do arquivo exato, sem conceder aprovação; pacing baixo integra os critérios editoriais já validados. CreativeFinalVideoEvidenceTest cobre contexto original/outro, SHA incorreto, processo/etapa errados, aprovação e tarefa ainda bloqueada tecnicamente.
 - Impacto comercial não medido. Essa correção não altera oferta nem autoriza campanha.
+
+## LOOP-APOLO-LOCUCAO-CANDIDATA — 24/10/2026
+
+- Mira jobs #21303/#21304: convite de duas palavras retornou 7,056s/4,752s de áudio. A candidata sem parecer bloqueava nova copy mesmo com confirmação de locução e orçamento, forçando revisão paga de defeito já medido.
+- Causa de fluxo: proteção da recuperação confundia repetir voz com editar texto de rascunho. A origem perceptual dos sons não foi inferida das medições.
+- Correção: alteração explícita de texto passa pelo gate financeiro existente; mesmo texto preserva recibos. Não há aprovação automática nem rejeição humana fabricada.
+- Regressões do comando real cobrem duas identidades, custo desconhecido, voz preservada, mesma copy, parecer ativo/arquivo incorreto e caminhos válidos anteriores. Novos vídeos continuam sujeitos à escuta independente; impacto comercial não medido.

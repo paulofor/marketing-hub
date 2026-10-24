@@ -674,3 +674,21 @@ não recebe credenciais, chama provedor, modifica tetos, aprova vídeo ou ativa 
 cruzado, recibo incompleto, contagem/período divergente ou uso parcial impedem gravação. Repetição
 igual é idempotente e callback sem custo não apaga conciliação existente. Detalhes e limites em
 [homologação da locução](../homologacao/capella-conciliacao-locucao-v1.md).
+
+
+## Diagnóstico de limite financeiro na escuta — 24/10/2026
+
+Psique deve distinguir a recusa específica da API sonora por crédito esgotado
+(`credit_balance_exhausted`), limite de gasto configurado na organização ou projeto
+(`organization_spend_limit_exceeded`, `project_spend_limit_exceeded`) e limite de uso
+aprovado pela OpenAI (`organization_usage_limit_exceeded`). A orientação deve indicar
+somente o controle atingido. Recarregar créditos não altera um limite de gasto configurado;
+a conexão Codex de texto/visão não substitui a API especializada de áudio.
+
+Envelope exclusivo de erro `insufficient_quota`, sem saída, uso ou custo já conhecido,
+permite registrar `ACCOUNT_BLOCKED` e custo incremental **estimado** zero. Reclassificar
+um recibo preservado usa replay, sem nova inferência. Tokens, saída, ledger com cobrança
+ou erro ambíguo preservam custo pendente. Nenhum desses diagnósticos autoriza mudar o
+limite da conta, ampliar tetos do produto, retentar automaticamente ou aprovar o vídeo.
+Fontes: [erros oficiais](https://developers.openai.com/api/docs/guides/error-codes) e
+[limites de gasto](https://developers.openai.com/api/docs/guides/spend-limits).

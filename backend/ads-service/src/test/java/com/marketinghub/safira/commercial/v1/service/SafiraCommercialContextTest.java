@@ -251,6 +251,68 @@ class SafiraCommercialContextTest {
         .hasMessageContaining("versão comercial");
   }
 
+  /** Reproduz Mira e outra identidade com retorno ao ciclo, sem executar a preparação prematura. */
+  @Test
+  void unfinishedCycleNavigatesToItsOwnStageWithoutWrites() {
+    for (long[] ids : List.of(new long[] {10, 102, 9, 26}, new long[] {44, 710, 71, 88})) {
+      product.setId(ids[0]);
+      experiment.setId(ids[1]);
+      var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+      cycle.setId(ids[2]);
+      cycle.setProductId(ids[0]);
+      cycle.setExperimentId(ids[1]);
+      cycle.setChainDefinitionId(ids[3]);
+      cycle.setStatus("OPEN");
+      when(experiments.findById(ids[1])).thenReturn(Optional.of(experiment));
+      when(cycles.findByExperimentId(ids[1])).thenReturn(Optional.of(cycle));
+      for (String stage : List.of("VIDEO_APPROVAL", "PLANNING", "VALIDATION")) {
+        cycle.setStage(stage);
+        assertThatThrownBy(() -> context.scope("experiment:" + ids[1], ids[0], true))
+            .isInstanceOfSatisfying(
+                SafiraCommercialBlocker.class,
+                blocker -> {
+                  assertThat(blocker.getMessage())
+                      .contains("O ciclo #" + ids[2], "Conclua essa etapa");
+                  assertThat(blocker.actionLabel()).isEqualTo("Abrir etapa atual do ciclo");
+                  assertThat(blocker.navigationUrl())
+                      .isEqualTo(
+                          "/business-process-chains/learning-cycles?productId="
+                              + ids[0]
+                              + "&chainId="
+                              + ids[3]
+                              + "&cycleId="
+                              + ids[2]);
+                });
+      }
+      assertThatThrownBy(() -> context.scope("experiment:" + ids[1], ids[0] + 1, true))
+          .isNotInstanceOf(SafiraCommercialBlocker.class)
+          .hasMessageContaining("outro produto");
+    }
+    verify(experiments, never()).save(any());
+    verify(cycles, never()).save(any());
+  }
+
+  /** Preserva a candidata antes válida nas duas etapas comerciais e não altera o ciclo. */
+  @Test
+  void commercialStagesRemainEligibleWithExactCycleIdentity() {
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(71L);
+    cycle.setProductId(product.getId());
+    cycle.setExperimentId(experiment.getId());
+    cycle.setChainDefinitionId(88L);
+    cycle.setProductVersion(slot.getExperienceVersion());
+    cycle.setStatus("OPEN");
+    when(cycles.findByExperimentId(experiment.getId())).thenReturn(Optional.of(cycle));
+    for (String stage : List.of("AUTHORIZATION", "PUBLICATION")) {
+      cycle.setStage(stage);
+      var scope = context.scope("experiment:301", product.getId(), true);
+      assertThat(scope.cycleId()).isEqualTo(71L);
+      assertThat(scope.chainId()).isEqualTo(88L);
+      assertThat(cycle.getStage()).isEqualTo(stage);
+    }
+    verify(cycles, never()).save(any());
+  }
+
   /** Isola a mudança econômica da jornada e uma mudança visual da economia. */
   @Test
   void fingerprintsPreparationActivitiesByTheirOwnSources() {

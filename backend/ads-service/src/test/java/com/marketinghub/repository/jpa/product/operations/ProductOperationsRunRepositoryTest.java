@@ -21,7 +21,7 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "spring.liquibase.enabled=false",
       "spring.jpa.show-sql=false",
-      "spring.datasource.url=jdbc:h2:mem:product-operations-${random.uuid};DB_CLOSE_DELAY=0"
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.repository.jpa.product.operations.ProductOperationsRunRepositoryTest-${random.uuid};DB_CLOSE_DELAY=0"
     })
 class ProductOperationsRunRepositoryTest {
   @Autowired private ProductOperationsRunRepository operations;

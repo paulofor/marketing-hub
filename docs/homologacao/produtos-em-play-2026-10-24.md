@@ -52,3 +52,8 @@ entidade ausente no harness mínimo. A falha foi reproduzida localmente por
 nativo e separar a leitura do painel, a terceira opção preserva a validação JPA e evita
 acoplar o coordenador ao catálogo. A consulta fica em `ProductOperationsRunRepository`,
 sem métodos de escrita, e o contexto mínimo continua coberto por regressão rápida.
+
+A conferência adicional executou o coordenador real com MySQL 5.7 segregado na sandbox:
+21 cenários de API, 22 de ciclo de vida e recuperação após reinício aprovados, sem gravações
+produtivas. A topologia temporária foi removida. Os 14 contratos locais do CI também
+passaram após adequar o nome do banco H2 ao isolamento por classe e execução.

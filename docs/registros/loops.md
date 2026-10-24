@@ -11010,3 +11010,23 @@ depois de materializar o checkout. Provas e limites em
   run não publicado e referência inválida; fotografia exportada ao BPM e navegador locais.
 - **Registro e limites:** `docs/homologacao/capella-medicao-identidade-2026-10-24.md`.
   Não reabre experimento, transfere autorização ou comprova demanda.
+
+## LOOP-CICLO-CHECKOUT-DIRETO-INVISIVEL — Compra comercial lida na fonte de pacotes
+
+- **Data:** 24/10/2026.
+- **Causa comprovada:** o checkout direto inclui a atribuição no recibo Mercado Pago,
+  mas a conciliação Quartzo consultava somente `lead_portal_purchase`. O webhook
+  comercial e a entrega de kit seguem outra persistência existente.
+- **Evidência:** CTA de Capella 105, histórico de callbacks e regressão local com
+  compra aprovada produziram zero na fonte errada. Quatro cliques não provam quatro
+  abandonos de pagamento.
+- **Correção:** selecionar a fonte do checkout explícito, reconciliar identidade,
+  janela e último recibo, sem somar duas fontes ou criar outro ledger.
+- **Prevenção:** SQL real com outro produto, caminho legado, duplicação, falha após
+  sucesso, mudança de identidade, QA, preço nominal, moeda, data e entrega final.
+- **Limites:** reembolsos e recibos ambíguos bloqueiam até conciliação; não há herança
+  financeira, reativação de campanha ou conclusão comercial baseada no teste local.
+- **Orientação complementar da mesma passagem:** a proposta inconclusiva pronta de
+  Atena aparecia com formulário de aprovação e resumo sem decisão pendente. A projeção
+  lê a revisão exata e reutiliza a política preparatória, preservando ajustes automáticos,
+  propostas obsoletas, ciclos encerrados e ausência de efeitos pela leitura.

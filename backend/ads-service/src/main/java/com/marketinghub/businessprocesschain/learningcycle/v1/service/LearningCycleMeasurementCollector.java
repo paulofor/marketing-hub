@@ -293,6 +293,7 @@ public class LearningCycleMeasurementCollector {
             funnel.pageViews(),
             funnel.checkouts(),
             payments.checkoutAccesses(),
+            payments.source(),
             funnel.lastHumanEventAt(),
             payments.purchases(),
             payments.refunds(),
@@ -319,6 +320,7 @@ public class LearningCycleMeasurementCollector {
     evidence.putNull("starts");
     evidence.putNull("firstResults");
     evidence.putArray("notApplicableMetrics").add("starts").add("firstResults");
+    evidence.put("checkoutClicks", funnel.checkouts());
     evidence.put("checkouts", funnel.checkouts() + payments.checkoutAccesses());
     evidence.put("netSales", netSales);
     evidence.put("refunds", payments.refunds());
@@ -356,6 +358,7 @@ public class LearningCycleMeasurementCollector {
     channel.put("impressions", media.impressions());
     channel.put("clicks", media.clicks());
     ObjectNode financial = sources.putObject("financialOutcomes");
+    financial.put("source", payments.source());
     financial.put("purchaseEvents", payments.purchases());
     financial.put("checkoutAccessEvents", payments.checkoutAccesses());
     financial.put("refundEvents", payments.refunds());

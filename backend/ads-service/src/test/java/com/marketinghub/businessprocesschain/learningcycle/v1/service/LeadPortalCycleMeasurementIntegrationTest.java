@@ -47,7 +47,7 @@ class LeadPortalCycleMeasurementIntegrationTest {
 
   /** Cria tabelas efêmeras; MySQL só é aceito no schema dedicado da sandbox. */
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
     String url = System.getenv("LEAD_PORTAL_CYCLE_TEST_JDBC_URL");
     boolean h2 = url == null;
     if (!h2
@@ -76,9 +76,13 @@ class LeadPortalCycleMeasurementIntegrationTest {
             "lead_portal_flow",
             "experiment_run",
             "experiment",
+            "product",
+            "mercadopago_webhook_log",
+            "agenda_cheia_delivery",
             "facebook_ads_campaign",
             "gera_sales_page_publication_audit")) jdbc.execute("DROP TABLE IF EXISTS " + table);
-    jdbc.execute("CREATE TABLE experiment(id BIGINT PRIMARY KEY, lead_portal_flow_id BIGINT)");
+    jdbc.execute(
+        "CREATE TABLE experiment(id BIGINT PRIMARY KEY, lead_portal_flow_id BIGINT, product_id BIGINT, commercial_checkout_url VARCHAR(500), " + Experiment.class.getDeclaredField("unitPrice").getAnnotation(jakarta.persistence.Column.class).name() + " DECIMAL(12,2))");
     jdbc.execute(
         "CREATE TABLE experiment_run(id BIGINT PRIMARY KEY, experiment_id BIGINT, run_number INT, mode VARCHAR(30), asset_bundle_version INT, published_at DATETIME)");
     jdbc.execute(
@@ -95,7 +99,12 @@ class LeadPortalCycleMeasurementIntegrationTest {
         "CREATE TABLE flow_submissions(id VARCHAR(100) PRIMARY KEY, flow_slug VARCHAR(150), campaign_code VARCHAR(150), answers TEXT)");
     jdbc.execute(
         "CREATE TABLE lead_portal_purchase(id BIGINT PRIMARY KEY AUTO_INCREMENT, submission_id VARCHAR(100), mp_payment_id VARCHAR(100), amount DECIMAL(12,2), currency VARCHAR(10), mp_status VARCHAR(30), mp_payment_payload TEXT, payment_approved_at DATETIME, checkout_accessed_at DATETIME, updated_at DATETIME, delivered_at DATETIME, zip_generated_at DATETIME, zip_object_key VARCHAR(500))");
-    jdbc.update("INSERT INTO experiment VALUES(88,60),(94,60)");
+    jdbc.execute("CREATE TABLE product(id BIGINT PRIMARY KEY, validation_definition_json TEXT)");
+    jdbc.execute(
+        "CREATE TABLE mercadopago_webhook_log(id BIGINT PRIMARY KEY AUTO_INCREMENT, resource_id VARCHAR(100), mercadopago_status VARCHAR(40), processing_status VARCHAR(40), mercadopago_response TEXT, created_at DATETIME)");
+    jdbc.execute(
+        "CREATE TABLE agenda_cheia_delivery(id BIGINT PRIMARY KEY AUTO_INCREMENT, payment_id VARCHAR(100), status VARCHAR(40), artifact_path VARCHAR(300), delivered_at DATETIME)");
+    jdbc.update("INSERT INTO experiment(id,lead_portal_flow_id) VALUES(88,60),(94,60)");
     jdbc.update("INSERT INTO lead_portal_flow VALUES(60,'capella',88)");
     jdbc.update(
         "INSERT INTO facebook_ads_campaign VALUES('campaign-88','meta-88',88),('campaign-94','meta-94',94)");
@@ -103,8 +112,197 @@ class LeadPortalCycleMeasurementIntegrationTest {
         "INSERT INTO gera_sales_page_publication_audit VALUES(32,88,?,?)",
         Timestamp.from(EVENT),
         PAGE);
-    repository = new LeadPortalCycleMeasurementRepository(jdbc);
+    repository =
+        new LeadPortalCycleMeasurementRepository(
+            jdbc,
+            new com.marketinghub.repository.jdbc.learningcycle.DirectCheckoutCyclePaymentRepository(
+                jdbc, new ObjectMapper()));
     eventId = 0;
+  }
+
+  /** Reproduz checkout direto: a compra não existe na tabela dos pacotes do Lead Portal. */
+  @ParameterizedTest
+  @ValueSource(longs = {88, 94})
+  void countsDirectCommercialPurchaseForDifferentExperiments(long experimentId) {
+    directCheckout(experimentId);
+    directReceipt("paid-" + experimentId, experimentId, "approved", "true", "67", EVENT, EVENT);
+    if (experimentId == 94) {
+      patchReceipt("paid-94", "experiment_id", "experimentId");
+      patchReceipt("paid-94", "product_id", "productId");
+    }
+    var payments = repository.read(experimentId, START, END).payments();
+    assertThat(payments.blocker()).isNull();
+    assertThat(payments.purchases()).isEqualTo(1);
+    assertThat(payments.grossRevenueBrl()).isEqualByComparingTo("67");
+  }
+
+  /** A mesma transação só conta uma vez; só a entrega final concluída comprova valor entregue. */
+  @Test
+  void directCheckoutDeduplicatesAndRequiresActualKitDelivery() {
+    directCheckout(88);
+    directReceipt("paid", 88, "approved", "true", "67", EVENT, EVENT);
+    directReceipt("paid", 88, "approved", "true", "67", EVENT, EVENT.plusSeconds(1));
+    assertThat(repository.read(88L, START, END).payments().purchases()).isEqualTo(1);
+    assertThat(repository.read(88L, START, END).payments().deliveredNetSales()).isZero();
+    jdbc.update(
+        "INSERT INTO agenda_cheia_delivery(payment_id,status,artifact_path,delivered_at) VALUES('paid','DELIVERED','private/kit.zip',?)",
+        Timestamp.from(EVENT.plusSeconds(2)));
+    assertThat(repository.read(88L, START, END).payments().deliveredNetSales()).isEqualTo(1);
+    jdbc.update("UPDATE agenda_cheia_delivery SET status='FAILED'");
+    assertThat(repository.read(88L, START, END).payments().deliveredNetSales()).isZero();
+  }
+
+  /** Outro experimento, ambiente de teste e compras fora da janela não viram receita atual. */
+  @Test
+  void directCheckoutExcludesOtherExperimentsTestsAndOutsideWindow() {
+    directCheckout(88);
+    directReceipt("other", 94, "approved", "true", "67", EVENT, EVENT);
+    directReceipt("sandbox", 88, "approved", "false", "67", EVENT, EVENT);
+    directReceipt("old", 88, "approved", "true", "67", START.minusSeconds(1), EVENT);
+    directReceipt("future", 88, "approved", "true", "67", END.plusSeconds(1), END.plusSeconds(1));
+    directReceipt("qa", 88, "approved", "true", "67", EVENT, EVENT);
+    patchReceipt("qa", "\"metadata\":{", "\"metadata\":{\"mh_test\":true,");
+    var payment = repository.read(88L, START, END).payments();
+    assertThat(payment.blocker()).isNull();
+    assertThat(payment.purchases()).isZero();
+    assertThat(payment.source()).isEqualTo("COMMERCIAL_CHECKOUT_WEBHOOK");
+  }
+
+  /** Recibo inválido, atribuição ambígua e reembolso impedem fabricar receita ou zero válido. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "product",
+        "experiment",
+        "conflict",
+        "amount",
+        "currency",
+        "refund",
+        "partial-refund",
+        "date",
+        "live",
+        "identity",
+        "processing",
+        "invalid",
+        "invalid-twice",
+        "identity-changed"
+      })
+  void directCheckoutBlocksUnreconciledReceipts(String defect) {
+    directCheckout(88);
+    directReceipt("paid", 88, "approved", "true", "67", EVENT, EVENT);
+    switch (defect) {
+      case "product" -> patchReceipt("paid", "\"product_id\":1088", "\"product_id\":999");
+      case "experiment" -> patchReceipt("paid", "\"experiment_id\":88", "\"experiment_id\":null");
+      case "conflict" ->
+          patchReceipt("paid", "\"experiment_id\":88", "\"experimentId\":94,\"experiment_id\":88");
+      case "amount" ->
+          patchReceipt("paid", "\"transaction_amount\":67", "\"transaction_amount\":0.67");
+      case "currency" -> patchReceipt("paid", "\"BRL\"", "\"USD\"");
+      case "refund" -> {
+        directReceipt("paid", 88, "refunded", "true", "67", EVENT, EVENT.plusSeconds(1));
+      }
+      case "partial-refund" ->
+          patchReceipt(
+              "paid",
+              "\"transaction_amount\":67",
+              "\"transaction_amount_refunded\":10,\"transaction_amount\":67");
+      case "date" -> patchReceipt("paid", EVENT.toString(), "sem-data");
+      case "live" -> patchReceipt("paid", "\"live_mode\":true", "\"live_mode\":null");
+      case "identity" -> patchReceipt("paid", "\"id\":\"paid\"", "\"id\":\"different\"");
+      case "processing" ->
+          jdbc.update("UPDATE mercadopago_webhook_log SET processing_status='ERROR'");
+      case "identity-changed" ->
+          directReceipt("paid", 94, "approved", "true", "67", EVENT, EVENT.plusSeconds(1));
+      case "invalid-twice" -> {
+        jdbc.update(
+            "INSERT INTO mercadopago_webhook_log(resource_id,processing_status,mercadopago_response,created_at) VALUES('paid','ERROR',NULL,?),( 'paid','ERROR',NULL,?)",
+            Timestamp.from(EVENT.plusSeconds(1)),
+            Timestamp.from(EVENT.plusSeconds(2)));
+      }
+      case "invalid" ->
+          jdbc.update(
+              "INSERT INTO mercadopago_webhook_log(resource_id,processing_status,mercadopago_response,created_at) VALUES('paid','ERROR','invalid',?)",
+              Timestamp.from(EVENT.plusSeconds(1)));
+      default -> throw new IllegalArgumentException(defect);
+    }
+    assertThat(repository.read(88L, START, END).payments().blocker()).isNotBlank();
+  }
+
+  /** Recibo futuro não substitui o sucesso válido da janela nem dispara pagamento novo. */
+  @Test
+  void directCheckoutPreservesHistoricalReceiptAndProviderOffset() {
+    directCheckout(88);
+    directReceipt("paid", 88, "approved", "true", "67", EVENT, EVENT);
+    patchReceipt("paid", EVENT.toString(), "2026-09-25T03:43:33-03:00");
+    directReceipt("paid", 88, "refunded", "true", "67", EVENT, END.plusSeconds(1));
+    assertThat(repository.read(88L, START, END).payments().purchases()).isEqualTo(1);
+  }
+
+  /** O checkout explícito não soma uma segunda fonte legada nem exige um fluxo de pacote. */
+  @Test
+  void directCheckoutDoesNotRequireLeadPortalPaymentPackage() {
+    directCheckout(88);
+    jdbc.update("DELETE FROM lead_portal_flow");
+    directReceipt("paid", 88, "approved", "true", "67", EVENT, EVENT);
+    var measurement = repository.read(88L, START, END);
+    assertThat(measurement.paymentSourceAvailable()).isTrue();
+    assertThat(measurement.payments().purchases()).isEqualTo(1);
+    assertThat(measurement.payments().checkoutAccesses()).isZero();
+  }
+
+  /** Altera apenas o recibo sintético para representar uma resposta observável do provedor. */
+  private void patchReceipt(String paymentId, String before, String after) {
+    jdbc.update(
+        "UPDATE mercadopago_webhook_log SET mercadopago_response=REPLACE(mercadopago_response,?,?) WHERE resource_id=?",
+        before,
+        after,
+        paymentId);
+  }
+
+  /** Prepara a identidade comercial sem preferências ou chamadas externas. */
+  private void directCheckout(long experimentId) {
+    jdbc.update(
+        "INSERT INTO product VALUES(?,?)",
+        experimentId + 1000,
+        "{\"checkoutIdentity\":{\"externalReference\":\"kit-profissional\"}}");
+    jdbc.update(
+        "UPDATE experiment SET product_id=?,commercial_checkout_url=?,unit_price_brl=67 WHERE id=?",
+        experimentId + 1000,
+        "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=test-" + experimentId,
+        experimentId);
+  }
+
+  /** Persiste recibo simulado com metadados de atribuição, sem dados de compradores. */
+  private void directReceipt(
+      String paymentId,
+      long experimentId,
+      String status,
+      String liveMode,
+      String amount,
+      Instant approvedAt,
+      Instant receivedAt) {
+    String payload =
+        "{\"id\":\""
+            + paymentId
+            + "\",\"status\":\""
+            + status
+            + "\",\"live_mode\":"
+            + liveMode
+            + ",\"transaction_amount\":"
+            + amount
+            + ",\"currency_id\":\"BRL\",\"date_approved\":\""
+            + approvedAt
+            + "\",\"external_reference\":\"kit-profissional\",\"metadata\":{\"experiment_id\":"
+            + experimentId
+            + ",\"product_id\":"
+            + (experimentId + 1000)
+            + "}}";
+    jdbc.update(
+        "INSERT INTO mercadopago_webhook_log(resource_id,mercadopago_status,processing_status,mercadopago_response,created_at) VALUES(?,?,'PROCESSED',?,?)",
+        paymentId,
+        status,
+        payload,
+        Timestamp.from(receivedAt));
   }
 
   /** Confirma visitantes e sessões humanos, mantendo QA, bots e desconhecidos na auditoria. */
@@ -144,7 +342,7 @@ class LeadPortalCycleMeasurementIntegrationTest {
   /** A consulta funciona com outro produto/experimento, sem regra especial por ID. */
   @Test
   void readsAnotherQuartzoThroughTheSameRepository() {
-    jdbc.update("INSERT INTO experiment VALUES(117,70)");
+    jdbc.update("INSERT INTO experiment(id,lead_portal_flow_id) VALUES(117,70)");
     jdbc.update("INSERT INTO lead_portal_flow VALUES(70,'another-kit',117)");
     jdbc.update(
         "INSERT INTO gera_sales_page_publication_audit VALUES(40,117,?,?)",
@@ -326,12 +524,28 @@ class LeadPortalCycleMeasurementIntegrationTest {
         .isEqualByComparingTo("-384.83");
   }
 
+  /** A compra direta chega ao relatório com receita, contribuição e fonte próprias. */
+  @Test
+  void producesCommercialDecisionEvidenceFromDirectCheckout() {
+    directCheckout(88);
+    directReceipt("paid", 88, "approved", "true", "67", EVENT, EVENT);
+    event(88L, "HUMAN", "checkout_click", "human", "session", "", EVENT);
+    var result = collected(1088L, 88L);
+    assertThat(result.ready()).isTrue();
+    assertThat(result.evidence().path("netSales").asLong()).isEqualTo(1);
+    assertThat(result.evidence().path("revenueBrl").decimalValue()).isEqualByComparingTo("67");
+    assertThat(result.evidence().path("contributionBrl").decimalValue()).isEqualByComparingTo("-317.83");
+    assertThat(result.evidence().path("checkoutClicks").asLong()).isEqualTo(1);
+    assertThat(result.evidence().at("/sources/financialOutcomes/checkoutAccessEvents").asLong()).isZero();
+    assertThat(result.evidence().at("/sources/financialOutcomes/source").asText()).isEqualTo("COMMERCIAL_CHECKOUT_WEBHOOK");
+  }
+
   /** Exporta outra fotografia SQL para o BPM local, sem reescrever identificadores da evidência. */
   @Test
   void exportsSqlMeasurementForLocalBpm() throws Exception {
     Instant observed = Instant.now().minusSeconds(10);
     Instant published = observed.minusSeconds(3600);
-    jdbc.update("INSERT INTO experiment VALUES(91001,60)");
+    jdbc.update("INSERT INTO experiment(id,lead_portal_flow_id) VALUES(91001,60)");
     jdbc.update("UPDATE lead_portal_flow SET experiment_id=91001 WHERE id=60");
     jdbc.update("UPDATE gera_sales_page_publication_audit SET experiment_id=91001 WHERE id=32");
     jdbc.update(

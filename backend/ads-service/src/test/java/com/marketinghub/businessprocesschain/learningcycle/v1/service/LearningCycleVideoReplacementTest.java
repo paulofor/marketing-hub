@@ -80,7 +80,7 @@ class LearningCycleVideoReplacementTest {
             new LearningCyclePrototypeContext(events, json),
             new LearningCycleJson(json),
             new LearningCycleVideoBudget(events, new LearningCycleJson(json)),
-            evidence);
+            evidence, mock(LearningCycleDecisionProposalRepository.class));
     var flow = projection.resolve(cycle, null);
     assertThat(flow.decisionNeeded()).isTrue();
     assertThat(flow.situation()).contains("aguardam seu aceite");

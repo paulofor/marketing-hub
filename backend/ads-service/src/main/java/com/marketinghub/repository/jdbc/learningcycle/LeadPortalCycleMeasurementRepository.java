@@ -14,10 +14,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class LeadPortalCycleMeasurementRepository {
   private final JdbcTemplate jdbc;
+  private final DirectCheckoutCyclePaymentRepository directPayments;
 
   /** Recebe a única conexão canônica do backend, sem consultar módulos externos. */
-  public LeadPortalCycleMeasurementRepository(JdbcTemplate jdbc) {
+  public LeadPortalCycleMeasurementRepository(
+      JdbcTemplate jdbc, DirectCheckoutCyclePaymentRepository directPayments) {
     this.jdbc = jdbc;
+    this.directPayments = directPayments;
   }
 
   /** Concilia publicação, tráfego segregado e pagamentos persistidos dentro da janela. */
@@ -88,6 +91,7 @@ public class LeadPortalCycleMeasurementRepository {
             """,
             Long.class,
             experimentId);
+    var direct = directPayments.read(experimentId, start, end);
     return new LeadPortalCycleMeasurement(
         publication == null ? null : publication.id(),
         publication == null ? null : publication.url(),
@@ -95,7 +99,7 @@ public class LeadPortalCycleMeasurementRepository {
         run != null && run.publicationId() != null
             ? "PUBLISHED_RUN_ASSET_BUNDLE"
             : "LEGACY_PUBLICATION_AS_OF_RUN_OR_WINDOW",
-        flows != null && flows > 0,
+        direct.isPresent() || (flows != null && flows > 0),
         funnel.humanEvents(),
         funnel.rawEvents(),
         funnel.visitors(),
@@ -104,7 +108,7 @@ public class LeadPortalCycleMeasurementRepository {
         funnel.pageViews(),
         funnel.checkouts(),
         funnel.lastEvent(),
-        payments(experimentId, from, until));
+        direct.orElseGet(() -> payments(experimentId, from, until)));
   }
 
   /** Usa a publicação fixada no run; legado sem vínculo admite somente a fotografia da época. */

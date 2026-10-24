@@ -1,6 +1,8 @@
 package com.marketinghub.businessprocesschain.learningcycle.v1.service;
 
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
+import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.LearningCyclePreparationPolicy;
+import com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycleEvent;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
@@ -34,10 +36,11 @@ public class LearningCycleValueFlowProjection {
   private final LearningCycleJson json;
   private final LearningCycleVideoBudget videoBudget;
   private final LearningCycleVideoEvidence videoEvidence;
+  private final LearningCycleDecisionProposalRepository proposals;
   private static final Set<String> ACTIVE = Set.of("PENDING", "RUNNING", "IN_PROGRESS", "QUEUED");
 
   /**
-   * Resolve atividade, pausa, teto e aceite das peças exatas sem autorizar consumo pela leitura.
+   * Resolve atividade, pausa, teto, aceite das peças e decisão de aprendizado sem autorizar consumo pela leitura.
    */
   public LearningCycleValueFlow resolve(
       LearningSalesCycle cycle, LearningCycleProcessContext.Work work) {
@@ -103,10 +106,11 @@ public class LearningCycleValueFlowProjection {
             && "OPEN".equals(cycle.getStatus())
             && "VIDEO_BRIEF".equals(cycle.getStage());
     boolean videoBudgetMissing = videoBrief && videoBudget.current(cycle) == null;
-    var videoReview =
+    var review =
         !paused && "OPEN".equals(cycle.getStatus()) && "VIDEO_APPROVAL".equals(cycle.getStage())
             ? videoReview(cycle)
-            : null;
+            : !paused ? cycleDecisionReview(cycle) : null;
+    if (review != null && "DECISION".equals(cycle.getStage())) active = false;
     String situation =
         paused
             ? "A continuidade automática deste ciclo está pausada. As entregas aceitas foram preservadas."
@@ -114,8 +118,8 @@ public class LearningCycleValueFlowProjection {
                 ? videoBudgetMissing
                     ? "A preparação dos vídeos aguarda sua decisão sobre o teto de produção e revisão."
                     : "O teto dos vídeos está registrado; falta concluir o briefing e a avaliação financeira."
-                : videoReview != null
-                    ? videoReview.situation()
+                : review != null
+                    ? review.situation()
                     : implementationPending
                         ? (active
                             ? "A implementação privada está em composição."
@@ -141,8 +145,8 @@ public class LearningCycleValueFlowProjection {
                 ? videoBudgetMissing
                     ? "Falta um teto próprio desta versão para o anúncio e a demonstração. O orçamento de preparação por IA não autoriza vídeos ou mídia."
                     : "Os vídeos desta versão ainda precisam de produção, revisão e integração antes da homologação comercial."
-                : videoReview != null
-                    ? videoReview.blocker()
+                : review != null
+                    ? review.blocker()
                     : implementationPending
                         ? "A versão precisa comprovar uso, arquivos íntegros, recuperação e isolamento antes da revisão independente."
                         : work != null
@@ -174,7 +178,7 @@ public class LearningCycleValueFlowProjection {
               .orElse(since);
       if (delivery.isAfter(since)) since = delivery;
       if (registration.isAfter(since)) since = registration;
-      if (videoReview != null) {
+      if (review != null && "VIDEO_APPROVAL".equals(cycle.getStage())) {
         var videoDelivery =
             ledger.stream()
                 .filter(e -> "COMPLETE".equals(e.getAction()))
@@ -261,7 +265,7 @@ public class LearningCycleValueFlowProjection {
     Boolean decision;
     if (paused) decision = Boolean.TRUE;
     else if (videoBrief) decision = videoBudgetMissing;
-    else if (videoReview != null) decision = videoReview.decisionNeeded();
+    else if (review != null) decision = review.decisionNeeded();
     else if (implementationPending) decision = Boolean.FALSE;
     else if ("AUTHORIZATION".equals(cycle.getStage())) decision = Boolean.TRUE;
     else if (work != null && Set.of("BLOCKED", "WAITING_INPUT").contains(work.state()))
@@ -276,15 +280,17 @@ public class LearningCycleValueFlowProjection {
                 ? videoBudgetMissing
                     ? "Você · responsável pelo orçamento dos vídeos"
                     : "Marketing Hub · preparação dos vídeos"
-                : videoReview != null
-                    ? videoReview.responsible()
+                : review != null
+                    ? review.responsible()
                     : implementationPending
                         ? "Dédalo · compositor de kits"
                         : work == null ? "Marketing Hub" : work.responsible(),
         videoBrief
             ? "Apolo · produção após briefing e avaliação de Plutus"
-            : videoReview != null
-                ? "Backend · integração; Psique e Têmis · homologação após o aceite"
+            : review != null
+                ? "DECISION".equals(cycle.getStage())
+                    ? "Backend · preparação após a decisão"
+                    : "Backend · integração; Psique e Têmis · homologação após o aceite"
                 : (paused || implementationPending) && work != null ? work.responsible() : null,
         active,
         decision,
@@ -294,8 +300,8 @@ public class LearningCycleValueFlowProjection {
                 ? videoBudgetMissing
                     ? "Informe em Financeiro dos vídeos um único teto total em US$ para produzir e revisar as duas peças. Nenhum valor foi escolhido automaticamente."
                     : "O teto vigente será reutilizado na avaliação. Ele não inicia produção nem autoriza campanha, cobrança ou mídia."
-                : videoReview != null
-                    ? videoReview.decisionReason()
+                : review != null
+                    ? review.decisionReason()
                     : implementationPending
                         ? "Nenhuma nova data ou meta de margem é necessária para esta implementação privada."
                         : Boolean.TRUE.equals(decision)
@@ -313,8 +319,8 @@ public class LearningCycleValueFlowProjection {
                 ? videoBudgetMissing
                     ? "Teto registrado no mesmo ciclo; depois, briefing de Íris e avaliação de Plutus antes da produção de Apolo."
                     : "Briefing concluído com a referência financeira vigente, seguido da avaliação de Plutus e produção governada."
-                : videoReview != null
-                    ? videoReview.acceptance()
+                : review != null
+                    ? review.acceptance()
                     : implementationPending
                         ? "Pacote íntegro, primeira aplicação, retomada e limites comprovados; depois Psique revisa a mesma versão."
                         : work == null
@@ -335,8 +341,26 @@ public class LearningCycleValueFlowProjection {
         measure == null ? null : "Evento #" + measure.getId() + " · " + measure.getCreatedAt());
   }
 
+  /** Expõe aceite real de Atena sem confundir proposta pronta com preparação automática permitida. */
+  private PendingReviewGuidance cycleDecisionReview(LearningSalesCycle cycle) {
+    if (!"OPEN".equals(cycle.getStatus()) || !"DECISION".equals(cycle.getStage())) return null;
+    var proposal = proposals.findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycle.getId(), cycle.getRevision());
+    if (proposal.isEmpty()) return null;
+    var current = proposal.get();
+    if (!"READY".equals(current.getStatus()) || !Objects.equals(current.getCycleId(), cycle.getId())
+        || current.getCycleRevision() != cycle.getRevision()
+        || LearningCyclePreparationPolicy.eligible(json.read(current.getProposalJson()))) return null;
+    return new PendingReviewGuidance(
+        "Atena concluiu a proposta de aprendizado; falta sua decisão sobre a continuação.",
+        "A próxima operação depende da decisão sobre o resultado. Novos testes exigem limites e homologação próprios.",
+        "Você · decisão do ciclo",
+        true,
+        "Confira a proposta de Atena no formulário desta tela. Você pode editar e clicar em Aprovar decisão e registrar no BPM. Essa aprovação não libera mídia automaticamente.",
+        "Decisão registrada sobre a proposta vigente; o backend prepara a continuidade elegível, sem herdar orçamento ou ativar campanha.");
+  }
+
   /** Mantém juntos os fatos da revisão sem transformá-los em execução ou aprovação comercial. */
-  private record VideoReviewGuidance(
+  private record PendingReviewGuidance(
       String situation,
       String blocker,
       String responsible,
@@ -345,10 +369,10 @@ public class LearningCycleValueFlowProjection {
       String acceptance) {}
 
   /** Reutiliza o gate das peças selecionadas e mantém divergência de evidência como pendência. */
-  private VideoReviewGuidance videoReview(LearningSalesCycle cycle) {
+  private PendingReviewGuidance videoReview(LearningSalesCycle cycle) {
     try {
       if (videoEvidence.hasRejectedVideo(cycle))
-        return new VideoReviewGuidance(
+        return new PendingReviewGuidance(
             "Há vídeo rejeitado; a comunicação precisa de correção antes de pedir novo aceite.",
             "A versão rejeitada não pode seguir para integração. O feedback precisa orientar o roteiro, a produção e a revisão do vídeo final.",
             "Íris e Apolo · correção; Psique · revisão independente",
@@ -356,14 +380,14 @@ public class LearningCycleValueFlowProjection {
             "A rejeição já está registrada. Não é necessário aprovar novamente a mesma peça; acompanhe a correção no Estúdio audiovisual.",
             "Nova versão corrigida, revisada no arquivo final e apresentada para seleção; preservar a rejeição e os custos anteriores.");
       if (videoEvidence.awaitingApproval(cycle))
-        return new VideoReviewGuidance(
+        return new PendingReviewGuidance(
             "Os dois vídeos estão produzidos e aguardam seu aceite de uso.",
             "Falta concluir a seleção humana das peças antes da integração e da homologação. O teto financeiro não substitui esse aceite.",
             "Você · seleção de uso dos vídeos",
             Boolean.TRUE,
             "Abra Ver aprovações dos vídeos, assista às duas peças com som e escolha aprovar o uso ou pedir ajustes. Não é necessário autorizar novamente os limites já registrados.",
             "Aceites dos dois vídeos selecionados neste ciclo; depois, integração e homologação da mesma versão, antes da campanha.");
-      return new VideoReviewGuidance(
+      return new PendingReviewGuidance(
           "O aceite dos dois vídeos está registrado; a integração e a homologação ainda precisam ser comprovadas.",
           "O conjunto com os vídeos precisa de integração, homologação e liberação comercial antes da campanha.",
           "Backend · integração e encaminhamento da homologação",
@@ -378,7 +402,7 @@ public class LearningCycleValueFlowProjection {
           cycle.getExperimentId(),
           cycle.getProductVersion(),
           ex);
-      return new VideoReviewGuidance(
+      return new PendingReviewGuidance(
           "As evidências dos vídeos precisam de conferência antes da integração.",
           "Não foi possível confirmar as peças selecionadas desta versão. Corrija sua evidência na atividade antes de pedir aceite ou integrar.",
           "Marketing Hub · conferência dos vínculos audiovisuais",

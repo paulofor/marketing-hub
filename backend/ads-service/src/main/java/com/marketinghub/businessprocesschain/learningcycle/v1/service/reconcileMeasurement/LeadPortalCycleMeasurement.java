@@ -30,5 +30,26 @@ public record LeadPortalCycleMeasurement(
       BigDecimal grossRevenueBrl,
       BigDecimal refundedRevenueBrl,
       long deliveredNetSales,
-      String blocker) {}
+      String blocker,
+      String source) {
+    /** Preserva o contrato legado dos pagamentos vinculados a pacotes do Lead Portal. */
+    public Payments(
+        long checkoutAccesses,
+        long purchases,
+        long refunds,
+        BigDecimal grossRevenueBrl,
+        BigDecimal refundedRevenueBrl,
+        long deliveredNetSales,
+        String blocker) {
+      this(
+          checkoutAccesses,
+          purchases,
+          refunds,
+          grossRevenueBrl,
+          refundedRevenueBrl,
+          deliveredNetSales,
+          blocker,
+          "LEAD_PORTAL_PURCHASE");
+    }
+  }
 }

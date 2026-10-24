@@ -38,6 +38,12 @@ import org.springframework.web.bind.annotation.*;
   BigIdeaLocalApplication.FixtureController.class
 })
 public class BigIdeaLocalApplication {
+  /** A fixture de CRUD não possui execução histórica e conserva essa dependência segregada. */
+  @Bean
+  BigIdeaHistoricalAuthority bigIdeaHistory() {
+    return mock(BigIdeaHistoricalAuthority.class);
+  }
+
   /** Inicia a fixture isolada sem ler configuração ou credenciais produtivas. */
   public static void main(String[] args) {
     String host = System.getenv().getOrDefault("BIG_IDEA_DB_HOST", "sandbox-docker");

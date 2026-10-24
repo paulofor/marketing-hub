@@ -19,6 +19,7 @@ class BigIdeaServiceTest {
   ProductBigIdeaRepository revisions;
   ProductBigIdeaBindingRepository bindings;
   BigIdeaService service;
+  BigIdeaHistoricalAuthority history;
   Product product;
   List<ProductBigIdea> saved;
 
@@ -28,13 +29,15 @@ class BigIdeaServiceTest {
     products = mock(ProductRepository.class);
     revisions = mock(ProductBigIdeaRepository.class);
     bindings = mock(ProductBigIdeaBindingRepository.class);
+    history = mock(BigIdeaHistoricalAuthority.class);
     service =
         new BigIdeaService(
             products,
             revisions,
             bindings,
             new ObjectMapper().findAndRegisterModules(),
-            Validation.buildDefaultValidatorFactory().getValidator());
+            Validation.buildDefaultValidatorFactory().getValidator(),
+            history);
     product = new Product();
     product.setId(701L);
     saved = new ArrayList<>();
@@ -124,6 +127,24 @@ class BigIdeaServiceTest {
     assertThat(service.pin(701L, "experiment:901@agent-validation-v1")).isEqualTo(first);
     assertThat(service.pin(701L, "experiment:902").revision()).isEqualTo(2);
     assertThatThrownBy(() -> service.pin(702L, "experiment:901")).hasMessageContaining("404");
+  }
+
+  /** Um vínculo tardio inválido permanece auditável sem migrar o experimento histórico. */
+  @Test
+  void doesNotApplyLateBindingToHistoricalContext() {
+    service.save(
+        701L, new SaveBigIdeaRequest(0, content("Direção futura"), "Pesquisa posterior"), "Atena");
+    var binding = new ProductBigIdeaBinding();
+    binding.setBigIdea(product.getBigIdea());
+    when(bindings.findByProductIdAndSourceReference(701L, "experiment:901"))
+        .thenReturn(Optional.of(binding));
+    when(history.preservesAbsence(product.getBigIdea(), "experiment:901")).thenReturn(true);
+    assertThat(service.pin(701L, "experiment:901@validation")).isNull();
+    assertThat(service.reference(product, "experiment:901")).isNull();
+    assertThat(service.pin(701L, "experiment:902").content().centralIdea())
+        .isEqualTo("Direção futura");
+    assertThat(binding.getBigIdea()).isSameAs(product.getBigIdea());
+    assertThat(service.get(701L).current().content().centralIdea()).isEqualTo("Direção futura");
   }
 
   /** Mantém produtos sem ideia explícitos sem bloquear leitura de legado. */

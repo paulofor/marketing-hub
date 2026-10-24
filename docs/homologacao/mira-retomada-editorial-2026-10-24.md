@@ -186,3 +186,9 @@ Validação local da passagem: 117 testes dos contratos de jobs, recuperação, 
 ## Recibo sonoro negativo preservado
 
 Vídeos #80/#81 foram remontados sem síntese nova e passaram na reprodução técnica desktop/iPhone/Pixel. A retomada criou Psique #806; o recibo #15 identificou possível efeito final e foi descartado por contradição com o metadado VOICE_ONLY. O contrato passa a admitir a avaliação negativa, mantendo a aprovação bloqueada. Replay conserva response bruto, valor estimado US$ 0,022693 e hash; não troca conteúdo por PASS. A medição técnica não confirmou origem do som e não equivale à percepção.
+
+## Direção histórica e encerramento
+
+Psique #807 preservou a imagem 659, aprovou escuta #16 do anúncio e pediu correção da demonstração pelo recibo #15. Seu BLOCKED também comparou v3 à Big Idea #3, criada após o início do experimento. A primeira tarefa #620, de 07/10, não continha Big Idea; o vínculo tardio apareceu na retomada #802 em 24/10. A correção aplica o cânone existente de não migração histórica, sem mudar a pesquisa atual nem fabricar parecer favorável.
+
+A matriz local cobre ausência legada/explicitamente MISSING, contexto novo, criação legítima por Atena, fotografia inválida, alias/IDs parecidos no SQL, vínculo tardio, recuperação e regras arquiteturais. Os MP4s ainda devem receber encerramento breve e seus pareceres próprios; revisão sonora negativa segue bloqueando aprovação.

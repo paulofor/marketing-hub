@@ -1831,6 +1831,7 @@ public class SalesVideoJobService {
     };
   }
 
+  /** Registra resumo limitado ao schema e preserva mensagens extensas na auditoria completa. */
   private void registerEvent(
       SalesVideoJob job,
       SalesVideoJobEventType type,
@@ -1838,14 +1839,25 @@ public class SalesVideoJobService {
       SalesVideoStatus newStatus,
       String message,
       String detailsJson) {
+    boolean oversized = message != null && message.length() > 512;
+    int summaryEnd = oversized ? 509 : 0;
+    if (oversized && Character.isHighSurrogate(message.charAt(summaryEnd - 1))) summaryEnd--;
+    String audit = detailsJson;
+    if (oversized) {
+      Map<String, Object> detail = new java.util.LinkedHashMap<>();
+      detail.put("contractVersion", "SALES_VIDEO_EVENT_DETAIL_V1");
+      detail.put("originalMessage", message);
+      detail.put("sourceDetailsText", detailsJson);
+      audit = writeJson(detail, "Falha ao preservar mensagem extensa do evento de vídeo");
+    }
     SalesVideoJobEvent event =
         SalesVideoJobEvent.builder()
             .job(job)
             .eventType(type)
             .oldStatus(oldStatus)
             .newStatus(newStatus)
-            .message(message)
-            .detailsJson(detailsJson)
+            .message(oversized ? message.substring(0, summaryEnd) + "..." : message)
+            .detailsJson(audit)
             .build();
     eventRepository.save(event);
     job.getEvents().add(event);

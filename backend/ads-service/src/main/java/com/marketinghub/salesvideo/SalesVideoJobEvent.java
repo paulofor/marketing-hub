@@ -36,6 +36,7 @@ public class SalesVideoJobEvent {
   @Column(name = "new_status", length = 64)
   private SalesVideoStatus newStatus;
 
+  @Column(name = "message", length = 512)
   private String message;
 
   @Lob

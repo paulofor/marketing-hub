@@ -283,16 +283,15 @@ public class CommunicationAgentCodexRunner {
   /** Compõe o schema versionado da atividade sem duplicar contratos das demais entregas. */
   JsonNode schemaFor(Contract contract) throws IOException {
     JsonNode schema = json.readTree(read("prompts/iris/v1/output-schema.json"));
-    if ("COMMUNICATION_PACKAGE".equals(contract.outputType())) {
+    if (!"COMMUNICATION_PACKAGE".equals(contract.outputType())) {
       var output =
           (com.fasterxml.jackson.databind.node.ObjectNode)
               schema.at("/properties/functionalOutput");
       ((com.fasterxml.jackson.databind.node.ObjectNode) output.path("properties"))
-          .set(
-              "persuasionEvidence",
-              json.readTree(read("prompts/iris/v1/persuasion-evidence-schema.json")));
-      ((com.fasterxml.jackson.databind.node.ArrayNode) output.path("required"))
-          .add("persuasionEvidence");
+          .remove("persuasionEvidence");
+      var required = (com.fasterxml.jackson.databind.node.ArrayNode) output.path("required");
+      for (int index = required.size() - 1; index >= 0; index--)
+        if ("persuasionEvidence".equals(required.get(index).asText())) required.remove(index);
     }
     return schema;
   }

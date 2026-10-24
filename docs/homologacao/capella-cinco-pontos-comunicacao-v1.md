@@ -68,8 +68,11 @@ privada. Não repetir experimentos históricos nem transformar aprovação técn
 - Backend: suíte completa com 5.286 testes executados e nenhuma falha, incluindo ArchUnit,
   identidade da parada e catálogo do harness; 47 integrações também no MySQL 5.7 isolado.
 - Validação dos agentes premium e 12 testes do empacotamento dos recursos aprovados.
-- O teste do catálogo reproduziu a ausência da extensão na tela dos agentes; o manifesto
-  agora a declara como schema complementar, com conteúdo e hash iguais aos do executor.
+- O teste do catálogo reproduziu a ausência da extensão na tela. O CI também comprovou que
+  o manifesto global integra uma atestação histórica de Mira. A extensão foi consolidada no
+  `output-schema.json` já cadastrado de Íris, sem alterar esse manifesto nem seus hashes.
+  O executor remove a extensão das outras atividades; o catálogo mostra a mesma fonte.
+  A montagem das provas comerciais imutáveis foi revalidada localmente.
 
 Os totais executados excluem testes opcionais dependentes de fixtures ou runners específicos
 (5 de Íris, 12 de Psique e 57 do backend). Todos os critérios desta matriz foram executados;

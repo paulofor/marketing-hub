@@ -142,6 +142,14 @@ class CommunicationAgentCodexRunnerTest {
                     "/properties/functionalOutput/properties/persuasionEvidence/properties/criteria/minItems")
                 .asInt())
         .isEqualTo(5);
+    var material =
+        runner.schemaFor(
+            new CommunicationAgentCodexRunner.Contract(
+                "NON_AUDIOVISUAL_PACKAGE", "prompts/iris/v1/non-audiovisual-package.md"));
+    assertThat(material.at("/properties/functionalOutput/properties").has("persuasionEvidence"))
+        .isFalse();
+    assertThat(material.at("/properties/functionalOutput/required").toString())
+        .doesNotContain("persuasionEvidence");
     assertThat(runner.prompt(input, contract))
         .contains(
             "COMMERCIAL_PERSUASION_EVIDENCE_V1", "sourcePointer", "compra única", "produção paga");

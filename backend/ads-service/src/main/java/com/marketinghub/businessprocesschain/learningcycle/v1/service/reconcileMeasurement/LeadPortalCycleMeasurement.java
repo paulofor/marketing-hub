@@ -7,6 +7,8 @@ import java.time.Instant;
 public record LeadPortalCycleMeasurement(
     Long publicationId,
     String publicationUrl,
+    Long publishedRunId,
+    String publicationScope,
     boolean paymentSourceAvailable,
     long humanEvents,
     long rawEvents,

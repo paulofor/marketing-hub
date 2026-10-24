@@ -24,17 +24,24 @@ public class LeadPortalCycleMeasurementRepository {
   public LeadPortalCycleMeasurement read(Long experimentId, Instant start, Instant end) {
     var from = Timestamp.from(start);
     var until = Timestamp.from(end);
-    var publications =
+    var runs =
         jdbc.query(
             """
-            SELECT id, sales_page_url FROM gera_sales_page_publication_audit
-            WHERE experiment_id = ? AND published_at <= ?
-            ORDER BY published_at DESC, id DESC LIMIT 1
+            SELECT id, asset_bundle_version, published_at FROM experiment_run
+            WHERE experiment_id = ? AND mode = 'PRODUCTION' AND published_at <= ?
+            ORDER BY run_number DESC, id DESC LIMIT 1
             """,
-            (rs, row) -> new Publication(rs.getLong("id"), rs.getString("sales_page_url")),
+            (rs, row) ->
+                new PublishedRun(
+                    rs.getLong("id"),
+                    rs.getObject("asset_bundle_version") == null
+                        ? null
+                        : rs.getLong("asset_bundle_version"),
+                    rs.getTimestamp("published_at")),
             experimentId,
             until);
-    var publication = publications.isEmpty() ? null : publications.getFirst();
+    var run = runs.isEmpty() ? null : runs.getFirst();
+    var publication = publication(experimentId, until, run);
     var funnel =
         jdbc.queryForObject(
             """
@@ -84,6 +91,10 @@ public class LeadPortalCycleMeasurementRepository {
     return new LeadPortalCycleMeasurement(
         publication == null ? null : publication.id(),
         publication == null ? null : publication.url(),
+        run == null ? null : run.id(),
+        run != null && run.publicationId() != null
+            ? "PUBLISHED_RUN_ASSET_BUNDLE"
+            : "LEGACY_PUBLICATION_AS_OF_RUN_OR_WINDOW",
         flows != null && flows > 0,
         funnel.humanEvents(),
         funnel.rawEvents(),
@@ -94,6 +105,36 @@ public class LeadPortalCycleMeasurementRepository {
         funnel.checkouts(),
         funnel.lastEvent(),
         payments(experimentId, from, until));
+  }
+
+  /** Usa a publicação fixada no run; legado sem vínculo admite somente a fotografia da época. */
+  private Publication publication(Long experimentId, Timestamp end, PublishedRun run) {
+    var publishedAt = run == null ? end : run.publishedAt();
+    List<Publication> publications;
+    if (run != null && run.publicationId() != null) {
+      publications =
+          jdbc.query(
+              """
+          SELECT id, sales_page_url FROM gera_sales_page_publication_audit
+          WHERE id = ? AND experiment_id = ? AND published_at <= ?
+          """,
+              (rs, row) -> new Publication(rs.getLong("id"), rs.getString("sales_page_url")),
+              run.publicationId(),
+              experimentId,
+              publishedAt);
+    } else {
+      publications =
+          jdbc.query(
+              """
+          SELECT id, sales_page_url FROM gera_sales_page_publication_audit
+          WHERE experiment_id = ? AND published_at <= ?
+          ORDER BY published_at DESC, id DESC LIMIT 1
+          """,
+              (rs, row) -> new Publication(rs.getLong("id"), rs.getString("sales_page_url")),
+              experimentId,
+              publishedAt);
+    }
+    return publications.isEmpty() ? null : publications.getFirst();
   }
 
   /** Lê checkout e desfechos financeiros; fluxo compartilhado exige atribuição própria. */
@@ -210,6 +251,9 @@ public class LeadPortalCycleMeasurementRepository {
 
   /** Responsabilidade: transportar somente a identidade da publicação histórica consultada. */
   private record Publication(Long id, String url) {}
+
+  /** Responsabilidade: preservar o vínculo auditado da execução que realmente publicou. */
+  private record PublishedRun(Long id, Long publicationId, Timestamp publishedAt) {}
 
   /** Responsabilidade: transportar contagens agregadas de tráfego sem identificadores pessoais. */
   private record Funnel(

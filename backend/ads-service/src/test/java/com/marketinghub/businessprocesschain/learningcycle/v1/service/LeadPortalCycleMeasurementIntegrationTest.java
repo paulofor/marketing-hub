@@ -74,10 +74,13 @@ class LeadPortalCycleMeasurementIntegrationTest {
             "lead_portal_purchase",
             "flow_submissions",
             "lead_portal_flow",
+            "experiment_run",
             "experiment",
             "facebook_ads_campaign",
             "gera_sales_page_publication_audit")) jdbc.execute("DROP TABLE IF EXISTS " + table);
     jdbc.execute("CREATE TABLE experiment(id BIGINT PRIMARY KEY, lead_portal_flow_id BIGINT)");
+    jdbc.execute(
+        "CREATE TABLE experiment_run(id BIGINT PRIMARY KEY, experiment_id BIGINT, run_number INT, mode VARCHAR(30), asset_bundle_version INT, published_at DATETIME)");
     jdbc.execute(
         "CREATE TABLE lead_portal_flow(id BIGINT PRIMARY KEY, slug VARCHAR(150), experiment_id BIGINT)");
     jdbc.execute(
@@ -152,6 +155,67 @@ class LeadPortalCycleMeasurementIntegrationTest {
     assertThat(snapshot.humanVisitors()).isEqualTo(1);
     assertThat(snapshot.paymentSourceAvailable()).isTrue();
     assertThat(snapshot.publicationId()).isEqualTo(40);
+  }
+
+  /** Nova revisão ou run não publicado não substitui a publicação congelada no teste anterior. */
+  @Test
+  void keepsPinnedPublicationAcrossLaterRevisionsAndUnpublishedRuns() {
+    publishedRun(19L, 88L, 1, 32L, EVENT.plusSeconds(1));
+    jdbc.update(
+        "INSERT INTO gera_sales_page_publication_audit VALUES(34,88,?,?)",
+        Timestamp.from(EVENT.plusSeconds(60)),
+        PAGE);
+    publishedRun(20L, 88L, 2, 34L, null);
+    publishedRun(21L, 88L, 3, 34L, END.plusSeconds(1));
+    jdbc.update(
+        "INSERT INTO experiment_run VALUES(22,88,4,'DRY_RUN',34,?)",
+        Timestamp.from(EVENT.plusSeconds(120)));
+    var snapshot = repository.read(88L, START, END);
+    assertThat(snapshot.publicationId()).isEqualTo(32);
+    assertThat(snapshot.publishedRunId()).isEqualTo(19);
+    assertThat(snapshot.publicationScope()).isEqualTo("PUBLISHED_RUN_ASSET_BUNDLE");
+    var result = collected(7L, 88L, "capella-private-v3", START, END, NOW);
+    assertThat(result.evidence().at("/sources/leadPortalAnalytics/productVersion").asText())
+        .isEqualTo("capella-private-v3");
+  }
+
+  /** Outra identidade usa o mesmo vínculo publicado, mesmo com contrato v1 e experiência v8. */
+  @Test
+  void reconcilesDifferentProductWithPinnedExperience() {
+    jdbc.update("UPDATE gera_sales_page_publication_audit SET experiment_id=94 WHERE id=32");
+    publishedRun(41L, 94L, 1, 32L, EVENT.plusSeconds(1));
+    var result = collected(117L, 94L, "other-kit-v8", START, END, NOW);
+    assertThat(result.evidence().at("/sources/leadPortalAnalytics/publishedRunId").asLong())
+        .isEqualTo(41);
+  }
+
+  /** Vínculo inválido não cai silenciosamente na última página válida de outro contexto. */
+  @ParameterizedTest
+  @ValueSource(strings = {"foreign", "missing", "future"})
+  void rejectsInvalidPinnedPublicationWithoutFallback(String problem) {
+    if (!"missing".equals(problem))
+      jdbc.update(
+          "INSERT INTO gera_sales_page_publication_audit VALUES(34,?,?,?)",
+          "foreign".equals(problem) ? 94L : 88L,
+          Timestamp.from("future".equals(problem) ? EVENT.plusSeconds(60) : EVENT),
+          PAGE);
+    publishedRun(19L, 88L, 1, 34L, EVENT.plusSeconds(1));
+    var snapshot = repository.read(88L, START, END);
+    assertThat(snapshot.publicationId()).isNull();
+    assertThat(snapshot.publishedRunId()).isEqualTo(19);
+  }
+
+  /** Legado sem asset preserva a página da época da publicação e explicita a limitação. */
+  @Test
+  void boundsLegacyPublicationByPublishedRunTime() {
+    publishedRun(19L, 88L, 1, null, EVENT.plusSeconds(1));
+    jdbc.update(
+        "INSERT INTO gera_sales_page_publication_audit VALUES(34,88,?,?)",
+        Timestamp.from(EVENT.plusSeconds(60)),
+        PAGE);
+    var snapshot = repository.read(88L, START, END);
+    assertThat(snapshot.publicationId()).isEqualTo(32);
+    assertThat(snapshot.publicationScope()).isEqualTo("LEGACY_PUBLICATION_AS_OF_RUN_OR_WINDOW");
   }
 
   /** Pagamento atribuído exige moeda e referência e distingue entrega de simples aprovação. */
@@ -265,9 +329,15 @@ class LeadPortalCycleMeasurementIntegrationTest {
   /** Exporta outra fotografia SQL para o BPM local, sem reescrever identificadores da evidência. */
   @Test
   void exportsSqlMeasurementForLocalBpm() throws Exception {
+    Instant observed = Instant.now().minusSeconds(10);
+    Instant published = observed.minusSeconds(3600);
     jdbc.update("INSERT INTO experiment VALUES(91001,60)");
     jdbc.update("UPDATE lead_portal_flow SET experiment_id=91001 WHERE id=60");
     jdbc.update("UPDATE gera_sales_page_publication_audit SET experiment_id=91001 WHERE id=32");
+    jdbc.update(
+        "UPDATE gera_sales_page_publication_audit SET published_at=? WHERE id=32",
+        Timestamp.from(published));
+    publishedRun(91001L, 91001L, 1, 32L, published.plusSeconds(1));
     for (int index = 0; index < 7; index++)
       event(
           91001L,
@@ -276,9 +346,11 @@ class LeadPortalCycleMeasurementIntegrationTest {
           "visitor-" + (index % 6),
           "session-" + (index % 6),
           "",
-          EVENT);
-    event(91001L, "AUTOMATED", "checkout_click", "qa", "qa", "mh_test=1", EVENT);
-    var result = collected(91001L, 91001L);
+          observed.minusSeconds(600));
+    event(
+        91001L, "AUTOMATED", "checkout_click", "qa", "qa", "mh_test=1", observed.minusSeconds(600));
+    var result =
+        collected(91001L, 91001L, "fixture-commercial-91001-v12", published, observed, observed);
     assertThat(result.ready()).isTrue();
     assertThat(result.evidence().path("experimentId").asLong()).isEqualTo(91001);
     assertThat(result.evidence().path("humanVisitors").asLong()).isEqualTo(6);
@@ -292,6 +364,17 @@ class LeadPortalCycleMeasurementIntegrationTest {
 
   /** Concilia o SQL real com apenas mídia e ledger substituídos por fontes determinísticas. */
   private LearningCycleMeasurementCollector.Result collected(Long productId, Long experimentId) {
+    return collected(productId, experimentId, "v1", START, END, NOW);
+  }
+
+  /** Exercita versões distintas do contrato com período e relógio explícitos. */
+  private LearningCycleMeasurementCollector.Result collected(
+      Long productId,
+      Long experimentId,
+      String productVersion,
+      Instant start,
+      Instant end,
+      Instant observed) {
     var analytics = mock(PdeExperimentAnalyticsReader.class);
     var acquisition = mock(ExperimentAcquisitionMetricsReader.class);
     var costs = mock(ExperimentCostReconciliationService.class);
@@ -316,8 +399,8 @@ class LeadPortalCycleMeasurementIntegrationTest {
             new ExperimentAcquisitionMetricsSnapshot(
                 ExperimentPlatform.FACEBOOK,
                 new BigDecimal("30.49"),
-                EVENT,
-                EVENT,
+                end.minusSeconds(60),
+                end.minusSeconds(60),
                 null,
                 1051L,
                 8L,
@@ -338,14 +421,25 @@ class LeadPortalCycleMeasurementIntegrationTest {
     cycle.setId(5L);
     cycle.setProductId(productId);
     cycle.setExperimentId(experimentId);
-    cycle.setProductVersion("v1");
-    cycle.setWindowStart(START);
-    cycle.setWindowEnd(END);
-    var result = collector.collect(cycle, experiment, NOW);
+    cycle.setProductVersion(productVersion);
+    cycle.setWindowStart(start);
+    cycle.setWindowEnd(end);
+    var result = collector.collect(cycle, experiment, observed);
     assertThat(result.ready()).isTrue();
-    LearningCycleRules.validateMetrics(cycle, result.evidence(), NOW);
+    LearningCycleRules.validateMetrics(cycle, result.evidence(), observed);
     verifyNoInteractions(analytics);
     return result;
+  }
+
+  /** Persiste um run sintético para conferir a seleção histórica, sem qualquer publicação real. */
+  private void publishedRun(Long id, Long experiment, int number, Long publication, Instant at) {
+    jdbc.update(
+        "INSERT INTO experiment_run VALUES(?,?,?,'PRODUCTION',?,?)",
+        id,
+        experiment,
+        number,
+        publication,
+        at == null ? null : Timestamp.from(at));
   }
 
   /** Ausência de fluxo/publicação fica explícita, sem tratar indisponibilidade como desempenho. */

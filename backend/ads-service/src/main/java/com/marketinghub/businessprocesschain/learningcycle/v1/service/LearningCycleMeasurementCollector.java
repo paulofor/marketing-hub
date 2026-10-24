@@ -258,13 +258,12 @@ public class LearningCycleMeasurementCollector {
             + fingerprint);
   }
 
-  /** Concilia kits Quartzo pelas fontes do Lead Portal sem exigir uma aplicação PDE artificial. */
+  /** Concilia a publicação histórica do kit; a versão do contrato não identifica a experiência. */
   private Result collectLeadPortalVerified(
       LearningSalesCycle cycle, Experiment experiment, Instant now, Instant periodEnd) {
     requireSource(
-        Objects.equals(
-            cycle.getProductVersion(), experiment.getProduct().getValidationDefinitionVersion()),
-        "A versão do kit diverge da versão registrada no ciclo; preserve o histórico e concilie a identidade.");
+        cycle.getProductVersion() != null && !cycle.getProductVersion().isBlank(),
+        "O ciclo não preservou a versão da experiência; concilie a identidade antes de medir.");
     var funnel = leadPortal.read(experiment.getId(), cycle.getWindowStart(), periodEnd);
     requireSource(
         funnel.publicationId() != null
@@ -286,6 +285,8 @@ public class LearningCycleMeasurementCollector {
             experiment.getId(),
             cycle.getProductVersion(),
             funnel.publicationId(),
+            funnel.publishedRunId(),
+            funnel.publicationScope(),
             funnel.humanEvents(),
             funnel.humanVisitors(),
             funnel.humanSessions(),
@@ -333,7 +334,11 @@ public class LearningCycleMeasurementCollector {
     ObjectNode portal = sources.putObject("leadPortalAnalytics");
     portal.put("publicationId", funnel.publicationId());
     portal.put("publicationUrl", funnel.publicationUrl());
+    portal.put("publishedRunId", funnel.publishedRunId());
+    portal.put("publicationScope", funnel.publicationScope());
     portal.put("productVersion", cycle.getProductVersion());
+    portal.put(
+        "validationDefinitionVersion", experiment.getProduct().getValidationDefinitionVersion());
     portal.put("attribution", "EXPERIMENT_ID_OR_LINKED_CAMPAIGN_IDENTIFIERS");
     portal.put("trafficQualityIncluded", "HUMAN_WITHOUT_INTERNAL_TEST_MARKERS");
     portal.put("humanEvents", funnel.humanEvents());

@@ -506,6 +506,12 @@ evidência e decide o próximo movimento comercial. O BPM v3 torna essa responsa
 - O kit `LOW_TICKET_DIGITAL_PRODUCT` usa publicação GeraSalesPage auditada, eventos normalizados
   do experimento e pagamentos persistidos do Lead Portal. Não exige slot nem assinatura PDE.
   Os produtos que usam PDE continuam no leitor de slot, versão e eventos canônicos já existente.
+- A versão da experiência congelada no ciclo é distinta de `validationDefinitionVersion`,
+  que identifica o contrato modular. Na conciliação Quartzo, a fonte é a publicação auditada
+  fixada em `asset_bundle_version` do run produtivo efetivamente publicado até a leitura.
+  Publicação alheia, ausente ou posterior ao run bloqueia; não há fallback para vínculo inválido.
+  Legado sem vínculo usa a publicação até a data do run, ou até o fim da leitura sem run,
+  registrando essa limitação. Run não publicado ou de teste não substitui a fonte histórica.
 - O contrato `LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2` preserva visitantes, sessões, checkouts,
   vendas, moeda, custos e assinatura. Em kits pós-compra, `starts` e `firstResults` são `null`,
   declarados em `notApplicableMetrics`; não são zero nem prova de experiência sem resultado.

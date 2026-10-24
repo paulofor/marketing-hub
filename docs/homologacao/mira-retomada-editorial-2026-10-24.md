@@ -73,3 +73,31 @@ da reserva e repetição sem nova cobrança. Autorizações totais não mudam.
 
 Os 59 testes adicionais de contrato, reserva e recuperação sonora passaram. A soma das
 validações locais relevantes é 182 testes, além do build e das três navegações emuladas.
+
+## Retorno de locução e limite da mensagem
+
+A remontagem autorizada 21295 reutilizou o clipe 21267, mas a primeira locução recebeu
+HTTP 401 / invalid_api_key. Nenhum áudio novo foi recebido. A credencial própria de
+Apolo e a cópia legada do mesmo host também foram recusadas na consulta sem geração;
+a credencial de Psique não foi copiada nem alterada.
+
+O callback `/internal/video/jobs/21295/fail` falhou três vezes: MySQL 1406, mensagem
+maior que `sales_video_job_event.message VARCHAR(512)`. Eventos anteriores aceitos
+(21289, 21288, 21272) tinham 79–103 caracteres. A falha não era nova geração em curso:
+a persistência do estado terminal foi revertida pelo evento extenso.
+
+A correção limita o resumo e preserva a mensagem integral no LONGTEXT existente.
+Para mensagens extensas, `details_json` usa `SALES_VIDEO_EVENT_DETAIL_V1`, com
+`originalMessage` e `sourceDetailsText` (texto original, inclusive quando contém JSON).
+Mensagens dentro do limite mantêm o contrato anterior. `failure_detail` permanece
+inalterado. O mapeamento JPA explicita o limite canônico; não há alteração de schema.
+
+Alternativas: ampliar a coluna exigiria migração sem resolver a mistura de resumo e
+auditoria; cortar a resposta no executor perderia evidência e não protegeria outros
+callbacks; limitar o resumo no backend e preservar o original protege todas as origens.
+A última opção foi adotada, com regressão de persistência H2 em modo MySQL para o caso,
+outra identidade e o caminho curto antes válido, incluindo corte seguro de Unicode.
+
+A nova locução permanece dependente da recuperação da credencial própria de Apolo;
+não repetir a chamada 401 sem mudança comprovada. Não ampliar orçamento, substituir
+por voz robótica ou atribuir aprovação aos revisores para contornar essa dependência.

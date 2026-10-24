@@ -48,6 +48,63 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
+  /**
+   * Persiste callbacks extensos no limite SQL real, preservando outra identidade e o caminho curto.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {21295, 91001, 91002})
+  void shouldPersistFailureWithoutOverflowingEventMessage(Long jobId) throws Exception {
+    boolean extended = jobId != 91002;
+    String message =
+        extended ? "x".repeat(508) + "😀" + "401 invalid_api_key ".repeat(90) : "Falha curta";
+    String detail = "{\"status\":401,\"code\":\"invalid_api_key\",\"message\":\"fixture\"}";
+    var job =
+        SalesVideoJob.builder()
+            .id(jobId)
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .build();
+    var request = new JobFailureRequest();
+    request.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    request.setFailureCode("OPENAI_TTS_FAILED");
+    request.setFailureDetail(detail);
+    request.setMessage(message);
+    given(jobRepository.findById(jobId)).willReturn(Optional.of(job));
+    given(jobRepository.save(job)).willReturn(job);
+    try (var db =
+        java.sql.DriverManager.getConnection("jdbc:h2:mem:event" + jobId + ";MODE=MySQL")) {
+      db.createStatement().execute("CREATE TABLE video_event (message VARCHAR(512), details CLOB)");
+      given(eventRepository.save(any()))
+          .willAnswer(
+              call -> {
+                com.marketinghub.salesvideo.SalesVideoJobEvent event = call.getArgument(0);
+                try (var insert = db.prepareStatement("INSERT INTO video_event VALUES (?, ?)")) {
+                  insert.setString(1, event.getMessage());
+                  insert.setString(2, event.getDetailsJson());
+                  insert.executeUpdate();
+                }
+                return event;
+              });
+      assertThat(service.fail(jobId, request).getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+      assertThat(job.getFailureDetail()).isEqualTo(detail);
+      try (var rows =
+          db.createStatement().executeQuery("SELECT message, details FROM video_event")) {
+        assertThat(rows.next()).isTrue();
+        assertThat(rows.getString(1).length()).isLessThanOrEqualTo(512);
+        if (extended) {
+          var audit = new ObjectMapper().readTree(rows.getString(2));
+          assertThat(audit.path("originalMessage").asText()).isEqualTo(message);
+          assertThat(audit.path("sourceDetailsText").asText()).isEqualTo(detail);
+          assertThat(rows.getString(1)).doesNotContain("\uFFFD");
+        } else {
+          assertThat(rows.getString(1)).isEqualTo(message);
+          assertThat(rows.getString(2)).isEqualTo(detail);
+        }
+      }
+    }
+  }
+
   /** Retoma falha, reprovação ou ajuste independente da fonte atual sem trocar trabalho válido. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(

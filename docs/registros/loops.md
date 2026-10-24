@@ -11030,3 +11030,15 @@ depois de materializar o checkout. Provas e limites em
   Atena aparecia com formulário de aprovação e resumo sem decisão pendente. A projeção
   lê a revisão exata e reutiliza a política preparatória, preservando ajustes automáticos,
   propostas obsoletas, ciclos encerrados e ausência de efeitos pela leitura.
+
+## LOOP-APOLO-CALLBACK-MENSAGEM-EXTENSA — 24/10/2026
+
+- Evidência: job 21295 recebeu 401 na primeira locução; callback `fail` retornou 500
+  por MySQL 1406 em `sales_video_job_event.message`, deixando status PROCESSING.
+- Causa: resumo sem limite recebia request/response do fornecedor; coluna canônica
+  VARCHAR(512), enquanto eventos anteriores curtos eram persistidos normalmente.
+- Correção: backend limita resumo, preserva íntegra em auditoria LONGTEXT e declara
+  o comprimento no mapeamento JPA. Não refaz inferência para registrar a falha.
+- Contrato preventivo: `SalesVideoJobServiceTest.shouldPersistFailureWithoutOverflowingEventMessage`,
+  persistência SQL do caso, outra identidade e caminho curto, com Unicode.
+- Registro: `docs/homologacao/mira-retomada-editorial-2026-10-24.md`.

@@ -1,0 +1,303 @@
+.products-play-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 0 40px;
+  color: #182536;
+}
+.products-play-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.products-play-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.7rem;
+  letter-spacing: 0.13em;
+  font-weight: 750;
+  color: #5263b4;
+  margin-bottom: 12px;
+}
+.products-play-header h1 {
+  font-size: clamp(1.75rem, 3vw, 2.3rem);
+  letter-spacing: -0.035em;
+  font-weight: 750;
+  margin-bottom: 10px;
+}
+.products-play-header p {
+  color: #617084;
+  margin: 0;
+}
+.products-play-header .page-title::after {
+  display: none;
+}
+.products-play-header .page-title-text {
+  background: none;
+  color: #182536;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+}
+.products-play-refresh {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #dbe2ec;
+  background: white;
+  color: #34465d;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.products-play-refresh:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.products-play-summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid #e0e6ef;
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 8px;
+}
+.products-play-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 22px;
+  border-right: 1px solid #edf0f6;
+}
+.products-play-summary > div:last-child {
+  border: 0;
+}
+.products-play-summary strong {
+  font-size: 1.8rem;
+  line-height: 1.2;
+  font-weight: 750;
+}
+.products-play-summary span {
+  color: #657185;
+  font-size: 0.83rem;
+}
+.products-play-summary--running strong {
+  color: #0c795f;
+}
+.products-play-summary--blocked strong {
+  color: #b6414d;
+}
+.products-play-updated {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  color: #647185;
+  font-size: 0.75rem;
+  margin: 14px 2px 26px;
+}
+.products-play-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.products-play-card {
+  --tone: #586579;
+  --tint: #f0f3f7;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #dfe5ee;
+  border-top: 3px solid var(--tone);
+  border-radius: 18px;
+  padding: 25px;
+  box-shadow: 0 6px 18px #23304d05;
+  min-width: 0;
+}
+.products-play-card--running {
+  --tone: #08735b;
+  --tint: #e6f6ef;
+}
+.products-play-card--waiting {
+  --tone: #8c5e12;
+  --tint: #fff5df;
+}
+.products-play-card--decision {
+  --tone: #6845a6;
+  --tint: #f1ebfc;
+}
+.products-play-card--blocked {
+  --tone: #b03b4a;
+  --tint: #fff0f2;
+}
+.products-play-card--complete {
+  --tone: #08735b;
+  --tint: #e6f6ef;
+}
+.products-play-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.products-play-card__monogram {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 13px;
+  background: #f1f3fa;
+  color: #4b5b91;
+  font-size: 1.25rem;
+  font-weight: 750;
+}
+.products-play-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--tone);
+  background: var(--tint);
+}
+.products-play-status svg {
+  flex-shrink: 0;
+}
+.products-play-card h2 {
+  font-size: 1.5rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  margin: 0 0 4px;
+}
+.products-play-card__subtitle {
+  font-size: 0.85rem;
+  color: #647185;
+  margin: 0;
+}
+.products-play-activity {
+  margin: 24px 0 16px;
+  padding: 20px 0 0;
+  border-top: 1px solid #edf0f6;
+}
+.products-play-activity > span {
+  color: #66748b;
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  font-weight: 750;
+}
+.products-play-activity h3 {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  font-weight: 650;
+  margin: 8px 0 12px;
+  overflow-wrap: anywhere;
+}
+.products-play-activity p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #5c6b80;
+  font-size: 0.8rem;
+  margin: 0;
+}
+.products-play-details {
+  font-size: 0.82rem;
+  color: #4e5c70;
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+}
+.products-play-details summary {
+  cursor: pointer;
+  padding: 5px 0;
+}
+.products-play-details p {
+  margin: 10px 0;
+  line-height: 1.65;
+}
+.products-play-card__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 14px 0 0;
+  border-top: 1px solid #edf0f6;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #4057ad;
+  text-decoration: none;
+}
+.products-play-card__link:hover {
+  color: #263c8a;
+  text-decoration: underline;
+}
+.products-play-page :focus-visible {
+  outline: 3px solid #6d8be8;
+  outline-offset: 4px;
+}
+.products-play-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  background: #fff;
+  border: 1px dashed #cbd5e3;
+  border-radius: 18px;
+  padding: 50px 20px;
+  color: #617084;
+}
+.products-play-empty h2 {
+  font-size: 1.2rem;
+  color: #27394c;
+  margin: 0;
+}
+.products-play-empty p {
+  margin: 0;
+}
+.products-play-spin {
+  animation: products-play-spin 1s linear infinite;
+}
+@keyframes products-play-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 700px) {
+  .products-play-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .products-play-summary {
+    padding: 14px 0;
+  }
+  .products-play-summary > div {
+    padding: 0 8px;
+    text-align: center;
+  }
+  .products-play-summary strong {
+    font-size: 1.45rem;
+  }
+  .products-play-summary span {
+    font-size: 0.65rem;
+  }
+  .products-play-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .products-play-card {
+    padding: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .products-play-spin {
+    animation: none;
+  }
+}

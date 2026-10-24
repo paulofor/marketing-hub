@@ -766,3 +766,13 @@ Continuar conferindo o consumo efetivamente reportado e bloqueando custos penden
 conflitos, saldo insuficiente e novas chamadas de resultado incerto.
 Fontes consultadas: https://developers.openai.com/api/docs/models/gpt-audio-1.5 e
 https://developers.openai.com/api/docs/guides/voice-latency-cost?voice-api=realtime.
+
+### Recusa da primeira locução — 24/10/2026
+
+A estimativa operacional pode registrar custo incremental zero para HTTP 401
+`invalid_api_key` no primeiro segmento, somente com request/resposta integrais,
+identidade e entrada conferidas e ausência de áudio, recibo ou tarefa aceita.
+Não equivale a fatura conciliada. Falhas de transporte, respostas incompletas e
+segmentos posteriores preservam custo desconhecido ou os recibos pagos já
+recebidos. Usar a conciliação existente, sem nova geração, transferência de
+orçamento ou dispensa das revisões independentes.

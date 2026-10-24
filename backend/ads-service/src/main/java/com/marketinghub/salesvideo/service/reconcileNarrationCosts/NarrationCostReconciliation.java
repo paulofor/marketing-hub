@@ -36,7 +36,8 @@ public class NarrationCostReconciliation {
   private final ObjectMapper json;
 
   /**
-   * Valida o lote inteiro antes de registrar custos; não chama provedor, aprova ou retoma tarefas.
+   * Valida o lote e recusas comprovadas antes de registrar estimativas; não chama provedor nem
+   * aprova tarefas.
    */
   @Transactional
   public ReconcileNarrationCostsResponse reconcile(
@@ -101,8 +102,16 @@ public class NarrationCostReconciliation {
               && entry.providerCostUsd() == null,
           "O lançamento diverge do contexto ou já tem cobrança confirmada pelo provedor.");
       JsonNode audit = NarrationUsageEvidence.audit(job, json);
+      boolean rejectedSpeech =
+          input.estimateFromReceipts()
+              && RejectedNarrationEvidence.withoutSpeech(job, audit, metadata, json);
+      require(
+          !rejectedSpeech || ledger.confirmsNoAcceptedProviderTask(id),
+          "Há tarefa de provedor aceita ou sua consulta não está disponível.");
       boolean zero =
-          rejectedBeforeGeneration || NarrationUsageEvidence.withoutNewSpeech(job, audit, metadata);
+          rejectedBeforeGeneration
+              || rejectedSpeech
+              || NarrationUsageEvidence.withoutNewSpeech(job, audit, metadata);
       NarrationUsageEvidence.PaidSpeech speech =
           zero ? null : NarrationUsageEvidence.paid(job, audit, requestIds);
       if (speech != null) {
@@ -135,7 +144,9 @@ public class NarrationCostReconciliation {
               zero
                   ? rejectedBeforeGeneration
                       ? PreGenerationCostEvidence.POLICY
-                      : metadata.has("preservedNarration") ? REUSED : BEFORE_TTS
+                      : rejectedSpeech
+                          ? RejectedNarrationEvidence.POLICY
+                          : metadata.has("preservedNarration") ? REUSED : BEFORE_TTS
                   : input.estimateFromReceipts() ? ESTIMATE : COHORT));
     }
     BigDecimal total =
@@ -155,7 +166,13 @@ public class NarrationCostReconciliation {
                       .multiply(BigDecimal.valueOf(attempt.speech().count()))
                       .divide(BigDecimal.valueOf(calls), 6, RoundingMode.CEILING);
       var entry = attempt.entry();
-      if (Set.of(COHORT, REUSED, BEFORE_TTS, ESTIMATE, PreGenerationCostEvidence.POLICY)
+      if (Set.of(
+                  COHORT,
+                  REUSED,
+                  BEFORE_TTS,
+                  ESTIMATE,
+                  PreGenerationCostEvidence.POLICY,
+                  RejectedNarrationEvidence.POLICY)
               .contains(Objects.toString(entry.costEvidence(), ""))
           && !(ESTIMATE.equals(entry.costEvidence()) && !input.estimateFromReceipts()))
         require(

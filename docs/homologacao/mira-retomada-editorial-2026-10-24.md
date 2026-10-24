@@ -122,3 +122,29 @@ Os 14 testes de retirada/isolamento passaram; `bash -n`, ShellCheck e o teste de
 recuperação atômica também passaram. Nenhuma nova imagem de produção é criada fora
 do fluxo versionado. A rotação e a autenticação no container serão registradas na
 evidência operacional após a publicação.
+
+## Recusa da primeira locução e custo incremental
+
+A rotação publicada autenticou e produziu as novas peças 77/78 (38/44 segundos).
+As locuções somam US$ 0,084632 estimados por duração/recibos. A tentativa 21295,
+recusada com 401 antes do primeiro áudio, continuou com custo desconhecido; a
+reserva sonora da tarefa 804 foi corretamente bloqueada antes de nova inferência.
+
+O callback preserva request, resposta `invalid_api_key`, HTTP 401, segmento 1 e
+identidade da tentativa. O executor encerra nesse ponto sem retry. Estimar todas
+as falhas como zero perderia consumo parcial; exigir extrato manteria uma recusa
+sem áudio sem solução; reconhecer apenas essa prova completa permite registrar
+custo incremental estimado zero no ledger existente. Foi escolhido o último,
+sem tratar a estimativa como fatura confirmada.
+
+A validação exige finalização encerrada, entrada correspondente, JSON integral
+sem duplicação, nenhum áudio/recibo/tarefa aceita, sem voz reutilizada e mesmo
+produto/experimento/tenant. Segmentos posteriores, timeouts, respostas truncadas,
+identidades conflitantes e cobrança confirmada continuam bloqueados. Recibos de
+áudio recebidos antes de falha posterior mantêm custo positivo. A regra não
+retoma nem aprova tarefas: a conciliação continua pela tela existente.
+
+Validação local desta correção: 68 testes de conciliação, 43 de reserva sonora e
+62 de jobs aprovados (173 casos). A rodada adicional repetiu somente a
+conciliação após reforçar a rejeição de recibo malformado. Sem novo endpoint,
+migração ou chamada a provedor; comentários de responsabilidade revisados.

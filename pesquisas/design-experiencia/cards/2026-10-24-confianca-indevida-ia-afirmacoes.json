@@ -1,0 +1,18 @@
+{
+  "cardKey": "confianca-factual-ia-deferencia-humana",
+  "collection": "neuromarketing",
+  "title": "Afirmações confiantes de IA não substituem verificação factual",
+  "finding": "Em estudo controlado com 32 pessoas, falsidades afirmadas com confiança por assistentes foram frequentemente aceitas, mesmo sem queda correspondente nas avaliações globais de confiança. O resultado foi medido em aprendizagem científica, não em compras.",
+  "mechanism": "A fluência e a segurança da resposta podem funcionar como pistas de autoridade, diminuindo a discriminação entre afirmações corretas e incorretas. Mecanismo interpretativo, não causalidade psicológica isolada.",
+  "commercialApplication": "Em anúncios e recomendações comerciais geradas por IA, exigir fonte verificável para preço, benefício, prazo e garantias; permitir contestação e explicitar incerteza antes da aprovação editorial.",
+  "evidenceStrength": "Experimento intraindivíduos, N=32, 104 questionários e 1.040 respostas; fatos falsos introduzidos experimentalmente em assistentes GPT-5-mini. Evidência comportamental controlada, com validade comercial desconhecida.",
+  "publishedOn": "2026-10-24",
+  "validUntil": "2026-12-08",
+  "experimentHypothesis": "Revisar alegações comerciais com evidências verificáveis e sinais de incerteza reduzirá a aceitação de informações falsas, sem reduzir compreensão; medir acerto factual e confiança calibrada com usuários reais.",
+  "risks": "Não usar assertividade artificial para persuadir, simular autoridade ou ocultar fragilidades das fontes. A apresentação de fontes também pode gerar falsa segurança se não houver verificação.",
+  "limits": "Não foram avaliados anúncios, consumidores, cliques, pagamento ou venda. Estudo pequeno, único modelo e fatos deliberadamente adulterados. Nenhum efeito comercial foi demonstrado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-24-confianca-indevida-ia-afirmacoes.md",
+  "sourceTitle": "Evidência revisada — confiança indevida em afirmações categóricas de IA",
+  "sourceSha256": "61937a22ebf82337421e8e3bf71ae986f5d13d4070ed371b4adbf3257f956e2f"
+}

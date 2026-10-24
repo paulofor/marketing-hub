@@ -362,6 +362,29 @@
   ou incompatível, modo legado nulo e contratos aprovados V3/V4. As provas históricas e seus hashes
   permanecem imutáveis; divergência real de planejamento continua exigindo reconciliação canônica.
 
+## LOOP-PSIQUE-SONORA-LIMITE-FINANCEIRO-OCULTO — 24/10/2026
+
+- **Evidência:** após atualização da credencial, Mira #102 retomou Psique #802. O recibo #10
+  preservou somente `error.type=insufficient_quota` e
+  `error.code=organization_spend_limit_exceeded`, sem modelo, saída ou uso. O backend
+  exigia identidade do modelo antes de reconhecer esse limite, exibindo “Resposta de modelo
+  incompatível” e mantendo `COST_PENDING`/reserva de US$ 4,116.
+- **Histórico:** os recibos #8/#9 eram `credit_balance_exhausted`, já reconhecidos. O controle
+  havia sido restrito a esse código; a autenticação atual e o código novo afastam a hipótese
+  de chave inválida ou simples falta de recarga.
+- **Alternativas:** repetir a inferência não regulariza limite; remover limites altera uma
+  decisão financeira do titular; classificar a recusa preservada distingue a ação correta sem
+  gasto. Adotada a terceira opção, sem alterar configuração da conta.
+- **Correção:** reconhecer os quatro códigos específicos documentados de créditos, limite de
+  gasto da organização/projeto e limite de uso aprovado. Exigir envelope exclusivo de erro e
+  `insufficient_quota`, sem tokens, saída ou cobrança existente. Preservar `ACCOUNT_BLOCKED`,
+  custo incremental estimado zero e instrução específica; replay reaplica o mesmo recibo sem modelo.
+- **Fontes oficiais consultadas:** [erros](https://developers.openai.com/api/docs/guides/error-codes)
+  e [limites de gasto](https://developers.openai.com/api/docs/guides/spend-limits).
+- **Prevenção:** testes em duas identidades cobrem cada novo código e replay histórico;
+  avaliações válidas, custos incertos, saída existente, ledger cobrado e recusas ambíguas continuam
+  protegidos. Esta alteração não aprova vídeo, aumenta teto ou comprova vendas.
+
 ## LOOP-SAFIRA-ETAPA-ANTERIOR-SEM-DESTINO — 24/10/2026
 
 - **Evidência:** Mira #102, ciclo #9, permanece em `VIDEO_APPROVAL` com Psique #792

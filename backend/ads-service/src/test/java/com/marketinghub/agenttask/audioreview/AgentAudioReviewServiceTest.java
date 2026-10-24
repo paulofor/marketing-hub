@@ -28,7 +28,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Homologa reserva, recuperação, isolamento e custo desconhecido usando persistência simulada. */
+/** Responsabilidade: homologar reserva, recuperação, isolamento e custo desconhecido de áudio. */
 class AgentAudioReviewServiceTest {
   private final ObjectMapper json = new ObjectMapper();
   private final AgentAudioReviewRepository reviews = mock(AgentAudioReviewRepository.class);
@@ -145,6 +145,42 @@ class AgentAudioReviewServiceTest {
                     9003,
                     new AudioReviewResultRequest("{\"error\":{\"code\":\"other\"}}")))
         .hasMessageContaining("já foi preservada");
+  }
+
+  /**
+   * Diferencia limites oficiais em duas identidades, preservando replay e recibo sem inferência.
+   */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "organization_spend_limit_exceeded,9005", "organization_spend_limit_exceeded,93005",
+    "project_spend_limit_exceeded,9005", "project_spend_limit_exceeded,93005",
+    "organization_usage_limit_exceeded,9005", "organization_usage_limit_exceeded,93005"
+  })
+  void classifiesEnforcedLimitsAndReplaysHistoricalResponse(String code, long productId) {
+    var input = prepare(productId);
+    service.reserve("customer-agent", 9001, input);
+    String raw = "{\"error\":{\"type\":\"insufficient_quota\",\"code\":\"" + code + "\"}}";
+    var entry = saved.get(9003L);
+    entry.setResponseJson(raw);
+    entry.setStatus("COST_PENDING");
+    entry.setErrorMessage("Resposta de modelo incompatível.");
+    var request = new AudioReviewResultRequest(raw);
+    var result = service.complete("customer-agent", 9001, 9003, request);
+    assertThat(result.status()).isEqualTo("ACCOUNT_BLOCKED");
+    assertThat(result.estimatedUsd()).isZero();
+    assertThat(result.mayInvoke()).isFalse();
+    assertThat(result.error()).contains(code, "não repetir automaticamente", "tetos próprios");
+    String detail =
+        switch (code) {
+          case "organization_spend_limit_exceeded" -> "settings/organization/limits";
+          case "project_spend_limit_exceeded" -> "configurações do projeto";
+          default -> "limite de uso aprovado";
+        };
+    assertThat(result.error()).contains(detail);
+    assertThat(result.assessment().size()).isZero();
+    assertThat(entry.getResponseJson()).isEqualTo(raw);
+    assertThat(service.complete("customer-agent", 9001, 9003, request)).isEqualTo(result);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
   }
 
   /** Recusa ambígua, uso reportado ou custo já existente não podem virar custo zero. */

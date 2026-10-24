@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Governa reserva, auditoria e recuperação da ferramenta auditiva da própria Psique. */
+/** Responsabilidade: governar reserva, auditoria e recuperação da ferramenta auditiva de Psique. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -159,7 +159,8 @@ public class AgentAudioReviewService {
   }
 
   /**
-   * Preserva respostas, identifica recusa de saldo e valida o parecer somente quando houver saída.
+   * Preserva respostas, identifica limites financeiros e valida o parecer somente quando houver
+   * saída.
    */
   @Transactional
   public AudioReviewReceipt complete(
@@ -175,7 +176,7 @@ public class AgentAudioReviewService {
           "A resposta desta chamada já foi preservada.");
       if ("COST_PENDING".equals(entry.getStatus()) && entry.getEstimatedUsd() == null) {
         try {
-          if (classifyMissingCredits(entry, object(json, input.rawResponse()))) {
+          if (classifyAccountLimit(entry, object(json, input.rawResponse()))) {
             reviews.saveAndFlush(entry);
             saveLedger(entry);
           }
@@ -195,7 +196,7 @@ public class AgentAudioReviewService {
     entry.setStatus("COST_PENDING");
     try {
       JsonNode raw = object(json, input.rawResponse());
-      if (classifyMissingCredits(entry, raw)) {
+      if (classifyAccountLimit(entry, raw)) {
         reviews.saveAndFlush(entry);
         saveLedger(entry);
         return receipt(entry, false);
@@ -297,14 +298,14 @@ public class AgentAudioReviewService {
   }
 
   /**
-   * Reclassifica recusa de saldo sem repetir a chamada nem sobrescrever custo ou avaliação já
+   * Reclassifica recusa financeira sem repetir a chamada nem sobrescrever custo ou avaliação já
    * conhecidos.
    */
-  private boolean classifyMissingCredits(AgentAudioReview review, JsonNode response) {
-    if (!rejectedForMissingCredits(response)) return false;
+  private boolean classifyAccountLimit(AgentAudioReview review, JsonNode response) {
+    if (!rejectedForAccountLimit(response)) return false;
     require(
         review.getEstimatedUsd() == null && review.getResultJson() == null,
-        "Não substitua consumo ou avaliação existentes por uma recusa de saldo.");
+        "Não substitua consumo ou avaliação existentes por uma recusa financeira.");
     var existing =
         ledger.findBySourceTypeAndSourceId("AGENT_AUDIO_REVIEW", review.getId().toString());
     require(
@@ -316,17 +317,33 @@ public class AgentAudioReviewService {
     String previous = review.getStatus();
     review.setEstimatedUsd(BigDecimal.ZERO);
     review.setStatus("ACCOUNT_BLOCKED");
+    String code = response.at("/error/code").asText();
+    String action =
+        switch (code) {
+          case "organization_spend_limit_exceeded" ->
+              "A organização atingiu o limite mensal de gasto configurado. Confira o limite em https://platform.openai.com/settings/organization/limits; adicionar créditos não altera esse limite.";
+          case "project_spend_limit_exceeded" ->
+              "O projeto atingiu o limite mensal de gasto configurado. Confira Limits nas configurações do projeto da chave de Psique; adicionar créditos não altera esse limite.";
+          case "organization_usage_limit_exceeded" ->
+              "A organização atingiu o limite de uso aprovado pela OpenAI. Solicite ampliação desse limite à OpenAI; ele é diferente do limite de gasto configurado.";
+          default ->
+              "A API de áudio de Psique está sem créditos. Disponibilize créditos na organização da chave de Psique.";
+        };
     review.setErrorMessage(
-        "credit_balance_exhausted: a API de áudio de Psique está sem créditos. "
-            + "A solicitação foi recusada antes da avaliação; custo incremental estimado zero. "
+        code
+            + ": "
+            + action
+            + " A solicitação foi recusada antes da avaliação; custo incremental estimado zero. "
             + "Texto e visão do Worker IA usam Codex, mas esta escuta usa a API de áudio. "
-            + "Disponibilize créditos na organização da chave de Psique antes de nova tentativa; não repetir automaticamente.");
+            + "Regularize somente o controle indicado antes de nova tentativa; não repetir automaticamente. "
+            + "Os tetos próprios do produto permanecem inalterados.");
     log.warn(
-        "Recusa de saldo auditivo identificada sem nova inferência. taskId={} assetId={} reviewId={} previousStatus={} status=ACCOUNT_BLOCKED endpoint=https://api.openai.com/v1/chat/completions code=credit_balance_exhausted",
+        "Recusa financeira auditiva identificada sem nova inferência. taskId={} assetId={} reviewId={} previousStatus={} status=ACCOUNT_BLOCKED endpoint=https://api.openai.com/v1/chat/completions code={}",
         review.getTaskId(),
         review.getAssetId(),
         review.getId(),
-        previous);
+        previous,
+        code);
     return true;
   }
 

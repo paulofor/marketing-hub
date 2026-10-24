@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
-/** Valida identidade, escuta temporal e consumo por modalidade sem confiar em notas isoladas. */
+/** Responsabilidade: validar identidade, escuta temporal e consumo por modalidade. */
 @Slf4j
 public final class AudioReviewContract {
   public static final String VERSION = "PSIQUE_AUDIO_REVIEW_V1";
@@ -46,13 +46,20 @@ public final class AudioReviewContract {
     return message.path("content").asText().trim();
   }
 
-  /** Identifica somente a recusa explícita de saldo anterior a qualquer saída ou uso reportado. */
-  public static boolean rejectedForMissingCredits(JsonNode response) {
+  /**
+   * Identifica recusa explícita de crédito ou limite financeiro antes de saída ou uso reportado.
+   */
+  public static boolean rejectedForAccountLimit(JsonNode response) {
     return response != null
         && response.isObject()
         && response.size() == 1
         && response.path("error").isObject()
-        && "credit_balance_exhausted".equals(response.at("/error/code").asText())
+        && Set.of(
+                "credit_balance_exhausted",
+                "organization_spend_limit_exceeded",
+                "project_spend_limit_exceeded",
+                "organization_usage_limit_exceeded")
+            .contains(response.at("/error/code").asText())
         && "insufficient_quota".equals(response.at("/error/type").asText());
   }
 

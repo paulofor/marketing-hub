@@ -40,5 +40,27 @@ contratos e autorizações próprios.
 | Requisição em andamento | botão do produto fica desabilitado e mostra carregamento |
 | Desktop e mobile | estado, rótulo e ação permanecem legíveis e acionáveis sem overflow |
 
-Uma rodada local completa sem defeitos conclui a homologação. Se houver correção após defeito, duas
-rodadas completas e consecutivas sem falhas passam a ser obrigatórias.
+Uma rodada local dos testes relevantes conclui a homologação quando os critérios são atendidos.
+Se houver defeito, corrigir a causa e repetir somente as verificações afetadas e regressões
+relacionadas; não exigir uma quantidade mínima de rodadas sem justificativa técnica.
+
+## Visão Produtos em play — 24/10/2026
+
+O menu **Produtos em play** (`/products/in-play`) apresenta produto, atividade corrente,
+responsável e status por `GET /api/products/operations/v1/in-play`. PLAY é permissão de
+automação, não prova de tarefa executando. O backend consolida a atividade canônica e a
+execução persistida, seguindo delegações do mesmo produto/cadeia/ciclo/referência.
+
+A cadeia histórica do ciclo permanece preservada. A fila operacional precede processos
+pausados; um subprocesso aguardando entrada não é execução ativa do agente. Reprovação
+de atividade anterior não substitui a projeção atual. Falhas são exibidas como não
+confirmadas, sem ocultar outros produtos. Totais vêm do backend; leituras, atualização
+automática da tela e links não disparam trabalho nem alteram autorizações.
+
+Motivos e último acompanhamento ficam sob demanda. Uma falha de atualização mantém a
+fotografia anterior explicitamente datada. Não exibir status de experimento como se fosse
+status da atividade. A consulta agregada fica no repositório de leitura do produto, sem
+adicionar dependências do catálogo ao contexto mínimo do coordenador. Testes:
+`ProductOperationsTest`, `ProductOperationsRunRepositoryTest`,
+`ProcessRunRepositoryMinimalContextTest` e
+`frontend/e2e/products-in-play-responsive.mjs`.

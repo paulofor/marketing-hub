@@ -73,6 +73,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Bot,
       },
       {
+        to: "/products/in-play",
+        label: "Produtos em play",
+        icon: Play,
+      },
+      {
         to: "/products/all",
         label: "Todos os produtos",
         icon: List,

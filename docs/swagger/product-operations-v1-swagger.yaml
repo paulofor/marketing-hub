@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Produtos em PLAY
+  version: v1
+paths:
+  /api/products/operations/v1/in-play:
+    get:
+      summary: Consulta a atividade e o estado reais dos produtos em PLAY
+      description: Somente leitura. Preserva ciclo e cadeia originais; falha parcial retorna UNAVAILABLE. Não cria tarefas nem custos.
+      responses:
+        '200':
+          description: Fotografia operacional
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [observedAt, total, executing, waiting, blocked, paused, unavailable, products]
+                properties:
+                  observedAt: {type: string, format: date-time}
+                  total: {type: integer}
+                  executing: {type: integer}
+                  waiting: {type: integer, description: Inclui fila e espera de decisão ou início.}
+                  blocked: {type: integer}
+                  paused: {type: integer}
+                  unavailable: {type: integer}
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductInPlay'
+components:
+  schemas:
+    ProductInPlay:
+      type: object
+      required: [productId, productName, activityName, status, statusLabel, activityUrl]
+      properties:
+        productId: {type: integer, format: int64}
+        productName: {type: string}
+        commercialName: {type: string, nullable: true}
+        chainId: {type: integer, format: int64, nullable: true}
+        cycleId: {type: integer, format: int64, nullable: true}
+        sourceReference: {type: string, nullable: true}
+        processDefinitionId: {type: integer, format: int64, nullable: true}
+        runId: {type: integer, format: int64, nullable: true}
+        activityId: {type: string, nullable: true}
+        activityNumber: {type: string, nullable: true}
+        activityName: {type: string}
+        responsible: {type: string, nullable: true}
+        status: {type: string, enum: [EXECUTING, QUEUED, WAITING, AWAITING_DECISION, BLOCKED, PAUSED, NOT_STARTED, COMPLETED, UNAVAILABLE]}
+        statusLabel: {type: string}
+        reason: {type: string, nullable: true}
+        activityUrl: {type: string}
+        lastReconciledAt: {type: string, format: date-time, nullable: true}

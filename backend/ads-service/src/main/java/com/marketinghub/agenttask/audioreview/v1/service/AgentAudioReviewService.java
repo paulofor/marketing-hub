@@ -192,6 +192,11 @@ public class AgentAudioReviewService {
               ex);
         }
       }
+      if ("INVALID".equals(entry.getStatus())
+          && entry.getEstimatedUsd() != null
+          && entry.getResultJson() == null) {
+        recoverNegativeAssessment(task, assetId, entry);
+      }
       return receipt(entry, false);
     }
     entry.setResponseJson(input.rawResponse());
@@ -247,6 +252,44 @@ public class AgentAudioReviewService {
     reviews.saveAndFlush(entry);
     saveLedger(entry);
     return receipt(entry, false);
+  }
+
+  /** Revalida somente parecer negativo preservado, sem nova inferência, custo ou aprovação. */
+  private void recoverNegativeAssessment(AgentTask task, long assetId, AgentAudioReview entry) {
+    try {
+      var raw = object(json, entry.getResponseJson());
+      require(
+          "stop".equals(raw.at("/choices/0/finish_reason").asText())
+              && raw.at("/choices/0/message/refusal").asText("").isBlank(),
+          "Recusa ou resposta incompleta não admite recuperação.");
+      var result = object(json, content(raw));
+      require(
+          Set.of("ADJUST", "INCONCLUSIVE").contains(result.path("verdict").asText()),
+          "Recuperação negativa não transforma avaliação em aprovação.");
+      var currentMedia = media(task, assetId);
+      require(
+          entry.getVideoSha256().equals(currentMedia.path("sha256").asText()),
+          "A mídia mudou após a escuta preservada.");
+      groundedAssessment(result, currentMedia);
+      entry.setResultJson(result.toString());
+      entry.setStatus("COMPLETED");
+      entry.setErrorMessage(null);
+      reviews.saveAndFlush(entry);
+      saveLedger(entry);
+      log.info(
+          "Parecer sonoro negativo recuperado sem inferência. taskId={} assetId={} reviewId={} verdict={}",
+          task.getId(),
+          assetId,
+          entry.getId(),
+          result.path("verdict").asText());
+    } catch (Exception ex) {
+      log.warn(
+          "Parecer sonoro preservado continua inválido. taskId={} assetId={} reviewId={}",
+          task.getId(),
+          assetId,
+          entry.getId(),
+          ex);
+    }
   }
 
   /** Expõe recibos existentes sem reservar trabalho nem repetir chamadas de modelo. */

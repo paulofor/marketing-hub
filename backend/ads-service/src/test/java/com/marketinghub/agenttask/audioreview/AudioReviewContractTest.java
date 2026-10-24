@@ -55,6 +55,21 @@ class AudioReviewContractTest {
         .doesNotThrowAnyException();
   }
 
+  /** Dúvida real em voz sintética é preservada para correção, nunca convertida em aprovação. */
+  @ParameterizedTest
+  @ValueSource(strings = {"ADJUST", "INCONCLUSIVE"})
+  void preservesNegativeFindingInVoiceOnlyMix(String verdict) {
+    var media = json.createObjectNode().put("assetId", 81).put("durationSeconds", 30);
+    media.putObject("audioProductionEvidence").put("mix", "VOICE_ONLY").put("music", "none");
+    var result = assessment(json).put("verdict", verdict);
+    ((ObjectNode) result.path("music")).put("status", "INCONCLUSIVE");
+    assertThatCode(() -> AudioReviewContract.groundedAssessment(result, media))
+        .doesNotThrowAnyException();
+    result.put("verdict", "PASS");
+    assertThatThrownBy(() -> AudioReviewContract.groundedAssessment(result, media))
+        .hasMessageContaining("contraditória");
+  }
+
   /** Aprovação de contrato não permite ignorar déficit sonoro em nenhuma dimensão. */
   @ParameterizedTest
   @ValueSource(strings = {"voice", "music", "timing"})

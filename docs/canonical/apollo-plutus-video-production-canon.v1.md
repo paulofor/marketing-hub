@@ -786,3 +786,7 @@ A captura vinculada à última parte da fala deve aparecer desde o início dessa
 ### Remontagem técnica antes do primeiro parecer — 24/10/2026
 
 Uma candidata privada READY/PENDING ainda sem parecer pode receber correção de montagem pela mesma fonte e ciclo, sem fabricar rejeição humana. O backend deve comprovar ausência de revisão em andamento e de parecer da mídia exata, recuperar integralmente a mesma fala auditada e proibir síntese nova. Recibo ausente, copy alterada sem preservação, seleção humana existente ou experimento em operação bloqueiam esse caminho. O novo arquivo exige seus próprios pareceres e seleção; a versão anterior e seus custos permanecem preservados.
+
+### Dúvida sonora em montagem sem trilha — 24/10/2026
+
+`VOICE_ONLY/music=none` comprova ausência de trilha acrescentada, não ausência perceptual de ruído na locução. Um parecer com `ADJUST` ou `INCONCLUSIVE` pode registrar som inesperado e orientar correção; não pode aprovar a mídia. O backend preserva esse parecer negativo como escuta concluída, mantendo o gate funcional bloqueado. Recibos antigos inválidos admitem replay do mesmo response bruto, custo e identidade, somente para avaliação negativa integralmente válida. Nenhuma nova chamada, aprovação ou mudança de custo decorre desse replay.

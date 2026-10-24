@@ -182,3 +182,7 @@ A leitura do percurso confirmou outra restrição antes da retomada: a demonstra
 Compararam-se: pagar revisão de defeito já conhecido (retrabalho); registrar rejeição humana não fornecida (incorreto); permitir remontagem estrita da candidata com voz preservada. A terceira alternativa mantém seleção humana e revisores independentes. A regra bloqueia parecer vigente, revisão em andamento, voz ausente e campanha em execução. A matriz cobre Mira, outra identidade, caminho anterior com ADJUST e impedimentos de seleção/consumo.
 
 Validação local da passagem: 117 testes dos contratos de jobs, recuperação, evidências e seleção passaram. A rodada incluiu candidata sem recibo (bloqueada), bloqueios históricos sem revisão ativa (não impedem correção), revisão IN_PROGRESS (bloqueia), identidade diferente, parecer vigente e preservação dos cinco áudios.
+
+## Recibo sonoro negativo preservado
+
+Vídeos #80/#81 foram remontados sem síntese nova e passaram na reprodução técnica desktop/iPhone/Pixel. A retomada criou Psique #806; o recibo #15 identificou possível efeito final e foi descartado por contradição com o metadado VOICE_ONLY. O contrato passa a admitir a avaliação negativa, mantendo a aprovação bloqueada. Replay conserva response bruto, valor estimado US$ 0,022693 e hash; não troca conteúdo por PASS. A medição técnica não confirmou origem do som e não equivale à percepção.

@@ -689,8 +689,10 @@ Publicar subprocesso novo não migra ciclos anteriores nem concede novas aprova�
 O botão azul do produto deve abrir a análise, as decisões e a continuidade da
 passagem pendente, mesmo quando o status comercial ainda descreve homologação.
 O backend fornece `learningCycleNavigation` no contrato existente de posição: última
-passagem do próprio produto na versão exata da cadeia, aberta ou encerrada para
-ajuste ainda sem sucessor. A URL abre o workspace dos ciclos com produto e cadeia
+passagem do próprio produto na família da cadeia publicada, aberta ou encerrada para
+ajuste ainda sem sucessor. Na consulta de versão histórica, restringir à versão exata.
+`contextChainDefinitionId` identifica a cadeia consultada no card;
+`chainDefinitionId` conserva a versão original do ciclo. A URL abre o workspace dos ciclos com produto e cadeia
 explícitos. A tela não escolhe essa prioridade por nome, ID ou inferência local.
 
 Sem ciclo pendente, permanece a continuidade oficial dos processos. Uma leitura ou
@@ -698,6 +700,15 @@ abertura do workspace não migra ciclos, altera status comercial, reabre experim
 encerrado, aprova estratégia, inicia tarefa ou autoriza gasto. No ciclo, a atividade
 delegada e seus critérios continuam vindo dos contratos canônicos do backend.
 Validação: `docs/homologacao/produto-navegacao-ciclo-v1.md`.
+
+### Publicação comprovada antes da parada — 24/10/2026
+
+A conferência de publicação deve aceitar o run produtivo que comprova preflight,
+publicação posterior à autorização, janela e teto exatos do ciclo, mesmo quando o
+experimento já foi encerrado. O estado atual não apaga a exposição anterior. Essa
+conferência avança somente a medição; não reativa a campanha nem renova autorização.
+Sem essa prova, o estado encerrado isolado não permite avançar. A medição continua
+dependendo das fontes oficiais, segregação de testes e sincronização final do canal.
 
 ## Passagem automática entre processos preparatórios — decisão de 06/10/2026
 

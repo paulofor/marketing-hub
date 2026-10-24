@@ -282,8 +282,8 @@ class ProductValueChainPositionServiceTest {
     when(chains.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
             chain.getChainCode(), "PUBLISHED"))
         .thenReturn(List.of(chain));
-    when(cycles.findFirstByProductIdAndChainDefinitionIdOrderByIdDesc(productId, 26L))
-        .thenReturn(Optional.of(cycle));
+    when(cycles.findByProductIdAndChainCodeOrderByIdDesc(productId, chain.getChainCode()))
+        .thenReturn(List.of(cycle));
     var service =
         new ProductValueChainPositionService(
             products,

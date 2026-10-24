@@ -1053,10 +1053,11 @@ components:
         learningCycleNavigation:
           type: object
           nullable: true
-          description: Continuidade da versão exata da cadeia; URL preserva produto, cadeia e cycleId. Ajuste sem sucessor é preparação não iniciada, não nova aprovação nem autorização de gasto. Leituras não criam tarefas.
+          description: Continuidade do produto na família da cadeia publicada, preservando na URL a versão original do ciclo. Consultas de versões históricas permanecem restritas à versão selecionada. Ajuste sem sucessor não concede aprovação nem gasto; leituras não criam tarefas.
           properties:
             productId: {type: integer, format: int64}
             chainDefinitionId: {type: integer, format: int64}
+            contextChainDefinitionId: {type: integer, format: int64, description: Cadeia consultada no card; pode diferir da versão original preservada em chainDefinitionId.}
             cycleId: {type: integer, format: int64}
             experimentId: {type: integer, format: int64}
             stage: {type: string}

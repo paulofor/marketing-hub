@@ -9,4 +9,5 @@ public record ProductLearningCycleNavigationResponse(
     String stage,
     String status,
     String reason,
-    String url) {}
+    String url,
+    Long contextChainDefinitionId) {}

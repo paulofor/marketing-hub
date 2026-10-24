@@ -181,6 +181,8 @@ paths:
       summary: Identificar o ciclo da atividade, memória herdada e próximo trabalho na cadeia
       description: >-
         Somente leitura. Sem cycleId, resolve o único ciclo aberto compatível; não cria tarefas.
+        Na cadeia publicada, encontra o ciclo da mesma família e devolve a cadeia original.
+        A consulta de uma versão histórica continua restrita à versão exata; nenhum ciclo é migrado.
         cycleNumber é o ordinal na linhagem do produto, distinto do id e da versão do BPM.
         nextWork usa a situação oficial das atividades e conserva os bloqueios e o retorno original.
         Os cards de produto também consomem este contrato, usando produto, processo coordenador,
@@ -312,6 +314,9 @@ paths:
         SCALE exige amostra, vendas líquidas, contribuição positiva, entrega, uso e satisfação.
         AUTHORIZE_SCALE exige confirmação explícita e limite consistente no experimento oficial.
         STOP e INCONCLUSIVE exigem experimento fora de RUNNING e preservam o histórico.
+        COMPLETE em PUBLICATION aceita publicação produtiva já encerrada quando preflight,
+        autorização, janela e teto originais estão comprovados. Avança somente a medição,
+        sem alterar o estado do experimento ou reativar mídia.
       requestBody:
         required: true
         content:

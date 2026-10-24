@@ -45,6 +45,17 @@ def read(cycle):
     return next(item for item in http(f'{API}/products/{cycle["productId"]}?chainId={cycle["chainDefinitionId"]}') if item['id'] == cycle['id'])
 
 
+def seed_preparation(reference):
+    """Instala entregas sintéticas dos executores delegados; não contorna o gate produtivo."""
+    assert re.fullmatch(r'experiment:9\d{4}', reference), reference
+    sql(f"""INSERT INTO business_process_activity_instance
+      (activity_definition_id,source_reference,occurrence_number,status,entered_at,exited_at,
+       objective_achieved,objective_evidence_json,known_cost_usd,cost_coverage,evidence_quality,created_at,updated_at)
+      SELECT id,'{reference}',1,'COMPLETED',UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),1,
+       '{{"fixture":true,"evidenceType":"DELEGATED_EXECUTOR_DOUBLE"}}',0,'COMPLETE','DIRECT',UTC_TIMESTAMP(6),UTC_TIMESTAMP(6)
+      FROM business_process_activity_definition WHERE process_definition_id IN (2,3,4)""")
+
+
 def prepare(experiment=91001, reset=True, missing=True):
     if reset:
         http('/fixture/reset', {})
@@ -58,6 +69,7 @@ def prepare(experiment=91001, reset=True, missing=True):
         windowStart=(now-dt.timedelta(days=1)).isoformat(), windowEnd=(now+dt.timedelta(days=1)).isoformat(),
         sampleTarget=100, minimumNetSales=5, operatorName='Homologação local'))
     cycle = command(cycle, dict(learning='Uso parcial não comprova venda', competingExplanation='Amostra pequena'))
+    seed_preparation(f'experiment:{experiment}')
     cycle = command(cycle, dict(planReference='internal://fixture/plan', stopRule='Parar no teto ou fim da janela'))
     cycle = command(cycle, dict(productVersion=cycle['productVersion'], changeEvidence='internal://fixture/release'))
     refs = http('/fixture/videos', dict(experimentId=experiment, productVersion=cycle['productVersion']))

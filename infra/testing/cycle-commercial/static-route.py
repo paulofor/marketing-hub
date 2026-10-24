@@ -2,17 +2,7 @@
 import datetime as dt
 import json
 import uuid
-from client import fixture, http, sql, API, command, read
-
-
-def seed_preparation(reference):
-    """Instala objetivos sintéticos explícitos dos processos delegados da fixture existente."""
-    sql(f"""INSERT INTO business_process_activity_instance
-      (activity_definition_id,source_reference,occurrence_number,status,entered_at,exited_at,
-       objective_achieved,objective_evidence_json,known_cost_usd,cost_coverage,evidence_quality,created_at,updated_at)
-      SELECT id,'{reference}',1,'COMPLETED',UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),1,
-       '{{"fixture":true,"evidenceType":"DELEGATED_EXECUTOR_DOUBLE"}}',0,'COMPLETE','DIRECT',UTC_TIMESTAMP(6),UTC_TIMESTAMP(6)
-      FROM business_process_activity_definition WHERE process_definition_id IN (2,3,4)""")
+from client import fixture, http, sql, API, command, read, seed_preparation
 
 
 def install_route(cycle, task):

@@ -29,6 +29,7 @@ export type ProductStageMeasurement = {
 };
 
 export type ProductLearningCycleNavigation = {
+  contextChainDefinitionId?: number;
   productId: number;
   cycleId: number;
   experimentId: number;

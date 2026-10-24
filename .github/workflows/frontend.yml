@@ -33,6 +33,8 @@ jobs:
         run: cd frontend && npm test -- --run src/components/FacebookTokenUpdateDialog.test.tsx
       - name: Testar criação, pesquisa com Atena e evolução da Big Idea
         run: cd frontend && npm test -- --run src/pages/product/ProductBigIdeaPage.test.tsx src/pages/product/ProductBigIdeaResearch.test.tsx
+      - name: Testar continuidade do ciclo entre versões da cadeia
+        run: cd frontend && npm test -- --run src/components/ProductNextProcessSummary.test.tsx src/components/ProductValueChainPositionNavigation.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/learningCycle/LearningCyclesPage.test.tsx
       - name: Type-check
         run: cd frontend && npm run typecheck
       - name: Build

@@ -81,7 +81,7 @@ class LearningCycleAuthorizationCommandTest {
     cycle.setWindowStart(Instant.now().minusSeconds(3600));
     cycle.setWindowEnd(Instant.now().plusSeconds(86400));
 
-    experiment = Experiment.builder().id(92L).build();
+    experiment = Experiment.builder().id(92L).product(Product.builder().id(4L).build()).build();
     BusinessProcessDefinition process = new BusinessProcessDefinition();
     process.setId(75L);
     process.setVersionNumber(6);

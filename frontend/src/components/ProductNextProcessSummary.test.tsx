@@ -139,6 +139,37 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
     },
   );
 
+  it.each([
+    [7, 12, 105],
+    [92007, 92012, 92105],
+  ])(
+    "abre o ciclo original de %s após publicar outra versão da cadeia",
+    async (productId, cycleId, experimentId) => {
+      const url = `/business-process-chains/learning-cycles?productId=${productId}&chainId=26&cycleId=${cycleId}`;
+      renderCard({
+        ...position,
+        productId,
+        chainDefinitionId: 27,
+        learningCycleNavigation: {
+          productId,
+          cycleId,
+          experimentId,
+          chainDefinitionId: 26,
+          contextChainDefinitionId: 27,
+          stage: "PUBLICATION",
+          status: "OPEN",
+          reason: "Conferir a publicação registrada.",
+          url,
+        },
+      });
+      expect(
+        await screen.findByRole("link", { name: "Abrir ciclo e decisões" }),
+      ).toHaveAttribute("href", url);
+      expect(axios.get).not.toHaveBeenCalled();
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
+
   it("não usa a navegação em cache quando a posição oficial falha", async () => {
     renderCard(
       {

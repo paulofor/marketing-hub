@@ -9532,6 +9532,16 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - Limite: consulta e navegação sem efeitos; decisões, custos e autorizações ficam
   preservados. Matriz: `docs/homologacao/produto-navegacao-ciclo-v1.md`.
 
+### Recorrência após publicação da cadeia v27 — 24/10/2026
+
+Capella ciclo #12/#105 permaneceu na cadeia #26, mas o card da cadeia publicada #27
+voltou à homologação histórica #88. A leitura agora localiza a passagem na mesma
+família e conserva sua versão na URL; consultas históricas continuam exatas.
+A conferência de publicação também reconhece o run produtivo encerrado sem reabrir
+campanha. Regressões cobrem outras identidades, isolamento, provas insuficientes e
+o caminho RUNNING antes válido. Matriz e limites:
+`docs/homologacao/capella-ciclo-publicado-continuidade-2026-10-24.md`.
+
 ### Entrada por homologação pausada antes do encerramento — 06/10/2026
 
 A correção do card não cobria links antigos de Mira #41/#93. O controle mostrava PAUSED,

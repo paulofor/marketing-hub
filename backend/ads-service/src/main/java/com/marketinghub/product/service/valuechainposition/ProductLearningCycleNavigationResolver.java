@@ -14,16 +14,23 @@ import org.springframework.stereotype.Component;
 public class ProductLearningCycleNavigationResolver {
   private final LearningSalesCycleRepository cycles;
 
-  /** Consulta a última passagem da versão exata da cadeia, preservando decisões e autorizações. */
+  /** Na cadeia vigente localiza a passagem mais recente, conservando o grafo original do ciclo. */
   public ProductLearningCycleNavigationResponse resolve(
       Long productId, BusinessProcessChainDefinition chain) {
+    boolean currentChain = "PUBLISHED".equals(chain.getStatus());
     var cycle =
-        cycles
-            .findFirstByProductIdAndChainDefinitionIdOrderByIdDesc(productId, chain.getId())
-            .orElse(null);
+        currentChain
+            ? cycles
+                .findByProductIdAndChainCodeOrderByIdDesc(productId, chain.getChainCode())
+                .stream()
+                .findFirst()
+                .orElse(null)
+            : cycles
+                .findFirstByProductIdAndChainDefinitionIdOrderByIdDesc(productId, chain.getId())
+                .orElse(null);
     if (cycle == null
         || !Objects.equals(productId, cycle.getProductId())
-        || !Objects.equals(chain.getId(), cycle.getChainDefinitionId())
+        || !currentChain && !Objects.equals(chain.getId(), cycle.getChainDefinitionId())
         || !Objects.equals(chain.getChainCode(), cycle.getChainCode())) return null;
     boolean open = "OPEN".equals(cycle.getStatus()) && cycle.getClosedAt() == null;
     boolean awaitingSuccessor =
@@ -46,6 +53,7 @@ public class ProductLearningCycleNavigationResolver {
             + "&chainId="
             + cycle.getChainDefinitionId()
             + "&cycleId="
-            + cycle.getId());
+            + cycle.getId(),
+        chain.getId());
   }
 }

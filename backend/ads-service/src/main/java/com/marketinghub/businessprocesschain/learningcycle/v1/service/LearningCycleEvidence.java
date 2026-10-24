@@ -169,11 +169,16 @@ public class LearningCycleEvidence {
         "A autorização precisa confirmar o teto total exato do ciclo.");
   }
 
-  /** Confere o resultado do fluxo oficial, incluindo run produtivo e preflight persistido. */
+  /** Reconhece a publicação comprovada inclusive após a parada, sem reativar o experimento. */
   public void publication(LearningSalesCycle cycle, Experiment experiment, Instant authorizedAt) {
     require(
-        experiment.getStatus() == ExperimentStatus.RUNNING,
+        experiment.getStatus() != null
+            && experiment.getStatus() != ExperimentStatus.PLANNED
+            && experiment.getStatus() != ExperimentStatus.STANDBY,
         "Publique pelo fluxo oficial do experimento e volte para conferir o resultado.");
+    require(
+        Objects.equals(cycle.getExperimentId(), experiment.getId()),
+        "A publicação deve pertencer ao experimento deste ciclo.");
     var run =
         runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(
                 experiment.getId(), ExperimentRunMode.PRODUCTION)

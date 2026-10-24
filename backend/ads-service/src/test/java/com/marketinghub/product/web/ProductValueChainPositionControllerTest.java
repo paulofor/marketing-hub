@@ -56,7 +56,8 @@ class ProductValueChainPositionControllerTest {
                         "DECISION",
                         "OPEN",
                         "Analisar o ciclo.",
-                        "/business-process-chains/learning-cycles?productId=9&chainId=5"))));
+                        "/business-process-chains/learning-cycles?productId=9&chainId=5",
+                        5L))));
     var mockMvc =
         MockMvcBuilders.standaloneSetup(new ProductValueChainPositionController(service)).build();
 
@@ -70,6 +71,7 @@ class ProductValueChainPositionControllerTest {
         .andExpect(jsonPath("$[0].nextProcess.processDefinitionId").value(45L))
         .andExpect(jsonPath("$[0].nextProcess.sequenceNumber").value(5))
         .andExpect(jsonPath("$[0].learningCycleNavigation.cycleId").value(92005L))
+        .andExpect(jsonPath("$[0].learningCycleNavigation.contextChainDefinitionId").value(5L))
         .andExpect(
             jsonPath("$[0].learningCycleNavigation.url")
                 .value("/business-process-chains/learning-cycles?productId=9&chainId=5"))

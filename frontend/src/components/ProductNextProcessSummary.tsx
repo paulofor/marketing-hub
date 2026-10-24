@@ -19,7 +19,8 @@ export default function ProductNextProcessSummary({
   const navigation = position.learningCycleNavigation;
   const cycleNavigation =
     navigation?.productId === position.productId &&
-    navigation.chainDefinitionId === position.chainDefinitionId
+    (navigation.contextChainDefinitionId ?? navigation.chainDefinitionId) ===
+      position.chainDefinitionId
       ? navigation
       : null;
   const processId =

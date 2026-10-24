@@ -78,7 +78,9 @@ public class LearningCycleService {
   @Autowired(required = false)
   private com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateService privateKits;
 
-  /** Apresenta o ciclo selecionado, sua posição e a memória histórica dentro do processo. */
+  /**
+   * Apresenta o ciclo original na família publicada sem migrar sua posição ou memória histórica.
+   */
   @Transactional(readOnly = true)
   public LearningCycleProcessContext processContext(
       Long productId, Long processId, Long cycleId, Long chainId) {
@@ -97,11 +99,16 @@ public class LearningCycleService {
         cycleId == null
             ? cycles.findByProductIdAndOpenSlot(productId, 1)
             : cycles.findById(cycleId).stream().toList();
+    var selectedChain = chainId == null ? null : requiredChain(chainId);
     var matching =
         candidates.stream()
             .filter(value -> Objects.equals(value.getProductId(), productId))
             .filter(
-                value -> chainId == null || Objects.equals(value.getChainDefinitionId(), chainId))
+                value ->
+                    selectedChain == null
+                        || Objects.equals(value.getChainDefinitionId(), selectedChain.getId())
+                        || "PUBLISHED".equals(selectedChain.getStatus())
+                            && Objects.equals(value.getChainCode(), selectedChain.getChainCode()))
             .toList();
     if (matching.size() != 1) {
       if (cycleId != null || matching.size() > 1)
@@ -1809,6 +1816,15 @@ public class LearningCycleService {
     String nextAction =
         stageNode == null ? label(cycle.getStage()) : stageNode.path("description").asText();
     String responsible = stageNode == null ? "Operador do ciclo" : stageNode.path("owner").asText();
+    if ("PUBLICATION".equals(cycle.getStage())
+        && evidence
+            .historicalPublication(
+                requiredExperiment(cycle.getProductId(), cycle.getExperimentId()))
+            .isPresent()) {
+      nextAction =
+          "A publicação deste experimento já está registrada. Conclua a conferência para conciliar os resultados e preparar a próxima decisão. Isso não reativa a campanha nem autoriza novo gasto.";
+      responsible = "Backend · conferir publicação e conciliar resultados";
+    }
     if (commercialPreparation != null && !commercialPreparation.readyForReview()) {
       nextAction = commercialPreparation.guidance();
       responsible = "Preparação comercial · responsáveis pelas pendências do experimento";

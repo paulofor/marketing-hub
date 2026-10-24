@@ -10,6 +10,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,6 +22,33 @@ class ProductLearningCycleNavigationResolverTest {
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
   private final ProductLearningCycleNavigationResolver resolver =
       new ProductLearningCycleNavigationResolver(cycles);
+
+  /** A cadeia publicada deve localizar o ciclo vigente sem migrar sua versão histórica. */
+  @ParameterizedTest
+  @CsvSource({"7,12,105,26,27", "92001,92012,92105,92026,92027"})
+  void publishedChainKeepsOriginalCycle(
+      Long productId,
+      Long cycleId,
+      Long experimentId,
+      Long originalChainId,
+      Long publishedChainId) {
+    var current = chain(publishedChainId);
+    current.setStatus("PUBLISHED");
+    var cycle = cycle(productId, originalChainId, cycleId, experimentId, "PUBLICATION", "OPEN");
+    when(cycles.findByProductIdAndChainCodeOrderByIdDesc(productId, current.getChainCode()))
+        .thenReturn(List.of(cycle));
+    var navigation = resolver.resolve(productId, current);
+    assertThat(navigation).isNotNull();
+    assertThat(navigation.chainDefinitionId()).isEqualTo(originalChainId);
+    assertThat(navigation.url()).contains("cycleId=" + cycleId, "chainId=" + originalChainId);
+    verifyNoMoreInteractionsExceptRead(productId, current.getChainCode());
+  }
+
+  /** Confirma que a navegação não grava estados, tarefas nem autorizações. */
+  private void verifyNoMoreInteractionsExceptRead(Long productId, String chainCode) {
+    verify(cycles).findByProductIdAndChainCodeOrderByIdDesc(productId, chainCode);
+    verifyNoMoreInteractions(cycles);
+  }
 
   /** Reproduz a decisão histórica do Capella, o sucessor atual e uma passagem independente. */
   @ParameterizedTest

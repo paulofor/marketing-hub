@@ -11042,3 +11042,14 @@ depois de materializar o checkout. Provas e limites em
 - Contrato preventivo: `SalesVideoJobServiceTest.shouldPersistFailureWithoutOverflowingEventMessage`,
   persistência SQL do caso, outra identidade e caminho curto, com Unicode.
 - Registro: `docs/homologacao/mira-retomada-editorial-2026-10-24.md`.
+
+## LOOP-APOLO-RECUSA-PRIMEIRA-VOZ-CUSTO-DESCONHECIDO — 24/10/2026
+
+- Causa comprovada: 21295 foi recusada com HTTP 401/invalid_api_key no primeiro
+  segmento, sem áudio; a conciliação reconhecia somente sucesso, reutilização
+  ou gates anteriores à requisição. Psique 804 bloqueou antes da escuta.
+- Correção: reconhecer o callback completo e correspondente à entrada, sem
+  tarefa aceita/recibo/áudio, estimando consumo incremental zero sem afirmar fatura.
+- Regressão: caso original e outra identidade, idempotência, recusa parcial,
+  JSON truncado/duplicado, resposta incerta e preservação de custo pago anterior.
+- Registro: `docs/homologacao/mira-retomada-editorial-2026-10-24.md`.

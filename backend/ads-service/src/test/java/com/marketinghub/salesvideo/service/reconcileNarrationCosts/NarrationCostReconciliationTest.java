@@ -398,6 +398,126 @@ class NarrationCostReconciliationTest {
     verifyNoInteractions(events);
   }
 
+  /**
+   * Reproduz a recusa real do primeiro segmento e outra identidade sem nova chamada ou aprovação.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {21295, 91021})
+  void reconcilesFirstSpeechAuthenticationRejection(long id) throws Exception {
+    var job = rejectedSpeechJob(id, id == 21295 ? 10 : 9007);
+    var result = service.reconcile(99001L, estimate(List.of(id)));
+    var entry =
+        ledger.findBySourceTypeAndSourceId("SALES_VIDEO_JOB", Long.toString(id)).orElseThrow();
+    assertThat(result.estimatedCostUsd()).isZero();
+    assertThat(result.newProviderRequests()).isZero();
+    assertThat(result.providerInvoiceConfirmed()).isFalse();
+    assertThat(entry.getCostEvidence()).isEqualTo(RejectedNarrationEvidence.POLICY);
+    assertThat(entry.getProviderCostUsd()).isNull();
+    assertThat(job.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+    assertThat(job.getFailureDetail()).contains("invalid_api_key");
+    service.reconcile(99001L, estimate(List.of(id)));
+    verify(events, times(1)).save(any());
+  }
+
+  /** Mantém bloqueadas falhas sem resposta, respostas conflitantes e geração já aceita. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "segment",
+        "identity",
+        "http",
+        "code",
+        "truncated",
+        "duplicate",
+        "trailing",
+        "input",
+        "usage",
+        "asset",
+        "accepted",
+        "preserved",
+        "responseMissing",
+        "malformedReceipt"
+      })
+  void rejectsAmbiguousSpeechReconciliation(String scenario) throws Exception {
+    var job = rejectedSpeechJob(91021, 9007);
+    String detail = job.getFailureDetail();
+    switch (scenario) {
+      case "segment" -> detail = detail.replace("segment=1", "segment=2");
+      case "identity" -> detail = detail.replace("jobId=91021", "jobId=91022");
+      case "http" -> detail = detail.replace("status=401", "status=500");
+      case "code" -> detail = detail.replace("invalid_api_key", "unknown");
+      case "truncated" -> detail = detail.substring(0, detail.length() - 1);
+      case "duplicate" ->
+          detail =
+              detail.replace(
+                  "\"code\":\"invalid_api_key\"",
+                  "\"code\":\"unknown\",\"code\":\"invalid_api_key\"");
+      case "trailing" -> detail += " {}";
+      case "input" -> detail = detail.replace("Fala de teste.", "Outra entrada.");
+      case "usage" -> detail = detail.substring(0, detail.length() - 1) + ",\"usage\":{}}";
+      case "asset" -> job.setAsset(new com.marketinghub.media.Asset());
+      case "accepted" -> when(providerTasks.existsBySalesVideoJobId(91021L)).thenReturn(true);
+      case "preserved" -> {
+        var metadata = (ObjectNode) json.readTree(job.getMetadataJson());
+        metadata.putObject("preservedNarration").put("sourceJobId", 123);
+        job.setMetadataJson(metadata.toString());
+      }
+      case "malformedReceipt" -> {
+        var metadata = (ObjectNode) json.readTree(job.getMetadataJson());
+        metadata.put("tts_interactions", "incompleto");
+        job.setMetadataJson(metadata.toString());
+      }
+      case "responseMissing" -> detail = detail.substring(0, detail.indexOf("; rawResponse="));
+    }
+    job.setFailureDetail(detail);
+    assertThatThrownBy(() -> service.reconcile(99001L, estimate(List.of(91021L))))
+        .isInstanceOf(ResponseStatusException.class);
+    verify(ledger, never()).save(any());
+    verifyNoInteractions(events);
+  }
+
+  /** Preserva recibos pagos quando uma etapa posterior da voz falha. */
+  @Test
+  void preservesReceivedSpeechCostAfterLaterFailure() throws Exception {
+    var job = measuredJob(91021, 9007);
+    job.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    job.setFailureCode("OPENAI_TTS_FAILED");
+    job.setFailureDetail("segment=2; status=401");
+    assertThat(service.reconcile(99001L, estimate(List.of(91021L))).estimatedCostUsd())
+        .isPositive();
+  }
+
+  /** Monta o callback sem áudio, usando o formato produzido pelo executor e texto sintético. */
+  private SalesVideoJob rejectedSpeechJob(long id, long productId) throws Exception {
+    var job = job(id, productId, 99001);
+    job.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    job.setFailureCode("OPENAI_TTS_FAILED");
+    var metadata = (ObjectNode) json.readTree(job.getMetadataJson());
+    metadata.remove("tts_interactions");
+    metadata.put("captionText", "Fala de teste. | Continuação.");
+    metadata.put("voiceOverScript", "Fala de teste. Continuação.");
+    job.setMetadataJson(metadata.toString());
+    var request =
+        json.createObjectNode()
+            .put("model", "gpt-4o-mini-tts-2025-12-15")
+            .put("voice", "marin")
+            .put("input", "Fala de teste.")
+            .put("response_format", "mp3");
+    var response = json.createObjectNode().put("status", 401);
+    response
+        .putObject("error")
+        .put("code", "invalid_api_key")
+        .put("message", "Credencial recusada.");
+    job.setFailureDetail(
+        "retryable=false;code=OPENAI_TTS_FAILED;message=OpenAI TTS recusou a locução; jobId="
+            + id
+            + "; segment=1; url=https://api.openai.com/v1/audio/speech; status=401; rawRequest="
+            + request
+            + "; rawResponse="
+            + response);
+    return job;
+  }
+
   /** Reproduz a sequência auditada antes de qualquer chamada ao motor de vídeo. */
   private SalesVideoJob rejectedPlanningJob(long id, long productId) throws Exception {
     var job = job(id, productId, 99001);

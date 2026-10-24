@@ -12,6 +12,23 @@ da compra pertence a Íris**. Demonstrações e screenshots nascem do produto re
 Dédalo. Íris pode selecioná-los, contextualizá-los e apresentá-los, mas nunca reconstruí-los como
 prova fictícia.
 
+## Cinco pontos com prova verificável — decisão de 24/10/2026
+
+Nas novas gerações do contrato de comunicação, Íris entrega `persuasionEvidence`
+(`COMMERCIAL_PERSUASION_EVIDENCE_V1`): uma decisão para cada um dos cinco critérios,
+mensagem proposta para a cliente, fonte literal do contexto congelado, métrica e limite.
+Repetição com margem é decisão interna, sem texto financeiro operacional no criativo.
+Marcadores preenchidos não bastam: o executor confere identidade dos critérios, presença
+da fonte e citação. Psique ainda julga significado, desejo e aderência nos ativos reais;
+proveniência correta não comprova persuasão nem conversão. Resultados históricos e replay
+sem inferência preservam seu contrato original.
+
+Para kit de compra única, continuidade significa o incremento entre amostra e pacote
+completo; nunca inventar assinatura. Antes de pedir dados ou pagamento, mostrar a prova
+permitida e uma ação simples. Roteiro deve abrir com benefício utilizável e produto
+identificável, sem tornar o formulário o benefício. Vídeo é opção comparada, não gasto
+automático. Ver [evidência e matriz](../homologacao/capella-cinco-pontos-comunicacao-v1.md).
+
 ## Decisão arquitetural
 
 Em 2026-08-28 foram comparadas três alternativas:

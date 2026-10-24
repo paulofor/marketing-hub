@@ -274,7 +274,17 @@ public class ExperimentFunnelAutoStopService {
     invalidateExperimentAndRequestStops(
         experiment,
         FacebookCampaignStopReason.CAMPAIGN_STATISTICALLY_FAILED_STAGE,
-        "etapa prioritária do funil reprovada estatisticamente para a política única de campanha");
+        "Etapa prioritária reprovada estatisticamente: stage="
+            + failedStage.stageKey()
+            + "; attempts="
+            + failedStage.attempts()
+            + "; successes="
+            + failedStage.successes()
+            + "; observedRate="
+            + failedStage.observedRate()
+            + "; minimumRate="
+            + failedStage.minAcceptableRate()
+            + ". Diagnóstico do funil; não comprova rejeição do produto.");
     return true;
   }
 
@@ -354,10 +364,13 @@ public class ExperimentFunnelAutoStopService {
     return diagnostic != null ? diagnostic.successes() : 0L;
   }
 
-  /** Atualiza o status do experimento e registra o motivo de parada nas campanhas vinculadas. */
+  /** Preserva o motivo efetivo no experimento antes de encerrar e solicitar a parada do canal. */
   private void invalidateExperimentAndRequestStops(
       Experiment experiment, FacebookCampaignStopReason stopReason, String businessReason) {
     experiment.setStatus(ExperimentStatus.INVALIDATED);
+    experiment.setLastStatusChangeAction("AUTOMATIC_STOP");
+    experiment.setLastStatusChangeReason(businessReason);
+    experiment.setLastStatusChangedAt(Instant.now());
     standbyService.requestFacebookCampaignStops(experiment.getId(), stopReason, businessReason);
     runMetricLifecycleService.completeCommercialStop(experiment, stopReason, businessReason);
     agentTaskService.cancelActiveTasksBySourceReference(

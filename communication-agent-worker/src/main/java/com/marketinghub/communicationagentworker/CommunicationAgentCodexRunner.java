@@ -46,7 +46,8 @@ public class CommunicationAgentCodexRunner {
     PromptComposition prompt = promptComposition(task, contract);
     Path answer = Files.createTempFile("iris-result-", ".json");
     Path processLog = Files.createTempFile("iris-codex-", ".jsonl");
-    Path schema = materialize("prompts/iris/v1/output-schema.json", ".json");
+    Path schema = Files.createTempFile("iris-schema-", ".json");
+    Files.writeString(schema, schemaFor(contract).toString());
     Path mcp = materialize("mcp/communication-agent.mjs", ".mjs");
     try {
       List<String> command = command(answer, schema, mcp, modelCode(task));
@@ -95,10 +96,11 @@ public class CommunicationAgentCodexRunner {
               prompt.activityPromptPart(),
               usage);
         }
+        String rawResponse = null;
         try {
-          String rawResponse = Files.readString(answer);
+          rawResponse = Files.readString(answer);
           JsonNode result = json.readTree(rawResponse);
-          validate(result, task, contract);
+          validateFreshResult(result, task, contract);
           session.success();
           log.info(
               "Resposta de Íris recebida. taskId={} processCode={} activityId={} status={}",
@@ -126,7 +128,8 @@ public class CommunicationAgentCodexRunner {
               prompt.agentPromptPart(),
               prompt.activityPromptPart(),
               usage,
-              ex);
+              ex,
+              rawResponse);
         }
       }
     } finally {
@@ -263,8 +266,34 @@ public class CommunicationAgentCodexRunner {
             "Íris não pode concluir com saída vazia ou prova ausente.");
       }
       validateActivityOutput(output, contract.outputType(), task);
+      if (output.has("persuasionEvidence"))
+        PersuasionEvidenceContract.validate(output.path("persuasionEvidence"), task);
       validateResearchIntelligence(task, output);
     }
+  }
+
+  /** Exige a prova comercial somente em nova geração, preservando recibos legados no replay. */
+  static void validateFreshResult(JsonNode result, Map<String, Object> task, Contract contract) {
+    validate(result, task, contract);
+    if ("COMMUNICATION_PACKAGE".equals(contract.outputType())
+        && "COMPLETED".equals(result.path("executionStatus").asText()))
+      PersuasionEvidenceContract.validate(result.at("/functionalOutput/persuasionEvidence"), task);
+  }
+
+  /** Compõe o schema versionado da atividade sem duplicar contratos das demais entregas. */
+  JsonNode schemaFor(Contract contract) throws IOException {
+    JsonNode schema = json.readTree(read("prompts/iris/v1/output-schema.json"));
+    if (!"COMMUNICATION_PACKAGE".equals(contract.outputType())) {
+      var output =
+          (com.fasterxml.jackson.databind.node.ObjectNode)
+              schema.at("/properties/functionalOutput");
+      ((com.fasterxml.jackson.databind.node.ObjectNode) output.path("properties"))
+          .remove("persuasionEvidence");
+      var required = (com.fasterxml.jackson.databind.node.ArrayNode) output.path("required");
+      for (int index = required.size() - 1; index >= 0; index--)
+        if ("persuasionEvidence".equals(required.get(index).asText())) required.remove(index);
+    }
+    return schema;
   }
 
   /** Confirma que a seleção de evidências registra somente cartões entregues na versão corrente. */
@@ -616,12 +645,13 @@ public class CommunicationAgentCodexRunner {
     }
   }
 
-  /** Preserva prompt e tokens quando a execução não produz uma resposta válida. */
+  /** Preserva resposta bruta, prompt e tokens quando a validação recusa a saída do modelo. */
   static class ExecutionException extends RuntimeException {
     private final String promptSent;
     private final String agentPromptPart;
     private final String activityPromptPart;
     private final TokenUsage usage;
+    private final String rawResponse;
 
     /** Cria uma falha operacional sem causa aninhada. */
     ExecutionException(
@@ -635,6 +665,7 @@ public class CommunicationAgentCodexRunner {
       this.agentPromptPart = agentPromptPart;
       this.activityPromptPart = activityPromptPart;
       this.usage = usage;
+      this.rawResponse = null;
     }
 
     /** Cria uma falha de contrato preservando a exceção original. */
@@ -645,11 +676,29 @@ public class CommunicationAgentCodexRunner {
         String activityPromptPart,
         TokenUsage usage,
         Throwable cause) {
+      this(message, promptSent, agentPromptPart, activityPromptPart, usage, cause, null);
+    }
+
+    /** Guarda os bytes recusados para diagnóstico e recuperação sem nova inferência. */
+    ExecutionException(
+        String message,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        TokenUsage usage,
+        Throwable cause,
+        String rawResponse) {
       super(message, cause);
       this.promptSent = promptSent;
       this.agentPromptPart = agentPromptPart;
       this.activityPromptPart = activityPromptPart;
       this.usage = usage;
+      this.rawResponse = rawResponse;
+    }
+
+    /** Retorna a resposta original quando o modelo produziu conteúdo antes da falha. */
+    String rawResponse() {
+      return rawResponse;
     }
 
     /** Retorna o prompt enviado antes da falha. */

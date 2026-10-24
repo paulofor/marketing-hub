@@ -10312,6 +10312,24 @@ Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
   comercial. Registros antigos não são reescritos. Nova mídia conserva revisão independente.
 - Matriz, limites e resultados: `docs/homologacao/video-copy-persuasiva-v1.md`.
 
+### Complemento — cinco decisões com fonte e retorno de mercado, 24/10/2026
+
+- Capella 105: anúncio 76 abria com formulário e só mostrava a arte cerca de 8 s depois.
+  O contrato já tinha os cinco marcadores, mas podia concluir sem relacionar cada decisão
+  a uma fonte e mensagem concretas. O parecer perceptivo não provou conversão.
+- Novas saídas de Íris usam `COMMERCIAL_PERSUASION_EVIDENCE_V1`, com validação executável
+  de cinco critérios e citações do contexto. Apolo recebe orientação de resultado antes
+  do formulário; Psique confronta os critérios com a peça exata, sem confundir proveniência
+  com persuasão. Compra única não se converte em assinatura.
+- A medição confirmou quatro cliques em uma sessão (36 ms); Atena agora recebe eventos
+  brutos e sessões distintos, sem somar acessos do pagamento, além do motivo de parada
+  quando persistido. Novas paradas conservam etapa, contagens e limiar; ausência histórica
+  permanece desconhecida. CTR não isola roteiro, público ou preço.
+- Regressões: geração simulada válida/recusada, callback com resposta e custo preservados,
+  replay legado, outro produto, consulta MySQL e contratos reais dos quatro agentes.
+  Matriz e limites: `docs/homologacao/capella-cinco-pontos-comunicacao-v1.md`.
+  Nenhum sucessor, parecer, vídeo pago ou campanha é disparado por esta correção.
+
 ## LOOP-VIDEO-NOTA-DE-RITMO-SEM-NARRATIVA — 15/10/2026
 
 - Evidência: arquivos #1/#2/#3, hashes conferidos novamente, análises #4/#5/#6 preservadas e

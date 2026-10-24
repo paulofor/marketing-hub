@@ -17,8 +17,45 @@ public record LeadPortalCycleMeasurement(
     long rawSessions,
     long pageViews,
     long checkouts,
+    Long checkoutSessions,
+    Long checkoutClicksWithoutSession,
     Instant lastHumanEventAt,
     Payments payments) {
+
+  /** Preserva a fotografia legada sem transformar eventos antigos em sessões conhecidas. */
+  public LeadPortalCycleMeasurement(
+      Long publicationId,
+      String publicationUrl,
+      Long publishedRunId,
+      String publicationScope,
+      boolean paymentSourceAvailable,
+      long humanEvents,
+      long rawEvents,
+      long humanVisitors,
+      long humanSessions,
+      long rawSessions,
+      long pageViews,
+      long checkouts,
+      Instant lastHumanEventAt,
+      Payments payments) {
+    this(
+        publicationId,
+        publicationUrl,
+        publishedRunId,
+        publicationScope,
+        paymentSourceAvailable,
+        humanEvents,
+        rawEvents,
+        humanVisitors,
+        humanSessions,
+        rawSessions,
+        pageViews,
+        checkouts,
+        null,
+        null,
+        lastHumanEventAt,
+        payments);
+  }
 
   /**
    * Responsabilidade: resumir pagamentos reconciliáveis e entrega, sem inferir uso ou satisfação.

@@ -23,7 +23,9 @@ public class LeadPortalCycleMeasurementRepository {
     this.directPayments = directPayments;
   }
 
-  /** Concilia publicação, tráfego segregado e pagamentos persistidos dentro da janela. */
+  /**
+   * Concilia tráfego, sessões de checkout e pagamentos sem somar eventos repetidos como pessoas.
+   */
   public LeadPortalCycleMeasurement read(Long experimentId, Instant start, Instant end) {
     var from = Timestamp.from(start);
     var until = Timestamp.from(end);
@@ -58,6 +60,12 @@ public class LeadPortalCycleMeasurementRepository {
                 AND LOWER(a.event_type) = 'page_view' THEN 1 ELSE 0 END) AS page_views,
               SUM(CASE WHEN a.commercial_human
                 AND LOWER(a.event_type) = 'checkout_click' THEN 1 ELSE 0 END) AS checkouts,
+              COUNT(DISTINCT CASE WHEN a.commercial_human
+                AND LOWER(a.event_type) = 'checkout_click' THEN NULLIF(TRIM(a.session_id), '') END)
+                AS checkout_sessions,
+              SUM(CASE WHEN a.commercial_human AND LOWER(a.event_type) = 'checkout_click'
+                AND NULLIF(TRIM(a.session_id), '') IS NULL THEN 1 ELSE 0 END)
+                AS checkout_without_session,
               MAX(CASE WHEN a.commercial_human THEN a.occurred_at END) AS last_event
             FROM (
               SELECT a.*, (a.traffic_quality = 'HUMAN'
@@ -79,6 +87,8 @@ public class LeadPortalCycleMeasurementRepository {
                     rs.getLong("raw_sessions"),
                     rs.getLong("page_views"),
                     rs.getLong("checkouts"),
+                    rs.getLong("checkout_sessions"),
+                    rs.getLong("checkout_without_session"),
                     instant(rs.getTimestamp("last_event"))),
             experimentId,
             from,
@@ -107,6 +117,8 @@ public class LeadPortalCycleMeasurementRepository {
         funnel.rawSessions(),
         funnel.pageViews(),
         funnel.checkouts(),
+        funnel.checkoutSessions(),
+        funnel.checkoutWithoutSession(),
         funnel.lastEvent(),
         direct.orElseGet(() -> payments(experimentId, from, until)));
   }
@@ -268,6 +280,8 @@ public class LeadPortalCycleMeasurementRepository {
       long rawSessions,
       long pageViews,
       long checkouts,
+      long checkoutSessions,
+      long checkoutWithoutSession,
       Instant lastEvent) {}
 
   /** Responsabilidade: conferir identidade financeira, atribuição e evidência mínima de entrega. */

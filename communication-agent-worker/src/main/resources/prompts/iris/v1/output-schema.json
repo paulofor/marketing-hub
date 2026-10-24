@@ -129,7 +129,8 @@
         "conversionArchitecture",
         "visualComposition",
         "landingHtml",
-        "audiovisualBrief"
+        "audiovisualBrief",
+        "persuasionEvidence"
       ],
       "properties": {
         "messageStrategy": {
@@ -399,6 +400,87 @@
             "string",
             "null"
           ]
+        },
+        "persuasionEvidence": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "contractVersion",
+            "criteria"
+          ],
+          "properties": {
+            "contractVersion": {
+              "type": "string",
+              "const": "COMMERCIAL_PERSUASION_EVIDENCE_V1"
+            },
+            "criteria": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "criterion",
+                  "decision",
+                  "customerMessage",
+                  "sourcePointer",
+                  "sourceQuote",
+                  "metric",
+                  "limitation"
+                ],
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "enum": [
+                      "RECOGNIZED_DESIRE",
+                      "EASY_FIRST_STEP",
+                      "VALUE_BEFORE_COMMITMENT",
+                      "PAID_INCREMENT",
+                      "REPEAT_WITH_MARGIN"
+                    ]
+                  },
+                  "decision": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "customerMessage": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "sourcePointer": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sourceQuote": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "metric": {
+                    "type": "string",
+                    "enum": [
+                      "AD_CLICK_THROUGH_RATE",
+                      "QUALIFIED_VISIT_RATE",
+                      "SAMPLE_VIEW_RATE",
+                      "FIRST_VALUE_COMPLETION_RATE",
+                      "SAMPLE_TO_CHECKOUT_RATE",
+                      "NET_PURCHASE_CONVERSION_RATE",
+                      "NET_CONTRIBUTION_AFTER_ACQUISITION"
+                    ]
+                  },
+                  "limitation": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },

@@ -23,23 +23,46 @@ class CommunicationAgentCodexRunnerTest {
   private static final String STRATEGY_HASH = "a".repeat(64);
   private final ObjectMapper json = new ObjectMapper();
 
-  /** Executa contratos estratégicos e materiais em processo local e compara auditoria e consumo. */
+  /** Executa modelo simulado, confere provas e preserva resposta recusada, auditoria e consumo. */
   @ParameterizedTest
-  @ValueSource(strings = {"communicationContract", "nonAudiovisual"})
+  @ValueSource(
+      strings = {"communicationContract", "nonAudiovisual", "missingProof", "inventedQuote"})
   void usesActivityModelInCommandAndCallback(
-      String activity, @org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
+      String scenario, @org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
+    boolean rejected = scenario.equals("missingProof") || scenario.equals("inventedQuote");
+    String activity = rejected ? "communicationContract" : scenario;
     boolean strategic = activity.equals("communicationContract");
     String expected = strategic ? "gpt-6-astra" : "fixture-operational";
     var input =
-        task(
-            strategic ? "pde-communication-sales-journey" : "creative-production-approval",
-            activity,
-            context("READY", true));
+        new java.util.LinkedHashMap<>(
+            task(
+                strategic ? "pde-communication-sales-journey" : "creative-production-approval",
+                activity,
+                context("READY", true)));
     var answer =
         result(
             strategic ? "COMMUNICATION_PACKAGE" : "NON_AUDIOVISUAL_PACKAGE",
             activity,
             strategic ? "COMPLETED" : "READY_FOR_RENDER");
+    if (strategic) {
+      var context =
+          (com.fasterxml.jackson.databind.node.ObjectNode)
+              json.readTree((String) input.get("processContextJson"));
+      ((com.fasterxml.jackson.databind.node.ObjectNode) context.path("marketStrategicContract"))
+          .put("summary", "Kit para manicures");
+      input.put("processContextJson", context.toString());
+      ((com.fasterxml.jackson.databind.node.ObjectNode) answer.path("functionalOutput"))
+          .set(
+              "persuasionEvidence",
+              PersuasionEvidenceContractTest.proof(json, "Kit para manicures"));
+    }
+    if (scenario.equals("missingProof"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) answer.path("functionalOutput"))
+          .remove("persuasionEvidence");
+    if (scenario.equals("inventedQuote"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode)
+              answer.at("/functionalOutput/persuasionEvidence/criteria/0"))
+          .put("sourceQuote", "Fonte que a tarefa não recebeu");
     Files.writeString(directory.resolve("response.json"), answer.toString());
     Path executable = directory.resolve("fake-codex.py");
     Files.writeString(
@@ -63,6 +86,17 @@ class CommunicationAgentCodexRunnerTest {
     when(telemetry.monitor(anyLong(), any(), any()))
         .thenReturn(mock(CodexTelemetryReporter.Session.class));
     var runner = new CommunicationAgentCodexRunner(config, json, telemetry);
+    if (rejected) {
+      assertThatThrownBy(() -> runner.run(input))
+          .isInstanceOfSatisfying(
+              CommunicationAgentCodexRunner.ExecutionException.class,
+              failure -> {
+                assertThat(failure.rawResponse()).isEqualTo(answer.toString());
+                assertThat(failure.promptSent()).contains("COMMERCIAL_PERSUASION_EVIDENCE_V1");
+                assertThat(failure.usage().outputTokens()).isEqualTo(9);
+              });
+      return;
+    }
     var execution = runner.run(input);
     var arguments = json.readTree(Files.readString(directory.resolve("arguments.json")));
     var args =
@@ -70,13 +104,65 @@ class CommunicationAgentCodexRunnerTest {
             arguments,
             new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
     assertThat(args).containsSubsequence("--model", expected);
-    var consumer = new CommunicationAgentTaskConsumer(null, runner, config, null, json.copy().findAndRegisterModules(), null);
+    var consumer =
+        new CommunicationAgentTaskConsumer(
+            null, runner, config, null, json.copy().findAndRegisterModules(), null);
     Map<String, Object> callback =
         org.springframework.test.util.ReflectionTestUtils.invokeMethod(
-            consumer, "basePayload", input, execution, java.time.Instant.now());
+            consumer, "successPayload", input, execution, java.time.Instant.now());
     var payload = json.valueToTree(callback);
     assertThat(payload.path("executionAudit").path("modelCode").asText()).isEqualTo(expected);
     assertThat(payload.path("modelUsages").get(0).path("modelCode").asText()).isEqualTo(expected);
+    if (strategic)
+      assertThat(
+              json.readTree(payload.path("resultJson").asText())
+                  .at("/functionalOutput/persuasionEvidence/criteria"))
+          .hasSize(5);
+  }
+
+  /**
+   * Marcadores genéricos preservam o replay histórico, mas não passam como nova prova comercial.
+   */
+  @Test
+  void requiresEvidenceOnFreshGenerationAndPreservesLegacyValidation() throws Exception {
+    var input =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", true));
+    var contract = CommunicationAgentCodexRunner.contractFor(input);
+    var answer = result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED");
+    CommunicationAgentCodexRunner.validate(answer, input, contract);
+    assertThatThrownBy(
+            () -> CommunicationAgentCodexRunner.validateFreshResult(answer, input, contract))
+        .hasMessageContaining("cinco pontos");
+    var runner =
+        new CommunicationAgentCodexRunner(properties(), json, mock(CodexTelemetryReporter.class));
+    var schema = runner.schemaFor(contract);
+    assertThat(
+            schema
+                .at(
+                    "/properties/functionalOutput/properties/persuasionEvidence/properties/criteria/minItems")
+                .asInt())
+        .isEqualTo(5);
+    var material =
+        runner.schemaFor(
+            new CommunicationAgentCodexRunner.Contract(
+                "NON_AUDIOVISUAL_PACKAGE", "prompts/iris/v1/non-audiovisual-package.md"));
+    assertThat(material.at("/properties/functionalOutput/properties").has("persuasionEvidence"))
+        .isFalse();
+    assertThat(material.at("/properties/functionalOutput/required").toString())
+        .doesNotContain("persuasionEvidence");
+    assertThat(runner.prompt(input, contract))
+        .contains(
+            "COMMERCIAL_PERSUASION_EVIDENCE_V1", "sourcePointer", "compra única", "produção paga");
+  }
+
+  /** Um contrato bloqueado pode declarar fontes ausentes sem inventar cinco citações. */
+  @Test
+  void permitsBlockedContractWithoutFabricatedProof() throws Exception {
+    var input =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", true));
+    var answer = result("COMMUNICATION_PACKAGE", "communicationContract", "BLOCKED");
+    CommunicationAgentCodexRunner.validateFreshResult(
+        answer, input, CommunicationAgentCodexRunner.contractFor(input));
   }
 
   /** Distingue plano técnico de atividade concluída e recusa esse estado nas outras saídas. */

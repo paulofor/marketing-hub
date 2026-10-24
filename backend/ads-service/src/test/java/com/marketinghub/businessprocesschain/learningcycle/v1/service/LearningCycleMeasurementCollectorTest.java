@@ -112,6 +112,40 @@ class LearningCycleMeasurementCollectorTest {
             });
   }
 
+  /**
+   * Leva a causa real da parada ao aprendizado e não inventa diagnóstico em fotografias legadas.
+   */
+  @Test
+  void includesStopEvidenceAndKeepsUnknownHistoricalDiagnosis() {
+    var legacy = collector.collect(cycle, experiment, NOW);
+    assertThat(legacy.evidence().at("/sources/acquisition/stopReason").isNull()).isTrue();
+    assertThat(legacy.evidence().at("/sources/acquisition/stopExplanation").isNull()).isTrue();
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.FACEBOOK,
+                new BigDecimal("10.05"),
+                NOW,
+                NOW,
+                null,
+                504L,
+                2L,
+                true,
+                "CAMPAIGN_STATISTICALLY_FAILED_STAGE",
+                NOW.minusSeconds(60),
+                NOW,
+                "Fixture: stage=CLICK; attempts=504; successes=2; minimumRate=0.015"));
+    var current = collector.collect(cycle, experiment, NOW);
+    var evidence = current.evidence().at("/sources/acquisition");
+    assertThat(current.ready()).isTrue();
+    assertThat(evidence.path("ctrPercent").decimalValue()).isEqualByComparingTo("0.3968");
+    assertThat(evidence.path("stopReason").asText())
+        .isEqualTo("CAMPAIGN_STATISTICALLY_FAILED_STAGE");
+    assertThat(evidence.path("stopExplanation").asText()).contains("stage=CLICK", "attempts=504");
+    assertThat(evidence.path("stopCompletedAt").asText()).isEqualTo(NOW.toString());
+    assertThat(evidence.path("interpretationLimit").asText()).contains("não isola");
+  }
+
   /** Reproduz os números conhecidos do #91 e calcula contribuição sem digitação humana. */
   @Test
   void reconcilesVegaFromOfficialSources() {
@@ -169,7 +203,11 @@ class LearningCycleMeasurementCollectorTest {
 
     assertThat(result.ready()).isTrue();
     assertThat(result.evidence().path("netSales").asLong()).isEqualTo(1);
-    assertThat(result.evidence().path("checkouts").asLong()).isEqualTo(1);
+    assertThat(result.evidence().path("checkouts").asLong()).isZero();
+    assertThat(result.evidence().path("checkoutCountBasis").asText())
+        .isEqualTo("RAW_LANDING_EVENTS_LEGACY");
+    assertThat(result.evidence().at("/sources/financialOutcomes/checkoutAccessEvents").asLong())
+        .isEqualTo(1);
     assertThat(result.evidence().path("deliveryVerified").asBoolean()).isTrue();
     assertThat(result.evidence().path("useVerified").asBoolean()).isFalse();
     assertThat(result.evidence().path("satisfactionVerified").asBoolean()).isFalse();

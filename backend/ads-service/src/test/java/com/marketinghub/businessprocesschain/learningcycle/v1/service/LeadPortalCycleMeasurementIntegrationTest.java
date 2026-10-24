@@ -548,6 +548,56 @@ class LeadPortalCycleMeasurementIntegrationTest {
         .isEqualTo("COMMERCIAL_CHECKOUT_WEBHOOK");
   }
 
+  /**
+   * Reproduz quatro eventos de uma sessão e mantém QA, bots, outros produtos e janela separados.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {88, 94})
+  void countsUniqueCheckoutSessionsWithoutInflatingBuyerIntent(long experimentId) {
+    for (int i = 0; i < 4; i++)
+      event(experimentId, "HUMAN", "checkout_click", "person", "one-session", "", EVENT);
+    event(experimentId, "HUMAN", "checkout_click", "person", "second-session", "", EVENT);
+    event(experimentId, "BOT", "checkout_click", "bot", "bot-session", "", EVENT);
+    event(experimentId, "HUMAN", "checkout_click", "qa", "qa-session", "mh_test=1", EVENT);
+    event(experimentId, "HUMAN", "checkout_click", "late", "late-session", "", END.plusSeconds(1));
+    event(
+        experimentId == 88 ? 94L : 88L,
+        "HUMAN",
+        "checkout_click",
+        "other",
+        "other-session",
+        "",
+        EVENT);
+    var measurement = repository.read(experimentId, START, END);
+    assertThat(measurement.checkouts()).isEqualTo(5);
+    assertThat(measurement.checkoutSessions()).isEqualTo(2L);
+    assertThat(measurement.checkoutClicksWithoutSession()).isZero();
+  }
+
+  /** Não converte identidade ausente em outra pessoa e mantém os acessos ao pagamento separados. */
+  @Test
+  void exposesMissingIdentityAndDoesNotSumPaymentAccesses() {
+    for (int i = 0; i < 4; i++)
+      event(88L, "HUMAN", "checkout_click", "visitor", "session", "", EVENT);
+    event(88L, "HUMAN", "checkout_click", "unknown", " ", "", EVENT);
+    purchase("pending", "88", "pending", null, "67.00", "BRL", EVENT, "{}", false);
+    jdbc.update(
+        "UPDATE lead_portal_purchase SET payment_approved_at=NULL,checkout_accessed_at=?",
+        Timestamp.from(EVENT));
+    var result = collected(7L, 88L);
+    assertThat(result.ready()).isTrue();
+    assertThat(result.evidence().path("checkoutClicks").asLong()).isEqualTo(5);
+    assertThat(result.evidence().path("checkouts").asLong()).isEqualTo(1);
+    assertThat(result.evidence().path("checkoutCountBasis").asText())
+        .isEqualTo("DISTINCT_LANDING_SESSIONS");
+    assertThat(result.evidence().path("checkoutIdentityComplete").asBoolean()).isFalse();
+    assertThat(result.evidence().path("checkoutClicksWithoutSession").asLong()).isEqualTo(1);
+    assertThat(result.evidence().at("/sources/financialOutcomes/checkoutAccessEvents").asLong())
+        .isEqualTo(1);
+    assertThat(result.evidence().path("measurementLimitations").toString())
+        .contains("não são somados", "Identidade de sessão incompleta");
+  }
+
   /** Exporta outra fotografia SQL para o BPM local, sem reescrever identificadores da evidência. */
   @Test
   void exportsSqlMeasurementForLocalBpm() throws Exception {

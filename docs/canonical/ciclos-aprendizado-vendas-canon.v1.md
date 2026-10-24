@@ -1,5 +1,21 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Diagnóstico de aquisição e contagens não aditivas — 24/10/2026
+
+A conciliação entrega a Atena métricas de aquisição, CTR descritivo, motivo e horários
+persistidos da parada. Novas interrupções estatísticas preservam etapa, tentativas,
+sucessos e limiar observado no motivo do experimento. Ausência histórica não autoriza
+recalcular ou inventar o diagnóstico da época.
+
+No Lead Portal, `checkoutClicks` conserva eventos brutos, enquanto `checkouts` usa
+sessões distintas quando `checkoutCountBasis=DISTINCT_LANDING_SESSIONS`. Acessos de
+pagamento ficam separados: não somá-los às sessões sem correlação individual. Sessão
+ausente é lacuna explícita (`checkoutIdentityComplete=false`), nunca novo comprador.
+QA, bots, outra janela e outro experimento ficam excluídos. Registros históricos não
+são reescritos pelo deploy. Poucos cliques não comprovam rejeição de produto ou preço;
+uma peça aprovada não comprova vendas. Repetição/escala continua sujeita a contribuição,
+meta e autorizações vigentes. [Evidências](../homologacao/capella-cinco-pontos-comunicacao-v1.md).
+
 ## Formato estático sem produção audiovisual — 21/10/2026
 
 O ciclo respeita a decisão vigente de Íris: quando a tarefa concluída e as ocorrências

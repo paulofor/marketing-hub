@@ -61,7 +61,7 @@ public class VideoProductProofService {
     return verifiedSequence(ownedProject(projectId), shots, captionText);
   }
 
-  /** Revalida uma sequência auditada do projeto proprietário para o gate comercial do backend. */
+  /** Revalida identidade, leitura e enquadramento da sequência para o gate comercial do backend. */
   @Transactional(readOnly = true)
   public java.util.List<Map<String, Object>> verifiedSequence(
       VideoProject project,
@@ -84,7 +84,11 @@ public class VideoProductProofService {
           || !shot.reference().contains("#crop="))
         throw invalid(
             "Cada trecho exige legenda em ordem, captura homologada recortada e leitura entre 2 e 12 segundos.");
+      if (shot.layout() != null
+          && !java.util.Set.of("FULL_PRODUCT_PROOF_V1", "MOTION_WITH_PRODUCT_PROOF_V1")
+              .contains(shot.layout())) throw invalid("Enquadramento da demonstração inválido.");
       var proof = resolveReference(project, shot.reference(), true);
+      if (shot.layout() != null) proof.put("layout", shot.layout());
       proof.put("captionCueIndex", shot.captionCueIndex());
       proof.put("minimumSeconds", shot.minimumSeconds());
       result.add(proof);

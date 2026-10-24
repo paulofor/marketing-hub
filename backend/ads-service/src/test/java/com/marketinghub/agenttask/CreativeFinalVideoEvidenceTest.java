@@ -172,6 +172,17 @@ class CreativeFinalVideoEvidenceTest {
         .thenReturn(Optional.of(review));
     assertThat(service.correctionRequested(video)).isTrue();
     assertThat(service.approvalBlockReason(video)).isNotNull();
+    // Ajuste editorial não crítico também exige correção, sem aprovar a candidata.
+    for (String finding :
+        List.of(
+            "\"copyReview\":{\"mode\":\"DESCRIPTIVE\"}",
+            "\"proofLegibility\":2",
+            "\"audioVisualSync\":[{\"status\":\"ADJUST\"}]")) {
+      review.setResultJson(
+          valid.replace("\"criticalDeficit\":true", "\"criticalDeficit\":false," + finding));
+      assertThat(service.correctionRequested(video)).isTrue();
+      assertThat(service.approvalBlockReason(video)).isNotNull();
+    }
     for (String invalid :
         List.of(
             valid.replace("ADJUST", "APPROVED"),

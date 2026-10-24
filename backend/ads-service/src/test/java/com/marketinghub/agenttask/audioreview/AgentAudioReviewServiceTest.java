@@ -530,6 +530,47 @@ class AgentAudioReviewServiceTest {
   }
 
   /**
+   * Estima PCM curto no teto existente e conserva bloqueio de saldo e replay para outros produtos.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {10, 93010})
+  void measuredAudioUsesExistingBudgetWithoutRepeatingCall(long productId) throws Exception {
+    var original = prepare(productId);
+    var buffer = new java.io.ByteArrayOutputStream();
+    var format = new javax.sound.sampled.AudioFormat(24000, 16, 1, true, false);
+    try (var stream =
+        new javax.sound.sampled.AudioInputStream(
+            new java.io.ByteArrayInputStream(new byte[33 * 48000]), format, 33 * 24000)) {
+      javax.sound.sampled.AudioSystem.write(
+          stream, javax.sound.sampled.AudioFileFormat.Type.WAVE, buffer);
+    }
+    byte[] wav = buffer.toByteArray();
+    ((com.fasterxml.jackson.databind.node.ObjectNode)
+            original.request().at("/messages/0/content/1/input_audio"))
+        .put("data", Base64.getEncoder().encodeToString(wav));
+    var input =
+        new AudioReviewReserveRequest(
+            original.assetId(),
+            original.videoSha256(),
+            AudioReviewContract.hash(wav),
+            original.request());
+    var used = new StudioCostLedgerEntry();
+    used.setAssetType("VIDEO");
+    used.setStatus("VIDEO_READY");
+    used.setEstimatedCostUsd(new BigDecimal("9.80"));
+    when(ledger.findByExperimentIdOrderByCreatedAtAsc(9002L)).thenReturn(List.of(used));
+    assertThatThrownBy(() -> service.reserve("customer-agent", 9001, input))
+        .hasMessageContaining("Saldo audiovisual insuficiente");
+    verify(reviews, never()).saveAndFlush(any());
+    used.setEstimatedCostUsd(new BigDecimal("9.70"));
+    var receipt = service.reserve("customer-agent", 9001, input);
+    assertThat(receipt.reservedUsd()).isEqualByComparingTo("0.25");
+    assertThat(receipt.mayInvoke()).isTrue();
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+    verify(reviews, times(1)).saveAndFlush(any());
+  }
+
+  /**
    * A primeira chamada pode consumir; repetir reserva ou callback não duplica custo nem inferência.
    */
   @ParameterizedTest

@@ -211,7 +211,9 @@ public class CreativeFinalVideoEvidence {
     return "Psique precisa revisar o vídeo final, sua clareza e progressão visual antes da seleção de uso. Abra a atividade de revisão da comunicação.";
   }
 
-  /** Reconhece ajuste independente da mídia exata sem conceder aprovação ou decisão humana. */
+  /**
+   * Reconhece ajuste crítico ou editorial da mídia exata sem conceder aprovação ou decisão humana.
+   */
   public boolean correctionRequested(ExperimentVideoAsset video) {
     var result = read(video.getResponseJson(), video.getId());
     if (video.getExperiment() == null
@@ -232,7 +234,14 @@ public class CreativeFinalVideoEvidence {
     for (var audit : review.path("videoAudit"))
       if (audit.path("assetId").asLong() == video.getId()
           && sha.equals(audit.path("sha256").asText())
-          && audit.path("criticalDeficit").asBoolean(false)) return true;
+          && (audit.path("criticalDeficit").asBoolean(false)
+              || "DESCRIPTIVE".equals(audit.at("/copyReview/mode").asText())
+              || java.util.stream.Stream.of(
+                      "desire", "clarity", "firstAction", "proofLegibility", "visualProgression")
+                  .anyMatch(field -> audit.path(field).isInt() && audit.path(field).asInt() < 3)
+              || java.util.stream.StreamSupport.stream(
+                      audit.path("audioVisualSync").spliterator(), false)
+                  .anyMatch(sync -> "ADJUST".equals(sync.path("status").asText())))) return true;
     return false;
   }
 

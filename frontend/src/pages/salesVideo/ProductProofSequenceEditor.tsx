@@ -48,6 +48,25 @@ export function ProductProofSequenceEditor({
             horizontal, vertical, largura e altura em pixels; a imagem original
             permanece preservada.
           </small>
+          <label htmlFor={`proof-layout-${index}`}>Enquadramento</label>
+          <select
+            id={`proof-layout-${index}`}
+            className="form-select"
+            value={shot.layout ?? ""}
+            onChange={(event) =>
+              update(index, {
+                layout: event.target.value
+                  ? (event.target.value as ProductProofShot["layout"])
+                  : undefined,
+              })
+            }
+          >
+            <option value="">Automático</option>
+            <option value="FULL_PRODUCT_PROOF_V1">Demonstração ampliada</option>
+            <option value="MOTION_WITH_PRODUCT_PROOF_V1">
+              Cena e demonstração juntas
+            </option>
+          </select>
           <label htmlFor={`proof-cue-${index}`}>Parte da legenda *</label>
           <input
             id={`proof-cue-${index}`}
@@ -135,6 +154,13 @@ export function validateProofSequence(
       shot.minimumSeconds > 12
     )
       return "O tempo de leitura deve ficar entre 2 e 12 segundos.";
+    if (
+      shot.layout &&
+      !["FULL_PRODUCT_PROOF_V1", "MOTION_WITH_PRODUCT_PROOF_V1"].includes(
+        shot.layout,
+      )
+    )
+      return "Escolha um enquadramento válido para a demonstração.";
     previous = shot.captionCueIndex;
   }
 }

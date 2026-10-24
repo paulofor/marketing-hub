@@ -595,14 +595,21 @@ class SalesVideoJobServiceTest {
     assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
   }
 
-  /** Conecta fonte, parecer ou candidata ainda não revisada à recuperação real da mesma voz. */
+  /**
+   * Conecta a candidata à voz preservada ou à revisão explícita de texto com orçamento, sem
+   * aprová-la.
+   */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({
     "91009,true",
     "92009,true",
     "21299,false",
     "93009,false",
-    "94009,false"
+    "94009,false",
+    "95009,false",
+    "96009,false",
+    "97009,false",
+    "98009,false"
   })
   void shouldRecoverNarrationAfterPeerAdjustmentWithoutHumanRejection(
       long id, boolean peerAdjustment) throws Exception {
@@ -626,6 +633,14 @@ class SalesVideoJobServiceTest {
             mapper.readTree(f.previous().getMetadataJson());
     metadata.setAll(f.audit());
     boolean missingVoice = id == 94009;
+    boolean revisedCopy = id == 95009 || id == 96009 || id == 97009;
+    boolean explicitSameCopy = id == 98009;
+    if (revisedCopy) {
+      f.request().setVoiceOverScript("Conheça a demonstração de Mira.");
+      f.request().setCaptionText("Conheça a demonstração de Mira.");
+      f.request().setNarrationRevisionConfirmed(true);
+    }
+    if (explicitSameCopy) f.request().setNarrationRevisionConfirmed(true);
     if (missingVoice) metadata.remove("tts_interactions");
     f.previous().setMetadataJson(metadata.toString());
     f.previous().setStatus(SalesVideoStatus.VIDEO_READY);
@@ -692,6 +707,9 @@ class SalesVideoJobServiceTest {
     cycle.setVideoProjectId(id + 500);
     cycle.setExperimentId(experimentId);
     cycle.setSalesVideoJobId(f.previous().getId());
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setBudgetLimitUsd(new BigDecimal("12"));
+    cycle.setKnownCostUsd(id == 97009 ? null : new BigDecimal("9.7"));
     given(cycles.findById(cycle.getId())).willReturn(Optional.of(cycle));
     service.setProductionCycleRepository(cycles);
     given(jobRepository.findById(f.source().getId())).willReturn(Optional.of(f.source()));
@@ -701,15 +719,22 @@ class SalesVideoJobServiceTest {
         .willReturn(Optional.of(f.previous()));
     for (long audioId = id + 10; audioId <= id + 14; audioId++) {
       var audio = f.assets().findById(audioId);
-      if (!missingVoice) given(assetRepository.findById(audioId)).willReturn(audio);
+      if (!missingVoice && !revisedCopy) given(assetRepository.findById(audioId)).willReturn(audio);
     }
-    given(jobRepository.save(any()))
-        .willAnswer(
-            invocation -> {
-              SalesVideoJob job = invocation.getArgument(0);
-              if (job.getId() == null) job.setId(id + 700);
-              return job;
-            });
+    if (id != 97009)
+      given(jobRepository.save(any()))
+          .willAnswer(
+              invocation -> {
+                SalesVideoJob job = invocation.getArgument(0);
+                if (job.getId() == null) job.setId(id + 700);
+                return job;
+              });
+    if (id == 97009) {
+      assertThatThrownBy(() -> service.requestPostProduction(f.source().getId(), f.request()))
+          .hasMessageContaining("custo conhecido");
+      verify(cycles, never()).save(any());
+      return;
+    }
     if (missingVoice) {
       assertThatThrownBy(() -> service.requestPostProduction(f.source().getId(), f.request()))
           .isInstanceOf(VideoModuleException.class)
@@ -720,10 +745,16 @@ class SalesVideoJobServiceTest {
     }
     var result = service.requestPostProduction(f.source().getId(), f.request());
     var payload = mapper.readTree(result.getMetadataJson());
-    assertThat(payload.at("/preservedNarration/segments")).hasSize(5);
-    assertThat(payload.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
-    assertThat(payload.at("/preservedNarration/sourceJobId").asLong())
-        .isEqualTo(f.previous().getId());
+    if (revisedCopy) {
+      assertThat(payload.path("preservedNarration").isMissingNode()).isTrue();
+      assertThat(payload.path("voiceOverScript").asText())
+          .isEqualTo("Conheça a demonstração de Mira.");
+    } else {
+      assertThat(payload.at("/preservedNarration/segments")).hasSize(5);
+      assertThat(payload.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
+      assertThat(payload.at("/preservedNarration/sourceJobId").asLong())
+          .isEqualTo(f.previous().getId());
+    }
     assertThat(cycle.getSalesVideoJobId()).isEqualTo(result.getId());
     assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(video.getReviewStatus())

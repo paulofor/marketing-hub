@@ -790,3 +790,7 @@ Uma candidata privada READY/PENDING ainda sem parecer pode receber correção de
 ### Dúvida sonora em montagem sem trilha — 24/10/2026
 
 `VOICE_ONLY/music=none` comprova ausência de trilha acrescentada, não ausência perceptual de ruído na locução. Um parecer com `ADJUST` ou `INCONCLUSIVE` pode registrar som inesperado e orientar correção; não pode aprovar a mídia. O backend preserva esse parecer negativo como escuta concluída, mantendo o gate funcional bloqueado. Recibos antigos inválidos admitem replay do mesmo response bruto, custo e identidade, somente para avaliação negativa integralmente válida. Nenhuma nova chamada, aprovação ou mudança de custo decorre desse replay.
+
+## Correção explícita de locução em candidata ainda não revisada — 24/10/2026
+
+Antes do parecer e do aceite humano, uma candidata privada pode corrigir texto e locução pelo comando oficial, sem criar rejeição humana fictícia. Exige texto efetivamente alterado, confirmação explícita de nova locução, limite vigente, decisão financeira aceita e custo conhecido abaixo do teto. Com o mesmo texto, a remontagem continua reutilizando a voz auditada. Permanecem os bloqueios de revisão ativa, contexto divergente, peça aprovada e experimento em execução comercial. Os novos arquivos exigem parecer próprio e seleção humana; corrigir rascunho não equivale a aprovar mídia.

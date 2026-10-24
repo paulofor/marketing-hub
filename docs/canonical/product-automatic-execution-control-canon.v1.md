@@ -59,5 +59,8 @@ automática da tela e links não disparam trabalho nem alteram autorizações.
 
 Motivos e último acompanhamento ficam sob demanda. Uma falha de atualização mantém a
 fotografia anterior explicitamente datada. Não exibir status de experimento como se fosse
-status da atividade. Testes: `ProductOperationsTest`, `ProcessRunRepositoryTest` e
+status da atividade. A consulta agregada fica no repositório de leitura do produto, sem
+adicionar dependências do catálogo ao contexto mínimo do coordenador. Testes:
+`ProductOperationsTest`, `ProductOperationsRunRepositoryTest`,
+`ProcessRunRepositoryMinimalContextTest` e
 `frontend/e2e/products-in-play-responsive.mjs`.

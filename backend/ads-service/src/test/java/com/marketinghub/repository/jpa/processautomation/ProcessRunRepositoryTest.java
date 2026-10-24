@@ -23,45 +23,6 @@ import org.springframework.test.context.TestPropertySource;
 class ProcessRunRepositoryTest {
   @Autowired private ProcessRunRepository repository;
 
-  @Autowired
-  private com.marketinghub.repository.jpa.businessprocesschain
-          .BusinessProcessChainDefinitionRepository
-      chains;
-
-  /** A visão operacional respeita produto, ciclo, referência, família e fila antes de pausas. */
-  @Test
-  void inPlayQueryPreservesScopeAndQueue() {
-    var chain = new com.marketinghub.businessprocesschain.BusinessProcessChainDefinition();
-    chain.setChainCode("pde-value-creation-delivery");
-    chain.setName("Cadeia sintética");
-    chain.setPurpose("Teste local");
-    chain.setOutcomeDescription("Consulta sem efeitos");
-    chain.setPrimaryMetric("Isolamento");
-    chain.setVersionNumber(26);
-    chain.setStatus("RETIRED");
-    chain.setCreatedAt(Instant.now());
-    chains.saveAndFlush(chain);
-    var paused = scopedRun(4L, 77L, chain.getId(), 13L, "experiment:106");
-    repository.save(paused);
-    var active = scopedRun(4L, 78L, chain.getId(), 13L, "experiment:106");
-    active.setStatus("WAITING_SUBPROCESS");
-    repository.save(active);
-    var closed = scopedRun(4L, 79L, chain.getId(), 13L, "experiment:106");
-    closed.setStatus("COMPLETED");
-    repository.save(closed);
-    repository.save(scopedRun(5L, 77L, chain.getId(), 13L, "experiment:106"));
-    repository.save(scopedRun(4L, 77L, chain.getId(), 14L, "experiment:106"));
-    repository.save(scopedRun(4L, 77L, chain.getId(), 13L, "experiment:107"));
-    var initial = repository.save(scopedRun(11L, 98L, chain.getId(), null, "experiment:97"));
-    repository.flush();
-    assertThat(repository.findOpenRootsForOperations(4L, 13L, "experiment:106"))
-        .extracting(ProcessRun::getId)
-        .containsExactly(active.getId(), paused.getId());
-    assertThat(repository.findOpenRootsForOperations(11L, null, null))
-        .extracting(ProcessRun::getId)
-        .containsExactly(initial.getId());
-  }
-
   /** O resumo não pode herdar pausa de outro produto, processo, cadeia, ciclo ou experimento. */
   @Test
   void readsOnlyExactProductProcessCycleAndExperiment() {

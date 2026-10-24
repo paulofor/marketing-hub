@@ -10,8 +10,8 @@ import com.marketinghub.product.Product;
 import com.marketinghub.product.operations.v1.service.inplay.*;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
-import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.product.operations.ProductOperationsRunRepository;
 import java.time.Instant;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class ProductOperationsService {
   private final ProductRepository products;
   private final LearningSalesCycleRepository cycles;
-  private final ProcessRunRepository runs;
+  private final ProductOperationsRunRepository runs;
   private final ProductValueChainPositionService positions;
   private final BusinessProcessActivityExecutionService executions;
   private final LearningCycleWorkResolver workResolver;

@@ -16,8 +16,8 @@ import com.marketinghub.product.operations.v1.controller.ProductOperationsContro
 import com.marketinghub.product.operations.v1.service.ProductOperationsService;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
-import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.product.operations.ProductOperationsRunRepository;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class ProductOperationsTest {
   private final ProductRepository products = mock(ProductRepository.class);
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
-  private final ProcessRunRepository runs = mock(ProcessRunRepository.class);
+  private final ProductOperationsRunRepository runs = mock(ProductOperationsRunRepository.class);
   private final ProductValueChainPositionService positions =
       mock(ProductValueChainPositionService.class);
   private final BusinessProcessActivityExecutionService executions =
@@ -76,7 +76,6 @@ class ProductOperationsTest {
             "#activity-economics");
     assertThat(item.runId()).isEqualTo(child.getId());
     verifyNoInteractions(positions, work, value);
-    verify(runs, never()).save(any());
     verify(products, never()).save(any());
   }
 
@@ -263,7 +262,6 @@ class ProductOperationsTest {
     Files.writeString(Path.of("target/products-in-play-fixture.json"), response);
     verify(products).findAllInPlayState();
     verify(products, never()).findAll();
-    verify(runs, never()).save(any());
   }
 
   /** Prepara dados sintéticos com contrato real, sem usar banco ou consumidores produtivos. */

@@ -48,23 +48,6 @@ public interface ProcessRunRepository extends JpaRepository<ProcessRun, Long> {
       "select r from ProcessRun r where r.productId = :productId and r.parentRunId is null and r.status not in ('PAUSED', 'COMPLETED', 'ERROR', 'CLOSED') order by r.id")
   List<ProcessRun> activeRoots(@Param("productId") Long productId);
 
-  /** Consulta a fila real da família PDE, isolando o ciclo e preservando pausas após os ativos. */
-  @Query(
-      """
-      select r from ProcessRun r
-      where r.productId = :productId and r.parentRunId is null
-        and r.status not in ('COMPLETED', 'CLOSED')
-        and ((:cycleId is null and r.learningCycleId is null) or r.learningCycleId = :cycleId)
-        and (:sourceReference is null or r.sourceReference = :sourceReference)
-        and exists (select c.id from BusinessProcessChainDefinition c
-                    where c.id = r.chainDefinitionId and c.chainCode = 'pde-value-creation-delivery')
-      order by case when r.status in ('PAUSED', 'ERROR') then 1 else 0 end, r.id
-      """)
-  List<ProcessRun> findOpenRootsForOperations(
-      @Param("productId") Long productId,
-      @Param("cycleId") Long cycleId,
-      @Param("sourceReference") String sourceReference);
-
   /** Localiza delegações para aguardar trabalho em curso antes de liberar outro processo. */
   List<ProcessRun> findAllByParentRunId(Long parentRunId);
 }

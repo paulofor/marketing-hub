@@ -45,3 +45,10 @@ interceptar somente caminhos `/api/`, preservando módulos JavaScript de `/src/a
 Spotless, Prettier, actionlint e `git diff --check` conferidos. Evidências locais em
 `artifacts/products-in-play`, sem versionar dados reais. Evidências da publicação, versão e
 conferência da tela ficam registradas no PR desta entrega.
+
+O CI detectou que acrescentar a consulta de cadeia ao repositório do coordenador exigia uma
+entidade ausente no harness mínimo. A falha foi reproduzida localmente por
+`ProcessRunRepositoryMinimalContextTest`. Comparados ampliar o contexto inteiro, usar SQL
+nativo e separar a leitura do painel, a terceira opção preserva a validação JPA e evita
+acoplar o coordenador ao catálogo. A consulta fica em `ProductOperationsRunRepository`,
+sem métodos de escrita, e o contexto mínimo continua coberto por regressão rápida.

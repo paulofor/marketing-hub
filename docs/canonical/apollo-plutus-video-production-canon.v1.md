@@ -782,3 +782,7 @@ orçamento ou dispensa das revisões independentes.
 A captura vinculada à última parte da fala deve aparecer desde o início dessa parte até o último frame, não somente nos três segundos finais. O limite de três segundos refere-se à retenção depois da voz; não deve atrasar a demonstração da ação. A duração final deve preservar a voz e evitar um encerramento repetitivo.
 
 `ProductProofShot.label` permite identificar editorialmente produto/experiência fora dos pixels da captura, em até 48 caracteres e duas linhas. O editor envia pelo contrato existente de pós-produção; o backend valida, congela e o executor audita. O texto é literal, não interpretado pelo FFmpeg, e não pode acrescentar promessa funcional sem suporte. Ausência preserva contratos anteriores. Pareceres independentes e seleção humana continuam obrigatórios.
+
+### Remontagem técnica antes do primeiro parecer — 24/10/2026
+
+Uma candidata privada READY/PENDING ainda sem parecer pode receber correção de montagem pela mesma fonte e ciclo, sem fabricar rejeição humana. O backend deve comprovar ausência de revisão em andamento e de parecer da mídia exata, recuperar integralmente a mesma fala auditada e proibir síntese nova. Recibo ausente, copy alterada sem preservação, seleção humana existente ou experimento em operação bloqueiam esse caminho. O novo arquivo exige seus próprios pareceres e seleção; a versão anterior e seus custos permanecem preservados.

@@ -70,4 +70,25 @@ public class ExperimentVideoAssetApprovalChecker
                             .contains(video.getExperiment().getStatus())
                         && finalReview.correctionRequested(video));
   }
+
+  /** Restringe remontagem anterior ao parecer a candidatas privadas e não selecionadas. */
+  @Override
+  public boolean isUnreviewedCandidate(Long salesVideoJobId) {
+    if (salesVideoJobId == null) return false;
+    var assets = repository.findBySalesVideoJobId(salesVideoJobId);
+    return !assets.isEmpty()
+        && assets.stream()
+            .allMatch(
+                video ->
+                    video.getStatus() == ExperimentVideoStatus.READY
+                        && video.getReviewStatus() == ExperimentVideoReviewStatus.PENDING
+                        && video.getExperiment() != null
+                        && video.getExperiment().getStatus() != null
+                        && java.util.Set.of(
+                                com.marketinghub.experiment.ExperimentStatus.PLANNED,
+                                com.marketinghub.experiment.ExperimentStatus.PAUSED,
+                                com.marketinghub.experiment.ExperimentStatus.USER_STOPPED)
+                            .contains(video.getExperiment().getStatus())
+                        && finalReview.awaitingFirstReview(video));
+  }
 }

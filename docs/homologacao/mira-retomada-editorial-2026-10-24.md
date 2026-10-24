@@ -174,3 +174,11 @@ Matriz: resposta perdida após persistência, payload idêntico no replay, esgot
 A inspeção do MP4 21300 também mostrou identificação do site sobreposta ao aviso obrigatório de IA. O compositor reserva agora faixas distintas; uma regressão FFmpeg mede a faixa inteira antes da aplicação do aviso. Esta correção entra no mesmo lote local, e a remontagem reutilizará a voz preservada.
 
 Validação local do lote: 101 testes de jobs/recuperação do backend passaram; o módulo de vídeo concluiu 291 testes sem falhas (nove casos FFmpeg condicionais fora dessa rodada). Após ajustar a faixa de texto, os 17 testes do compositor foram executados com FFmpeg habilitado, sem skips ou falhas. Diff e comentários revisados antes da publicação.
+
+## Correção técnica da candidata ainda não revisada
+
+A leitura do percurso confirmou outra restrição antes da retomada: a demonstração 79/21300, produzida mas ainda sem parecer, não poderia ser remontada para remover a sobreposição sem rejeição humana ou inferência adicional. Não se registrou rejeição em nome do usuário.
+
+Compararam-se: pagar revisão de defeito já conhecido (retrabalho); registrar rejeição humana não fornecida (incorreto); permitir remontagem estrita da candidata com voz preservada. A terceira alternativa mantém seleção humana e revisores independentes. A regra bloqueia parecer vigente, revisão em andamento, voz ausente e campanha em execução. A matriz cobre Mira, outra identidade, caminho anterior com ADJUST e impedimentos de seleção/consumo.
+
+Validação local da passagem: 117 testes dos contratos de jobs, recuperação, evidências e seleção passaram. A rodada incluiu candidata sem recibo (bloqueada), bloqueios históricos sem revisão ativa (não impedem correção), revisão IN_PROGRESS (bloqueia), identidade diferente, parecer vigente e preservação dos cinco áudios.

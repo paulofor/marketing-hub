@@ -12,4 +12,9 @@ public interface SalesVideoExperimentAssetApprovalChecker {
 
   /** Informa se Psique pediu correção do arquivo atual, sem registrar decisão humana. */
   boolean isCorrectionRequested(Long salesVideoJobId);
+
+  /**
+   * Identifica candidata ainda sem parecer ou seleção, permitindo somente remontagem sem voz nova.
+   */
+  boolean isUnreviewedCandidate(Long salesVideoJobId);
 }

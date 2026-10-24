@@ -206,6 +206,35 @@ class CreativeFinalVideoEvidenceTest {
     assertThat(service.correctionRequested(video)).isFalse();
   }
 
+  /** Impede corrigir mídia já avaliada ou em avaliação e permite apenas a candidata sem parecer. */
+  @ParameterizedTest
+  @ValueSource(longs = {79, 95079})
+  void identifiesUnreviewedCandidateWithoutManufacturingRejection(long id) {
+    var candidate = video(id);
+    var review = new AgentTask();
+    review.setProcessActivityId("customer");
+    review.setStatus("COMPLETED");
+    review.setResultJson(
+        "{\"videoAudit\":[{\"assetId\":" + (id - 1) + ",\"sha256\":\"" + "a".repeat(64) + "\"}]}");
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:102", "creative-production-approval"))
+        .thenReturn(List.of(review));
+    assertThat(service.awaitingFirstReview(candidate)).isTrue();
+    review.setStatus("BLOCKED");
+    assertThat(service.awaitingFirstReview(candidate)).isTrue();
+    review.setStatus("IN_PROGRESS");
+    assertThat(service.awaitingFirstReview(candidate)).isFalse();
+    review.setProcessActivityId("commercial");
+    assertThat(service.awaitingFirstReview(candidate)).isFalse();
+    review.setProcessActivityId("customer");
+    review.setStatus("COMPLETED");
+    review.setResultJson(
+        "{\"videoAudit\":[{\"assetId\":" + id + ",\"sha256\":\"" + "a".repeat(64) + "\"}]}");
+    assertThat(service.awaitingFirstReview(candidate)).isFalse();
+    candidate.setResponseJson("{}");
+    assertThat(service.awaitingFirstReview(candidate)).isFalse();
+  }
+
   /** Monta mídia sintética com identidade e duração, sem autorização comercial. */
   private ExperimentVideoAsset video(Long id) {
     var video = new ExperimentVideoAsset();

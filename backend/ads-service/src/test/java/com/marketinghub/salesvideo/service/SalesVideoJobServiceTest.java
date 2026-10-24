@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
@@ -594,10 +595,17 @@ class SalesVideoJobServiceTest {
     assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
   }
 
-  /** Conecta parecer, fonte atual e recuperação real da voz em duas identidades independentes. */
+  /** Conecta fonte, parecer ou candidata ainda não revisada à recuperação real da mesma voz. */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(longs = {91009, 92009})
-  void shouldRecoverNarrationAfterPeerAdjustmentWithoutHumanRejection(long id) throws Exception {
+  @org.junit.jupiter.params.provider.CsvSource({
+    "91009,true",
+    "92009,true",
+    "21299,false",
+    "93009,false",
+    "94009,false"
+  })
+  void shouldRecoverNarrationAfterPeerAdjustmentWithoutHumanRejection(
+      long id, boolean peerAdjustment) throws Exception {
     var mapper = new ObjectMapper();
     var f = VideoNarrationRecoveryTest.fixture(id, mapper);
     long experimentId = id + 200;
@@ -617,6 +625,8 @@ class SalesVideoJobServiceTest {
         (com.fasterxml.jackson.databind.node.ObjectNode)
             mapper.readTree(f.previous().getMetadataJson());
     metadata.setAll(f.audit());
+    boolean missingVoice = id == 94009;
+    if (missingVoice) metadata.remove("tts_interactions");
     f.previous().setMetadataJson(metadata.toString());
     f.previous().setStatus(SalesVideoStatus.VIDEO_READY);
     f.previous().setFailureCode(null);
@@ -645,7 +655,7 @@ class SalesVideoJobServiceTest {
     review.setStatus("COMPLETED");
     review.setResultJson(
         "{\"decision\":\"ADJUST\",\"correctionScope\":\"FINAL_VIDEO\",\"videoAudit\":[{\"assetId\":"
-            + video.getId()
+            + (peerAdjustment ? video.getId() : video.getId() + 1)
             + ",\"sha256\":\""
             + "a".repeat(64)
             + "\",\"criticalDeficit\":true}]}");
@@ -660,6 +670,10 @@ class SalesVideoJobServiceTest {
             tasks.findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
                 "customer-agent", "experiment:" + experimentId))
         .willReturn(Optional.of(review));
+    given(
+            tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+                "experiment:" + experimentId, "creative-production-approval"))
+        .willReturn(List.of(review));
     var evidence =
         new com.marketinghub.agenttask.CreativeFinalVideoEvidence(
             videos,
@@ -687,7 +701,7 @@ class SalesVideoJobServiceTest {
         .willReturn(Optional.of(f.previous()));
     for (long audioId = id + 10; audioId <= id + 14; audioId++) {
       var audio = f.assets().findById(audioId);
-      given(assetRepository.findById(audioId)).willReturn(audio);
+      if (!missingVoice) given(assetRepository.findById(audioId)).willReturn(audio);
     }
     given(jobRepository.save(any()))
         .willAnswer(
@@ -696,6 +710,14 @@ class SalesVideoJobServiceTest {
               if (job.getId() == null) job.setId(id + 700);
               return job;
             });
+    if (missingVoice) {
+      assertThatThrownBy(() -> service.requestPostProduction(f.source().getId(), f.request()))
+          .isInstanceOf(VideoModuleException.class)
+          .hasMessageContaining("mesma voz auditada");
+      verify(cycles, never()).save(any());
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(f.previous().getId());
+      return;
+    }
     var result = service.requestPostProduction(f.source().getId(), f.request());
     var payload = mapper.readTree(result.getMetadataJson());
     assertThat(payload.at("/preservedNarration/segments")).hasSize(5);

@@ -11069,3 +11069,11 @@ depois de materializar o checkout. Provas e limites em
 - Correção: prazo HTTP no executor, replay do mesmo payload; recuperação estrita de locução após `BACKEND_INTEGRATION_ERROR`; claim órfão com recibos bloqueado.
 - Contratos preventivos: `BackendVideoClientTest` (original/outra identidade, perda de resposta, esgotamento e sucesso), `VideoNarrationRecoveryTest` (recibo completo/ausente e claim).
 - Registro: `docs/homologacao/mira-retomada-editorial-2026-10-24.md`. Não altera aceites nem tetos.
+
+### LOOP-APOLO-CANDIDATA-SEM-PARECER — 24/10/2026
+
+- Evidência: correção visual de Mira 79/21300 dependeria de rejeição humana inexistente ou de uma revisão paga do defeito conhecido.
+- Causa: substituição tratava toda candidata pronta como já revisada.
+- Correção: remontagem limitada à mesma fonte, voz auditada e candidata sem parecer, sem revisão ativa ou seleção humana.
+- Regressões: `SalesVideoJobServiceTest`, `CreativeFinalVideoEvidenceTest` e `ExperimentVideoAssetApprovalCheckerTest`; outro produto, voz ausente, aprovação existente e experimento RUNNING.
+- Limite: não aprova a peça, não cria rejeição humana, não autoriza voz nova nem campanha.

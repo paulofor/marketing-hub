@@ -152,3 +152,13 @@ migração ou chamada a provedor; comentários de responsabilidade revisados.
 A conferência de recuperação também exige preservar esta estimativa em callbacks
 posteriores sem custo. O teste parametrizado do ledger cobre essa nova evidência
 junto das conciliações anteriores; a suíte do ledger e a conciliação passaram.
+
+## Parecer 805 e alinhamento do convite
+
+Psique aprovou as escutas 13/14 (US$ 0,044373 estimados), mas devolveu ADJUST sobre os MP4s 77/78. Pediu identificação do site, convite de entrada correto, captura durante a fala e retenção final menor. A avaliação textual custou US$ 0,592888 estimados. A imagem 659 permanece adequada; não se repete homologação de produto.
+
+Foram comparados: encurtar somente os vídeos (não corrige o atraso durante toda a fala); deslocar a voz para o fim (piora ritmo e cria retrabalho); corrigir a regra compartilhada para acompanhar o início do convite, acrescentar identificação editorial e ajustar a duração. A terceira opção resolve a causa sem trocar a prova ou ampliar a promessa.
+
+Matriz local: CTA completo e último frame, abertura identificada sem alterar captura, dois produtos, ausência de rótulo legada, texto literal com pontuação/percentual, rótulo inválido rejeitado antes de consumo, frontend desktop/iPhone/Pixel sem overflow. Os custos e as autorizações existentes permanecem separados; testes sintéticos não são mercado. A Big Idea de manhã/noite permanece sem prova na v3 e não será introduzida no vídeo como capacidade já entregue.
+
+Validação desta correção: 76 testes backend, 24 testes do compositor/relógio com FFmpeg real e dois do editor passaram; build do frontend aprovado. Desktop, iPhone 15 Pro e Pixel 7 preservaram rótulo, contrato e largura. A fixture de pixels e o rótulo com percentual/pontuação foram inspecionados. Nenhum dado de teste foi gravado como resultado comercial.

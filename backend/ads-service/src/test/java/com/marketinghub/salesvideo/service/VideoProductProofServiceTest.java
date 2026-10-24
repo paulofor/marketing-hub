@@ -186,6 +186,19 @@ class VideoProductProofServiceTest {
             .containsEntry("layout", layout)
             .containsEntry("sha256", "abc");
       }
+      var labeled =
+          new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+              shot.reference(), 0, 4, "FULL_PRODUCT_PROOF_V1", "Site Exemplo: demonstração");
+      assertThat(reader.sequence(91001L, java.util.List.of(labeled), "A").getFirst())
+          .containsEntry("label", "Site Exemplo: demonstração")
+          .containsEntry("sha256", "abc");
+      for (String label : java.util.List.of("x".repeat(49), "Linha\nindevida")) {
+        var invalidLabel =
+            new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+                shot.reference(), 0, 4, null, label);
+        assertThatThrownBy(() -> reader.sequence(91001L, java.util.List.of(invalidLabel), "A"))
+            .hasMessageContaining("identificação editorial");
+      }
       var invalidLayout =
           new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
               shot.reference(), 0, 4, "inventado");

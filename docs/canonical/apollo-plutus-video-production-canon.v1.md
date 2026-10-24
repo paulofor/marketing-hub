@@ -776,3 +776,9 @@ Não equivale a fatura conciliada. Falhas de transporte, respostas incompletas e
 segmentos posteriores preservam custo desconhecido ou os recibos pagos já
 recebidos. Usar a conciliação existente, sem nova geração, transferência de
 orçamento ou dispensa das revisões independentes.
+
+### Prova durante o convite — 24/10/2026
+
+A captura vinculada à última parte da fala deve aparecer desde o início dessa parte até o último frame, não somente nos três segundos finais. O limite de três segundos refere-se à retenção depois da voz; não deve atrasar a demonstração da ação. A duração final deve preservar a voz e evitar um encerramento repetitivo.
+
+`ProductProofShot.label` permite identificar editorialmente produto/experiência fora dos pixels da captura, em até 48 caracteres e duas linhas. O editor envia pelo contrato existente de pós-produção; o backend valida, congela e o executor audita. O texto é literal, não interpretado pelo FFmpeg, e não pode acrescentar promessa funcional sem suporte. Ausência preserva contratos anteriores. Pareceres independentes e seleção humana continuam obrigatórios.

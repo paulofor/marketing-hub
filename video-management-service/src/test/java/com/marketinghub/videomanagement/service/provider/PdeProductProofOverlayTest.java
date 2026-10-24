@@ -208,7 +208,7 @@ class PdeProductProofOverlayTest {
                         .put("captionCueIndex", index).put("minimumSeconds", 2);
                 shot.put("contentPath", "/api/sales-videos/projects/91001/product-proof/91004/" + (91005 + index));
                 shot.putArray("crop").add(0).add(0).add(300).add(400);
-                if (fullFrame) shot.put("layout", "FULL_PRODUCT_PROOF_V1");
+                if (fullFrame) shot.put("layout", "FULL_PRODUCT_PROOF_V1").put("label", "Site Exemplo 100%: demonstração");
                 shots.add(shot);
                 server.enqueue(response(pixels));
             }
@@ -227,7 +227,7 @@ class PdeProductProofOverlayTest {
                 var output = new PdeProductProofOverlay(properties, WebClient.builder())
                         .apply(source, input, 91009L, captions);
                 result = output.videoFile();
-                for (double second : new double[] {.1, 14.8}) {
+                for (double second : new double[] {.1, 10.5, 14.8}) {
                     if (fullFrame) assertThat(samplePixelAt(result, second, 540, 300)[2] & 255).isLessThan(100);
                     else assertThat(samplePixelAt(result, second, 540, 300)[2] & 255).isGreaterThan(200);
                     assertThat(samplePixelAt(result, second, 540, 900)[0] & 255).isGreaterThan(230);
@@ -235,9 +235,11 @@ class PdeProductProofOverlayTest {
                 assertThat(samplePixelAt(result, 6, 540, 600)[0] & 255).isGreaterThan(230);
                 assertThat(samplePixelAt(result, 6, 540, 1400)[1] & 255).isGreaterThan(230);
                 var audit = new ObjectMapper().valueToTree(output.audit());
+                if (fullFrame && productId == 10) Files.copy(result, Path.of("target/proof-labeled-cta.mp4"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                if (fullFrame) assertThat(audit.at("/shots/0/label").asText()).isEqualTo("Site Exemplo 100%: demonstração");
                 assertThat(audit.at("/shots/0/layout").asText()).isEqualTo(fullFrame ? "FULL_PRODUCT_PROOF_V1" : "MOTION_WITH_PRODUCT_PROOF_V1");
                 assertThat(audit.at("/shots/1/layout").asText()).isEqualTo("FULL_PRODUCT_PROOF_V1");
-                assertThat(audit.at("/shots/2/intervals").asText()).isEqualTo("between(t,12.000,15.000)");
+                assertThat(audit.at("/shots/2/intervals").asText()).isEqualTo("between(t,10.000,15.000)");
             } finally {
                 Files.deleteIfExists(source);
                 if (result != null) Files.deleteIfExists(result);

@@ -41,6 +41,9 @@ final class PdeProductProofOverlay {
         }
         if (!metadata.at("/post_production/product_proof").isMissingNode()) {
             PdeProofCaptionTiming.cueIndex(metadata);
+            String label = metadata.at("/post_production/product_proof/label").asText("").trim();
+            if (label.length() > 48 || label.codePoints().anyMatch(Character::isISOControl))
+                throw invalid("Identificação editorial inválida.");
             load(metadata, jobId);
         }
     }
@@ -72,22 +75,35 @@ final class PdeProductProofOverlay {
         Path image = null;
         Path output = null;
         Path processLog = null;
+        Path labelFile = null;
+        String label = metadata.at("/post_production/product_proof/label").asText("").trim();
+        if (label.length() > 48 || label.codePoints().anyMatch(Character::isISOControl))
+            throw invalid("Identificação editorial inválida.");
         try {
             image = Files.createTempFile("pde-proof-" + jobId, ".png");
             output = Files.createTempFile("pde-proof-" + jobId, ".mp4");
             processLog = Files.createTempFile("pde-proof-" + jobId, ".log");
             Files.write(image, proof.bytes());
+            String labelFilter = "";
+            if (!label.isEmpty()) {
+                labelFile = Files.createTempFile("pde-proof-label-", ".txt");
+                Files.writeString(labelFile, wrapLabel(label));
+                labelFilter = "drawtext=textfile=" + labelFile + ":expansion=none:fontsize=38:fontcolor=0x173f35:"
+                        + "x=(w-text_w)/2:y=" + (hybrid ? "610" : contextual ? "750" : "110")
+                        + ":enable='" + intervals + "',";
+            }
             String crop = "crop=%d:%d:%d:%d,".formatted(proof.width(), proof.height(), proof.x(), proof.y());
             int proofHeight = metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false) ? 1100 : 1360;
             String proofFrame = hybrid
-                    ? "scale=972:800:force_original_aspect_ratio=decrease,pad=1080:900:(ow-iw)/2:80:color=0xf8f3ee,"
+                    ? (label.isEmpty() ? "scale=972:800:force_original_aspect_ratio=decrease,pad=1080:900:(ow-iw)/2:80:color=0xf8f3ee," : "scale=972:800:force_original_aspect_ratio=decrease,pad=1080:1020:(ow-iw)/2:200:color=0xf8f3ee,")
                     : contextual
-                    ? "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:770:(ow-iw)/2:60:color=0xf8f3ee,"
-                    : "scale=972:" + proofHeight + ":force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:180:color=0xf8f3ee,";
+                    ? (label.isEmpty() ? "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:770:(ow-iw)/2:60:color=0xf8f3ee," : "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:890:(ow-iw)/2:180:color=0xf8f3ee,")
+                    : "scale=972:" + proofHeight + ":force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:" + (label.isEmpty() ? "180" : "230") + ":color=0xf8f3ee,";
             String filter = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
                     + "[1:v]" + crop + proofFrame
                     + "format=yuva420p,loop=loop=-1:size=1:start=0,setpts=N/(25*TB)[proof];"
                     + "[base][proof]overlay=0:" + (hybrid ? "540" : contextual ? "690" : "0") + ":enable='" + intervals + "',"
+                    + labelFilter
                     + "drawtext=text='Exemplo com dados de teste':fontsize=38:fontcolor=0x333333:"
                     + "x=(w-text_w)/2:y=" + (hybrid ? "560" : contextual ? "700" : "50") + ":enable='" + intervals + "'[out]";
             List<String> command = List.of(properties.getProviders().getPostProduction().getFfmpegPath(),
@@ -112,6 +128,7 @@ final class PdeProductProofOverlay {
                     "intervals", intervals, "syntheticScenario", true,
                     "commercialEvidenceClaimed", false,
                     "compositionMode", "PREPARED_FRAME_LOOP_V1"));
+            if (!label.isEmpty()) audit.put("label", label);
             if (timing != null) {
                 audit.put("timingSource", "NARRATION_CUE_V1");
                 audit.put("reviewMoments", List.of((timing.start() + timing.end()) / 2));
@@ -128,9 +145,18 @@ final class PdeProductProofOverlay {
             if (ex instanceof VideoProviderException failure) throw failure;
             throw new VideoProviderException("PDE_PRODUCT_PROOF_INVALID", "Não foi possível compor a prova privada do PDE.", ex);
         } finally {
+            delete(labelFile, jobId);
             delete(image, jobId);
             delete(processLog, jobId);
         }
+    }
+
+    /** Limita a identificação a duas linhas fora da captura, sem interpretar comandos de texto. */
+    private String wrapLabel(String label) {
+        if (label.length() <= 24) return label;
+        int split = label.lastIndexOf(' ', 24);
+        if (split < label.length() - 24) split = 24;
+        return label.substring(0, split).stripTrailing() + "\n" + label.substring(split).stripLeading();
     }
 
     /** Reconhece a sequência explícita sem alterar o comportamento do contrato legado. */

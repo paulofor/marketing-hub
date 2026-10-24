@@ -781,3 +781,19 @@ considerar a revisão efetivamente solicitada. A origem só pode voltar à esper
 do filho após comando de revalidação posterior à sua conclusão, com toda a árvore
 no mesmo contexto e sem pausa, STOP ou trabalho conflitante. Depois do parecer,
 o retorno é recebido uma vez, preservando as entregas anteriores e a seleção humana.
+
+## Conciliação de checkout direto — 24/10/2026
+
+Kit com checkout comercial direto usa os recibos financeiros persistidos desse
+checkout, não a tabela de compras de pacotes do Lead Portal. Exigir identidade
+exata de produto/experimento, recibo único, moeda, preço, ambiente e data financeira.
+Não inferir venda por clique, envio de e-mail ou nome de produto. O relatório declara
+a fonte usada e preserva cliques do portal separadamente dos acessos persistidos.
+
+Callbacks duplicados não duplicam receita; o estado mais recente dentro da janela
+prevalece. Recibo atual inválido, atribuição ambígua, preço divergente ou reembolso
+sem conciliação impedem decisão financeira segura. Não reutilizar sucesso anterior
+para esconder falha posterior. Entrega exige pacote final e data; uso e satisfação
+continuam independentes. Testes e outras identidades permanecem segregados.
+
+Referência: [evidência e regressões do checkout direto](../homologacao/capella-checkout-direto-medicao-2026-10-24.md).

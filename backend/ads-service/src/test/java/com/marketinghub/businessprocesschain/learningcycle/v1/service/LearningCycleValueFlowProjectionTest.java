@@ -32,6 +32,12 @@ import org.junit.jupiter.params.provider.CsvSource;
  * conciliada.
  */
 class LearningCycleValueFlowProjectionTest {
+  private final com.marketinghub.repository.jpa.learningcycle
+          .LearningCycleDecisionProposalRepository
+      proposals =
+          mock(
+              com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository
+                  .class);
   private final ObjectMapper mapper = new ObjectMapper();
   private final KitPrototypeCapabilities capabilities = mock(KitPrototypeCapabilities.class);
   private final KitPrivateArtifactRepository artifacts = mock(KitPrivateArtifactRepository.class);
@@ -65,7 +71,70 @@ class LearningCycleValueFlowProjectionTest {
           prototype,
           new LearningCycleJson(mapper),
           new LearningCycleVideoBudget(events, new LearningCycleJson(mapper)),
-          videoEvidence);
+          videoEvidence,
+          proposals);
+
+  /**
+   * Capella e outra identidade expõem a decisão inconclusiva vigente, sem escrita ou nova
+   * inferência.
+   */
+  @ParameterizedTest
+  @CsvSource({"7,12,105,capella-private-v3", "86,90,190,other-v4"})
+  void readyInconclusiveProposalShowsActualHumanDecision(
+      long productId, long cycleId, long experimentId, String version) throws Exception {
+    var cycle = videoFixture(productId, cycleId, experimentId, version);
+    cycle.setStage("DECISION");
+    var proposal = decisionProposal(cycle, "READY", "INCONCLUSIVE");
+    when(proposals.findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(
+            cycleId, cycle.getRevision()))
+        .thenReturn(Optional.of(proposal));
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isTrue();
+    assertThat(flow.activeExecution()).isFalse();
+    assertThat(flow.resolvingResponsible()).startsWith("Você");
+    assertThat(flow.decisionReason())
+        .contains("Aprovar decisão e registrar no BPM")
+        .doesNotContain("Nenhuma decisão");
+    assertThat(flow.acceptance()).contains("sem herdar orçamento");
+    verify(proposals, never()).save(any());
+    verify(events, never()).save(any());
+  }
+
+  /** Proposta antiga, encerrada ou ajuste preparatório não fabrica uma nova aprovação pendente. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"stale", "approved", "running", "automatic", "closed"})
+  void decisionProjectionPreservesExistingBoundaries(String state) throws Exception {
+    var cycle = videoFixture(7, 12, 105, "capella-private-v3");
+    cycle.setStage("DECISION");
+    var proposal =
+        decisionProposal(cycle, "READY", "automatic".equals(state) ? "ADJUST" : "INCONCLUSIVE");
+    if ("stale".equals(state)) proposal.setCycleRevision(cycle.getRevision() - 1);
+    if ("approved".equals(state)) proposal.setStatus("APPROVED");
+    if ("running".equals(state)) proposal.setStatus("RUNNING");
+    if ("closed".equals(state)) cycle.setStatus("INCONCLUSIVE");
+    when(proposals.findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(
+            cycle.getId(), cycle.getRevision()))
+        .thenReturn(Optional.of(proposal));
+    assertThat(projection.resolve(cycle, null).decisionNeeded()).isNotEqualTo(Boolean.TRUE);
+  }
+
+  /** Monta parecer sintético completo sem emitir decisão em nome de Atena. */
+  private com.marketinghub.businessprocesschain.learningcycle.v1.decision
+          .LearningCycleDecisionProposal
+      decisionProposal(LearningSalesCycle cycle, String status, String action) {
+    var proposal =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.decision
+            .LearningCycleDecisionProposal();
+    proposal.setCycleId(cycle.getId());
+    proposal.setCycleRevision(cycle.getRevision());
+    proposal.setStatus(status);
+    proposal.setProposalJson(
+        "{\"contractVersion\":\"LEARNING_CYCLE_DECISION_PROPOSAL_V2\",\"action\":\""
+            + action
+            + "\",\"nextHypothesis\":\"Hipótese sintética\",\"learning\":\"Aprendizado sintético\",\"rootCause\":\"Amostra insuficiente\",\"marketReview\":{\"recommendedScope\":\"KEEP_FOCUS\",\"requiresNewCycle\":true}}");
+    return proposal;
+  }
 
   /** Mira e outro contexto usam as duas peças reais selecionadas para expor o aceite pendente. */
   @ParameterizedTest

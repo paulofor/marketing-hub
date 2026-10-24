@@ -72,6 +72,24 @@ describe("MainNavigation", () => {
     ).not.toHaveClass("is-active");
   });
 
+  it("destaca o acompanhamento em play sem selecionar a gestão", () => {
+    render(
+      <MemoryRouter initialEntries={["/products/in-play"]}>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Produtos em play" })).toHaveAttribute(
+      "href",
+      "/products/in-play",
+    );
+    expect(screen.getByRole("link", { name: "Produtos em play" })).toHaveClass(
+      "is-active",
+    );
+    expect(screen.getByRole("link", { name: "Gestão de Produto" })).not.toHaveClass(
+      "is-active",
+    );
+  });
+
   it("oferece acesso direto ao dossiê de oportunidades", () => {
     render(
       <MemoryRouter>

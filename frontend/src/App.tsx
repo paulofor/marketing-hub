@@ -20,6 +20,7 @@ import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
 import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 import ProductListPage from "./pages/product/ProductListPage";
 import AllProductsPage from "./pages/product/AllProductsPage";
+import ProductsInPlayPage from "./pages/product/ProductsInPlayPage";
 import NewProductPage from "./pages/product/NewProductPage";
 import EditProductPage from "./pages/product/EditProductPage";
 import ProductFinancialPage from "./pages/product/ProductFinancialPage";
@@ -274,6 +275,7 @@ export default function App() {
               <Route path="/app-ideas/new" element={<NewAppIdeaPage />} />
               <Route path="/products" element={<ProductListPage />} />
               <Route path="/products/all" element={<AllProductsPage />} />
+              <Route path="/products/in-play" element={<ProductsInPlayPage />} />
               <Route
                 path="/product-types"
                 element={<ProductTypeCatalogPage />}

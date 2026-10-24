@@ -162,3 +162,15 @@ Foram comparados: encurtar somente os vídeos (não corrige o atraso durante tod
 Matriz local: CTA completo e último frame, abertura identificada sem alterar captura, dois produtos, ausência de rótulo legada, texto literal com pontuação/percentual, rótulo inválido rejeitado antes de consumo, frontend desktop/iPhone/Pixel sem overflow. Os custos e as autorizações existentes permanecem separados; testes sintéticos não são mercado. A Big Idea de manhã/noite permanece sem prova na v3 e não será introduzida no vídeo como capacidade já entregue.
 
 Validação desta correção: 76 testes backend, 24 testes do compositor/relógio com FFmpeg real e dois do editor passaram; build do frontend aprovado. Desktop, iPhone 15 Pro e Pixel 7 preservaram rótulo, contrato e largura. A fixture de pixels e o rótulo com percentual/pontuação foram inspecionados. Nenhum dado de teste foi gravado como resultado comercial.
+
+## Callback sem confirmação após preservação da voz
+
+A demonstração 21300 recuperou os seis áudios do job 21299, cuja duração medida excedeu o alvo. O anúncio 21298 persistiu os recibos e o progresso de 95%, mas a thread ficou em `BackendVideoClient.postForJob → Mono.block` esperando a resposta. O dump da JVM e o evento persistido confirmam ausência de nova chamada ao fornecedor nesse ponto.
+
+Foram comparados: reiniciar e repetir a produção (risco de duplicação de locução); apenas registrar falha manual (não previne recorrência); limitar cada confirmação e recuperar a mesma voz auditada. A terceira opção foi adotada. O executor limita chamadas a 30 segundos, preserva três tentativas e registra contexto/stack trace. O backend recupera falhas de integração somente com recibos completos, identidade, texto e hash conferidos. Claim de órfão que já recebeu voz fica bloqueado contra consumo repetido.
+
+Matriz: resposta perdida após persistência, payload idêntico no replay, esgotamento finito, chamada válida posterior, job original e outra identidade, recuperação de voz completa, recibo ausente rejeitado e contratos anteriores preservados. Nenhum teste chama fornecedor pago. A conclusão depende dos pareceres sobre os arquivos finais, sem substituir seleção humana.
+
+A inspeção do MP4 21300 também mostrou identificação do site sobreposta ao aviso obrigatório de IA. O compositor reserva agora faixas distintas; uma regressão FFmpeg mede a faixa inteira antes da aplicação do aviso. Esta correção entra no mesmo lote local, e a remontagem reutilizará a voz preservada.
+
+Validação local do lote: 101 testes de jobs/recuperação do backend passaram; o módulo de vídeo concluiu 291 testes sem falhas (nove casos FFmpeg condicionais fora dessa rodada). Após ajustar a faixa de texto, os 17 testes do compositor foram executados com FFmpeg habilitado, sem skips ou falhas. Diff e comentários revisados antes da publicação.

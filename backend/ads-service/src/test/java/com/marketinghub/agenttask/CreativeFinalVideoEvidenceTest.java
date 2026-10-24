@@ -224,6 +224,9 @@ class CreativeFinalVideoEvidenceTest {
     assertThat(service.awaitingFirstReview(candidate)).isTrue();
     review.setStatus("IN_PROGRESS");
     assertThat(service.awaitingFirstReview(candidate)).isFalse();
+    review.setProcessActivityId("commercial");
+    assertThat(service.awaitingFirstReview(candidate)).isFalse();
+    review.setProcessActivityId("customer");
     review.setStatus("COMPLETED");
     review.setResultJson(
         "{\"videoAudit\":[{\"assetId\":" + id + ",\"sha256\":\"" + "a".repeat(64) + "\"}]}");

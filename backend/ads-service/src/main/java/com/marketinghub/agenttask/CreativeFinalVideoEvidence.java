@@ -255,7 +255,7 @@ public class CreativeFinalVideoEvidence {
     for (var task :
         tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
             "experiment:" + video.getExperiment().getId(), "creative-production-approval")) {
-      if (!java.util.Set.of("customer", "compliance")
+      if (!java.util.Set.of("customer", "commercial")
           .contains(Objects.toString(task.getProcessActivityId(), ""))) continue;
       if (!java.util.Set.of("COMPLETED", "BLOCKED", "FAILED", "CANCELLED")
           .contains(Objects.toString(task.getStatus(), ""))) return false;

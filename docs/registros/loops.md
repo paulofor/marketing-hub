@@ -11077,3 +11077,11 @@ depois de materializar o checkout. Provas e limites em
 - Correção: remontagem limitada à mesma fonte, voz auditada e candidata sem parecer, sem revisão ativa ou seleção humana.
 - Regressões: `SalesVideoJobServiceTest`, `CreativeFinalVideoEvidenceTest` e `ExperimentVideoAssetApprovalCheckerTest`; outro produto, voz ausente, aprovação existente e experimento RUNNING.
 - Limite: não aprova a peça, não cria rejeição humana, não autoriza voz nova nem campanha.
+
+## LOOP-PSIQUE-DUVIDA-SONORA-DESCARTADA — 24/10/2026
+
+- Evidência: Mira, tarefa #806, recibo #15, vídeo #81. A API respondeu escuta ADJUST, música INCONCLUSIVE e possível toque no encerramento; o backend marcou INVALID apenas por `VOICE_ONLY/music=none`. Custo estimado US$ 0,022693 preservado.
+- Causa: validação tratava metadado de ausência de trilha adicionada como prova de ausência de qualquer som indesejado, descartando inclusive uma avaliação negativa. O histórico de Capella continua exigindo bloquear PASS contraditório e tempos inventados.
+- Correção: preservar dúvida/ajuste negativo com cobertura temporal e recuperar o mesmo recibo pago por callback. A aprovação continua exigindo PASS; nenhum parecer foi fabricado.
+- Regressões: AudioReviewContractTest e AgentAudioReviewServiceTest cobrem caso original, outra identidade, replay idempotente, custo, mídia alterada, JSON inválido e PASS indevido. Prompt e request históricos preservados para não invalidar reaproveitamento por hash.
+- Limite: medições locais não substituem escuta; o achado sonoro precisa ser resolvido antes do aceite audiovisual. Não comprova venda.

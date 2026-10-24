@@ -204,15 +204,20 @@ public final class AudioReviewContract {
         "A escuta precisa cobrir abertura, desenvolvimento e encerramento.");
   }
 
-  /** Confronta a escuta com o mix e os intervalos medidos, preservando respostas contraditórias. */
+  /**
+   * Confronta tempos e aprovação com o mix, preservando dúvidas e defeitos sonoros para correção.
+   */
   public static void groundedAssessment(JsonNode result, JsonNode media) {
     assessment(result, media.path("durationSeconds").asDouble());
     var production = media.path("audioProductionEvidence");
     if ("VOICE_ONLY".equals(production.path("mix").asText())
         && "none".equals(production.path("music").asText()))
       require(
-          "NOT_PRESENT".equals(result.at("/music/status").asText()),
-          "O parecer descreve música, mas o mix auditado contém somente voz.");
+          "NOT_PRESENT".equals(result.at("/music/status").asText())
+              || (Set.of("ADJUST", "INCONCLUSIVE").contains(result.path("verdict").asText())
+                  && Set.of("ADJUST", "INCONCLUSIVE")
+                      .contains(result.at("/music/status").asText())),
+          "O parecer descreve música, mas o mix auditado contém somente voz; uma dúvida deve impedir aprovação.");
     if (!"SEGMENT_AUDIO_DURATION".equals(production.path("timingSource").asText())) return;
     var segments = production.path("segments");
     require(

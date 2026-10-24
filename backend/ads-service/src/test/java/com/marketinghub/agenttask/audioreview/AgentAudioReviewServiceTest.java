@@ -93,6 +93,77 @@ class AgentAudioReviewServiceTest {
     assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
   }
 
+  /** Reproduz dúvida do recibo 15 e outra identidade, preservando custo e bloqueio da aprovação. */
+  @ParameterizedTest
+  @ValueSource(longs = {10, 93010})
+  void replaysPreservedNegativeAssessmentWithoutNewCharge(long productId) throws Exception {
+    var input = prepare(productId);
+    service.reserve("customer-agent", 9001, input);
+    var media =
+        json.createObjectNode()
+            .put("assetId", 9003)
+            .put("sha256", "a".repeat(64))
+            .put("durationSeconds", 30);
+    media.putObject("audioProductionEvidence").put("mix", "VOICE_ONLY").put("music", "none");
+    when(videos.inputs(any())).thenReturn(json.createArrayNode().add(media));
+    var assessment = AudioReviewContractTest.assessment(json).put("verdict", "ADJUST");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) assessment.path("music"))
+        .put("status", "INCONCLUSIVE");
+    var raw = json.createObjectNode().put("model", "gpt-audio-1.5");
+    raw.putArray("choices")
+        .addObject()
+        .put("finish_reason", "stop")
+        .putObject("message")
+        .put("content", assessment.toString());
+    var entry = saved.get(9003L);
+    entry.setStatus("INVALID");
+    entry.setResponseJson(raw.toString());
+    entry.setEstimatedUsd(new BigDecimal("0.022693"));
+    entry.setErrorMessage("O parecer descreve música, mas o mix auditado contém somente voz.");
+    var request = new AudioReviewResultRequest(raw.toString());
+    var result = service.complete("customer-agent", 9001, 9003, request);
+    assertThat(result.status()).isEqualTo("COMPLETED");
+    assertThat(result.assessment().path("verdict").asText()).isEqualTo("ADJUST");
+    assertThat(result.estimatedUsd()).isEqualByComparingTo("0.022693");
+    assertThat(result.mayInvoke()).isFalse();
+    assertThat(entry.getResponseJson()).isEqualTo(raw.toString());
+    assertThat(service.complete("customer-agent", 9001, 9003, request)).isEqualTo(result);
+    assertThat(service.reserve("customer-agent", 9001, input).mayInvoke()).isFalse();
+    assertThatThrownBy(() -> service.validateCompletion(task, "{\"decision\":\"APPROVED\"}"))
+        .hasMessageContaining("reprovada");
+    verify(reviews, times(2)).saveAndFlush(any());
+    verify(ledger, times(2)).saveAndFlush(any());
+  }
+
+  /** Replay não amplia a permissão a aprovação, JSON inválido ou identidade alterada. */
+  @ParameterizedTest
+  @ValueSource(strings = {"PASS", "MALFORMED", "OTHER_MEDIA"})
+  void refusesUnsafeHistoricalReclassification(String variant) {
+    var input = prepare(93010);
+    service.reserve("customer-agent", 9001, input);
+    var result =
+        AudioReviewContractTest.assessment(json)
+            .put("verdict", variant.equals("PASS") ? "PASS" : "ADJUST");
+    var raw = json.createObjectNode().put("model", "gpt-audio-1.5");
+    raw.putArray("choices")
+        .addObject()
+        .put("finish_reason", "stop")
+        .putObject("message")
+        .put("content", variant.equals("MALFORMED") ? "{incompleto" : result.toString());
+    var entry = saved.get(9003L);
+    entry.setStatus("INVALID");
+    entry.setResponseJson(raw.toString());
+    entry.setEstimatedUsd(new BigDecimal("0.022693"));
+    if (variant.equals("OTHER_MEDIA")) entry.setVideoSha256("b".repeat(64));
+    var receipt =
+        service.complete(
+            "customer-agent", 9001, 9003, new AudioReviewResultRequest(raw.toString()));
+    assertThat(receipt.status()).isEqualTo("INVALID");
+    assertThat(receipt.mayInvoke()).isFalse();
+    assertThat(receipt.estimatedUsd()).isEqualByComparingTo("0.022693");
+    verify(reviews, times(1)).saveAndFlush(any());
+  }
+
   /** Duas identidades recebem causa de saldo correta, sem fatura, parecer ou nova chamada. */
   @ParameterizedTest
   @ValueSource(longs = {9005, 93005})

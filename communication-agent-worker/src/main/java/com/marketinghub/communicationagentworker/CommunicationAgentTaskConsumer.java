@@ -214,7 +214,10 @@ public class CommunicationAgentTaskConsumer {
     return payload;
   }
 
-  /** Registra falha técnica sem mascarar uma segunda falha de callback. */
+  /**
+   * Preserva inclusive respostas recusadas na validação, sem refazer inferência nem mascarar
+   * callback.
+   */
   private void failSafely(
       Map<String, Object> task,
       CommunicationAgentCodexRunner.Execution execution,
@@ -252,6 +255,8 @@ public class CommunicationAgentTaskConsumer {
       payload.put(
           "error", materializationReplay ? "AUTO_RETRY_MATERIALIZATION_ONCE|" + ex : ex.toString());
       if (execution != null) payload.put("resultJson", execution.rawResponse());
+      else if (ex instanceof CommunicationAgentCodexRunner.ExecutionException failure
+          && failure.rawResponse() != null) payload.put("resultJson", failure.rawResponse());
       else if (retryResult != null) payload.put("resultJson", retryResult);
       payload.put(
           "evidenceJson",

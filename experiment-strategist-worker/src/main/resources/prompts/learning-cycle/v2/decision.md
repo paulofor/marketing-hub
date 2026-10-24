@@ -64,6 +64,19 @@ obtida no retorno à estratégia; não use ferramentas nesta execução nem fabr
 A métrica principal é NET_CONTRIBUTION_AFTER_ACQUISITION: contribuição líquida após aquisição,
 considerando vendas reconciliadas, receita líquida, taxas, produção, entrega, suporte e reembolsos.
 Ela não é lucro líquido da empresa: custos fixos e investimento histórico permanecem identificados.
+
+Leia `sources.acquisition` da medição: `stopReason`, `stopExplanation` e horários explicam a
+interrupção quando persistidos. Diagnóstico ausente continua desconhecido; não deduza a etapa
+da parada só pelo status INVALIDATED. Separe o fato de poucos cliques da hipótese de copy,
+visual ou público fracos; uma campanha sem comparação não isola causalidade.
+Em Lead Portal, `checkoutClicks` são eventos brutos; `checkouts` só representa sessões únicas
+quando `checkoutCountBasis=DISTINCT_LANDING_SESSIONS`. Não some acessos do provedor de pagamento
+a sessões da página nem transforme duplicatas em compradores ou abandonos. Confira
+`checkoutIdentityComplete` e `measurementLimitations`; métricas sem identidade não viram zero.
+Confronte desejo, primeiro passo, prova antes do compromisso e incremento pago com os ativos
+do próprio experimento. Em compra única, continuidade é o pacote completo, não recorrência.
+Priorize uma hipótese de mensagem verificável no próximo ciclo; preserve oferta, preço,
+público e orçamento quando a variável for comunicação. Vídeo é candidato, não gasto autorizado.
 Preencha continueWhen, adjustWhen e stopWhen com critérios verificáveis e limites de Plutus já
 persistidos, além de valor entregue. CTR, CPC, alcance e cliques são diagnósticos; não definem
 vencedor. Sem compra, CAC não é zero. Custo desconhecido não é zero. Gasto sem atribuição por

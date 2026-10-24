@@ -132,7 +132,7 @@ class LearningCycleDecisionWorkerTest {
             "--output-schema");
   }
 
-  /** Revisão v2 exige mercado e economia, distinguindo preparação backend de autorização humana. */
+  /** Revisão v2 exige economia, causa de parada e contagens com identidade sem autorizar gasto. */
   @Test
   void preparesMarketReviewV2WithoutChangingLegacySchema() throws Exception {
     var runner = new LearningCycleDecisionRunner(properties(), json);
@@ -153,7 +153,12 @@ class LearningCycleDecisionWorkerTest {
             "Não solicite entrevistas",
             "LEARNING_CYCLE_SAFE_PREPARATION_V1",
             "backend",
-            "sem nova inferência");
+            "sem nova inferência",
+            "sources.acquisition",
+            "stopExplanation",
+            "DISTINCT_LANDING_SESSIONS",
+            "checkoutIdentityComplete",
+            "Vídeo é candidato, não gasto autorizado");
     var v1 =
         runner.prepare(
             json.createObjectNode().put("contractVersion", "LEARNING_CYCLE_DECISION_PROPOSAL_V1"));

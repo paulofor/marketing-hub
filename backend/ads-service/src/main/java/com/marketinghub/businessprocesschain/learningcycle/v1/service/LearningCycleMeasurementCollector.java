@@ -157,6 +157,7 @@ public class LearningCycleMeasurementCollector {
             revenue,
             media.spendBrl(),
             media.observedAt(),
+            media.snapshot(),
             auditableCost,
             outcomes.accessReleasedNetSales(),
             deliveries,
@@ -204,14 +205,7 @@ public class LearningCycleMeasurementCollector {
     pde.put("humanSessions", funnel.humanSessions());
     pde.put("rawSessions", funnel.rawSessions());
     putNullable(pde, "lastEventAt", funnel.lastEventAt());
-    ObjectNode channel = sources.putObject("acquisition");
-    channel.put("platform", String.valueOf(experiment.getPlatform()));
-    channel.put("mode", media.mode());
-    channel.put("spendBrl", media.spendBrl());
-    putNullable(channel, "observedAt", media.observedAt());
-    channel.put("finalSnapshot", media.finalSnapshot());
-    channel.put("impressions", media.impressions());
-    channel.put("clicks", media.clicks());
+    acquisitionEvidence(sources, experiment, media);
     ObjectNode financial = sources.putObject("financialOutcomes");
     financial.put("purchaseEvents", outcomes.purchases());
     financial.put("refundEvents", outcomes.refunds());
@@ -292,6 +286,8 @@ public class LearningCycleMeasurementCollector {
             funnel.humanSessions(),
             funnel.pageViews(),
             funnel.checkouts(),
+            funnel.checkoutSessions(),
+            funnel.checkoutClicksWithoutSession(),
             payments.checkoutAccesses(),
             payments.source(),
             funnel.lastHumanEventAt(),
@@ -301,6 +297,7 @@ public class LearningCycleMeasurementCollector {
             revenue,
             media.spendBrl(),
             media.observedAt(),
+            media.snapshot(),
             auditableCost,
             !now.isBefore(cycle.getWindowEnd()));
     ObjectNode evidence = json.createObjectNode();
@@ -321,7 +318,22 @@ public class LearningCycleMeasurementCollector {
     evidence.putNull("firstResults");
     evidence.putArray("notApplicableMetrics").add("starts").add("firstResults");
     evidence.put("checkoutClicks", funnel.checkouts());
-    evidence.put("checkouts", funnel.checkouts() + payments.checkoutAccesses());
+    evidence.put(
+        "checkouts",
+        funnel.checkoutSessions() == null ? funnel.checkouts() : funnel.checkoutSessions());
+    evidence.put(
+        "checkoutCountBasis",
+        funnel.checkoutSessions() == null
+            ? "RAW_LANDING_EVENTS_LEGACY"
+            : "DISTINCT_LANDING_SESSIONS");
+    evidence.put(
+        "checkoutIdentityComplete",
+        funnel.checkoutSessions() != null
+            && funnel.checkoutClicksWithoutSession() != null
+            && funnel.checkoutClicksWithoutSession() == 0);
+    if (funnel.checkoutClicksWithoutSession() == null)
+      evidence.putNull("checkoutClicksWithoutSession");
+    else evidence.put("checkoutClicksWithoutSession", funnel.checkoutClicksWithoutSession());
     evidence.put("netSales", netSales);
     evidence.put("refunds", payments.refunds());
     evidence.put("spendBrl", media.spendBrl());
@@ -349,14 +361,7 @@ public class LearningCycleMeasurementCollector {
     portal.put("humanSessions", funnel.humanSessions());
     portal.put("rawSessions", funnel.rawSessions());
     putNullable(portal, "lastEventAt", funnel.lastHumanEventAt());
-    ObjectNode channel = sources.putObject("acquisition");
-    channel.put("platform", String.valueOf(experiment.getPlatform()));
-    channel.put("mode", media.mode());
-    channel.put("spendBrl", media.spendBrl());
-    putNullable(channel, "observedAt", media.observedAt());
-    channel.put("finalSnapshot", media.finalSnapshot());
-    channel.put("impressions", media.impressions());
-    channel.put("clicks", media.clicks());
+    acquisitionEvidence(sources, experiment, media);
     ObjectNode financial = sources.putObject("financialOutcomes");
     financial.put("source", payments.source());
     financial.put("purchaseEvents", payments.purchases());
@@ -383,7 +388,15 @@ public class LearningCycleMeasurementCollector {
         .add(
             "Entrega exige pagamento aprovado, ZIP gerado e envio registrado; não comprova uso ou satisfação.")
         .add(
-            "Página histórica pode reunir revisões: publicação auditada identifica a fonte, sem provar causalidade entre versões.");
+            "Página histórica pode reunir revisões: publicação auditada identifica a fonte, sem provar causalidade entre versões.")
+        .add(
+            "Cliques repetidos não são pessoas distintas; acessos de pagamento não são somados às sessões de checkout.")
+        .add(
+            "Sessões da página não são automaticamente atribuíveis aos cliques da Meta; não inferir abandono ou conversão entre fontes sem vínculo.");
+    if (!evidence.path("checkoutIdentityComplete").asBoolean())
+      ((com.fasterxml.jackson.databind.node.ArrayNode) evidence.path("measurementLimitations"))
+          .add(
+              "Identidade de sessão incompleta: a contagem não comprova todos os interessados únicos.");
     String summary =
         "Conciliação automática do Lead Portal: "
             + funnel.humanVisitors()
@@ -406,6 +419,36 @@ public class LearningCycleMeasurementCollector {
             + experiment.getId()
             + "/measurements/"
             + fingerprint);
+  }
+
+  /**
+   * Entrega métricas e parada persistida ao aprendizado, sem inferir rejeição de produto ou limite
+   * ausente.
+   */
+  private void acquisitionEvidence(ObjectNode sources, Experiment experiment, MediaEvidence media) {
+    ObjectNode channel = sources.putObject("acquisition");
+    channel.put("platform", String.valueOf(experiment.getPlatform()));
+    channel.put("mode", media.mode());
+    channel.put("spendBrl", media.spendBrl());
+    putNullable(channel, "observedAt", media.observedAt());
+    channel.put("finalSnapshot", media.finalSnapshot());
+    channel.put("impressions", media.impressions());
+    channel.put("clicks", media.clicks());
+    if (media.impressions() > 0)
+      channel.put(
+          "ctrPercent",
+          BigDecimal.valueOf(media.clicks())
+              .multiply(BigDecimal.valueOf(100))
+              .divide(BigDecimal.valueOf(media.impressions()), 4, RoundingMode.HALF_UP));
+    else channel.putNull("ctrPercent");
+    var snapshot = media.snapshot();
+    putNullable(channel, "stopReason", snapshot == null ? null : snapshot.stopReason());
+    putNullable(channel, "stopRequestedAt", snapshot == null ? null : snapshot.stopRequestedAt());
+    putNullable(channel, "stopCompletedAt", snapshot == null ? null : snapshot.stopCompletedAt());
+    putNullable(channel, "stopExplanation", snapshot == null ? null : snapshot.stopExplanation());
+    channel.put(
+        "interpretationLimit",
+        "CTR diagnostica aquisição; sem comparação não isola efeito de copy, vídeo ou público. Ausência histórica de diagnóstico permanece desconhecida.");
   }
 
   /** Confere a página publicada sem transformar parâmetros de tracking em outra identidade. */
@@ -441,7 +484,8 @@ public class LearningCycleMeasurementCollector {
   /** Confere a fonte de aquisição sem tratar sincronização ausente como gasto zero. */
   private MediaEvidence media(Experiment experiment, Instant now) {
     if (experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE)
-      return new MediaEvidence(BigDecimal.ZERO.setScale(2), "DIRECT_ONE_TO_ONE", null, true, 0, 0);
+      return new MediaEvidence(
+          BigDecimal.ZERO.setScale(2), "DIRECT_ONE_TO_ONE", null, true, 0, 0, null);
     requireSource(
         experiment.getPlatform() == ExperimentPlatform.FACEBOOK,
         "O canal deste experimento ainda não possui uma fonte automática de gasto.");
@@ -482,7 +526,8 @@ public class LearningCycleMeasurementCollector {
         observedAt,
         finalSnapshot,
         value(metric.impressions()),
-        value(metric.clicks()));
+        value(metric.clicks()),
+        metric);
   }
 
   /** Conta somente o tipo canônico informado dentro do resumo já atribuído. */
@@ -567,5 +612,6 @@ public class LearningCycleMeasurementCollector {
       Instant observedAt,
       boolean finalSnapshot,
       long impressions,
-      long clicks) {}
+      long clicks,
+      ExperimentAcquisitionMetricsSnapshot snapshot) {}
 }

@@ -120,6 +120,21 @@ narração ausente ou sem evidência. DESCRIPTIVE exige ADJUST; UNVERIFIABLE exi
 Não dê nota pelo uso de “você”, interrogação, adjetivo ou gatilho isolado. Não exija rosto,
 testemunho, medo ou urgência para criar conexão. Copy clara pode ser declarativa e respeitosa.
 
+Confronte os cinco pontos do contrato de Íris (`persuasionEvidence`, quando recebido) com a
+peça exata. Fonte literal não basta para aprovar: a mensagem precisa cumprir sua função nos
+pixels e na fala. Registre em `evidence` o que foi demonstrado, o que ficou só prometido e o
+que pertence ao destino. Abertura com formulário pode identificar o produto e ainda esconder
+o desejo: confira se a recompensa utilizável é reconhecível cedo, sem prometer agendamento
+ou vendas. Não exija sempre fotografia, pessoa ou um corte a cada intervalo fixo.
+
+Avalie separadamente: desejo na situação do público; primeiro passo simples e real; amostra
+compreensível antes de compra/briefing; diferença entre a prova e o pacote pago. No kit de
+compra única, o incremento é a entrega personalizada e organizada, não uma assinatura.
+Liste condições e preço com fidelidade, mas não os trate como explicação suficiente do valor.
+Se a atração depende de conteúdo que só aparece depois dos campos e instruções, registre esse
+risco e a correção concreta; aprovação perceptiva anterior não comprova eficácia comercial.
+Margem é gate de Plutus e medição real, nunca promessa ao público ou nota estética de Psique.
+
 Avalie 0–5 cada dimensão com `score`, `quote` literal e `assessment` explicando o efeito:
 - `recognition`: momento concreto em que o público se reconhece, além do nome do produto;
 - `humanConnection`: conversa próxima e respeitosa com a pessoa, sem voz corporativa fria;

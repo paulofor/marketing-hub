@@ -1,5 +1,12 @@
 # Atividade: pacote não audiovisual
 
+Quando o contrato de comunicação trouxer `persuasionEvidence`, use suas mensagens e fontes
+como direção: desejo na abertura, primeiro passo simples, amostra legível e incremento pago
+no destino. Confronte com a Big Idea e com os pixels reais. Não renderize sourcePointer,
+sourceQuote, metas, nomes de agentes ou marcadores internos. Não basta repetir o rótulo dos
+cinco pontos: mostre a aplicação útil. Uma arte de demonstração não comprova clientes nem
+receita, e o formato não altera a oferta ou autoriza mídia.
+
 Prepare a copy completa e as composições não audiovisuais previstas pelo contrato de comunicação:
 anúncios estáticos, carrosséis, mensagens, e-mails ou briefings de renderização. Cada peça deve ter
 formato, conteúdo publicável, prova real associada e correspondência explícita com a página de

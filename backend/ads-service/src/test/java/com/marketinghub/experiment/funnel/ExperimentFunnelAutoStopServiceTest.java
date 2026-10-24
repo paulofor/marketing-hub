@@ -336,6 +336,16 @@ class ExperimentFunnelAutoStopServiceTest {
 
     assertThat(stopped).isTrue();
     assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+    assertThat(experiment.getLastStatusChangeAction()).isEqualTo("AUTOMATIC_STOP");
+    assertThat(experiment.getLastStatusChangedAt()).isNotNull();
+    assertThat(experiment.getLastStatusChangeReason())
+        .contains(
+            "stage=COMPRA",
+            "attempts=120",
+            "successes=0",
+            "observedRate=",
+            "minimumRate=",
+            "não comprova rejeição do produto");
     assertThat(campaign.getStopReason())
         .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_STATISTICALLY_FAILED_STAGE);
     assertThat(campaign.getStopRequestedAt()).isNotNull();

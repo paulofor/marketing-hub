@@ -255,7 +255,9 @@ class CustomerBpmTaskConsumerTest {
         .hasMessageContaining("evidências suficientes");
   }
 
-  /** Exige prompt e schema próprios para a percepção do criativo. */
+  /**
+   * Exige contrato perceptivo que confronte os cinco pontos com a peça exata, sem simular vendas.
+   */
   @Test
   void selectsVersionedCreativeContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
@@ -273,7 +275,12 @@ class CustomerBpmTaskConsumerTest {
             "dois primeiros segundos",
             "purchaseEmotion",
             "researchIntelligence",
-            "cardId")
+            "cardId",
+            "persuasionEvidence",
+            "Fonte literal não basta",
+            "primeiro passo simples",
+            "compra única",
+            "Margem é gate de Plutus")
         .doesNotContain("nail designer", "posts e stories prontos");
   }
 

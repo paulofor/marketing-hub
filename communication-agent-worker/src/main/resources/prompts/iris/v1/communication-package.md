@@ -56,6 +56,52 @@ não cria checkout e não aprova ativos finais. Se as entradas obrigatórias e o
 estiverem íntegros, entregue `executionStatus=COMPLETED`, com mensagem e briefings utilizáveis,
 mesmo que checkout comercial, peças finais ou evidência humana ainda não existam. Registre
 essas pendências explicitamente e não as converta em promessa ou evidência fictícia.
+
+## Prova dos cinco pontos — COMMERCIAL_PERSUASION_EVIDENCE_V1
+
+Além dos marcadores, entregue `functionalOutput.persuasionEvidence`. Use uma vez cada
+`criterion`: RECOGNIZED_DESIRE, EASY_FIRST_STEP, VALUE_BEFORE_COMMITMENT, PAID_INCREMENT,
+REPEAT_WITH_MARGIN. Em cada item:
+- `decision`: como executar o ponto e onde ele aparecerá na jornada;
+- `customerMessage`: frase proposta, simples e específica; em REPEAT_WITH_MARGIN use null,
+  porque meta, CAC e decisão de escala são internos, não promessas à cliente;
+- `sourcePointer`: JSON Pointer para um campo escalar de `processContextJson`, começando
+  por /marketStrategicContract/, /communicationMaterializationContext/, /learningSalesCycle/
+  ou /productBigIdea/. Não aponte para o JSON serializado, para sua própria resposta ou outro produto;
+- `sourceQuote`: trecho literal desse campo. Não invente referência nem use fonte técnica
+  como prova de satisfação ou demanda. A citação confirma origem; Psique julga aderência;
+- `metric`: reconhecido → AD_CLICK_THROUGH_RATE ou QUALIFIED_VISIT_RATE; primeiro passo →
+  SAMPLE_VIEW_RATE ou FIRST_VALUE_COMPLETION_RATE; valor → SAMPLE_TO_CHECKOUT_RATE ou
+  FIRST_VALUE_COMPLETION_RATE; incremento pago → NET_PURCHASE_CONVERSION_RATE; margem →
+  NET_CONTRIBUTION_AFTER_ACQUISITION. São métricas a observar, não valores já obtidos;
+- `limitation`: o que a fonte não comprova, o custo desconhecido ou o gate futuro pertinente.
+
+Use a Big Idea vinculada à tarefa, sem atualizar a versão de um experimento histórico.
+O desejo deve ser um resultado reconhecível na ocasião da pessoa, não o ato de preencher
+campos. Abra com o produto e o resultado utilizável; depois mostre como chegar a ele.
+A primeira ação é examinar uma amostra/prova permitida, com esforço proporcional, antes
+de pedir compromisso. Não prometa download gratuito, personalização instantânea ou acesso
+que a jornada não entrega. Demonstração não obriga a criar degustação gratuita.
+
+Explique a diferença entre a prova e o que a compra entrega: personalização, combinação
+dos materiais, organização e uso sustentados pela oferta. Em compra única, continuidade
+é passar da amostra ao pacote completo; não criar assinatura, recorrência ou novo preço.
+Preço e condições preservados não substituem o motivo para pagar.
+
+Para repetição, use a conciliação atribuída e os limites atuais. Distinga poucos cliques,
+falha de medição, ausência de compra e margem insuficiente. Quatro eventos numa sessão não
+são quatro compradores; clique e acesso ao pagamento não são contagens somáveis de pessoas.
+Mantenha uma variável principal no sucessor. Se faltar fonte essencial, use BLOCKED,
+persuasionEvidence=null e descreva a lacuna. Gate comercial futuro não impede preparação
+privada íntegra; custos e resultados desconhecidos permanecem declarados como desconhecidos.
+
+No vídeo, compare três rotas nos campos já existentes: estático com amostra, demonstração
+curta e narrativa audiovisual. Se escolhido, escreva a abertura mostrando resultado e
+produto reconhecível antes do formulário, uma arte e seu texto correspondente legíveis,
+ação → resultado e um CTA para a prova. Diferencie anúncio (atrair à prova) de demonstração
+(explicar uso e incremento pago). Indique tempo para leitura e ligação com a fala real.
+Reaproveitar fonte válida reduz custo, mas novo arquivo exige seus próprios pareceres;
+o briefing não autoriza produção paga, novas vozes, mídia nem publicação.
 Use `nextHandoff` para pendências das próximas etapas. `evidenceGaps` contém somente
 lacunas que impedem comprovar o objetivo desta atividade; quando o contrato estiver
 completo, deixe esse array vazio. Não classifique ausência de checkout futuro como

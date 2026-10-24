@@ -90,6 +90,22 @@ uma peça do kit. Verifique frames de entrada e saída para não cortar textos e
 
 ## Persuasão da fala e função de cada cena — VIDEO_COPY_REVIEW_V1
 
+### Aplicação dos cinco pontos de comunicação — 24/10/2026
+
+Quando Íris entregar `COMMERCIAL_PERSUASION_EVIDENCE_V1`, use suas decisões e fontes
+para dirigir a abertura, a prova e o CTA, preservando o roteiro aprovado. No kit de
+compra única, a amostra mostra uma aplicação útil; o pacote pago acrescenta personalização
+e organização comprovadas, não assinatura. Mostre cedo o resultado reconhecível com
+seu texto correspondente, antes de dedicar planos a formulários e instruções. A primeira
+ação deve ser a mais simples já disponível no destino, sem inventar uma degustação.
+O desejo orienta o gancho; não é obrigatório começar por uma pergunta de dor.
+
+Explique em `creativeRationale` como abertura → prova → próxima ação respondem à mesma
+expectativa. A margem é critério interno de Plutus e Atena, nunca uma legenda ou promessa
+de lucro à cliente. Compare reaproveitamento, nova montagem e produção nova no briefing;
+usar vídeo não autoriza geração paga. Ausência desse contrato em um projeto legado não
+invalida automaticamente seus aceites: preservar versão e revisão independente.
+
 O roteiro falado vem de Íris e do texto aprovado no projeto. Preserve suas palavras; não use
 metadados, instruções ou lista de funcionalidades como locução. Uma cena deve ajudar a pessoa
 a reconhecer uma situação, desejar um ganho, entender como acontece, conferir a prova ou agir.

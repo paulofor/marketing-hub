@@ -40,7 +40,7 @@ class ApolloStoryboardPlannerTest {
         planner = new ApolloStoryboardPlanner(new VideoManagementProperties(), objectMapper, aiClient);
     }
 
-    /** Exige direção narrativa e raciocínio máximo no request real e na auditoria do planejamento. */
+    /** Exige direção comercial e narrativa no request real, preservando sua auditoria. */
     @Test
     void shouldPlanWithMaximumReasoningAndPreserveRequestInResult() throws Exception {
         var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
@@ -62,6 +62,7 @@ class ApolloStoryboardPlannerTest {
             assertThat(request.path("service_tier").asText()).isEqualTo("flex");
             assertThat(request.path("input").asText()).contains("VIDEO_NARRATIVE_REVIEW_V1", "informação nova", "expectativa → desenvolvimento → recompensa");
             assertThat(request.path("input").asText()).contains("VIDEO_SENSORY_COMPREHENSION_V1", "FOCO DE ATENÇÃO", "pausa e leitura", "não comprovam conversão");
+            assertThat(request.path("input").asText()).contains("COMMERCIAL_PERSUASION_EVIDENCE_V1", "compra única", "não assinatura", "não autoriza geração paga", "critério interno de Plutus");
             var response = objectMapper.createObjectNode();
             response.putArray("output").addObject().putArray("content").addObject()
                     .put("type", "output_text").put("text", approvedPlan.toString());

@@ -100,4 +100,31 @@ class ExperimentVideoAssetApprovalCheckerTest {
     assertThat(checker.isCorrectionRequested(93090L)).isFalse();
     assertThat(checker.isCorrectionRequested(null)).isFalse();
   }
+
+  /** Remontagem técnica não modifica seleção humana e nunca substitui uma peça em campanha. */
+  @Test
+  void unreviewedRemountPreservesHumanAndCommercialGates() {
+    var checker = new ExperimentVideoAssetApprovalChecker(repository, finalReview);
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var video =
+        ExperimentVideoAsset.builder()
+            .id(95079L)
+            .experiment(experiment)
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .build();
+    given(repository.findBySalesVideoJobId(95300L)).willReturn(List.of(video));
+    given(finalReview.awaitingFirstReview(video)).willReturn(true);
+    assertThat(checker.isUnreviewedCandidate(95300L)).isTrue();
+    assertThat(video.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    video.setReviewStatus(ExperimentVideoReviewStatus.APPROVED);
+    assertThat(checker.isUnreviewedCandidate(95300L)).isFalse();
+    video.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING);
+    assertThat(checker.isUnreviewedCandidate(95300L)).isFalse();
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    given(finalReview.awaitingFirstReview(video)).willReturn(false);
+    assertThat(checker.isUnreviewedCandidate(95300L)).isFalse();
+  }
 }

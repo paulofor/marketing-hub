@@ -781,7 +781,7 @@ public class SalesVideoJobService {
             });
   }
 
-  /** Só substitui o filho da mesma fonte quando existe falha ou parecer permitindo correção. */
+  /** Substitui a mesma fonte em falha, correção autorizada ou remontagem candidata sem nova voz. */
   private boolean canTrackFinalization(Long currentJobId, SalesVideoJob source) {
     if (java.util.Objects.equals(currentJobId, source.getId())) return true;
     if (currentJobId == null) return false;
@@ -795,13 +795,17 @@ public class SalesVideoJobService {
         .isPresent();
   }
 
-  /** Permite corrigir falha, reprovação humana ou ajuste independente da mídia exata. */
+  /**
+   * Permite corrigir falha, parecer ou candidata ainda não revisada; a montagem exige voz
+   * preservada.
+   */
   private boolean isReplaceableFinalization(SalesVideoJob current) {
     if (current.getStatus() == SalesVideoStatus.VIDEO_FAILED) return true;
     if (current.getStatus() != SalesVideoStatus.VIDEO_READY
         || experimentAssetApprovalChecker == null) return false;
     return experimentAssetApprovalChecker.isRejectedForReplacement(current.getId())
-        || experimentAssetApprovalChecker.isCorrectionRequested(current.getId());
+        || experimentAssetApprovalChecker.isCorrectionRequested(current.getId())
+        || experimentAssetApprovalChecker.isUnreviewedCandidate(current.getId());
   }
 
   /**
@@ -859,7 +863,7 @@ public class SalesVideoJobService {
           VideoModuleErrorCode.BAD_REQUEST,
           "Esta fonte já possui finalização em execução. Aguarde o resultado antes de alterar o texto.");
     }
-    validateFinalizationRecovery(sourceJob);
+    boolean requiresPreservedVoice = validateFinalizationRecovery(sourceJob);
     if (request.isNarrationRevisionConfirmed()
         && existing
             .map(
@@ -888,6 +892,14 @@ public class SalesVideoJobService {
             ? VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper)
             : buildPostProductionMetadata(
                 sourceJob, sourceVideoUrl, request, existing.orElse(null)));
+    if (requiresPreservedVoice) {
+      JsonNode voice = readJobMetadata(postProductionJob).path("preservedNarration");
+      if (!VideoNarrationRecovery.CONTRACT.equals(voice.path("contractVersion").asText())
+          || voice.path("newTtsAuthorized").asBoolean(true))
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "A candidata sem parecer só pode ser remontada com a mesma voz auditada, sem nova síntese.");
+    }
     postProductionJob.setAuditSnapshotJson(
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
     jobRepository.save(postProductionJob);
@@ -906,12 +918,12 @@ public class SalesVideoJobService {
     return toDto(postProductionJob);
   }
 
-  /** Impede recuperação paga de uma fonte cujo ciclo já avançou para outra tentativa. */
-  private void validateFinalizationRecovery(SalesVideoJob source) {
-    if (productionCycleRepository == null) return;
+  /** Confere a tentativa vigente e exige voz preservada para corrigir candidata sem parecer. */
+  private boolean validateFinalizationRecovery(SalesVideoJob source) {
+    if (productionCycleRepository == null) return false;
     JsonNode metadata = readJobMetadata(source);
     long cycleId = metadata.path("videoProductionCycleId").asLong();
-    if (cycleId <= 0) return;
+    if (cycleId <= 0) return false;
     var cycle = productionCycleRepository.findById(cycleId).orElse(null);
     if (cycle == null
         || !java.util.Objects.equals(
@@ -922,6 +934,11 @@ public class SalesVideoJobService {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
           "A fonte não corresponde à tentativa atual do ciclo. Consulte a finalização existente antes de solicitar outra.");
+    return !java.util.Objects.equals(cycle.getSalesVideoJobId(), source.getId())
+        && experimentAssetApprovalChecker != null
+        && experimentAssetApprovalChecker.isUnreviewedCandidate(cycle.getSalesVideoJobId())
+        && !experimentAssetApprovalChecker.isCorrectionRequested(cycle.getSalesVideoJobId())
+        && !experimentAssetApprovalChecker.isRejectedForReplacement(cycle.getSalesVideoJobId());
   }
 
   /** Confere o limite financeiro da fonte antes de autorizar uma locução de texto alterado. */

@@ -245,6 +245,28 @@ public class CreativeFinalVideoEvidence {
     return false;
   }
 
+  /** Confere ausência de parecer da mídia e de revisão ativa, sem fabricar reprovação humana. */
+  public boolean awaitingFirstReview(ExperimentVideoAsset video) {
+    if (video.getExperiment() == null) return false;
+    var result = read(video.getResponseJson(), video.getId());
+    String sha = result.at("/hls_delivery/sourceSha256").asText();
+    if (!"CUSTOMER_VIDEO_QUALITY_V1".equals(result.path("customerQualityContract").asText())
+        || !sha.matches("[a-f0-9]{64}")) return false;
+    for (var task :
+        tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:" + video.getExperiment().getId(), "creative-production-approval")) {
+      if (!java.util.Set.of("customer", "compliance")
+          .contains(Objects.toString(task.getProcessActivityId(), ""))) continue;
+      if (!java.util.Set.of("COMPLETED", "BLOCKED", "FAILED", "CANCELLED")
+          .contains(Objects.toString(task.getStatus(), ""))) return false;
+      for (var audit : read(task.getResultJson(), video.getId()).path("videoAudit")) {
+        if (audit.path("assetId").asLong() == video.getId()
+            && sha.equals(audit.path("sha256").asText())) return false;
+      }
+    }
+    return true;
+  }
+
   /** Restringe o contrato à revisão criativa independente, nunca à produção do próprio ativo. */
   private boolean supports(AgentTask task) {
     return task != null

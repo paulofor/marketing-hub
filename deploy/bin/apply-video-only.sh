@@ -73,8 +73,8 @@ if ! docker image inspect "${VIDEO_MGMT_IMAGE}:${VIDEO_MGMT_IMAGE_TAG}" >/dev/nu
   fi
 fi
 
-# Atualiza somente o módulo de vídeo sem reiniciar backend/frontend
-# (backend/frontend permanecem no host 191.252.181.168)
+# Recria somente vídeo para remontar secrets rotacionados atomicamente, mesmo com a mesma imagem.
+# Backend/frontend e os demais produtos permanecem preservados.
 VIDEO_MGMT_IMAGE="${VIDEO_MGMT_IMAGE}" \
 VIDEO_MGMT_IMAGE_TAG="${VIDEO_MGMT_IMAGE_TAG}" \
 VIDEO_BACKEND_BASE_URL="${VIDEO_BACKEND_BASE_URL}" \
@@ -84,7 +84,7 @@ LUMA_API_KEY_HOST_FILE="${LUMA_API_KEY_HOST_FILE}" \
 KLING_API_KEY_HOST_FILE="${KLING_API_KEY_HOST_FILE}" \
 HEYGEN_API_KEY_HOST_FILE="${HEYGEN_API_KEY_HOST_FILE}" \
 RUNWAY_API_KEY_HOST_FILE="${RUNWAY_API_KEY_HOST_FILE}" \
-docker compose -f docker-compose.video.yml up -d --no-deps video-management
+docker compose -f docker-compose.video.yml up -d --no-deps --force-recreate video-management
 
 # Imagens anteriores ficam disponíveis para rollback; limpeza exige avaliação separada.
 rm -f "${VIDEO_TAR}"

@@ -21,6 +21,13 @@ da homologação local e da preparação de dados, sem iniciar duas cópias do e
 O cadastro do monitor precisa distinguir suspensão de falha e preservar o histórico.
 Matriz: [retirada do VPS](../homologacao/retirada-vps-video-2026-10-23.md).
 
+Na rotação explícita da credencial própria de Apolo, preparar o arquivo de forma atômica
+sob o coordenador, preservando backup restrito e conferindo autenticação sem imprimir
+valores. O publicador recria somente `video-management`, inclusive com a mesma imagem:
+um bind mount de arquivo pode continuar ligado ao inode anterior após a troca atômica.
+Não reiniciar serviços dos produtos nem copiar a chave de Psique como fallback automático.
+A comprovação final exige a chave carregada no container, além da fonte no host.
+
 ### TLS do MCP — decisão e recuperação de 20/10/2026
 
 A renovação de `mcpserverdigi.shop` é mantida pelo workflow versionado do MCP,

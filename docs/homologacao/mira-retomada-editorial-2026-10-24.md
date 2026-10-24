@@ -148,3 +148,7 @@ Validação local desta correção: 68 testes de conciliação, 43 de reserva so
 62 de jobs aprovados (173 casos). A rodada adicional repetiu somente a
 conciliação após reforçar a rejeição de recibo malformado. Sem novo endpoint,
 migração ou chamada a provedor; comentários de responsabilidade revisados.
+
+A conferência de recuperação também exige preservar esta estimativa em callbacks
+posteriores sem custo. O teste parametrizado do ledger cobre essa nova evidência
+junto das conciliações anteriores; a suíte do ledger e a conciliação passaram.

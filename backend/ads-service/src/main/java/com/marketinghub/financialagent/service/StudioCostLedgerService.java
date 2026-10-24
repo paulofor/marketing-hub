@@ -306,7 +306,7 @@ public class StudioCostLedgerService {
             });
   }
 
-  /** Atualiza a tentativa de vídeo sem apagar conciliação ou cobrança por callback incompleto. */
+  /** Atualiza a tentativa sem apagar cobrança ou estimativa auditada, inclusive recusa da primeira voz, por callback incompleto. */
   @Transactional
   public void recordVideo(
       Long jobId,
@@ -344,6 +344,7 @@ public class StudioCostLedgerService {
                             "OPENAI_USAGE_COHORT_ESTIMATE",
                             "NARRATION_MEASURED_DURATION_ESTIMATE_V1",
                             "PLANNING_REJECTED_BEFORE_GENERATION_AUDITED",
+                            "FIRST_TTS_AUTHENTICATION_REJECTED_AUDITED",
                             "PRESERVED_NARRATION_NO_NEW_CALL",
                             "FAILED_BEFORE_TTS_AUDITED")
                         .contains(java.util.Objects.toString(entry.getCostEvidence(), ""))

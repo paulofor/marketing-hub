@@ -1,0 +1,18 @@
+{
+  "cardKey": "sincronia-estrutura-expressiva-audiovisual",
+  "collection": "prazer-audio-visual",
+  "title": "Testar coerência temporal expressiva entre som e movimento",
+  "finding": "Revisão crítica de 2026 indica que a correspondência audiovisual pode resultar de uma estrutura dinâmica compartilhada mesmo sem onsets rigorosamente simultâneos; estudos e definições são heterogêneos.",
+  "mechanism": "Agrupamento multissensorial de padrões temporais, atenção a correspondências estruturais e associações aprendidas. Não há prova de que maior congruência produza mais prazer ou venda.",
+  "commercialApplication": "Apolo pode variar o alinhamento entre dinâmica sonora e movimento de animações; Psique pode testar correspondência percebida, legibilidade, compreensão e conforto, sem desalinhar fala.",
+  "evidenceStrength": "Revisão crítica por pares: média para relevância da estrutura temporal, baixa para efeito comercial causal.",
+  "publishedOn": "2026-10-24",
+  "validUntil": "2026-12-08",
+  "experimentHypothesis": "Em animação controlada, a versão com evolução expressiva coerente terá maior avaliação de correspondência som-imagem que a incongruente; verificar prazer e compreensão independentemente.",
+  "risks": "Assincronia labial; desconforto e acessibilidade; aplicar resultados de estímulos abstratos a narrativas complexas; interpretar avaliação subjetiva como conversão.",
+  "limits": "Revisão narrativa, não meta-análise; estudos heterogêneos, alguns com amostras pequenas; ausência de causalidade demonstrada para métricas comerciais, prazer e dopamina.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-24-sincronia-estrutura-expressiva.md",
+  "sourceTitle": "Fonte revisada v1 — Sincronia temporal e coerência estrutural audiovisual",
+  "sourceSha256": "d532d935e3e6104985713ce23a1cd5380bb1dc20dc55b1e4cb8acf3c105f43a8"
+}

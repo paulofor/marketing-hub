@@ -38,6 +38,10 @@ public class BigIdeaTaskContext {
       snapshot.put("productId", target.productId());
       snapshot.put("status", idea == null ? "MISSING" : "DEFINED");
       snapshot.set("revision", json.valueToTree(idea));
+      if (idea == null)
+        snapshot.put(
+            "guidance",
+            "Este contexto não possui Big Idea fixada. Preserve a estratégia e a entrega já aprovadas; não aplique retroativamente a ideia atual do produto como requisito desta revisão. Criação inicial por Atena só ocorre na própria atividade estratégica; evolução posterior exige novo contexto autorizado.");
     } else {
       snapshot.put("status", "PRODUCT_NOT_CREATED");
     }

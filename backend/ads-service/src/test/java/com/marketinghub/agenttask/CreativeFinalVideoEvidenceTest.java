@@ -171,12 +171,15 @@ class CreativeFinalVideoEvidenceTest {
             "customer-agent", "experiment:102"))
         .thenReturn(Optional.of(review));
     assertThat(service.correctionRequested(video)).isTrue();
+    review.setResultJson(valid.replace("ADJUST", "BLOCKED"));
+    assertThat(service.correctionRequested(video)).isTrue();
     assertThat(service.approvalBlockReason(video)).isNotNull();
     // Ajuste editorial não crítico também exige correção, sem aprovar a candidata.
     for (String finding :
         List.of(
             "\"copyReview\":{\"mode\":\"DESCRIPTIVE\"}",
             "\"proofLegibility\":2",
+            "\"narrativeReview\":{\"pacing\":{\"score\":2}}",
             "\"audioVisualSync\":[{\"status\":\"ADJUST\"}]")) {
       review.setResultJson(
           valid.replace("\"criticalDeficit\":true", "\"criticalDeficit\":false," + finding));

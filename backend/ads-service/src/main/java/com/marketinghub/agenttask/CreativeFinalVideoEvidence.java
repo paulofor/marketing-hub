@@ -229,13 +229,15 @@ public class CreativeFinalVideoEvidence {
     if (latest == null || !"COMPLETED".equals(latest.getStatus()) || !supports(latest))
       return false;
     var review = read(latest.getResultJson(), video.getId());
-    if (!"ADJUST".equals(review.path("decision").asText())
+    if (!java.util.Set.of("ADJUST", "BLOCKED").contains(review.path("decision").asText())
         || !"FINAL_VIDEO".equals(review.path("correctionScope").asText())) return false;
     for (var audit : review.path("videoAudit"))
       if (audit.path("assetId").asLong() == video.getId()
           && sha.equals(audit.path("sha256").asText())
           && (audit.path("criticalDeficit").asBoolean(false)
               || "DESCRIPTIVE".equals(audit.at("/copyReview/mode").asText())
+              || (audit.at("/narrativeReview/pacing/score").isInt()
+                  && audit.at("/narrativeReview/pacing/score").asInt() < 3)
               || java.util.stream.Stream.of(
                       "desire", "clarity", "firstAction", "proofLegibility", "visualProgression")
                   .anyMatch(field -> audit.path(field).isInt() && audit.path(field).asInt() < 3)

@@ -29,6 +29,7 @@ public class BigIdeaService {
   private final ProductBigIdeaBindingRepository bindings;
   private final ObjectMapper json;
   private final Validator validator;
+  private final BigIdeaHistoricalAuthority history;
 
   /** Consulta pesquisa isolada de Atena, mantendo experimentos e revisões existentes. */
   @Transactional(readOnly = true)
@@ -109,7 +110,9 @@ public class BigIdeaService {
     return create(product, content, "Criação na estratégia aprovada de Atena", "Atena", taskId);
   }
 
-  /** Fixa a referência comercial; tarefas isoladas usam a versão vigente em sua criação. */
+  /**
+   * Fixa a referência comercial preservando ausência histórica; tarefas isoladas usam a vigente.
+   */
   @Transactional
   public BigIdeaView pin(Long productId, String reference) {
     Product product = products.findLockedById(productId).orElseThrow(() -> missing());
@@ -121,7 +124,9 @@ public class BigIdeaService {
             : reference;
     if (!commercial) return view(product.getBigIdea());
     var existing = bindings.findByProductIdAndSourceReference(productId, canonical);
-    if (existing.isPresent()) return view(existing.get().getBigIdea());
+    var selected = existing.map(ProductBigIdeaBinding::getBigIdea).orElse(product.getBigIdea());
+    if (history.preservesAbsence(selected, canonical)) return null;
+    if (existing.isPresent()) return view(selected);
     if (product.getBigIdea() == null) return null;
     var binding = new ProductBigIdeaBinding();
     binding.setProductId(productId);
@@ -134,10 +139,13 @@ public class BigIdeaService {
   /** Consulta a referência comercial fixada sem produzir mutações em leituras de contexto. */
   @Transactional(readOnly = true)
   public BigIdeaView reference(Product product, String sourceReference) {
-    return bindings
-        .findByProductIdAndSourceReference(product.getId(), sourceReference)
-        .map(binding -> view(binding.getBigIdea()))
-        .orElseGet(() -> view(product.getBigIdea()));
+    String canonical = BigIdeaHistoricalAuthority.canonical(sourceReference);
+    var idea =
+        bindings
+            .findByProductIdAndSourceReference(product.getId(), canonical)
+            .map(ProductBigIdeaBinding::getBigIdea)
+            .orElse(product.getBigIdea());
+    return history.preservesAbsence(idea, canonical) ? null : view(idea);
   }
 
   /** Converte a entidade preservada em conteúdo estruturado e rastreável. */

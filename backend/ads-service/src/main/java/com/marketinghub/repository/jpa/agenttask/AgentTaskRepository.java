@@ -215,6 +215,32 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   /** Busca a tarefa mais recente pela referência exata, sem confundir ids com prefixo comum. */
   Optional<AgentTask> findTopBySourceReferenceOrderByUpdatedAtDescIdDesc(String sourceReference);
 
+  /** Busca a primeira fotografia do contexto exato ou de seus sufixos, sem confundir IDs. */
+  @Query(
+      value =
+          """
+      SELECT id, source_reference AS sourceReference, product_big_idea_json AS productBigIdeaJson
+      FROM agent_task
+      WHERE source_reference = :reference
+         OR source_reference LIKE CONCAT(:reference, '@%')
+         OR source_reference LIKE CONCAT(:reference, ':%')
+      ORDER BY created_at ASC, id ASC LIMIT 1
+      """,
+      nativeQuery = true)
+  Optional<BigIdeaHistory> findFirstBigIdeaHistory(@Param("reference") String reference);
+
+  /** Projeta somente a identidade e a fotografia histórica necessárias ao contrato da Big Idea. */
+  interface BigIdeaHistory {
+    /** Identifica a primeira tarefa do contexto. */
+    Long getId();
+
+    /** Expõe a referência histórica para auditoria. */
+    String getSourceReference();
+
+    /** Preserva a fotografia original, inclusive ausência anterior ao contrato. */
+    String getProductBigIdeaJson();
+  }
+
   /** Lista todo o histórico operacional de uma entidade para montar a instância BPM. */
   List<AgentTask> findBySourceReferenceOrderByCreatedAtAscIdAsc(String sourceReference);
 

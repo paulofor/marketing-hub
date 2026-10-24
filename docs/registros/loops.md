@@ -11085,3 +11085,12 @@ depois de materializar o checkout. Provas e limites em
 - Correção: preservar dúvida/ajuste negativo com cobertura temporal e recuperar o mesmo recibo pago por callback. A aprovação continua exigindo PASS; nenhum parecer foi fabricado.
 - Regressões: AudioReviewContractTest e AgentAudioReviewServiceTest cobrem caso original, outra identidade, replay idempotente, custo, mídia alterada, JSON inválido e PASS indevido. Prompt e request históricos preservados para não invalidar reaproveitamento por hash.
 - Limite: medições locais não substituem escuta; o achado sonoro precisa ser resolvido antes do aceite audiovisual. Não comprova venda.
+
+## LOOP-BIG-IDEA-RETROATIVA — 24/10/2026
+
+- Mira #102 começou em 07/10 (tarefa #620 sem Big Idea). A pesquisa #3 foi adotada em 23/10; a retomada #802 criou vínculo tardio e #807 bloqueou a versão documental v3 pela promessa posterior de manhã/noite. O cânone já exigia preservar ausência e experimentos em curso.
+- Causa: pin ignorava tarefas anteriores à implantação e não persistia ausência em binding; leitura comercial caía diretamente na ideia atual do produto.
+- Correção: primeira fotografia da referência exata/sufixos governa a ausência; direção posterior não é aplicada ao legado. Mantidos revisão atual, bindings e snapshots históricos. Criação legítima de Atena na própria estratégia permanece válida.
+- Regressões: BigIdeaHistoricalAuthorityTest executa SQL local para ordenação, alias e IDs semelhantes; BigIdeaServiceTest cobre vínculo tardio, contexto novo e isolamento; BigIdeaTaskContextTest preserva fotografia. ArquiteturaTest incluído.
+- O parecer BLOCKED/FINAL_VIDEO com déficit localizado também habilita correção do arquivo exato, sem conceder aprovação; pacing baixo integra os critérios editoriais já validados. CreativeFinalVideoEvidenceTest cobre contexto original/outro, SHA incorreto, processo/etapa errados, aprovação e tarefa ainda bloqueada tecnicamente.
+- Impacto comercial não medido. Essa correção não altera oferta nem autoriza campanha.

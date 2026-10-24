@@ -97,6 +97,33 @@ class VideoNarrationRecoveryTest {
         .isTrue();
   }
 
+  /** Recupera callback interrompido com recibos íntegros e impede repetição órfã da locução. */
+  @ParameterizedTest
+  @ValueSource(longs = {21297, 95010})
+  void recoversInterruptedCallbackWithoutNewSpeech(long id) throws Exception {
+    var f = fixture(id, mapper);
+    f.previous().setFailureCode("BACKEND_INTEGRATION_ERROR");
+    var result =
+        mapper.valueToTree(
+            VideoNarrationRecovery.prepare(
+                f.source(), f.previous(), f.request(), mapper, f.assets()));
+    assertThat(result.at("/preservedNarration/newTtsAuthorized").asBoolean()).isFalse();
+    assertThat(result.at("/preservedNarration/segments")).hasSize(5);
+    f.previous().setStatus(SalesVideoStatus.VIDEO_PROCESSING);
+    assertThatThrownBy(
+            () ->
+                VideoNarrationRecovery.requireCompatible(
+                    f.previous(), VideoNarrationRecovery.HYBRID_CONTRACT, mapper))
+        .hasMessageContaining("recibos de locução");
+    f.previous().setStatus(SalesVideoStatus.VIDEO_FAILED);
+    f.previous().getEvents().clear();
+    assertThatThrownBy(
+            () ->
+                VideoNarrationRecovery.prepare(
+                    f.source(), f.previous(), f.request(), mapper, f.assets()))
+        .hasMessageContaining("recibo íntegro");
+  }
+
   /** A correção visual de uma finalização pronta conserva todos os áudios sem outra síntese. */
   @ParameterizedTest
   @ValueSource(longs = {21266, 93166})

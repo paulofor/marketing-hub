@@ -188,7 +188,7 @@ class PdeProductProofOverlayTest {
         }
     }
 
-    /** Comprova enquadramento explícito e contexto legado na abertura e no final de dois produtos. */
+    /** Comprova enquadramento, espaço do aviso de IA e convite sincronizado em dois produtos. */
     @ParameterizedTest
     @org.junit.jupiter.params.provider.CsvSource({"10,false", "93010,false", "10,true", "93010,true"})
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
@@ -234,6 +234,14 @@ class PdeProductProofOverlayTest {
                 }
                 assertThat(samplePixelAt(result, 6, 540, 600)[0] & 255).isGreaterThan(230);
                 assertThat(samplePixelAt(result, 6, 540, 1400)[1] & 255).isGreaterThan(230);
+                if (fullFrame) {
+                    var band = new ProcessBuilder("ffmpeg", "-v", "error", "-ss", "0.2", "-i", result.toString(),
+                            "-vf", "crop=1080:50:0:95", "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1").start();
+                    byte[] region = band.getInputStream().readAllBytes();
+                    assertThat(band.waitFor()).isZero();
+                    assertThat(region).hasSize(1080 * 50 * 3);
+                    for (byte channel : region) assertThat(channel & 255).isGreaterThan(200);
+                }
                 var audit = new ObjectMapper().valueToTree(output.audit());
                 if (fullFrame && productId == 10) Files.copy(result, Path.of("target/proof-labeled-cta.mp4"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 if (fullFrame) assertThat(audit.at("/shots/0/label").asText()).isEqualTo("Site Exemplo 100%: demonstração");

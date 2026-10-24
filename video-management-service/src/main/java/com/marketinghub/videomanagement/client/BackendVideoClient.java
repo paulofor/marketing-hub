@@ -44,6 +44,7 @@ public class BackendVideoClient {
     private final VideoManagementProperties properties;
     private final VideoJobObservabilityService observabilityService;
 
+    /** Configura a comunicação com tentativas limitadas pelo prazo operacional do executor. */
     public BackendVideoClient(WebClient.Builder builder,
                               VideoManagementProperties properties,
                               VideoJobObservabilityService observabilityService) {
@@ -75,10 +76,11 @@ public class BackendVideoClient {
                             .onStatus(status -> !status.is2xxSuccessful(), response ->
                                     mapError("Erro ao listar preflights de vídeo", response))
                             .bodyToMono(PREFLIGHT_LIST_TYPE)
-                            .blockOptional()
+                            .blockOptional(properties.getJobs().getBackendCallTimeout())
                             .orElse(Collections.emptyList()));
             return pending.isEmpty() ? null : pending.getFirst();
         } catch (BackendIntegrationException ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw ex;
         } catch (Exception ex) {
             log.error("Falha ao consultar preflight de provider no backend", ex);
@@ -100,7 +102,7 @@ public class BackendVideoClient {
                         .onStatus(status -> !status.is2xxSuccessful(), response ->
                                 mapError("Erro ao reportar preflight do ciclo " + cycleId, response))
                         .toBodilessEntity()
-                        .block();
+                        .block(properties.getJobs().getBackendCallTimeout());
                 return null;
             });
         } catch (Exception ex) {
@@ -118,7 +120,7 @@ public class BackendVideoClient {
                     .onStatus(httpStatus -> !httpStatus.is2xxSuccessful(), response ->
                             mapError("Erro ao reconciliar fila de Apolo", response))
                     .toBodilessEntity()
-                    .block());
+                    .block(properties.getJobs().getBackendCallTimeout()));
         } catch (Exception ex) {
             log.error("Falha ao reconciliar fila de Apolo antes do polling", ex);
             throw wrap("Falha ao reconciliar fila de Apolo", ex);
@@ -140,7 +142,7 @@ public class BackendVideoClient {
                     .onStatus(httpStatus -> !httpStatus.is2xxSuccessful(), response ->
                             mapError("Erro ao listar jobs", response))
                     .bodyToMono(JOB_LIST_TYPE)
-                    .blockOptional()
+                    .blockOptional(properties.getJobs().getBackendCallTimeout())
                     .orElse(Collections.emptyList()));
         } catch (BackendIntegrationException ex) {
             log.error("Falha ao consultar fila de vídeo; status={}", status, ex);
@@ -151,6 +153,7 @@ public class BackendVideoClient {
         }
     }
 
+    /** Consulta o estado persistido de um job com espera limitada. */
     public SalesVideoJob fetchJob(Long jobId) {
         try {
             return executeWithRetry("fetch job " + jobId, () -> authorized(webClient.get()
@@ -159,16 +162,19 @@ public class BackendVideoClient {
                     .onStatus(httpStatus -> !httpStatus.is2xxSuccessful(), response ->
                             mapError("Erro ao carregar job %d".formatted(jobId), response))
                     .bodyToMono(SalesVideoJob.class)
-                    .blockOptional()
+                    .blockOptional(properties.getJobs().getBackendCallTimeout())
                     .orElseThrow(() -> new BackendIntegrationException(
                             "Job de vídeo não encontrado: " + jobId, 404)));
         } catch (BackendIntegrationException ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw ex;
         } catch (Exception ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw wrap("Falha ao consultar job %d".formatted(jobId), ex);
         }
     }
 
+    /** Consulta o perfil do vídeo sem manter a execução esperando indefinidamente. */
     public SalesVideoProfile fetchProfile(Long profileId) {
         try {
             return executeWithRetry("fetch profile " + profileId, () -> authorized(webClient.get()
@@ -177,12 +183,14 @@ public class BackendVideoClient {
                     .onStatus(status -> !status.is2xxSuccessful(), response ->
                             mapError("Erro ao carregar perfil %d".formatted(profileId), response))
                     .bodyToMono(SalesVideoProfile.class)
-                    .blockOptional()
+                    .blockOptional(properties.getJobs().getBackendCallTimeout())
                     .orElseThrow(() -> new BackendIntegrationException(
                             "Perfil de vídeo não encontrado: " + profileId, 404)));
         } catch (BackendIntegrationException ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw ex;
         } catch (Exception ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw wrap("Falha ao consultar perfil %d".formatted(profileId), ex);
         }
     }
@@ -211,7 +219,7 @@ public class BackendVideoClient {
                     .onStatus(status -> !status.is2xxSuccessful(), response ->
                             mapError("Erro ao registrar aprendizado sombra de Apolo", response))
                     .toBodilessEntity()
-                    .block());
+                    .block(properties.getJobs().getBackendCallTimeout()));
         } catch (Exception ex) {
             log.error("Falha ao registrar aprendizado sombra de Apolo. jobId={}", payload.jobId(), ex);
             throw wrap("Falha ao registrar aprendizado sombra de Apolo", ex);
@@ -230,6 +238,7 @@ public class BackendVideoClient {
         postIgnoringBody("/internal/video/jobs/{jobId}/expired", jobId, payload);
     }
 
+    /** Envia o callback e limita a espera de cada confirmação antes da recuperação existente. */
     private SalesVideoJob postForJob(String path,
                                      Long jobId,
                                      Object payload) {
@@ -242,14 +251,17 @@ public class BackendVideoClient {
                     .onStatus(status -> !status.is2xxSuccessful(), response ->
                             mapError("Erro ao atualizar job %d".formatted(jobId), response))
                     .bodyToMono(SalesVideoJob.class)
-                    .block());
+                    .block(properties.getJobs().getBackendCallTimeout()));
         } catch (BackendIntegrationException ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw ex;
         } catch (Exception ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw wrap("Falha ao atualizar job %d".formatted(jobId), ex);
         }
     }
 
+    /** Aguarda a confirmação do callback dentro do prazo, preservando o payload entre tentativas. */
     private void postIgnoringBody(String path,
                                   Long jobId,
                                   Object payload) {
@@ -263,12 +275,14 @@ public class BackendVideoClient {
                     .onStatus(status -> !status.is2xxSuccessful(), response ->
                             mapError("Erro ao atualizar job %d".formatted(jobId), response))
                     .toBodilessEntity()
-                    .block();
+                    .block(properties.getJobs().getBackendCallTimeout());
                 return null;
             });
         } catch (BackendIntegrationException ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw ex;
         } catch (Exception ex) {
+            log.error("Falha na comunicação de vídeo com backend", ex);
             throw wrap("Falha ao atualizar job %d".formatted(jobId), ex);
         }
     }
@@ -292,6 +306,7 @@ public class BackendVideoClient {
                         response.statusCode().value()));
     }
 
+    /** Recupera falhas transitórias da mesma chamada, registrando contexto e exceção integral. */
     private <T> T executeWithRetry(String operation, Supplier<T> action) {
         int maxAttempts = properties.getJobs().getBackendCallMaxAttempts();
         long backoffMs = properties.getJobs().getBackendCallBackoff().toMillis();
@@ -300,6 +315,7 @@ public class BackendVideoClient {
             try {
                 return action.get();
             } catch (BackendIntegrationException ex) {
+                log.warn("Falha de backend; operation={} attempt={}/{} status={}", operation, attempt, maxAttempts, ex.getStatusCode(), ex);
                 lastError = ex;
                 if (!shouldRetry(ex.getStatusCode()) || attempt == maxAttempts) {
                     throw ex;
@@ -309,6 +325,7 @@ public class BackendVideoClient {
                         attempt, maxAttempts, operation, ex.getStatusCode(), ex.getMessage());
                 sleep(backoffMs);
             } catch (WebClientResponseException ex) {
+                log.warn("Falha HTTP; operation={} attempt={}/{} status={}", operation, attempt, maxAttempts, ex.getStatusCode().value(), ex);
                 lastError = new BackendIntegrationException(operation + ": " + ex.getResponseBodyAsString(),
                         ex.getStatusCode().value(),
                         ex);
@@ -320,6 +337,7 @@ public class BackendVideoClient {
                         attempt, maxAttempts, operation, ex.getStatusCode().value(), ex.getMessage());
                 sleep(backoffMs);
             } catch (Exception ex) {
+                log.warn("Falha de comunicação; operation={} attempt={}/{}", operation, attempt, maxAttempts, ex);
                 lastError = new BackendIntegrationException(operation + ": " + ex.getMessage(), ex);
                 if (attempt == maxAttempts) {
                     throw lastError;

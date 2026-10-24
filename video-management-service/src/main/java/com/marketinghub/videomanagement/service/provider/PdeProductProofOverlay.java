@@ -53,7 +53,7 @@ final class PdeProductProofOverlay {
         return apply(source, metadata, jobId, List.of());
     }
 
-    /** Compõe a captura no trecho narrado com enquadramento explícito ou legado, preservando identidade. */
+    /** Compõe a captura no trecho narrado, reservando faixas distintas para identificação e aviso de IA. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId,
                                                   List<PdeProofCaptionTiming.Window> captions) {
         if (hasSequence(metadata)) return applySequence(source, metadata, jobId, captions);
@@ -89,7 +89,7 @@ final class PdeProductProofOverlay {
                 labelFile = Files.createTempFile("pde-proof-label-", ".txt");
                 Files.writeString(labelFile, wrapLabel(label));
                 labelFilter = "drawtext=textfile=" + labelFile + ":expansion=none:fontsize=38:fontcolor=0x173f35:"
-                        + "x=(w-text_w)/2:y=" + (hybrid ? "610" : contextual ? "750" : "110")
+                        + "x=(w-text_w)/2:y=" + (hybrid ? "610" : contextual ? "750" : "165")
                         + ":enable='" + intervals + "',";
             }
             String crop = "crop=%d:%d:%d:%d,".formatted(proof.width(), proof.height(), proof.x(), proof.y());
@@ -98,7 +98,7 @@ final class PdeProductProofOverlay {
                     ? (label.isEmpty() ? "scale=972:800:force_original_aspect_ratio=decrease,pad=1080:900:(ow-iw)/2:80:color=0xf8f3ee," : "scale=972:800:force_original_aspect_ratio=decrease,pad=1080:1020:(ow-iw)/2:200:color=0xf8f3ee,")
                     : contextual
                     ? (label.isEmpty() ? "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:770:(ow-iw)/2:60:color=0xf8f3ee," : "scale=972:710:force_original_aspect_ratio=decrease,pad=1080:890:(ow-iw)/2:180:color=0xf8f3ee,")
-                    : "scale=972:" + proofHeight + ":force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:" + (label.isEmpty() ? "180" : "230") + ":color=0xf8f3ee,";
+                    : "scale=972:" + proofHeight + ":force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:" + (label.isEmpty() ? "180" : "280") + ":color=0xf8f3ee,";
             String filter = "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
                     + "[1:v]" + crop + proofFrame
                     + "format=yuva420p,loop=loop=-1:size=1:start=0,setpts=N/(25*TB)[proof];"

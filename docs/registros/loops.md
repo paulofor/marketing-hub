@@ -11061,3 +11061,11 @@ depois de materializar o checkout. Provas e limites em
 **Correção compartilhada:** usar o início da fala também no último trecho, manter a prova até o fim e limitar a retenção posterior; identificação editorial opcional fora da captura. Corrigir o convite de entrada para “Experimentar a demonstração”, mantendo “Consultar organização” para resultados já gerados.
 
 **Prevenção:** relógio medido, pixels FFmpeg no começo/meio/fim do convite, duas identidades, contratos legados e validação do rótulo no backend/frontend. A aprovação sonora não aprova montagem nem usabilidade da próxima ação.
+
+### LOOP-APOLO-CALLBACK-SEM-PRAZO — 2026-10-24
+
+- Evidência: Mira job 21298 persistiu auditoria e progresso, mas `Mono.block` aguardou confirmação indefinidamente.
+- Causa: tentativas limitadas não limitavam a duração de cada chamada. Reinício poderia repetir voz já recebida.
+- Correção: prazo HTTP no executor, replay do mesmo payload; recuperação estrita de locução após `BACKEND_INTEGRATION_ERROR`; claim órfão com recibos bloqueado.
+- Contratos preventivos: `BackendVideoClientTest` (original/outra identidade, perda de resposta, esgotamento e sucesso), `VideoNarrationRecoveryTest` (recibo completo/ausente e claim).
+- Registro: `docs/homologacao/mira-retomada-editorial-2026-10-24.md`. Não altera aceites nem tetos.

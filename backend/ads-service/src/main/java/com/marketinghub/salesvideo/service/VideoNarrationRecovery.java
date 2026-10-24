@@ -37,7 +37,7 @@ public final class VideoNarrationRecovery {
   private VideoNarrationRecovery() {}
 
   /**
-   * Recupera a mesma voz ou registra mudança explícita de texto; o service valida rejeição e
+   * Recupera a mesma voz após montagem ou callback interrompido; o service valida rejeição e
    * financeiro. Recuperações sucessivas conservam os mesmos áudios e seu custo original pendente.
    */
   public static Map<String, Object> prepare(
@@ -51,14 +51,15 @@ public final class VideoNarrationRecovery {
         previous.getStatus() == SalesVideoStatus.VIDEO_READY
             && previous.getJobType()
                 == com.marketinghub.salesvideo.SalesVideoJobType.POST_PRODUCTION;
-    boolean durationFailure =
+    boolean recoverableFailure =
         previous.getStatus() == SalesVideoStatus.VIDEO_FAILED
             && java.util.Set.of(
                     "APOLLO_NARRATION_DURATION_EXCEEDED",
                     "PDE_PROOF_CAPTION_TIMING_INVALID",
-                    "PDE_PRODUCT_PROOF_INVALID")
+                    "PDE_PRODUCT_PROOF_INVALID",
+                    "BACKEND_INTEGRATION_ERROR")
                 .contains(previous.getFailureCode() == null ? "" : previous.getFailureCode());
-    if (!completedFinalization && !durationFailure) return Map.of();
+    if (!completedFinalization && !recoverableFailure) return Map.of();
     require(
         Objects.equals(source.getTenantId(), previous.getTenantId())
             && previous.getRetryOfJob() != null
@@ -278,12 +279,19 @@ public final class VideoNarrationRecovery {
     };
   }
 
-  /**
-   * Impede que executor antigo ignore amostras, capturas ou voz preservada durante a publicação.
-   */
+  /** Impede executor incompatível ou retomada órfã que repetiria locução já recebida. */
   public static void requireCompatible(
       SalesVideoJob job, String workerContract, ObjectMapper mapper) {
     JsonNode metadata = read(mapper, job.getMetadataJson(), job.getId());
+    require(
+        job.getStatus() != SalesVideoStatus.VIDEO_PROCESSING
+            || job.getEvents() == null
+            || job.getEvents().stream()
+                .noneMatch(
+                    event ->
+                        event.getDetailsJson() != null
+                            && event.getDetailsJson().contains("tts_interactions")),
+        "O job órfão já possui recibos de locução; recupere a fala preservada antes de outra execução.");
     if (!metadata.at("/post_production/deliveryExamples").isMissingNode()
         && !metadata.at("/post_production/proofShots").isMissingNode())
       require(

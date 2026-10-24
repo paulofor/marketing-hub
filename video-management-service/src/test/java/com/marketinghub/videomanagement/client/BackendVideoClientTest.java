@@ -1,6 +1,14 @@
 package com.marketinghub.videomanagement.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import com.marketinghub.videomanagement.client.payload.JobProgressPayload;
+import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
+import com.marketinghub.videomanagement.exception.BackendIntegrationException;
 
 import com.marketinghub.videomanagement.client.dto.ProviderPreflightJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
@@ -166,6 +174,56 @@ class BackendVideoClientTest {
         assertThat(request.getBody().readUtf8())
                 .contains("\"accountKey\":\"RUNWAY_PRIMARY\"")
                 .doesNotContain("runway-test-key");
+    }
+
+    /** Recupera confirmação perdida sem alterar job, recibos ou disparar nova geração. */
+    @ParameterizedTest
+    @ValueSource(longs = {21298L, 93010L})
+    void retriesPersistedProgressWhenResponseBodyNeverArrives(long jobId) throws Exception {
+        server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("{\"id\":" + jobId + "}").setBodyDelay(2, TimeUnit.SECONDS));
+        server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("{\"id\":" + jobId + "}"));
+        var properties = properties();
+        properties.getJobs().setBackendCallTimeout(Duration.ofMillis(300));
+        properties.getJobs().setBackendCallBackoff(Duration.ZERO);
+        var client = new BackendVideoClient(WebClient.builder(), properties,
+                new VideoJobObservabilityService(new SimpleMeterRegistry()));
+        var payload = new JobProgressPayload(95, SalesVideoStatus.VIDEO_PROCESSING,
+                "Recibos preservados", "{\"voiceReceipt\":\"already-produced\"}");
+
+        assertThat(client.reportProgress(jobId, payload).id()).isEqualTo(jobId);
+
+        var first = server.takeRequest(1, TimeUnit.SECONDS);
+        var replay = server.takeRequest(1, TimeUnit.SECONDS);
+        assertThat(first.getPath()).isEqualTo("/internal/video/jobs/" + jobId + "/progress");
+        assertThat(replay.getPath()).isEqualTo(first.getPath());
+        assertThat(replay.getBody().readUtf8()).isEqualTo(first.getBody().readUtf8());
+        assertThat(server.getRequestCount()).isEqualTo(2);
+    }
+
+    /** Encerra espera sem resposta após o número finito de tentativas, sem bloquear a fila. */
+    @Test
+    void exhaustsTimeoutAndPreservesNormalCallback() throws Exception {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            server.enqueue(new MockResponse().setBody("{}").setBodyDelay(2, TimeUnit.SECONDS));
+        }
+        var properties = properties();
+        properties.getJobs().setBackendCallTimeout(Duration.ofMillis(200));
+        properties.getJobs().setBackendCallBackoff(Duration.ZERO);
+        properties.getJobs().setBackendCallMaxAttempts(2);
+        var client = new BackendVideoClient(WebClient.builder(), properties,
+                new VideoJobObservabilityService(new SimpleMeterRegistry()));
+        var payload = new JobProgressPayload(95, SalesVideoStatus.VIDEO_PROCESSING, "Preservado", "{}");
+        long start = System.nanoTime();
+        assertThatThrownBy(() -> client.reportProgress(93011L, payload))
+                .isInstanceOf(BackendIntegrationException.class);
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(2));
+        assertThat(server.getRequestCount()).isEqualTo(2);
+        server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("{\"id\":93012}"));
+        assertThat(client.reportProgress(93012L, payload).id()).isEqualTo(93012L);
+        assertThat(server.getRequestCount()).isEqualTo(3);
     }
 
     /** Cria o client sob teste com observabilidade isolada. */

@@ -137,6 +137,10 @@ public class VideoManagementProperties {
         @NotNull
         private Duration backendCallBackoff = Duration.ofSeconds(2);
 
+        /** Prazo de cada chamada HTTP, inclusive quando o backend persiste mas não confirma. */
+        @NotNull
+        private Duration backendCallTimeout = Duration.ofSeconds(30);
+
         @Min(1)
         private int batchSize = 10;
 

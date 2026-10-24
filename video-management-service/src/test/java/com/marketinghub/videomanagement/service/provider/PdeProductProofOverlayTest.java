@@ -188,11 +188,11 @@ class PdeProductProofOverlayTest {
         }
     }
 
-    /** Comprova interface e contexto simultâneos na abertura e no último frame de dois produtos. */
+    /** Comprova enquadramento explícito e contexto legado na abertura e no final de dois produtos. */
     @ParameterizedTest
-    @ValueSource(longs = {10, 93010})
+    @org.junit.jupiter.params.provider.CsvSource({"10,false", "93010,false", "10,true", "93010,true"})
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "video.proof.real-ffmpeg", matches = "true")
-    void preservesMotionContextAndProofAtBothEnds(long productId) throws Exception {
+    void preservesMotionContextAndProofAtBothEnds(long productId, boolean fullFrame) throws Exception {
         try (var server = new MockWebServer()) {
             server.start();
             byte[] pixels = pixels();
@@ -208,6 +208,7 @@ class PdeProductProofOverlayTest {
                         .put("captionCueIndex", index).put("minimumSeconds", 2);
                 shot.put("contentPath", "/api/sales-videos/projects/91001/product-proof/91004/" + (91005 + index));
                 shot.putArray("crop").add(0).add(0).add(300).add(400);
+                if (fullFrame) shot.put("layout", "FULL_PRODUCT_PROOF_V1");
                 shots.add(shot);
                 server.enqueue(response(pixels));
             }
@@ -227,13 +228,14 @@ class PdeProductProofOverlayTest {
                         .apply(source, input, 91009L, captions);
                 result = output.videoFile();
                 for (double second : new double[] {.1, 14.8}) {
-                    assertThat(samplePixelAt(result, second, 540, 300)[2] & 255).isGreaterThan(200);
+                    if (fullFrame) assertThat(samplePixelAt(result, second, 540, 300)[2] & 255).isLessThan(100);
+                    else assertThat(samplePixelAt(result, second, 540, 300)[2] & 255).isGreaterThan(200);
                     assertThat(samplePixelAt(result, second, 540, 900)[0] & 255).isGreaterThan(230);
                 }
                 assertThat(samplePixelAt(result, 6, 540, 600)[0] & 255).isGreaterThan(230);
                 assertThat(samplePixelAt(result, 6, 540, 1400)[1] & 255).isGreaterThan(230);
                 var audit = new ObjectMapper().valueToTree(output.audit());
-                assertThat(audit.at("/shots/0/layout").asText()).isEqualTo("MOTION_WITH_PRODUCT_PROOF_V1");
+                assertThat(audit.at("/shots/0/layout").asText()).isEqualTo(fullFrame ? "FULL_PRODUCT_PROOF_V1" : "MOTION_WITH_PRODUCT_PROOF_V1");
                 assertThat(audit.at("/shots/1/layout").asText()).isEqualTo("FULL_PRODUCT_PROOF_V1");
                 assertThat(audit.at("/shots/2/intervals").asText()).isEqualTo("between(t,12.000,15.000)");
             } finally {

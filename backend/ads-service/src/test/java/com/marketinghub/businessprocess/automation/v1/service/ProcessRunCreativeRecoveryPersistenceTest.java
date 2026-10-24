@@ -310,6 +310,33 @@ class ProcessRunCreativeRecoveryPersistenceTest {
         .anyMatch(e -> "NO_PROGRESS".equals(e.eventType()));
   }
 
+  /**
+   * Parecer concluído em ajuste substitui a causa antiga sem repetir inferência nem aprovar vídeo.
+   */
+  @Test
+  void currentEditorialAdjustmentSupersedesOldTechnicalFailure() throws Exception {
+    var run = start();
+    tick(run.id());
+    callback("nonAudiovisual", "COMPLETED", null);
+    tick(run.id());
+    callback("customer", "BLOCKED", "{\"evidenceGaps\":[\"Limite mensal antigo\"]}");
+    assertThat(tick(run.id()).status()).isEqualTo("BLOCKED");
+    mvc.perform(post(root + "/" + run.id() + "/resume")).andExpect(status().isOk());
+    tick(run.id());
+    callback(
+        "customer",
+        "COMPLETED",
+        "{\"decision\":\"ADJUST\",\"requiredChanges\":[\"Ampliar prova da continuidade\"]}");
+    state("customer", "NOT_STARTED", false);
+    var result = tick(run.id());
+    assertThat(result.status()).isEqualTo("BLOCKED");
+    assertThat(result.reason())
+        .contains("Ampliar prova da continuidade")
+        .doesNotContain("Limite mensal antigo");
+    tick(run.id());
+    assertThat(requested).containsExactly("nonAudiovisual", "customer", "customer");
+  }
+
   /** Reconstrói o serviço sobre o mesmo diário persistido, sem retomar ou mudar entradas. */
   private void restartCoordinator() {
     var previous = service;

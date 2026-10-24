@@ -186,6 +186,7 @@ export interface RequestVideoRenderPayload {
 }
 
 export interface ProductProofShot {
+  layout?: "FULL_PRODUCT_PROOF_V1" | "MOTION_WITH_PRODUCT_PROOF_V1";
   reference: string;
   captionCueIndex: number;
   minimumSeconds: number;

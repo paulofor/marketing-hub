@@ -50,7 +50,7 @@ final class PdeProductProofOverlay {
         return apply(source, metadata, jobId, List.of());
     }
 
-    /** Compõe a captura no trecho narrado, preservando título, arte de fundo e identidade. */
+    /** Compõe a captura no trecho narrado com enquadramento explícito ou legado, preservando identidade. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId,
                                                   List<PdeProofCaptionTiming.Window> captions) {
         if (hasSequence(metadata)) return applySequence(source, metadata, jobId, captions);
@@ -64,6 +64,8 @@ final class PdeProductProofOverlay {
                 && metadata.at("/post_production/product_proof/sequenceShot").asBoolean(false)
                 && ((timing.cueIndex() == 0 && timing.start() < .1)
                     || timing.cueIndex() == captions.size() - 1);
+        String requestedLayout = metadata.at("/post_production/product_proof/layout").asText("");
+        if (!requestedLayout.isEmpty()) contextual = "MOTION_WITH_PRODUCT_PROOF_V1".equals(requestedLayout);
         boolean hybrid = DeliveryExamplesMontage.requested(metadata);
         String intervals = timing == null ? proof.intervals()
                 : "between(t," + number(timing.start()) + "," + number(timing.end()) + ")";
@@ -136,7 +138,7 @@ final class PdeProductProofOverlay {
         return !metadata.at("/post_production/proofShots").isMissingNode();
     }
 
-    /** Exige trechos ordenados e limitados antes de consumir voz ou baixar capturas. */
+    /** Exige trechos ordenados, limitados e com enquadramento válido antes de consumir voz ou baixar capturas. */
     private JsonNode sequence(JsonNode metadata) {
         JsonNode shots = metadata.at("/post_production/proofShots");
         if (!shots.isArray() || shots.isEmpty() || shots.size() > 5
@@ -151,6 +153,9 @@ final class PdeProductProofOverlay {
             double seconds = shot.path("minimumSeconds").asDouble(Double.NaN);
             if (cue <= previous || !Double.isFinite(seconds) || seconds < 2 || seconds > 12)
                 throw invalid("Trechos da demonstração fora de ordem ou sem duração válida.");
+            String layout = shot.path("layout").asText("");
+            if (!layout.isEmpty() && !java.util.Set.of("FULL_PRODUCT_PROOF_V1", "MOTION_WITH_PRODUCT_PROOF_V1").contains(layout))
+                throw invalid("Enquadramento da demonstração inválido.");
             previous = cue;
         }
         if (!containsOriginal) throw invalid("A sequência precisa preservar a prova homologada original.");

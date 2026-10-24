@@ -660,8 +660,12 @@ Evidências em [qualidade de Capella](../homologacao/capella-video-quality-v2.md
 
 ## Recuperação após ajuste independente — 16/10/2026
 
-Um parecer concluído de Psique `ADJUST`, escopo `FINAL_VIDEO`, com déficit crítico sobre
-o ID e hash exatos da candidata permite corrigir a montagem pela mesma fonte bruta do ciclo.
+Um parecer concluído de Psique `ADJUST`, escopo `FINAL_VIDEO`, com déficit crítico ou
+ajuste editorial comprovado sobre o ID e hash exatos da candidata permite corrigir a
+montagem pela mesma fonte bruta do ciclo. Ajuste editorial inclui copy descritiva,
+nota abaixo de três nas dimensões audiovisuais ou correspondência áudio/imagem em
+`ADJUST`. Não é necessário classificar toda melhoria como déficit crítico. O parecer
+vigente deve aparecer como causa da pendência, sem ressuscitar a falha técnica anterior.
 Esta passagem só atende candidatas READY/PENDING de experimento PLANNED, PAUSED ou
 USER_STOPPED. Não exige que o operador invente uma rejeição humana para executar um ajuste
 independente. Uma decisão posterior ou referente a outra mídia não autoriza essa recuperação.
@@ -735,3 +739,12 @@ Leitura de prova já aceita e materialização de nova comunicação são contra
 O avanço para autorização, publicação ou medição não invalida pixels aprovados por si só:
 revalidar ciclo aberto, gate, revisões, produto e versão, sem liberar nova tarefa de Íris.
 Regressões e matriz: `docs/homologacao/capella-governanca-editorial-v1.md`.
+
+### Enquadramento explícito da prova — 24/10/2026
+
+A sequência de demonstração pode escolher por trecho `FULL_PRODUCT_PROOF_V1` (prova
+ampliada) ou `MOTION_WITH_PRODUCT_PROOF_V1` (cena e prova juntas). Sem escolha, preservar
+o comportamento anterior. Não impor a sobreposição reduzida quando o parecer exige
+legibilidade da interface: preservar pixels, hash, versão, duração e auditoria. Toda mídia
+alterada continua exigindo os pareceres e aceites próprios. Evidências e matriz:
+`docs/homologacao/mira-retomada-editorial-2026-10-24.md`.

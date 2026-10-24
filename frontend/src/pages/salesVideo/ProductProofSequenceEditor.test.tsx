@@ -31,6 +31,18 @@ describe("sequência de prova homologada", () => {
       target: { value: "3" },
     });
     expect(change).toHaveBeenCalledWith([{ ...shot, captionCueIndex: 2 }]);
+    fireEvent.change(screen.getByLabelText("Enquadramento"), {
+      target: { value: "FULL_PRODUCT_PROOF_V1" },
+    });
+    expect(change).toHaveBeenCalledWith([
+      { ...shot, layout: "FULL_PRODUCT_PROOF_V1" },
+    ]);
+    expect(
+      validateProofSequence(
+        [{ ...shot, layout: "FULL_PRODUCT_PROOF_V1" }],
+        "A",
+      ),
+    ).toBeUndefined();
     fireEvent.click(screen.getByText("Adicionar captura"));
     expect(change.mock.lastCall?.[0][1].captionCueIndex).toBe(1);
   });

@@ -177,6 +177,20 @@ class VideoProductProofServiceTest {
           .containsEntry("minimumSeconds", 4.0);
       assertThatThrownBy(() -> reader.sequence(91001L, java.util.List.of(shot, shot), "A | B"))
           .hasMessageContaining("ordem");
+      for (String layout :
+          java.util.List.of("FULL_PRODUCT_PROOF_V1", "MOTION_WITH_PRODUCT_PROOF_V1")) {
+        var explicit =
+            new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+                shot.reference(), 0, 4, layout);
+        assertThat(reader.sequence(91001L, java.util.List.of(explicit), "A").getFirst())
+            .containsEntry("layout", layout)
+            .containsEntry("sha256", "abc");
+      }
+      var invalidLayout =
+          new com.marketinghub.salesvideo.service.postproduction.ProductProofShot(
+              shot.reference(), 0, 4, "inventado");
+      assertThatThrownBy(() -> reader.sequence(91001L, java.util.List.of(invalidLayout), "A"))
+          .hasMessageContaining("Enquadramento");
       when(repository.read(91004L, 91005L)).thenReturn(new byte[] {1, 2});
       assertThat(reader.read(91001L, 91004L, 91005L)).containsExactly(1, 2);
       project.setExperimentId(91999L);

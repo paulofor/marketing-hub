@@ -567,7 +567,7 @@ public class ProcessRunService {
           run,
           "BLOCKED",
           "A tentativa não comprovou o objetivo e as entradas continuam iguais. "
-              + failureReason(activity)
+              + failureReason(run, activity)
               + " Corrija o impedimento antes de retomar o processo.",
           "NO_PROGRESS");
       return response(run);
@@ -760,17 +760,34 @@ public class ProcessRunService {
         "SUBPROCESS_NOT_REQUIRED");
   }
 
-  /** Expõe as lacunas da última tentativa bloqueada sem substituir sua causa pela prontidão. */
-  private String failureReason(ProductProcessActivityExecutionGroupResponse activity) {
+  /** Expõe o parecer vigente, inclusive ajuste concluído, sem ressuscitar falhas antigas. */
+  private String failureReason(
+      ProcessRun run, ProductProcessActivityExecutionGroupResponse activity) {
     var task =
         activity.tasks().stream()
-            .filter(t -> "BLOCKED".equals(t.status()))
+            .filter(t -> t.taskId() != null)
             .max(Comparator.comparing(t -> t.taskId()));
     if (task.isEmpty()) return activity.stateReason();
     String reason = task.get().executionError();
-    if (task.get().comments() != null) {
+    String result =
+        context.functionalTasks(run).stream()
+            .filter(
+                t ->
+                    Objects.equals(t.id(), task.get().taskId())
+                        && Objects.equals(t.processDefinitionId(), run.getProcessDefinitionId())
+                        && Objects.equals(t.processActivityId(), activity.activityId()))
+            .map(com.marketinghub.agenttask.AgentTaskFunctionalSnapshot::resultJson)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(task.get().comments());
+    if (result != null) {
       try {
-        var gaps = json.readTree(task.get().comments()).path("evidenceGaps");
+        var parsed = json.readTree(result);
+        var gaps =
+            parsed.path(
+                "ADJUST".equals(parsed.path("decision").asText())
+                    ? "requiredChanges"
+                    : "evidenceGaps");
         List<String> details = new ArrayList<>();
         if (gaps.isArray())
           for (var gap : gaps)

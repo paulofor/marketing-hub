@@ -82,7 +82,12 @@ class LeadPortalCycleMeasurementIntegrationTest {
             "facebook_ads_campaign",
             "gera_sales_page_publication_audit")) jdbc.execute("DROP TABLE IF EXISTS " + table);
     jdbc.execute(
-        "CREATE TABLE experiment(id BIGINT PRIMARY KEY, lead_portal_flow_id BIGINT, product_id BIGINT, commercial_checkout_url VARCHAR(500), " + Experiment.class.getDeclaredField("unitPrice").getAnnotation(jakarta.persistence.Column.class).name() + " DECIMAL(12,2))");
+        "CREATE TABLE experiment(id BIGINT PRIMARY KEY, lead_portal_flow_id BIGINT, product_id BIGINT, commercial_checkout_url VARCHAR(500), "
+            + Experiment.class
+                .getDeclaredField("unitPrice")
+                .getAnnotation(jakarta.persistence.Column.class)
+                .name()
+            + " DECIMAL(12,2))");
     jdbc.execute(
         "CREATE TABLE experiment_run(id BIGINT PRIMARY KEY, experiment_id BIGINT, run_number INT, mode VARCHAR(30), asset_bundle_version INT, published_at DATETIME)");
     jdbc.execute(
@@ -534,10 +539,13 @@ class LeadPortalCycleMeasurementIntegrationTest {
     assertThat(result.ready()).isTrue();
     assertThat(result.evidence().path("netSales").asLong()).isEqualTo(1);
     assertThat(result.evidence().path("revenueBrl").decimalValue()).isEqualByComparingTo("67");
-    assertThat(result.evidence().path("contributionBrl").decimalValue()).isEqualByComparingTo("-317.83");
+    assertThat(result.evidence().path("contributionBrl").decimalValue())
+        .isEqualByComparingTo("-317.83");
     assertThat(result.evidence().path("checkoutClicks").asLong()).isEqualTo(1);
-    assertThat(result.evidence().at("/sources/financialOutcomes/checkoutAccessEvents").asLong()).isZero();
-    assertThat(result.evidence().at("/sources/financialOutcomes/source").asText()).isEqualTo("COMMERCIAL_CHECKOUT_WEBHOOK");
+    assertThat(result.evidence().at("/sources/financialOutcomes/checkoutAccessEvents").asLong())
+        .isZero();
+    assertThat(result.evidence().at("/sources/financialOutcomes/source").asText())
+        .isEqualTo("COMMERCIAL_CHECKOUT_WEBHOOK");
   }
 
   /** Exporta outra fotografia SQL para o BPM local, sem reescrever identificadores da evidência. */

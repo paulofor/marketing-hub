@@ -1,15 +1,15 @@
 package com.marketinghub.businessprocesschain.learningcycle.v1.service;
 
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
-import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.LearningCyclePreparationPolicy;
-import com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycleEvent;
+import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.LearningCyclePreparationPolicy;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleValueFlow.*;
 import com.marketinghub.pde.kit.privateprototype.v1.service.KitPrototypeCapabilities;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.kit.KitPrivateArtifactRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
 import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
 import java.math.*;
@@ -40,7 +40,8 @@ public class LearningCycleValueFlowProjection {
   private static final Set<String> ACTIVE = Set.of("PENDING", "RUNNING", "IN_PROGRESS", "QUEUED");
 
   /**
-   * Resolve atividade, pausa, teto, aceite das peças e decisão de aprendizado sem autorizar consumo pela leitura.
+   * Resolve atividade, pausa, teto, aceite das peças e decisão de aprendizado sem autorizar consumo
+   * pela leitura.
    */
   public LearningCycleValueFlow resolve(
       LearningSalesCycle cycle, LearningCycleProcessContext.Work work) {
@@ -341,15 +342,21 @@ public class LearningCycleValueFlowProjection {
         measure == null ? null : "Evento #" + measure.getId() + " · " + measure.getCreatedAt());
   }
 
-  /** Expõe aceite real de Atena sem confundir proposta pronta com preparação automática permitida. */
+  /**
+   * Expõe aceite real de Atena sem confundir proposta pronta com preparação automática permitida.
+   */
   private PendingReviewGuidance cycleDecisionReview(LearningSalesCycle cycle) {
     if (!"OPEN".equals(cycle.getStatus()) || !"DECISION".equals(cycle.getStage())) return null;
-    var proposal = proposals.findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycle.getId(), cycle.getRevision());
+    var proposal =
+        proposals.findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(
+            cycle.getId(), cycle.getRevision());
     if (proposal.isEmpty()) return null;
     var current = proposal.get();
-    if (!"READY".equals(current.getStatus()) || !Objects.equals(current.getCycleId(), cycle.getId())
+    if (!"READY".equals(current.getStatus())
+        || !Objects.equals(current.getCycleId(), cycle.getId())
         || current.getCycleRevision() != cycle.getRevision()
-        || LearningCyclePreparationPolicy.eligible(json.read(current.getProposalJson()))) return null;
+        || LearningCyclePreparationPolicy.eligible(json.read(current.getProposalJson())))
+      return null;
     return new PendingReviewGuidance(
         "Atena concluiu a proposta de aprendizado; falta sua decisão sobre a continuação.",
         "A próxima operação depende da decisão sobre o resultado. Novos testes exigem limites e homologação próprios.",

@@ -69,3 +69,9 @@ projeção, vídeos e arquitetura passaram. O cenário SQL passou também no MyS
 local em 44 casos. Os 16 testes existentes da tela de decisão e visão do ciclo passaram.
 A consulta adicional de auditoria via MCP confirmou zero recibos no período real;
 a correção da fonte não cria compras nem altera retroativamente a contagem histórica.
+
+O CI identificou formatação pendente e a referência imutável da projeção na atestação
+privada de Mira v43. A formatação foi aplicada, e a v44 registra apenas compatibilidade
+das fontes compartilhadas, com os testes de projeção, vídeos e decisão já executados.
+A v43 permanece intacta. O verificador de evidências e a seleção de publicação são
+executados localmente; a atestação não autoriza publicar Mira nem renova pareceres.

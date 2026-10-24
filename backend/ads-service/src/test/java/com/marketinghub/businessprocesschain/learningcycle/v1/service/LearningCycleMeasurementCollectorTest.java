@@ -178,13 +178,36 @@ class LearningCycleMeasurementCollectorTest {
     verify(analytics, never()).read(any(), any(), any());
   }
 
-  /** Impede falsa medição quando a página, a versão ou o pagamento do kit está inconsistente. */
+  /** Separa a versão da experiência do contrato modular sem perder a identidade auditada. */
+  @Test
+  void acceptsExperienceVersionDistinctFromValidationContract() {
+    for (long productId : List.of(7L, 117L)) {
+      quartzo(productId, productId + 98);
+      cycle.setProductVersion("kit-private-v3");
+      var result = collector.collect(cycle, experiment, NOW);
+      assertThat(result.ready()).isTrue();
+      assertThat(result.evidence().at("/sources/leadPortalAnalytics/productVersion").asText())
+          .isEqualTo("kit-private-v3");
+      assertThat(
+              result
+                  .evidence()
+                  .at("/sources/leadPortalAnalytics/validationDefinitionVersion")
+                  .asText())
+          .isEqualTo("v1");
+      assertThat(result.evidence().at("/sources/leadPortalAnalytics/publishedRunId").asLong())
+          .isEqualTo(19);
+    }
+  }
+
+  /**
+   * Impede falsa medição quando falta versão, a página diverge ou o pagamento está inconsistente.
+   */
   @Test
   void blocksQuartzoVersionPublicationAndFinancialMismatch() {
     quartzo(7L, 88L);
-    cycle.setProductVersion("v2");
+    cycle.setProductVersion("");
     assertThat(collector.collect(cycle, experiment, NOW).evidence().path("blocker").asText())
-        .contains("versão do kit");
+        .contains("versão da experiência");
     cycle.setProductVersion("v1");
     experiment.setFollowUpActionUrl("https://different.example.test/flows/88");
     assertThat(collector.collect(cycle, experiment, NOW).evidence().path("blocker").asText())
@@ -247,6 +270,8 @@ class LearningCycleMeasurementCollectorTest {
     return new LeadPortalCycleMeasurement(
         32L,
         "https://kit.example.test/flows/88",
+        19L,
+        "PUBLISHED_RUN_ASSET_BUNDLE",
         true,
         20,
         rawEvents,

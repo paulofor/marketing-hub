@@ -10997,3 +10997,16 @@ depois de materializar o checkout. Provas e limites em
 - Limites: nenhuma aprovação comercial é herdada; não altera teto, peça, cobrança,
   campanha ou contrato de ciclos. Testes não são evidência comercial.
 - Registro: [matriz e resultados](../homologacao/alcyone-passagem-comercial-2026-10-22.md).
+
+## LOOP-QUARTZO-MEDICAO-CONFUNDE-CONTRATO-E-EXPERIENCIA — 24/10/2026
+
+- **Sintoma:** Capella ciclo 12 bloqueia medição ao comparar experiência
+  `capella-private-v3` com contrato modular `v1`.
+- **Causa confirmada:** comparação de campos semanticamente distintos. O ciclo 4
+  antes válido usava `v1` nos dois campos e ocultava a divergência.
+- **Correção compartilhada:** fonte congelada no run publicado, publicação auditada
+  do mesmo experimento e anterior ao run; preserva versão do ciclo separada do contrato.
+- **Prevenção:** SQL real e coletor com versões distintas, outra identidade, legado,
+  run não publicado e referência inválida; fotografia exportada ao BPM e navegador locais.
+- **Registro e limites:** `docs/homologacao/capella-medicao-identidade-2026-10-24.md`.
+  Não reabre experimento, transfere autorização ou comprova demanda.

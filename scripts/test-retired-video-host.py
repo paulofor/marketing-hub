@@ -18,6 +18,41 @@ spec.loader.exec_module(state_transfer)
 class RetirementContractTest(unittest.TestCase):
     """Impede retorno ao host retirado e disputa de recursos com os produtos."""
 
+    def test_rotation_recreates_only_video_with_same_image_and_refuses_missing_secret(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            calls = directory / "calls.jsonl"
+            docker = directory / "docker"
+            docker.write_text('''#!/usr/bin/env python3
+import json,os,sys
+from pathlib import Path
+with Path(os.environ["VIDEO_TEST_CALLS"]).open("a") as f: f.write(json.dumps(sys.argv[1:])+"\\n")
+''')
+            docker.chmod(0o755)
+            secret = directory / "secret"
+            secret.write_text("credencial-sintetica-local")
+            env = {**os.environ, "PATH": str(directory) + os.pathsep + os.environ["PATH"],
+                   "DEPLOY_DIR": str(directory), "VIDEO_TAR": str(directory / "absent.tar"),
+                   "VIDEO_TEST_CALLS": str(calls), "VIDEO_IMAGE": "video-contract",
+                   "IMAGE_TAG": "same-approved-sha", "VIDEO_PULL": "false"}
+            for provider in ["OPENAI", "GEMINI", "LUMA", "KLING", "HEYGEN", "RUNWAY"]:
+                env[provider + "_API_KEY_HOST_FILE"] = str(secret)
+            command = ["bash", str(ROOT / "deploy/bin/apply-video-only.sh")]
+            for _ in range(2):
+                result = subprocess.run(command, env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            recorded = [json.loads(line) for line in calls.read_text().splitlines()]
+            mutations = [call for call in recorded if call[0] == "compose"]
+            self.assertEqual(len(mutations), 2)
+            self.assertTrue(all(call == ["compose", "-f", "docker-compose.video.yml", "up", "-d",
+                                        "--no-deps", "--force-recreate", "video-management"]
+                                for call in mutations))
+            before = calls.read_bytes()
+            secret.unlink()
+            result = subprocess.run(command, env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(calls.read_bytes(), before)
+
     def test_no_workflow_contacts_retired_host(self):
         for path in (ROOT / ".github/workflows").glob("*.yml"):
             self.assertNotIn("177.153.62.107", path.read_text(), str(path))

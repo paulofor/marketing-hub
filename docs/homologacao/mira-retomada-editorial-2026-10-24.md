@@ -101,3 +101,24 @@ outra identidade e o caminho curto antes válido, incluindo corte seguro de Unic
 A nova locução permanece dependente da recuperação da credencial própria de Apolo;
 não repetir a chamada 401 sem mudança comprovada. Não ampliar orçamento, substituir
 por voz robótica ou atribuir aprovação aos revisores para contornar essa dependência.
+
+## Fonte operacional recuperável e recarga de Apolo
+
+A conferência adicional do histórico identificou a fonte operacional previamente
+fornecida ao Worker IA (`191.252.210.83`, arquivo protegido OpenAI). Ela respondeu HTTP
+200 na consulta de autenticação sem geração, enquanto o arquivo próprio e o legado de
+Apolo responderam 401. Isso permite preparar a rotação dentro da retomada autorizada,
+sem solicitar outra chave nem copiar/modificar a credencial exclusiva de Psique.
+
+Manter a chave inválida preservaria o bloqueio; trocar um arquivo comum poderia afetar
+outros produtos; preparar cópia própria validada e recarregar pelo pipeline mantém o
+isolamento. Foi escolhido o último caminho, com backup e coordenação operacional.
+Nenhuma chave fica no repositório, argumento de comando ou saída de ferramenta.
+
+O publicador de vídeo passa a usar `--force-recreate --no-deps` somente no serviço
+`video-management`. A validação executa o script real com Docker simulado: mesma imagem
+em duas aplicações, somente vídeo recriado, segredo ausente preservando o container.
+Os 14 testes de retirada/isolamento passaram; `bash -n`, ShellCheck e o teste de
+recuperação atômica também passaram. Nenhuma nova imagem de produção é criada fora
+do fluxo versionado. A rotação e a autenticação no container serão registradas na
+evidência operacional após a publicação.

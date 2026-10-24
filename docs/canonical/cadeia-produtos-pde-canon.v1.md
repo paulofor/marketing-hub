@@ -781,6 +781,12 @@ Essa transição não
 promove a prova privada, não preenche escolhas ausentes, não publica experiência, não ativa campanha
 e não concede orçamento; decisões comerciais não persistidas continuam exigindo confirmação humana.
 
+Quando o ciclo ainda estiver em planejamento, validação ou produção/revisão audiovisual,
+a conferência comercial Safira deve explicar a etapa persistida e oferecer retorno ao ciclo
+original, preservando produto, cadeia e experimento. Não encaminhar essa dependência ao
+cadastro genérico nem permitir execução prematura. A orientação reutiliza o bloqueio tipado
+e a tela existente do ciclo; abrir o destino não dispara tarefas, aprovações ou gasto.
+
 O reaproveitamento de 5.1.6 em 5.2 e de 5.1.7 em 5.3 registra a tarefa e a consolidação originais,
 impressão da evidência e custo incremental zero. Só é válido para o mesmo produto, cadeia, ciclo,
 experimento, versão e configuração comercial. Mudança material invalida o snapshot e exige renovar

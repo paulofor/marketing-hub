@@ -255,6 +255,28 @@ class SafiraCommercialServiceTest {
     verifyNoInteractions(instances, tasks);
   }
 
+  /** Entrega a orientação tipada à tela e impede comando, persistência e revisão paga. */
+  @Test
+  void cycleBlockerReachesReadinessAndPreventsPrematureExecution() {
+    String url = "/business-process-chains/learning-cycles?productId=10&chainId=26&cycleId=9";
+    when(context.scope("experiment:301", product.getId(), true))
+        .thenThrow(
+            new SafiraCommercialBlocker(
+                "O ciclo #9 está em Revisar e integrar os dois vídeos.",
+                "Abrir etapa atual do ciclo",
+                url));
+    for (String step : List.of("journey", "economics", "ready")) {
+      var entry = service.readiness(process, activities.get(step), product, "experiment:301");
+      assertThat(entry.ready()).isFalse();
+      assertThat(entry.navigationUrl()).isEqualTo(url);
+      assertThat(entry.actionLabel()).isEqualTo("Abrir etapa atual do ciclo");
+      assertThatThrownBy(
+              () -> service.execute(process, activities.get(step), product, "experiment:301"))
+          .hasMessageContaining("Revisar e integrar os dois vídeos");
+    }
+    verifyNoInteractions(checks, instances, tasks, predecessors);
+  }
+
   /** Persiste um parecer aprovado sintético como se tivesse retornado do agente responsável. */
   private void completeReview(String activity) throws Exception {
     var task = task(activity);

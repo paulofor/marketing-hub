@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
@@ -147,7 +148,7 @@ public class SafiraCommercialContext {
     return null;
   }
 
-  /** Confere identidade, encerramento, subtipo e estado seguro antes de qualquer nova atividade. */
+  /** Confere identidade e estado seguro e orienta a etapa anterior no ciclo original. */
   public Scope scope(String source, Long productId, boolean mutation) {
     Experiment experiment = experiment(source, productId);
     Product product = experiment.getProduct();
@@ -172,10 +173,21 @@ public class SafiraCommercialContext {
           "Prepare uma candidata planejada ou interrompida; não altere campanha em operação.");
     }
     if (mutation && cycle != null) {
-      require(
+      SafiraCommercialBlocker.requireAt(
           "OPEN".equals(cycle.getStatus())
               && List.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage()),
-          "O ciclo não está na etapa de preparação comercial.");
+          "O ciclo #"
+              + cycle.getId()
+              + " está em "
+              + LearningCycleRules.label(cycle.getStage())
+              + ". Conclua essa etapa antes de preparar a jornada pública; não é necessário alterar o cadastro do produto.",
+          "Abrir etapa atual do ciclo",
+          "/business-process-chains/learning-cycles?productId="
+              + product.getId()
+              + "&chainId="
+              + cycle.getChainDefinitionId()
+              + "&cycleId="
+              + cycle.getId());
     }
     PdeProductionSlot slot =
         slots.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(experiment.getId()).orElse(null);

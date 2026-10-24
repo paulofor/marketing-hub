@@ -362,6 +362,25 @@
   ou incompatível, modo legado nulo e contratos aprovados V3/V4. As provas históricas e seus hashes
   permanecem imutáveis; divergência real de planejamento continua exigindo reconciliação canônica.
 
+## LOOP-SAFIRA-ETAPA-ANTERIOR-SEM-DESTINO — 24/10/2026
+
+- **Evidência:** Mira #102, ciclo #9, permanece em `VIDEO_APPROVAL` com Psique #792
+  bloqueada na API sonora. A atividade 5.1.1 recusava corretamente a preparação comercial,
+  mas devolvia somente “O ciclo não está na etapa de preparação comercial” e encaminhava
+  `/products/10/edit`. Alterar cadastro não resolve essa dependência.
+- **Alternativas:** repetir a orientação manual mantém o erro para outros produtos; liberar
+  a preparação ignora os aceites; reaproveitar o bloqueio tipado e apontar o ciclo original
+  preserva segurança e reduz desvios. Adotada a terceira opção.
+- **Mudança reutilizável:** o contexto Safira informa a etapa persistida e um destino com
+  produto, cadeia original e ciclo, depois de conferir propriedade, estado e canal. A tela
+  existente apresenta “Abrir etapa atual do ciclo”. Não inicia tarefa, muda etapa ou concede gasto.
+- **Regressões locais:** caso Mira e outra identidade; planejamento, validação e revisão
+  audiovisual; propriedade cruzada recusada; comando impedido sem gravação ou agente; caminhos
+  `AUTHORIZATION` e `PUBLICATION` antes válidos preservados.
+- **Limite:** esta correção torna a recuperação compreensível. Não substitui escuta válida,
+  seleção humana dos vídeos finais, integração, economia e homologação comercial. Custo Codex
+  continua estimado; a escuta real usa API especializada. Impacto em vendas não medido.
+
 ## LOOP-SAFIRA-HOMOLOGACAO-SEM-ESCOPO-EXPOSTO — 29/09/2026
 
 - **Evidência confirmada:** o run produtivo #14 de Mira recebeu as quatro provas funcionais pela

@@ -65,11 +65,14 @@ privada. Não repetir experimentos históricos nem transformar aprovação técn
 - Psique: 228 testes executados; o teste de contrato também confirma as novas instruções.
 - Atena: 69 testes; prompt e consumidor preservam fonte, limite e autorização separada.
 - Apolo: 14 testes do planejador, incluindo request auditado e preservação de planos legados.
-- Backend: 196 testes direcionados, incluindo ArchUnit; 47 integrações executadas também
-  no MySQL 5.7 isolado e um teste adicional da identidade do motivo de parada.
+- Backend: suíte completa com 5.286 testes executados e nenhuma falha, incluindo ArchUnit,
+  identidade da parada e catálogo do harness; 47 integrações também no MySQL 5.7 isolado.
 - Validação dos agentes premium e 12 testes do empacotamento dos recursos aprovados.
+- O teste do catálogo reproduziu a ausência da extensão na tela dos agentes; o manifesto
+  agora a declara como schema complementar, com conteúdo e hash iguais aos do executor.
 
-Os testes opcionais de replay audiovisual/imagens com arquivos externos não se aplicam:
+Os totais executados excluem testes opcionais dependentes de fixtures ou runners específicos
+(5 de Íris, 12 de Psique e 57 do backend). Todos os critérios desta matriz foram executados;
 esta entrega não gera nem altera mídia. O comportamento do novo contrato foi executado com
 modelo simulado, sem chamadas pagas. A primeira tentativa de conexão MySQL usou o endereço
 local errado; o teste foi concluído no daemon dedicado `sandbox-docker`. Não houve mudança

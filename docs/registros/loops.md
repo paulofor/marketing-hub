@@ -11053,3 +11053,11 @@ depois de materializar o checkout. Provas e limites em
 - Regressão: caso original e outra identidade, idempotência, recusa parcial,
   JSON truncado/duplicado, resposta incerta e preservação de custo pago anterior.
 - Registro: `docs/homologacao/mira-retomada-editorial-2026-10-24.md`.
+
+## LOOP-APOLO-PROVA-CONVITE-TARDIA — 24/10/2026
+
+**Causa comprovada:** Psique #805 inspecionou Mira 77/78 e apontou convite narrado antes da captura correspondente. `PdeProofCaptionTiming` usava `max(início da fala, duração - 3)`, deslocando o último trecho para o fim. A própria regressão antiga esperava esse atraso.
+
+**Correção compartilhada:** usar o início da fala também no último trecho, manter a prova até o fim e limitar a retenção posterior; identificação editorial opcional fora da captura. Corrigir o convite de entrada para “Experimentar a demonstração”, mantendo “Consultar organização” para resultados já gerados.
+
+**Prevenção:** relógio medido, pixels FFmpeg no começo/meio/fim do convite, duas identidades, contratos legados e validação do rótulo no backend/frontend. A aprovação sonora não aprova montagem nem usabilidade da próxima ação.

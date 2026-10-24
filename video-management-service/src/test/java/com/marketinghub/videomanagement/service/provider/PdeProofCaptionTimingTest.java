@@ -48,7 +48,7 @@ class PdeProofCaptionTimingTest {
         assertThat(PdeProofCaptionTiming.resolve(input, List.of())).isNull();
     }
 
-    /** Mantém a prova no encerramento de três segundos sem cortar a voz já produzida. */
+    /** Mostra o convite durante toda a fala, preservando até três segundos posteriores. */
     @ParameterizedTest
     @ValueSource(longs = {10, 93010})
     void keepsFinalSequenceProofUntilLastFrame(long productId) {
@@ -60,7 +60,7 @@ class PdeProofCaptionTimingTest {
                 new PdeProofCaptionTiming.Window(8.4, 17.184, 1),
                 new PdeProofCaptionTiming.Window(17.184, 21.048, 2));
         assertThat(PdeProofCaptionTiming.resolve(input, captions))
-                .isEqualTo(new PdeProofCaptionTiming.Window(19, 22, 2));
+                .isEqualTo(new PdeProofCaptionTiming.Window(17.184, 22, 2));
         input.withObject("/post_production/product_proof").put("minimumSeconds", 6);
         assertThatThrownBy(() -> PdeProofCaptionTiming.resolve(input, captions))
                 .isInstanceOf(VideoProviderException.class);

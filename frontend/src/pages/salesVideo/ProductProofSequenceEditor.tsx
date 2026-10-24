@@ -48,6 +48,23 @@ export function ProductProofSequenceEditor({
             horizontal, vertical, largura e altura em pixels; a imagem original
             permanece preservada.
           </small>
+          <label htmlFor={`proof-label-${index}`}>
+            Identificação junto da captura
+          </label>
+          <input
+            id={`proof-label-${index}`}
+            className="form-control"
+            maxLength={48}
+            value={shot.label ?? ""}
+            placeholder="Ex.: Site Mira — demonstração"
+            onChange={(event) =>
+              update(index, { label: event.target.value || undefined })
+            }
+          />
+          <small>
+            Identifique o produto sem acrescentar promessas. O texto fica fora
+            da captura original.
+          </small>
           <label htmlFor={`proof-layout-${index}`}>Enquadramento</label>
           <select
             id={`proof-layout-${index}`}
@@ -161,6 +178,12 @@ export function validateProofSequence(
       )
     )
       return "Escolha um enquadramento válido para a demonstração.";
+    if (
+      shot.label &&
+      (shot.label.trim().length > 48 ||
+        /[\u0000-\u001f\u007f-\u009f]/.test(shot.label))
+    )
+      return "A identificação deve ter até 48 caracteres, em uma linha.";
     previous = shot.captionCueIndex;
   }
 }

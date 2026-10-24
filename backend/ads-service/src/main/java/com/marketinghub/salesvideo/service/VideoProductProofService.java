@@ -87,7 +87,11 @@ public class VideoProductProofService {
       if (shot.layout() != null
           && !java.util.Set.of("FULL_PRODUCT_PROOF_V1", "MOTION_WITH_PRODUCT_PROOF_V1")
               .contains(shot.layout())) throw invalid("Enquadramento da demonstração inválido.");
+      String label = shot.label() == null ? "" : shot.label().trim();
+      if (label.length() > 48 || label.codePoints().anyMatch(Character::isISOControl))
+        throw invalid("A identificação editorial deve ter até 48 caracteres, em uma linha.");
       var proof = resolveReference(project, shot.reference(), true);
+      if (!label.isEmpty()) proof.put("label", label);
       if (shot.layout() != null) proof.put("layout", shot.layout());
       proof.put("captionCueIndex", shot.captionCueIndex());
       proof.put("minimumSeconds", shot.minimumSeconds());

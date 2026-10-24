@@ -43,6 +43,18 @@ describe("sequência de prova homologada", () => {
         "A",
       ),
     ).toBeUndefined();
+    fireEvent.change(screen.getByLabelText("Identificação junto da captura"), {
+      target: { value: "Site Exemplo — demonstração" },
+    });
+    expect(change).toHaveBeenCalledWith([
+      { ...shot, label: "Site Exemplo — demonstração" },
+    ]);
+    expect(
+      validateProofSequence([{ ...shot, label: "x".repeat(49) }], "A"),
+    ).toContain("48");
+    expect(validateProofSequence([{ ...shot, label: "A\nB" }], "A")).toContain(
+      "linha",
+    );
     fireEvent.click(screen.getByText("Adicionar captura"));
     expect(change.mock.lastCall?.[0][1].captionCueIndex).toBe(1);
   });

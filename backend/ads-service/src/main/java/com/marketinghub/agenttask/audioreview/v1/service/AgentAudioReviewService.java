@@ -40,8 +40,8 @@ public class AgentAudioReviewService {
   private final ObjectMapper json;
 
   /**
-   * Reutiliza a escuta idêntica ou reserva uma chamada sob o lock do ciclo, sem repetir envio
-   * incerto.
+   * Reutiliza a escuta idêntica ou estima reserva pela entrada sob o lock do ciclo, sem repetir
+   * envio incerto.
    */
   @Transactional
   public AudioReviewReceipt reserve(String agent, long taskId, AudioReviewReserveRequest input) {
@@ -132,9 +132,12 @@ public class AgentAudioReviewService {
           "Custo de revisão audiovisual anterior ainda desconhecido.");
       used = used.add(old.estimatedCostUsd());
     }
+    BigDecimal reservation = AudioReviewReservation.estimate(input.request());
     require(
-        used.add(RESERVATION).compareTo(authority.budgetLimitUsd()) <= 0,
-        "Saldo audiovisual insuficiente para a reserva conservadora da escuta (USD 4,116); nenhum consumo foi iniciado.");
+        used.add(reservation).compareTo(authority.budgetLimitUsd()) <= 0,
+        "Saldo audiovisual insuficiente para a reserva estimada da escuta (USD "
+            + reservation
+            + "); nenhum consumo foi iniciado.");
     var entry = new AgentAudioReview();
     entry.setTaskId(taskId);
     entry.setAssetId(input.assetId());
@@ -145,7 +148,7 @@ public class AgentAudioReviewService {
     entry.setRequestHash(requestHash);
     entry.setRequestJson(requestText);
     entry.setStatus("RESERVED");
-    entry.setReservedUsd(RESERVATION);
+    entry.setReservedUsd(reservation);
     entry.setStartedAt(Instant.now());
     entry = reviews.saveAndFlush(entry);
     saveLedger(entry);

@@ -748,3 +748,21 @@ o comportamento anterior. Não impor a sobreposição reduzida quando o parecer 
 legibilidade da interface: preservar pixels, hash, versão, duração e auditoria. Toda mídia
 alterada continua exigindo os pareceres e aceites próprios. Evidências e matriz:
 `docs/homologacao/mira-retomada-editorial-2026-10-24.md`.
+
+### Reserva estimada da escuta curta — 24/10/2026
+
+A reserva de Psique é uma estimativa preventiva, não custo faturado. Para PCM mono de
+16 bits com duração medida até 180 segundos e bytes completos, estimar entrada sonora
+em 100 tokens/segundo + 256 tokens, texto em bytes UTF-8 + 1.024 tokens e saída máxima
+de 2.000 tokens. Aplicar as tarifas versionadas GPT-Audio-1.5: US$ 32/milhão de áudio
+entrante, US$ 2,50/milhão de texto entrante e US$ 10/milhão de texto de saída. Piso
+US$ 0,25; nunca acima da reserva integral anterior de US$ 4,116. Entrada ilegível ou
+fora desse perfil conserva a reserva integral. Não reduzir reservas já registradas.
+
+100 tokens/segundo é margem conservadora local, não garantia de tokenização do provedor:
+os recibos reais 11/12 mediram 220/330 tokens em 22/33 segundos. A referência oficial
+Realtime descreve 10 tokens/segundo; não tratá-la como contrato de Chat Completions.
+Continuar conferindo o consumo efetivamente reportado e bloqueando custos pendentes,
+conflitos, saldo insuficiente e novas chamadas de resultado incerto.
+Fontes consultadas: https://developers.openai.com/api/docs/models/gpt-audio-1.5 e
+https://developers.openai.com/api/docs/guides/voice-latency-cost?voice-api=realtime.

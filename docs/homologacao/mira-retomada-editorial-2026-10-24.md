@@ -56,3 +56,20 @@ O impacto em conversão e contribuição exige medição de mercado posterior au
 
 A montagem das peças reais e seus novos pareceres serão registrados após a publicação;
 esta validação local não representa aprovação dos vídeos nem resultado comercial.
+
+## Reserva sonora baseada na entrada
+
+A conferência prévia da próxima revisão identificou outra dependência: US$ 4,116 eram
+reservados como se todo o contexto de 128 mil tokens fosse áudio, mesmo em vídeos curtos.
+Recibos 11/12: PCM mono 24 kHz/16 bits, 22/33 segundos, 6.411/6.629 bytes de texto,
+220/330 tokens sonoros e 431/544 de saída. Não foram feitas novas chamadas para medir isso.
+
+Preservar a reserva fixa manteria a pausa apesar da folga observada; reservar apenas a média
+histórica subestimaria variação. Foi escolhido medir o PCM e usar margem local de 10 vezes
+os tokens/segundo observados, texto por bytes, saída máxima e piso US$ 0,25. É estimativa,
+não garantia de preço ou limite tarifário; formato incerto mantém o fallback anterior.
+Testes adicionais cobrem duração/contexto maiores, fallback, duas identidades, saldo abaixo
+da reserva e repetição sem nova cobrança. Autorizações totais não mudam.
+
+Os 59 testes adicionais de contrato, reserva e recuperação sonora passaram. A soma das
+validações locais relevantes é 182 testes, além do build e das três navegações emuladas.

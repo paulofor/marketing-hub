@@ -105,7 +105,7 @@
     },
     {
       "path": "docs/homologacao/vega-estilo-experiencia-v15.md",
-      "sha256": "ead9e6b46488a9c781d9985ab33709c6cbb0f6d6f1ce658a9418158d5d6fb1ba",
+      "sha256": "cbc13cd60d74332d033b9ddab4f48a563e685e15303ab5bd0a0704687368673c",
       "promptMode": "FULL"
     }
   ],
@@ -133,7 +133,7 @@
     },
     {
       "path": "pde-platform/scripts/pde_release_contract.py",
-      "sha256": "b62f6f757cddf61b446fde5aee0b3a570400075e92b069cb9a900cd5b6ecbe49",
+      "sha256": "5300b8221ff5be2afe66acf1e5c1fbad74ad511762964a8d845d400c593308c4",
       "promptMode": "FULL"
     },
     {
@@ -148,7 +148,7 @@
     },
     {
       "path": "pde-platform/scripts/test_pde_release_contract.py",
-      "sha256": "4d56d79fb58b9992064d1cd5fd65630eb1e2173cd9230ad4f7a87555f4d4d957",
+      "sha256": "a5b27333f2819dc185783f923afc87a7f8cba00625498f7f0cae40f91f5f6e8a",
       "promptMode": "FULL"
     },
     {
@@ -174,7 +174,7 @@
     },
     {
       "path": "scripts/test-production-freshness.py",
-      "sha256": "66c9475f6ba010bc70613188dd73227452b6f258eac2c413af600130be4dfdf2",
+      "sha256": "df2f0489102313fe9fba37b08cc676e1fe6d32eb970cad4f1933809fc0142317",
       "promptMode": "FULL"
     },
     {
@@ -228,7 +228,7 @@
       {
         "path": "pde-platform/scripts/pde_release_contract.py",
         "previousSha256": "6d4a01bc9c99c79794556f2d2aadde67eb2d41869cbbd210599f18de848c1172",
-        "sha256": "b62f6f757cddf61b446fde5aee0b3a570400075e92b069cb9a900cd5b6ecbe49"
+        "sha256": "5300b8221ff5be2afe66acf1e5c1fbad74ad511762964a8d845d400c593308c4"
       },
       {
         "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
@@ -238,7 +238,7 @@
       {
         "path": "pde-platform/scripts/test_pde_release_contract.py",
         "previousSha256": "4ccb47ded9714bc0ad326a7a31ba95c0411342e648a1a10ad24a9267656993b0",
-        "sha256": "4d56d79fb58b9992064d1cd5fd65630eb1e2173cd9230ad4f7a87555f4d4d957"
+        "sha256": "a5b27333f2819dc185783f923afc87a7f8cba00625498f7f0cae40f91f5f6e8a"
       },
       {
         "path": "pde-platform/scripts/test-targeted-production-smokes.sh",

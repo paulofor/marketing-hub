@@ -171,6 +171,11 @@ def validate_release_contract(
             raise ValueError("Inventário transitório não autoriza superfície descontinuada")
         return
 
+    if surface.get("productId") == 4 and (
+        type(contract.get("processVersion")) is not int or contract["processVersion"] <= 0
+    ):
+        raise ValueError("Versão de processo MUSA inválida: informe processVersion positivo")
+
     product = contract.get("product")
     publication = contract.get("publicationContract")
     live_visual = contract.get("liveVisualContract")

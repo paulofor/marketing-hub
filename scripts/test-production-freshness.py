@@ -536,7 +536,10 @@ class MusaPdeWatchdogTest(unittest.TestCase):
         self.assertIn("frontendSourceSha256", result[1]["error"])
 
     def test_repository_current_private_manifest_preserves_the_musa_public_surface(self):
-        selected = musa_pde_watchdog.supported_surfaces_at(ROOT, "HEAD")
+        # Valida também alterações ainda locais antes de criar o commit da candidata.
+        documents = {str(path.relative_to(ROOT)): json.loads(path.read_text())
+                     for path in (ROOT / "pde-platform/contracts").glob("*.json")}
+        selected = musa_pde_watchdog.select_supported_surfaces(documents)
         current = next(surface for surface in selected if surface.target == "v8")
         self.assertEqual(current.experience_version, "musa-pde-entry-v12-primeiro-ajuste-aplicavel")
         self.assertIsNotNone(current.release_contract)
@@ -548,6 +551,10 @@ class MusaPdeWatchdogTest(unittest.TestCase):
         self.assertEqual(candidate.experience_version, "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
         self.assertIsNotNone(candidate.source_sha256)
         self.assertIsNotNone(candidate.release_contract)
+        style = next(surface for surface in selected if surface.target == "v10")
+        self.assertEqual(style.experience_version, "musa-pde-entry-v15-estilo-pessoal")
+        self.assertIsNotNone(style.source_sha256)
+        self.assertIsNotNone(style.release_contract)
 
     def private_documents(self):
         # A fixture histórica contém sua publicação e os legados, sem novas superfícies sem manifesto.

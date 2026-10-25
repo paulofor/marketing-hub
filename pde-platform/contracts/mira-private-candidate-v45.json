@@ -335,7 +335,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleImplementedInputContextTest.java",
-      "sha256": "6ac2fa44cea9abafc564f3f687f91866cf87bc9845d71892b81808b94abbae59",
+      "sha256": "ea19127ca7609789496ef992373ebc9bfa904656f15680fb3822517fe2b59d79",
       "promptMode": "FULL"
     },
     {
@@ -1129,7 +1129,7 @@
     },
     {
       "path": "docs/homologacao/vega-estilo-experiencia-v15.md",
-      "sha256": "ead9e6b46488a9c781d9985ab33709c6cbb0f6d6f1ce658a9418158d5d6fb1ba",
+      "sha256": "cbc13cd60d74332d033b9ddab4f48a563e685e15303ab5bd0a0704687368673c",
       "promptMode": "FULL"
     }
   ],
@@ -1147,7 +1147,7 @@
       {
         "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleImplementedInputContextTest.java",
         "previousSha256": "949e8275cc5c6ff73cfa5cd9eba0e4994cbd89101e10a60ca35f282a0fc8caeb",
-        "sha256": "6ac2fa44cea9abafc564f3f687f91866cf87bc9845d71892b81808b94abbae59"
+        "sha256": "ea19127ca7609789496ef992373ebc9bfa904656f15680fb3822517fe2b59d79"
       }
     ],
     "validationReport": "docs/homologacao/vega-estilo-experiencia-v15.md"

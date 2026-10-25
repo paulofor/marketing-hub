@@ -36,7 +36,9 @@ class LearningCycleImplementedInputContextTest {
         92010L, "pde-planejado-36", "mira-private-candidate-v3", MiraPrivateContract.Input.class);
   }
 
-  /** Entrega estilo e preferências somente à nova versão, inclusive com outra identidade de produto. */
+  /**
+   * Entrega estilo e preferências somente à nova versão, inclusive com outra identidade de produto.
+   */
   @Test
   void exposesStylePreferenceWithoutRewritingHistoricalContext() {
     for (long id : List.of(4L, 94004L)) {
@@ -47,7 +49,8 @@ class LearningCycleImplementedInputContextTest {
       assertThat(current.path("externalInference").asBoolean()).isFalse();
       assertThat(current.path("personalization").asText()).contains("preferência", "persistidos");
       assertThat(current.path("agentApprovalClaimed").asBoolean()).isFalse();
-      var historical = service.resolve(cycle(id, "musa-pde-entry-v14-primeiro-ajuste-aplicavel")).orElseThrow();
+      var historical =
+          service.resolve(cycle(id, "musa-pde-entry-v14-primeiro-ajuste-aplicavel")).orElseThrow();
       assertThat(historical.path("requiredFields").toString()).doesNotContain("stylePreference");
     }
   }

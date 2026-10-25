@@ -49,7 +49,7 @@ posteriormente; testes locais não comprovam ganho comercial.
 - Nove percursos Playwright da v15 passaram em Chromium desktop, iPhone 15 Pro e Pixel 7,
   com MySQL 5.7 real, SMTP descartável e pagamento simulado local. Dezoito regressões da
   v14 passaram nos mesmos dispositivos; nenhum gateway de pagamento real foi acionado.
-- 35 contratos de runtime/publicação e 25 testes do contrato de release passaram.
+- 35 contratos de runtime/publicação e 26 testes do contrato de release passaram.
 - Três verificações adicionais da resposta em andamento passaram nos mesmos dispositivos;
   campos bloqueados durante a resposta impedem que uma orientação seja atribuída a outra escolha.
 - A matriz Docker de proxy/isolamento e a homologação transacional de publicação e reversão
@@ -78,3 +78,9 @@ continuam restritas às versões antigas; a mudança de foco pertence à v15.
 As capturas anexas usam entradas explicitamente simuladas. Elas documentam layout
 e interação; não representam avaliação comercial ou cliente real. A implantação
 mantém a candidata sem checkout publicado e sem associação automática ao #106.
+
+A primeira rodada do PR detectou ausência de `processVersion` no novo manifesto e
+formatação do teste de contexto. A correção local alinhou o manifesto ao monitor,
+acrescentou regressão no validador de release e fez o teste do monitor conferir
+arquivos locais antes do commit. Os 26 testes de release e 35 do monitor passaram;
+a formatação do arquivo alterado foi aplicada e conferida com o mesmo Spotless.

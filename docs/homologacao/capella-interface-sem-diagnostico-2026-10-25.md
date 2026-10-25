@@ -67,11 +67,19 @@ de Psique sobre acabamento comercial, evidência de demanda ou autorização de 
 
 O primeiro CI detectou o hash do prompt v5 congelado na atestação de Mira. A alteração foi
 isolada no prompt de kit v6, selecionado pelo runtime, sem alterar o schema de saída. O runner
-e o prompt v5 foram restaurados aos bytes homologados; a verificação nova fica nos consumidores
-e em um validador específico de prova do kit. Testes com duas identidades cobrem a seleção v6
+e o prompt v5 foram restaurados aos bytes homologados; a verificação nova fica no harness e no
+consumidor de cenários com um validador específico de prova do kit. Testes com duas identidades cobrem a seleção v6
 e preservam o caminho v5. O empacotador real validou 656 arquivos e 156 manifestos, sem nova
 atestação ou mudança de produto alheio ao pedido. Correspondência com o loop conhecido
 `LOOP-ACTIONS-PROVA-IMUTAVEL-E-GRAFO-HISTORICO`: preservar o artefato congelado e versionar a
 evolução específica elimina a dependência indevida sem enfraquecer o gate de integridade.
 As seis passagens reais de cenário para os consumidores foram reexecutadas localmente com
 modelos simulados, confirmação de callback e controles de isolamento aprovados após essa divisão.
+
+O CI completo confirmou ainda que o consumidor técnico faz parte da prova operacional de Vega:
+seus bytes foram preservados, mantendo a barreira no script técnico e antes do parecer por modelo.
+O catálogo de gestão evolui para v3, registrando o prompt v6 e preservando o manifesto v2.
+As 37 regressões do catálogo, detalhe do agente e evidência operacional passaram localmente,
+assim como as dos consumidores afetados. O catálogo v3 foi comparado estruturalmente com o v2:
+somente a versão do catálogo e o acréscimo do prompt específico diferem. Não há redução de
+cobertura ou substituição de hashes históricos.

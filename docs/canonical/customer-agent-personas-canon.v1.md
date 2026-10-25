@@ -16,8 +16,10 @@ aprovação técnica não comprova demanda, vendas ou margem.
 
 A instrução específica é `bpm/v6/pde-kit-agent-validation-scenario-review.md`, selecionada pelo
 runtime declarado, com o schema de saída v5 inalterado. Prompt e runner v5 preservam seus bytes
-para os demais PDEs e suas atestações históricas. Os consumidores validam a prova nova do kit
-antes de aceitar a homologação ou invocar o modelo, sem reinterpretar recibos históricos.
+para os demais PDEs e suas atestações históricas. O harness técnico recusa a contaminação e o
+consumidor de cenários exige a prova nova antes de invocar o modelo, sem reinterpretar recibos
+históricos. O catálogo atual `agent-harness-v3.json` torna a instrução v6 visível na gestão dos
+agentes; o catálogo v2 permanece preservado para as atestações que o referenciam.
 
 ## Objetivo
 

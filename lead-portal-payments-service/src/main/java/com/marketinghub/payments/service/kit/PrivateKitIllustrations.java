@@ -15,8 +15,7 @@ public final class PrivateKitIllustrations implements AgendaCheiaPhotoGenerator 
   }
 
   /**
-   * Renderiza formas reconhecíveis como demonstração, sem atribuí-las a fotografia de trabalho
-   * real.
+   * Renderiza a demonstração com aviso simples de imagem ilustrativa, sem alegar trabalho real.
    */
   @Override
   public BufferedImage generate(String executionId, int variant, CapellaKitProfile profile) {
@@ -39,7 +38,7 @@ public final class PrivateKitIllustrations implements AgendaCheiaPhotoGenerator 
     }
     g.setColor(new Color(255, 255, 255, 230));
     g.setFont(new Font("SansSerif", Font.BOLD, 32));
-    g.drawString("ILUSTRAÇÃO SINTÉTICA • PROVA PRIVADA", 65, 180);
+    g.drawString("IMAGEM ILUSTRATIVA • EXEMPLO DE DIVULGAÇÃO", 65, 180);
     g.dispose();
     return image;
   }

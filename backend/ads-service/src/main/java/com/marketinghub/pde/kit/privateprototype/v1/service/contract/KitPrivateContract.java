@@ -92,10 +92,11 @@ public final class KitPrivateContract {
       Instant expiresAt,
       JsonNode videoIntegration) {}
 
-  /** Entrega explicação e ação permitida do estado persistido para apresentação pela interface. */
+  /** Separa mensagens próprias para a interface das causas técnicas preservadas na auditoria. */
   public record Presentation(
       String title,
       String introduction,
+      String statusMessage,
       String reasonCode,
       String nextStep,
       String nextActionLabel,

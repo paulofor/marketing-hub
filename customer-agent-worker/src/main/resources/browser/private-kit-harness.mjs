@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
 import { validateFirstKitActions } from './private-kit-first-actions-contract.mjs';
+import { checkCustomerSurface } from './customer-surface-contract.mjs';
 import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 const require=createRequire(import.meta.url);
 let library;try{library=require('playwright-core');}catch(ex){if(ex.code!=='MODULE_NOT_FOUND')throw ex;library=require('playwright');}
@@ -32,7 +33,7 @@ async function observeSafety(page) {
 async function checkFirstActions(page) {
   validateFirstKitActions(await page.evaluate(() => ({
     viewport: { width: innerWidth, height: innerHeight },
-    testControlsClosed: document.querySelector('#test-controls')?.open === false,
+    testControlsClosed: !document.querySelector('#test-controls'),
     actions: ['copy-caption', 'download'].map(id => {
       const element = document.getElementById(id);
       if (!element) return { id, hidden: true };
@@ -60,8 +61,9 @@ try {
     try {
       await page.addInitScript(secret=>sessionStorage.setItem('private-kit-session-v1',secret),created.sessionToken);
       await page.goto(input.sourceUrl);await page.locator('#briefing').waitFor({state:'visible'});
+      await checkCustomerSurface(page);
       const videoPlayback=input.videoIntegration?await verifyIntegratedPage(page,input.videoIntegration,created.session,{
-        startName:'Preparar meu kit de teste',videoLabel:'Demonstração do kit de divulgação',
+        startName:'Preparar meu kit de exemplo',videoLabel:'Demonstração do kit de divulgação',
         failureMessage:'O vídeo não abriu. Você pode continuar e usar seu kit normalmente.',
       }):null;
       if(input.profileCode==='barber-v1')await page.locator('[name=services]').fill('Corte e barba');
@@ -96,7 +98,7 @@ try {
         await page.locator('#copy-caption').click();await page.locator('#download-status').filter({hasText:'Texto copiado'}).waitFor();
         if(!(await page.evaluate(()=>window.__copiedText)))throw new Error('A ação não copiou o texto.');
         const download=page.waitForEvent('download');await page.locator('#download').click();const artifact=await download;if(await artifact.failure())throw new Error('Download falhou.');
-        await page.locator('#download-status').filter({hasText:'Pacote íntegro recebido'}).waitFor();
+        await page.locator('#download-status').filter({hasText:'Kit recebido'}).waitFor();
         downloadedSha256=createHash('sha256').update(await readFile(await artifact.path())).digest('hex');
         if(input.mode==='TECHNICAL'&&scenarioCode==='ADHERENT') {
           await page.locator('details').filter({has:page.locator('#calendar')}).locator('summary').click();
@@ -104,10 +106,8 @@ try {
           momentKeys.push(await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile+'-CONTENT'));
           await page.locator('details').filter({has:page.locator('#calendar')}).locator('summary').click();
         }
-        await page.locator('#test-controls summary').click();
-        await page.locator('#prefer').click();await page.locator('#checkout-status').filter({hasText:'Preferência simulada'}).waitFor();
-        await page.locator('#checkout').click();await page.locator('#checkout-status').filter({hasText:'Continuidade simulada'}).waitFor();
-        await page.locator('#test-controls summary').click();
+        // Os sinais sintéticos são exercitados pelo executor; não viram botões da cliente.
+        for(const code of ['PREFERRED_OVER_FREE','CHECKOUT_STARTED'])await api('/events',{method:'POST',session:created.sessionToken,body:{eventId:crypto.randomUUID(),code}});
         const before=await api('/session',{session:created.sessionToken});
         await page.locator('#exit').click();await page.locator('#resume').waitFor({state:'visible'});await page.locator('#return').click();await page.locator('#result').waitFor({state:'visible'});
         await page.reload();await page.locator('#result').waitFor({state:'visible'});
@@ -117,6 +117,7 @@ try {
         if(!resumed)throw new Error('Retomada perdeu o pacote ou criou uma nova composição.');
       }
       const current=await api('/session',{session:created.sessionToken});
+      const customerSurface=await checkCustomerSurface(page);
       if(scenarioCode!=='SAFETY'&&(current.manifest?.packageContractVersion!==packageContractVersion||JSON.stringify(current.manifest.files.map(f=>f.name).sort())!==JSON.stringify(packageNames)||current.manifest.zipSha256!==downloadedSha256))throw new Error('O pacote recebido não comprovou os 36 arquivos aprovados e seu hash.');
       const expected=scenarioCode==='SAFETY'?['EXPERIENCE_STARTED','SAFETY_LIMIT_BLOCKED']:['EXPERIENCE_STARTED','VALUE_MOMENT','READY_RESULT_USED','PREFERRED_OVER_FREE','CHECKOUT_STARTED','DOWNLOAD_COMPLETED'];
       if(!expected.every(code=>current.events.some(e=>e.code===code))||current.prototypeVersion!==input.prototypeVersion||current.productId!==input.productId||current.cycleId!==input.cycleId)throw new Error('Sinais ou identidade da sessão não foram preservados.');
@@ -124,7 +125,7 @@ try {
       const layout=await page.evaluate(()=>({height:document.documentElement.scrollHeight,noHorizontalOverflow:document.documentElement.scrollWidth<=innerWidth,controlsNamed:[...document.querySelectorAll('button,input,textarea,select')].every(e=>e.textContent?.trim()||e.getAttribute('aria-label')||[...(e.labels||[])].some(l=>l.textContent.trim()))}));
       if(!layout.noHorizontalOverflow||!layout.controlsNamed)throw new Error('Layout ou acessibilidade básica reprovados.');
       const key=await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile);
-      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[...momentKeys,key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,videoPlayback,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
+      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[...momentKeys,key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,videoPlayback,customerSurface,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
       await writeFile(outputFile+'.partial',JSON.stringify({status:'IN_PROGRESS',scenarios,artifacts},null,2));
     }finally{await context.close();}
   }

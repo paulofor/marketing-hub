@@ -9,16 +9,11 @@
   async function api(path, method = 'GET', body, binary = false) {
     const response = await fetch(base + path, { method, headers: { 'X-Kit-Session': secret, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', credentials: 'omit' });
     if (!response.ok) {
-      let detail;
-      try { detail = await response.json(); } catch { detail = {}; }
-      throw new Error(detail.detail || detail.message || (response.status === 401 ? 'Acesso inválido, expirado ou revogado. Volte ao ciclo para conferir seu acesso.' : 'A ação não foi aceita. Confira a entrada e tente novamente.'));
+      throw new Error(response.status === 401 ? 'Seu acesso não está disponível. Abra novamente a demonstração pelo painel.' : 'Não foi possível concluir esta ação. Seus dados foram preservados. Tente novamente.');
     }
     return binary ? response.blob() : response.status === 204 ? null : response.json();
   }
-  async function event(code) { current = await api('/events', 'POST', { eventId: crypto.randomUUID(), code }); audit(); }
-  function audit() {
-    $('audit').textContent = JSON.stringify({ productId: current.productId, cycleId: current.cycleId, experimentId: current.experimentId, prototypeVersion: current.prototypeVersion, sessionId: current.id, state: current.status, transfers: current.transfers, events: current.events.map(e => e.code), providerCalls: 0, commercialEvidenceEligible: false }, null, 2);
-  }
+  async function event(code) { current = await api('/events', 'POST', { eventId: crypto.randomUUID(), code }); }
   // Consome apenas o recibo privado da sessão; leitura e reprodução não aprovam peças ou comércio.
   function renderVideo() {
     const binding = current.videoIntegration;
@@ -52,8 +47,17 @@
     const first = current.firstApplication;
     $('caption').value = first.caption;
     $('message').value = first.message;
-    $('calendar').textContent = first.calendar;
-    $('files').replaceChildren(...current.manifest.files.map(file => { const li = document.createElement('li'); li.textContent = file.name + ' · ' + file.bytes + ' bytes'; return li; }));
+    const fileLabels = { posts: 'Post', stories: 'Story', legendas: 'Legenda', mensagens: 'Mensagem' };
+    const friendlyName = path => {
+      const [category, name] = path.split('/');
+      return category === 'calendario' ? 'Calendário de 7 dias' : (fileLabels[category] || 'Arquivo do kit') + ' ' + Number(name?.match(/\d+/)?.[0] || 1);
+    };
+    $('calendar').textContent = current.manifest.files.reduce((text, file) => text.replaceAll(file.name, friendlyName(file.name)), first.calendar);
+    $('files').replaceChildren(...current.manifest.files.map(file => {
+      const li = document.createElement('li');
+      li.textContent = friendlyName(file.name);
+      return li;
+    }));
     for (const [id, name] of [['post', first.post], ['story', first.story]]) {
       const blob = await api('/assets/' + name, 'GET', undefined, true);
       const url = URL.createObjectURL(blob); imageUrls.push(url); $(id).src = url;
@@ -64,9 +68,9 @@
   async function render() {
     clearTimeout(timer);
     error('');
-    $('identity').textContent = current.productName + ' · produto #' + current.productId + ' · ciclo #' + current.cycleId + ' · ' + current.prototypeVersion;
-    $('status').textContent = current.reason;
+    $('identity').textContent = current.productName;
     const presentation = current.presentation;
+    $('status').textContent = presentation.statusMessage || '';
     $('title').textContent = presentation.title;
     $('introduction').textContent = presentation.introduction;
     $('introduction').hidden = current.status === 'READY';
@@ -79,7 +83,6 @@
     $('result').hidden = true;
     $('resume').hidden = true;
     $('prepare').disabled = current.status !== 'INPUT';
-    audit();
     renderVideo();
     if (current.status === 'READY') {
       try { await showResult(); $('result').hidden = false; window.scrollTo(0, 0); } catch (ex) { displaying = ''; throw ex; }
@@ -110,12 +113,10 @@
   });
   $('download').onclick = () => action($('download'), async () => {
     const blob = await api('/download', 'GET', undefined, true);
-    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'kit-privado.zip'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'kit-de-divulgacao.zip'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     await event('DOWNLOAD_COMPLETED');
-    $('download-status').textContent = 'Pacote íntegro recebido para salvar. Nenhuma compra ou envio foi criado.';
+    $('download-status').textContent = 'Kit recebido. Guarde seus arquivos para usar quando quiser.';
   });
-  $('prefer').onclick = () => action($('prefer'), async () => { await event('PREFERRED_OVER_FREE'); $('checkout-status').textContent = 'Preferência simulada registrada como teste técnico, sem prova de demanda.'; });
-  $('checkout').onclick = () => action($('checkout'), async () => { await event('CHECKOUT_STARTED'); $('checkout-status').textContent = 'Continuidade simulada. Não há cobrança, link de pagamento nem autorização comercial nesta prova.'; });
   $('exit').onclick = () => action($('exit'), async () => { await event('SESSION_EXITED'); $('result').hidden = true; $('resume').hidden = false; $('status').textContent = 'Sua entrada e seu pacote foram preservados.'; });
   $('return').onclick = () => action($('return'), async () => { await event('SESSION_RETURNED'); await load(); });
   window.addEventListener('message', async e => {

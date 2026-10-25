@@ -16,7 +16,7 @@ class PrivateKitHarnessContractTest {
   @TempDir Path work;
   private final ObjectMapper json = new ObjectMapper();
 
-  /** Comprova a matriz real e recusa formato anterior, quantidade incorreta e captura ausente. */
+  /** Comprova a matriz real e recusa pacote, captura ou verificação da interface incompletos. */
   @Test
   void validatesLocalNineCaseReport() throws Exception {
     String path = System.getenv("KIT_LOCAL_REPORT");
@@ -49,6 +49,8 @@ class PrivateKitHarnessContractTest {
             "previous-count",
             "missing-capture",
             "missing-moment",
+            "missing-surface",
+            "failed-surface",
             "wrong-device")) {
       var invalid = report.deepCopy();
       if ("previous-format".equals(failure))
@@ -62,6 +64,13 @@ class PrivateKitHarnessContractTest {
       else if ("wrong-device".equals(failure))
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("artifacts").get(0))
             .put("deviceProfile", "UNKNOWN");
+      else if ("missing-surface".equals(failure))
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
+            .remove("customerSurface");
+      else if ("failed-surface".equals(failure))
+        ((com.fasterxml.jackson.databind.node.ObjectNode)
+                invalid.path("scenarios").get(0).path("customerSurface"))
+            .put("internalInformationAbsent", false);
       else
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
             .remove("screenshotEvidenceKeys");

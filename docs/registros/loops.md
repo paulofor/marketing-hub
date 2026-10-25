@@ -11119,3 +11119,17 @@ depois de materializar o checkout. Provas e limites em
 - Causa de fluxo: proteção da recuperação confundia repetir voz com editar texto de rascunho. A origem perceptual dos sons não foi inferida das medições.
 - Correção: alteração explícita de texto passa pelo gate financeiro existente; mesmo texto preserva recibos. Não há aprovação automática nem rejeição humana fabricada.
 - Regressões do comando real cobrem duas identidades, custo desconhecido, voz preservada, mesma copy, parecer ativo/arquivo incorreto e caminhos válidos anteriores. Novos vídeos continuam sujeitos à escuta independente; impacto comercial não medido.
+## LOOP-KIT-DIAGNOSTICO-NA-EXPERIENCIA — 25/10/2026
+
+- **Evidência:** Capella #7, ciclo #14, experimento #107. A captura mostra JSON de sessão,
+  `AGENT_VALIDATION`, limites por fixture e controles de teste no mesmo documento da experiência.
+  Histórico #685/686 e #745/746 aprovava função privada, sem recusar conteúdo recolhido.
+- **Causa:** auditoria serializada pelo cliente e ausência de verificação textual no harness.
+  Psique inspecionava capturas de função e tratava avisos internos como transparência.
+- **Correção:** dados permanecem no relatório; página usa mensagens de apresentação seguras.
+  Eventos simulados passam pelo executor, sem botões técnicos na experiência.
+- **Prevenção:** verificação de texto e elementos do DOM, inclusive acordeões fechados, antes da
+  revisão por modelo; teste com o vazamento original, outra identidade, erro bruto e percurso
+  antes válido. Matriz local cobre copiar, download, retomada, segurança e três dispositivos.
+- **Limite:** correção de apresentação não aprova nova hipótese nem autoriza consumo comercial.
+- **Registro:** [matriz e evidências](../homologacao/capella-interface-sem-diagnostico-2026-10-25.md).

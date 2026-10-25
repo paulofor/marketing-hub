@@ -255,7 +255,8 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
-   * vinculadas aos cenários e momentos reais do uso antes do parecer.
+   * vinculadas aos cenários, ausência de diagnóstico na interface e momentos do uso antes do
+   * parecer.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -307,6 +308,12 @@ public class PdeAgentValidationHarnessRunner {
         throw new HarnessException(
             "A prova do kit não corresponde ao pacote corrigido de 36 arquivos.");
       for (JsonNode scenario : result.path("scenarios")) {
+        JsonNode surface = scenario.path("customerSurface");
+        if (!"PDE_CUSTOMER_SURFACE_V1".equals(surface.path("contractVersion").asText())
+            || !surface.path("internalInformationAbsent").asBoolean(false)
+            || !surface.path("collapsedContentChecked").asBoolean(false))
+          throw new HarnessException(
+              "O kit não comprovou ausência de dados internos na interface e nos detalhes recolhidos.");
         int requiredFiles = "SAFETY".equals(scenario.path("scenarioCode").asText()) ? 0 : 36;
         if (scenario.path("packageFileCount").asInt(-1) != requiredFiles
             || !scenario.path("screenshotEvidenceKeys").isArray()

@@ -4,7 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
   testMatch:
-    /(musa-local-integration|musa-v14-commercial|mira-private-prototype|public-presence-diagnostic\.smoke)\.spec\.ts/,
+    /(musa-local-integration|musa-v14-commercial|musa-v15-style|mira-private-prototype|public-presence-diagnostic\.smoke)\.spec\.ts/,
   workers: 1,
   timeout: 60_000,
   expect: {

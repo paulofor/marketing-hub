@@ -49,6 +49,7 @@ on:
           - v7
           - v8
           - v9
+          - v10
           - mira
           - mira-commercial
           - kit-whatsapp
@@ -81,6 +82,7 @@ env:
   FRONTEND_V7_IMAGE_NAME: pde-platform-frontend-v7
   FRONTEND_V8_IMAGE_NAME: pde-platform-frontend-v8
   FRONTEND_V9_IMAGE_NAME: pde-platform-frontend-v9
+  FRONTEND_V10_IMAGE_NAME: pde-platform-frontend-v10
   FRONTEND_MIRA_IMAGE_NAME: pde-platform-frontend-mira
   FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME: pde-platform-frontend-mira-commercial
   FRONTEND_KIT_WHATSAPP_IMAGE_NAME: pde-platform-frontend-kit-whatsapp
@@ -401,6 +403,10 @@ jobs:
             echo "${IMAGE_NAMESPACE}/${FRONTEND_V9_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_V9_IMAGE_NAME}:${GITHUB_SHA}"
             echo "EOF"
+            echo "frontend_v10_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V10_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V10_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
             echo "frontend_mira_tags<<EOF"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${GITHUB_SHA}"
@@ -522,6 +528,22 @@ jobs:
             PDE_FRONTEND_VERSION_ID=v9
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V9_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V9_IMAGE_NAME }}:buildcache,mode=max
+      - name: Build and push frontend v10 image
+        if: needs.deployment_scope.outputs.frontend-version == 'v10'
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/frontend
+          file: pde-platform/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.image_metadata.outputs.frontend_v10_tags }}
+          labels: |
+            ${{ steps.image_metadata.outputs.labels }}
+            com.marketinghub.pde.product-id=4
+            com.marketinghub.pde.product-slug=metodo-musa-7-dias
+          build-args: |
+            PDE_FRONTEND_VERSION_ID=v10
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V10_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V10_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push Mira frontend image
         if: needs.deployment_scope.outputs.frontend-version == 'mira'
         uses: docker/build-push-action@v6
@@ -655,6 +677,7 @@ jobs:
       PDE_PLATFORM_FRONTEND_V7_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V7_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V7_PORT || '5178' }}
       PDE_PLATFORM_FRONTEND_V8_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V8_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V8_PORT || '5181' }}
       PDE_PLATFORM_FRONTEND_V9_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V9_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V9_PORT || '5185' }}
+      PDE_PLATFORM_FRONTEND_V10_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V10_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V10_PORT || '5186' }}
       PDE_PLATFORM_FRONTEND_MIRA_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_MIRA_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_MIRA_PORT || '5180' }}
       PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT || '5182' }}
       PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT || '5179' }}
@@ -785,6 +808,7 @@ jobs:
             v7) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}" ;;
             v8) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${IMAGE_TAG}" ;;
             v9) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V9_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            v10) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V10_IMAGE_NAME}:${IMAGE_TAG}" ;;
             mira) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${IMAGE_TAG}" ;;
             mira-commercial) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME}:${IMAGE_TAG}" ;;
             kit-whatsapp) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${IMAGE_TAG}" ;;
@@ -804,6 +828,7 @@ jobs:
             && export PDE_PLATFORM_FRONTEND_V7_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_V8_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_V9_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V9_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_V10_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V10_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${IMAGE_TAG}' \
@@ -816,6 +841,7 @@ jobs:
             && export PDE_PLATFORM_FRONTEND_V7_PORT='${PDE_PLATFORM_FRONTEND_V7_PORT}' \
             && export PDE_PLATFORM_FRONTEND_V8_PORT='${PDE_PLATFORM_FRONTEND_V8_PORT}' \
             && export PDE_PLATFORM_FRONTEND_V9_PORT='${PDE_PLATFORM_FRONTEND_V9_PORT}' \
+            && export PDE_PLATFORM_FRONTEND_V10_PORT='${PDE_PLATFORM_FRONTEND_V10_PORT}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_PORT='${PDE_PLATFORM_FRONTEND_MIRA_PORT}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT='${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}' \
             && export PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT='${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}' \
@@ -934,6 +960,12 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V9_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V9_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v9"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V9_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel"'
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v10" ]; then
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V10_PORT}/" > /dev/null
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V10_PORT}/healthz"
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V10_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v10"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V10_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v15-estilo-pessoal"'
           fi
           if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/mira-private" > /dev/null
@@ -1069,6 +1101,11 @@ jobs:
             validate_public_version v9
           else
             validate_public_health v9
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v10" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
+            validate_public_version v10
+          else
+            validate_public_health v10
           fi
           if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_dns_points_to_deploy_host v7.clubemusa.com.br

@@ -32,6 +32,7 @@ const canonicalV14Product = JSON.parse(
     "utf8",
   ),
 );
+const canonicalV15Product = JSON.parse(readFileSync(process.env.PDE_MUSA_V15_CONTRACT_PATH ?? path.resolve(currentDirectory, "../../backend/src/main/resources/contracts/musa-v15-product-v1.json"), "utf8"));
 const v14ExperienceVersion = canonicalV14Product.experienceVersion;
 const kitWhatsAppV1 = JSON.parse(
   readFileSync(
@@ -281,6 +282,7 @@ const slots = {
     ...canonicalV12Product,
   },
   v9: { ...canonicalV14Product },
+  v10: { ...canonicalV15Product },
 };
 
 function resolveSlot(url) {
@@ -412,6 +414,7 @@ const server = http.createServer(async (request, response) => {
         v7ExperienceVersion,
         v12ExperienceVersion,
         v14ExperienceVersion,
+        canonicalV15Product.experienceVersion,
       ].includes(experienceVersion)
     ) {
       response.writeHead(400, {

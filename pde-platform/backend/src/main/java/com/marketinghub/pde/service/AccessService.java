@@ -75,6 +75,8 @@ public class AccessService {
     private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
     @Value("${pde.access.musa-commercial-base-url:https://v9.clubemusa.com.br}")
     private String musaCommercialBaseUrl = "https://v9.clubemusa.com.br";
+    @Value("${pde.access.musa-style-base-url:https://v10.clubemusa.com.br}")
+    private String musaStyleBaseUrl = "https://v10.clubemusa.com.br";
     private static final String MUSA_V12_EXPERIENCE_VERSION =
             "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
     private static final long MUSA_PAID_ACCESS_DAYS = 90L;
@@ -281,7 +283,7 @@ public class AccessService {
         return createAccess(productSlug, email, source, "");
     }
 
-    /** Cria ou atualiza um acesso preservando a versão comercial que originou a entrada. */
+    /** Cria ou reutiliza o acesso da mesma versão, sem reescrever progresso de outra experiência. */
     public AccessResponse createAccess(
             String productSlug, String email, String source, String experienceVersion) {
         if (requiresMercadoPagoPaidEntitlement(productSlug)) {
@@ -292,7 +294,7 @@ public class AccessService {
             requireMercadoPagoPaidExperienceVersion(productSlug, experienceVersion);
         }
         resolveProduct(productSlug, experienceVersion);
-        AccessGrant existingGrant = findGrantByEmail(productSlug, email);
+        AccessGrant existingGrant = findGrantByEmail(productSlug, email, experienceVersion);
         if (existingGrant != null) {
             boolean versionCanChange = !isPaidSource(existingGrant.getSource());
             if (versionCanChange) {
@@ -381,7 +383,7 @@ public class AccessService {
         metadata.put("pepperCurrency", currency);
         metadata.put("pepperPaymentStatus", paymentStatus);
         metadata.put("experienceVersion", paidProduct.experienceVersion());
-        AccessGrant existingGrant = findGrantByEmail(productSlug, buyerEmail);
+        AccessGrant existingGrant = findGrantByEmail(productSlug, buyerEmail, paidProduct.experienceVersion());
         if (existingGrant != null) {
             boolean promotedToPaid = shouldPromoteToPaidSource(existingGrant, "PEPPER");
             if (promotedToPaid || newlyVerifiedPayment) {
@@ -516,12 +518,17 @@ public class AccessService {
 
     /** Envia link mágico apenas quando já existe cadastro para o e-mail informado. */
     public MagicLinkResponse requestExistingMagicLink(String productSlug, String email) {
+        return requestExistingMagicLink(productSlug, email, "");
+    }
+
+    /** Recupera a versão pedida sem entregar progresso ou compra de outra candidata. */
+    public MagicLinkResponse requestExistingMagicLink(String productSlug, String email, String experienceVersion) {
         AccessGrant grant;
         if (requiresMercadoPagoPaidEntitlement(productSlug)) {
             grant = ensureMercadoPagoPaidAccess(productSlug, email);
         } else {
             productCatalogService.getProduct(productSlug);
-            grant = findGrantByEmail(productSlug, email);
+            grant = findGrantByEmail(productSlug, email, experienceVersion);
             if (grant == null) {
                 throw new IllegalArgumentException("Cadastro da Área MUSA não encontrado para este e-mail");
             }
@@ -1445,7 +1452,10 @@ public class AccessService {
             ProductExperienceResponse.MissionDto mission) {
         String missionId = mission.id();
         Map<String, String> answers = grant.getMissionInteractions().getOrDefault(missionId, Map.of());
-        if (usesMusaCategoricalJourney(product)) {
+        if (MusaPersonalStyleContract.VERSION.equals(product.experienceVersion())) {
+            MusaPersonalStyleContract.validate(answers);
+            requireAnswers(answers, Set.of("reflection"));
+        } else if (usesMusaCategoricalJourney(product)) {
             MusaV7CategoricalContract.validateMission(mission, answers);
         }
         if ("entrada-guiada".equals(missionId)) {
@@ -1511,7 +1521,9 @@ public class AccessService {
         validateMissionRole(mission, "CUSTOMER");
         validateMissionOrder(product, grant, mission);
         Map<String, String> sanitizedAnswers = sanitizeInteractionAnswers(request.answers());
-        if (usesMusaCategoricalJourney(product)) {
+        if (MusaPersonalStyleContract.VERSION.equals(product.experienceVersion())) {
+            MusaPersonalStyleContract.validate(request.answers());
+        } else if (usesMusaCategoricalJourney(product)) {
             MusaV7CategoricalContract.validateMission(mission, sanitizedAnswers);
         }
         grant.saveMissionInteraction(missionId, sanitizedAnswers);
@@ -1571,11 +1583,11 @@ public class AccessService {
         }
     }
 
-    /** Aplica as missões categoriais de baixo custo às versões MUSA compatíveis, inclusive v14. */
+    /** Identifica jornadas MUSA com sequência e validação determinísticas por versão. */
     private boolean usesMusaCategoricalJourney(ProductExperienceResponse product) {
         return product != null
                 && MUSA_PRODUCT_SLUG.equals(product.slug())
-                && Set.of(MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION, MusaV14EntryContract.VERSION)
+                && Set.of(MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION, MusaV14EntryContract.VERSION, MusaPersonalStyleContract.VERSION)
                         .contains(product.experienceVersion());
     }
 
@@ -1628,11 +1640,20 @@ public class AccessService {
 
     /** Procura acesso já liberado para o mesmo produto e e-mail. */
     private AccessGrant findGrantByEmail(String productSlug, String email) {
+        return findGrantByEmail(productSlug, email, "");
+    }
+
+    /** Isola versões explícitas e prioriza a compra existente na recuperação legada sem versão. */
+    private AccessGrant findGrantByEmail(String productSlug, String email, String experienceVersion) {
         String normalizedEmail = normalizeEmail(email);
         return accessByToken.values().stream()
                 .filter(grant -> grant.getProductSlug().equals(productSlug))
                 .filter(grant -> !"PRIVACY_DELETED".equals(grant.getSource()))
                 .filter(grant -> normalizeEmail(grant.getEmail()).equals(normalizedEmail))
+                .filter(grant -> experienceVersion == null || experienceVersion.isBlank()
+                        || experienceVersion.equals(grant.getExperienceVersion()))
+                .sorted(java.util.Comparator.comparing((AccessGrant grant) -> !isPaidSource(grant.getSource()))
+                        .thenComparing(AccessGrant::getCreatedAt))
                 .findFirst()
                 .orElse(null);
     }
@@ -1649,8 +1670,9 @@ public class AccessService {
 
     /** Preserva a rota e a versão na entrada inicial e na recuperação do mesmo acesso. */
     private String clientAccessUrl(AccessGrant grant) {
-        return (MusaV14EntryContract.VERSION.equals(grant.getExperienceVersion())
-                ? "/experiences/" + MusaV14EntryContract.VERSION : "") + clientAccessUrl(grant.getToken());
+        return ((MusaV14EntryContract.VERSION.equals(grant.getExperienceVersion())
+                || MusaPersonalStyleContract.VERSION.equals(grant.getExperienceVersion()))
+                ? "/experiences/" + grant.getExperienceVersion() : "") + clientAccessUrl(grant.getToken());
     }
 
     /** Mantém o bearer no fragmento, que não é enviado ao servidor, ao referrer ou ao proxy. */
@@ -1782,7 +1804,8 @@ public class AccessService {
         var access = product.commercialAccess();
         if (access == null) {
             if (MUSA_V12_EXPERIENCE_VERSION.equals(experienceVersion)
-                    || MusaV14EntryContract.VERSION.equals(experienceVersion)) {
+                    || MusaV14EntryContract.VERSION.equals(experienceVersion)
+                    || MusaPersonalStyleContract.VERSION.equals(experienceVersion)) {
                 throw new IllegalStateException("A versão comprada não possui contrato comercial de acesso");
             }
             return MUSA_PAID_ACCESS_DAYS;
@@ -1834,10 +1857,12 @@ public class AccessService {
         return value == null || value.isBlank() ? null : Instant.parse(value);
     }
 
-    /** Converte o acesso em URL da superfície correta, inclusive a rota comercial v14 isolada. */
+    /** Direciona recuperação à superfície da versão comprada, sem migrar acessos históricos. */
     private String buildAbsoluteAccessUrl(String productSlug, String accessUrl) {
         String normalizedBase;
-        if (MUSA_PRODUCT_SLUG.equals(productSlug) && accessUrl.startsWith("/experiences/" + MusaV14EntryContract.VERSION + "/")) {
+        if (MUSA_PRODUCT_SLUG.equals(productSlug) && accessUrl.startsWith("/experiences/" + MusaPersonalStyleContract.VERSION + "/")) {
+            normalizedBase = musaStyleBaseUrl.replaceAll("/+$", "");
+        } else if (MUSA_PRODUCT_SLUG.equals(productSlug) && accessUrl.startsWith("/experiences/" + MusaV14EntryContract.VERSION + "/")) {
             normalizedBase = musaCommercialBaseUrl.replaceAll("/+$", "");
         } else if (RigelPaidEntitlementService.MIRA_PRODUCT_SLUG.equals(productSlug)) {
             normalizedBase = "https://mira.digicomdigital.com.br";

@@ -72,12 +72,14 @@ public class AccessController {
                 request.productSlug(), request.email(), request.experienceVersion());
     }
 
-    /** Envia um link mágico somente para cliente que já possui cadastro na Área MUSA. */
+    /** Recupera o cadastro da versão solicitada, com conciliação financeira quando aplicável. */
     @PostMapping("/login-link")
     public MagicLinkResponse requestLoginLink(@Valid @RequestBody AccessRequest request) {
         try {
-            return accessService.requestExistingMagicLink(request.productSlug(), request.email());
+            return accessService.requestExistingMagicLink(request.productSlug(), request.email(), request.experienceVersion());
         } catch (IllegalArgumentException ex) {
+            log.info("Acesso PDE não encontrado para recuperação; productSlug={}, experienceVersion={}",
+                    request.productSlug(), request.experienceVersion(), ex);
             if (!accessService.supportsPepperLoginReconciliation(request.productSlug())) {
                 throw ex;
             }
@@ -86,7 +88,7 @@ public class AccessController {
                     request.productSlug(),
                     ex);
             pepperTransactionSyncService.syncPaidTransactions(request.productSlug(), request.email());
-            return accessService.requestExistingMagicLink(request.productSlug(), request.email());
+            return accessService.requestExistingMagicLink(request.productSlug(), request.email(), request.experienceVersion());
         }
     }
 

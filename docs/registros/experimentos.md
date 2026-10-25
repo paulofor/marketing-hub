@@ -7680,3 +7680,20 @@ jornada e comunicação. A gestão também prioriza a ideia vigente sobre a pesq
 inicial. O ciclo #13/experimento #106 e sua candidata v14 não foram migrados; a próxima
 experiência exige construção e homologação próprias. Nenhuma nova inferência ou mídia.
 Evidências e limites: [mudança de foco de Vega](../homologacao/vega-estilo-pessoal-v1.md).
+
+### Complemento executável da mesma mudança de foco
+
+A conferência identificou que o cadastro e a Big Idea já tinham mudado, mas a v14
+não recebia preferência. A correção entrega candidata v15 isolada no slot v10,
+com entrada simples, regras por gosto declarado, sete dias, recuperação e registros
+exportáveis. O mesmo e-mail conserva acessos/progresso distintos por versão.
+A gestão recebeu o rascunho pelo frontend, sem novo ciclo nem consumo pago.
+
+Harness: o contexto implementado dos agentes passa a expor as três entradas e seus
+limites para v15; o teste compara identidade original e outra identidade, preservando
+v14 e outro produto. Regressões executáveis contrastam as mesmas peças com preferências
+diferentes, preservam caminho neutro e recuperam a orientação sem repetir geração.
+Hipótese: maior identificação e aplicação cotidiana. Adoção técnica requer testes e
+isolamento; adoção comercial depende de uso, compras conciliadas e contribuição.
+Se esses sinais piorarem, evoluir a candidata, sem apagar resultados anteriores.
+Não houve nova medição de vendas, ROI ou demanda.

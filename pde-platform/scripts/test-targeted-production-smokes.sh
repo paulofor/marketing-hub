@@ -94,6 +94,14 @@ if grep -Fq 'https://v8.clubemusa.com.br' "${invocation_log}"; then
   exit 1
 fi
 
+run_target v10 v10
+grep -Fq 'tests/musa-v15-route-public.smoke.spec.ts' "${invocation_log}"
+grep -Fq 'https://v10.clubemusa.com.br' "${invocation_log}"
+if grep -Fq 'https://v8.clubemusa.com.br' "${invocation_log}"; then
+  echo '[ARQUITETURA] A candidata v15 não pode validar outra superfície.' >&2
+  exit 1
+fi
+
 run_target v5
 grep -Fqx $'npm\thttps://v5.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}"
 grep -Fqx $'npm\thttps://v5.clubemusa.com.br\t\tmusa-pde-entry-v5-video-explicativo\trun test:public-diagnostic-smoke' "${invocation_log}"

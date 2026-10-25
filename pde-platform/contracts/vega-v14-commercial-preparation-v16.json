@@ -1,0 +1,327 @@
+{
+  "contractVersion": "vega-v14-commercial-preparation.v16",
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "processCode": "opala-commercial-preparation-v1",
+  "processVersion": 1,
+  "activityId": "entry",
+  "sourceReference": "experiment:106",
+  "learningCycleId": 13,
+  "chainDefinitionId": 26,
+  "experimentId": 106,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v9.clubemusa.com.br"
+  },
+  "boundary": "Compatibilidade das fontes compartilhadas para a candidata de estilo pessoal de Vega. Preserva experiências, provas e aprovações anteriores; não autoriza gasto, campanha ou publicação de outra superfície.",
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v9",
+    "publicUrl": "https://v9.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "c96d625823f50761241d5aeb61809a3fea0bd0434b92c573d29285e70db43ed9"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v9",
+      "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "c96d625823f50761241d5aeb61809a3fea0bd0434b92c573d29285e70db43ed9"
+    }
+  },
+  "deploymentValidation": {
+    "mode": "COMMERCIAL_CANDIDATE_READ_ONLY",
+    "readOnly": true,
+    "checkoutRequiresRunning": true,
+    "commercialLaunchClaimed": false
+  },
+  "operationalState": {
+    "experimentStatus": "PLANNED",
+    "commercialLaunchClaimed": false,
+    "minimumContributionTargetPercent": null
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": 20,
+    "includesPreviousConsumption": true,
+    "mediaTotalLimitBrl": 100,
+    "mediaDurationDays": 5,
+    "mediaCondition": "Somente após homologação e liberações comerciais vigentes",
+    "paidVideoAuthorized": false,
+    "source": "Autorização #3709 e limites de Vega ciclo 13 preservados; este manifesto não amplia gastos."
+  },
+  "validationReport": "docs/homologacao/vega-v14-continuidade-comercial-v1.md",
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/vega-v14-continuidade-comercial-v1.md",
+      "sha256": "d9e659050f83ca66d4272c2b54f24fad8c020b4733943d3df149ec1122b204e7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json",
+      "sha256": "a8488bb80dbfa9dbd6b906763e664f7c3cd292381260304dfa2092067f4d4a1c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-private-safety-preparation-v12.json",
+      "sha256": "ffcf3c6f370b2e8fedd44c4857c4336662b132e47aa23d86c8898e95a2a20dec",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Implementação privada e pareceres anteriores preservados; não são aceite da candidata comercial."
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v10.json",
+      "sha256": "6c3e4fa0816fe8b225ee01d321457f62504e544c0d38ea353a04dd8f6387441e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico e rejeição do predecessor preservados; sem herança de aprovação ou autorização."
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14-comercial/desktop-primeiro-valor.png",
+      "sha256": "faa7fa30ff1ece9741a667ec2eed64150c4a241fb7bc1d90dc1bb06bec53a48c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14-comercial/iphone-primeiro-valor.png",
+      "sha256": "f6e0321b75d132909ab2623b9c4867247b4b8c83f1937c4fd0eaf6d6d43d8775",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14-comercial/pixel-primeiro-valor.png",
+      "sha256": "ea1128458f7e91412bbdc049ace9bf2c17330e63cd78592f90baa1904f966672",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/local-validation/evidence/vega-host-routing-v1.json",
+      "sha256": "01dae0a42ab1c0479fdab87b166c5bb3b0901fb33bc380bcbefc0b87276ea4da",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-v14-commercial-preparation-v13.json",
+      "sha256": "88b21f84c69a518a3f3b4f759e2650495c40440e115b0da532d52069e61c3012",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado. A correção do domínio real tem regressão e recibo próprios; não renova pareceres nem aprovações comerciais."
+    },
+    {
+      "path": "pde-platform/contracts/vega-v14-commercial-preparation-v14.json",
+      "sha256": "33aeb247a2b02b8aee6c54ccca2577e7a58a9e6e054ba8cc3614ffad462644e7",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado; esta compatibilidade não renova seus aceites."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/opala-commercial-ui-proof-v1.json",
+      "sha256": "6eca24cf181013d81a3d53702c9d04d394f140bf9dd37336a4be2829ec383a8f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/opala-prova-comercial-interface-v1.md",
+      "sha256": "1f33b040ee197b591a263644c9f186fa3dcd667d5cb8fdd8addbd50b4ed79b41",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/opala-first-value-v1.png",
+      "sha256": "4f3e055210ff36902505b00e827c250b6bfe215fd4cc32ee950907917d40f019",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialUiProof.java",
+      "sha256": "0cc01edf479bf02966622964d87efaef7283045e9981b0e59735ed126d47160f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialUiProofMaterialization.java",
+      "sha256": "16fee7a2ca34782a909b5fef51f120f1d9c2ea73d84bf3f4681764c8701f6a28",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativePreparationEvidenceResolver.java",
+      "sha256": "cf19689a145cebc2b8f8cf552537c39cddaa9b61b8b3b856d2dcd9dc969260c5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialUiProofTest.java",
+      "sha256": "354a8b494435cc8b01197268c5d0d77a10628e561dd93fe39a5a2e90fe7d0435",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativePreparationEvidenceResolverTest.java",
+      "sha256": "14831c70f65fbf7477352d5596a392875179cf506af97a375e5e1136c806abc4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/proofs/opala/v1/capture-ui-proof.mjs",
+      "sha256": "01593155927d739938304f6c140e9c1225dfcc66bac6d276029ae2b45982f520",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/proofs/opala/v1/local-first-value-adapter.json",
+      "sha256": "b219efa42bb45b0992fa7e96994263bb547227b99cfc1696a0e7cddd90697a76",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/scripts/test-opala-ui-proof.mjs",
+      "sha256": "040e154cb0ee978712ced7c042394f4ebc9e788fafb8a23cc021afce7fa74356",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/scripts/prepared-checkout.test.mjs",
+      "sha256": "1b6a5cf1c004e8a4e2939ac2c7961c0bce75e44439d29736e7551102b9577af9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/scripts/static-ui-proof.test.mjs",
+      "sha256": "44fdaae9bb0f87d758fd30999effb24fbd4caa10c3c309892ea17fe8fe057d16",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-v14-commercial-preparation-v15.json",
+      "sha256": "1b8dc1a0f0352ddb5619779ac5adb97dfa3b693b45b2d39e5aa3fcac65b56f89",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado; esta revalidação não renova aceites comerciais."
+    },
+    {
+      "path": "docs/homologacao/vega-estilo-experiencia-v15.md",
+      "sha256": "f6d8cfd2af2afa183eb9aa45073375e59aca50c0d5c8aef67f31847109ce3f30",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v14-product-v1.json",
+      "sha256": "3a613cbc81b413e8b0f0f578a1e74a66d44324c9fa88ae82f03638896ffe5c45",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/MusaV14EntryContract.java",
+      "sha256": "1c0dd4bc959cecdbf286ac5f2f0c9aab516605986c937c3afabb2e5e5a942f12",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "9af342b0084328af379e17d6cef1ab839bc7407c8f0ee95e5a2637266a7ff3eb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "dd361c3b42406676eb8484e1cfc84dd0e442cdf309e67307e959ac05b34ef3e6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AiGuidanceService.java",
+      "sha256": "8964dd3831915bd57e70699e58a34ab0fe055b232df102e3b61422c5662b122b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaV14CommercialJourneyTest.java",
+      "sha256": "11c19a67dd991fd08441b6f9a1cf3a4663738174ac86da2d23262696695b2d3b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "36267011af82605b2be015da405a575d380e48742c765bf5cbabfc00cbe5e7fb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/musaExperiences.ts",
+      "sha256": "9459c1c04d58ac3511a77fd647d52e902cdf5f65cf89561629c06f6fa809dbbd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-v14-commercial.spec.ts",
+      "sha256": "f415cb3ae702df79f789acadd27fc17a6b9adedff597e14d3c639f1ffe6cabe1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-v14-route-public.smoke.spec.ts",
+      "sha256": "8052b1ca660e775854e8332631fc64fc63b251abdc56052fbbd15b593224842d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "43893799a26cdcbb1a12928d0dd605c8ac867fdf60672a034225982df475afa9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/docker-compose.deploy.yml",
+      "sha256": "4304b9cd649c186ac1b090733acfeb1fc019c8960686aa671ddf081c0211efc5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "lead-portal-payments-service/nginx.conf",
+      "sha256": "a19e90c296324690a3130315fcaccde7a010ac89ce69161dd2174279259b1d6a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-isolation-contract.mjs",
+      "sha256": "180d8dfd0f38919f2290d610d3a39846d3dcc32de9f7bebc69f3e1ddb5c7f8ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/local-validation/evidence/vega-host-routing-v1.json",
+      "sha256": "01dae0a42ab1c0479fdab87b166c5bb3b0901fb33bc380bcbefc0b87276ea4da",
+      "promptMode": "FULL"
+    }
+  ],
+  "hostRoutingCorrection": {
+    "reason": "Versão explicitamente atribuída prevalece sobre reserva ou alias legado; a raiz envia a versão que apresenta.",
+    "validatedLocally": true,
+    "commercialApprovalGranted": false,
+    "rootDomain": "v9.clubemusa.com.br"
+  },
+  "compatibilityAttestation": {
+    "previousManifest": "pde-platform/contracts/vega-v14-commercial-preparation-v15.json",
+    "previousManifestSha256": "1b8dc1a0f0352ddb5619779ac5adb97dfa3b693b45b2d39e5aa3fcac65b56f89",
+    "validatedAt": "2026-10-25T12:50:15.806915+00:00",
+    "scope": "Compatibilidade das fontes compartilhadas para a candidata de estilo pessoal de Vega. Preserva experiências, provas e aprovações anteriores; não autoriza gasto, campanha ou publicação de outra superfície.",
+    "changedEvidence": [
+      {
+        "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+        "previousSha256": "e519042f2cdc9581620da3563f01b1b037f7a21da7054ef17657bfaf4d3113f8",
+        "sha256": "9af342b0084328af379e17d6cef1ab839bc7407c8f0ee95e5a2637266a7ff3eb"
+      },
+      {
+        "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+        "previousSha256": "cc53bb3167708889bf3fcc1f51aa64fc549cb08e420e4eb5c098a38986bd2637",
+        "sha256": "dd361c3b42406676eb8484e1cfc84dd0e442cdf309e67307e959ac05b34ef3e6"
+      },
+      {
+        "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AiGuidanceService.java",
+        "previousSha256": "c304406f36cbb7a5cf5f65d95c77eaf6371d0be4335b03d99dbabe2a2492b88e",
+        "sha256": "8964dd3831915bd57e70699e58a34ab0fe055b232df102e3b61422c5662b122b"
+      },
+      {
+        "path": "pde-platform/frontend/src/App.tsx",
+        "previousSha256": "13a22578181d1f7f631f784d12b52d3fa5bfba6462b6b2b5545147c80dba331f",
+        "sha256": "36267011af82605b2be015da405a575d380e48742c765bf5cbabfc00cbe5e7fb"
+      },
+      {
+        "path": "pde-platform/frontend/src/musaExperiences.ts",
+        "previousSha256": "994f1eebf29c392379c35082dc55719801e411df21fc7bcc0fd342493353446f",
+        "sha256": "9459c1c04d58ac3511a77fd647d52e902cdf5f65cf89561629c06f6fa809dbbd"
+      },
+      {
+        "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+        "previousSha256": "2beb254b17edbeb62d38faf0205127600b3a0510f19db3a722ff85f926131e9a",
+        "sha256": "43893799a26cdcbb1a12928d0dd605c8ac867fdf60672a034225982df475afa9"
+      },
+      {
+        "path": "pde-platform/docker-compose.deploy.yml",
+        "previousSha256": "395ed032144a6e0595614b1be4f7734c8737d65b22b38be55e1136f79fff437e",
+        "sha256": "4304b9cd649c186ac1b090733acfeb1fc019c8960686aa671ddf081c0211efc5"
+      },
+      {
+        "path": "lead-portal-payments-service/nginx.conf",
+        "previousSha256": "8f2bdf7c0af0d36d42a0c96124dff2f385bce964b42d95876f8be6d31381bda6",
+        "sha256": "a19e90c296324690a3130315fcaccde7a010ac89ce69161dd2174279259b1d6a"
+      },
+      {
+        "path": "pde-platform/scripts/test-product-runtime-isolation-contract.mjs",
+        "previousSha256": "2b811cc845ad69df62098ff43a029f65bbf9bd738c34c8507566580dc572bf5b",
+        "sha256": "180d8dfd0f38919f2290d610d3a39846d3dcc32de9f7bebc69f3e1ddb5c7f8ad"
+      }
+    ],
+    "validationReport": "docs/homologacao/vega-estilo-experiencia-v15.md"
+  }
+}

@@ -41,6 +41,7 @@ class PdeReleaseContractTest(unittest.TestCase):
                 "v7",
                 "v8",
                 "v9",
+                "v10",
                 "mira",
                 "mira-commercial",
                 "kit-whatsapp",
@@ -52,6 +53,7 @@ class PdeReleaseContractTest(unittest.TestCase):
         surface = MODULE.select_surface(self.inventory, "v9")
         contract = {
             "status": "READY_FOR_INDEPENDENT_REVIEW",
+            "processVersion": 1,
             "product": {"id": 4, "slug": surface["productSlug"], "experienceVersion": surface["experienceVersion"], "publicUrl": surface["publicUrl"]},
             "publicationContract": {"automaticDeployOnMerge": True, "frontendVersion": "v9", "publicUrl": surface["publicUrl"], "requiredFrontendSourceSha256": "a" * 64},
             "liveVisualContract": {"runtimeIdentity": {"version": "v9", "experienceVersion": surface["experienceVersion"], "frontendSourceSha256": "a" * 64}},
@@ -67,6 +69,17 @@ class PdeReleaseContractTest(unittest.TestCase):
         unsafe["deploymentValidation"]["commercialLaunchClaimed"] = True
         with self.assertRaisesRegex(ValueError, "gates preservados"):
             MODULE.smoke_profile(surface, unsafe, "a" * 64)
+
+    def test_style_candidate_requires_process_version_before_publication(self):
+        surface = MODULE.select_surface(self.inventory, "v10")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-style-v15-preparation-v1.json")
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        MODULE.validate_release_contract(surface, contract, source)
+        for invalid in (None, 0, -1, "1", True):
+            unsafe = copy.deepcopy(contract)
+            unsafe["processVersion"] = invalid
+            with self.assertRaisesRegex(ValueError, "processVersion"):
+                MODULE.validate_release_contract(surface, unsafe, source)
 
     def test_commercial_mira_has_its_own_runtime_identity(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
@@ -193,6 +206,7 @@ class PdeReleaseContractTest(unittest.TestCase):
         contract = {
             "contractVersion": "musa-v12-commercial-homologation.v6",
             "status": "READY_FOR_INDEPENDENT_REVIEW",
+            "processVersion": 1,
             "product": {
                 "id": 4,
                 "slug": "metodo-musa-7-dias",

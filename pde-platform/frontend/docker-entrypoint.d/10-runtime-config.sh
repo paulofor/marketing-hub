@@ -73,6 +73,10 @@ if [ "$PRODUCT_SLUG" != "metodo-musa-7-dias" ]; then
   ]
 }
 EOF
+elif [ "$FRONTEND_VERSION" = "v10" ]; then
+  cat > "$HEALTH_CONTRACT_FILE" <<EOF
+{"slug":"metodo-musa-7-dias","healthPath":"/","requiredTexts":["Seu guarda-roupa pode ter mais a sua cara.","Experimentar com minhas roupas"],"requiredHlsStreams":[],"forbiddenTexts":["Application error","Cannot find module","Unexpected token"]}
+EOF
 elif [ "$FRONTEND_VERSION" = "v7" ] || [ "$FRONTEND_VERSION" = "v8" ] || [ "$FRONTEND_VERSION" = "v9" ]; then
   cat > "$HEALTH_CONTRACT_FILE" <<EOF
 {
@@ -126,7 +130,7 @@ cat > "$DIAGNOSTICS_FILE" <<EOF
     {"host": "v7.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "pointed", "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"},
     {"host": "v8.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "pointed", "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"},
     {"host": "v9.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "pointed", "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel"},
-    {"host": "v10.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "reserved", "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"}
+    {"host": "v10.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "pointed", "experienceVersion": "musa-pde-entry-v15-estilo-pessoal"}
   ]
 }
 EOF

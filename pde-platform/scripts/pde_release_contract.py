@@ -171,6 +171,11 @@ def validate_release_contract(
             raise ValueError("Inventário transitório não autoriza superfície descontinuada")
         return
 
+    if surface.get("productId") == 4 and (
+        type(contract.get("processVersion")) is not int or contract["processVersion"] <= 0
+    ):
+        raise ValueError("Versão de processo MUSA inválida: informe processVersion positivo")
+
     product = contract.get("product")
     publication = contract.get("publicationContract")
     live_visual = contract.get("liveVisualContract")
@@ -279,7 +284,7 @@ def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str
     mode = contract.get("deploymentValidation", {}).get("mode", "COMMERCIAL")
     if mode == "COMMERCIAL_CANDIDATE_READ_ONLY":
         validation = contract.get("deploymentValidation", {})
-        if (surface["deployTarget"] != "v9" or validation.get("readOnly") is not True
+        if (surface["deployTarget"] not in {"v9", "v10"} or validation.get("readOnly") is not True
                 or validation.get("checkoutRequiresRunning") is not True
                 or validation.get("commercialLaunchClaimed") is not False):
             raise ValueError("Candidata comercial exige isolamento e gates preservados")

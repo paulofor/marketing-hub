@@ -65,7 +65,9 @@ public class AiGuidanceService {
             "MUSA_V7_DAY_4_FIRST_IMPRESSION",
             "MUSA_V7_DAY_5_COLOR_DIRECTION",
             "MUSA_V7_DAY_6_PERSONAL_SIGNATURE",
-            "MUSA_V7_DAY_7_PERSONAL_FORMULA");
+            "MUSA_V7_DAY_7_PERSONAL_FORMULA",
+            "MUSA_STYLE_DAY_1", "MUSA_STYLE_DAY_2", "MUSA_STYLE_DAY_3", "MUSA_STYLE_DAY_4",
+            "MUSA_STYLE_DAY_5", "MUSA_STYLE_DAY_6", "MUSA_STYLE_DAY_7");
 
     private final AccessService accessService;
     private final ProductCatalogService productCatalogService;
@@ -98,11 +100,15 @@ public class AiGuidanceService {
         loadPersistedRequests();
     }
 
-    /** Cria uma solicitação de orientação por IA e salva as respostas da missão. */
+    /** Valida a versão e salva a missão antes de produzir orientação local ou encaminhar ao executor. */
     public AiGuidanceResponse createGuidanceRequest(String token, String missionId, AiGuidanceCreateRequest request) {
         validateGuidanceType(request.guidanceType());
         WorkspaceResponse workspace = accessService.getWorkspace(token);
         MissionDto mission = validateMissionBelongsToWorkspace(workspace, missionId);
+        if (request.experienceVersion() != null && !request.experienceVersion().isBlank()
+                && !request.experienceVersion().equals(workspace.product().experienceVersion())) {
+            throw new IllegalArgumentException("A versão solicitada difere da versão deste acesso");
+        }
         boolean useLocalRules = usesMusaLocalRules(
                 request.experienceVersion(), workspace.product().experienceVersion());
         if (useLocalRules) {
@@ -110,7 +116,11 @@ public class AiGuidanceService {
                     || !request.guidanceType().equals(mission.interaction().guidanceType())) {
                 throw new IllegalArgumentException("Tipo de orientação divergente da missão MUSA v7");
             }
-            MusaV7CategoricalContract.validateMission(mission, request.answers());
+            if (MusaPersonalStyleContract.VERSION.equals(workspace.product().experienceVersion())) {
+                MusaPersonalStyleContract.validate(request.answers());
+            } else {
+                MusaV7CategoricalContract.validateMission(mission, request.answers());
+            }
         }
         accessService.saveMissionInteraction(token, missionId, new MissionInteractionRequest(request.answers()));
         workspace = accessService.getWorkspace(token);
@@ -149,9 +159,12 @@ public class AiGuidanceService {
         ProductExperienceResponse product = productCatalogService.getProductForRequest(
                 MUSA_PRODUCT_SLUG,
                 v12 ? "v8.clubemusa.com.br" : "v7.clubemusa.com.br",
-                MusaV14EntryContract.VERSION.equals(request.experienceVersion()) ? "" : v12 ? "v8" : "v7",
+                (MusaV14EntryContract.VERSION.equals(request.experienceVersion())
+                        || MusaPersonalStyleContract.VERSION.equals(request.experienceVersion())) ? "" : v12 ? "v8" : "v7",
                 request.experienceVersion());
-        if (MusaV14EntryContract.VERSION.equals(request.experienceVersion())) {
+        if (MusaPersonalStyleContract.VERSION.equals(request.experienceVersion())) {
+            MusaPersonalStyleContract.validate(request.answers());
+        } else if (MusaV14EntryContract.VERSION.equals(request.experienceVersion())) {
             MusaV14EntryContract.validate(request.answers());
         } else if (usesMusaLocalRules(request.experienceVersion(), product.experienceVersion())) {
             MusaV7CategoricalContract.validatePublicDiagnostic(product.publicDiagnosticQuestions(), request.answers());
@@ -251,11 +264,22 @@ public class AiGuidanceService {
                 || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(requestedVersion))
                 || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion))
                 || MusaV14EntryContract.VERSION.equals(nullToBlank(requestedVersion))
-                || MusaV14EntryContract.VERSION.equals(nullToBlank(workspaceVersion));
+                || MusaV14EntryContract.VERSION.equals(nullToBlank(workspaceVersion))
+                || MusaPersonalStyleContract.VERSION.equals(nullToBlank(requestedVersion))
+                || MusaPersonalStyleContract.VERSION.equals(nullToBlank(workspaceVersion));
     }
 
-    /** Conclui por regras locais e audita a versão v14 sem fila, tokens ou chamada externa. */
+    /** Conclui pelas regras da versão e preserva preferências e histórico sem chamada externa. */
     private StoredAiGuidance completeWithLocalRules(StoredAiGuidance pending, String experienceVersion) {
+        if (MusaPersonalStyleContract.VERSION.equals(experienceVersion)) {
+            var result = MusaPersonalStyleContract.guide(pending.missionId(), pending.answers(), pending.previousMissionAnswers());
+            return pending.withResult("COMPLETED", result.headline(), result.summary(), result.signals(), result.actions(),
+                    "A orientação parte do que você contou; não analisa fotos, corpo ou personalidade.",
+                    MusaPersonalStyleContract.MODEL, "LOCAL",
+                    serializeJson(Map.of("experienceVersion", experienceVersion, "answers", pending.answers(),
+                            "previousMissionAnswers", pending.previousMissionAnswers())),
+                    serializeJson(result), 0, 0, BigDecimal.ZERO, "", Instant.now().toString());
+        }
         boolean neutralPath = pending.answers().values().stream()
                 .anyMatch(value -> MUSA_NEUTRAL_CHOICE.equals(value)
                         || "Minha imagem está coerente; quero apenas organizar minhas escolhas".equals(value));
@@ -417,9 +441,17 @@ public class AiGuidanceService {
         return sanitized;
     }
 
-    /** Coleta respostas anteriores para manter continuidade sem recomputar contexto no frontend. */
+    /** Ordena o histórico por dia e preserva a origem das preferências nas novas jornadas de estilo. */
     private Map<String, String> previousMissionAnswers(WorkspaceResponse workspace, String currentMissionId) {
         Map<String, String> previousAnswers = new LinkedHashMap<>();
+        if (MusaPersonalStyleContract.VERSION.equals(workspace.product().experienceVersion())) {
+            for (MissionDto mission : workspace.product().missions()) {
+                if (mission.id().equals(currentMissionId)) break;
+                workspace.missionInteractions().stream().filter(answer -> mission.id().equals(answer.missionId()))
+                        .forEach(answer -> previousAnswers.put(mission.id() + "." + answer.questionKey(), answer.answerText()));
+            }
+            return previousAnswers;
+        }
         workspace.missionInteractions().stream()
                 .filter(answer -> !currentMissionId.equals(answer.missionId()))
                 .forEach(answer -> previousAnswers.put(answer.questionKey(), answer.answerText()));

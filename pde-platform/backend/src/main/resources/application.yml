@@ -22,6 +22,7 @@ pde:
     jdbc-password: ${PDE_ACCESS_JDBC_PASSWORD:}
     require-jdbc: ${PDE_ACCESS_REQUIRE_JDBC:false}
     app-base-url: ${PDE_APP_BASE_URL:http://localhost:5176}
+    musa-style-base-url: ${PDE_MUSA_STYLE_BASE_URL:https://v10.clubemusa.com.br}
     musa-commercial-base-url: ${PDE_MUSA_COMMERCIAL_BASE_URL:https://v9.clubemusa.com.br}
     expose-magic-link-in-response: ${PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:false}
     pepper:

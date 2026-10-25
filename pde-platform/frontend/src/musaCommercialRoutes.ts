@@ -1,13 +1,19 @@
 export const MUSA_V14_EXPERIENCE_VERSION =
   "musa-pde-entry-v14-primeiro-ajuste-aplicavel";
 
+export const MUSA_V15_EXPERIENCE_VERSION = "musa-pde-entry-v15-estilo-pessoal";
+
 export function musaCommercialPath(version: string) {
   return `/experiences/${encodeURIComponent(version)}`;
 }
 
 export function resolveMusaCommercialRoute(pathname: string) {
-  const prefix = musaCommercialPath(MUSA_V14_EXPERIENCE_VERSION);
-  return pathname === prefix || pathname.startsWith(`${prefix}/`)
-    ? MUSA_V14_EXPERIENCE_VERSION
-    : "";
+  return (
+    [MUSA_V14_EXPERIENCE_VERSION, MUSA_V15_EXPERIENCE_VERSION].find(
+      (version) => {
+        const prefix = musaCommercialPath(version);
+        return pathname === prefix || pathname.startsWith(`${prefix}/`);
+      },
+    ) || ""
+  );
 }

@@ -303,3 +303,20 @@ test("links de teste são expostos somente na topologia local, preservando a pro
   assert.doesNotMatch(production, /PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:\s*["']?true/, "[ARQUITETURA] A produção não pode expor links mágicos na resposta.");
   assert.match(configuration, /PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:false/, "[ARQUITETURA] A exposição de links deve nascer desabilitada.");
 });
+
+test("estilo pessoal possui runtime próprio sem substituir a candidata v14", async () => {
+  const definition = await contract();
+  const surfaces = definition.products.find(p => p.productId === 4).surfaces;
+  const current = surfaces.find(s => s.deployTarget === "v10");
+  const previous = surfaces.find(s => s.deployTarget === "v9");
+  assert.equal(current.experienceVersion, "musa-pde-entry-v15-estilo-pessoal");
+  assert.notEqual(current.hostPort, previous.hostPort, "[ARQUITETURA] Candidatas devem preservar suas portas.");
+  const proxy = await source("lead-portal-payments-service/nginx.conf");
+  assert.match(proxy, /v10\.clubemusa\.com\.br pde-platform-frontend-v10:80;/, "[ARQUITETURA] Estilo deve usar sua própria imagem.");
+  const input = JSON.parse(await source("backend/ads-service/src/main/resources/contracts/pde-implemented-inputs-v1.json"));
+  const agent = input.implementations.find(i => i.prototypeVersions.includes(current.experienceVersion));
+  const product = JSON.parse(await source("pde-platform/backend/src/main/resources/contracts/musa-v15-product-v1.json"));
+  assert.deepEqual(agent.requiredFields, product.publicDiagnosticQuestions.map(q => q.key), "[ARQUITETURA] Os agentes devem receber as mesmas entradas executáveis.");
+  assert.equal(product.commercialBinding, null);
+  assert.equal(product.commercialCheckout, null);
+});

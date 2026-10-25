@@ -1,0 +1,464 @@
+{
+  "slug": "metodo-musa-7-dias",
+  "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+  "layoutKey": "personal-style-v1",
+  "funnelVersion": "musa-personal-style-v1",
+  "name": "Método MUSA — Seu Estilo em 7 Dias",
+  "promise": "Descubra combinações com as próprias roupas e construa um jeito de se vestir que combina com seu gosto e sua rotina.",
+  "audience": "Pessoas que querem reconhecer seu estilo nas roupas do dia a dia, sem precisar trocar o guarda-roupa.",
+  "priceLabel": "R$67",
+  "commercialBinding": null,
+  "commercialCheckout": null,
+  "commercialAccess": {
+    "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+    "accessDays": 90,
+    "renewal": false,
+    "activationTrigger": "PAYMENT_APPROVED",
+    "scope": "DAYS_2_TO_7_AND_SUPPORT_MATERIALS"
+  },
+  "theme": {
+    "primary": "#31584f",
+    "accent": "#c66748",
+    "background": "#fbf7ef",
+    "imageUrl": ""
+  },
+  "diagnostic": {
+    "title": "Seu guarda-roupa pode ter mais a sua cara",
+    "intro": "Conte a ocasião, as peças disponíveis e sua preferência. Experimente uma sugestão antes de informar e-mail ou decidir continuar.",
+    "questions": [
+      "Onde você vai usar?",
+      "Quais roupas você já tem em mente?",
+      "O que você quer sentir no seu jeito de vestir?"
+    ]
+  },
+  "missions": [
+    {
+      "id": "estilo-dia-1",
+      "day": 1,
+      "title": "Comece com o que tem a sua cara",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Teste uma orientação com suas próprias roupas e registre como foi.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_1",
+        "kicker": "Dia 1 · seu estilo",
+        "title": "Comece com o que tem a sua cara",
+        "helperText": "Teste uma orientação com suas próprias roupas e registre como foi.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "estilo-dia-2",
+      "day": 2,
+      "title": "Reconheça o que funcionou",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Reaproveite uma escolha que funcionou e descarte o que não combinou com você.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_2",
+        "kicker": "Dia 2 · seu estilo",
+        "title": "Reconheça o que funcionou",
+        "helperText": "Reaproveite uma escolha que funcionou e descarte o que não combinou com você.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "estilo-dia-3",
+      "day": 3,
+      "title": "Experimente outra forma de usar",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Compare duas formas de usar suas peças, sem precisar comprar.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_3",
+        "kicker": "Dia 3 · seu estilo",
+        "title": "Experimente outra forma de usar",
+        "helperText": "Compare duas formas de usar suas peças, sem precisar comprar.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "estilo-dia-4",
+      "day": 4,
+      "title": "Leve seu estilo para a rotina",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Adapte sua combinação à ocasião, respeitando conforto e gosto.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_4",
+        "kicker": "Dia 4 · seu estilo",
+        "title": "Leve seu estilo para a rotina",
+        "helperText": "Adapte sua combinação à ocasião, respeitando conforto e gosto.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "estilo-dia-5",
+      "day": 5,
+      "title": "Encontre suas combinações de cores",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Observe cores e texturas que você já tem e escolha o que quer repetir.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_5",
+        "kicker": "Dia 5 · seu estilo",
+        "title": "Encontre suas combinações de cores",
+        "helperText": "Observe cores e texturas que você já tem e escolha o que quer repetir.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "estilo-dia-6",
+      "day": 6,
+      "title": "Guarde sua fórmula pessoal",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Combine suas escolhas em uma fórmula simples para consultar depois.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_6",
+        "kicker": "Dia 6 · seu estilo",
+        "title": "Guarde sua fórmula pessoal",
+        "helperText": "Combine suas escolhas em uma fórmula simples para consultar depois.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "estilo-dia-7",
+      "day": 7,
+      "title": "Prepare sua próxima semana",
+      "principle": "Seu gosto orienta as escolhas. Elegância é uma possibilidade, não uma obrigação.",
+      "action": "Revise os registros e organize o que pretende repetir na semana.",
+      "evidence": "Seu registro do que funcionou, do que quer mudar ou da decisão de manter como está.",
+      "visualCue": "Compare apenas o que você consegue observar, sem prever a reação de outras pessoas.",
+      "completionRole": "CUSTOMER",
+      "interaction": {
+        "guidanceType": "MUSA_STYLE_DAY_7",
+        "kicker": "Dia 7 · seu estilo",
+        "title": "Prepare sua próxima semana",
+        "helperText": "Revise os registros e organize o que pretende repetir na semana.",
+        "buttonLabel": "Ver orientação para hoje",
+        "loadingLabel": "Preparando sua orientação…",
+        "pendingLabel": "Preparando sua orientação…",
+        "failedLabel": "Não foi possível concluir agora. Suas respostas continuam no formulário.",
+        "completedKicker": "Para experimentar hoje",
+        "nextStepTitle": "O que você quer guardar?",
+        "nextStepText": "Registre o que funcionou para você antes de concluir o dia.",
+        "fields": [
+          {
+            "key": "occasion",
+            "label": "Onde você vai usar?",
+            "placeholder": "Ex.: trabalhar e buscar minha filha",
+            "options": []
+          },
+          {
+            "key": "existingSelection",
+            "label": "Quais roupas você já tem em mente?",
+            "placeholder": "Ex.: camiseta azul, jeans e tênis",
+            "options": []
+          },
+          {
+            "key": "stylePreference",
+            "label": "O que você quer sentir no seu jeito de vestir?",
+            "placeholder": "Escolha o que combina com você hoje",
+            "options": [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "supportMaterials": [
+    {
+      "title": "Mapa do meu estilo",
+      "type": "HTML",
+      "description": "Um roteiro para reconhecer suas preferências sem se prender a um rótulo.",
+      "url": "/materials/musa-v15/mapa-do-meu-estilo.html"
+    },
+    {
+      "title": "Antes de sair, do meu jeito",
+      "type": "HTML",
+      "description": "Um checklist de gosto, conforto e adequação à sua rotina.",
+      "url": "/materials/musa-v15/antes-de-sair.html"
+    },
+    {
+      "title": "Minhas fórmulas para a semana",
+      "type": "CSV",
+      "description": "Registre combinações, preferências, ocasiões e o que funcionou.",
+      "url": "/materials/musa-v15/minhas-formulas.csv"
+    }
+  ],
+  "heroVideos": [],
+  "publicDiagnosticQuestions": [
+    {
+      "key": "occasion",
+      "stageLabel": "Onde você vai usar?",
+      "question": "Onde você vai usar?",
+      "options": [],
+      "imageUrl": "",
+      "visualTitle": "",
+      "visualText": "",
+      "journeyEventType": "REAL_INPUT_SUBMITTED"
+    },
+    {
+      "key": "existingSelection",
+      "stageLabel": "Quais roupas você já tem em mente?",
+      "question": "Quais roupas você já tem em mente?",
+      "options": [],
+      "imageUrl": "",
+      "visualTitle": "",
+      "visualText": "",
+      "journeyEventType": "REAL_INPUT_SUBMITTED"
+    },
+    {
+      "key": "stylePreference",
+      "stageLabel": "O que você quer sentir no seu jeito de vestir?",
+      "question": "O que você quer sentir no seu jeito de vestir?",
+      "options": [
+        "Conforto e praticidade",
+        "Cor e criatividade",
+        "Discrição",
+        "Delicadeza",
+        "Elegância",
+        "Ainda estou descobrindo",
+        "Quero manter como está"
+      ],
+      "imageUrl": "",
+      "visualTitle": "",
+      "visualText": "",
+      "journeyEventType": "REAL_INPUT_SUBMITTED"
+    }
+  ],
+  "publicFirstFold": {
+    "headline": "Seu guarda-roupa pode ter mais a sua cara.",
+    "supportingText": "Comece com uma combinação que você já tem. Descubra uma forma de usar que respeita seu gosto, não uma regra de como você deveria ser.",
+    "videoKicker": "Vega · Método MUSA",
+    "videoHeadline": "Seu estilo aparece nas escolhas que fazem sentido para você.",
+    "videoSupportingText": "Uma orientação gratuita antes do cadastro. Depois, sete dias para experimentar, guardar o que funciona e criar sua fórmula pessoal.",
+    "videoExtraText": "Elegância, criatividade, conforto ou discrição: você escolhe e pode mudar de ideia.",
+    "videoCtaLabel": "Experimentar com minhas roupas"
+  },
+  "completionOffer": "Continuidade proposta: dias 2 a 7, três materiais e acesso por 90 dias, por R$ 67 em pagamento único. Sem assinatura. A compra depende da liberação comercial desta versão."
+}

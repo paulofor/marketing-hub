@@ -41,6 +41,7 @@ class PdeReleaseContractTest(unittest.TestCase):
                 "v7",
                 "v8",
                 "v9",
+                "v10",
                 "mira",
                 "mira-commercial",
                 "kit-whatsapp",

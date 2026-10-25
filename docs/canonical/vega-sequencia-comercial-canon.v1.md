@@ -106,3 +106,26 @@ A campanha histórica do #91 possui recibo Meta persistido, mas não tem run/pre
 Essa lacuna deve acompanhar a adoção e a memória do sucessor; não exige reativar #91 nem fabricar
 aprovação retroativa. O backend deve aceitar a referência pelo contrato de publicação histórica
 do cânone dos ciclos. A nova publicação continua exigindo sua própria homologação e autorização.
+
+## Experiência executável de estilo pessoal — 25/10/2026
+
+A direção de estilo pessoal da Big Idea v2 deve aparecer no comportamento, não só na
+promessa. A candidata `musa-pde-entry-v15-estilo-pessoal`, runtime/slot `v10`, recebe
+ocasião, peças disponíveis e preferência explícita. A mesma roupa deve permitir
+orientações distintas para conforto, criatividade, discrição, delicadeza ou elegância;
+explorar sem rótulo e manter como está são escolhas válidas. É vedado impor feminilidade,
+formalidade ou uma leitura de corpo/personalidade não declarada.
+
+A entrada e os sete dias usam regras locais auditáveis, sem alegar nova inferência.
+Cada dia conserva a origem dos registros anteriores e exige reflexão da própria cliente
+para concluir. Primeiro valor antes de e-mail; Dia 1 gratuito; dias 2–7 e três materiais
+por 90 dias, proposta de R$ 67 em compra única. Novas versões têm acesso/progresso
+isolados, inclusive para o mesmo e-mail, e não herdam compras ou checkout de outra versão.
+
+O catálogo `pde-implemented-inputs-v1.json` expõe aos agentes essa entrada apenas para
+a versão exata. A v14/ciclo #13/experimento #106 permanece histórica, sem migração,
+autorização financeira transferida ou renovação de parecer. A candidata precisa de
+revisões independentes e contexto comercial próprio antes de ser colocada à venda.
+A publicação do software e o cadastro CANDIDATE não representam esse aceite.
+
+Prova e limites: [matriz executada da v15](../homologacao/vega-estilo-experiencia-v15.md).

@@ -36,6 +36,22 @@ class LearningCycleImplementedInputContextTest {
         92010L, "pde-planejado-36", "mira-private-candidate-v3", MiraPrivateContract.Input.class);
   }
 
+  /** Entrega estilo e preferências somente à nova versão, inclusive com outra identidade de produto. */
+  @Test
+  void exposesStylePreferenceWithoutRewritingHistoricalContext() {
+    for (long id : List.of(4L, 94004L)) {
+      when(products.findById(id))
+          .thenReturn(Optional.of(Product.builder().id(id).slug("metodo-musa-7-dias").build()));
+      var current = service.resolve(cycle(id, "musa-pde-entry-v15-estilo-pessoal")).orElseThrow();
+      assertThat(current.path("requiredFields").toString()).contains("stylePreference");
+      assertThat(current.path("externalInference").asBoolean()).isFalse();
+      assertThat(current.path("personalization").asText()).contains("preferência", "persistidos");
+      assertThat(current.path("agentApprovalClaimed").asBoolean()).isFalse();
+      var historical = service.resolve(cycle(id, "musa-pde-entry-v14-primeiro-ajuste-aplicavel")).orElseThrow();
+      assertThat(historical.path("requiredFields").toString()).doesNotContain("stylePreference");
+    }
+  }
+
   /** Compara obrigatoriedade e campos com Bean Validation, sem reproduzir o catálogo no teste. */
   private void assertRecord(Long id, String slug, String version, Class<?> inputType) {
     var cycle = cycle(id, version);

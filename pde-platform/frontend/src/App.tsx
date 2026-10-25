@@ -19,6 +19,7 @@ import {
   User,
 } from "lucide-react";
 import { createRoot } from "react-dom/client";
+import MusaPersonalStyleApp from "./MusaPersonalStyleApp";
 import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 import { AssistedServiceApp } from "./AssistedServiceApp";
 import { TransitionPauseExperiment } from "./TransitionPauseExperiment";
@@ -39,6 +40,7 @@ import {
 import "./styles.css";
 import {
   MUSA_V14_EXPERIENCE_VERSION,
+  MUSA_V15_EXPERIENCE_VERSION,
   resolveMusaCommercialRoute,
 } from "./musaCommercialRoutes";
 
@@ -4520,6 +4522,12 @@ root.render(
         Confira o endereço recebido. Nenhum resultado ou compra foi iniciado.
       </p>
     </main>
+  ) : configuredProductSlug === "metodo-musa-7-dias" &&
+    (resolveMusaCommercialRoute(window.location.pathname) ===
+      MUSA_V15_EXPERIENCE_VERSION ||
+      (window.location.hostname === "v10.clubemusa.com.br" &&
+        !window.location.pathname.startsWith("/experiences/"))) ? (
+    <MusaPersonalStyleApp />
   ) : configuredProductSlug === "metodo-musa-7-dias" ? (
     <App />
   ) : (

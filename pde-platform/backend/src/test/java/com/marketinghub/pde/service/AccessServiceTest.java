@@ -2220,7 +2220,7 @@ class AccessServiceTest {
         assertThat(guidanceService.getPendingGuidance()).isEmpty();
     }
 
-    /** Confirma que a v7 bloqueia salto de dia no backend e preserva a versão de uma compra existente. */
+    /** Preserva compra e progresso anteriores e separa uma entrada explícita em outra versão. */
     @Test
     void blocksMusaV7DayJumpAndFreezesPaidExperienceVersion() {
         ProductCatalogService catalog = new ProductCatalogService();
@@ -2247,7 +2247,11 @@ class AccessServiceTest {
                 "CUSTOMER_REGISTRATION",
                 "musa-pde-entry-v5-video-explicativo");
         WorkspaceResponse workspace = accessService.getWorkspace(retryOnOldHost.token());
-        assertThat(workspace.experienceVersion()).isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+        assertThat(workspace.experienceVersion()).isEqualTo("musa-pde-entry-v5-video-explicativo");
+        assertThat(workspace.subscriptionStatus()).isEqualTo("TRIAL");
+        assertThat(accessService.getWorkspace(access.token()).experienceVersion()).isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+        assertThat(accessService.getWorkspace(access.token()).subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(retryOnOldHost.token()).isNotEqualTo(access.token());
     }
 
     /** Impede texto livre, chave desconhecida e valor de outra pergunta pela rota direta da v7. */

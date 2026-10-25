@@ -1,4 +1,7 @@
-import { MUSA_V14_EXPERIENCE_VERSION } from "./musaCommercialRoutes";
+import {
+  MUSA_V14_EXPERIENCE_VERSION,
+  MUSA_V15_EXPERIENCE_VERSION,
+} from "./musaCommercialRoutes";
 export type Theme = {
   primary: string;
   accent: string;
@@ -193,7 +196,7 @@ export const MUSA_V12_EXPERIENCE_VERSION =
   "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
 
 const MUSA_V5_LEGACY_HOSTS = ["v1.clubemusa.com.br", "v2.clubemusa.com.br"];
-const MUSA_V7_RESERVED_HOSTS = ["v10.clubemusa.com.br"];
+const MUSA_V7_RESERVED_HOSTS: string[] = [];
 
 const MUSA_APPROVED_HERO_VIDEO_URL =
   "/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8";
@@ -472,6 +475,43 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
     usesMotivationalTimelineVideo: false,
     videoPlacements: [],
   },
+  [MUSA_V15_EXPERIENCE_VERSION]: {
+    experienceVersion: MUSA_V15_EXPERIENCE_VERSION,
+    primaryHost: "v10.clubemusa.com.br",
+    layoutKey: "personal-style-v1",
+    publicDiagnosticQuestions: [
+      "occasion",
+      "existingSelection",
+      "stylePreference",
+    ].map((key) => ({
+      ...musaV12PublicDiagnosticQuestions.find(
+        (question) => question.key === key,
+      )!,
+      key,
+      question:
+        key === "stylePreference"
+          ? "O que você quer sentir no seu jeito de vestir?"
+          : musaV12PublicDiagnosticQuestions.find(
+              (question) => question.key === key,
+            )!.question,
+      options:
+        key === "stylePreference"
+          ? [
+              "Conforto e praticidade",
+              "Cor e criatividade",
+              "Discrição",
+              "Delicadeza",
+              "Elegância",
+              "Ainda estou descobrindo",
+              "Quero manter como está",
+            ]
+          : [],
+    })),
+    usesDesireRoad: false,
+    supportsPublishedPublicDiagnosticVideoHero: false,
+    usesMotivationalTimelineVideo: false,
+    videoPlacements: [],
+  },
   [MUSA_V12_EXPERIENCE_VERSION]: {
     experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
     layoutKey: "espelho-antes-de-sair",
@@ -577,9 +617,9 @@ export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [
     host: "v10.clubemusa.com.br",
     url: "https://v10.clubemusa.com.br",
     observedAddress: "163.245.200.7",
-    label: "Reservado v7",
-    role: "reserved",
-    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+    label: "Candidata de estilo pessoal v15",
+    role: "pointed",
+    experienceVersion: MUSA_V15_EXPERIENCE_VERSION,
   },
 ];
 

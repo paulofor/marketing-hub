@@ -10,16 +10,45 @@
       ],
       "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/privateprototype/v1/service/contract/VegaPrivateContract.java#Input",
       "minimumCustomerInput": "Ocasião (occasion) e roupa ou combinação disponível (existingSelection); observação (optionalNote) opcional.",
-      "requiredFields": ["occasion", "existingSelection"],
-      "optionalFields": ["optionalNote"]
+      "requiredFields": [
+        "occasion",
+        "existingSelection"
+      ],
+      "optionalFields": [
+        "optionalNote"
+      ]
     },
     {
       "productSlug": "pde-planejado-36",
-      "prototypeVersions": ["mira-private-candidate-v3"],
+      "prototypeVersions": [
+        "mira-private-candidate-v3"
+      ],
       "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/contract/MiraPrivateContract.java#Input",
       "minimumCustomerInput": "Objetivo (objective) e produtos disponíveis (products), cada um com nome e instruções do rótulo; URL da fonte opcional.",
-      "requiredFields": ["objective", "products"],
+      "requiredFields": [
+        "objective",
+        "products"
+      ],
       "optionalFields": []
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersions": [
+        "musa-pde-entry-v15-estilo-pessoal"
+      ],
+      "sourceReference": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/MusaPersonalStyleContract.java",
+      "minimumCustomerInput": "Ocasião, peças disponíveis e preferência de estilo declarada. Elegância é opcional; manter como está e explorar sem rótulo são respostas válidas.",
+      "requiredFields": [
+        "occasion",
+        "existingSelection",
+        "stylePreference"
+      ],
+      "optionalFields": [
+        "reflection"
+      ],
+      "personalization": "Ações variam pela preferência; os sete dias reutilizam registros persistidos. Não inferir corpo, personalidade ou uma estética obrigatória.",
+      "executionMode": "LOCAL_RULES",
+      "externalInference": false
     }
   ]
 }

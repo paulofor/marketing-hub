@@ -46,7 +46,7 @@ public class ProductCatalogService {
             "v7.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
             "v8.clubemusa.com.br", MUSA_V12_EXPERIENCE_VERSION,
             "v9.clubemusa.com.br", MusaV14EntryContract.VERSION,
-            "v10.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION);
+            "v10.clubemusa.com.br", MusaPersonalStyleContract.VERSION);
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
             "metodo-musa-7-dias", createMusaProduct(),
@@ -150,7 +150,7 @@ public class ProductCatalogService {
         return applyExperienceVersionOverride(product, host, "");
     }
 
-    /** Resolve a rota comercial v14 explícita e preserva os padrões dos hosts e contratos anteriores. */
+    /** Resolve candidatas explícitas e preserva os padrões dos hosts e contratos históricos. */
     private ProductExperienceResponse applyExperienceVersionOverride(
             ProductExperienceResponse product,
             String host,
@@ -158,7 +158,8 @@ public class ProductCatalogService {
         if (!"metodo-musa-7-dias".equals(product.slug())) {
             return product;
         }
-        String selectedExperienceVersion = MusaV14EntryContract.VERSION.equals(requestedExperienceVersion)
+        String selectedExperienceVersion = (MusaV14EntryContract.VERSION.equals(requestedExperienceVersion)
+                || MusaPersonalStyleContract.VERSION.equals(requestedExperienceVersion))
                 ? requestedExperienceVersion : resolveHostExperienceVersion(host);
         if (!StringUtils.hasText(selectedExperienceVersion)) {
             selectedExperienceVersion = requestedExperienceVersion;
@@ -175,6 +176,8 @@ public class ProductCatalogService {
             product = createMusaV12Product();
         } else if (MusaV14EntryContract.VERSION.equals(selectedExperienceVersion.trim())) {
             product = readVersionedMusaContract(MUSA_V14_CONTRACT_RESOURCE, "v14");
+        } else if (MusaPersonalStyleContract.VERSION.equals(selectedExperienceVersion.trim())) {
+            product = readVersionedMusaContract("/contracts/musa-v15-product-v1.json", "v15");
         }
         return new ProductExperienceResponse(
                 product.slug(),

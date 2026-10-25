@@ -105,6 +105,21 @@
           "hostPort": 5185,
           "publicUrl": "https://v9.clubemusa.com.br",
           "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
+        },
+        {
+          "deployTarget": "v10",
+          "versionId": "v10",
+          "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "serviceName": "pde-platform-frontend-v10",
+          "containerName": "pde-platform-frontend-v10",
+          "imageName": "pde-platform-frontend-v10",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_V10_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_V10_PORT",
+          "hostPort": 5186,
+          "publicUrl": "https://v10.clubemusa.com.br",
+          "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
         }
       ]
     },

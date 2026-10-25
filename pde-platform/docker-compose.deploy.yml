@@ -244,6 +244,41 @@ services:
       retries: 5
       start_period: 15s
 
+  pde-platform-frontend-v10:
+    image: ${PDE_PLATFORM_FRONTEND_V10_IMAGE:?PDE_PLATFORM_FRONTEND_V10_IMAGE is required}
+    container_name: pde-platform-frontend-v10
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      com.marketinghub.pde.product-id: "4"
+      com.marketinghub.pde.product-slug: metodo-musa-7-dias
+    ports:
+      - "${PDE_PLATFORM_FRONTEND_V10_PORT:-5186}:80"
+    environment:
+      VITE_MUSA_CHECKOUT_URL: ""
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v15-estilo-pessoal
+      VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_V15_HERO_STREAM_URL:-}
+      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_V15_HERO_VIDEO_URL:-}
+      PDE_FRONTEND_VERSION: v10
+      PDE_FRONTEND_PUBLIC_URL: https://v10.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V10_IMAGE:-}
+      PDE_FRONTEND_VERSION_ID: v10
+      PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
+      PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
+      PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    networks:
+      - pde-platform-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   pde-platform-frontend-mira:
     image: ${PDE_PLATFORM_FRONTEND_MIRA_IMAGE:?PDE_PLATFORM_FRONTEND_MIRA_IMAGE is required}
     container_name: pde-platform-frontend-mira

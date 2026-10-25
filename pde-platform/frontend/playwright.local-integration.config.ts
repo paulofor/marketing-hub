@@ -18,7 +18,7 @@ const mysqlHost = process.env.PDE_LOCAL_MYSQL_HOST ?? "127.0.0.1";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: /(musa-local-integration|musa-v14-commercial)\.spec\.ts/,
+  testMatch: /(musa-local-integration|musa-v14-commercial|musa-v15-style)\.spec\.ts/,
   workers: 1,
   timeout: 60_000,
   expect: {
@@ -56,6 +56,7 @@ export default defineConfig({
         "PDE_AI_STORAGE_PATH=/tmp/pde-local-ai-guidance-requests.json",
         "PDE_APP_BASE_URL=http://localhost:57180",
         "PDE_MUSA_COMMERCIAL_BASE_URL=http://localhost:57180",
+        "PDE_MUSA_STYLE_BASE_URL=http://localhost:57180",
         "PDE_MAIL_TRANSPORT=smtp",
         `PDE_SMTP_HOST=${process.env.PDE_TEST_SMTP_HOST ?? "sandbox-mail"}`,
         `PDE_SMTP_PORT=${process.env.PDE_TEST_SMTP_PORT ?? "1025"}`,

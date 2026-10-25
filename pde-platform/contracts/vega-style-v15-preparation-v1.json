@@ -1,0 +1,93 @@
+{
+  "contractVersion": "vega-style-v15-preparation.v1",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+    "publicUrl": "https://v10.clubemusa.com.br"
+  },
+  "boundary": "Candidata de software para a mudança de foco autorizada em 25/10/2026. Não cria ciclo, herda autorização financeira, altera o experimento 106 ou inicia mídia/cobrança.",
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v10",
+    "publicUrl": "https://v10.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "f24ff4e14d06d314a8f81918c1f486e911d1b81f80efcef4e130393989ba6c88"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v10",
+      "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+      "frontendSourceSha256": "f24ff4e14d06d314a8f81918c1f486e911d1b81f80efcef4e130393989ba6c88"
+    }
+  },
+  "deploymentValidation": {
+    "mode": "COMMERCIAL_CANDIDATE_READ_ONLY",
+    "readOnly": true,
+    "checkoutRequiresRunning": true,
+    "commercialLaunchClaimed": false
+  },
+  "externalAuthorization": {
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false,
+    "source": "Mudança de posicionamento e experiência solicitada pelo usuário; limites e experimentos históricos preservados."
+  },
+  "validationReport": "docs/homologacao/vega-estilo-experiencia-v15.md",
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/vega-estilo-experiencia-v15.md",
+      "sha256": "ead9e6b46488a9c781d9985ab33709c6cbb0f6d6f1ce658a9418158d5d6fb1ba",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-estilo-v15/desktop.png",
+      "sha256": "992c82823c83ada0a0eeb0b641625c704831374bf665e27746862dda53f05d20",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-estilo-v15/pixel.png",
+      "sha256": "50bebff6e7f8b59cdca20176f4d43da195bd2d4ca9f88368f4b3892f8c4c4cd8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-estilo-v15/iphone.png",
+      "sha256": "334fb77d1f796bd0b8421bf5b97bf6aa4e8555fd1b9758330af1544970bc4510",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v15-product-v1.json",
+      "sha256": "9081b0139def1e37b7c96b726d5709c81c41c7325ebc806541f9005618e2cd07",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/MusaPersonalStyleContract.java",
+      "sha256": "c114dc0817fc6f7ee7c049d421bddac2f20610838274a38433287d9c1da2efbb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaPersonalStyleJourneyTest.java",
+      "sha256": "e7f0d1e9d93e4259ebf5b5a22f4a2099809d0d1287db49bbbf56cf98228bc49e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MusaPersonalStyleApp.tsx",
+      "sha256": "f7855176d4f4804470ad3ca9104baf3deaeb702464159882065e26d84abd7f3b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-v15-style.spec.ts",
+      "sha256": "751d5223a5a4ed24832da872b40434e95dbd7487ad3b4b49ff0821ee42ed01d7",
+      "promptMode": "FULL"
+    }
+  ]
+}

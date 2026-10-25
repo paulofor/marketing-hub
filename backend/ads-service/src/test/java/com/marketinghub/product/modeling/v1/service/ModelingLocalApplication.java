@@ -79,10 +79,10 @@ public class ModelingLocalApplication {
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS learning_sales_cycle_v1(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),objective TEXT,reference_sources TEXT) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_audit(cycle_id BIGINT PRIMARY KEY) ENGINE=InnoDB");
-    for (long id : List.of(99101L, 99102L)) {
+    for (long id : List.of(99101L, 99102L, 99103L)) {
       jdbc.update("INSERT IGNORE INTO product(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO learning_sales_cycle_v1(id) VALUES (?)", id + 100);
       jdbc.update("INSERT IGNORE INTO experiment(id) VALUES (?)", id + 200);
@@ -140,6 +140,12 @@ public class ModelingLocalApplication {
               p.setId(id);
               p.setName("Estrela teste " + id);
               p.setInternalName(p.getName());
+              p.setTargetAudience(
+                  id == 99103L
+                      ? "Público sintético"
+                      : "Público brasileiro com preferências, rotina e limitações próprias. "
+                          .repeat(20)
+                          .substring(0, id == 99101L ? 278 : 600));
               p.setAutomaticExecutionEnabled(true);
               var b = new ProductBigIdea();
               b.setContentJson("{\"centralIdea\":\"Direção própria preservada\"}");
@@ -156,7 +162,7 @@ public class ModelingLocalApplication {
     return r;
   }
 
-  /** Conserva a fila de descoberta em MySQL, simulando apenas seu mapeamento não alterado. */
+  /** Persiste também o público completo na coluna real para detectar perda na passagem. */
   @Bean
   ProductDiscoveryCycleRepository research(DataSource source) {
     var r = mock(ProductDiscoveryCycleRepository.class);
@@ -167,9 +173,10 @@ public class ModelingLocalApplication {
               ProductDiscoveryCycle c = i.getArgument(0);
               if (c.getId() == null) {
                 jdbc.update(
-                    "INSERT INTO product_discovery_cycle(status,theme,objective,reference_sources) VALUES (?,?,?,?)",
+                    "INSERT INTO product_discovery_cycle(status,theme,target_audience,objective,reference_sources) VALUES (?,?,?,?,?)",
                     c.getStatus().name(),
                     c.getTheme(),
+                    c.getTargetAudience(),
                     c.getObjective(),
                     c.getReferenceSources());
                 c.setId(jdbc.queryForObject("SELECT LAST_INSERT_ID()", Long.class));
@@ -190,6 +197,7 @@ public class ModelingLocalApplication {
               var c = new ProductDiscoveryCycle();
               c.setId(id);
               c.setTheme((String) row.get("theme"));
+              c.setTargetAudience((String) row.get("target_audience"));
               c.setObjective((String) row.get("objective"));
               c.setReferenceSources((String) row.get("reference_sources"));
               c.setStatus(ProductDiscoveryCycleStatus.valueOf((String) row.get("status")));
@@ -356,6 +364,19 @@ public class ModelingLocalApplication {
     public Map<String, Object> health() {
       return Map.of(
           "audit", jdbc.queryForObject("SELECT COUNT(*) FROM fixture_audit", Integer.class));
+    }
+
+    /** Consulta o público realmente gravado para detectar truncamento ou perda do contexto. */
+    @GetMapping("/fixture/audience/{id}")
+    public Map<String, Object> audience(@PathVariable Long id) {
+      return Map.of(
+          "targetAudience",
+          Objects.toString(
+              jdbc.queryForObject(
+                  "SELECT target_audience FROM product_discovery_cycle WHERE id=?",
+                  String.class,
+                  id),
+              ""));
     }
 
     /** Simula resultado Argos sem chamar modelos, preservando a fila em banco. */

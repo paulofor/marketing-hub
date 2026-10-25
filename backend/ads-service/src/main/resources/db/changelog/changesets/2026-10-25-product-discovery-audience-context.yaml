@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-25-product-discovery-audience-context
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: product_discovery_cycle
+            columnName: target_audience
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                MODIFY COLUMN target_audience LONGTEXT NULL;

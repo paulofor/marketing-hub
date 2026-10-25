@@ -2244,3 +2244,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-25-product-modeling-international-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-25-product-discovery-audience-context.yaml
+      relativeToChangelogFile: true

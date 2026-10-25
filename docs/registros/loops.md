@@ -3623,6 +3623,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** cada início manual abre um `autonomous_cycle_id`; tarefas, revisões automáticas e custos herdam a correlação, e os gates consultam somente o ciclo corrente.
 - **Prevenção:** teste de contrato mantém revisões históricas fora do contador atual sem apagar auditoria nem ampliar o limite seguro de quatro revisões.
 
+### LOOP-PRODUCT-MODELING-AUDIENCE-LIMIT
+
+- **Sintoma (25/10/2026):** preparar a modelagem de Vega retorna HTTP 500, sem criar pesquisa.
+- **Causa:** público de 278 caracteres em `product.target_audience LONGTEXT` chegava a `product_discovery_cycle.target_audience VARCHAR(191)`; a fixture não persistia esse campo.
+- **Correção:** alinhar entidade, DTO e coluna da descoberta a texto contextual completo, por migração incremental, sem truncar ou duplicar o público.
+- **Prevenção:** matriz MySQL 5.7 reproduz a falha antiga e verifica textos de 278 e 600 caracteres, duas identidades, caminho curto e nulo, replay e reinício. Registro: [modelagem por referências](product-modeling.md).
+
 ### LOOP-LANDING-GENERATOR-MEMORY-TEXT-OVERFLOW
 
 - **Sintoma:** Dédalo conclui a análise autônoma, mas o callback responde HTTP 500 e nenhuma regeneração é iniciada.

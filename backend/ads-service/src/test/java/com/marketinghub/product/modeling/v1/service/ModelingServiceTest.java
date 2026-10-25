@@ -92,6 +92,39 @@ class ModelingServiceTest {
                         && "pt-BR".equals(r.language())));
   }
 
+  /** Preserva públicos detalhados de identidades distintas no contrato entregue à descoberta. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {4L, 99122L})
+  void preservesFullAudienceInDiscoveryContract(long id) throws NoSuchFieldException {
+    String audience =
+        "Público com rotina, preferências e necessidades próprias. ".repeat(12).trim();
+    var product = new Product();
+    product.setId(id);
+    product.setInternalName("Produto " + id);
+    product.setTargetAudience(audience);
+    when(products.findLockedById(id)).thenReturn(Optional.of(product));
+    service.prepare(
+        new SaveModelingRequest(
+            UUID.randomUUID(),
+            id,
+            null,
+            "Resultado contextualizado",
+            List.of("https://reference.example/")));
+    var capture = org.mockito.ArgumentCaptor.forClass(CreateProductDiscoveryCycleRequest.class);
+    verify(discovery).prepareCycle(capture.capture());
+    assertThat(capture.getValue().targetAudience()).isEqualTo(audience);
+    try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+      assertThat(factory.getValidator().validate(capture.getValue())).isEmpty();
+    }
+    assertThat(
+            ProductDiscoveryCycle.class
+                .getDeclaredField("targetAudience")
+                .getAnnotation(jakarta.persistence.Column.class)
+                .columnDefinition())
+        .isEqualTo("LONGTEXT");
+    verify(discovery, never()).startPreparedCycle(anyLong());
+  }
+
   /** Um novo produto ainda é intenção, não cadastro fabricado ou campanha autorizada. */
   @Test
   void preparesNewProductWithoutCreatingCommercialProduct() {

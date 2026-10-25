@@ -26,7 +26,7 @@ public class ProductDiscoveryCycle {
   @Column(name = "theme", nullable = false, length = 191)
   private String theme;
 
-  @Column(name = "target_audience", length = 191)
+  @Column(name = "target_audience", columnDefinition = "LONGTEXT")
   private String targetAudience;
 
   @Column(name = "country", nullable = false, length = 16)

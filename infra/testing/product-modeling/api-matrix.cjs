@@ -5,6 +5,8 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
  for(const id of [99101,99102]){
   const input={requestKey:crypto.randomUUID(),productId:id,desiredOutcome:'Resultado específico '+id,referenceUrls:['https://reference.example/']};
   const m=await call('POST','/api/product-modeling/v1',input);assert.equal(m.status,'DRAFT');assert.equal(m.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(m.targetMarket,'Brasil');
+  const audience=await call('GET',`/fixture/audience/${m.discoveryCycleId}`);
+  assert.equal(audience.targetAudience,'Público brasileiro com preferências, rotina e limitações próprias. '.repeat(20).slice(0,id===99101?278:600));
   const replay=await call('POST','/api/product-modeling/v1',input);assert.equal(m.id,replay.id);
   await call('POST','/api/product-modeling/v1',{...input,desiredOutcome:'Outra intenção'},409);
   assert.equal((await call('GET','/fixture/health')).audit,id===99101?0:1);
@@ -20,5 +22,8 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
  }
  const fresh=await call('POST','/api/product-modeling/v1',{requestKey:crypto.randomUUID(),newProductName:'Nova estrela',desiredOutcome:'Outro resultado',referenceUrls:['https://reference.example/']});
  assert.equal(fresh.productId,null);assert.equal(fresh.status,'DRAFT');
- console.log(JSON.stringify({prepare:'PASS',replay:'PASS',concurrentStart:'PASS',adoption:'PASS',identity:'PASS',factualContext:'PASS',newProduct:'PASS',externalSpend:0}));
+ assert.equal((await call('GET',`/fixture/audience/${fresh.discoveryCycleId}`)).targetAudience,'');
+ const short=await call('POST','/api/product-modeling/v1',{requestKey:crypto.randomUUID(),productId:99103,desiredOutcome:'Público curto preservado',referenceUrls:['https://reference.example/']});
+ assert.equal((await call('GET',`/fixture/audience/${short.discoveryCycleId}`)).targetAudience,'Público sintético');
+ console.log(JSON.stringify({prepare:'PASS',fullAudienceTwoProducts:'PASS',shortAndNullAudience:'PASS',replay:'PASS',concurrentStart:'PASS',adoption:'PASS',identity:'PASS',factualContext:'PASS',newProduct:'PASS',externalSpend:0}));
 })().catch(e=>{console.error(e);process.exitCode=1});

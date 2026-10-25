@@ -936,7 +936,7 @@ components:
           allOf:
             - $ref: "./video-studio-swagger.yaml#/components/schemas/ResearchIntelligenceSelection"
         theme: { type: string, maxLength: 191 }
-        targetAudience: { type: string, maxLength: 191, nullable: true }
+        targetAudience: { type: string, nullable: true, description: Contexto integral do público, preservado também na modelagem de produtos existentes. }
         country: { type: string }
         language: { type: string }
         acquisitionChannel: { type: string, nullable: true }

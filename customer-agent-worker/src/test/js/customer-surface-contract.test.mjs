@@ -30,7 +30,7 @@ test('recusa os dados históricos de Capella e outras identidades, mesmo em deta
 });
 
 test('a interface real usa apresentação segura, mantém demonstração honesta e não exibe o erro bruto', async () => {
-  let status = 'INPUT', fail = false;
+  let status = 'INPUT', fail = false, malformed = false;
   const session = () => ({ id: 'another-session', productId: 9918, cycleId: 2233, experimentId: 4411,
     prototypeVersion: 'another-private-v9', productName: 'Kit de barbearia', status,
     reason: 'SQLException debugInfo fixture sessionId=secret-technical-detail', events: [{ code: 'VALUE_MOMENT' }],
@@ -47,6 +47,7 @@ test('a interface real usa apresentação segura, mantém demonstração honesta
     }
     if (req.url.endsWith('/session')) {
       res.setHeader('Content-Type', 'application/json');
+      if (malformed) { res.end('{"sessionId":"raw-technical-receipt", malformed'); return; }
       res.end(JSON.stringify(session())); return;
     }
     if (req.url.endsWith('/input')) {
@@ -74,7 +75,7 @@ test('a interface real usa apresentação segura, mantém demonstração honesta
     fail = true;
     await page.locator('#prepare').click();
     await page.locator('#error').waitFor({ state: 'visible' });
-    assert.match(await page.locator('#error').innerText(), /Seus dados foram preservados/);
+    assert.match(await page.locator('#error').innerText(), /Não foi possível concluir esta ação/);
     await checkCustomerSurface(page);
     status = 'FAILED';
     await page.reload();
@@ -85,6 +86,11 @@ test('a interface real usa apresentação segura, mantém demonstração honesta
     await page.reload();
     await page.locator('#result').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#calendar').textContent(), 'Dia 1 — Apresente seu serviço | Post 1 | Story 1 | Legenda 1');
+    await checkCustomerSurface(page);
+    malformed = true;
+    await page.reload();
+    await page.locator('#error').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#error').innerText(), 'Não foi possível abrir seu kit agora. Tente novamente.');
     await checkCustomerSurface(page);
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 });

@@ -3,13 +3,14 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const base = location.pathname.replace(/\/prototype$/, '');
+  class KitUiError extends Error {}
   let secret = sessionStorage.getItem('private-kit-session-v1') || '';
   let current, timer, displaying = '', imageUrls = [];
   const error = message => { $('error').textContent = message; $('error').hidden = !message; $('reload').hidden = !message || current?.status !== 'READY'; };
   async function api(path, method = 'GET', body, binary = false) {
     const response = await fetch(base + path, { method, headers: { 'X-Kit-Session': secret, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', credentials: 'omit' });
     if (!response.ok) {
-      throw new Error(response.status === 401 ? 'Seu acesso não está disponível. Abra novamente a demonstração pelo painel.' : 'Não foi possível concluir esta ação. Seus dados foram preservados. Tente novamente.');
+      throw new KitUiError(response.status === 401 ? 'Seu acesso não está disponível. Abra novamente a demonstração pelo painel.' : 'Não foi possível concluir esta ação. Tente novamente.');
     }
     return binary ? response.blob() : response.status === 204 ? null : response.json();
   }
@@ -90,11 +91,11 @@
     if (['QUEUED', 'RUNNING'].includes(current.status)) timer = setTimeout(load, 1000);
   }
   async function load() {
-    try { current = await api('/session'); await render(); } catch (ex) { clearTimeout(timer); error(ex.message); }
+    try { current = await api('/session'); await render(); } catch (ex) { clearTimeout(timer); error(ex instanceof KitUiError ? ex.message : 'Não foi possível abrir seu kit agora. Tente novamente.'); }
   }
   async function action(button, operation) {
     button.disabled = true; error('');
-    try { await operation(); } catch (ex) { error(ex.message); } finally { button.disabled = false; }
+    try { await operation(); } catch (ex) { error(ex instanceof KitUiError ? ex.message : 'Não foi possível concluir esta ação. Tente novamente.'); } finally { button.disabled = false; }
   }
   $('reload').onclick = () => action($('reload'), load);
   $('form').addEventListener('submit', async e => {

@@ -83,3 +83,7 @@ As 37 regressões do catálogo, detalhe do agente e evidência operacional passa
 assim como as dos consumidores afetados. O catálogo v3 foi comparado estruturalmente com o v2:
 somente a versão do catálogo e o acréscimo do prompt específico diferem. Não há redução de
 cobertura ou substituição de hashes históricos.
+
+Erros nativos de rede, decodificação ou JSON malformado também usam mensagem simples. A
+regressão do cliente real inclui recibo malformado com identificador técnico, sem refletir
+esse conteúdo na tela. Os três testes afetados e o empacotador foram revalidados após o ajuste.

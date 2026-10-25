@@ -539,6 +539,42 @@ class ProductDiscoveryServiceTest {
     verify(bpmAuditService).open(any(ProductDiscoveryCycle.class));
   }
 
+  /** Rascunho não abre tarefa; início explícito publica uma única auditoria e fila. */
+  @Test
+  void preparesWithoutTaskAndStartsExactlyOnce() {
+    when(cycleRepository.save(any(ProductDiscoveryCycle.class)))
+        .thenAnswer(
+            i -> {
+              ProductDiscoveryCycle c = i.getArgument(0);
+              c.setId(37L);
+              return c;
+            });
+    var service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    var response =
+        service.prepareCycle(
+            new CreateProductDiscoveryCycleRequest(
+                "Modelagem",
+                "Público",
+                "BR",
+                "pt-BR",
+                "Instagram",
+                "Sem campanha",
+                null,
+                "Resultado"));
+    var capture = org.mockito.ArgumentCaptor.forClass(ProductDiscoveryCycle.class);
+    verify(cycleRepository).save(capture.capture());
+    assertThat(capture.getValue().getStatus()).isEqualTo(ProductDiscoveryCycleStatus.DRAFT);
+    org.mockito.Mockito.verifyNoInteractions(bpmAuditService);
+    when(cycleRepository.findByIdForUpdate(37L)).thenReturn(Optional.of(capture.getValue()));
+    service.startPreparedCycle(response.id());
+    service.startPreparedCycle(response.id());
+    verify(bpmAuditService, times(1)).open(capture.getValue());
+    assertThat(capture.getValue().getStatus())
+        .isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+  }
+
   /** Deve retomar o handoff atual sem recriar ou reexecutar a pesquisa factual de Argos. */
   @Test
   void resumesPrivateValidationFromCompletedFactualCycle() {

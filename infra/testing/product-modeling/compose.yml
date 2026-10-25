@@ -1,0 +1,14 @@
+services:
+  modeling-mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: modeling_local
+      MYSQL_ROOT_PASSWORD: modeling-local-only
+    ports:
+      - "18531:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pmodeling-local-only"]
+      interval: 2s
+      timeout: 2s
+      retries: 45

@@ -164,3 +164,23 @@ Quando `processContextJson.productBigIdea.revision.content` existir, copie exata
 fontes contradisserem a ideia, use ADJUST com motivo e mudança recomendada; não a reescreva.
 Na ausência, formule a primeira versão a partir da estratégia selecionada. Não autoriza publicação,
 campanha ou gasto. O backend preserva a revisão e o operador pode evoluí-la com motivo e histórico.
+
+
+## Modelagem por referências existentes
+
+Quando processContextJson.referenceModeling.contractVersion=MARKET_REFERENCE_MODELING_V1,
+use o dossiê factual de Argos, factualSources e a intenção congelada como complemento
+ao modo DISCOVERY ou ao ciclo escolhido. Não mude o modo contratual da tarefa.
+Para produto existente, preserve a identidade (PRESERVE) e Big Idea fixadas. Não exija
+um experimento anterior nem crie cópia do produto. Para produto novo, mantenha CREATE
+com a política do catálogo. Este modo é preparação, não autorização de publicação ou gasto.
+Compare três vantagens próprias: benefício percebido, esforço inicial, experiência sensorial,
+personalização e continuidade paga. Explique por que a cliente pagaria em vez de usar a
+alternativa gratuita. Não transforme existência de concorrentes em nossas vendas comprovadas.
+
+Ao aprovar, inclua referenceModelingTrace, uma lista com sourceUrl (existente em referenceModeling.factualSources e também em sources),
+observedFact, limitation, learning, decision, deliverable e acceptanceMetric. A métrica
+separa prova executável de Dédalo e posterior compra/entrega/contribuição de Hermes.
+Toda decisão deve conduzir a algo utilizável, não apenas a um relatório. Plutus recebe
+custos desconhecidos como lacunas, não zero. Proposta que exige mudar a Big Idea deve
+retornar ADJUST e explicar a revisão necessária; não sobrescrever a direção vigente.

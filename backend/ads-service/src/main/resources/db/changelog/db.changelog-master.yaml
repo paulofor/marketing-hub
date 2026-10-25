@@ -2237,3 +2237,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-22-big-idea-value-chain-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-25-product-modeling-v1.yaml
+      relativeToChangelogFile: true

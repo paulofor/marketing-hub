@@ -1239,3 +1239,28 @@ agentes; simular a capacidade como sempre disponível esconde falhas dessa passa
 A Big Idea versionada do produto orienta oferta, construção, comunicação, revisão e aprendizado.
 Atena cria na estratégia; o operador pode evoluir com motivo e histórico. Cada experimento preserva
 sua versão, sem reescrever aprovações ou herdar autorizações. Seguir [Big Idea v1](product-big-idea-canon.v1.md).
+
+## Entrada por referências de mercado — decisão de 25/10/2026
+
+O percurso `MARKET_REFERENCE_MODELING_V1` integra a descoberta e os seis processos existentes.
+A gestão aceita produto existente ou nome de produto novo, de uma a cinco URLs públicas e o
+resultado desejado. Salvar prepara pesquisa em DRAFT, sem inferência, campanha ou autorização
+herdada. O comando explícito de pesquisa libera Argos pela fila canônica já existente.
+
+Argos reúne fatos, preços datados, entrada gratuita, continuidade paga, experiência, relatos,
+contrapontos e lacunas. Atena compara três vantagens próprias, preserva a Big Idea vigente e
+propõe evolução explícita quando necessária. Plutus avalia a economia; Dédalo arquiteta e
+constrói; Íris/Apolo comunicam provas reais; Psique/Têmis revisam independentemente; Hermes
+opera somente após homologação e autorizações próprias. Não acrescentar agentes ou novos gates.
+
+A modelagem preserva a ligação fonte → aprendizado → decisão → entrega → resultado comercial.
+Usar os IDs de evidência e o histórico de tarefas do mesmo contexto. Produtos existentes vinculam as fontes a uma preparação ainda não executada, usando as
+referências oficiais do ciclo; não criar cópia do produto nem alterar experimentos anteriores.
+Produtos novos mantêm o handoff canônico da descoberta. Seguir
+[Modelagem por referências v1](market-reference-modeling-canon.v1.md).
+Mudanças comerciais exigem o ciclo sucessor vigente. Concorrentes oferecem sinais de mercado,
+não prova das nossas vendas; identidade, materiais e implementação devem ser próprios.
+
+Piloto: Vega, com Whering e Indyx como referências, preservando estilo pessoal e roupas disponíveis.
+A hipótese de melhoria é reduzir esforço inicial e aumentar valor percebido da personalização;
+medir tempo até entrega útil, compras líquidas e contribuição. Não declarar ganho sem mercado real.

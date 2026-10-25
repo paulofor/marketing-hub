@@ -577,6 +577,60 @@
           "maxLength": 2000
         }
       }
+    },
+    "referenceModelingTrace": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sourceUrl",
+          "observedFact",
+          "limitation",
+          "learning",
+          "decision",
+          "deliverable",
+          "acceptanceMetric"
+        ],
+        "properties": {
+          "sourceUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "observedFact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "limitation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "learning": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "decision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "deliverable": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "acceptanceMetric": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      }
     }
   }
 }

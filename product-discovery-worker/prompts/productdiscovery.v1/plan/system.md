@@ -80,3 +80,13 @@ No aprofundamento, `metaAdRequests` consulta somente snapshots já persistidos p
 O acervo Meta válido da descoberta inicial continua disponível; não abra outra investigação nem
 reutilize seus números de tentativa. Ausência ou vencimento de snapshot é lacuna, não ausência
 de mercado. As novas buscas públicas devem se concentrar nas perguntas pendentes das candidatas.
+
+## Modelagem por referências — MARKET_REFERENCE_MODELING_V1
+
+Quando objective contiver MODEL_REFERENCES_V1, comece pelas URLs em referenceSources.
+Investigue público, desejo, ocasião, primeiro valor, esforço de entrada, experiência sensorial,
+personalização, preços e moeda/data, fronteira gratuita/paga, relatos públicos e contrapontos.
+Esses produtos são referências, não candidatas a copiar. Fonte inacessível é lacuna explícita.
+Uma oferta existente é sinal de mercado e investimento; não comprova vendas nem margem do nosso PDE.
+A pesquisa não redefine a Big Idea, produto ou orçamento. Entregue IDs de evidência para que Atena
+possa comparar três diferenças úteis e Dédalo possa ligar cada decisão à prova executável.

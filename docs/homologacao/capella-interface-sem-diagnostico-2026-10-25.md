@@ -45,7 +45,7 @@ autoriza campanha. Melhoria comercial ainda não medida.
 
 ## Validação local concluída
 
-- Backend: 58 testes do kit, sem falhas. Psique: suíte de 240 casos sem falhas (12 condicionais
+- Backend: 58 testes do kit, sem falhas. Psique: suíte de 243 casos sem falhas (12 condicionais
   de integração), seguida das validações com relatório real. Compositor: 66 testes sem falhas.
 - Navegador: 52 testes JavaScript aprovados em sequência; os três testes da interface foram
   repetidos após simplificar o calendário e também passaram.
@@ -62,3 +62,16 @@ autoriza campanha. Melhoria comercial ainda não medida.
 
 Os resultados comprovam a correção e a barreira de recorrência. Não constituem parecer novo
 de Psique sobre acabamento comercial, evidência de demanda ou autorização de campanha.
+
+## Compatibilidade das homologações
+
+O primeiro CI detectou o hash do prompt v5 congelado na atestação de Mira. A alteração foi
+isolada no prompt de kit v6, selecionado pelo runtime, sem alterar o schema de saída. O runner
+e o prompt v5 foram restaurados aos bytes homologados; a verificação nova fica nos consumidores
+e em um validador específico de prova do kit. Testes com duas identidades cobrem a seleção v6
+e preservam o caminho v5. O empacotador real validou 656 arquivos e 156 manifestos, sem nova
+atestação ou mudança de produto alheio ao pedido. Correspondência com o loop conhecido
+`LOOP-ACTIONS-PROVA-IMUTAVEL-E-GRAFO-HISTORICO`: preservar o artefato congelado e versionar a
+evolução específica elimina a dependência indevida sem enfraquecer o gate de integridade.
+As seis passagens reais de cenário para os consumidores foram reexecutadas localmente com
+modelos simulados, confirmação de callback e controles de isolamento aprovados após essa divisão.

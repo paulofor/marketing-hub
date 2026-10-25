@@ -439,6 +439,30 @@ class CustomerBpmTaskConsumerTest {
     }
   }
 
+  /**
+   * Aplica a revisão nova aos kits por contrato, sem alterar a revisão histórica de outros PDEs.
+   */
+  @Test
+  void isolatesKitCustomerSurfacePromptFromHistoricalPdeReview() throws Exception {
+    var consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000", "codex", "gpt-6.1-sol", "max", "/absent", "", json);
+    for (long productId : new long[] {7L, 9918L}) {
+      var task = json.valueToTree(cycleTask("psiqueAdherent", 4L, 92L, 2L));
+      var target = (com.fasterxml.jackson.databind.node.ObjectNode) task.path("taskTarget");
+      target.put("productId", productId);
+      ((com.fasterxml.jackson.databind.node.ObjectNode) target.path("pdeContext").path("lineage"))
+          .put("productId", productId);
+      ((com.fasterxml.jackson.databind.node.ObjectNode) target.path("pdeContext"))
+          .putObject("privatePrototypeAcceptance")
+          .put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
+      Map<String, Object> input = json.convertValue(task, Map.class);
+      assertThat(consumer.prompt(input, List.of()))
+          .contains("revisão sintética de cenário de kit v6", "Separar a experiência da auditoria")
+          .doesNotContain("revisão sintética de cenário PDE v5");
+    }
+  }
+
   /** Recusa referências incoerentes antes de captura ou inferência sem voltar ao fluxo legado. */
   @Test
   void rejectsMismatchedCycleInsteadOfFallingBackToHumanReview() {

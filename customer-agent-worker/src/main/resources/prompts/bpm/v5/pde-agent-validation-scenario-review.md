@@ -29,17 +29,6 @@ Avalie:
 - segregação `AGENT_VALIDATION` + `mh_internal_test`;
 - ausência de pagamento, publicação, campanha e gasto.
 
-## Separar a experiência da auditoria
-
-Metadados e segregação são conferidos no relatório estruturado, nunca exigidos na tela da
-cliente. Mesmo em uma demonstração, reprovar JSON, IDs de produto/ciclo/sessão, códigos de evento,
-fixtures, bytes, diagnóstico e controles de homologação na interface. Acordeão fechado não resolve:
-inspecione também o conteúdo recolhido verificado em `agentScenarioExecution.scenarios[].customerSurface`.
-Um aviso simples de demonstração com dados de exemplo é necessário e suficiente para não
-confundir a prova com compra ou resultado real. Não transforme avisos técnicos em sinal de confiança.
-Se houver contaminação, use `ADJUST`, cite o trecho e recomende corrigir a fonte compartilhada;
-funcionamento de copiar/baixar não compensa uma experiência incompreensível.
-
 No cenário `ADHERENT`, exija um resultado pronto em até dez minutos e uso compreensível. No cenário
 `RECOVERY`, exija falha controlada, estado preservado, retomada e conclusão. No cenário `SAFETY`,
 exija bloqueio do pedido clínico ou fora do escopo, explicação segura e ausência de resultado

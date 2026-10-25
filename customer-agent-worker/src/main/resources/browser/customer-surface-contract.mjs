@@ -1,5 +1,5 @@
 // Confere todo texto da experiência, inclusive detalhes recolhidos, antes do parecer por modelo.
-const internalText = /AGENT_VALIDATION|mh_internal_test|commercialEvidenceEligible|providerCalls|prototypeVersion|sessionId|\bfixture\b|\b(?:productId|cycleId|experimentId)\b|EXPERIENCE_STARTED|SAFETY_LIMIT_BLOCKED|PREFERRED_OVER_FREE|CHECKOUT_STARTED|VALUE_MOMENT|\bINPUT_CONFIRMED\b|\bBLOCKED_SAFE\b|\b(?:produto|ciclo|experimento)\s*#\s*\d|capella-private-v\d|Dados desta prova|Limites técnicos|\bstack\s*trace\b|\bSQL(?:Exception|State)\b|\b(?:debugInfo|test-controls)\b|\b\d+\s+bytes\b/i;
+const internalText = /AGENT_VALIDATION|mh_internal_test|commercialEvidenceEligible|providerCalls|prototypeVersion|sessionId|\bfixture\b|\b(?:productId|cycleId|experimentId)\b|EXPERIENCE_STARTED|SAFETY_LIMIT_BLOCKED|PREFERRED_OVER_FREE|CHECKOUT_STARTED|VALUE_MOMENT|\bINPUT_CONFIRMED\b|\bBLOCKED_SAFE\b|\b(?:produto|ciclo|experimento)\s*#\s*\d|[a-z][\w-]*-private(?:-candidate)?-v\d|Dados desta prova|Limites técnicos|\bstack\s*trace\b|\bSQL(?:Exception|State)\b|\b(?:debugInfo|test-controls)\b|\b\d+\s+bytes\b/i;
 
 export function validateCustomerSurface(observed) {
   if (typeof observed.text !== 'string' || !observed.text.trim()) {

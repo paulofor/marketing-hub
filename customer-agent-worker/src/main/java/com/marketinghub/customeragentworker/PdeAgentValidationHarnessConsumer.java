@@ -47,7 +47,7 @@ public class PdeAgentValidationHarnessConsumer {
     this.visualEvidenceBackendClient = visualEvidenceBackendClient;
   }
 
-  /** Reserva somente a etapa técnica e a conclui sem invocar modelo de IA. */
+  /** Reserva a etapa técnica, confere a interface do kit e conclui sem invocar modelo de IA. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
@@ -60,6 +60,8 @@ public class PdeAgentValidationHarnessConsumer {
       workDirectory = Files.createTempDirectory("pde-agent-validation-task-" + taskId(task) + "-");
       PdeAgentValidationHarnessRunner.HarnessExecution execution =
           runner.run(task, "TECHNICAL", null, workDirectory);
+      KitCustomerSurfaceProof.validate(
+          json.valueToTree(task.get("taskTarget")), execution.result());
       serializedInput = execution.serializedInput();
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
           visualEvidenceBackendClient.uploadArtifacts(

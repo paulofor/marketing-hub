@@ -1,0 +1,85 @@
+{
+  "recordVersion": "vega-personal-style-focus-v1",
+  "date": "2026-10-25",
+  "productId": 4,
+  "commercialName": "Método MUSA - Seu Estilo em 7 Dias",
+  "bigIdea": {
+    "id": 5,
+    "productId": 4,
+    "revision": 2,
+    "content": {
+      "centralIdea": "Seu guarda-roupa pode ter mais a sua cara. O Método MUSA ajuda você a descobrir combinações com as próprias roupas e construir, em uma jornada de sete dias, um jeito de se vestir que combina com seu gosto e sua rotina.",
+      "audience": "Mulheres que querem reconhecer seu estilo nas combinações do dia a dia, aproveitar as roupas que já têm e decidir o que vestir com menos esforço. Preferências casuais, criativas, discretas, esportivas, românticas ou elegantes são caminhos possíveis, não categorias obrigatórias.",
+      "desire": "Olhar uma combinação e sentir “isso tem a minha cara”, com conforto e praticidade para a vida real, sem precisar renovar o guarda-roupa nem aprender moda ou operar ferramentas de IA.",
+      "promise": "Ajudar a experimentar e organizar combinações alinhadas ao gosto declarado e à rotina, em uma jornada guiada de sete dias com as próprias roupas. Um primeiro ajuste utilizável deve demonstrar valor antes da compra. Elegância é uma preferência possível, não a transformação obrigatória.",
+      "mechanism": "Harness de estilo pessoal: recebe a ocasião, as peças disponíveis e a preferência da cliente; oferece uma orientação simples com explicação ligada à escolha; permite experimentar, salvar e retomar; organiza o aprendizado da semana em uma fórmula pessoal reutilizável. A continuidade de R$ 67 em pagamento único oferece a sequência dos Dias 2 a 7 e materiais durante 90 dias, sem assinatura. Personalização deve respeitar cores, conforto e expressão escolhidos, inclusive a opção de manter a combinação. Não recomendar retirar elementos ou aumentar formalidade por padrão.",
+      "evidence": "Decisão explícita do usuário em 25/10/2026: mudar Vega de elegância para estilo. A pesquisa de Atena #21 e a Big Idea v1 ficam preservadas como antecedentes. A presença de concorrentes é sinal de uma categoria existente e uma oportunidade de público mais amplo; superioridade, tamanho do mercado e demanda por Vega continuam hipóteses, não vendas comprovadas. Em 25/10 a candidata v14 estava acessível em https://v9.clubemusa.com.br e o ciclo #13/experimento #106 permanecia PLANNED; isso comprova disponibilidade da versão anterior, não homologação desta nova direção. Comparar uso do primeiro ajuste, compras líquidas, entrega útil e contribuição no futuro teste autorizado.",
+      "limits": "Não promete descobrir uma identidade definitiva em sete dias, aprovação alheia, mudança corporal, renda, economia garantida ou aumento comprovado de vendas. Não exige elegância, feminilidade ou minimalismo. Vega atende estilo cotidiano; Alcyone mantém a decisão visual para uma ocasião específica. A nova direção orienta contextos novos; ciclo #13/experimento #106, versões, pareceres e custos históricos não são reescritos. Não amplia orçamento, autoriza vídeos pagos, campanha ou cobrança. A candidata de estilo precisa de implementação e homologação próprias antes do lançamento."
+    },
+    "changeReason": "Decisão explícita do usuário em 25/10/2026: deslocar Vega de elegância para estilo pessoal, mantendo elegância como uma preferência e a concorrência como sinal de categoria. Preservar histórico e limites.",
+    "createdBy": "Operador do painel (identidade não informada)",
+    "sourceTaskId": null,
+    "createdAt": "2026-10-25T11:30:44.931785117Z"
+  },
+  "verification": {
+    "protectedFieldsUnchanged": [
+      "id",
+      "slug",
+      "internalName",
+      "currentPriceBrl",
+      "publicUrl",
+      "productTypeId",
+      "pdeExperienceJson",
+      "validationDefinitionJson",
+      "scientificEvidencePack",
+      "associatedExperiments",
+      "checkoutMonetization"
+    ],
+    "slotsUnchanged": 7,
+    "bigIdeaId": 5,
+    "revision": 2,
+    "historyPreserved": true
+  },
+  "localValidation": {
+    "backendTests": 16,
+    "frontendTests": 109,
+    "typescript": "PASS",
+    "productionBuild": "PASS",
+    "browser": [
+      {
+        "device": "desktop",
+        "currentRevision": 2,
+        "researchCollapsed": true,
+        "historyAccessible": true,
+        "overflow": false,
+        "writes": 0
+      },
+      {
+        "device": "iphone",
+        "currentRevision": 2,
+        "researchCollapsed": true,
+        "historyAccessible": true,
+        "overflow": false,
+        "writes": 0
+      },
+      {
+        "device": "pixel",
+        "currentRevision": 2,
+        "researchCollapsed": true,
+        "historyAccessible": true,
+        "overflow": false,
+        "writes": 0
+      }
+    ]
+  },
+  "historicalContext": {
+    "cycleId": 13,
+    "experimentId": 106,
+    "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+    "mutated": false
+  },
+  "scope": "Posicionamento e briefing de novos contextos; não implementa nem homologa a próxima experiência de estilo.",
+  "newPaidInference": false,
+  "campaignLaunched": false,
+  "commercialImpactMeasured": false
+}

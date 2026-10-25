@@ -50,3 +50,11 @@ Homologação e fontes conceituais: [criação por Atena](../homologacao/product
 ## Ausência histórica anterior à implantação — 24/10/2026
 
 A primeira tarefa da referência comercial, incluindo sufixos canônicos, também pode registrar ausência anterior ao campo Big Idea. Essa ausência não autoriza vincular uma pesquisa posterior quando o processo é retomado. O backend confere a origem antes de fixar ou expor a direção; vínculo tardio incorreto permanece como registro histórico, sem orientar novas retentativas daquele contexto. Fotografias e pareceres anteriores não são reescritos. A criação inicial explícita de Atena na atividade estratégica do próprio contexto continua permitida. A ideia vigente segue disponível para novos contextos, sem redução de promessa ou migração silenciosa do experimento legado.
+
+## Direção vigente antes da pesquisa — 25/10/2026
+
+Após uma evolução explícita, a gestão apresenta primeiro a revisão vigente. A proposta
+original de Atena e suas fontes ficam disponíveis em consulta recolhida; não devem
+ocupar o destaque acima da decisão atual. Sem Big Idea definida, a criação com Atena
+continua diretamente acessível. A apresentação usa a revisão retornada pelo backend,
+sem inferir aprovação, atualidade comercial ou reescrever o resultado da pesquisa.

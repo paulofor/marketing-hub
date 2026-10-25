@@ -215,7 +215,6 @@ export default function ProductBigIdeaPage() {
       )}
       {query.data && (
         <>
-          <ProductBigIdeaResearch key={productId} productId={productId} />
           <section className="alert alert-primary" aria-label="Direção vigente">
             <strong>
               {query.data.current
@@ -229,6 +228,18 @@ export default function ProductBigIdeaPage() {
             )}
             <p className="small mb-0">{query.data.guidance}</p>
           </section>
+          {query.data.current ? (
+            <details className="mb-3">
+              <summary>Consultar pesquisa de Atena e fontes</summary>
+              <p className="small mt-2">
+                A pesquisa preserva suas propostas e fontes. A direção vigente
+                do produto é a versão apresentada acima.
+              </p>
+              <ProductBigIdeaResearch key={productId} productId={productId} />
+            </details>
+          ) : (
+            <ProductBigIdeaResearch key={productId} productId={productId} />
+          )}
           {product.data && (
             <details className="mb-3">
               <summary>Consultar estratégia já cadastrada</summary>

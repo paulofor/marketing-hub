@@ -5,6 +5,38 @@
 > [regra global de validação por agentes ou mercado](system-governance-canon.v3.md#31-regra-global-de-validação-por-agentes-ou-mercado).
 > A antiga observação solicitada com cinco pessoas foi retirada e não pode voltar como gate.
 
+## Estilo pessoal como direção vigente — decisão de 25/10/2026
+
+Vega passa de **presença elegante** para **estilo pessoal com as próprias roupas**.
+A Big Idea e o cadastro do produto são a origem compartilhada para novos contextos.
+Elegância é uma preferência possível; não impor feminilidade, formalidade ou minimalismo.
+A concorrência indica uma categoria existente e orienta diferenciação. A hipótese de público
+mais amplo não substitui compras líquidas, entrega útil e contribuição como prova de mercado.
+
+- **Promessa:** ajudar a reconhecer o próprio gosto nas combinações e reutilizar escolhas na rotina.
+- **Entrada:** ocasião, peças disponíveis e preferência, com opção de ainda não saber ou manter a combinação.
+- **Primeiro valor:** orientação aplicável, acompanhada de uma explicação ligada à preferência declarada.
+- **Continuidade:** jornada de sete dias que consolida escolhas numa fórmula pessoal reutilizável;
+  R$ 67 em pagamento único e 90 dias de acesso, sem assinatura.
+- **Diferenciação:** Vega desenvolve estilo cotidiano; Alcyone resolve uma ocasião específica.
+- **Agentes:** Atena usa a ideia fixada; Dédalo transforma preferências em comportamento verificável;
+  Íris demonstra identificação e utilidade; Psique compara perfis distintos e Têmis verifica fidelidade.
+  Nenhum agente deve usar sua estética como padrão universal.
+- **Aceite da próxima candidata:** mesmas peças e ocasião com preferências diferentes devem produzir
+  orientações pertinentes, sem inventar peças; ausência de preferência não recebe uma identidade
+  inventada. Verificar salvar/retomar, caminho neutro, desktop/mobile e segregação de dados sintéticos.
+- **História e autorização:** preservar v14, ciclo #13/experimento #106, pareceres, custos e contratos
+  publicados. Nova condição comercial exige sucessor e seus aceites, sem herança de autorização.
+  Registrar esta direção não publica experiência, não aprova revisão nem inicia IA ou mídia.
+
+Comparação: manter elegância preservaria a execução mas contrariaria a decisão; “estilo” genérico
+ampliaria a mensagem sem explicar a entrega; **estilo pessoal com roupas existentes** conecta
+identidade, facilidade e mecanismo concreto. Esta foi a opção adotada, preservando preço e público
+inicial para que a próxima comparação possa avaliar a mudança de foco.
+
+A sequência abaixo é o antecedente histórico de 08/09; seus princípios operacionais continuam
+válidos, mas sua estética não prevalece sobre esta direção em novos contextos.
+
 Decisão do usuário em 08/09/2026. Produto `4` (Vega/MUSA), plano comercial `3`.
 Referência: [análise conciliada do #91](../marketing/vega-cadeia-valor-estrategia-2026-09-08.md).
 

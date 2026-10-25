@@ -7666,3 +7666,17 @@ nem reduz a meta de 30% para continuidade/escala. Matriz e provas locais:
 [`capella-worker-retomada-codex-v1.md`](../homologacao/capella-worker-retomada-codex-v1.md).
 A entrega funcional depende da publicação, retomada e aceites seguintes; testes
 e conexão não significam experimento em execução nem evidência de demanda.
+
+## 2026-10-25 — Vega: direção de estilo pessoal
+
+O usuário adotou estilo pessoal com as próprias roupas como foco de Vega, deixando
+elegância como preferência possível. Cadastro atualizado pela tela e Big Idea v2
+(registro #5) confirmados por API/MCP; v1 permanece no histórico. R$ 67, sete dias e
+90 dias de acesso preservados. A hipótese é ampliar identificação e utilidade cotidiana;
+concorrência é sinal de categoria, sem comprovar vendas próprias ou maior mercado medido.
+
+A fonte compartilhada do briefing passa a alinhar público, promessa, mecanismo,
+jornada e comunicação. A gestão também prioriza a ideia vigente sobre a pesquisa
+inicial. O ciclo #13/experimento #106 e sua candidata v14 não foram migrados; a próxima
+experiência exige construção e homologação próprias. Nenhuma nova inferência ou mídia.
+Evidências e limites: [mudança de foco de Vega](../homologacao/vega-estilo-pessoal-v1.md).

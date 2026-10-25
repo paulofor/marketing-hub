@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-hy-nomas-cena-interativa-camera",
+  "collection": "video",
+  "title": "Agente dirige cenas contínuas por prompts e trajetórias de câmera",
+  "finding": "Tencent publicou código e pesos Hy-Nomas em 21–23/10/2026: geração de segmentos de mundo com texto multi-turno, câmera e contexto KV cache.",
+  "mechanism": "Difusão autoregressiva por segmentos condicionada por texto, câmera e histórico; checkpoint com oito passos.",
+  "commercialApplication": "Pesquisar storyboard orientado por agente e movimento de câmera, sem integração de produção neste momento.",
+  "evidenceStrength": "Forte para código, checkpoints e benchmark publicado; insuficiente para alegar qualidade cinematográfica, real-time ou custos.",
+  "publishedOn": "2026-10-23",
+  "validUntil": "2026-11-25",
+  "experimentHypothesis": "Cenas iterativas de Hy-Nomas podem reduzir incoerências visuais em storyboards longos.",
+  "risks": "Infra GPU, deriva de contexto, termos de componentes terceiros, direitos dos resultados.",
+  "limits": "Sem API pública comercial confirmada; 24 FPS é playback; áudio nativo sincronizado não confirmado; licença Apache 2.0 com exceções.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-25-hy-nomas-controle-cena.md",
+  "sourceTitle": "Fonte revisada — Tencent Hy-Nomas: cenas interativas por texto e câmera",
+  "sourceSha256": "56039bfefdc7b2491802fcd38c322169eb4d2bd2addcb642119f51b2fd215835"
+}

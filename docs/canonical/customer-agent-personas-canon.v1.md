@@ -1,5 +1,26 @@
 # Biblioteca de Personas e Agente Cliente v1
 
+## Interface sem diagnóstico interno — decisão de 25/10/2026
+
+Psique deve distinguir os dados da auditoria da experiência que a cliente utiliza, inclusive em
+demonstrações. Produto/ciclo/sessão, códigos de evento, quotas de fixture, JSON, caminhos, tamanhos
+de arquivo e controles de simulação permanecem nos relatórios administrativos, não na interface.
+Um aviso simples de demonstração com dados de exemplo preserva a honestidade da prova.
+Recolher o conteúdo não resolve a contaminação: o harness deve verificar texto em detalhes
+fechados, erros e retomada antes do parecer pago. Funcionamento técnico não compensa essa falha.
+
+O kit compartilhado usa `PDE_CUSTOMER_SURFACE_V1`: remove diagnóstico do documento, mantém eventos
+segregados no backend e apresenta mensagens próprias para a cliente. Causas brutas continuam
+auditáveis. A validação local abrange outra identidade e caminhos anteriormente válidos;
+aprovação técnica não comprova demanda, vendas ou margem.
+
+A instrução específica é `bpm/v6/pde-kit-agent-validation-scenario-review.md`, selecionada pelo
+runtime declarado, com o schema de saída v5 inalterado. Prompt e runner v5 preservam seus bytes
+para os demais PDEs e suas atestações históricas. O harness técnico recusa a contaminação e o
+consumidor de cenários exige a prova nova antes de invocar o modelo, sem reinterpretar recibos
+históricos. O catálogo atual `agent-harness-v3.json` torna a instrução v6 visível na gestão dos
+agentes; o catálogo v2 permanece preservado para as atestações que o referenciam.
+
 ## Objetivo
 
 A Biblioteca de Personas mantém hipóteses versionadas e rastreáveis sobre clientes. O Agente

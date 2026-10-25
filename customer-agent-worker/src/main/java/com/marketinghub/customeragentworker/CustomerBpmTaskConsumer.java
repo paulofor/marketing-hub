@@ -475,7 +475,7 @@ public class CustomerBpmTaskConsumer {
   }
 
   /**
-   * Executa um cenário sintético novo antes de solicitar a interpretação independente de Psique.
+   * Executa o cenário e confere a interface do kit antes da interpretação independente de Psique.
    */
   private PreparedVisualEvidence prepareAgentScenarioEvidence(Map<String, Object> task)
       throws Exception {
@@ -488,6 +488,8 @@ public class CustomerBpmTaskConsumer {
       String scenarioCode = scenarioCode(activityId(task));
       PdeAgentValidationHarnessRunner.HarnessExecution execution =
           pdeAgentValidationHarnessRunner.run(task, "SCENARIO", scenarioCode, workDirectory);
+      KitCustomerSurfaceProof.validate(
+          json.valueToTree(task.get("taskTarget")), execution.result());
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
           visualEvidenceBackendClient.uploadArtifacts(
               taskId(task), execution.visualEvidence().capture().artifacts());
@@ -1217,11 +1219,12 @@ public class CustomerBpmTaskConsumer {
     };
   }
 
-  /** Seleciona o prompt de cenário quando a referência pertence à validação multiagente. */
+  /** Isola a revisão de kit na v6, preservando o prompt v5 das demais experiências homologadas. */
   private String promptResourceFor(Map<String, Object> task) {
-    return isAgentValidationTask(task)
-        ? "prompts/bpm/v5/pde-agent-validation-scenario-review.md"
-        : promptResourceFor(processCode(task));
+    if (!isAgentValidationTask(task)) return promptResourceFor(processCode(task));
+    return KitCustomerSurfaceProof.applies(json.valueToTree(task.get("taskTarget")))
+        ? "prompts/bpm/v6/pde-kit-agent-validation-scenario-review.md"
+        : "prompts/bpm/v5/pde-agent-validation-scenario-review.md";
   }
 
   /** Seleciona o schema sintético sem alterar o contrato histórico de leitura privada. */

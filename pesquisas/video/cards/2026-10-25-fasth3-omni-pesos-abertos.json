@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-fasth3-omni-pesos-abertos",
+  "collection": "video",
+  "title": "Gerar criativos referenciados com áudio sincronizado por pesos acelerados",
+  "finding": "Em 20/10/2026 FastVideo e Nuva Lab publicaram pesos finais, treinamento, inferência e variantes ComfyUI/MLX de FastH3-Omni. Modelo referencia imagem, vídeo e voz e usa oito etapas de geração.",
+  "mechanism": "A destilação do MiniMax H3 reduz avaliações de 50 para 8; benchmark interno em 8 GB200 aponta ganho de latência 5,6–11,9x, que não se extrapola a GPUs locais.",
+  "commercialApplication": "Piloto isolado de variantes publicitárias com produto/personagem/voz licenciados; medir custo por tomada aceita, consistência e uso de GPU.",
+  "evidenceStrength": "Forte para pesos, ferramentas e licença publicados; limitada para qualidade/latência fora do benchmark do fornecedor.",
+  "publishedOn": "2026-10-20",
+  "validUntil": "2026-11-25",
+  "experimentHypothesis": "FastH3-Omni reduzirá custo por vídeo aprovado com referências consistentes comparado ao pipeline atual.",
+  "risks": "Restrição territorial/comercial MiniMax H3, atribuição obrigatória, perda de fidelidade, custo real de GPU, direitos dos materiais.",
+  "limits": "Pesos MiniMax H3 Community License não permissiva; 5–15s, 24 FPS; APIs terceirizadas possuem contrato separado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-25-fasth3-omni-pesos-abertos.md",
+  "sourceTitle": "Fonte revisada — FastH3-Omni: pesos abertos",
+  "sourceSha256": "5ce790bf65fa8b66f498ed9dc2d10f48cf553e2d506f360bfc234ea2d3adad4e"
+}

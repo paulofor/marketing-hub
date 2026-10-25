@@ -69,13 +69,11 @@ it("creates a complete first revision and shows persisted history", async () => 
   mount();
   await screen.findByText("Big Idea ainda não definida");
   const values = Object.values(content);
-  screen
-    .getAllByRole("textbox")
-    .forEach((field, index) =>
-      fireEvent.change(field, {
-        target: { value: values[index] ?? "Direção inicial" },
-      }),
-    );
+  screen.getAllByRole("textbox").forEach((field, index) =>
+    fireEvent.change(field, {
+      target: { value: values[index] ?? "Direção inicial" },
+    }),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Criar Big Idea" }));
   await screen.findByText("Versão vigente: v1");
   expect(axios.post).toHaveBeenCalledWith(
@@ -121,4 +119,54 @@ it("shows query failure without claiming that the product has no idea", async ()
   mount();
   await screen.findByText("Não foi possível consultar a Big Idea.");
   expect(screen.queryByText("Big Idea ainda não definida")).toBeNull();
+});
+it("keeps the adopted direction visible while an earlier research stays available on demand", async () => {
+  const current = { ...content, centralIdea: "Combinações com a sua cara" };
+  vi.mocked(axios.get).mockImplementation(async (url) => ({
+    data: String(url).endsWith("/research")
+      ? {
+          productId: 701,
+          executionId: 91,
+          status: "COMPLETED",
+          canRequest: false,
+          canAdopt: false,
+          guidance: "Pesquisa preservada.",
+          proposal: {
+            bigIdea: { ...content, centralIdea: "Presença elegante" },
+            selectionReason: "Hipótese anterior",
+            demandAssessment: {},
+            alternatives: [],
+            sources: [],
+          },
+        }
+      : String(url).endsWith("big-idea")
+        ? {
+            productId: 701,
+            status: "DEFINED",
+            current: { revision: 2, content: current },
+            history: [],
+            guidance: "Experimentos anteriores preservados.",
+          }
+        : { id: 701, internalName: "Produto sintético" },
+  }));
+  mount();
+  const direction = await screen.findByRole("region", {
+    name: "Direção vigente",
+  });
+  expect(direction).toHaveTextContent("Versão vigente: v2");
+  expect(direction).toHaveTextContent("Combinações com a sua cara");
+  const research = screen
+    .getByText("Consultar pesquisa de Atena e fontes")
+    .closest("details")!;
+  expect(research).not.toHaveAttribute("open");
+  expect(
+    await screen.findByText("Presença elegante", { selector: "p" }),
+  ).not.toBeVisible();
+  // O histórico pode ser consultado sem salvar, executar IA ou substituir a direção atual.
+  research.open = true;
+  expect(
+    screen.getByText("Presença elegante", { selector: "p" }),
+  ).toBeVisible();
+  expect(direction).toHaveTextContent("Combinações com a sua cara");
+  expect(axios.post).not.toHaveBeenCalled();
 });

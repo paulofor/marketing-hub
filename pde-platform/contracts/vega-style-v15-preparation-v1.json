@@ -13,7 +13,7 @@
     "automaticDeployOnMerge": true,
     "frontendVersion": "v10",
     "publicUrl": "https://v10.clubemusa.com.br",
-    "requiredFrontendSourceSha256": "f24ff4e14d06d314a8f81918c1f486e911d1b81f80efcef4e130393989ba6c88"
+    "requiredFrontendSourceSha256": "d41619960bc61a62252819cafac210b1a41dd4b145fc678ae48f1beae7299c93"
   },
   "liveVisualContract": {
     "devices": [
@@ -24,7 +24,7 @@
     "runtimeIdentity": {
       "version": "v10",
       "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
-      "frontendSourceSha256": "f24ff4e14d06d314a8f81918c1f486e911d1b81f80efcef4e130393989ba6c88"
+      "frontendSourceSha256": "d41619960bc61a62252819cafac210b1a41dd4b145fc678ae48f1beae7299c93"
     }
   },
   "deploymentValidation": {
@@ -44,7 +44,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/vega-estilo-experiencia-v15.md",
-      "sha256": "cbc13cd60d74332d033b9ddab4f48a563e685e15303ab5bd0a0704687368673c",
+      "sha256": "f6d8cfd2af2afa183eb9aa45073375e59aca50c0d5c8aef67f31847109ce3f30",
       "promptMode": "FULL"
     },
     {
@@ -86,7 +86,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/musa-v15-style.spec.ts",
-      "sha256": "751d5223a5a4ed24832da872b40434e95dbd7487ad3b4b49ff0821ee42ed01d7",
+      "sha256": "9c8e3e1b31b142a320827c7f4e729c56e5c79e864124f46e22e6ecac8a535ddd",
       "promptMode": "FULL"
     }
   ],

@@ -222,6 +222,18 @@ test("sete dias reutilizam escolhas, mantêm acesso e refund sem alterar versão
 test("mantém a preferência durante uma resposta em andamento", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window.crypto, "randomUUID", {
+      value: undefined,
+      configurable: true,
+    });
+    Object.defineProperty(window, "sessionStorage", {
+      get() {
+        throw new DOMException("Armazenamento indisponível", "SecurityError");
+      },
+      configurable: true,
+    });
+  });
   const product = {
     experienceVersion: version,
     publicDiagnosticQuestions: [

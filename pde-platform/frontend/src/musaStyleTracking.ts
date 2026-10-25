@@ -1,5 +1,15 @@
 import { MUSA_V15_EXPERIENCE_VERSION } from "./musaCommercialRoutes";
 
+let volatileSessionId: string | undefined;
+
+/** Identificador apenas analítico, sem função de autenticação; funciona também em prévias HTTP. */
+function newSessionId() {
+  return (
+    window.crypto?.randomUUID?.() ??
+    `musa-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  );
+}
+
 /** Mede somente esta candidata e conserva marcadores de QA sem atribuir eventos ao experimento antigo. */
 export function trackStyleEvent(eventType: string, requestId = "") {
   const params = new URLSearchParams(location.search);
@@ -8,11 +18,14 @@ export function trackStyleEvent(eventType: string, requestId = "") {
   let sessionId: string;
   try {
     sessionId =
-      sessionStorage.getItem("musa-style-session") || crypto.randomUUID();
+      sessionStorage.getItem("musa-style-session") ||
+      volatileSessionId ||
+      newSessionId();
     sessionStorage.setItem("musa-style-session", sessionId);
   } catch {
-    sessionId = crypto.randomUUID();
+    sessionId = volatileSessionId || newSessionId();
   }
+  volatileSessionId = sessionId;
   const metadata: Record<string, unknown> = {
     sessionId,
     experienceVersion: MUSA_V15_EXPERIENCE_VERSION,

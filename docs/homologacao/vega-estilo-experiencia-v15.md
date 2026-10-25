@@ -84,3 +84,14 @@ formatação do teste de contexto. A correção local alinhou o manifesto ao mon
 acrescentou regressão no validador de release e fez o teste do monitor conferir
 arquivos locais antes do commit. Os 26 testes de release e 35 do monitor passaram;
 a formatação do arquivo alterado foi aplicada e conferida com o mesmo Spotless.
+
+A rodada Docker do PR identificou uma diferença real entre localhost e a rede de
+containers HTTP: `crypto.randomUUID` não está disponível fora de contexto seguro.
+O rastreamento novo interrompia a primeira tela; os percursos pagos e as versões
+anteriores passavam. A reprodução local confirmou a mesma exceção e a comparação
+com os rastreadores antigos mostrou o fallback já adotado no produto. A v15 agora
+usa identificador analítico em memória quando UUID ou sessionStorage não estão
+disponíveis, sem utilizá-lo como credencial. A regressão também bloqueia storage.
+Após a correção, os 12 percursos v15 passaram na imagem real, com MySQL 5.7 e os
+três dispositivos, incluindo primeiro valor, recuperação e os sete dias. A falta
+de disco da sandbox foi resolvida removendo somente cache descartável de builds.

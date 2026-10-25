@@ -1,0 +1,18 @@
+{
+  "cardKey": "atencao-visual-rostos-saliencia-contexto-artistico",
+  "collection": "neuromarketing",
+  "title": "Rostos orientam fixações iniciais em pinturas: testar composição sem confundir atenção e conversão",
+  "finding": "No AVAtt, 152 pessoas observaram 283 pinturas (4.505 trajetórias oculares). Em 93 obras com rostos, eles receberam 20,1% das fixações, contra 7,2% na referência de trajetórias em outras pinturas. A métrica de enriquecimento dos autores foi 4,97 e a primeira fixação em rosto teve mediana de 0,39 s. São medidas de atenção em arte, não publicidade.",
+  "mechanism": "Rostos, estrutura local e contraste podem direcionar atenção ocular precoce. Essa orientação perceptiva não implica compreensão da oferta, envolvimento emocional ou intenção de compra. O contexto visual pode modificar o efeito.",
+  "commercialApplication": "Comparar criativos estáticos com rosto perto ou longe de benefício, produto e CTA, mantendo oferta e público constantes. Avaliar compreensão, recordação, leitura da oferta e eventos reais de funil; verificar se o rosto ajuda ou compete com a mensagem.",
+  "evidenceStrength": "Evidência observacional com eye-tracking (152 participantes, 283 pinturas, 121.426 fixações); achado consistente na análise da coleção artística, sem ensaio publicitário ou evidência comercial. Aplicação a anúncios é hipótese.",
+  "publishedOn": "2026-10-25",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "A proximidade de rosto e informação central alterará padrões de olhar e compreensão da oferta em relação a uma composição alternativa; efeito sobre CTA ou compra é incerto e deve ser medido separadamente em teste controlado.",
+  "risks": "Confundir fixações com desejo, emoção ou eficácia; desviar atenção do preço e das condições; usar rostos de modo desrespeitoso. Não otimizar apenas atenção e não afirmar aumento de conversões.",
+  "limits": "Observação livre de pinturas, não landing pages, anúncios mobile, vídeos ou consumidores brasileiros. Associações e referências de fixação não demonstram causalidade nem resultado comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-25-atencao-visual-rostos-pinturas.md",
+  "sourceTitle": "AVAtt — atenção visual e rostos em pinturas (revisão curta, 25/10/2026)",
+  "sourceSha256": "08089e12ddc00321750b930de5896d4a12ced6dcfaa2c3fadc2c9087bc9f35a2"
+}

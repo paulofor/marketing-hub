@@ -1,3 +1,4 @@
+import ProductModelingPage from "./pages/product/ProductModelingPage";
 import ProductBigIdeaPage from "./pages/product/ProductBigIdeaPage";
 import CatalogoVivoOpalaPage from "./pages/catalogoVivo/CatalogoVivoOpalaPage";
 import LearningCyclesPage from "./pages/learningCycle/LearningCyclesPage";
@@ -273,9 +274,16 @@ export default function App() {
               <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
               <Route path="/app-ideas" element={<AppIdeaListPage />} />
               <Route path="/app-ideas/new" element={<NewAppIdeaPage />} />
+              <Route
+                path="/product-modeling"
+                element={<ProductModelingPage />}
+              />
               <Route path="/products" element={<ProductListPage />} />
               <Route path="/products/all" element={<AllProductsPage />} />
-              <Route path="/products/in-play" element={<ProductsInPlayPage />} />
+              <Route
+                path="/products/in-play"
+                element={<ProductsInPlayPage />}
+              />
               <Route
                 path="/product-types"
                 element={<ProductTypeCatalogPage />}

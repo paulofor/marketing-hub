@@ -144,6 +144,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: FileText,
       },
       {
+        to: "/product-modeling",
+        label: "Modelar por referências",
+        icon: Search,
+      },
+      {
         to: "/product-discovery",
         label: "Descoberta PDE",
         icon: Search,

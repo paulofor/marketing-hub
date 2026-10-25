@@ -59,6 +59,10 @@ public class ProductDiscoveryService {
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
   private final OpportunityDossierResearchSyncService dossierResearchSyncService;
   private final ProductDiscoveryBpmAuditService bpmAuditService;
+
+  @Autowired(required = false)
+  private com.marketinghub.product.modeling.v1.service.ModelingHandoff modeling;
+
   @Autowired private ResearchIntelligenceService researchIntelligenceService;
   @Autowired private ProductDiscoveryCustomerInterviewService customerInterviewService;
   @Autowired private ProductDiscoveryGapResearchContractService gapResearchContractService;
@@ -80,6 +84,28 @@ public class ProductDiscoveryService {
   /** Cria um ciclo pronto para o worker pesquisar dores e lacunas na internet. */
   @Transactional
   public ProductDiscoveryCycleResponse createCycle(CreateProductDiscoveryCycleRequest request) {
+    return createCycle(request, true);
+  }
+
+  /** Prepara pesquisa sem abrir tarefa BPM ou liberar a fila do executor. */
+  @Transactional
+  public ProductDiscoveryCycleResponse prepareCycle(CreateProductDiscoveryCycleRequest request) {
+    return createCycle(request, false);
+  }
+
+  /** Inicia uma pesquisa preparada uma única vez, junto com sua auditoria canônica. */
+  @Transactional
+  public void startPreparedCycle(Long id) {
+    var cycle = cycleRepository.findByIdForUpdate(id).orElseThrow();
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.DRAFT) return;
+    cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    cycleRepository.save(cycle);
+    bpmAuditService.open(cycle);
+  }
+
+  /** Compartilha o contrato de entrada, distinguindo preparo de execução autorizada. */
+  private ProductDiscoveryCycleResponse createCycle(
+      CreateProductDiscoveryCycleRequest request, boolean start) {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
     cycle.setEvidencePolicy("PUBLIC_SOURCES_V1");
     cycle.setTheme(requiredText(request.theme(), "theme"));
@@ -99,10 +125,11 @@ public class ProductDiscoveryService {
             ? ProductDiscoveryMarketType.UNSPECIFIED
             : request.marketType());
     cycle.setReferenceSources(optionalText(request.referenceSources()));
-    cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    cycle.setStatus(
+        start ? ProductDiscoveryCycleStatus.READY_FOR_RESEARCH : ProductDiscoveryCycleStatus.DRAFT);
     cycle.setStageCode(STAGE_CODE);
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
-    bpmAuditService.open(saved);
+    if (start) bpmAuditService.open(saved);
     return toCycleResponse(saved);
   }
 
@@ -127,7 +154,7 @@ public class ProductDiscoveryService {
 
   /**
    * Retoma o handoff comercial do ciclo concluído sem repetir a pesquisa factual executada por
-   * Argos.
+   * Argos; produto existente aguarda adoção explícita sem abrir materialização duplicada.
    */
   @Transactional
   public ProductDiscoveryPrivateValidationHandoffResponse resumePrivateValidationHandoff(
@@ -161,6 +188,14 @@ public class ProductDiscoveryService {
     }
 
     dossierResearchSyncService.synchronize(cycleId, opportunities);
+    if (modeling != null && modeling.preservesExistingProduct(cycleId))
+      return new ProductDiscoveryPrivateValidationHandoffResponse(
+          cycleId,
+          "product-discovery-cycle:" + cycleId,
+          dossierReadyCount,
+          "AWAITING_CYCLE_ADOPTION",
+          "MODEL_REFERENCE_ADOPTION",
+          "Pesquisa preservada para o produto existente. Em Modelar por referências, vincule as fontes a uma preparação ainda não executada; nenhuma tarefa adicional foi aberta.");
     return new ProductDiscoveryPrivateValidationHandoffResponse(
         cycleId,
         "product-discovery-cycle:" + cycleId,

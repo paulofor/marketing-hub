@@ -458,6 +458,12 @@ export default function ProductListPage() {
 
                 <div className="px-3">
                   <ProductBigIdeaSummary product={product} />
+                  <Link
+                    className="btn btn-outline-primary btn-sm mt-2"
+                    to={`/product-modeling?productId=${product.id}`}
+                  >
+                    Modelar por referências
+                  </Link>
                 </div>
                 <ProductValueChainPosition
                   productId={product.id}

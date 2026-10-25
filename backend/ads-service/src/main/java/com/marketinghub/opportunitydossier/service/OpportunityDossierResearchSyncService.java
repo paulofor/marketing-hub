@@ -54,6 +54,9 @@ public class OpportunityDossierResearchSyncService {
   private final ProductTypeDefinitionRepository productTypeRepository;
   private final ObjectMapper objectMapper;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.modeling.v1.service.ModelingHandoff modeling;
+
   /** Configura as fontes que preservam dossiê, evidência e tarefas sequenciais. */
   public OpportunityDossierResearchSyncService(
       OpportunityDossierRepository dossierRepository,
@@ -92,7 +95,8 @@ public class OpportunityDossierResearchSyncService {
                 candidate.opportunity().getMaturity()
                         == ProductDiscoveryOpportunityMaturity.DOSSIER_READY
                     && candidate.dossier().getCreatedProduct() == null)) {
-      openCommercialTasks(cycleId, candidates);
+      if (modeling == null || !modeling.preservesExistingProduct(cycleId))
+        openCommercialTasks(cycleId, candidates);
     }
   }
 
@@ -445,6 +449,7 @@ public class OpportunityDossierResearchSyncService {
   private String taskContext(Long cycleId, List<CandidateHandoff> candidates) {
     Map<String, Object> context = new LinkedHashMap<>();
     context.put("cycleId", cycleId);
+    if (modeling != null) context.put("referenceModeling", modeling.context(cycleId));
     context.put("productIdentityPolicy", productIdentityPolicy());
     context.put(
         "candidates",

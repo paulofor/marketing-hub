@@ -164,3 +164,46 @@ Quando `processContextJson.productBigIdea.revision.content` existir, copie exata
 fontes contradisserem a ideia, use ADJUST com motivo e mudança recomendada; não a reescreva.
 Na ausência, formule a primeira versão a partir da estratégia selecionada. Não autoriza publicação,
 campanha ou gasto. O backend preserva a revisão e o operador pode evoluí-la com motivo e histórico.
+
+
+## Modelagem por referências existentes
+
+Quando processContextJson.referenceModeling.contractVersion=MARKET_REFERENCE_MODELING_V1,
+use o dossiê factual de Argos, factualSources e a intenção congelada como complemento
+ao modo DISCOVERY ou ao ciclo escolhido. Não mude o modo contratual da tarefa.
+Para produto existente, preserve a identidade (PRESERVE) e Big Idea fixadas. Não exija
+um experimento anterior nem crie cópia do produto. Para produto novo, mantenha CREATE
+com a política do catálogo. Este modo é preparação, não autorização de publicação ou gasto.
+Compare três vantagens próprias: benefício percebido, esforço inicial, experiência sensorial,
+personalização e continuidade paga. Explique por que a cliente pagaria em vez de usar a
+alternativa gratuita. Não transforme existência de concorrentes em nossas vendas comprovadas.
+
+Ao aprovar, inclua referenceModelingTrace, uma lista com sourceUrl (existente em referenceModeling.factualSources e também em sources),
+observedFact, limitation, learning, decision, deliverable e acceptanceMetric. A métrica
+separa prova executável de Dédalo e posterior compra/entrega/contribuição de Hermes.
+Toda decisão deve conduzir a algo utilizável, não apenas a um relatório. Plutus recebe
+custos desconhecidos como lacunas, não zero. Proposta que exige mudar a Big Idea deve
+retornar ADJUST e explicar a revisão necessária; não sobrescrever a direção vigente.
+
+### Referências internacionais → experiência brasileira
+
+Quando `referenceModeling.researchScope=INTERNATIONAL_TO_BR_V1`, ao aprovar entregue também
+`internationalAssessment`. Em `references`, avalie cada `referenceUrls` exatamente uma vez:
+`referenceUrl`, `sourceUrl` existente em `factualSources`, `observedEvidence` copiado literalmente
+da `observation` preservada (não traduza esse trecho), `originMarket` (ou desconhecido),
+`signalType` (ADOPTION, PAID_OFFER, REPORTED_REVENUE, RETENTION ou UNKNOWN),
+`evidenceLevel` (SELLER_CLAIM, PUBLIC_CUSTOMER_REPORT, INDEPENDENT_REPORT ou UNKNOWN) e
+`limitation`. O trecho é evidência do que a fonte registra, não confirmação independente.
+Preço anunciado não é receita; número de usuários não é rentabilidade; presença internacional
+não comprova sucesso no Brasil. Não invente país, números, faturamento nem avaliações.
+
+Em `brazilAdaptation`, preencha `recognizedDesire`, `firstValue`, `localization`,
+`localAlternatives`, `paidValue`, `economicsHypotheses`, `mainRisk` e `validationPlan`.
+Conecte esses campos à alternativa escolhida e à Big Idea. Compare três alternativas com
+benefício, esforço, risco e economia. Considere pt-BR, rotina, clima e preferências pertinentes,
+acesso por celular, preço em reais, pagamento e suporte locais. Custos Codex são estimativas
+identificadas; não exigir fatura da API nem definir a meta de margem pelo operador.
+A facilidade e a personalização devem ser demonstráveis, não apenas promessa. Explique por
+que pagar após o primeiro valor e como medir entrega útil, compras líquidas e contribuição.
+Se faltarem dados, classifique a lacuna e proponha teste limitado; não fabrique alta demanda.
+Atena decide a estratégia; Plutus avalia economia e Dédalo constrói, sem novos agentes ou gates.

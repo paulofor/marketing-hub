@@ -53,6 +53,9 @@ public class AgentTaskService {
       executionProfileContext;
 
   @Autowired(required = false)
+  private com.marketinghub.product.modeling.v1.service.ModelingHandoff modelingContext;
+
+  @Autowired(required = false)
   private com.marketinghub.product.bigidea.v1.service.BigIdeaTaskContext bigIdeaContext;
 
   @Autowired(required = false)
@@ -3004,7 +3007,8 @@ public class AgentTaskService {
 
   /**
    * Consolida resultados vigentes por responsável e atividade, ficha e fontes comerciais; preserva
-   * histórico na auditoria e evita repassar bloqueios superados ou conclusões invalidadas.
+   * histórico na auditoria, inclui fontes adotadas pelo ciclo exato e evita repassar bloqueios
+   * superados ou conclusões invalidadas.
    */
   private String processContext(AgentTask task) {
     try {
@@ -3026,6 +3030,10 @@ public class AgentTaskService {
       List<Map<String, Object>> completedHumanActivities = completedHumanActivities(task);
       Map<String, Object> context = new java.util.LinkedHashMap<>();
       context.put("handoffContractVersion", "AGENT_HANDOFF_CONTEXT_V1");
+      if (modelingContext != null)
+        context.put(
+            "referenceModeling",
+            modelingContext.snapshot(task.getSourceReference(), task.getCreatedAt()));
       if (bigIdeaContext != null) context.put("productBigIdea", bigIdeaContext.snapshot(task));
       context.put("completedActivities", completedActivities);
       if (opalaCommercialContext != null
@@ -3081,7 +3089,18 @@ public class AgentTaskService {
       if (learningCycleTaskContext != null) {
         learningCycleTaskContext
             .resolve(task.getSourceReference(), task.getCreatedAt())
-            .ifPresent(value -> context.put("learningSalesCycle", value));
+            .ifPresent(
+                value -> {
+                  context.put("learningSalesCycle", value);
+                  if (modelingContext != null) {
+                    var modeling =
+                        modelingContext.forLearningCycle(
+                            ((Number) value.get("cycleId")).longValue(),
+                            ((Number) value.get("productId")).longValue(),
+                            task.getCreatedAt());
+                    if (!modeling.isNull()) context.put("referenceModeling", modeling);
+                  }
+                });
       }
       if (prototypeCorrection) {
         context.put(

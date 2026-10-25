@@ -79,6 +79,24 @@ class OpportunityDossierResearchSyncServiceTest {
         .doesNotContain("Viagem solo 40+");
   }
 
+  /** Evolução de produto conserva dossiês sem acionar a materialização de outra identidade. */
+  @Test
+  void preservesExistingProductUntilExplicitCycleAdoption() {
+    Fixture fixture = new Fixture();
+    var service = fixture.service();
+    var modeling = mock(com.marketinghub.product.modeling.v1.service.ModelingHandoff.class);
+    when(modeling.preservesExistingProduct(42L)).thenReturn(true);
+    ReflectionTestUtils.setField(service, "modeling", modeling);
+    service.synchronize(
+        42L,
+        List.of(
+            opportunity(11L, "Estilo pessoal", ProductDiscoveryOpportunityMaturity.DOSSIER_READY)));
+    verify(fixture.dossiers).save(any(OpportunityDossier.class));
+    verify(fixture.evidence, times(4)).save(any());
+    verify(fixture.agentTaskService, never()).retryBlockedByHumanOrRefreshPending(any());
+    verify(fixture.agentTaskService, never()).createByHuman(any());
+  }
+
   /** Reinicia Atena e as sucessoras quando a tentativa concluída usa o contrato v2 obsoleto. */
   @Test
   void restartsCommercialChainWhenCompletedAtenaContractIsStale() {

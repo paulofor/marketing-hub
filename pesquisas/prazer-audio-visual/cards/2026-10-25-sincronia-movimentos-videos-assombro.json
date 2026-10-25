@@ -1,0 +1,18 @@
+{
+  "cardKey": "sincronia-movimentos-videos-assombro",
+  "collection": "prazer-audio-visual",
+  "title": "Coordenação visual coletiva pode aumentar assombro, não elevação moral",
+  "finding": "Em experimento online com 232 pessoas, vídeos de movimentos mais sincronizados provocaram escores um pouco maiores de assombro (awe), mas não de elevação moral; análise complementar de comentários foi observacional.",
+  "mechanism": "Movimentos coordenados podem transmitir ordem, ação coletiva e conexão, criando percepção de assombro; não é prova de integração áudio-vídeo ou de ativação dopaminérgica.",
+  "commercialApplication": "Comparar dois vídeos com movimentos de grupo mais/menos coordenados e roteiro equivalente; avaliar awe, compreensão, conforto e lembrança com pessoas reais.",
+  "evidenceStrength": "Moderada-baixa para efeito experimental pequeno em awe (ηp²=0,02); baixa para extrapolação dos comentários do YouTube, cujo estudo usou codificação com agentes sintéticos.",
+  "publishedOn": "2026-10-25",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "Uma cena com movimentos coletivos coordenados terá maior nota de assombro do que a mesma cena sem coordenação, sem necessariamente melhorar compreensão, CTA ou conversão.",
+  "risks": "Criar impressão enganosa de apoio social; forçar movimentos artificiais; confundir assombro com prazer ou conversão.",
+  "limits": "Experimento com seleção limitada de vídeos e desfechos declarados; não mede intenção de compra real; sincronia dos atores é diferente de sincronia som-imagem.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-25-sincronia-movimentos-video-assombro.md",
+  "sourceTitle": "Fonte revisada v1 — Oliver et al. (Behavioral Sciences 2026): sincronia em vídeos e awe",
+  "sourceSha256": "ca8042f29d95f0e43566b90e509974024513ca13c60714fb960cbff772f73f9e"
+}

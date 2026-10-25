@@ -128,7 +128,7 @@ class ModelingAdoptionTest {
     strategy.setProcessActivityId("marketStrategy");
     strategy.setStatus("COMPLETED");
     strategy.setResultJson(
-        "{\"decision\":\"APPROVE\",\"referenceModelingTrace\":[{\"deliverable\":\"Primeiro valor utilizável\"}]}");
+        "{\"decision\":\"APPROVE\",\"referenceModelingTrace\":[{\"deliverable\":\"Primeiro valor utilizável\"}],\"internationalAssessment\":{\"brazilAdaptation\":{\"firstValue\":\"Uma combinação própria\"}}}");
     when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:408"))
         .thenReturn(List.of(strategy));
     assertThat(
@@ -140,6 +140,15 @@ class ModelingAdoptionTest {
                 .path("deliverable")
                 .asText())
         .isEqualTo("Primeiro valor utilizável");
+    assertThat(
+            handoff
+                .snapshot("experiment:408", m.getAdoptedAt())
+                .path("strategicDecision")
+                .path("internationalAssessment")
+                .path("brazilAdaptation")
+                .path("firstValue")
+                .asText())
+        .isEqualTo("Uma combinação própria");
     var retry = new com.marketinghub.agenttask.AgentTask();
     retry.setId(901L);
     retry.setProcessActivityId("marketStrategy");
@@ -149,6 +158,7 @@ class ModelingAdoptionTest {
     var current = handoff.snapshot("experiment:408", m.getAdoptedAt()).path("strategicDecision");
     assertThat(current.path("status").asText()).isEqualTo("BLOCKED");
     assertThat(current.has("trace")).isFalse();
+    assertThat(current.has("internationalAssessment")).isFalse();
   }
 
   /** Rejeita histórico, ausência de fatos e produto alheio sem alterar qualquer limite. */

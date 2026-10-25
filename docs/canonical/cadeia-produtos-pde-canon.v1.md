@@ -1264,3 +1264,14 @@ não prova das nossas vendas; identidade, materiais e implementação devem ser 
 Piloto: Vega, com Whering e Indyx como referências, preservando estilo pessoal e roupas disponíveis.
 A hipótese de melhoria é reduzir esforço inicial e aumentar valor percebido da personalização;
 medir tempo até entrega útil, compras líquidas e contribuição. Não declarar ganho sem mercado real.
+
+
+### Modelagem internacional para o Brasil — 25/10/2026
+
+O percurso integrado de modelagem prioriza referências internacionais e adaptação brasileira,
+conforme [contrato de modelagem](market-reference-modeling-canon.v1.md). Argos distingue sinal,
+autoria e limite; Atena compara três alternativas com primeiro valor, diferença própria e motivo
+para pagar. Plutus, Dédalo, comunicação e revisores recebem essa decisão na cadeia existente.
+Não criar outro produto para uma evolução, transferir autorização ou reescrever experimentos.
+Pesquisa estrangeira pode orientar hipóteses; demanda e contribuição brasileiras exigem o teste
+próprio autorizado. A preparação é acessível por Produtos e Cadeias, sem adicionar sétimo processo.

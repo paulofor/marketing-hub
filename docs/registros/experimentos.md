@@ -7697,3 +7697,13 @@ Hipótese: maior identificação e aplicação cotidiana. Adoção técnica requ
 isolamento; adoção comercial depende de uso, compras conciliadas e contribuição.
 Se esses sinais piorarem, evoluir a candidata, sem apagar resultados anteriores.
 Não houve nova medição de vendas, ROI ou demanda.
+## 2026-10-25 — Capella: diagnóstico fora da experiência
+
+- Produto #7, ciclo #14/experimento #107: a tela de demonstração expunha auditoria e controles
+  sintéticos. O registro da sessão confirma que não era compra nem página comercial.
+- Corrigida a fonte compartilhada e a revisão de Psique: JSON e eventos ficam no relatório;
+  interface mostra produto, resultado, ações e mensagens seguras. Verificação inclui detalhes
+  recolhidos e outra identidade, sem exceção pelo nome de Capella.
+- Não altera oferta, orçamento, resultado histórico, campanha ou parecer. Critério comercial
+  futuro: reduzir confusão/abandono e retrabalho; impacto em vendas ainda não medido.
+- [Matriz e resultados da validação](../homologacao/capella-interface-sem-diagnostico-2026-10-25.md).

@@ -16,6 +16,20 @@ export interface ProductModeling {
   createdAt: string;
   learningCycleId: number | null;
   chainUrl: string | null;
+  researchScope: string;
+  targetMarket: string;
+  internationalAssessment: {
+    references: Array<{
+      referenceUrl: string;
+      sourceUrl: string;
+      observedEvidence: string;
+      originMarket: string;
+      signalType: string;
+      evidenceLevel: string;
+      limitation: string;
+    }>;
+    brazilAdaptation: Record<string, string>;
+  } | null;
   availableCycles: Array<{
     cycleId: number;
     experimentId: number;

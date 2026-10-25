@@ -26,6 +26,7 @@ const base='http://127.0.0.1:5179';
    await page.getByRole('status').filter({hasText:'Preparação salva'}).waitFor();
    const card=page.locator('article').filter({hasText:'Resultado próprio '+name});
    await card.getByText('Preparada',{exact:true}).waitFor();
+   await card.getByText('Referências internacionais → Brasil',{exact:true}).waitFor();
    assert.equal((await (await fetch('http://127.0.0.1:18101/fixture/health')).json()).audit,0);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
    await page.screenshot({path:path.join(out,name+'.png'),fullPage:true});assert.deepEqual(errors,[]);

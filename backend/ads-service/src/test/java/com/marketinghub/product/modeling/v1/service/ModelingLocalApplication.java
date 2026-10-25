@@ -89,7 +89,7 @@ public class ModelingLocalApplication {
     }
     var l = new liquibase.integration.spring.SpringLiquibase();
     l.setDataSource(source);
-    l.setChangeLog("classpath:db/changelog/changesets/2026-10-25-product-modeling-v1.yaml");
+    l.setChangeLog("classpath:modeling-local-changelog.yaml");
     return l;
   }
 

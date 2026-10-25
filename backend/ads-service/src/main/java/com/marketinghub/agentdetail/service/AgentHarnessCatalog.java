@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class AgentHarnessCatalog {
-  static final String MANIFEST_PATH = "agent-harness/agent-harness-v2.json";
+  static final String MANIFEST_PATH = "agent-harness/agent-harness-v3.json";
   static final String BEHAVIOR_FILES_ROOT = "agent-behavior-files/";
   private static final Set<String> REQUIRED_SECTIONS =
       Set.of("executor", "runtime", "orchestration", "memory", "security", "observability");

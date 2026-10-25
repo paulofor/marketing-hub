@@ -122,13 +122,14 @@ components:
         experimentId: { type: integer, format: int64 }
         prototypeVersion: { type: string }
         status: { type: string, enum: [INPUT, QUEUED, RUNNING, READY, FAILED, BLOCKED_SAFE] }
-        reason: { type: string }
+        reason: { type: string, description: 'Causa operacional para auditoria; não renderizar como mensagem da experiência.' }
         presentation:
           type: object
-          required: [title, introduction, reasonCode, nextStep, nextActionLabel, nextActionPath]
+          required: [title, introduction, statusMessage, reasonCode, nextStep, nextActionLabel, nextActionPath]
           properties:
             title: { type: string }
             introduction: { type: string }
+            statusMessage: { type: string, description: 'Mensagem simples e segura para a interface, sem erros brutos ou identificadores internos.' }
             reasonCode: { type: string }
             nextStep: { type: string }
             nextActionLabel: { type: string }

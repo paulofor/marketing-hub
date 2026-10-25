@@ -21,4 +21,7 @@ public record ModelingView(
     List<ModelingStageView> stages,
     Long learningCycleId,
     String chainUrl,
-    List<ModelingCycleOption> availableCycles) {}
+    List<ModelingCycleOption> availableCycles,
+    String researchScope,
+    String targetMarket,
+    JsonNode internationalAssessment) {}

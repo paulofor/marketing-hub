@@ -27,6 +27,9 @@ public class ProductModeling {
   @Column(name = "desired_outcome", nullable = false, length = 2000)
   private String desiredOutcome;
 
+  @Column(name = "research_scope", nullable = false, length = 32)
+  private String researchScope = "MARKET_REFERENCES_V1";
+
   @Column(name = "references_json", nullable = false, columnDefinition = "LONGTEXT")
   private String referencesJson;
 

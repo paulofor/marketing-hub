@@ -26,6 +26,8 @@ const item = {
   desiredOutcome: "Resultado útil",
   referenceUrls: ["https://reference.example/"],
   status: "DRAFT",
+  researchScope: "INTERNATIONAL_TO_BR_V1",
+  targetMarket: "Brasil",
   guidance: "Preparada, sem execução",
   researchUrl: "/product-discovery/cycles/41",
   stages: [],
@@ -71,6 +73,9 @@ describe("modelagem por referências", () => {
       screen.getByRole("button", { name: "Preparar início da pesquisa" }),
     );
     expect(f.mutate).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Referências internacionais → Brasil"),
+    ).toBeInTheDocument();
     expect(screen.getByText(/pode consumir IA/)).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Iniciar pesquisa com Argos" }),
@@ -93,5 +98,41 @@ describe("modelagem por referências", () => {
     fireEvent.click(screen.getByRole("button", { name: /Usar no ciclo #201/ }));
     expect(f.mutate.mock.calls[0][0]).toEqual({ adopt: 91, cycleId: 201 });
     expect(screen.getByText(/não inicia agentes/)).toBeInTheDocument();
+  });
+  it("mostra adaptação e fonte sem declarar demanda local comprovada", () => {
+    f.items = [
+      {
+        ...item,
+        internationalAssessment: {
+          references: [
+            {
+              referenceUrl: "https://reference.example/",
+              sourceUrl: "https://reference.example/pricing",
+              originMarket: "Reino Unido",
+              observedEvidence: "O vendedor anuncia um plano pago",
+              limitation: "Receita não auditada",
+            },
+          ],
+          brazilAdaptation: {
+            recognizedDesire: "Combinações com a sua cara",
+            firstValue: "Uma orientação antes do cadastro",
+            paidValue: "Jornada própria de sete dias",
+          },
+        },
+      },
+    ];
+    render(
+      <MemoryRouter>
+        <ProductModelingPage />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("region", { name: "Adaptação ao Brasil" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Receita não auditada")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Fonte · Reino Unido" }),
+    ).toHaveAttribute("href", "https://reference.example/pricing");
+    expect(f.mutate).not.toHaveBeenCalled();
   });
 });

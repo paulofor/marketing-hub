@@ -2,6 +2,30 @@
 
 Decisão do usuário de 25/10/2026: integrar o percurso à cadeia existente, usando Vega, Whering e Indyx como piloto. PDE entrega experiência sensorial e personalizada; o modelo é uma capacidade interna, não o produto vendido.
 
+## Referências internacionais para o Brasil — decisão de 25/10/2026
+
+Novas preparações usam `INTERNATIONAL_TO_BR_V1`: priorizar produtos com sinais públicos de
+adoção ou monetização no exterior e avaliar uma experiência própria para o Brasil. Produto
+existir, ter investimento ou anunciar um preço não comprova receita, retenção ou lucro.
+Registrar país/mercado, data, fonte, sinal observado, autoria da alegação e limitação;
+informação indisponível permanece desconhecida. Não declarar sucesso brasileiro por analogia.
+
+Argos pesquisa também alternativas brasileiras, reclamações, esforço de entrada e o que é
+gratuito ou pago. Atena compara três alternativas e entrega `internationalAssessment`:
+evidências literais das fontes preservadas para cada referência e adaptação brasileira com
+desejo, primeiro valor, linguagem/rotina, alternativas locais, continuidade paga, premissas
+econômicas, risco e plano de validação. O contrato recusa fonte ou trecho inventado e
+aprovação sem adaptação; sinais fracos devem permanecer classificados como tal.
+
+Plutus recebe custos projetados em reais com premissas explícitas, inclusive câmbio quando
+aplicável. Dédalo implementa a diferença escolhida; Íris/Apolo demonstram o benefício real,
+e Psique/Têmis verificam personalização, clareza e integridade. Reutilizar os gates existentes:
+não criar fila paralela nem novas aprovações para demonstrar aprendizado. Somente compras
+conciliadas, entrega útil e contribuição do teste autorizado validam nosso resultado.
+
+Preparações antigas mantêm seu escopo. O piloto Vega preserva Big Idea e experimentos;
+salvar referências prepara pesquisa, sem iniciar inferência ou herdar autorização financeira.
+
 ## Contrato
 
 Entrada: produto existente ou nome provisório de novo produto; resultado desejado; uma a cinco URLs públicas HTTPS. Salvar cria rascunho sem tarefa. Iniciar libera Argos explicitamente e respeita STOP do produto existente. Não autoriza mídia, publicação nem transfere saldo de outro contexto.

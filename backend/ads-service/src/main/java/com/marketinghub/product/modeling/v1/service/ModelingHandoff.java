@@ -84,6 +84,8 @@ public class ModelingHandoff {
     ObjectNode result = json.createObjectNode();
     result.put("contractVersion", "MARKET_REFERENCE_MODELING_V1");
     result.put("modelingId", m.getId());
+    result.put("researchScope", m.getResearchScope());
+    result.put("targetMarket", "BR");
     result.put("discoveryCycleId", cycleId);
     if (m.getProductId() != null) result.put("productId", m.getProductId());
     result.put("identityMode", m.getProductId() == null ? "CREATE" : "PRESERVE");
@@ -138,8 +140,10 @@ public class ModelingHandoff {
     if ("COMPLETED".equals(latest.getStatus()) && latest.getResultJson() != null) {
       var output = read(latest.getResultJson());
       decision.put("decision", output.path("decision").asText());
-      if ("APPROVE".equals(output.path("decision").asText()))
+      if ("APPROVE".equals(output.path("decision").asText())) {
         decision.set("trace", output.path("referenceModelingTrace"));
+        decision.set("internationalAssessment", output.path("internationalAssessment"));
+      }
     }
     return result;
   }

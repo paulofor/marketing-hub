@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-25-product-modeling-international-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_modeling_v1
+                ADD COLUMN research_scope VARCHAR(32) NOT NULL DEFAULT 'MARKET_REFERENCES_V1';

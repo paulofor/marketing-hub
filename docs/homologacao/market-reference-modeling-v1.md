@@ -17,7 +17,16 @@ Matriz definida antes da rodada integrada. Dados sintéticos e dependências ext
 
 Não exigir entrevistas, recrutamento ou opiniões solicitadas. Piloto Vega com Whering/Indyx preparado pela UI; execução paga exige autorização aplicável e não é inferida da implementação.
 
-## Resultado local — 25/10/2026
+## Ampliação internacional — critérios definidos antes da nova rodada
+
+- Nova preparação deve persistir escopo internacional e destino Brasil; rascunhos anteriores conservam o escopo genérico.
+- Aprovação de Atena exige cada referência preparada, sinal classificado e atribuído, trecho literal da evidência persistida e adaptação brasileira completa.
+- Recusar trechos inventados, referência de outro produto, repetição e omissão de primeiro valor ou continuidade paga. Ausência de dados permanece UNKNOWN; não exigir comprovação financeira do concorrente para pesquisar.
+- Preservar contrato histórico sem modelagem, ADJUST fundamentado, idempotência e STOP.
+- API e tela reais com MySQL 5.7: duas identidades, preparação sem gasto, início concorrente, adoção, snapshot e reinício; Chromium desktop/iPhone/Pixel.
+- Fontes públicas do piloto: Whering e Indyx; números divulgados pelo vendedor não são demanda brasileira. O piloto produtivo é um rascunho criado pela tela, sem chamadas pagas ou campanhas.
+
+## Resultado local anterior — 25/10/2026
 
 - Backend: 311 testes aprovados, incluindo arquitetura, contexto dos agentes, descoberta, Big Idea, continuidade do ciclo e novas regressões de modelagem.
 - Atena: suíte completa, 71 testes aprovados. Argos: 162 testes aprovados. Frontend: 13 testes da tela/menu, tipagem e build aprovados.
@@ -35,3 +44,28 @@ A única atestação vigente afetada foi Mira privada v45, que fixa o hash do co
 ## Decisão de implementação
 
 Comparadas três alternativas: relatório separado (menor esforço, perde passagem), cadeia nova (duplica agentes e governança) e entrada integrada (reutiliza descoberta, planejamento e gates). Escolhida a terceira. Para produto existente, a adoção explícita no ciclo ainda não executado evita substituir seu histórico. Para novo produto, conserva a materialização existente. A vinculação não exige copiar saídas entre agentes.
+
+
+## Fontes públicas do piloto — consulta em 25/10/2026
+
+- [Whering](https://www.whering.co/): a própria empresa anuncia mais de 10 milhões de usuários e recursos para catalogar roupas, planejar combinações e compartilhar guarda-roupas. Classificação: alegação do vendedor sobre adoção, sem receita ou margem verificadas nesta consulta.
+- [Indyx](https://www.myindyx.com/home/): entrada gratuita para organizar o guarda-roupa, recursos premium e serviço de styling. Classificação: oferta observável com passagem gratuita/paga; a existência da oferta não comprova compras, lucro ou adequação brasileira.
+
+Hipótese para Vega: combinações com a própria identidade e poucas peças antes de um cadastro
+extenso; uma jornada personalizada de sete dias pode justificar a continuidade paga. Verificar
+alternativas locais, português, rotina/clima, acesso móvel, preço e custos em reais. O piloto
+não importa marca, imagens, código ou depoimentos dos concorrentes. Sua Big Idea v2 permanece.
+
+
+## Resultado da ampliação internacional — 25/10/2026
+
+- Backend: 287 testes unitários/arquitetura aprovados; 9 testes de modelagem repetidos após ampliar a prova de passagem da adaptação brasileira. Atena: 72 testes; Argos: 162; frontend: 14 testes, tipagem e build aprovados.
+- MySQL 5.7 real: as duas migrações aplicadas, preparo e replay, início concorrente sem duplicar, adoção de duas identidades, contexto internacional e recuperação após reinício aprovados. Topologia temporária removida com volumes.
+- Interface real: desktop Chromium, iPhone 15 Pro e Pixel 7 emulados, com URLs inválidas, fallback UUID em HTTP, rascunho sem tarefas e ausência de rolagem horizontal aprovados. Capturas conferidas em `artifacts/product-modeling/local`.
+- Contrato internacional: recusa omissões, trecho fabricado, identidade de referência alheia e adaptação incompleta; preserva UNKNOWN, ADJUST, contrato anterior e decisão vigente. A adaptação aprovada acompanha as etapas seguintes e desaparece se a decisão vigente estiver bloqueada.
+- Atestação v47 registra somente compatibilidade das fontes compartilhadas de Atena após essa validação. v46 e anteriores permanecem imutáveis; experiência e pareceres comerciais de Mira não foram renovados.
+- Custo externo da homologação: zero. Testes com respostas simuladas comprovam contratos e passagem; a qualidade de uma inferência real e o impacto sobre vendas exigem avaliação posterior autorizada.
+
+A falha anterior do workflow Liquibase do PR #5700 foi HTTP 429 do Maven Central ao baixar
+o POM pai. Não foi falha de SQL. A nova revisão mantém os scripts existentes e reapresenta
+o PR após a homologação local completa; nenhum deploy é usado como teste.

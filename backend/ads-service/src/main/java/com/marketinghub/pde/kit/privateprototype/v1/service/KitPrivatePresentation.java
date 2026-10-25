@@ -20,7 +20,8 @@ final class KitPrivatePresentation {
   }
 
   /**
-   * Vincula título, explicação e ação interna ao mesmo estado, sem promessa de resultado ausente.
+   * Vincula mensagens seguras e ação ao estado, sem exibir erros brutos ou prometer resultado
+   * ausente.
    */
   static Presentation resolve(String status, String safetyCase, Long productId, Long cycleId) {
     String cyclePath =
@@ -30,6 +31,7 @@ final class KitPrivatePresentation {
           new Presentation(
               "Seu próximo post, pronto para usar",
               "Confira uma aplicação completa: arte, legenda, mensagem e dia do calendário. Depois, guarde o pacote para continuar.",
+              "Seu kit está pronto. Copie a legenda ou baixe os arquivos.",
               "",
               "",
               "",
@@ -37,7 +39,8 @@ final class KitPrivatePresentation {
       case "QUEUED", "RUNNING" ->
           new Presentation(
               "Seu kit está em preparação",
-              "Aguarde a composição desta entrada. Você poderá conferir e guardar os arquivos quando a preparação terminar.",
+              "Estamos preparando as artes e os textos com os dados informados.",
+              "Aguarde um momento. Seu kit aparecerá aqui quando estiver pronto.",
               "",
               "",
               "",
@@ -46,6 +49,7 @@ final class KitPrivatePresentation {
           new Presentation(
               "A preparação deste kit foi bloqueada",
               "Nenhum pacote foi gerado nesta tentativa. Sua entrada permanece preservada para a revisão.",
+              safetyReason(safetyCase),
               safetyCase,
               "UNVERIFIED_VISUAL_ORIGIN".equals(safetyCase)
                   ? "Na revisão deste ciclo, confira a origem das imagens e prepare uma entrada compatível. Esta tentativa continuará bloqueada."
@@ -58,6 +62,7 @@ final class KitPrivatePresentation {
           new Presentation(
               "A preparação do kit foi interrompida",
               "O pacote desta tentativa não ficou disponível. Sua entrada e o motivo da falha foram preservados.",
+              "Não foi possível preparar este kit. Seus dados estão guardados para retomar com segurança.",
               "COMPOSITION_FAILED",
               "Confira a falha na revisão deste ciclo antes de uma nova tentativa.",
               "Abrir a revisão deste ciclo",
@@ -65,7 +70,8 @@ final class KitPrivatePresentation {
       default ->
           new Presentation(
               "Prepare o primeiro post do seu kit",
-              "Informe o briefing para receber uma aplicação com arte, legenda, mensagem e calendário.",
+              "Escolha os dados de exemplo para conferir uma arte, sua legenda e a divulgação da semana.",
+              "",
               "",
               "",
               "",

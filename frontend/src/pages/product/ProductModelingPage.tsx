@@ -9,8 +9,13 @@ import {
 } from "../../api/product/useProductModeling";
 
 const steps = [
-  ["01", "Investigar", "Argos", "Fontes, alternativas e lacunas"],
-  ["02", "Diferenciar", "Atena", "Três alternativas e Big Idea"],
+  [
+    "01",
+    "Investigar",
+    "Argos",
+    "Sinais no exterior e alternativas brasileiras",
+  ],
+  ["02", "Adaptar ao Brasil", "Atena", "Três vantagens próprias e Big Idea"],
   ["03", "Conferir economia", "Plutus", "Custos e contribuição projetada"],
   ["04", "Construir", "Dédalo", "Experiência funcionando e prova"],
   [
@@ -49,6 +54,11 @@ function ModelingCard({ item }: { item: ProductModeling }) {
           </span>
         </div>
         <p>{item.desiredOutcome}</p>
+        {item.researchScope === "INTERNATIONAL_TO_BR_V1" && (
+          <p className="small text-primary">
+            Referências internacionais → {item.targetMarket}
+          </p>
+        )}
         <p className="text-secondary">{item.guidance}</p>
         <div className="d-flex flex-wrap gap-3">
           {item.referenceUrls.map((url) => (
@@ -117,6 +127,9 @@ function ModelingCard({ item }: { item: ProductModeling }) {
                     action.mutate({ adopt: item.id, cycleId: c.cycleId })
                   }
                 >
+                  {action.isPending && (
+                    <span className="spinner-border spinner-border-sm me-2" />
+                  )}
                   Usar no ciclo #{c.cycleId} · {c.productVersion}
                 </button>
               ))
@@ -154,6 +167,45 @@ function ModelingCard({ item }: { item: ProductModeling }) {
               </div>
             ))}
           </div>
+        )}
+        {item.internationalAssessment?.brazilAdaptation && (
+          <section
+            className="mt-3 p-3 rounded bg-light"
+            aria-label="Adaptação ao Brasil"
+          >
+            <h3 className="h6">Nossa oportunidade no Brasil</h3>
+            {Object.entries({
+              recognizedDesire: "Desejo da cliente",
+              firstValue: "Primeiro valor",
+              localization: "Adaptação à rotina brasileira",
+              localAlternatives: "Alternativas locais",
+              paidValue: "Por que pagar",
+              economicsHypotheses: "Economia projetada",
+              mainRisk: "Principal risco",
+              validationPlan: "Como validar",
+            }).map(([key, label]) => (
+              <p key={key}>
+                <strong>{label}:</strong>{" "}
+                {item.internationalAssessment?.brazilAdaptation[key]}
+              </p>
+            ))}
+            <details>
+              <summary>Conferir evidências internacionais e limites</summary>
+              {item.internationalAssessment.references.map((reference) => (
+                <div key={reference.referenceUrl} className="border-top py-2">
+                  <a
+                    href={reference.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Fonte · {reference.originMarket}
+                  </a>
+                  <p>{reference.observedEvidence}</p>
+                  <p className="small text-secondary">{reference.limitation}</p>
+                </div>
+              ))}
+            </details>
+          </section>
         )}
         <details className="mt-3">
           <summary>Contexto preservado</summary>
@@ -195,12 +247,13 @@ export default function ProductModelingPage() {
         style={{ background: "linear-gradient(120deg,#e8f3ff,#e9f8f0)" }}
       >
         <span className="badge bg-primary mb-2">
-          Da referência à experiência própria
+          Do mercado internacional para o Brasil
         </span>
         <h1>Modelar por referências</h1>
         <p className="mb-0">
-          Aprenda com produtos existentes. Construa uma vantagem que a cliente
-          perceba, usando a nossa cadeia de valor.
+          Investigue produtos que já conquistaram público no exterior e
+          transforme esse aprendizado em uma experiência própria para a cliente
+          brasileira.
         </p>
       </header>
       <div className="row g-2 mb-4">
@@ -218,6 +271,12 @@ export default function ProductModelingPage() {
           </div>
         ))}
       </div>
+      <p className="text-secondary">
+        Argos confere sinais de adoção e monetização, fontes e limites. Atena
+        propõe a adaptação ao Brasil. O sucesso aqui será medido por compras,
+        entrega útil e contribuição — a existência de concorrentes é um ponto de
+        partida.
+      </p>
       <form
         className="card mb-4"
         onSubmit={(event) => {
@@ -305,8 +364,9 @@ export default function ProductModelingPage() {
             placeholder="https://www.exemplo.com/"
           />
           <small className="text-secondary">
-            Uma a cinco páginas públicas HTTPS, uma por linha. Não informe
-            credenciais ou links privados.
+            Uma a cinco páginas públicas HTTPS, uma por linha. Priorize
+            referências internacionais; o agente também pesquisa alternativas
+            brasileiras. Não informe credenciais ou links privados.
           </small>
           <p className="mt-3">
             Salvar preserva a intenção e a Big Idea atual. Não inicia pesquisa,
@@ -340,7 +400,9 @@ export default function ProductModelingPage() {
         <p role="alert">Não foi possível consultar as modelagens.</p>
       )}
       {models.data?.length === 0 && <p>Nenhuma preparação registrada.</p>}
-      {models.data?.map((item) => <ModelingCard key={item.id} item={item} />)}
+      {models.data?.map((item) => (
+        <ModelingCard key={item.id} item={item} />
+      ))}
     </main>
   );
 }

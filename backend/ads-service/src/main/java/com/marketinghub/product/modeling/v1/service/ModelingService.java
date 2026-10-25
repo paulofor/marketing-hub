@@ -78,6 +78,7 @@ public class ModelingService {
     modeling.setProductName(name);
     modeling.setDesiredOutcome(outcome);
     modeling.setReferencesJson(encodedUrls);
+    modeling.setResearchScope("INTERNATIONAL_TO_BR_V1");
     modeling.setBigIdeaSnapshot(
         product == null || product.getBigIdea() == null
             ? null
@@ -94,7 +95,7 @@ public class ModelingService {
                 "Instagram",
                 "Preparação sem campanha, publicação ou autorização financeira herdada.",
                 "Não copiar marcas, identidade, materiais ou código de terceiros.",
-                "MODEL_REFERENCES_V1 #" + modeling.getId() + ": " + outcome,
+                "MODEL_REFERENCES_V1 INTERNATIONAL_TO_BR_V1 #" + modeling.getId() + ": " + outcome,
                 ProductDiscoveryResearchMode.VALIDATE_MARKET,
                 ProductDiscoveryMarketType.UNSPECIFIED,
                 String.join("\n", urls)));
@@ -167,7 +168,15 @@ public class ModelingService {
         stages(m),
         m.getLearningCycleId(),
         adoption.url(m),
-        adoption.options(m));
+        adoption.options(m),
+        m.getResearchScope(),
+        "Brasil",
+        m.getDiscoveryCycleId() == null
+            ? json.nullNode()
+            : handoff
+                .context(m.getDiscoveryCycleId())
+                .path("strategicDecision")
+                .path("internationalAssessment"));
   }
 
   /** Relaciona as tarefas reais da referência, sem confundir conclusão técnica com venda. */

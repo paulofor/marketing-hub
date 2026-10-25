@@ -4,7 +4,7 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
 (async()=>{
  for(const id of [99101,99102]){
   const input={requestKey:crypto.randomUUID(),productId:id,desiredOutcome:'Resultado específico '+id,referenceUrls:['https://reference.example/']};
-  const m=await call('POST','/api/product-modeling/v1',input);assert.equal(m.status,'DRAFT');
+  const m=await call('POST','/api/product-modeling/v1',input);assert.equal(m.status,'DRAFT');assert.equal(m.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(m.targetMarket,'Brasil');
   const replay=await call('POST','/api/product-modeling/v1',input);assert.equal(m.id,replay.id);
   await call('POST','/api/product-modeling/v1',{...input,desiredOutcome:'Outra intenção'},409);
   assert.equal((await call('GET','/fixture/health')).audit,id===99101?0:1);
@@ -16,7 +16,7 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
   const adopted=await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100});
   assert.equal(adopted.learningCycleId,id+100);assert.match(adopted.chainUrl,new RegExp('productId='+id));
   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100});
-  const context=await call('GET',`/fixture/context/${id+200}`);assert.equal(context.productId,id);assert.equal(context.factualSources.length,1);assert.equal(context.commercialAuthorizationInherited,false);
+  const context=await call('GET',`/fixture/context/${id+200}`);assert.equal(context.productId,id);assert.equal(context.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(context.targetMarket,'BR');assert.equal(context.factualSources.length,1);assert.equal(context.commercialAuthorizationInherited,false);
  }
  const fresh=await call('POST','/api/product-modeling/v1',{requestKey:crypto.randomUUID(),newProductName:'Nova estrela',desiredOutcome:'Outro resultado',referenceUrls:['https://reference.example/']});
  assert.equal(fresh.productId,null);assert.equal(fresh.status,'DRAFT');

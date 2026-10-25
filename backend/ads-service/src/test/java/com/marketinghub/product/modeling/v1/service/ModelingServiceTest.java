@@ -77,6 +77,8 @@ class ModelingServiceTest {
                 List.of("https://reference.example/")));
     assertThat(response.productId()).isEqualTo(42L);
     assertThat(response.status()).isEqualTo("DRAFT");
+    assertThat(response.researchScope()).isEqualTo("INTERNATIONAL_TO_BR_V1");
+    assertThat(response.targetMarket()).isEqualTo("Brasil");
     assertThat(response.referenceUrls()).containsExactly("https://reference.example/");
     assertThat(response.researchUrl()).isEqualTo("/product-discovery/cycles/9001");
     verify(products, never()).save(any());
@@ -85,7 +87,9 @@ class ModelingServiceTest {
             argThat(
                 r ->
                     r.referenceSources().contains("reference.example")
-                        && r.objective().startsWith("MODEL_REFERENCES_V1")));
+                        && r.objective().startsWith("MODEL_REFERENCES_V1 INTERNATIONAL_TO_BR_V1")
+                        && "BR".equals(r.country())
+                        && "pt-BR".equals(r.language())));
   }
 
   /** Um novo produto ainda é intenção, não cadastro fabricado ou campanha autorizada. */
@@ -189,6 +193,12 @@ class ModelingServiceTest {
       assertThat(handoff.context(id + 200).path("identityMode").asText()).isEqualTo("PRESERVE");
       assertThat(handoff.context(id + 200).path("commercialAuthorizationInherited").asBoolean())
           .isFalse();
+      assertThat(handoff.context(id + 200).path("researchScope").asText())
+          .isEqualTo("MARKET_REFERENCES_V1");
+      m.setResearchScope("INTERNATIONAL_TO_BR_V1");
+      assertThat(handoff.context(id + 200).path("researchScope").asText())
+          .isEqualTo("INTERNATIONAL_TO_BR_V1");
+      assertThat(handoff.context(id + 200).path("targetMarket").asText()).isEqualTo("BR");
     }
     assertThat(handoff.sourceReference(9999L)).isEqualTo("product-discovery-cycle:9999");
     assertThat(handoff.context(9999L).isNull()).isTrue();

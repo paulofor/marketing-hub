@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-valencia-arousal-memoria-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Valência e ativação da música não garantem memória visual",
+  "finding": "Em experimento com colagens de imagens, a ativação emocional da música interagiu com características afetivas das imagens na memória; música mais ativadora encurtou fixações, sem efeito principal consistente sobre acertos.",
+  "mechanism": "Contexto auditivo pode modificar vigilância, exploração visual e codificação; o estudo não identifica mediador neural nem demonstra uma regra universal de congruência.",
+  "commercialApplication": "Comparar duas trilhas de ativação diferente no mesmo vídeo, controlando volume, roteiro e imagens; medir lembrança dos benefícios, conforto e erros de reconhecimento, não apenas reações imediatas.",
+  "evidenceStrength": "Moderada no experimento de reconhecimento e eye-tracking (amostra modelada n=41); baixa para generalizar a vídeos/anúncios; interação de quatro vias sem poder suficiente.",
+  "publishedOn": "2026-10-25",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "Variar a ativação emocional da trilha modificará reconhecimento visual ou conforto, mas não necessariamente melhorará ambas as métricas; testar diferença versus controle pré-registrado.",
+  "risks": "Sobrecarregar a mensagem; interpretar fixações curtas como desatenção; prometer aumento de vendas sem dados.",
+  "limits": "Colagens estáticas e memória imediata, poucos participantes, sem medição direta de dopamina e sem resultado comercial; hipótese exige validação com humanos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-25-musica-imagens-memoria-valencia-arousal.md",
+  "sourceTitle": "Fonte revisada v1 — Du Bruyn et al. (PeerJ 2026): música, imagens e memória",
+  "sourceSha256": "ec0f2b9b34fc5f58035848f66a90d2090343717ef71fd48d9c47f8cca969b824"
+}

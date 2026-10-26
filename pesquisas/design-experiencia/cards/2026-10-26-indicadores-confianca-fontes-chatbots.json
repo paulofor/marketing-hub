@@ -1,0 +1,18 @@
+{
+  "cardKey": "confianca-factual-ia-deferencia-humana",
+  "collection": "neuromarketing",
+  "title": "Confiança aparente e evidência factual em conteúdo produzido por IA",
+  "finding": "Novo estudo com entrevistas (N=8), survey (N=1.000) e experimento randomizado entre participantes (N=5.151): rótulos de confiança e fontes afetaram modestamente percepções iniciais; após revelar a correção das respostas, o efeito do tipo de indicador na confiança desapareceu (p=0,115) e a verdade factual foi decisiva.",
+  "mechanism": "Indicadores podem atuar como pistas iniciais de credibilidade, mas o significado de 'confiança' é interpretado de formas diferentes. Correção conhecida e risco da tarefa predominam sobre sinais decorativos. O mecanismo psicológico específico não foi isolado.",
+  "commercialApplication": "Íris e Têmis: exigir fontes primárias rastreáveis para alegações comerciais sobre preço, benefício, prazo e garantia; separar fato confirmado de inferência e mostrar evidências ao revisor. Não exibir escores de confiabilidade inventados ao consumidor.",
+  "evidenceStrength": "Estudo misto com experimento de 5.151 usuários de IA dos EUA; efeitos modestos em julgamentos sobre screenshots, não em decisões de compra. É evidência experimental de percepção, não comprovação de melhora comercial.",
+  "publishedOn": "2026-10-26",
+  "validUntil": "2026-12-10",
+  "experimentHypothesis": "Auditoria editorial com links para fontes primárias e estado de verificação por alegação reduzirá aceitação de afirmações incorretas frente à revisão convencional. Testar primeiro offline com casos conhecidos, depois observar erros e resultados reais sem inventar dados de mercado.",
+  "risks": "Selo de confiança pode ampliar falsa segurança; links podem não sustentar alegações; fontes fabricadas, falta de consentimento e confusão entre aparência e verdade. Não prometer incremento de conversões.",
+  "limits": "O experimento avaliou screenshots estáticos, três temas (jardinagem, matemática, saúde) e participantes dos EUA. Não testou anúncios, clientes brasileiros, pagamentos nem verificação factual em tempo real.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-26-indicadores-confianca-fontes-chatbots.md",
+  "sourceTitle": "Warren et al. — indicadores de factualidade, fontes e confiança percebida (revisão de 26/10/2026)",
+  "sourceSha256": "36a0f60985f04d9a651550f7a1b53c135a002e920ceb7d82f51c6dda68d191a0"
+}

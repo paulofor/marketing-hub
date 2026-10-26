@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readStrictOutputSchema } from "./strict-output-schema.js";
+import { referenceSourceDomains } from "./research.js";
 
 /** Cria com Codex um plano de investigação; nenhuma credencial de marketplace entra no prompt. */
 export async function planDirectedResearch(job, options = {}) {
@@ -98,6 +99,15 @@ export async function planDirectedResearch(job, options = {}) {
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+}
+
+/** Identifica complemento público de referências já declaradas com candidatas persistidas. */
+export function isReferenceGapResearch(job) {
+  return (
+    job.stageCode === "candidate-gap-deepening" &&
+    job.evidencePolicy === "PUBLIC_SOURCES_V1" &&
+    referenceSourceDomains(job.referenceSources).length > 0
+  );
 }
 
 /** Reutiliza somente o plano original da mesma pesquisa, sem executar modelo ou repetir tokens. */
@@ -427,7 +437,7 @@ export function deterministicPlan(job) {
   };
 }
 
-/** Produz uma retomada limitada por candidata quando o planejador de modelo não está disponível. */
+/** Monta consultas limitadas por candidata e referência persistidas, sem inferência de planejamento. */
 function deterministicGapDeepeningPlan(job) {
   const candidates = job.previousCandidates || [];
   if (candidates.length < 2 || candidates.length > 3) {
@@ -436,9 +446,15 @@ function deterministicGapDeepeningPlan(job) {
     );
   }
   const queryCounts = candidates.length === 2 ? [4, 4] : [3, 3, 2];
+  const referenceDomains = referenceSourceDomains(job.referenceSources);
   const candidateGaps = candidates.map((candidate, index) => {
     const name = compactQuery(candidate.name, 90);
     const queries = [
+      ...referenceDomains
+        .filter(
+          (_, referenceIndex) => referenceIndex % candidates.length === index,
+        )
+        .map((domain) => `site:${domain}`),
       `${name} relato comprou desistiu dificuldade`,
       `${name} preço entrega público review`,
       `${name} alternativa gratuita reclamação`,
@@ -511,6 +527,7 @@ function deterministicGapDeepeningPlan(job) {
       operation: "PRODUCT_DISCOVERY_CANDIDATE_GAP_DEEPENING_V1",
       cycleId: job.cycleId,
       candidateNames: candidates.map((candidate) => candidate.name),
+      referenceSources: job.referenceSources || null,
       interviewCount: (job.customerInterviews || []).length,
       limits: job.gapResearchPolicy,
     }),

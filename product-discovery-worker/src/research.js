@@ -317,6 +317,9 @@ export function buildSearchQueries(job) {
   const directed = classifyDirectedQueries(job.directedQueries);
 
   return deduplicateQueries([
+    ...referenceSourceDomains(job.referenceSources).map(
+      (domain) => `site:${domain}`,
+    ),
     ...directed.commercial.slice(0, 3),
     ...paidAlternativeQueries.slice(0, 4),
     ...directed.scientific.slice(0, 2),
@@ -392,8 +395,12 @@ function summarizeFactualSearchCoverage(results) {
   };
 }
 
-/** Reserva espaço no relatório para ofertas, ciência e Instagram antes de preencher com relatos gerais. */
-function selectBalancedSearchResults(results, maxSearchResults) {
+/** Preserva uma fonte observada por referência antes de equilibrar ofertas, ciência e relatos. */
+function selectBalancedSearchResults(
+  results,
+  maxSearchResults,
+  referenceSources,
+) {
   const uniqueResults = deduplicateResults(results || []);
   const selected = [];
   const selectedUrls = new Set();
@@ -407,6 +414,15 @@ function selectBalancedSearchResults(results, maxSearchResults) {
     }
   };
 
+  for (const domain of referenceSourceDomains(referenceSources)) {
+    append(
+      uniqueResults.filter((item) => {
+        const observed = safeDomain(item.url);
+        return observed === domain || observed.endsWith(`.${domain}`);
+      }),
+      1,
+    );
+  }
   append(
     uniqueResults.filter(isPublicComparableOffer),
     Math.min(12, maxSearchResults),
@@ -542,7 +558,11 @@ export async function searchInternet(job, options = {}) {
     );
   }
   if (collected.length === 0) return [];
-  const selected = selectBalancedSearchResults(collected, maxSearchResults);
+  const selected = selectBalancedSearchResults(
+    collected,
+    maxSearchResults,
+    job.referenceSources,
+  );
   const coverage = summarizeFactualSearchCoverage(selected);
   logger.info?.(
     "[product-discovery-worker] factual search coverage queries=%s results=%s publicOffers=%s scientific=%s instagram=%s",
@@ -1241,6 +1261,18 @@ function marketFocusSearchBase(job = {}) {
       [job.theme, job.targetAudience].filter(Boolean).join(" "),
     ),
   );
+}
+
+/** Extrai os domínios declarados sem enviar parâmetros ou credenciais às buscas. */
+export function referenceSourceDomains(referenceSources) {
+  return [
+    ...new Set(
+      String(referenceSources || "")
+        .split(/[\n,]+/)
+        .map((source) => safeDomain(source.trim()))
+        .filter(Boolean),
+    ),
+  ].slice(0, 5);
 }
 
 /** Pesquisa fontes editoriais declaradas por domínio sem acessar área autenticada. */

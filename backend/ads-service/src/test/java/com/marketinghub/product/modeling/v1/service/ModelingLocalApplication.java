@@ -47,6 +47,7 @@ import org.springframework.web.bind.annotation.*;
 @EnableTransactionManagement
 @Import({
   ModelingService.class,
+  ModelingResearchRecovery.class,
   ModelingHandoff.class,
   ModelingAdoption.class,
   ProductModelingController.class,
@@ -79,9 +80,11 @@ public class ModelingLocalApplication {
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS learning_sales_cycle_v1(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT,error_message TEXT,decision_summary TEXT,raw_response TEXT) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS fixture_audit(cycle_id BIGINT PRIMARY KEY) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS fixture_audit(cycle_id BIGINT PRIMARY KEY,attempts INT NOT NULL DEFAULT 1) ENGINE=InnoDB");
+    jdbc.execute(
+        "CREATE TABLE IF NOT EXISTS fixture_auth_failure(cycle_id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     for (long id : List.of(99101L, 99102L, 99103L)) {
       jdbc.update("INSERT IGNORE INTO product(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO learning_sales_cycle_v1(id) VALUES (?)", id + 100);
@@ -182,8 +185,10 @@ public class ModelingLocalApplication {
                 c.setId(jdbc.queryForObject("SELECT LAST_INSERT_ID()", Long.class));
               } else
                 jdbc.update(
-                    "UPDATE product_discovery_cycle SET status=? WHERE id=?",
+                    "UPDATE product_discovery_cycle SET status=?,error_message=?,decision_summary=? WHERE id=?",
                     c.getStatus().name(),
+                    c.getErrorMessage(),
+                    c.getDecisionSummary(),
                     c.getId());
               return c;
             });
@@ -201,6 +206,10 @@ public class ModelingLocalApplication {
               c.setObjective((String) row.get("objective"));
               c.setReferenceSources((String) row.get("reference_sources"));
               c.setStatus(ProductDiscoveryCycleStatus.valueOf((String) row.get("status")));
+              c.setStageCode("research");
+              c.setErrorMessage((String) row.get("error_message"));
+              c.setDecisionSummary((String) row.get("decision_summary"));
+              c.setResearchAnalysisRawResponse((String) row.get("raw_response"));
               return Optional.of(c);
             });
     when(r.findByIdForUpdate(anyLong()))
@@ -213,9 +222,9 @@ public class ModelingLocalApplication {
     return r;
   }
 
-  /** Exercita o serviço real de preparo/início com somente a auditoria externa simulada. */
+  /** Persiste ocorrências da fila sintética para medir início e retomada concorrentes. */
   @Bean
-  ProductDiscoveryService discovery(ProductDiscoveryCycleRepository r, DataSource source) {
+  ProductDiscoveryBpmAuditService audit(DataSource source) {
     var audit = mock(ProductDiscoveryBpmAuditService.class);
     var jdbc = new JdbcTemplate(source);
     when(audit.open(any()))
@@ -225,6 +234,21 @@ public class ModelingLocalApplication {
               jdbc.update("INSERT INTO fixture_audit(cycle_id) VALUES (?)", c.getId());
               return null;
             });
+    when(audit.reopenInitialResearch(any(), anyString()))
+        .thenAnswer(
+            i -> {
+              ProductDiscoveryCycle c = i.getArgument(0);
+              jdbc.update(
+                  "UPDATE fixture_audit SET attempts=attempts+1 WHERE cycle_id=?", c.getId());
+              return null;
+            });
+    return audit;
+  }
+
+  /** Exercita os serviços reais de preparo e início sem chamar modelo ou fila externa. */
+  @Bean
+  ProductDiscoveryService discovery(
+      ProductDiscoveryCycleRepository r, ProductDiscoveryBpmAuditService audit) {
     return new ProductDiscoveryService(
         r,
         mock(ProductDiscoveryOpportunityRepository.class),
@@ -296,10 +320,65 @@ public class ModelingLocalApplication {
     return r;
   }
 
-  /** Nenhuma tarefa paga existe nesta topologia. */
+  /** Reconstitui tentativas locais de autenticação sem criar tarefas ou consumo produtivos. */
   @Bean
-  AgentTaskRepository tasks() {
-    return mock(AgentTaskRepository.class);
+  AgentTaskRepository tasks(DataSource source) {
+    var repository = mock(AgentTaskRepository.class);
+    var jdbc = new JdbcTemplate(source);
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(anyString()))
+        .thenAnswer(
+            i -> {
+              String ref = i.getArgument(0);
+              if (!ref.startsWith("product-discovery-cycle:")) return List.of();
+              long id = Long.parseLong(ref.substring("product-discovery-cycle:".length()));
+              if (jdbc.queryForList(
+                      "SELECT cycle_id FROM fixture_auth_failure WHERE cycle_id=?", id)
+                  .isEmpty()) return List.of();
+              var agent = new com.marketinghub.agent.Agent();
+              agent.setId(9005L);
+              agent.setAgentKey("market-radar");
+              var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+              process.setId(99115L);
+              process.setProcessCode("pde-opportunity-discovery");
+              var task = new com.marketinghub.agenttask.AgentTask();
+              task.setId(id + 10000);
+              task.setAssignedAgent(agent);
+              task.setProcessDefinition(process);
+              task.setProcessActivityId("marketEvidence");
+              task.setSourceReference(ref);
+              task.setStatus("BLOCKED");
+              task.setExecutionError("workspace routing discovery unauthorized (401)");
+              task.setExecutionMode("MODEL");
+              task.setUpdatedAt(java.time.Instant.parse("2026-10-26T13:35:16Z"));
+              int attempts =
+                  jdbc.queryForObject(
+                      "SELECT attempts FROM fixture_audit WHERE cycle_id=?", Integer.class, id);
+              if (attempts > 1) {
+                var resumed = new com.marketinghub.agenttask.AgentTask();
+                resumed.setId(id + 20000);
+                resumed.setAssignedAgent(agent);
+                resumed.setProcessDefinition(process);
+                resumed.setProcessActivityId("marketEvidence");
+                resumed.setSourceReference(ref);
+                resumed.setStatus("PENDING");
+                return List.of(task, resumed);
+              }
+              return List.of(task);
+            });
+    return repository;
+  }
+
+  /** Fornece somente uma reconexão fictícia posterior, sem token nem autenticação real. */
+  @Bean
+  com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository reconnections() {
+    var repository = mock(com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository.class);
+    var connection = mock(com.marketinghub.agentmonitor.CodexAuthReconnect.class);
+    when(connection.getId()).thenReturn(99025L);
+    when(connection.getStatus()).thenReturn("AUTHENTICATED");
+    when(connection.getCompletedAt()).thenReturn(java.time.Instant.parse("2026-10-26T13:53:29Z"));
+    when(repository.findTopByAgentIdOrderByRequestedAtDesc(9005L))
+        .thenReturn(Optional.of(connection));
+    return repository;
   }
 
   /** Nenhuma execução externa existe nesta topologia. */
@@ -363,7 +442,10 @@ public class ModelingLocalApplication {
     @GetMapping("/fixture/health")
     public Map<String, Object> health() {
       return Map.of(
-          "audit", jdbc.queryForObject("SELECT COUNT(*) FROM fixture_audit", Integer.class));
+          "audit", jdbc.queryForObject("SELECT COUNT(*) FROM fixture_audit", Integer.class),
+          "attempts",
+              jdbc.queryForObject(
+                  "SELECT COALESCE(SUM(attempts),0) FROM fixture_audit", Integer.class));
     }
 
     /** Consulta o público realmente gravado para detectar truncamento ou perda do contexto. */
@@ -383,6 +465,23 @@ public class ModelingLocalApplication {
     @PostMapping("/fixture/complete/{id}")
     public void complete(@PathVariable Long id) {
       jdbc.update("UPDATE product_discovery_cycle SET status='COMPLETED' WHERE id=?", id);
+    }
+
+    /** Reproduz localmente a recusa inicial de acesso sem plano ou resposta de modelo. */
+    @PostMapping("/fixture/fail-auth/{id}")
+    public void failAuthentication(@PathVariable Long id) {
+      jdbc.update(
+          "UPDATE product_discovery_cycle SET status='FAILED',error_message='unauthorized (401)' WHERE id=?",
+          id);
+      jdbc.update("INSERT IGNORE INTO fixture_auth_failure(cycle_id) VALUES (?)", id);
+    }
+
+    /** Preserva saída sintética para comprovar que a retomada não pode repetir uma inferência. */
+    @PostMapping("/fixture/preserve-output/{id}")
+    public void preserveOutput(@PathVariable Long id) {
+      jdbc.update(
+          "UPDATE product_discovery_cycle SET raw_response='Resultado sintético preservado' WHERE id=?",
+          id);
     }
 
     /** Consulta o contexto real que será entregue às etapas da cadeia. */

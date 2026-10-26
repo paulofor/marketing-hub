@@ -23,6 +23,7 @@ class ModelingServiceTest {
   final ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
   final ProductDiscoveryService discovery = mock(ProductDiscoveryService.class);
   final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+  final ModelingResearchRecovery recovery = mock(ModelingResearchRecovery.class);
   final ObjectMapper json = new ObjectMapper();
   final ModelingHandoff handoff =
       new ModelingHandoff(
@@ -37,7 +38,15 @@ class ModelingServiceTest {
           tasks);
   final ModelingService service =
       new ModelingService(
-          models, products, cycles, discovery, json, handoff, mock(ModelingAdoption.class), tasks);
+          models,
+          products,
+          cycles,
+          discovery,
+          json,
+          handoff,
+          mock(ModelingAdoption.class),
+          recovery,
+          tasks);
   final ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
 
   /** Monta um ciclo sintético; nenhuma dependência externa é chamada. */
@@ -201,11 +210,44 @@ class ModelingServiceTest {
     when(products.findById(42L)).thenReturn(Optional.of(p));
     assertThatThrownBy(() -> service.start(91L))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    assertThatThrownBy(() -> service.resume(91L))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     p.setAutomaticExecutionEnabled(true);
     cycle.setStatus(ProductDiscoveryCycleStatus.DRAFT);
     service.start(91L);
     service.start(91L);
     verify(discovery, times(2)).startPreparedCycle(9001L);
+  }
+
+  /** A pesquisa possui seu próprio espaço e STOP também impede oferecer retomada na leitura. */
+  @Test
+  void linksResearchWorkspaceAndProjectsStop() {
+    var m = new ProductModeling();
+    m.setId(91L);
+    m.setProductId(42L);
+    m.setReferencesJson("[]");
+    m.setDiscoveryCycleId(9001L);
+    when(models.findById(91L)).thenReturn(Optional.of(m));
+    var product = new Product();
+    product.setAutomaticExecutionEnabled(false);
+    when(products.findById(42L)).thenReturn(Optional.of(product));
+    when(recovery.readiness(cycle))
+        .thenReturn(
+            new com.marketinghub.product.modeling.v1.service.get.ModelingResearchRecoveryView(
+                true, "Reconexão confirmada", 25L));
+    var agent = new com.marketinghub.agent.Agent();
+    agent.setAgentKey("market-radar");
+    var task = new com.marketinghub.agenttask.AgentTask();
+    task.setId(818L);
+    task.setAssignedAgent(agent);
+    task.setProcessActivityId("marketEvidence");
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:9001"))
+        .thenReturn(List.of(task));
+    var view = service.get(91L);
+    assertThat(view.researchRecovery().available()).isFalse();
+    assertThat(view.researchRecovery().reason()).contains("STOP");
+    assertThat(view.stages().getFirst().activityUrl()).isEqualTo("/product-discovery/cycles/9001");
+    verify(recovery, never()).resume(any());
   }
 
   /**

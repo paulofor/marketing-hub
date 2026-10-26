@@ -11,6 +11,11 @@ export interface ProductModeling {
   discoveryCycleId: number;
   status: string;
   guidance: string;
+  researchRecovery?: {
+    available: boolean;
+    reason: string;
+    reconnectionId: number | null;
+  };
   researchUrl: string;
   productUrl: string | null;
   createdAt: string;
@@ -67,18 +72,26 @@ export function useModelingAction() {
       value:
         | PrepareModeling
         | { start: number }
+        | { resume: number }
         | { adopt: number; cycleId: number },
     ) =>
       ("start" in value
         ? await axios.post<ProductModeling>(
             `/api/product-modeling/v1/${value.start}/start`,
           )
-        : "adopt" in value
+        : "resume" in value
           ? await axios.post<ProductModeling>(
-              `/api/product-modeling/v1/${value.adopt}/adopt`,
-              { cycleId: value.cycleId },
+              `/api/product-modeling/v1/${value.resume}/resume`,
             )
-          : await axios.post<ProductModeling>("/api/product-modeling/v1", value)
+          : "adopt" in value
+            ? await axios.post<ProductModeling>(
+                `/api/product-modeling/v1/${value.adopt}/adopt`,
+                { cycleId: value.cycleId },
+              )
+            : await axios.post<ProductModeling>(
+                "/api/product-modeling/v1",
+                value,
+              )
       ).data,
     onSuccess: () =>
       client.invalidateQueries({ queryKey: ["product-modeling"] }),

@@ -60,6 +60,9 @@ function ModelingCard({ item }: { item: ProductModeling }) {
           </p>
         )}
         <p className="text-secondary">{item.guidance}</p>
+        {item.status === "FAILED" && item.researchRecovery && (
+          <p>{item.researchRecovery.reason}</p>
+        )}
         <div className="d-flex flex-wrap gap-3">
           {item.referenceUrls.map((url) => (
             <a key={url} href={url} target="_blank" rel="noopener noreferrer">
@@ -84,6 +87,14 @@ function ModelingCard({ item }: { item: ProductModeling }) {
               Preparar início da pesquisa
             </button>
           )}
+          {item.researchRecovery?.available && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setConfirm(!confirm)}
+            >
+              Retomar pesquisa com Argos
+            </button>
+          )}
         </div>
         {confirm && (
           <div className="alert alert-warning mt-3">
@@ -97,7 +108,9 @@ function ModelingCard({ item }: { item: ProductModeling }) {
               disabled={action.isPending}
               onClick={() =>
                 action.mutate(
-                  { start: item.id },
+                  item.researchRecovery?.available
+                    ? { resume: item.id }
+                    : { start: item.id },
                   { onSuccess: () => setConfirm(false) },
                 )
               }
@@ -105,7 +118,9 @@ function ModelingCard({ item }: { item: ProductModeling }) {
               {action.isPending && (
                 <span className="spinner-border spinner-border-sm me-2" />
               )}
-              Iniciar pesquisa com Argos
+              {item.researchRecovery?.available
+                ? "Confirmar retomada da pesquisa"
+                : "Iniciar pesquisa com Argos"}
             </button>
           </div>
         )}
@@ -162,7 +177,7 @@ function ModelingCard({ item }: { item: ProductModeling }) {
                 {stage.status}
                 {stage.resultSummary && <p>{stage.resultSummary}</p>}
                 {stage.activityUrl && (
-                  <Link to={stage.activityUrl}>Abrir atividade e entrega</Link>
+                  <Link to={stage.activityUrl}>Abrir pesquisa e entrega</Link>
                 )}
               </div>
             ))}
@@ -400,9 +415,7 @@ export default function ProductModelingPage() {
         <p role="alert">Não foi possível consultar as modelagens.</p>
       )}
       {models.data?.length === 0 && <p>Nenhuma preparação registrada.</p>}
-      {models.data?.map((item) => (
-        <ModelingCard key={item.id} item={item} />
-      ))}
+      {models.data?.map((item) => <ModelingCard key={item.id} item={item} />)}
     </main>
   );
 }

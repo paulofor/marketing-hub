@@ -49,6 +49,16 @@ Plutus estima custos e contribuição sem confundir ausência com zero. Dédalo 
 
 A pesquisa concluída não é produto funcionando; parecer aprovado não é demanda. Concorrência é sinal de mercado, não evidência das nossas vendas. A tela mostra estado real, fontes, passagens e acesso à cadeia, sem afirmar etapas não executadas.
 
+### Recuperação após reconexão — 26/10/2026
+
+Reconectar Argos não retoma uma pesquisa automaticamente. A tela deve oferecer retomada explícita
+da mesma pesquisa quando o backend comprovar recusa 401 de autenticação antes de plano/dossiê,
+ausência de uso informado e reconexão autenticada do mesmo agente posterior à falha. O comando
+preserva processo/versão, contexto, tentativa histórica e autorizações; não converte custo
+desconhecido em zero. Concorrência ou replay não criam outra ocorrência ativa. STOP permanece
+obrigatório. Havendo saída ou consumo informado, manter bloqueio e usar recuperação específica.
+Fontes só podem ser adotadas no ciclo correto após pesquisa concluída, antes de iniciar Atena.
+
 ## Aprendizado verificável
 
 Lacuna observada: a descoberta presumiu produto novo e os agentes não tinham ligação executável entre fonte e decisão de modelagem. Mudança: entrada segregada, adoção congelada e validação da rastreabilidade. Sucesso técnico: nenhum produto duplicado, fontes acessíveis nas passagens, citações ausentes recusadas e histórico preservado. Sucesso comercial: comparar uso do primeiro valor, compras e contribuição na experiência autorizada. Ainda sem evidência de ganho comercial. Reverter novas adoções se houver cruzamento de identidade, mantendo registros históricos.

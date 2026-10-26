@@ -1,5 +1,31 @@
 # Modelagem por referências — registros operacionais
 
+## 26/10/2026 — retomada após autenticação de Argos
+
+Vega, modelagem #2, pesquisa #73, tarefa #818 e ciclo #16/experimento #109: o login #25
+terminou `AUTHENTICATED` às 13:53:29 UTC, depois da recusa 401 das 13:35:16 UTC. MCP confirmou
+pesquisa `FAILED`, sem plano ou resposta, e tarefa bloqueada sem tokens/custo informado. A tela
+de modelagem não oferecia retomada. `/start` só altera `DRAFT`; mudar o status da tarefa não
+reabre a fila de pesquisa. O aprofundamento já possui recuperação explícita, mas a coleta
+inicial não tinha passagem equivalente. Essa diferença confirma a causa compartilhada.
+
+Alternativas: editar apenas a tarefa (não reabre a fila), criar outra pesquisa (duplica contexto
+e separa histórico) ou retomar explicitamente a mesma pesquisa após comprovar a reconexão.
+Adotada a terceira, com lock, nova ocorrência na versão original e recusa quando há plano,
+resposta, uso informado, trabalho ativo, outra causa ou autenticação anterior à falha. A
+autorização cumulativa permanece própria do produto; nada transfere mídia ou saldo.
+
+O link das tarefas também foi alinhado ao espaço da própria pesquisa. A URL antiga tentava
+abrir uma execução de produto com fonte de descoberta, que o contrato recusava. A leitura
+respeita STOP ao oferecer a retomada, além do bloqueio obrigatório no comando.
+
+A melhoria do harness é executável: teste do caso histórico, outra identidade, caminhos válidos,
+STOP, resultado preservado e retomada concorrente. A matriz existente passou a persistir falha,
+reconexão simulada e ocorrência de recuperação no MySQL 5.7; a tela usa a elegibilidade do backend
+em computador/iPhone/Pixel. Critério de adoção: uma única tentativa nova na mesma pesquisa,
+histórico íntegro e nenhum gasto externo nos testes. Reverter a oferta de retomada se houver
+duplicidade, perda de saída ou cruzamento de identidade. Testes não demonstram aumento de vendas.
+
 ## 25/10/2026 — preservar o contexto do público na descoberta
 
 A criação do piloto de Vega pela tela retornou HTTP 500, sem persistir modelagem nem iniciar

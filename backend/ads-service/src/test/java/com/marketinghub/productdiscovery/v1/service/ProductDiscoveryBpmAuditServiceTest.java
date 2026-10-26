@@ -142,6 +142,26 @@ class ProductDiscoveryBpmAuditServiceTest {
     assertThat(failed.getStatus()).isEqualTo("BLOCKED");
   }
 
+  /** A retomada inicial conserva processo e fonte históricos, sem apagar a tentativa bloqueada. */
+  @Test
+  void resumesInitialResearchInOriginalProcessVersion() {
+    ProductDiscoveryCycle cycle = cycle(ProductDiscoveryCycleStatus.FAILED);
+    Agent argos = new Agent();
+    argos.setAgentKey("market-radar");
+    AgentTask failed = linkedTask(905L, "BLOCKED", argos, process);
+    when(taskRepository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:37"))
+        .thenReturn(List.of(failed));
+    service.reopenInitialResearch(cycle, "Reconexão #25 confirmada; limites preservados.");
+    ArgumentCaptor<CreateAgentTaskRequest> request =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTaskService).createByHuman(request.capture());
+    assertThat(request.getValue().sourceReference()).isEqualTo("product-discovery-cycle:37");
+    assertThat(request.getValue().processDefinitionId()).isEqualTo(49L);
+    assertThat(request.getValue().processActivityId()).isEqualTo("marketEvidence");
+    assertThat(request.getValue().description()).contains("Reconexão #25", "limites preservados");
+    assertThat(failed.getStatus()).isEqualTo("BLOCKED");
+  }
+
   /** Deve abrir uma nova ocorrência auditável para a reanálise da mesma sessão Meta. */
   @Test
   void reopensCompletedResearchForSupervisedMetaEvidence() {

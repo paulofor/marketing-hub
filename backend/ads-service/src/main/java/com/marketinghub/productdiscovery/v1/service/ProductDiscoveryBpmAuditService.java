@@ -84,6 +84,24 @@ public class ProductDiscoveryBpmAuditService {
         INITIAL_COMPATIBLE_ACTIVITY_IDS);
   }
 
+  /** Abre outra tentativa inicial na versão original, preservando a falha e sua justificativa. */
+  public AgentTaskResponse reopenInitialResearch(ProductDiscoveryCycle cycle, String reason) {
+    requirePersistedCycle(cycle);
+    BusinessProcessDefinition process = processForCycle(cycle);
+    return agentTaskService.createByHuman(
+        new CreateAgentTaskRequest(
+            AGENT_KEY,
+            "Marketing Hub",
+            executionTitle(cycle),
+            executionDescription(cycle) + "\n\n" + reason,
+            "HIGH",
+            sourceReference(cycle),
+            process.getId(),
+            resolveInitialActivityId(process),
+            false,
+            null));
+  }
+
   /** Abre a segunda atividade na mesma versão do processo usada pela pesquisa inicial. */
   public AgentTaskResponse openCandidateGapDeepening(ProductDiscoveryCycle cycle) {
     return openCandidateGapDeepening(cycle, false);

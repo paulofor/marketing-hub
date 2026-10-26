@@ -1,0 +1,18 @@
+{
+  "cardKey": "whatsapp-compra-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Compra no WhatsApp: conversão observada e continuidade da jornada",
+  "finding": "O Magalu reportou para o WhatsApp da Lu mais de 18 milhões de conversas, R$ 100 milhões em vendas acumuladas até julho/2026, conversão 3x a busca do aplicativo, NPS 84 e recompra de cerca de 20% dos compradores. São métricas autorreportadas e comparações não experimentais.",
+  "mechanism": "Uma conversa que une descoberta, esclarecimento e encaminhamento ao pagamento pode reduzir troca de contexto e atrito em compras de alta intenção. A seleção prévia de usuários pode explicar parte da diferença observada; não há causalidade demonstrada.",
+  "commercialApplication": "Testar WhatsApp conversacional contra landing/checkout convencional com oferta, público elegível e atribuição comparáveis. Medir pagamento reconciliado por lead, margem líquida, recompra, custo de IA/mensagens e reembolsos, sem prometer aumento de conversão.",
+  "evidenceStrength": "Moderada para existência de compras e adoção operacional quantitativa no Brasil; baixa para ganho causal de conversão, pois os números são da empresa e não há randomização ou informação suficiente dos denominadores.",
+  "publishedOn": "2026-10-26",
+  "validUntil": "2026-12-10",
+  "experimentHypothesis": "Para uma mesma oferta e leads com intenção equiparável, continuidade da jornada em conversa aumentará pagamentos reconciliados por lead sem elevar custo por venda, reclamações ou reembolsos.",
+  "risks": "Envio não consentido, excesso de mensagens, erro de recomendação, cobrança indevida, fraude, exposição de dados, dependência do WhatsApp e aumento não percebido de custos operacionais.",
+  "limits": "R$ 100 milhões é GMV/venda do varejista, não receita ou lucro de software. O 3x compara jornadas e públicos potencialmente diferentes; efeito da IA, do WhatsApp e do pagamento não foi isolado. Sem dados publicados de CAC, margem ou lucro do canal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-26-magalu-whatsapp-compra-conversacional.md",
+  "sourceTitle": "Fonte revisada — Compra conversacional no WhatsApp da Lu",
+  "sourceSha256": "bc10ba10e22dfe6f5ab731b7346e8516ba6d248f62a4f0610ff2c5197bd00338"
+}

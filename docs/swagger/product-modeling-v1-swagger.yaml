@@ -59,15 +59,15 @@ paths:
     parameters:
       - $ref: '#/components/parameters/id'
     post:
-      summary: Retoma pesquisa inicial recusada por autenticação após reconexão comprovada
-      description: Exige comando explícito, pesquisa sem plano ou resposta, tentativa 401 sem uso informado e reconexão posterior autenticada do mesmo Argos. Preserva limites e histórico; não renova campanha. Repetição concorrente não duplica trabalho.
+      summary: Retoma pesquisa interrompida antes da análise com recuperação comprovada
+      description: Exige comando explícito. Aceita recusa 401 sem plano ou uso informado e reconexão posterior autenticada do mesmo Argos, ou recusa contratual da coleta Meta anterior à síntese com reutilização do plano original. Preserva limites, resposta, modelo, custo e histórico; não renova campanha. Repetição concorrente não duplica trabalho.
       responses:
         '200':
           description: Mesma pesquisa na fila ou em andamento
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ModelingView' }
-        '409': { description: STOP, autenticação não corrigida, outra falha ou saída preservada }
+        '409': { description: STOP, autenticação não corrigida, outra falha, análise já produzida ou tarefa ativa }
   /api/product-modeling/v1/{id}/adopt:
     parameters:
       - $ref: '#/components/parameters/id'

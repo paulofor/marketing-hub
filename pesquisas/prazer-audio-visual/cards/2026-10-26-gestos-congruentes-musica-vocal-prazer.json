@@ -1,0 +1,18 @@
+{
+  "cardKey": "gestos-congruentes-musica-vocal-prazer",
+  "collection": "prazer-audio-visual",
+  "title": "Congruência dos movimentos vocais pode elevar prazer musical",
+  "finding": "Em 31 ouvintes analisados, performances vocais com movimentos visuais congruentes ao áudio receberam avaliações de prazer superiores às versões com pareamento incongruente; EEG Mu e condutância mostraram diferenças adicionais.",
+  "mechanism": "Pistas visuais de produção vocal podem facilitar previsão sensório-motora e processamento musical. Mediação estatística por Mu não comprova causalidade neurofisiológica.",
+  "commercialApplication": "Em vídeos performáticos, comparar gesto-som congruente versus incongruente e somente áudio, controlando a faixa musical. Medir prazer, naturalidade, distração e entendimento com espectadores reais.",
+  "evidenceStrength": "Moderada para música vocal no experimento com n=31; baixa para avatares narradores, sincronização labial em milissegundos e efeitos comerciais.",
+  "publishedOn": "2026-10-26",
+  "validUntil": "2026-12-10",
+  "experimentHypothesis": "Pareamento gestual coerente à performance vocal aumentará prazer e naturalidade reportados em vídeos musicais; não assumir a mesma magnitude em narração publicitária.",
+  "risks": "Interpretar condutância da pele como prazer ou dopamina; usar movimentos artificiais que aumentem distração; atribuir causalidade à mediação Mu.",
+  "limits": "Artigo online de setembro de 2025; só 31 ouvintes, repertório restrito, sem teste de atrasos temporais específicos, interação entre tipos de instrumento não significativa e sem resultado de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-26-gestos-congruentes-musica-vocal-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Zhang, Du e Zatorre (2025), congruência visual e prazer vocal",
+  "sourceSha256": "ba0a3aa2d1812850633ae12de62887426d6f44c7f6e8c91bac4b8ce310d4189b"
+}

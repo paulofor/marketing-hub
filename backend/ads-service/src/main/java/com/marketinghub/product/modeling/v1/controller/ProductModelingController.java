@@ -53,4 +53,11 @@ public class ProductModelingController {
   public ModelingView start(@PathVariable Long id) {
     return service.start(id);
   }
+
+  /** Retoma a mesma pesquisa somente após comprovar a correção da autenticação de Argos. */
+  @PostMapping("/{id}/resume")
+  @Operation(summary = "Retoma pesquisa inicial após reconexão autenticada, preservando histórico")
+  public ModelingView resume(@PathVariable Long id) {
+    return service.resume(id);
+  }
 }

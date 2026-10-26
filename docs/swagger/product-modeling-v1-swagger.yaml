@@ -55,6 +55,19 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ModelingView' }
         '409': { description: STOP ou preparação inexistente }
+  /api/product-modeling/v1/{id}/resume:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      summary: Retoma pesquisa inicial recusada por autenticação após reconexão comprovada
+      description: Exige comando explícito, pesquisa sem plano ou resposta, tentativa 401 sem uso informado e reconexão posterior autenticada do mesmo Argos. Preserva limites e histórico; não renova campanha. Repetição concorrente não duplica trabalho.
+      responses:
+        '200':
+          description: Mesma pesquisa na fila ou em andamento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelingView' }
+        '409': { description: STOP, autenticação não corrigida, outra falha ou saída preservada }
   /api/product-modeling/v1/{id}/adopt:
     parameters:
       - $ref: '#/components/parameters/id'
@@ -112,6 +125,13 @@ components:
         discoveryCycleId: { type: integer, format: int64 }
         status: { type: string, description: Estado oficial da pesquisa, não da venda ou da cadeia inteira }
         guidance: { type: string }
+        researchRecovery:
+          type: object
+          required: [available, reason]
+          properties:
+            available: { type: boolean }
+            reason: { type: string }
+            reconnectionId: { type: integer, format: int64, nullable: true }
         researchUrl: { type: string }
         productUrl: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }

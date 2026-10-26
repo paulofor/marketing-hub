@@ -31,6 +31,7 @@ public class ModelingService {
   private final ObjectMapper json;
   private final ModelingHandoff handoff;
   private final ModelingAdoption adoption;
+  private final ModelingResearchRecovery researchRecovery;
   private final com.marketinghub.repository.jpa.agenttask.AgentTaskRepository tasks;
 
   /** Lista a situação persistida sem disparar pesquisa ou alterar produtos. */
@@ -118,6 +119,21 @@ public class ModelingService {
     return view(modeling);
   }
 
+  /** Retoma explicitamente a pesquisa após reconexão comprovada, sem mudar ciclo ou orçamento. */
+  @Transactional
+  public ModelingView resume(Long id) {
+    var modeling =
+        modelings.findLockedById(id).orElseThrow(() -> error("Modelagem não encontrada."));
+    if (modeling.getProductId() != null
+        && !Boolean.TRUE.equals(
+            products
+                .findById(modeling.getProductId())
+                .orElseThrow()
+                .getAutomaticExecutionEnabled())) throw error("O produto está em STOP.");
+    researchRecovery.resume(modeling.getDiscoveryCycleId());
+    return view(modeling);
+  }
+
   /** Adota fontes na preparação exata sem disparar tarefas ou modificar orçamento. */
   @Transactional
   public ModelingView adopt(Long id, Long cycleId) {
@@ -176,10 +192,29 @@ public class ModelingService {
             : handoff
                 .context(m.getDiscoveryCycleId())
                 .path("strategicDecision")
-                .path("internationalAssessment"));
+                .path("internationalAssessment"),
+        recoveryView(m, cycle));
   }
 
-  /** Relaciona as tarefas reais da referência, sem confundir conclusão técnica com venda. */
+  /** Expõe retomada somente quando a pesquisa é elegível e o produto continua em PLAY. */
+  private ModelingResearchRecoveryView recoveryView(
+      ProductModeling m, ProductDiscoveryCycle cycle) {
+    var readiness = researchRecovery.readiness(cycle);
+    if (readiness != null
+        && readiness.available()
+        && m.getProductId() != null
+        && !products
+            .findById(m.getProductId())
+            .map(p -> Boolean.TRUE.equals(p.getAutomaticExecutionEnabled()))
+            .orElse(false))
+      return new ModelingResearchRecoveryView(
+          false, "O produto está em STOP. Retome o produto antes da pesquisa.", null);
+    return readiness;
+  }
+
+  /**
+   * Relaciona as tarefas reais ao espaço da pesquisa, sem inventar vínculo de execução do produto.
+   */
   private List<ModelingStageView> stages(ProductModeling m) {
     if (m.getDiscoveryCycleId() == null) return List.of();
     var latest = new LinkedHashMap<String, com.marketinghub.agenttask.AgentTask>();
@@ -200,18 +235,7 @@ public class ModelingService {
                     task.getResultJson() == null
                         ? null
                         : read(task.getResultJson()).path("summary").asText(null),
-                    m.getProductId() == null || task.getProcessDefinition() == null
-                        ? null
-                        : "/products/"
-                            + m.getProductId()
-                            + "/value-chain-history/processes/"
-                            + task.getProcessDefinition().getId()
-                            + "/activities?sourceReference="
-                            + java.net.URLEncoder.encode(
-                                task.getSourceReference(), java.nio.charset.StandardCharsets.UTF_8)
-                            + adoption.activityQuery(m)
-                            + "#activity-"
-                            + task.getProcessActivityId()))
+                    "/product-discovery/cycles/" + m.getDiscoveryCycleId()))
         .toList();
   }
 

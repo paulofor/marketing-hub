@@ -24,4 +24,5 @@ public record ModelingView(
     List<ModelingCycleOption> availableCycles,
     String researchScope,
     String targetMarket,
-    JsonNode internationalAssessment) {}
+    JsonNode internationalAssessment,
+    ModelingResearchRecoveryView researchRecovery) {}

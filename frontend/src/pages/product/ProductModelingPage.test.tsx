@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ProductModelingPage from "./ProductModelingPage";
 const f = vi.hoisted(() => ({
   mutate: vi.fn(),
@@ -35,6 +35,7 @@ const item = {
   bigIdeaSnapshot: { centralIdea: "Direção preservada" },
 };
 describe("modelagem por referências", () => {
+  afterEach(cleanup);
   beforeEach(() => {
     f.items = [];
     f.mutate.mockClear();
@@ -98,6 +99,59 @@ describe("modelagem por referências", () => {
     fireEvent.click(screen.getByRole("button", { name: /Usar no ciclo #201/ }));
     expect(f.mutate.mock.calls[0][0]).toEqual({ adopt: 91, cycleId: 201 });
     expect(screen.getByText(/não inicia agentes/)).toBeInTheDocument();
+  });
+  it("retoma somente quando o backend comprova a reconexão, após confirmação de consumo", () => {
+    f.items = [
+      {
+        ...item,
+        status: "FAILED",
+        researchRecovery: {
+          available: true,
+          reconnectionId: 25,
+          reason: "Reconexão confirmada; histórico preservado.",
+        },
+      },
+    ];
+    render(
+      <MemoryRouter>
+        <ProductModelingPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retomar pesquisa com Argos" }),
+    );
+    expect(f.mutate).not.toHaveBeenCalled();
+    expect(screen.getByText(/pode consumir IA/)).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar retomada da pesquisa" }),
+    );
+    expect(f.mutate.mock.calls[0][0]).toEqual({ resume: 91 });
+    expect(
+      screen.queryByRole("button", { name: "Iniciar pesquisa com Argos" }),
+    ).toBeNull();
+  });
+  it("não deduz retomada apenas por falha e apresenta a causa fornecida pelo backend", () => {
+    f.items = [
+      {
+        ...item,
+        status: "FAILED",
+        researchRecovery: {
+          available: false,
+          reconnectionId: null,
+          reason: "Há resultado preservado; recupere o recibo.",
+        },
+      },
+    ];
+    render(
+      <MemoryRouter>
+        <ProductModelingPage />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Retomar pesquisa com Argos" }),
+    ).toBeNull();
+    expect(screen.getByText(/Há resultado preservado/)).toBeInTheDocument();
+    expect(f.mutate).not.toHaveBeenCalled();
   });
   it("mostra adaptação e fonte sem declarar demanda local comprovada", () => {
     f.items = [

@@ -15,6 +15,7 @@ const base='http://127.0.0.1:5179';
    await page.addInitScript(()=>{delete Crypto.prototype.randomUUID;});
    await page.goto(base+'/product-modeling?productId=99101');
    await page.getByRole('heading',{name:'Modelar por referências',exact:true}).waitFor().catch(async e=>{await page.screenshot({path:path.join(out,'failure.png'),fullPage:true});console.error(errors,await page.locator('body').innerText());throw e;});
+   const beforeAudit=(await (await fetch('http://127.0.0.1:18101/fixture/health')).json()).audit;
    await page.getByLabel('O que a cliente deseja conseguir?').fill('Resultado próprio '+name);
    await page.getByLabel('Links das referências').fill('http://reference.example/');
    await page.getByRole('button',{name:'Salvar preparação'}).click();
@@ -27,16 +28,23 @@ const base='http://127.0.0.1:5179';
    const card=page.locator('article').filter({hasText:'Resultado próprio '+name});
    await card.getByText('Preparada',{exact:true}).waitFor();
    await card.getByText('Referências internacionais → Brasil',{exact:true}).waitFor();
-   assert.equal((await (await fetch('http://127.0.0.1:18101/fixture/health')).json()).audit,0);
+   assert.equal((await (await fetch('http://127.0.0.1:18101/fixture/health')).json()).audit,beforeAudit);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
    await page.screenshot({path:path.join(out,name+'.png'),fullPage:true});assert.deepEqual(errors,[]);
-   if(name==='desktop') {
-    await card.getByRole('button',{name:'Preparar início da pesquisa'}).click();
-    await card.getByRole('button',{name:'Iniciar pesquisa com Argos'}).waitFor();
-    // Não iniciar neste teste para comparar os três dispositivos sem trabalho externo.
-   }
+   const models=await (await fetch('http://127.0.0.1:18101/api/product-modeling/v1')).json();
+   const current=models.find(m=>m.desiredOutcome==='Resultado próprio '+name);
+   await card.getByRole('button',{name:'Preparar início da pesquisa'}).click();
+   await card.getByRole('button',{name:'Iniciar pesquisa com Argos'}).click();
+   await card.getByText('Na fila de Argos',{exact:true}).waitFor();
+   await fetch(`http://127.0.0.1:18101/fixture/fail-auth/${current.discoveryCycleId}`,{method:'POST'});
+   await page.reload();
+   await card.getByRole('button',{name:'Retomar pesquisa com Argos'}).click();
+   await card.getByRole('button',{name:'Confirmar retomada da pesquisa'}).click();
+   await card.getByText('Na fila de Argos',{exact:true}).waitFor();
+   assert.match(await card.innerText(),/PENDING/);
+   await page.screenshot({path:path.join(out,name+'-recovery.png'),fullPage:true});
    await context.close();
   }
-  console.log(JSON.stringify({desktop:'PASS',iphone:'PASS',pixel:'PASS',httpUuid:'PASS',draftNoTasks:'PASS'}));
+  console.log(JSON.stringify({desktop:'PASS',iphone:'PASS',pixel:'PASS',httpUuid:'PASS',draftNoTasks:'PASS',recovery:'PASS'}));
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

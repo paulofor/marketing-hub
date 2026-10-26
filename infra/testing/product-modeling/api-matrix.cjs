@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');const crypto=require('node:crypto');
 const base='http://127.0.0.1:18101';
 async function call(method,path,body,status=200){const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});const t=await r.text();assert.equal(r.status,status,t);return t?JSON.parse(t):null;}
 (async()=>{
+ const baseline=(await call('GET','/fixture/health')).audit;
  for(const id of [99101,99102]){
   const input={requestKey:crypto.randomUUID(),productId:id,desiredOutcome:'Resultado específico '+id,referenceUrls:['https://reference.example/']};
   const m=await call('POST','/api/product-modeling/v1',input);assert.equal(m.status,'DRAFT');assert.equal(m.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(m.targetMarket,'Brasil');
@@ -9,10 +10,10 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
   assert.equal(audience.targetAudience,'Público brasileiro com preferências, rotina e limitações próprias. '.repeat(20).slice(0,id===99101?278:600));
   const replay=await call('POST','/api/product-modeling/v1',input);assert.equal(m.id,replay.id);
   await call('POST','/api/product-modeling/v1',{...input,desiredOutcome:'Outra intenção'},409);
-  assert.equal((await call('GET','/fixture/health')).audit,id===99101?0:1);
+  assert.equal((await call('GET','/fixture/health')).audit,baseline+(id===99101?0:1));
   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100},409);
   await Promise.all([call('POST',`/api/product-modeling/v1/${m.id}/start`),call('POST',`/api/product-modeling/v1/${m.id}/start`)]);
-  assert.equal((await call('GET','/fixture/health')).audit,id===99101?1:2);
+  assert.equal((await call('GET','/fixture/health')).audit,baseline+(id===99101?1:2));
   await call('POST',`/fixture/complete/${m.discoveryCycleId}`);
   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id===99101?99202:99201},409);
   const adopted=await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100});
@@ -25,5 +26,21 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
  assert.equal((await call('GET',`/fixture/audience/${fresh.discoveryCycleId}`)).targetAudience,'');
  const short=await call('POST','/api/product-modeling/v1',{requestKey:crypto.randomUUID(),productId:99103,desiredOutcome:'Público curto preservado',referenceUrls:['https://reference.example/']});
  assert.equal((await call('GET',`/fixture/audience/${short.discoveryCycleId}`)).targetAudience,'Público sintético');
- console.log(JSON.stringify({prepare:'PASS',fullAudienceTwoProducts:'PASS',shortAndNullAudience:'PASS',replay:'PASS',concurrentStart:'PASS',adoption:'PASS',identity:'PASS',factualContext:'PASS',newProduct:'PASS',externalSpend:0}));
+ for(const id of [99101,99102]) {
+  const m=await call('POST','/api/product-modeling/v1',{requestKey:crypto.randomUUID(),productId:id,desiredOutcome:'Retomada segregada '+id,referenceUrls:['https://reference.example/']});
+  await call('POST',`/api/product-modeling/v1/${m.id}/start`);
+  await call('POST',`/fixture/fail-auth/${m.discoveryCycleId}`);
+  const failed=await call('GET',`/api/product-modeling/v1/${m.id}`);
+  assert.equal(failed.researchRecovery.available,true);
+  const before=(await call('GET','/fixture/health')).attempts;
+  const resumed=await Promise.all([call('POST',`/api/product-modeling/v1/${m.id}/resume`),call('POST',`/api/product-modeling/v1/${m.id}/resume`)]);
+  assert.equal((await call('GET','/fixture/health')).attempts,before+1);
+  for(const r of resumed){assert.equal(r.discoveryCycleId,m.discoveryCycleId);assert.equal(r.productId,id);assert.equal(r.status,'READY_FOR_RESEARCH');}
+  await call('POST',`/fixture/fail-auth/${m.discoveryCycleId}`);
+  await call('POST',`/fixture/preserve-output/${m.discoveryCycleId}`);
+  assert.equal((await call('GET',`/api/product-modeling/v1/${m.id}`)).researchRecovery.available,false);
+  await call('POST',`/api/product-modeling/v1/${m.id}/resume`,undefined,409);
+  assert.equal((await call('GET','/fixture/health')).attempts,before+1);
+ }
+ console.log(JSON.stringify({prepare:'PASS',fullAudienceTwoProducts:'PASS',shortAndNullAudience:'PASS',replay:'PASS',concurrentStart:'PASS',concurrentRecovery:'PASS',preservedOutput:'PASS',adoption:'PASS',identity:'PASS',factualContext:'PASS',newProduct:'PASS',externalSpend:0}));
 })().catch(e=>{console.error(e);process.exitCode=1});

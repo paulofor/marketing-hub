@@ -24,7 +24,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Responsabilidade: reproduzir perda de callback e reinício usando worker e HTTP locais reais. */
+/**
+ * Responsabilidade: conferir contrato enviado, callback e retomada com worker e HTTP locais reais.
+ */
 class PdeMarketStrategyDeliveryTest {
   @TempDir Path temporary;
   private final ObjectMapper json = new ObjectMapper();
@@ -42,6 +44,7 @@ class PdeMarketStrategyDeliveryTest {
   private boolean catalogedSuccessor;
   private boolean omitCatalogIdentity;
   private boolean implementedInputProvided;
+  private boolean bigIdeaProvided;
 
   /** Inicia backend HTTP e modelo descartáveis, sem qualquer credencial ou conexão produtiva. */
   @BeforeEach
@@ -66,6 +69,17 @@ class PdeMarketStrategyDeliveryTest {
         with (root/'invocations.txt').open('a') as f: f.write('call\\n')
         args=sys.argv
         (root/'arguments.json').write_text(json.dumps(args))
+        schema=json.loads(pathlib.Path(args[args.index('--output-schema')+1]).read_text())
+        def strict(node):
+          if isinstance(node,dict):
+            if 'properties' in node:
+              assert node.get('additionalProperties') is False
+              assert set(node['properties']) == set(node.get('required',[]))
+            for value in node.values(): strict(value)
+          elif isinstance(node,list):
+            for value in node: strict(value)
+        strict(schema)
+        (root/'schema-used.json').write_text(json.dumps(schema))
         pathlib.Path(args[args.index('--output-last-message')+1]).write_text((root/'answer.json').read_text())
         print(json.dumps({'type':'turn.completed','usage':{'input_tokens':100,'cached_input_tokens':20,'output_tokens':10}}))
         """);
@@ -244,6 +258,99 @@ class PdeMarketStrategyDeliveryTest {
     assertThat(Files.readString(temporary.resolve("prompt.txt")))
         .contains("learningSalesCycle", "Estrela", "Quartzo", "PDE_COMMERCIAL_PLANNING_INPUT_V1");
     assertThat(Files.exists(temporary.resolve("state/pending.json"))).isFalse();
+  }
+
+  /** Envia o schema v12 estrito e recupera o callback sem inventar pesquisa em outro produto. */
+  @ParameterizedTest
+  @ValueSource(longs = {4L, 99122L})
+  void sendsStrictBigIdeaSchemaAndReplaysWithoutModeling(long productId) throws Exception {
+    targetProductId = productId;
+    catalogedSuccessor = true;
+    bigIdeaProvided = true;
+    callbackFailures = 1;
+    var result = new PdeMarketStrategyBpmTaskConsumerTest().agentValidationResult();
+    result
+        .withObject("/productIdentity")
+        .put("mode", "PRESERVE")
+        .put("internalName", "Estrela")
+        .put("productTypeCode", "LOW_TICKET_DIGITAL_PRODUCT")
+        .put("productTypeInternalName", "Quartzo");
+    result.put("activity", "marketStrategy");
+    result.set("bigIdea", fixedBigIdea());
+    result.putArray("referenceModelingTrace");
+    result.putNull("internationalAssessment");
+    Files.writeString(temporary.resolve("answer.json"), result.toString());
+
+    consumer().processOne();
+    consumer().processOne();
+
+    assertThat(paths).containsExactly("pending", "execution-audit", "result", "result");
+    assertThat(invocations()).isEqualTo(1);
+    assertThat(callbacks.getLast()).isEqualTo(callbacks.getFirst());
+    var schema = json.readTree(temporary.resolve("schema-used.json").toFile());
+    assertThat(schema.path("required")).anyMatch(v -> v.asText().equals("referenceModelingTrace"));
+    assertThat(schema.path("properties").path("internationalAssessment").path("type"))
+        .anyMatch(v -> v.asText().equals("null"));
+    assertThat(Files.readString(temporary.resolve("prompt.txt")))
+        .contains("# Prompt v12", "internationalAssessment: null");
+  }
+
+  /** Confere todos os schemas empacotados, inclusive propriedades novas e objetos anuláveis. */
+  @Test
+  void keepsEveryPackagedSchemaStrictAndComplete() throws Exception {
+    try (var resources = Files.walk(Path.of("src/main/resources/prompts"))) {
+      var schemas = resources.filter(p -> p.toString().endsWith("schema.json")).sorted().toList();
+      assertThat(schemas).isNotEmpty();
+      for (var resource : schemas) {
+        for (var object : json.readTree(resource.toFile()).findParents("properties")) {
+          assertThat(object.path("additionalProperties").asBoolean(true))
+              .as(resource.toString())
+              .isFalse();
+          var fields = new ArrayList<String>();
+          object.path("properties").fieldNames().forEachRemaining(fields::add);
+          assertThat(object.path("required"))
+              .as(resource.toString())
+              .extracting(JsonNode::asText)
+              .containsExactlyInAnyOrderElementsOf(fields);
+        }
+      }
+    }
+  }
+
+  /** Avaliação anulável não permite aprovar estudo internacional sem evidência e adaptação. */
+  @Test
+  void nullableAssessmentDoesNotBypassInternationalApproval() {
+    var task = json.createObjectNode();
+    var reference = task.putObject("processContextJson").putObject("referenceModeling");
+    reference
+        .put("contractVersion", "MARKET_REFERENCE_MODELING_V1")
+        .put("researchScope", "INTERNATIONAL_TO_BR_V1");
+    reference.putArray("factualSources").addObject().put("url", "https://reference.example/");
+    var result = json.createObjectNode().put("decision", "APPROVE");
+    for (int i = 0; i < 3; i++) result.withArray("alternatives").addObject();
+    var trace = result.putArray("referenceModelingTrace").addObject();
+    trace.put("sourceUrl", "https://reference.example/");
+    for (String field :
+        List.of(
+            "observedFact",
+            "limitation",
+            "learning",
+            "decision",
+            "deliverable",
+            "acceptanceMetric")) trace.put(field, "Hipótese sintética com limites explícitos");
+    result.putNull("internationalAssessment");
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> ReferenceModelingContract.validate(result, task))
+        .hasMessageContaining("adaptação");
+  }
+
+  /** Produz direção fixada de teste sem usar parecer ou dados de cliente reais. */
+  private com.fasterxml.jackson.databind.node.ObjectNode fixedBigIdea() {
+    var idea = json.createObjectNode();
+    for (String field :
+        List.of("centralIdea", "audience", "desire", "promise", "mechanism", "evidence", "limits"))
+      idea.put(field, "Hipótese sintética " + field);
+    return idea;
   }
 
   /** Preserva resposta recusada, tokens e callback após reinício, sem repetir o modelo local. */
@@ -506,6 +613,18 @@ class PdeMarketStrategyDeliveryTest {
             .putArray("requiredFields")
             .add("occasion")
             .add("existingSelection");
+        task.put("processContextJson", context.toString());
+      }
+      if (bigIdeaProvided) {
+        var context =
+            (com.fasterxml.jackson.databind.node.ObjectNode)
+                json.readTree(String.valueOf(task.get("processContextJson")));
+        context.withObject("/learningSalesCycle").put("productId", targetProductId);
+        context
+            .putObject("productBigIdea")
+            .put("contractVersion", "PRODUCT_BIG_IDEA_V1")
+            .putObject("revision")
+            .set("content", fixedBigIdea());
         task.put("processContextJson", context.toString());
       }
       response = json.writeValueAsBytes(List.of(task));

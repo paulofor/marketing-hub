@@ -73,3 +73,13 @@ Complemento após timeout #821: planejador determinístico existente para aprofu
 ## Adoção do estudo internacional — 26/10/2026
 
 Antes dos testes desta passagem: conferir estudo `RESEARCHABLE` com duas fontes primárias e contraponto; recusar fonte ausente, domínio falso, data/texto nulo, limite vazio, rejeição, revisão humana e escopo antigo; preservar `DOSSIER_READY` anterior. Percorrer salvar → iniciar → concluir pesquisa sintética → vincular → consultar contexto → replay/reinício no MySQL 5.7 e na tela em desktop/iPhone/Pixel. Verificar Big Idea, identidade, maturidade, hipóteses, limites e zero tarefa/custo na adoção. Conferir o contrato consumidor de Atena com fontes literais e três alternativas. Antes: os dois casos de estudo retornavam 409 localmente e o caso real também retornou 409 pela tela. Depois: somente estudo factual completo recebe a base preparatória, sem alterar prontidão comercial.
+
+## Formato estrito de Atena — 26/10/2026
+
+Reproduzir antes da correção a falta de dois campos em `required` no schema v12. Depois,
+percorrer recursivamente todos os schemas empacotados, inclusive objetos anuláveis. No processo
+Codex simulado e HTTP local, verificar o arquivo efetivamente enviado, auditoria, resultado,
+perda/replay de callback e Big Idea fixada em duas identidades. Caminho sem modelagem usa
+lista vazia/`null`; aprovação internacional com `null` continua recusada. Executar a suíte do
+executor e validar as atestações existentes antes de publicar. Sem mudança de UI, persistência ou
+schema de banco nesta correção, preservar a matriz anterior de navegador/MySQL sem repeti-la.

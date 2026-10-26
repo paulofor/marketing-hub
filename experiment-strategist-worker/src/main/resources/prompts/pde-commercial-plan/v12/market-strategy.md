@@ -168,6 +168,12 @@ campanha ou gasto. O backend preserva a revisão e o operador pode evoluí-la co
 
 ## Modelagem por referências existentes
 
+Todos os retornos incluem `referenceModelingTrace` e `internationalAssessment` para cumprir o
+formato estrito. Sem modelagem, use `referenceModelingTrace: []` e `internationalAssessment: null`.
+Sem escopo internacional, ou em `ADJUST`/`REJECT` sem avaliação suficiente, use `internationalAssessment: null`.
+Não preencha referências inexistentes para satisfazer o formato. Em aprovação internacional,
+o objeto completo e a rastreabilidade abaixo continuam obrigatórios e serão validados pelo executor.
+
 Quando processContextJson.referenceModeling.contractVersion=MARKET_REFERENCE_MODELING_V1,
 use o dossiê factual de Argos, factualSources e a intenção congelada como complemento
 ao modo DISCOVERY ou ao ciclo escolhido. Não mude o modo contratual da tarefa.

@@ -2920,6 +2920,16 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 ## LOOP-OPENAI-SCHEMA-CONTRACT — Prompts, schemas e Structured Outputs
 
+- **Recorrência fechada em Atena, 26/10/2026:** a tarefa #823 recebeu o estudo #73 e a Big Idea
+  corretos, mas o provedor recusou o schema v12 antes da análise: `referenceModelingTrace` e
+  `internationalAssessment` estavam em `properties`, sem entrar em `required`. A tarefa #811
+  completara a mesma versão antes da inclusão desses campos. Os testes de rigidez percorriam
+  apenas v7/v9/v10. O schema declara ambos, permitindo avaliação `null` quando não aplicável;
+  aprovação internacional segue bloqueando `null`. O teste percorre todas as versões empacotadas,
+  inclusive objetos anuláveis, e o processo local confere o schema efetivamente passado ao Codex.
+  Callback perdido é reenviado sem nova inferência; outra identidade e caminho sem modelagem
+  preservam comportamento. A recusa histórica conserva auditoria e custo não informado.
+
 - **Recorrência local em Psique, 16/10/2026:** GPT-Audio-1.5 não garante Structured Outputs.
   O leitor aceitava conteúdo posterior ao JSON, chaves duplicadas, justificativa numérica
   e múltiplas alternativas; quatro testes reproduziram `COMPLETED` indevido antes da correção.

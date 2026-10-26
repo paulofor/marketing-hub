@@ -16,7 +16,7 @@ const { mutateAsync } = vi.hoisted(() => ({
   mutateAsync: vi.fn().mockResolvedValue({}),
 }));
 vi.mock("../../api/learningCycle/useLearningCycles", () => ({
-  useCycleMutation: () => ({ mutateAsync, isPending: false }),
+  useCycleMutation: () => ({ mutateAsync, isPending: false, reset: vi.fn() }),
   cycleError: () => "",
 }));
 afterEach(() => {
@@ -265,5 +265,119 @@ it("abre a preparação Opala indicada pelo backend sem perder ciclo e experimen
   expect(
     screen.getByRole("link", { name: "Abrir preparação Opala com os agentes" }),
   ).toHaveAttribute("href", cycle.commercialPreparation.preparationUrl);
+  expect(mutateAsync).not.toHaveBeenCalled();
+});
+
+it.each([
+  { id: 13, productId: 4, experimentId: 106, authorizationAvailable: false },
+  { id: 401, productId: 817, experimentId: 905, authorizationAvailable: true },
+])(
+  "permite mudar o ciclo $id sem aprovar orçamento nem iniciar agentes",
+  async (identity) => {
+    const current = {
+      ...authorizationCycle,
+      ...identity,
+      commands: [
+        {
+          action: "COMPLETE",
+          label: "Registrar autorização",
+          available: identity.authorizationAvailable,
+          reason: "A janela precisa estar válida antes de autorizar mídia.",
+        },
+        {
+          action: "ADJUST",
+          label: "Preparar nova versão",
+          available: true,
+          reason: "",
+        },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <LearningCycleCommandForm
+          cycle={current}
+          catalog={catalog}
+          onUpdated={() => {}}
+        />
+      </MemoryRouter>,
+    );
+    expect(mutateAsync).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Decisão *" }), {
+      target: { value: "ADJUST" },
+    });
+    expect(screen.queryByLabelText("Orçamento total (R$) *")).toBeNull();
+    expect(mutateAsync).not.toHaveBeenCalled();
+    const form = screen.getByRole("form", {
+      name: "Decisão do ciclo",
+    }) as HTMLFormElement;
+    for (const [name, value] of Object.entries({
+      operatorName: "Operador de teste",
+      summary: "Nova direção autorizada, com histórico e orçamento preservados",
+      evidenceReference: "internal://test/market-reference-direction",
+      rootCause:
+        "A nova direção precisa de pesquisa própria antes do planejamento",
+      learning: "Referências de mercado são hipóteses, sem vendas comprovadas",
+      nextHypothesis: "Primeiro valor personalizado com poucas peças",
+      returnTarget: "70:prototypeCorrection",
+    }))
+      fireEvent.change(form.elements.namedItem(name) as HTMLElement, {
+        target: { value },
+      });
+    expect(form.checkValidity()).toBe(true);
+    fireEvent.submit(form);
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({
+      action: "ADJUST",
+      expectedRevision: current.revision,
+      evidence: {
+        returnProcessId: 70,
+        returnActivityId: "prototypeCorrection",
+      },
+    });
+    expect(mutateAsync.mock.calls[0][0]).not.toHaveProperty(
+      "budgetAuthorization",
+    );
+    expect(mutateAsync.mock.calls[0][0].evidence).not.toHaveProperty(
+      "budgetLimitBrl",
+    );
+  },
+);
+
+it("conserva comandos bloqueados e volta ao orçamento sem registrar decisão", () => {
+  render(
+    <MemoryRouter>
+      <LearningCycleCommandForm
+        cycle={{
+          ...authorizationCycle,
+          commands: [
+            ...authorizationCycle.commands,
+            {
+              action: "ADJUST",
+              label: "Preparar nova versão",
+              available: true,
+              reason: "",
+            },
+            {
+              action: "STOP",
+              label: "Encerrar ciclo",
+              available: false,
+              reason: "Aguarde a tarefa ativa.",
+            },
+          ],
+        }}
+        catalog={catalog}
+        onUpdated={() => {}}
+      />
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole("option", { name: /Encerrar ciclo/ })).toBeDisabled();
+  fireEvent.change(screen.getByRole("combobox", { name: "Decisão *" }), {
+    target: { value: "ADJUST" },
+  });
+  fireEvent.change(screen.getByRole("combobox", { name: "Decisão *" }), {
+    target: { value: "COMPLETE" },
+  });
+  expect(screen.getByLabelText("Orçamento total (R$) *")).toHaveValue(100);
+  expect(screen.queryByLabelText("Hipótese para o sucessor *")).toBeNull();
   expect(mutateAsync).not.toHaveBeenCalled();
 });

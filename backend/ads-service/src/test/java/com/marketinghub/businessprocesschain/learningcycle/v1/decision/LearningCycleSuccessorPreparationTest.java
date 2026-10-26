@@ -191,11 +191,19 @@ class LearningCycleSuccessorPreparationTest {
     return cycle;
   }
 
-  /** Prepara o caso original e outra identidade sem alterar o passado, inferir ou gastar. */
+  /** Prepara mudanças pré-mercado, inclusive na autorização, sem alterar o passado ou gastar. */
   @ParameterizedTest
-  @ValueSource(longs = {10, 8017})
-  void preparesPrivateCorrectionWithoutCommercialDates(long productId) throws Exception {
+  @CsvSource({
+    "10,ADJUSTMENT",
+    "8017,ADJUSTMENT",
+    "10,VALIDATION",
+    "4,AUTHORIZATION",
+    "8017,AUTHORIZATION"
+  })
+  void preparesPrivateCorrectionWithoutCommercialDates(long productId, String stage)
+      throws Exception {
     var cycle = privateAdjustment(productId);
+    cycle.setStage(stage);
     clearInvocations(proposals, agents);
     assertThat(preparation.adjustmentAvailability(productId, cycle.getId()).available()).isTrue();
     verifyNoInteractions(service, processRuns);
@@ -344,6 +352,9 @@ class LearningCycleSuccessorPreparationTest {
         "BASELINE",
         "DECISION",
         "EXPOSED",
+        "AUTHORIZATION_EXPOSED",
+        "AUTHORIZATION_NO_RECEIPT",
+        "AUTHORIZATION_RELEASE_REQUESTED",
         "RELEASE_REQUESTED",
         "OTHER_PRODUCT",
         "OTHER_CYCLE",
@@ -363,6 +374,18 @@ class LearningCycleSuccessorPreparationTest {
       case "BASELINE" -> cycle.setBaseline(true);
       case "DECISION" -> cycle.setStage("DECISION");
       case "EXPOSED" -> source.setStatus(ExperimentStatus.RUNNING);
+      case "AUTHORIZATION_EXPOSED" -> {
+        cycle.setStage("AUTHORIZATION");
+        source.setStatus(ExperimentStatus.RUNNING);
+      }
+      case "AUTHORIZATION_NO_RECEIPT" -> {
+        cycle.setStage("AUTHORIZATION");
+        when(events.findByCycleIdOrderByRevisionAsc(cycle.getId())).thenReturn(List.of());
+      }
+      case "AUTHORIZATION_RELEASE_REQUESTED" -> {
+        cycle.setStage("AUTHORIZATION");
+        source.setFacebookReleaseRequestedAt(java.time.Instant.now());
+      }
       case "RELEASE_REQUESTED" -> source.setFacebookReleaseRequestedAt(java.time.Instant.now());
       case "OTHER_PRODUCT" -> source.setProduct(Product.builder().id(83L).build());
       case "OTHER_CYCLE" -> receipt.setCycleId(999L);

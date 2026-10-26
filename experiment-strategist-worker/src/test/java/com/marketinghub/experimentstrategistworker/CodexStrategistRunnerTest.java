@@ -9,6 +9,27 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato de isolamento do executor Estrategista. */
 class CodexStrategistRunnerTest {
+  /** A Big Idea independente recebe a direção comum sem misturar contexto ou mudar as demais pesquisas. */
+  @Test
+  void sharesStrategicDirectionWithStandaloneBigIdeas() throws Exception {
+    var runner = new CodexStrategistRunner(new WorkerProperties(), new ObjectMapper());
+    for (String product : new String[] {"Capella-beleza", "Outra-identidade-estilo"}) {
+      var job = new StrategistJob(91001L, 91002L, "RUNNING", BigIdeaResearchContract.MODE,
+          "Pesquisar somente " + product, "{\"product\":\"" + product + "\"}");
+      String prompt = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+          runner, "prompt", job, false);
+      assertThat(prompt).startsWith("# Atena — núcleo de estratégia v1")
+          .contains("Crenças cotidianas e desejo", "PRODUCT_BIG_IDEA_RESEARCH_V1", product)
+          .doesNotContain("{{EVIDENCE_SNAPSHOT}}", "{{RESEARCH_QUESTION}}");
+      var historicalMode = new StrategistJob(91003L, 91002L, "RUNNING",
+          "COMMERCIAL_ASSUMPTIONS_PROPOSAL", "Premissas econômicas", "{}");
+      String independent = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+          runner, "prompt", historicalMode, false);
+      assertThat(independent).doesNotContain("# Atena — núcleo de estratégia v1")
+          .contains("Plutus");
+    }
+  }
+
   /** Comprova processo local → uso JSONL → callback, sem inferência nem perda da resposta bruta. */
   @Test
   void reportsAuditableUsageFromCompletedLocalProcess() throws Exception {

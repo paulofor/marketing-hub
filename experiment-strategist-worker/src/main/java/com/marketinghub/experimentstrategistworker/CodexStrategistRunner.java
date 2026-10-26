@@ -261,10 +261,11 @@ public class CodexStrategistRunner {
     return command;
   }
 
-  /** Resolve o prompt com evidencias e biblioteca comportamental versionadas. */
+  /** Inclui o núcleo estratégico na Big Idea e preserva os contratos próprios das outras pesquisas. */
   private String prompt(StrategistJob job, boolean clarityAvailable) throws IOException {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
-    return read(BigIdeaResearchContract.MODE.equals(job.authorityMode())
+    boolean bigIdea = BigIdeaResearchContract.MODE.equals(job.authorityMode());
+    String activity = read(bigIdea
             ? "prompts/product-big-idea/v1/research.md"
             : assumptions
                 ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
@@ -278,6 +279,9 @@ public class CodexStrategistRunner {
                 ? "DISPONIVEL: consulte somente snapshots agregados por PAGE, SOURCE e DEVICE."
                 : "INDISPONIVEL: declare a lacuna e use somente o funil interno; não invente dados.")
         .replace("{{RESEARCH_QUESTION}}", text(job.researchQuestion()));
+    return bigIdea
+        ? read("prompts/experiment-strategist/v1/agent-core.md") + "\n\n" + activity
+        : activity;
   }
 
   /** Confirma que o arquivo secreto do Clarity existe, é legível e não está vazio. */

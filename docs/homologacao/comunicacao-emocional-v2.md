@@ -27,6 +27,8 @@ Alternativas:
 ## Mudança reutilizável
 
 - Atena explicita crença hipotética, desejo e ligação com a Big Idea nos campos existentes.
+  O caminho independente de Big Idea passa a carregar esse mesmo núcleo; os contratos próprios
+  de pesquisa e premissas econômicas permanecem preservados.
 - Íris V2 exige situação, hipótese de crença, desejo, recompensa emocional e reenquadramento,
   com fonte literal na direção da própria tarefa. Abertura, prova e ação têm de corresponder
   às mensagens dos cinco critérios. O mapa fica interno; não é conteúdo publicável.
@@ -79,10 +81,10 @@ Concluída na sandbox, sem inferência externa ou mutação comercial:
 - Íris: 149 testes executados; 5 cenários opcionais ignorados pela configuração existente.
 - Psique: 231 executados; 12 opcionais ignorados. Inclui recusa de copy descritiva,
   escores insuficientes e citações inventadas em avaliações simuladas.
-- Atena: 72 executados, sem falha.
+- Atena: 73 executados, sem falha, incluindo criação independente de Big Idea.
 - Apolo: 282 executados; 9 opcionais ignorados. Preservação de roteiro, request auditado
   e prova seguem válidos.
-- Total: 734 testes executados, zero falhas/erros. Os 26 ignorados pertencem às condições
+- Total: 735 testes executados, zero falhas/erros. Os 26 ignorados pertencem às condições
   opcionais das suites existentes; nenhum critério novo depende deles.
 - Criação de Íris exercitada por processo Codex simulado, callback com mapa V2 e custo
   preservado; V1 novo, mapa omitido e mapa divergente foram recusados. Replay V1 aceito.

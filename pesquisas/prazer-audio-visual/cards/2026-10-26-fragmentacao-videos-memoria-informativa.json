@@ -1,0 +1,18 @@
+{
+  "cardKey": "fragmentacao-videos-memoria-informativa",
+  "collection": "prazer-audio-visual",
+  "title": "Fragmentação narrativa pode prejudicar memória de informações",
+  "finding": "Em três experimentos com vídeos de turismo de 10 minutos, uma sequência de 5–7 clipes independentes teve menor acerto de memória que uma narrativa contínua; na condição de memorização intencional, houve maior declínio após um dia.",
+  "mechanism": "Mudanças de contexto podem competir com a integração narrativa e a codificação; diferenças de sincronização cerebral entre participantes são correlatas e não demonstram mediação causal.",
+  "commercialApplication": "Comparar versões com mesmo roteiro, duração total e volume: narrativa contínua versus segmentos desconectados. Medir recordação dos benefícios, compreensão e conforto imediatamente e após 24h.",
+  "evidenceStrength": "Moderada para o paradigma (n=180, n=185, fMRI n=59); baixa para anúncios e vídeos curtos isolados.",
+  "publishedOn": "2026-10-26",
+  "validUntil": "2026-12-10",
+  "experimentHypothesis": "A versão de narrativa contínua produzirá maior recordação factual após 24h que uma montagem fragmentada, sem reduzir prazer percebido; avaliar separadamente CTA e venda em teste próprio.",
+  "risks": "Confundir duração curta com fragmentação; trocar conteúdo além da continuidade; sacrificar clareza ou engajamento; atribuir causalidade a fMRI.",
+  "limits": "Roteiros turísticos, amostra universitária e conjuntos de estímulos restritos; não pré-registrado; não avaliou anúncios, compra, dopamina ou Reels curtos isolados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-26-fragmentacao-videos-memoria-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Wei et al. (2026), fragmentação de vídeos e memória",
+  "sourceSha256": "8ff566ee872384fe5a6398c12ae8d5e266d459cebf46b8be96c8ed293075a402"
+}

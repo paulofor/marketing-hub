@@ -56,7 +56,7 @@ it("reutiliza o ajuste pelo endpoint oficial, sem datas ou orçamento no envio",
   const input = await screen.findByRole("textbox", {
     name: "Identificação da nova versão *",
   });
-  expect(screen.getAllByRole("textbox")).toHaveLength(1);
+  expect(screen.getAllByRole("textbox")).toHaveLength(2);
   expect(axios.post).not.toHaveBeenCalled();
   fireEvent.change(input, { target: { value: "candidate-v2" } });
   fireEvent.submit(screen.getByRole("form"));
@@ -91,7 +91,9 @@ it("mostra falha real e conserva os dados para corrigir sem enviar automaticamen
     response: { data: { message: "O ciclo mudou" } },
   });
   const updated = mount();
-  const input = await screen.findByRole("textbox");
+  const input = await screen.findByRole("textbox", {
+    name: "Identificação da nova versão *",
+  });
   fireEvent.change(input, { target: { value: "candidate-v1" } });
   expect(screen.getByRole("button")).toBeDisabled();
   fireEvent.change(input, { target: { value: "candidate-v2" } });
@@ -100,4 +102,44 @@ it("mostra falha real e conserva os dados para corrigir sem enviar automaticamen
   expect(input).toHaveValue("candidate-v2");
   expect(updated).not.toHaveBeenCalled();
   expect(axios.post).toHaveBeenCalledTimes(1);
+});
+
+it("encaminha a mudança explícita de público sem orçamento, datas ou início automático", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: { available: true, reason: "Ajuste válido" },
+  });
+  let resolve!: (value: unknown) => void;
+  vi.mocked(axios.post).mockReturnValue(
+    new Promise((done) => {
+      resolve = done;
+    }),
+  );
+  mount({ ...cycle, productId: 7, id: 14 });
+  fireEvent.change(
+    await screen.findByRole("textbox", {
+      name: "Identificação da nova versão *",
+    }),
+    { target: { value: "capella-beleza-v1" } },
+  );
+  fireEvent.change(
+    screen.getByRole("textbox", { name: /Público do novo ciclo/ }),
+    { target: { value: " Profissionais de beleza " } },
+  );
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() =>
+    expect(axios.post).toHaveBeenCalledWith(
+      `${cycleApi}/products/7/14/decision-proposal/adjustment-successor`,
+      {
+        expectedRevision: 4,
+        productVersion: "capella-beleza-v1",
+        targetAudience: "Profissionais de beleza",
+      },
+    ),
+  );
+  expect(screen.getByRole("button")).toBeDisabled();
+  expect(
+    screen.getByRole("status", { name: "Preparando" }),
+  ).toBeInTheDocument();
+  resolve({ data: { ...cycle, id: 7120 } });
+  await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
 });

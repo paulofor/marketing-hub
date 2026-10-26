@@ -7707,3 +7707,19 @@ Não houve nova medição de vendas, ROI ou demanda.
 - Não altera oferta, orçamento, resultado histórico, campanha ou parecer. Critério comercial
   futuro: reduzir confusão/abandono e retrabalho; impacto em vendas ainda não medido.
 - [Matriz e resultados da validação](../homologacao/capella-interface-sem-diagnostico-2026-10-25.md).
+
+
+## 2026-10-26 — Capella: ampliar direção para profissionais autônomos de beleza
+
+- Pedido: alinhar público, desejo, promessa, mecanismo, evidências e limites à ideia
+  central editada pelo usuário, preservando-a literalmente. A nova direção considera
+  cabelo, barbearia, maquiagem, sobrancelhas/cílios, estética não clínica e unhas,
+  condicionada à demonstração da entrega adequada a cada especialidade.
+- Causa compartilhada: o preparo de sucessor copiava público e hipótese antigos,
+  contrariando uma decisão explícita de mercado. O contrato aceita `targetAudience`,
+  preserva-o no briefing/memória e usa a hipótese nova no experimento. Não reescreve
+  predecessores nem transfere aprovações ou autorização financeira.
+- Harness: regressão do caso original, outra identidade, caminho anterior, replay
+  idêntico/divergente, validação do endpoint e envio da tela. Hipótese de melhoria:
+  menos retrabalho por contexto contraditório; impacto comercial não medido.
+- Matriz e limites: [ampliação de beleza](../homologacao/capella-ampliacao-beleza-v1.md).

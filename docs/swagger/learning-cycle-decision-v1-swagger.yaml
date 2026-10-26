@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Proposta comercial de Atena no ciclo da Cadeia de Valor
-  version: 1.4.0
+  version: 1.5.0
   description: >-
     A atividade DECISION do subprocesso chamado por 6.4 recebe uma proposta de Atena.
     O worker apenas propõe. O backend pode preparar sucessor de ajuste KEEP_FOCUS ou inconclusivo humano aprovado com nova hipótese no mesmo foco pela
@@ -14,6 +14,49 @@ info:
     pde-commercial-plan-offer, com novo ciclo/experimento. A métrica principal é
     NET_CONTRIBUTION_AFTER_ACQUISITION; cliques não comprovam sucesso comercial.
 paths:
+  /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal/adjustment-successor:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CycleId'
+    get:
+      summary: Consultar elegibilidade do ajuste privado sem iniciar trabalho
+      responses:
+        '200':
+          description: Disponibilidade e motivo persistido; leitura sem efeitos externos
+    post:
+      summary: Preparar sucessor de ajuste privado com público explicitamente escolhido
+      description: >-
+        Exige decisão ADJUST vigente, produto em PLAY e experimento sem exposição ou
+        liberação. Mantém hipótese da decisão, oferta e preço; targetAudience substitui
+        apenas o público do novo ciclo e fica na memória auditável. Ausente ou vazio
+        preserva público anterior. Experimento recebe a hipótese nova. Mídia zero,
+        sem datas, campanhas, tarefas de IA ou aprovações herdadas. Replay idêntico
+        recupera a mesma versão; público divergente rejeita sem sobrescrever histórico.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, productVersion]
+              properties:
+                expectedRevision:
+                  type: integer
+                  minimum: 0
+                productVersion:
+                  type: string
+                  pattern: '[a-z0-9][a-z0-9._-]{2,63}'
+                targetAudience:
+                  type: string
+                  nullable: true
+                  maxLength: 500
+      responses:
+        '200':
+          description: LearningCycleResponse do sucessor planejado
+        '400':
+          description: Entrada inválida
+        '409':
+          description: Revisão, versão, público, autoridade ou situação incompatível
   /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal/prepare-successor:
     parameters:
       - $ref: '#/components/parameters/ProductId'

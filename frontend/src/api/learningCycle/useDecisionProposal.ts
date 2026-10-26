@@ -194,11 +194,20 @@ export function useAdjustmentPreparation(cycle: LearningCycle) {
 export function usePrepareAdjustmentSuccessor(cycle: LearningCycle) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (productVersion: string) =>
+    mutationFn: async ({
+      productVersion,
+      targetAudience,
+    }: {
+      productVersion: string;
+      targetAudience?: string;
+    }) =>
       (
         await axios.post<LearningCycle>(`${url(cycle)}/adjustment-successor`, {
           expectedRevision: cycle.revision,
           productVersion,
+          ...(targetAudience?.trim()
+            ? { targetAudience: targetAudience.trim() }
+            : {}),
         })
       ).data,
     onSuccess: async () => {

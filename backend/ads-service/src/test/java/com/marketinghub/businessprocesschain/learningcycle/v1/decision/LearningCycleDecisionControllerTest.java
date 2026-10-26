@@ -46,4 +46,33 @@ class LearningCycleDecisionControllerTest {
         .andExpect(status().isBadRequest());
     verifyNoInteractions(decisions);
   }
+
+  /** O endpoint recebe mudança explícita e rejeita público acima do limite antes de preparar. */
+  @Test
+  void acceptsChangedAudienceAndRejectsOversizedInput() throws Exception {
+    var mvc =
+        MockMvcBuilders.standaloneSetup(new LearningCycleDecisionController(decisions, preparation))
+            .build();
+    mvc.perform(
+            post(PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"expectedRevision\":4,\"productVersion\":\"beauty-v1\",\"targetAudience\":\"Profissionais de beleza\"}"))
+        .andExpect(status().isOk());
+    verify(preparation)
+        .prepareAdjustmentOnly(
+            8010L,
+            7106L,
+            new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Profissionais de beleza"));
+    clearInvocations(preparation);
+    mvc.perform(
+            post(PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"expectedRevision\":4,\"productVersion\":\"beauty-v1\",\"targetAudience\":\""
+                        + "x".repeat(501)
+                        + "\"}"))
+        .andExpect(status().isBadRequest());
+    verifyNoInteractions(preparation, decisions);
+  }
 }

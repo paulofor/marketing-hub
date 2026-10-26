@@ -205,6 +205,7 @@ class LearningCycleSuccessorPreparationTest {
     var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
     verify(service).createPreparation(eq(productId), request.capture());
     assertThat(request.getValue().productVersion()).isEqualTo("candidate-v2");
+    assertThat(request.getValue().audience()).isEqualTo("Profissionais");
     assertThat(request.getValue().previousCycleId()).isEqualTo(cycle.getId());
     assertThat(request.getValue().budgetLimitBrl()).isZero();
     assertThat(request.getValue().windowStart()).isNull();
@@ -229,6 +230,87 @@ class LearningCycleSuccessorPreparationTest {
     assertThat(learning.getValue().evidence().path("humanApproved").asBoolean()).isFalse();
     assertThat(learning.getValue().evidence().path("externalSpendAuthorized").asBoolean())
         .isFalse();
+  }
+
+  /**
+   * Reproduz expansão de Capella e outra identidade sem reintroduzir público ou hipótese antigos.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {7, 8017})
+  void preparesExplicitMarketChangeWithoutRewritingPredecessor(long productId) throws Exception {
+    var cycle = privateAdjustment(productId);
+    String before = cycle.getBriefJson();
+    var source = experiments.findById(cycle.getExperimentId()).orElseThrow();
+    source.setHypothesis("Hipótese anterior restrita");
+    preparation.prepareAdjustmentOnly(
+        productId,
+        cycle.getId(),
+        new PrepareAdjustmentSuccessorRequest(
+            4, "beauty-v1", "  Profissionais autônomos de beleza  "));
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(productId), request.capture());
+    assertThat(request.getValue().audience()).isEqualTo("Profissionais autônomos de beleza");
+    assertThat(request.getValue().hypothesis()).isEqualTo("Tornar o valor claro");
+    assertThat(request.getValue().offer()).isEqualTo("Kit R$67");
+    assertThat(request.getValue().budgetLimitBrl()).isZero();
+    var saved = ArgumentCaptor.forClass(Experiment.class);
+    verify(experiments).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getHypothesis()).isEqualTo(request.getValue().hypothesis());
+    assertThat(saved.getValue().getMediaSpendLimit()).isZero();
+    var learning =
+        ArgumentCaptor.forClass(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                .LearningCycleCommand.class);
+    verify(service).carryPreparedLearning(eq(productId), eq(productId + 400), learning.capture());
+    assertThat(learning.getValue().evidence().path("successorAudience").asText())
+        .isEqualTo(request.getValue().audience());
+    assertThat(source.getHypothesis()).isEqualTo("Hipótese anterior restrita");
+    assertThat(cycle.getBriefJson()).isEqualTo(before);
+    verifyNoInteractions(processRuns);
+  }
+
+  /** Preserva hipótese longa no ciclo sem exceder a coluna curta do experimento. */
+  @Test
+  void keepsFullHypothesisWhileBoundingLegacyExperimentSummary() throws Exception {
+    var cycle = privateAdjustment(7);
+    String hypothesis = "Comunicação específica por especialidade. ".repeat(20);
+    events
+        .findByCycleIdOrderByRevisionAsc(cycle.getId())
+        .get(0)
+        .setEvidenceJson(valid().put("nextHypothesis", hypothesis).toString());
+    preparation.prepareAdjustmentOnly(
+        7L, cycle.getId(), new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Beleza"));
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(7L), request.capture());
+    assertThat(request.getValue().hypothesis()).isEqualTo(hypothesis);
+    var saved = ArgumentCaptor.forClass(Experiment.class);
+    verify(experiments).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getHypothesis()).hasSize(255).endsWith("...");
+  }
+
+  /** Um replay do mesmo público recupera o sucessor; outra direção exige nova decisão. */
+  @Test
+  void rejectsDivergentAudienceOnReplay() throws Exception {
+    var cycle = privateAdjustment(7);
+    var next = new LearningSalesCycle();
+    next.setId(407L);
+    next.setProductVersion("beauty-v1");
+    next.setBriefJson("{\"audience\":\"Profissionais de beleza\"}");
+    when(cycles.findByPreviousCycleId(cycle.getId())).thenReturn(Optional.of(next));
+    preparation.prepareAdjustmentOnly(
+        7L,
+        cycle.getId(),
+        new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", " Profissionais de beleza "));
+    verify(service).get(7L, 407L);
+    assertThatThrownBy(
+            () ->
+                preparation.prepareAdjustmentOnly(
+                    7L,
+                    cycle.getId(),
+                    new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Todos os negócios")))
+        .hasMessageContaining("outro público");
+    verify(experiments, never()).saveAndFlush(any());
+    verifyNoInteractions(processRuns);
   }
 
   /** Repetir o envio recupera a mesma versão; versão diferente não substitui o sucessor. */

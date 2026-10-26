@@ -19,10 +19,16 @@ export default function CycleAdjustmentPreparationForm({
   const availability = useAdjustmentPreparation(cycle);
   const mutation = usePrepareAdjustmentSuccessor(cycle);
   const [version, setVersion] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      onUpdated(await mutation.mutateAsync(version.trim()));
+      onUpdated(
+        await mutation.mutateAsync({
+          productVersion: version.trim(),
+          targetAudience,
+        }),
+      );
     } catch {
       /* A falha permanece disponível no formulário, sem repetir a preparação. */
     }
@@ -59,6 +65,21 @@ export default function CycleAdjustmentPreparationForm({
             onChange={(event) => setVersion(event.target.value)}
           />
         </label>
+        <label className="form-label">
+          Público do novo ciclo (se mudou)
+          <textarea
+            className="form-control"
+            name="targetAudience"
+            maxLength={500}
+            value={targetAudience}
+            onChange={(event) => setTargetAudience(event.target.value)}
+          />
+          <span className="form-text">
+            Informe quem será atendido nesta versão. Em branco, mantém o público
+            anterior. Esta mudança fica registrada no novo ciclo e não autoriza
+            gasto.
+          </span>
+        </label>
         {mutation.isError && (
           <p role="alert" className="alert alert-danger">
             {cycleError(mutation.error)}
@@ -72,9 +93,18 @@ export default function CycleAdjustmentPreparationForm({
               mutation.isPending || version.trim() === cycle.productVersion
             }
           >
-            {mutation.isPending
-              ? "Preparando…"
-              : "Preparar versão corrigida sem gasto"}
+            {mutation.isPending ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-label="Preparando"
+                />
+                Preparando…
+              </>
+            ) : (
+              "Preparar versão corrigida sem gasto"
+            )}
           </button>
         </div>
       </form>

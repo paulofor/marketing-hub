@@ -813,3 +813,19 @@ para esconder falha posterior. Entrega exige pacote final e data; uso e satisfa�
 continuam independentes. Testes e outras identidades permanecem segregados.
 
 Referência: [evidência e regressões do checkout direto](../homologacao/capella-checkout-direto-medicao-2026-10-24.md).
+
+
+## Público explícito na preparação de ajuste privado — 26/10/2026
+
+Quando o usuário muda o mercado de um produto, registrar ADJUST e preparar o sucessor
+com o novo público explicitamente informado pela tela. A hipótese vem da decisão;
+o experimento e o ciclo não podem voltar à hipótese anterior. O campo opcional
+`targetAudience` do contrato `adjustment-successor` altera somente o briefing novo,
+com registro `successorAudience` na memória da passagem. Omitido ou vazio, preserva
+o público do predecessor. Um replay com público divergente é rejeitado.
+
+O operador pode alinhar os campos da Big Idea preservando a ideia central escolhida.
+A revisão vigente orienta contextos novos; fotografias antigas, pareceres e métricas
+permanecem intactos. Público elegível exige entrega demonstrada por especialidade;
+expansão e acabamento premium não são prova de demanda ou promessa de receita.
+Preparar o sucessor continua sem inferência, orçamento, janela ou autorização herdada.

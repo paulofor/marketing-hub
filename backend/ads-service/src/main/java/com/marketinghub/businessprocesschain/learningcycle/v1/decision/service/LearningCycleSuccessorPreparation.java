@@ -94,7 +94,7 @@ public class LearningCycleSuccessorPreparation {
     }
   }
 
-  /** Prepara uma candidata nova a partir do ajuste pré-mercado registrado, sem nova inferência. */
+  /** Prepara a candidata e o público explicitado no ajuste privado, sem nova inferência. */
   @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
   public LearningCycleResponse prepareAdjustmentOnly(
       Long productId, Long cycleId, PrepareAdjustmentSuccessorRequest request) {
@@ -118,6 +118,13 @@ public class LearningCycleSuccessorPreparation {
       require(
           request.productVersion().equals(existing.get().getProductVersion()),
           "O sucessor existente pertence a outra versão; preserve sua história.");
+      if (request.targetAudience() != null && !request.targetAudience().isBlank())
+        require(
+            request
+                .targetAudience()
+                .trim()
+                .equals(json.read(existing.get().getBriefJson()).path("audience").asText()),
+            "O sucessor existente pertence a outro público; preserve sua história.");
       return service.get(productId, existing.get().getId());
     }
     require(
@@ -142,6 +149,8 @@ public class LearningCycleSuccessorPreparation {
     decision.put("preparationPolicy", LearningCyclePreparationPolicy.CONTRACT);
     decision.put("humanApproved", false);
     decision.put("externalSpendAuthorized", false);
+    if (request.targetAudience() != null && !request.targetAudience().isBlank())
+      decision.put("successorAudience", request.targetAudience().trim());
     var result =
         createPreparedSuccessor(
             productId,
@@ -304,7 +313,7 @@ public class LearningCycleSuccessorPreparation {
     return result;
   }
 
-  /** Compartilha o cadastro seguro sem copiar mídia, janela ou permissões do predecessor. */
+  /** Preserva a mudança registrada no briefing e na memória, sem copiar autorizações ou mídia. */
   private LearningCycleResponse createPreparedSuccessor(
       Long productId,
       LearningSalesCycle cycle,
@@ -329,7 +338,7 @@ public class LearningCycleSuccessorPreparation {
                 decision.path("nextHypothesis").asText(),
                 decision.path("nextHypothesis").asText(),
                 brief.path("successCriterion").asText(),
-                brief.path("audience").asText(),
+                decision.path("successorAudience").asText(brief.path("audience").asText()),
                 brief.path("offer").asText(),
                 "Canal de referência: "
                     + source.getPlatform()
@@ -418,7 +427,7 @@ public class LearningCycleSuccessorPreparation {
         .orElse(null);
   }
 
-  /** Copia somente o contexto da oferta; campanha, artefatos, janela e permissões nascem vazios. */
+  /** Usa a hipótese nova e a oferta preservada; campanha, artefatos e permissões nascem vazios. */
   private Experiment plannedExperiment(Experiment source, Long cycleId, ObjectNode proposal) {
     return Experiment.builder()
         .name(
@@ -438,7 +447,7 @@ public class LearningCycleSuccessorPreparation {
         .unitPrice(source.getUnitPrice())
         .desireTerritoryCode(source.getDesireTerritoryCode())
         .desireTerritorySnapshotJson(source.getDesireTerritorySnapshotJson())
-        .hypothesis(source.getHypothesis())
+        .hypothesis(experimentHypothesis(proposal.path("nextHypothesis").asText()))
         .learnedLessons(proposal.path("learning").asText())
         .status(ExperimentStatus.PLANNED)
         .dailyBudget(BigDecimal.ZERO)
@@ -447,6 +456,12 @@ public class LearningCycleSuccessorPreparation {
         .zeroPurchaseSpendLimit(BigDecimal.ZERO)
         .creativeApproved(false)
         .build();
+  }
+
+  /** Resume somente a coluna legada; o ciclo e a decisão preservam a hipótese integral. */
+  private String experimentHypothesis(String hypothesis) {
+    if (hypothesis.codePointCount(0, hypothesis.length()) <= 255) return hypothesis;
+    return hypothesis.substring(0, hypothesis.offsetByCodePoints(0, 252)) + "...";
   }
 
   /** Deriva chaves estáveis para que replays não dupliquem decisões, ciclos ou aprendizados. */

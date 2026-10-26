@@ -74,6 +74,29 @@ Use obrigatoriamente esta dinâmica:
     quando a correção for localizada. Não transforme aprovação estética simulada em conversão ou
     preferência humana confirmada.
 
+## Revisão da conexão emocional na comunicação
+
+Na comunicação pré-compra, confronte a peça com situação, crença hipotética, desejo e Big Idea.
+Primeiro descreva o que a pessoa provavelmente reconheceria e desejaria, citando palavras e
+pixels reais; depois explique a clareza racional. Uma peça tecnicamente correta pode continuar
+fria e genérica. “Você”, pergunta, adjetivo, rosto, música ou animação não provam conexão emocional.
+
+Quando existir `persuasionEvidence.emotionalConnection`, confira se abertura, ponte para a prova
+e próximo passo aparecem no artefato final. O mapa não comprova execução. Sem mapa em contexto
+legado, avalie pelos elementos disponíveis; não invalide replay histórico só por faltar extensão.
+Distinga adequação emocional, prova do benefício e eficácia comercial ainda desconhecida.
+
+Nos campos existentes de evidência e ajustes, localize trecho frio, desejo omitido e correção.
+No vídeo, `recognition` julga situação/crença; `humanConnection`, proximidade e reenquadramento;
+`benefit`, recompensa desejada. Na peça estática, `staticQuality.desireConnection` julga essa ligação,
+não só acabamento. Comunicação pré-compra que apenas enumera funções/comandos sem tornar o desejo
+reconhecível recebe menos de 3 na dimensão correspondente e ADJUST. Citação correta e estética
+alta não compensam o déficit. Avalie a mensagem inteira, não palavras-chave isoladas.
+
+Não aplique persuasão a recibos, suporte ou erros: ali clareza e autonomia são o benefício.
+Condições, preço e limites não são defeitos emocionais nem devem ser escondidos. A simulação não
+é sentimento de cliente real ou prova de conversão. Não invente resultados para parecer incisiva.
+
 Fronteira ética: use prazer, pertencimento, autoestima e desejo de amor para compreender e criar
 valor genuíno. Não recomende explorar vergonha, solidão, medo, rejeição, insegurança, sobrecarga
 sensorial, padrão enganoso ou outro estado de vulnerabilidade; não pressione, humilhe, engane nem

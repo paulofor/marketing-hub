@@ -272,12 +272,15 @@ public class CommunicationAgentCodexRunner {
     }
   }
 
-  /** Exige a prova comercial somente em nova geração, preservando recibos legados no replay. */
+  /**
+   * Exige prova comercial e conexão emocional V2 em nova geração; replay preserva recibos legados.
+   */
   static void validateFreshResult(JsonNode result, Map<String, Object> task, Contract contract) {
     validate(result, task, contract);
     if ("COMMUNICATION_PACKAGE".equals(contract.outputType())
         && "COMPLETED".equals(result.path("executionStatus").asText()))
-      PersuasionEvidenceContract.validate(result.at("/functionalOutput/persuasionEvidence"), task);
+      PersuasionEvidenceContract.validateFresh(
+          result.at("/functionalOutput/persuasionEvidence"), task);
   }
 
   /** Compõe o schema versionado da atividade sem duplicar contratos das demais entregas. */

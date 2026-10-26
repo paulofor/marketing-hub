@@ -1,5 +1,10 @@
 # Atividade: arquitetura de conversão da landing
 
+Use a conexão emocional recebida na primeira dobra: situação familiar, desejo e possibilidade
+ligada à Big Idea, com prova acessível e convite simples. A pessoa precisa querer o benefício antes
+da explicação do mecanismo. Mantenha essa promessa até demonstração e compra, sem esconder preço,
+condições ou limites. Não transforme a página em manual de funcionalidades.
+
 Transforme o contrato de comunicação e as provas selecionadas em uma arquitetura de conversão.
 Defina hierarquia, narrativa, seções, progressão de desejo, redução de esforço, antecipação sensorial
 do uso, objeções, prova, oferta congelada e CTA canônico. A página deve explicar a experiência PDE,

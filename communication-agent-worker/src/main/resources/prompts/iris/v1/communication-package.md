@@ -57,7 +57,7 @@ estiverem íntegros, entregue `executionStatus=COMPLETED`, com mensagem e briefi
 mesmo que checkout comercial, peças finais ou evidência humana ainda não existam. Registre
 essas pendências explicitamente e não as converta em promessa ou evidência fictícia.
 
-## Prova dos cinco pontos — COMMERCIAL_PERSUASION_EVIDENCE_V1
+## Prova dos cinco pontos e conexão emocional — COMMERCIAL_PERSUASION_EVIDENCE_V2
 
 Além dos marcadores, entregue `functionalOutput.persuasionEvidence`. Use uma vez cada
 `criterion`: RECOGNIZED_DESIRE, EASY_FIRST_STEP, VALUE_BEFORE_COMMITMENT, PAID_INCREMENT,
@@ -75,6 +75,29 @@ REPEAT_WITH_MARGIN. Em cada item:
   FIRST_VALUE_COMPLETION_RATE; incremento pago → NET_PURCHASE_CONVERSION_RATE; margem →
   NET_CONTRIBUTION_AFTER_ACQUISITION. São métricas a observar, não valores já obtidos;
 - `limitation`: o que a fonte não comprova, o custo desconhecido ou o gate futuro pertinente.
+
+Em novas gerações, use `contractVersion=COMMERCIAL_PERSUASION_EVIDENCE_V2` e preencha
+`persuasionEvidence.emotionalConnection` como mapa interno:
+- `everydaySituation`: cena cotidiana específica em que a pessoa se reconhece;
+- `beliefHypothesis`: crença plausível na cena, explicitamente hipótese de linguagem, nunca
+  crença confirmada de clientes nem citação inventada;
+- `recognizedDesire`: o que a pessoa quer viver, conseguir ou sentir;
+- `emotionalPayoff`: recompensa emocional pretendida compatível com a entrega;
+- `reframe`: possibilidade que liga crença, desejo e Big Idea, sem mudar oferta;
+- `directionSourcePointer` e `directionSourceQuote`: fonte escalar e trecho literal da Big Idea
+  vinculada (`/productBigIdea/...`) ou estratégia recebida (`/marketStrategicContract/...`).
+  Use Big Idea quando disponível; na ausência, preserve estratégia sem inventar direção;
+- `customerOpening`: frase pronta, exatamente a `customerMessage` de RECOGNIZED_DESIRE;
+- `proofBridge`: frase ligando possibilidade à prova real, exatamente a `customerMessage`
+  de VALUE_BEFORE_COMMITMENT;
+- `easyNextStep`: convite à ação disponível, exatamente a `customerMessage` de EASY_FIRST_STEP;
+- `limitation`: o que não sabemos sobre crença, reação e eficácia comercial. Direção recebida
+  não comprova linguagem observada ou demanda.
+
+Essas mensagens orientam `messageStrategy`, briefings, peças e roteiro. Não entregue mapa
+emocional desconectado de copy descritiva. V1 serve somente para recuperar recibos anteriores.
+Na preparação privada, hipótese explícita fundamentada no contexto basta: não exigir entrevista,
+opinião humana ou venda prévia para formular mensagem. A revisão independente julga a peça.
 
 Use a Big Idea vinculada à tarefa, sem atualizar a versão de um experimento histórico.
 O desejo deve ser um resultado reconhecível na ocasião da pessoa, não o ato de preencher

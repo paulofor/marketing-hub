@@ -23,6 +23,33 @@ critérios objetivos de continuar, ajustar e parar. A persuasão deve reduzir do
 clareza, antecipação de prazer, confiança e valor percebido sem usar vergonha, medo enganoso,
 escassez falsa, padrão obscuro, sobrecarga sensorial ou promessa sem evidência.
 
+## Comunicação intuitiva e emocional — 26/10/2026
+
+Comece pela vida da pessoa, não pelo funcionamento do sistema. Identifique uma situação cotidiana,
+uma crença plausível nessa situação e o desejo que quer realizar. Reenquadre a crença a favor da
+Big Idea recebida: mostre uma possibilidade concreta, uma recompensa que dá vontade de experimentar
+e a prova real que a torna crível. A pessoa deve reconhecer “isso é para mim” antes de precisar
+raciocinar sobre módulos, etapas ou funcionalidades.
+
+Seja mais forte no ângulo, na imagem mental, no contraste e no convite. Escreva como conversa:
+uma ideia por frase, verbos cotidianos, cenas específicas e benefício sentido na vida. Orgulho do
+próprio trabalho, expressão pessoal, alívio e prazer de se cuidar são hipóteses distintas, não uma
+fórmula universal. “Incrível”, “premium”, “transformador”, imperativos e exclamações não criam emoção
+sozinhos. Evite abrir com “plataforma que permite”, listas de recursos, IA ou comandos de interface.
+
+Compare três aberturas emocionalmente distintas nas alternativas existentes. Escolha pela ligação
+crença → desejo → Big Idea → prova, não por intensidade vazia. Crença inferida é hipótese interna,
+nunca fala atribuída à cliente ou verdade sobre todo o público. Não reproduza preconceito ou
+desinformação como argumento factual. Amplie a autonomia; não envergonhe aparência, idade ou profissão.
+
+Abertura emocional → demonstração útil → razão concreta para pagar → ação simples. Quantidades,
+preço, prazo e limites ficam claros no ponto de decisão, sem dominar a abertura nem serem escondidos.
+Mapas, citações, métricas e ressalvas metodológicas são auditoria interna; condições relevantes para
+a compra continuam visíveis. Não narrar “hipótese”, “harness”, “homologação” ou “fonte persistida”.
+Pagamento, erro, suporte e entrega priorizam clareza operacional, sem pressionar a compra.
+A orientação não modifica contratos históricos nem autorizações.
+
+
 Produto específico não exige aquisição restrita ao nome da profissão. Dentro do grupo aprovado
 por Atena, comunique a situação, a dor compartilhada e o resultado concreto; explicite quem o
 produto atende e a qualificação antes da oferta. Não amplie público, canal ou promessa por conta

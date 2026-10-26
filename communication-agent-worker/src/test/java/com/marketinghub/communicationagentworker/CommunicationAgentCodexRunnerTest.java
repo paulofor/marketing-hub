@@ -26,10 +26,19 @@ class CommunicationAgentCodexRunnerTest {
   /** Executa modelo simulado, confere provas e preserva resposta recusada, auditoria e consumo. */
   @ParameterizedTest
   @ValueSource(
-      strings = {"communicationContract", "nonAudiovisual", "missingProof", "inventedQuote"})
+      strings = {
+        "communicationContract",
+        "nonAudiovisual",
+        "missingProof",
+        "inventedQuote",
+        "missingEmotion",
+        "divergentEmotion",
+        "oldProof"
+      })
   void usesActivityModelInCommandAndCallback(
       String scenario, @org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
-    boolean rejected = scenario.equals("missingProof") || scenario.equals("inventedQuote");
+    boolean rejected =
+        !scenario.equals("communicationContract") && !scenario.equals("nonAudiovisual");
     String activity = rejected ? "communicationContract" : scenario;
     boolean strategic = activity.equals("communicationContract");
     String expected = strategic ? "gpt-6-astra" : "fixture-operational";
@@ -54,7 +63,7 @@ class CommunicationAgentCodexRunnerTest {
       ((com.fasterxml.jackson.databind.node.ObjectNode) answer.path("functionalOutput"))
           .set(
               "persuasionEvidence",
-              PersuasionEvidenceContractTest.proof(json, "Kit para manicures"));
+              PersuasionEvidenceContractTest.emotionalProof(json, "Kit para manicures"));
     }
     if (scenario.equals("missingProof"))
       ((com.fasterxml.jackson.databind.node.ObjectNode) answer.path("functionalOutput"))
@@ -63,6 +72,19 @@ class CommunicationAgentCodexRunnerTest {
       ((com.fasterxml.jackson.databind.node.ObjectNode)
               answer.at("/functionalOutput/persuasionEvidence/criteria/0"))
           .put("sourceQuote", "Fonte que a tarefa não recebeu");
+    if (scenario.equals("missingEmotion"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode)
+              answer.at("/functionalOutput/persuasionEvidence"))
+          .remove("emotionalConnection");
+    if (scenario.equals("divergentEmotion"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode)
+              answer.at("/functionalOutput/persuasionEvidence/emotionalConnection"))
+          .put("customerOpening", "Plataforma com geração e download");
+    if (scenario.equals("oldProof"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) answer.path("functionalOutput"))
+          .set(
+              "persuasionEvidence",
+              PersuasionEvidenceContractTest.proof(json, "Kit para manicures"));
     Files.writeString(directory.resolve("response.json"), answer.toString());
     Path executable = directory.resolve("fake-codex.py");
     Files.writeString(
@@ -92,7 +114,7 @@ class CommunicationAgentCodexRunnerTest {
               CommunicationAgentCodexRunner.ExecutionException.class,
               failure -> {
                 assertThat(failure.rawResponse()).isEqualTo(answer.toString());
-                assertThat(failure.promptSent()).contains("COMMERCIAL_PERSUASION_EVIDENCE_V1");
+                assertThat(failure.promptSent()).contains("COMMERCIAL_PERSUASION_EVIDENCE_V2");
                 assertThat(failure.usage().outputTokens()).isEqualTo(9);
               });
       return;
@@ -113,11 +135,17 @@ class CommunicationAgentCodexRunnerTest {
     var payload = json.valueToTree(callback);
     assertThat(payload.path("executionAudit").path("modelCode").asText()).isEqualTo(expected);
     assertThat(payload.path("modelUsages").get(0).path("modelCode").asText()).isEqualTo(expected);
-    if (strategic)
+    if (strategic) {
+      assertThat(
+              json.readTree(payload.path("resultJson").asText())
+                  .at("/functionalOutput/persuasionEvidence/emotionalConnection/customerOpening")
+                  .asText())
+          .isEqualTo("O cuidado que você tem pode aparecer na sua apresentação.");
       assertThat(
               json.readTree(payload.path("resultJson").asText())
                   .at("/functionalOutput/persuasionEvidence/criteria"))
           .hasSize(5);
+    }
   }
 
   /**
@@ -152,7 +180,12 @@ class CommunicationAgentCodexRunnerTest {
         .doesNotContain("persuasionEvidence");
     assertThat(runner.prompt(input, contract))
         .contains(
-            "COMMERCIAL_PERSUASION_EVIDENCE_V1", "sourcePointer", "compra única", "produção paga");
+            "COMMERCIAL_PERSUASION_EVIDENCE_V2",
+            "sourcePointer",
+            "compra única",
+            "produção paga",
+            "beliefHypothesis",
+            "customerOpening");
   }
 
   /** Um contrato bloqueado pode declarar fontes ausentes sem inventar cinco citações. */

@@ -10337,6 +10337,18 @@ Evidência e matriz: `docs/homologacao/capella-captura-complementar-v1.md`.
   Matriz e limites: `docs/homologacao/capella-cinco-pontos-comunicacao-v1.md`.
   Nenhum sucessor, parecer, vídeo pago ou campanha é disparado por esta correção.
 
+### Complemento — comunicação racional sem ponte emocional, 26/10/2026
+
+- A leitura das tarefas Íris #690/#786 confirmou mensagens centradas em copiar/baixar e em
+  ajuste funcional; o contrato de cinco pontos não exigia ligação explícita crença–desejo–Big Idea.
+- V2 exige mapa emocional, fonte da própria direção e correspondência com abertura, prova e ação.
+  Atena, Íris, Apolo e Psique recebem a mesma orientação; nenhuma nova identidade ou fila.
+- Preservar replay V1, mas impedir novas saídas V1. Regressões cobrem fontes cruzadas, citações
+  inventadas, mapa decorativo, callback, custo e resposta preservados. A revisão semântica continua
+  independente; validação estrutural não comprova emoção ou vendas.
+- Matriz e limites: `docs/homologacao/comunicacao-emocional-v2.md`. Não repetir campanha nem gerar
+  material pago para validar a mudança. Não transpor o recorte histórico de unhas à Capella atual.
+
 ## LOOP-VIDEO-NOTA-DE-RITMO-SEM-NARRATIVA — 15/10/2026
 
 - Evidência: arquivos #1/#2/#3, hashes conferidos novamente, análises #4/#5/#6 preservadas e

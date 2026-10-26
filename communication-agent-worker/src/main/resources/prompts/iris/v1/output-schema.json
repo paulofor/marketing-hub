@@ -409,12 +409,13 @@
           "additionalProperties": false,
           "required": [
             "contractVersion",
-            "criteria"
+            "criteria",
+            "emotionalConnection"
           ],
           "properties": {
             "contractVersion": {
               "type": "string",
-              "const": "COMMERCIAL_PERSUASION_EVIDENCE_V1"
+              "const": "COMMERCIAL_PERSUASION_EVIDENCE_V2"
             },
             "criteria": {
               "type": "array",
@@ -477,6 +478,69 @@
                     "type": "string",
                     "minLength": 1
                   }
+                }
+              }
+            },
+            "emotionalConnection": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "everydaySituation",
+                "beliefHypothesis",
+                "recognizedDesire",
+                "emotionalPayoff",
+                "reframe",
+                "directionSourcePointer",
+                "directionSourceQuote",
+                "customerOpening",
+                "proofBridge",
+                "easyNextStep",
+                "limitation"
+              ],
+              "properties": {
+                "everydaySituation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "beliefHypothesis": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "recognizedDesire": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "emotionalPayoff": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reframe": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "directionSourcePointer": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "directionSourceQuote": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "customerOpening": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "proofBridge": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "easyNextStep": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "limitation": {
+                  "type": "string",
+                  "minLength": 1
                 }
               }
             }

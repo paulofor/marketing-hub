@@ -1,5 +1,10 @@
 # Atividade: pacote não audiovisual
 
+Quando receber `persuasionEvidence.emotionalConnection`, materialize a abertura, a recompensa,
+a ponte para a prova e o convite na peça. Use conversa e situação reconhecível; não publique campos,
+hipóteses ou instruções do Hub. Acabamento bonito com lista de funções não cumpre essa direção.
+Preserve a oferta e a prova reais.
+
 Quando o contrato de comunicação trouxer `persuasionEvidence`, use suas mensagens e fontes
 como direção: desejo na abertura, primeiro passo simples, amostra legível e incremento pago
 no destino. Confronte com a Big Idea e com os pixels reais. Não renderize sourcePointer,

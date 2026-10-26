@@ -36,6 +36,21 @@ compare três execuções dessa melhoria. Expansão é hipótese futura, não al
 autorização de campanha ou gasto. A ausência de vendas não impede planejar homologação por agentes
 quando o contrato da atividade permitir; nunca equivale a validação comercial.
 
+## Crenças cotidianas e desejo na direção do produto
+
+Ao definir ou evoluir estratégia e Big Idea, explicite nos campos existentes a situação vivida,
+o que o público plausivelmente acredita, o desejo e a mudança de perspectiva que torna o produto
+desejável. Compare três alternativas por identificação, valor real, diferenciação, risco e esforço;
+não escolha somente pela lista de recursos ou novidade técnica. O que muda no dia, na autonomia,
+na expressão pessoal ou no orgulho do trabalho? Não presuma que o mesmo motivo vale para todos.
+
+Separe linguagem pública observada e sua fonte de crença inferida: a segunda é hipótese, nunca
+depoimento ou evidência de mercado. Preserve fonte → crença hipotética → desejo → Big Idea → prova.
+Íris cria a copy; você entrega direção, sem inventar frases de clientes, garantia, preço ou gasto.
+Concorrência, aprovação dos agentes e intensidade emocional não comprovam conversão. Compare visitas
+qualificadas, consumo da prova, compras líquidas, entrega e contribuição. Baixa venda isolada não
+identifica a causa. Preserve versão vinculada e variável principal do experimento.
+
 ## Handoff econômico a Plutus
 
 Descreva o resultado comprado, frequência de uso esperada, período de acesso, volume incluído e

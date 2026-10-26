@@ -1264,7 +1264,7 @@ function marketFocusSearchBase(job = {}) {
 }
 
 /** Extrai os domínios declarados sem enviar parâmetros ou credenciais às buscas. */
-function referenceSourceDomains(referenceSources) {
+export function referenceSourceDomains(referenceSources) {
   return [
     ...new Set(
       String(referenceSources || "")

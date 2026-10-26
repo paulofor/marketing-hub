@@ -1,5 +1,13 @@
 # Modelagem por referências — registros operacionais
 
+## 26/10/2026 — planejamento complementar expirado
+
+O aprofundamento #821 recebeu as candidatas da pesquisa inicial, mas o planejamento Codex excedeu 600.000 ms. A sessão preservada não tinha `token_count` ou `task_complete`; não há resposta final recuperável nem custo confirmado. As sessões anteriores do mesmo executor completaram plano e síntese em aproximadamente 70 segundos. A causa interna do provedor permanece desconhecida; o erro não comprova falta de crédito ou nova falha de login.
+
+Em vez de aumentar espera ou repetir a chamada sem mudança, o aprofundamento público com referências explícitas usa o planejador determinístico já existente. Ele distribui fontes declaradas e perguntas entre as mesmas candidatas, conserva o teto de consultas e executa uma síntese factual de Argos. Não fabrica observações ou aprovação; maturidade e gates continuam avaliados pelo fluxo existente. A coleta inicial e os aprofundamentos sem referências preservam seus caminhos anteriores. A tentativa #821 e seu custo desconhecido permanecem separados.
+
+A validação local cobre duas e três candidatas, cinco referências, outra identidade e saída única. O plano gerado foi aceito pelo validador Java real do backend; 171 testes do executor passaram. O planejador por modelo não é chamado nesse complemento e a síntese permanece auditada como modelo. Adotar enquanto o plano preservar candidatas, referências e limites; reverter se desaparecer evidência ou surgir aprovação sem análise.
+
 ## 26/10/2026 — referências explícitas excluídas da pesquisa factual
 
 Depois da recuperação, #820 concluiu a pesquisa inicial da #73 e o backend encaminhou #821 ao aprofundamento. A comparação entre plano e corpus mostrou outra causa compartilhada: Whering e Indyx estavam nas primeiras consultas planejadas, mas nenhuma apareceu nas 30 fontes selecionadas. O executor reordenava consultas comerciais e científicas genéricas antes das referências, depois encerrava ao preencher o limite. A seleção final também podia consumir todas as vagas com ofertas e excluir fontes declaradas já coletadas.

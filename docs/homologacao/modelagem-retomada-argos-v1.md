@@ -65,3 +65,6 @@ Resultado local: 102 testes iniciais de backend e 165 de executor aprovados; 92 
 ## Cobertura de referências na pesquisa — 26/10/2026
 
 O relatório real expôs zero fontes de Whering/Indyx entre 30 selecionadas apesar do plano explícito. Matriz local adicional: domínio declarado antes do encerramento por limite; uma fonte observada por referência mantida mesmo com várias ofertas; outro produto com domínios diferentes; ausência de retorno sem fabricar evidência; fluxo anterior sem referências. Provider é test double, sem custo externo. Reproduções e resultados: `reference-search-coverage.test.js`; corpus do plano em `fixtures/research-plan-replay.json`.
+
+
+Complemento após timeout #821: planejador determinístico existente para aprofundamento público com referências, sem nova inferência de planejamento; fontes distribuídas entre candidatas sem duplicar consulta; até cinco referências e três candidatas; análise factual mantém modelo e gates. Plano produzido pelo Node aceito por `ProductDiscoveryGapResearchContractService.validatePlan` real em sandbox; 171 testes do executor PASS. O timeout histórico permanece com custo não informado, sem atribuir zero.

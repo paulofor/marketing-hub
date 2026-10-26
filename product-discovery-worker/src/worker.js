@@ -20,6 +20,8 @@ import {
 import {
   planDirectedResearch,
   reusePersistedResearchPlan,
+  deterministicPlan,
+  isReferenceGapResearch,
 } from "./argos-codex.js";
 import { synthesizeMarketCandidates } from "./argos-research.js";
 import { selectResearchLibraryContext } from "./research-library.js";
@@ -128,12 +130,15 @@ export async function processJob(job, dependencies = {}) {
   const post = dependencies.postJson || postJson;
   const selectLibrary =
     dependencies.selectResearchLibraryContext || selectResearchLibraryContext;
+  const referenceGapResearch = isReferenceGapResearch(job);
   const planResearch = job.researchPlanReplay
     ? reusePersistedResearchPlan
-    : job.supervisedMetaReanalysis
-      ? dependencies.planSupervisedMetaReanalysis ||
-        buildSupervisedMetaReanalysisPlan
-      : dependencies.planDirectedResearch || planDirectedResearch;
+    : referenceGapResearch
+      ? deterministicPlan
+      : job.supervisedMetaReanalysis
+        ? dependencies.planSupervisedMetaReanalysis ||
+          buildSupervisedMetaReanalysisPlan
+        : dependencies.planDirectedResearch || planDirectedResearch;
   const internetSearch = dependencies.searchInternet || searchInternet;
   const collectCommercialEvidence =
     dependencies.collectMarketplaceEvidence || collectMarketplaceEvidence;
@@ -151,11 +156,12 @@ export async function processJob(job, dependencies = {}) {
     const researchLibraryContext = await selectLibrary(job);
     const enrichedJob = { ...job, researchLibraryContext };
     const execution = await executeBoundedMarketResearch(enrichedJob, {
-      maxAttempts: job.researchPlanReplay
-        ? 1
-        : (dependencies.maxAttempts ??
-          job.gapResearchPolicy?.maximumAttempts ??
-          process.env.ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS),
+      maxAttempts:
+        job.researchPlanReplay || referenceGapResearch
+          ? 1
+          : (dependencies.maxAttempts ??
+            job.gapResearchPolicy?.maximumAttempts ??
+            process.env.ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS),
       repositoryEvidence: researchLibraryContext.evidence,
       repositoryCoverage: researchLibraryContext.coverage,
       planResearch: async (researchJob) => {

@@ -105,11 +105,12 @@ public class ProductDiscoveryController {
     return ResponseEntity.ok(service.archiveArtificialLegacyEvidence());
   }
 
-  /** Entrega pendências canônicas para o worker de pesquisa. */
+  /** Entrega pendências compatíveis com as capacidades declaradas pelo worker de pesquisa. */
   @GetMapping("/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending")
   public ResponseEntity<List<ProductDiscoveryPendingResponse>> pending(
-      @RequestParam(required = false) String supportedEvidencePolicy) {
-    return ResponseEntity.ok(service.pending(supportedEvidencePolicy));
+      @RequestParam(required = false) String supportedEvidencePolicy,
+      @RequestParam(defaultValue = "false") boolean supportsPlanReplay) {
+    return ResponseEntity.ok(service.pending(supportedEvidencePolicy, supportsPlanReplay));
   }
 
   /** Persiste o plano de perguntas, fontes e coletores escolhido por Argos. */

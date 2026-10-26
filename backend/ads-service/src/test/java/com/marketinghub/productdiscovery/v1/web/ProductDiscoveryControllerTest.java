@@ -63,7 +63,7 @@ class ProductDiscoveryControllerTest {
   /** Repassa a capacidade declarada no pending antes de o serviço reservar trabalho. */
   @Test
   void pendingRequiresExplicitPublicPolicyCapability() throws Exception {
-    when(service.pending("PUBLIC_SOURCES_V1")).thenReturn(List.of());
+    when(service.pending("PUBLIC_SOURCES_V1", false)).thenReturn(List.of());
     when(service.pendingGapDeepening(null)).thenReturn(List.of());
     mockMvc
         .perform(
@@ -75,7 +75,7 @@ class ProductDiscoveryControllerTest {
             get(
                 "/api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/pending"))
         .andExpect(status().isOk());
-    org.mockito.Mockito.verify(service).pending("PUBLIC_SOURCES_V1");
+    org.mockito.Mockito.verify(service).pending("PUBLIC_SOURCES_V1", false);
     org.mockito.Mockito.verify(service).pendingGapDeepening(null);
   }
 

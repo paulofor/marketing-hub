@@ -8,13 +8,11 @@ import com.marketinghub.mois.metaads.v1.service.MoisMetaAdDtos;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdInvestigationService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
-import com.marketinghub.productdiscovery.v1.ProductDiscoveryMarketType;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -105,11 +103,7 @@ public class ProductDiscoveryMetaAdBrowserCollectionService {
         || !executionLeaseId.equals(cycle.getExecutionLeaseId())) {
       throw conflict("Lease da execução de descoberta expirou ou foi substituído");
     }
-    String channel =
-        StringUtils.hasText(cycle.getAcquisitionChannel())
-            ? cycle.getAcquisitionChannel().trim().toLowerCase(Locale.ROOT)
-            : "";
-    if (cycle.getMarketType() != ProductDiscoveryMarketType.B2C || !channel.contains("instagram")) {
+    if (!cycle.supportsMetaPublicBrowser()) {
       throw conflict("O navegador Meta de Argos exige um ciclo B2C orientado ao Instagram");
     }
     return cycle;

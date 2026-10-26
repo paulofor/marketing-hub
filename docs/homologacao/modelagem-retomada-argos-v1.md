@@ -38,3 +38,25 @@ Regressões: `ModelingResearchRecoveryTest`, `ModelingServiceTest`,
 Limites: recuperação específica de recusa 401 anterior a plano/dossiê. Não recupera saída perdida,
 não autoriza orçamento, não aprova dossiê e não comprova vendas. A retomada produtiva deve ser
 confirmada separadamente pelo consumo da fila e pela entrega de Argos ao ciclo correto.
+
+
+## Recuperação da coleta após plano pronto — 26/10/2026
+
+O caso Vega revelou divergência de contrato: o produtor oferecia `PUBLIC_BROWSER` para ciclo `UNSPECIFIED`, mas o callback aceita somente B2C/Instagram. O plano e os tokens estavam preservados na tentativa #819, sem síntese. Compararam-se três opções: forçar B2C (altera o escopo de pesquisas futuras), duplicar a política no executor (permite divergência) e centralizar a regra no backend (adotada). Pesquisas não elegíveis continuam com fontes públicas e histórico disponível, sem alegar ausência de anúncios.
+
+Critérios adicionais de aceite local, antes de nova retomada real:
+
+| Cenário | Verificação |
+|---|---|
+| Elegibilidade | Produtor e callback compartilham a regra; B2C/Instagram continua válido; B2B e UNSPECIFIED não recebem coleta recusável. |
+| Plano preservado | Pesquisa original e outra identidade retomam coleta e síntese, com zero invocações de planejamento. |
+| Compatibilidade | Executor antigo não reserva recuperação que desconhece; executor novo declara `supportsPlanReplay=true`. |
+| Auditoria | Plano/resposta/modelo originais permanecem iguais; uso anterior é estimado pelo catálogo, sem API de cobrança e sem somar tokens novamente. |
+| Falhas | Plano de outro ciclo, plano inválido, análise já pronta, outra falha e tarefa ativa não autorizam recuperação. |
+| Integração | Pending → plano recuperado → fontes → síntese → callback terminal usa a mesma pesquisa, lease e um resultado terminal. |
+| Isolamento e regressão | Identificadores distintos, fluxo normal anterior, STOP e limites mantidos; dados sintéticos não entram em métricas comerciais. |
+| Tela | Mesmo comando de retomada explícita; desktop, iPhone e Pixel preservam contexto e mostram motivo da recuperação. |
+
+Testes locais verificam comportamento, não demanda, vendas ou efeito comercial. Não há nova autorização de mídia ou audiovisual.
+
+Resultado local: 102 testes iniciais de backend e 165 de executor aprovados; 92 regras de arquitetura aprovadas. Matriz MySQL 5.7, reinício e navegação desktop/iPhone/Pixel PASS, com topologia removida. Revisão final acrescentou regressão para distinguir replay de ampliação determinística normal; somente os contratos afetados foram revalidados.

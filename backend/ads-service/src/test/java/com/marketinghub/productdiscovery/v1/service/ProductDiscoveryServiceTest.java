@@ -669,6 +669,80 @@ class ProductDiscoveryServiceTest {
     verify(bpmAuditService).recordPlan(eq(cycle), any(ProductDiscoveryResearchPlanRequest.class));
   }
 
+  /**
+   * Replay preserva os bytes originais e recusa substituição; evolução determinística normal
+   * continua válida.
+   */
+  @Test
+  void distinguishesPlanReplayFromNormalDeterministicExpansion() {
+    var cycle = new ProductDiscoveryCycle();
+    cycle.setId(73L);
+    cycle.setStageCode("research");
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-73");
+    String original = "{ \"researchLens\" : \"Plano original\" }";
+    cycle.setResearchPlanJson(original);
+    cycle.setResearchPlanRawResponse("Resposta original");
+    cycle.setResearchPlanModel("gpt-6.1-sol");
+    when(cycleRepository.findById(73L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    var service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    service.registerResearchPlan(
+        73L,
+        new ProductDiscoveryResearchPlanRequest(
+            "lease-73",
+            "{\"researchLens\":\"Plano original\"}",
+            "Resposta original",
+            "gpt-6.1-sol",
+            "DETERMINISTIC",
+            "Reutilizar",
+            null,
+            "Reutilizar",
+            "NOT_APPLICABLE",
+            null,
+            null,
+            null,
+            true));
+    assertThat(cycle.getResearchPlanJson()).isEqualTo(original);
+    assertThatThrownBy(
+            () ->
+                service.registerResearchPlan(
+                    73L,
+                    new ProductDiscoveryResearchPlanRequest(
+                        "lease-73",
+                        "{}",
+                        "Outra resposta",
+                        "gpt-6.1-sol",
+                        "DETERMINISTIC",
+                        "Reutilizar",
+                        null,
+                        "Reutilizar",
+                        "NOT_APPLICABLE",
+                        null,
+                        null,
+                        null,
+                        true)))
+        .hasMessageContaining("preservar");
+    service.registerResearchPlan(
+        73L,
+        new ProductDiscoveryResearchPlanRequest(
+            "lease-73",
+            "{\"expansionAxis\":\"ADJACENT_LIFE_MOMENT\"}",
+            "Plano evoluído",
+            "deterministic-v1",
+            "DETERMINISTIC",
+            "Evoluir",
+            null,
+            "Evoluir",
+            "NOT_APPLICABLE",
+            null,
+            null,
+            null));
+    assertThat(cycle.getResearchPlanRawResponse()).isEqualTo("Plano evoluído");
+  }
+
   /** Deve concluir sem oportunidade quando a busca real não trouxer evidência suficiente. */
   @Test
   void completeWithoutArtificialOpportunityWhenResearchIsEmpty() {
@@ -1431,6 +1505,34 @@ class ProductDiscoveryServiceTest {
     assertThat(page.getValue().getPageSize()).isEqualTo(1);
     verify(dossierResearchSyncService).start(22L);
     verify(bpmAuditService).start(cycle);
+  }
+
+  /** Executor antigo não reserva recuperação; o novo recebe o plano sem repetir sua geração. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {73L, 99173L})
+  void deliversOriginalPlanOnlyToReplayCapableWorker(long id) {
+    var cycle = new ProductDiscoveryCycle();
+    cycle.setId(id);
+    cycle.setStageCode("research");
+    cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    cycle.setResearchPlanJson("{ \"researchLens\": \"Plano preservado\" }");
+    cycle.setResearchPlanRawResponse("resposta original");
+    cycle.setResearchPlanModel("gpt-6.1-sol");
+    when(cycleRepository.findClaimableForUpdate(
+            eq("research"), any(), any(), any(), any(), eq(true), any()))
+        .thenReturn(List.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    var service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    assertThat(service.pending("PUBLIC_SOURCES_V1")).isEmpty();
+    assertThat(cycle.getStatus()).isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    var job = service.pending("PUBLIC_SOURCES_V1", true).getFirst();
+    assertThat(job.researchPlanReplay().cycleId()).isEqualTo(id);
+    assertThat(job.researchPlanReplay().rawResponse()).isEqualTo("resposta original");
+    assertThat(job.researchPlanReplay().plan().path("researchLens").asText())
+        .isEqualTo("Plano preservado");
+    assertThat(cycle.getResearchPlanJson()).contains("{ ");
   }
 
   /** Deve refletir no BPM a mesma falha aceita pelo contrato do ciclo de descoberta. */

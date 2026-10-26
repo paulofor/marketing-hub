@@ -219,7 +219,7 @@ public class ProductDiscoveryService {
     return registerPlan(cycleId, request, GAP_STAGE_CODE, true);
   }
 
-  /** Centraliza a auditoria dos dois planos sem permitir callback na etapa errada. */
+  /** Centraliza a auditoria dos planos e preserva o original em callbacks explícitos de recuperação. */
   private ProductDiscoveryResearchPlanResponse registerPlan(
       Long cycleId,
       ProductDiscoveryResearchPlanRequest request,
@@ -229,9 +229,25 @@ public class ProductDiscoveryService {
     validateExecutionLease(cycle, request.executionLeaseId(), expectedStageCode);
     String planJson = requiredText(request.planJson(), "planJson");
     if (requireGapContract) gapResearchContractService.validatePlan(cycle, planJson);
-    cycle.setResearchPlanJson(planJson);
-    cycle.setResearchPlanRawResponse(requiredText(request.rawResponse(), "rawResponse"));
-    cycle.setResearchPlanModel(requiredText(request.model(), "model"));
+    if (Boolean.TRUE.equals(request.reusedPlan())) {
+      if (!requiresPlanReplay(cycle) || !"DETERMINISTIC".equals(request.executionMode()))
+        throw new IllegalArgumentException(
+            "A recuperação exige plano original e execução determinística");
+      var original = preservedPlan(cycle);
+      try {
+        if (!original.plan().equals(JSON.readTree(planJson))
+            || !original.rawResponse().equals(request.rawResponse())
+            || !original.model().equals(request.model()))
+          throw new IllegalArgumentException("A recuperação deve preservar o plano original");
+      } catch (java.io.IOException ex) {
+        LOGGER.error("Falha no plano recuperado cycleId={}", cycleId, ex);
+        throw new IllegalArgumentException("Plano recuperado inválido", ex);
+      }
+    } else {
+      cycle.setResearchPlanJson(planJson);
+      cycle.setResearchPlanRawResponse(requiredText(request.rawResponse(), "rawResponse"));
+      cycle.setResearchPlanModel(requiredText(request.model(), "model"));
+    }
     cycle.setLeaseExpiresAt(Instant.now().plus(EXECUTION_LEASE_DURATION));
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
     bpmAuditService.recordPlan(saved, request);
@@ -463,30 +479,38 @@ public class ProductDiscoveryService {
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending() {
-    return pending(STAGE_CODE, false);
+    return pending(STAGE_CODE, false, false);
   }
 
   /** Entrega somente ciclos cuja política de evidências liberou a pesquisa candidata-específica. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pendingGapDeepening() {
-    return pending(GAP_STAGE_CODE, false);
+    return pending(GAP_STAGE_CODE, false, false);
   }
 
   /** Reserva pesquisa inicial somente nas políticas declaradas pelo executor. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending(String supportedEvidencePolicy) {
-    return pending(STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy));
+    return pending(supportedEvidencePolicy, false);
+  }
+
+  /** Reserva plano preservado somente para executor que declara recuperação sem inferência. */
+  @Transactional
+  public List<ProductDiscoveryPendingResponse> pending(
+      String supportedEvidencePolicy, boolean supportsPlanReplay) {
+    return pending(
+        STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy), supportsPlanReplay);
   }
 
   /** Reserva aprofundamento somente nas políticas declaradas pelo executor. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pendingGapDeepening(String supportedEvidencePolicy) {
-    return pending(GAP_STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy));
+    return pending(GAP_STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy), false);
   }
 
   /** Reserva etapa e política compatíveis antes de conceder lease ou iniciar consumo. */
   private List<ProductDiscoveryPendingResponse> pending(
-      String stageCode, boolean supportsPublicEvidence) {
+      String stageCode, boolean supportsPublicEvidence, boolean supportsPlanReplay) {
     Instant now = Instant.now();
     return cycleRepository
         .findClaimableForUpdate(
@@ -498,8 +522,10 @@ public class ProductDiscoveryService {
             supportsPublicEvidence,
             PageRequest.of(0, 1))
         .stream()
+        .filter(cycle -> !requiresPlanReplay(cycle) || supportsPlanReplay)
         .map(
             cycle -> {
+              var replay = requiresPlanReplay(cycle) ? preservedPlan(cycle) : null;
               cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
               cycle.setStageCode(stageCode);
               cycle.setErrorMessage(null);
@@ -509,7 +535,7 @@ public class ProductDiscoveryService {
               dossierResearchSyncService.start(cycle.getId());
               ProductDiscoveryCycle saved = cycleRepository.save(cycle);
               bpmAuditService.start(saved);
-              return toPendingResponse(saved);
+              return toPendingResponse(saved, replay);
             })
         .toList();
   }
@@ -1307,9 +1333,10 @@ public class ProductDiscoveryService {
   }
 
   /**
-   * Converte o ciclo para pendência e inclui a curadoria consultiva de Argos na pesquisa factual.
+   * Converte o ciclo para pendência com curadoria e o plano original quando houver recuperação.
    */
-  private ProductDiscoveryPendingResponse toPendingResponse(ProductDiscoveryCycle cycle) {
+  private ProductDiscoveryPendingResponse toPendingResponse(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResearchPlanReplayResponse replay) {
     boolean gapDeepening = GAP_STAGE_CODE.equals(cycle.getStageCode());
     boolean supervisedMetaReanalysis = cycle.getSupervisedMetaReanalysisInvestigationId() != null;
     ProductDiscoveryGapDeepeningResponse gap =
@@ -1364,7 +1391,32 @@ public class ProductDiscoveryService {
         gap == null ? List.of() : gap.interviews(),
         gapDeepening ? gapResearchContractService.policy() : null,
         cycle.getEvidencePolicy(),
-        supervisedContext);
+        supervisedContext,
+        replay);
+  }
+
+  /** Identifica plano inicial já produzido que precisa ser reutilizado antes de coletar fontes. */
+  private boolean requiresPlanReplay(ProductDiscoveryCycle cycle) {
+    return STAGE_CODE.equals(cycle.getStageCode())
+        && cycle.getSupervisedMetaReanalysisInvestigationId() == null
+        && StringUtils.hasText(cycle.getResearchPlanJson())
+        && !StringUtils.hasText(cycle.getResearchAnalysisRawResponse());
+  }
+
+  /** Valida e entrega o artefato original sem converter ausência de resposta em nova inferência. */
+  private ProductDiscoveryResearchPlanReplayResponse preservedPlan(ProductDiscoveryCycle cycle) {
+    try {
+      JsonNode plan = JSON.readTree(cycle.getResearchPlanJson());
+      if (!plan.isObject()
+          || !StringUtils.hasText(cycle.getResearchPlanRawResponse())
+          || !StringUtils.hasText(cycle.getResearchPlanModel()))
+        throw new IllegalArgumentException("Plano preservado incompleto");
+      return new ProductDiscoveryResearchPlanReplayResponse(
+          cycle.getId(), plan, cycle.getResearchPlanRawResponse(), cycle.getResearchPlanModel());
+    } catch (java.io.IOException ex) {
+      LOGGER.error("Plano preservado inválido cycleId={}", cycle.getId(), ex);
+      throw new IllegalArgumentException("Plano preservado inválido", ex);
+    }
   }
 
   /** Impede que uma execução expirada sobrescreva o resultado de uma retomada mais recente. */

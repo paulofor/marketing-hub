@@ -100,6 +100,40 @@ export async function planDirectedResearch(job, options = {}) {
   }
 }
 
+/** Reutiliza somente o plano original da mesma pesquisa, sem executar modelo ou repetir tokens. */
+export function reusePersistedResearchPlan(job) {
+  const snapshot = job.researchPlanReplay;
+  if (
+    !snapshot ||
+    snapshot.cycleId !== job.cycleId ||
+    job.stageCode !== "research" ||
+    job.supervisedMetaReanalysis ||
+    !snapshot.rawResponse ||
+    !snapshot.model ||
+    !snapshot.plan ||
+    Array.isArray(snapshot.plan)
+  ) {
+    throw new Error("Plano preservado não pertence à mesma pesquisa inicial");
+  }
+  validatePlan(snapshot.plan, job);
+  return {
+    plan: snapshot.plan,
+    rawResponse: snapshot.rawResponse,
+    model: snapshot.model,
+    mode: "DETERMINISTIC",
+    reusedPlan: true,
+    reasoningEffort: "NOT_APPLICABLE",
+    usage: null,
+    prompt: JSON.stringify({
+      operation: "REUSE_PERSISTED_RESEARCH_PLAN",
+      cycleId: job.cycleId,
+    }),
+    agentPromptPart: "Reutilizar plano persistido sem nova inferência.",
+    activityPromptPart:
+      "Coletar fontes e analisar; custo do plano permanece na tentativa original.",
+  };
+}
+
 /** Executa o Codex enviando e encerrando explicitamente a entrada padrão. */
 export function executeCodexWithInput(command, args, input, options = {}) {
   const spawnProcess = options.spawnProcess || spawn;

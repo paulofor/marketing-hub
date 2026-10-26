@@ -56,7 +56,23 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
               long investigationId = invocation.getArgument(2);
               return investigation(investigationId, 0);
             });
+    when(sessionLinkService.supportsPublicBrowser(Mockito.anyLong())).thenReturn(true);
     createSchema();
+  }
+
+  /** Ciclos não elegíveis recebem só histórico, nunca coleta que o callback recusaria. */
+  @Test
+  void doesNotOfferBrowserForIneligibleCycle() {
+    when(sessionLinkService.supportsPublicBrowser(73L)).thenReturn(false);
+    var result =
+        service.requestAndSearch(
+            73L,
+            new ProductDiscoveryMetaAdEvidenceRequest(
+                "lease-73", 1, "consultoria estilo pessoal", "BR", "INSTAGRAM", 10));
+    assertThat(result.sourceStatus()).isNotEqualTo("AWAITING_PUBLIC_BROWSER");
+    assertThat(result.investigationId()).isNull();
+    assertThat(result.searchUrl()).isNull();
+    verifyNoInteractions(investigationService);
   }
 
   /** Deve aceitar somente anúncio atual e explicitamente distribuído no Instagram. */

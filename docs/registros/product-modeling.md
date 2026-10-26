@@ -1,5 +1,15 @@
 # Modelagem por referências — registros operacionais
 
+## 26/10/2026 — coleta incompatível e recuperação do plano já produzido
+
+Após a reconexão comprovada, a tarefa #819 gerou o plano da pesquisa #73 com 19.901 tokens de entrada e 2.358 de saída. A coleta recebeu HTTP 409: o produtor oferecia navegador Meta para mercado UNSPECIFIED, enquanto o callback exigia B2C/Instagram. O plano e a resposta existiam, sem síntese. O histórico anterior B2C/Instagram e seus testes permaneciam válidos, descartando falha de login ou necessidade de refazer a pesquisa.
+
+A elegibilidade passou a ser compartilhada por produtor e consumidor; ciclos não elegíveis consultam o histórico disponível e as demais fontes públicas, sem criar uma coleta incompatível. Não se impõe B2C a toda modelagem. A recuperação explícita reconhece essa falha anterior à síntese, preserva o plano original e entrega um snapshot tipado da mesma pesquisa somente ao worker que declara `supportsPlanReplay=true`. O executor valida o snapshot, registra reaproveitamento determinístico e só executa a síntese; tokens do plano não são cobrados outra vez.
+
+O catálogo já tinha preços de GPT-6.1 Sol (entrada US$ 2/milhão, cache US$ 0,10/milhão e saída US$ 10/milhão). A auditoria intermediária guardava tokens sem estimá-los. O BPM agora usa o serviço canônico de estimativa após callbacks, inclusive para recuperar o uso preservado: US$ 0,063382 estimados para #819, sem consulta de fatura. A alteração não inventa custo para #818 nem concilia cobrança.
+
+Validação preventiva: contrato de elegibilidade, executor antigo/novo, plano operacional real com duas identidades sintéticas, coleta → síntese → callback único, custo idempotente, limites e STOP. O harness existente MySQL/UI recebe a falha de coleta para testar a mesma retomada em desktop/iPhone/Pixel. Adotar enquanto plano, autoria e resultado terminal forem preservados; reverter a retomada se houver repetição de planejamento, perda de auditoria ou cruzamento de contexto. Testes não comprovam impacto comercial.
+
 ## 26/10/2026 — retomada após autenticação de Argos
 
 Vega, modelagem #2, pesquisa #73, tarefa #818 e ciclo #16/experimento #109: o login #25

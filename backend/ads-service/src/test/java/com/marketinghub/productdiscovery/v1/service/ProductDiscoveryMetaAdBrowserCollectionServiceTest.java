@@ -95,6 +95,22 @@ class ProductDiscoveryMetaAdBrowserCollectionServiceTest {
             objectMapper);
   }
 
+  /** A mesma regra que impede oferta da coleta também impede seu callback incompatível. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.EnumSource(value = ProductDiscoveryMarketType.class)
+  void producerAndConsumerAgreeOnMarketEligibility(ProductDiscoveryMarketType marketType) {
+    cycle.setMarketType(marketType);
+    assertThat(cycle.supportsMetaPublicBrowser())
+        .isEqualTo(marketType == ProductDiscoveryMarketType.B2C);
+    if (marketType != ProductDiscoveryMarketType.B2C)
+      assertThatThrownBy(() -> service.record(144L, observedRequest()))
+          .hasMessageContaining("ciclo B2C");
+    cycle.setAcquisitionChannel("Busca pública");
+    assertThat(cycle.supportsMetaPublicBrowser()).isFalse();
+    assertThatThrownBy(() -> service.record(144L, observedRequest()))
+        .hasMessageContaining("ciclo B2C");
+  }
+
   /** Deve persistir o card bruto uma vez e aceitar retry equivalente sem inflar observações. */
   @Test
   void recordsObservedBatchIdempotently() {

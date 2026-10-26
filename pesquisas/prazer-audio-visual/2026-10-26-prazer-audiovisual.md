@@ -40,7 +40,7 @@
 
 ## Artigo 3 — Movimentos visuais coerentes podem aumentar prazer em música vocal
 
-**Referência:** Zhang L, Du Y, Zatorre RJ. *Visual congruency of performers' movements enhances vocal music reward through Mu entrainment*. Social Cognitive and Affective Neuroscience 20(1):nsaf089, 03/09/2025. https://doi.org/10.1093/scan/nsaf089 ; página https://academic.oup.com/scan/article/20/1/nsaf089/8249984
+**Referência:** Zhang L, Du Y, Zatorre RJ. *Visual congruency of performers' movements enhances vocal music reward through Mu entrainment*. Social Cognitive and Affective Neuroscience 20(1):nsaf089, 03/09/2025. https://doi.org/10.1093/scan/nsaf089 ; página https://academic.oup.com/scan/article/20/1/nsaf089/8246823
 
 **Método:** 32 ouvintes recrutados; 31 analisados. Observaram e ouviram performances de música vocal em mandarim e violino, com pares gesto-som congruentes ou incongruentes, além de condições unimodais. A pesquisa combinou escalas de prazer, condutância da pele e EEG (coerência entre ritmos Mu e envelope da música).
 

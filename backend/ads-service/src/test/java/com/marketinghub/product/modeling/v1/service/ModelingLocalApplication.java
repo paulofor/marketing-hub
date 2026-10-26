@@ -80,12 +80,12 @@ public class ModelingLocalApplication {
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS learning_sales_cycle_v1(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT,error_message TEXT,decision_summary TEXT,raw_response TEXT,plan_json LONGTEXT,plan_raw LONGTEXT,plan_model VARCHAR(120)) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT,error_message TEXT,decision_summary TEXT,raw_response TEXT,plan_json LONGTEXT,plan_raw LONGTEXT,plan_model VARCHAR(120),reference_study TINYINT NOT NULL DEFAULT 0) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_audit(cycle_id BIGINT PRIMARY KEY,attempts INT NOT NULL DEFAULT 1) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_auth_failure(cycle_id BIGINT PRIMARY KEY) ENGINE=InnoDB");
-    for (long id : List.of(99101L, 99102L, 99103L)) {
+    for (long id : List.of(99101L, 99102L, 99103L, 99111L, 99112L, 99113L)) {
       jdbc.update("INSERT IGNORE INTO product(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO learning_sales_cycle_v1(id) VALUES (?)", id + 100);
       jdbc.update("INSERT IGNORE INTO experiment(id) VALUES (?)", id + 200);
@@ -289,11 +289,11 @@ public class ModelingLocalApplication {
     return mock(ProductDiscoverySupervisedMetaSessionService.class);
   }
 
-  /** Oferece duas preparações segregadas, sem tarefas comerciais reais. */
+  /** Oferece preparações segregadas por produto e dispositivo, sem tarefas comerciais reais. */
   @Bean
   LearningSalesCycleRepository cycles() {
     var r = mock(LearningSalesCycleRepository.class);
-    for (long p : List.of(99101L, 99102L)) {
+    for (long p : List.of(99101L, 99102L, 99111L, 99112L, 99113L)) {
       var c = new LearningSalesCycle();
       c.setId(p + 100);
       c.setProductId(p);
@@ -397,7 +397,9 @@ public class ModelingLocalApplication {
 
   /** Simula callback concluído de Argos com dossiê do ciclo consultado. */
   @Bean
-  OpportunityDossierRepository dossiers(ProductDiscoveryCycleRepository research) {
+  OpportunityDossierRepository dossiers(
+      ProductDiscoveryCycleRepository research, DataSource source) {
+    var jdbc = new JdbcTemplate(source);
     var r = mock(OpportunityDossierRepository.class);
     when(r.findAllByProductDiscoveryCycleIdOrderByIdAsc(anyLong()))
         .thenAnswer(
@@ -408,10 +410,24 @@ public class ModelingLocalApplication {
               var d = new OpportunityDossier();
               d.setId(id);
               d.setTitle("Sinal público sintético");
-              d.setKnownRisks("Não comprova vendas");
+              d.setKnownRisks("Não comprova vendas; economia e demanda ainda são hipóteses");
+              d.setMainPain("Resultado pessoal a adaptar com fontes e limitações");
+              int study =
+                  jdbc.queryForObject(
+                      "SELECT reference_study FROM product_discovery_cycle WHERE id=?",
+                      Integer.class,
+                      id);
               var o = new ProductDiscoveryOpportunity();
               org.springframework.test.util.ReflectionTestUtils.setField(o, "id", id);
-              o.setMaturity(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+              o.setMaturity(
+                  study > 0
+                      ? ProductDiscoveryOpportunityMaturity.RESEARCHABLE
+                      : ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+              if (study > 0)
+                o.setEvidenceJson(
+                    "{\"publicEvidenceAssessment\":{\"observations\":[{\"sourceRole\":\"EDITORIAL\",\"url\":\"https://editorial.example/contraponto\",\"supportingExcerpt\":\"Contraponto editorial sintético\",\"limitation\":\"Fonte sintética, sem validação comercial\",\"sourceSha256\":\""
+                        + "0".repeat(64)
+                        + "\"}]}}");
               d.setProductDiscoveryOpportunity(o);
               return List.of(d);
             });
@@ -420,11 +436,47 @@ public class ModelingLocalApplication {
 
   /** Entrega fato sintético explicitamente distinto das referências reais do piloto. */
   @Bean
-  OpportunityEvidenceRepository evidence() {
+  OpportunityEvidenceRepository evidence(DataSource source) {
+    var jdbc = new JdbcTemplate(source);
     var r = mock(OpportunityEvidenceRepository.class);
     when(r.findByDossierIdOrderByCreatedAtAsc(anyLong()))
         .thenAnswer(
             i -> {
+              long id = i.getArgument(0);
+              int study =
+                  jdbc.queryForObject(
+                      "SELECT reference_study FROM product_discovery_cycle WHERE id=?",
+                      Integer.class,
+                      id);
+              if (study > 0) {
+                String refs =
+                    jdbc.queryForObject(
+                        "SELECT reference_sources FROM product_discovery_cycle WHERE id=?",
+                        String.class,
+                        id);
+                var facts = new java.util.ArrayList<OpportunityEvidence>();
+                int index = 1;
+                for (String url : refs.split("\\n")) {
+                  if (study == 2 && index == 1) {
+                    index++;
+                    continue;
+                  }
+                  var fact = new OpportunityEvidence();
+                  fact.setId(id * 10 + index++);
+                  fact.setSourceUrl(url);
+                  fact.setSummary(
+                      "Fonte primária sintética; alegação pública sem validação comercial.");
+                  fact.setCreatedAt(java.time.Instant.parse("2026-10-26T20:00:00Z"));
+                  facts.add(fact);
+                }
+                var counter = new OpportunityEvidence();
+                counter.setId(id * 10 + 9);
+                counter.setSourceUrl("https://editorial.example/contraponto");
+                counter.setSummary("Contraponto editorial sintético com limitações de aplicação.");
+                counter.setCreatedAt(java.time.Instant.parse("2026-10-26T20:00:00Z"));
+                facts.add(counter);
+                return facts;
+              }
               var e = new OpportunityEvidence();
               e.setId(i.getArgument(0));
               e.setSourceUrl("https://reference.example/");
@@ -497,6 +549,15 @@ public class ModelingLocalApplication {
       jdbc.update("INSERT IGNORE INTO fixture_auth_failure(cycle_id) VALUES (?)", id);
     }
 
+    /** Conclui estudo sintético com maturidade ainda exploratória e cobertura controlada. */
+    @PostMapping("/fixture/reference-study/{id}/{mode}")
+    public void referenceStudy(@PathVariable Long id, @PathVariable int mode) {
+      jdbc.update(
+          "UPDATE product_discovery_cycle SET status='COMPLETED',reference_study=? WHERE id=?",
+          mode,
+          id);
+    }
+
     /** Preserva saída sintética para comprovar que a retomada não pode repetir uma inferência. */
     @PostMapping("/fixture/preserve-output/{id}")
     public void preserveOutput(@PathVariable Long id) {
@@ -516,7 +577,10 @@ public class ModelingLocalApplication {
     public Object products() {
       return List.of(
           Map.of("id", 99101, "name", "Vega sintética", "internalName", "Vega sintética"),
-          Map.of("id", 99102, "name", "Outro produto", "internalName", "Outro produto"));
+          Map.of("id", 99102, "name", "Outro produto", "internalName", "Outro produto"),
+          Map.of("id", 99111, "name", "Estudo desktop", "internalName", "Estudo desktop"),
+          Map.of("id", 99112, "name", "Estudo iPhone", "internalName", "Estudo iPhone"),
+          Map.of("id", 99113, "name", "Estudo Pixel", "internalName", "Estudo Pixel"));
     }
   }
 }

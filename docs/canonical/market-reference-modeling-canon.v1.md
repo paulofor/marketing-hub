@@ -69,3 +69,10 @@ Homologação: `docs/homologacao/market-reference-modeling-v1.md`. Contrato API 
 ### Recuperação da coleta com plano preservado — 26/10/2026
 
 A recusa contratual de coleta antes da síntese pode ser retomada explicitamente na mesma pesquisa, preservando plano, resposta, modelo, tentativa e custo anteriores. O backend só oferece navegador Meta quando o mesmo contrato do callback aceita o ciclo (B2C/Instagram); nos demais mantém histórico e fontes públicas, sem interpretar falta de coleta como falta de mercado. O pending entrega snapshot tipado da mesma pesquisa apenas a executor com `supportsPlanReplay=true`. A reutilização do plano é determinística; não autoriza nova geração do plano ou gasto duplicado. Uso informado pelo Codex é estimado pelo catálogo existente, sem exigir extrato da API. STOP, saldo e adoção antes do planejamento continuam obrigatórios.
+
+
+## Estudo internacional para estratégia — 26/10/2026
+
+Para produto existente no escopo `INTERNATIONAL_TO_BR_V1`, a adoção pode levar à estratégia um estudo factual concluído mesmo que as candidatas continuem `SIGNAL` ou `RESEARCHABLE`. Exigir fontes primárias persistidas para todos os domínios de referência, pelo menos um contraponto externo editorial, científico ou de relato público com trecho literal, limitação e hash de origem registrados, identificadores e datas de registro, observações preenchidas e limitações por candidata. `null` não é texto preenchido. Rejeição ou revisão humana pendente não é convertida em prontidão.
+
+Essa passagem recebe `adoptionBasis=REFERENCE_STUDY_FOR_STRATEGY`, `commercialValidationRequired=true` e mantém `demandStatus=HYPOTHESIS`, maturidades, lacunas, Big Idea, custos e autorizações. Serve para Atena comparar três vantagens próprias e formular a adaptação brasileira; preço, economia e provas da entrega continuam nas etapas responsáveis. Não modifica o gate genérico de dez ofertas, não promove dossiê, não autoriza mercado e não substitui Plutus ou as revisões independentes. O caminho anterior com `DOSSIER_READY` permanece válido. A tela só oferece ciclos para adoção quando a pesquisa satisfaz uma dessas bases.

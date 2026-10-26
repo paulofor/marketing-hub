@@ -4,7 +4,7 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
 (async()=>{
  const baseline=(await call('GET','/fixture/health')).audit;
  for(const id of [99101,99102]){
-  const input={requestKey:crypto.randomUUID(),productId:id,desiredOutcome:'Resultado específico '+id,referenceUrls:['https://reference.example/']};
+  const input={requestKey:crypto.randomUUID(),productId:id,desiredOutcome:'Resultado específico '+id,referenceUrls:id===99101?['https://reference.example/']:['https://alpha.example/','https://beta.example/']};
   const m=await call('POST','/api/product-modeling/v1',input);assert.equal(m.status,'DRAFT');assert.equal(m.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(m.targetMarket,'Brasil');
   const audience=await call('GET',`/fixture/audience/${m.discoveryCycleId}`);
   assert.equal(audience.targetAudience,'Público brasileiro com preferências, rotina e limitações próprias. '.repeat(20).slice(0,id===99101?278:600));
@@ -14,12 +14,18 @@ async function call(method,path,body,status=200){const r=await fetch(base+path,{
   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100},409);
   await Promise.all([call('POST',`/api/product-modeling/v1/${m.id}/start`),call('POST',`/api/product-modeling/v1/${m.id}/start`)]);
   assert.equal((await call('GET','/fixture/health')).audit,baseline+(id===99101?1:2));
-  await call('POST',`/fixture/complete/${m.discoveryCycleId}`);
+  if(id===99101) await call('POST',`/fixture/complete/${m.discoveryCycleId}`);
+  else {
+   await call('POST',`/fixture/reference-study/${m.discoveryCycleId}/2`);
+   assert.deepEqual((await call('GET',`/api/product-modeling/v1/${m.id}`)).availableCycles,[]);
+   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100},409);
+   await call('POST',`/fixture/reference-study/${m.discoveryCycleId}/1`);
+  }
   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id===99101?99202:99201},409);
   const adopted=await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100});
   assert.equal(adopted.learningCycleId,id+100);assert.match(adopted.chainUrl,new RegExp('productId='+id));
   await call('POST',`/api/product-modeling/v1/${m.id}/adopt`,{cycleId:id+100});
-  const context=await call('GET',`/fixture/context/${id+200}`);assert.equal(context.productId,id);assert.equal(context.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(context.targetMarket,'BR');assert.equal(context.factualSources.length,1);assert.equal(context.commercialAuthorizationInherited,false);
+  const context=await call('GET',`/fixture/context/${id+200}`);assert.equal(context.productId,id);assert.equal(context.researchScope,'INTERNATIONAL_TO_BR_V1');assert.equal(context.targetMarket,'BR');assert.equal(context.factualSources.length,id===99101?1:3);if(id===99102){assert.equal(context.adoptionBasis,'REFERENCE_STUDY_FOR_STRATEGY');assert.equal(context.candidates[0].maturity,'RESEARCHABLE');assert.equal(context.commercialValidationRequired,true);require('node:fs').writeFileSync('artifacts/product-modeling/local/reference-context.json',JSON.stringify(context));}assert.equal(context.commercialAuthorizationInherited,false);
  }
  const fresh=await call('POST','/api/product-modeling/v1',{requestKey:crypto.randomUUID(),newProductName:'Nova estrela',desiredOutcome:'Outro resultado',referenceUrls:['https://reference.example/']});
  assert.equal(fresh.productId,null);assert.equal(fresh.status,'DRAFT');

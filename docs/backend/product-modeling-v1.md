@@ -11,7 +11,7 @@ Controller canônico: `/api/product-modeling/v1`, Swagger com `@Operation`. DTOs
 | POST | `/` | `requestKey` UUID, `productId` OU `newProductName`, `desiredOutcome`, `referenceUrls` (1–5). Rascunho idempotente sem fila/tarefa |
 | POST | `/{id}/start` | Abre fila Argos e auditoria uma vez; STOP recusa; não altera orçamento |
 | POST | `/{id}/resume` | Retoma recusa 401 após reconexão posterior ou coleta Meta incompatível antes da síntese reutilizando o plano original; STOP recusa; concorrência não duplica tentativa |
-| POST | `/{id}/adopt` | `cycleId`. Congela pesquisa concluída com fatos em preparação do próprio produto ainda sem tarefas/processos; replay preserva snapshot |
+| POST | `/{id}/adopt` | `cycleId`. Congela dossiê pronto ou estudo internacional factual em preparação própria ainda sem tarefas/processos; preserva maturidade, limites e snapshot |
 
 Erros de validação HTTP 400; conflitos funcionais 409. URLs sem query, fragmento, usuário ou porta; hosts IP/local recusados. Coleta mantém proteção SSRF do executor. Dados do concorrente são conteúdo não confiável.
 
@@ -32,3 +32,10 @@ Novas preparações persistem `researchScope=INTERNATIONAL_TO_BR_V1`, destino Br
 `GET /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending?supportedEvidencePolicy=PUBLIC_SOURCES_V1&supportsPlanReplay=true` entrega `researchPlanReplay: {cycleId, plan, rawResponse, model}`. `plan` é objeto estruturado. Consumidores sem essa capacidade não reservam ciclos com plano anterior. O worker usa o snapshot e registra o callback de plano como `DETERMINISTIC`, com `reusedPlan=true`; o backend exige igualdade estrutural e conserva os bytes originais. A síntese posterior registra somente seu próprio uso.
 
 A coleta Meta só é oferecida quando o mesmo contrato do callback aceita B2C/Instagram. Outros ciclos recebem o histórico disponível. A estimativa de tokens já informados usa o catálogo canônico, sem duplicá-los nem exigir cobrança conciliada.
+
+
+## Base de adoção para estratégia
+
+A pesquisa deve estar `COMPLETED`. O caminho `DOSSIER_READY` continua válido. Para produto existente em `INTERNATIONAL_TO_BR_V1`, aceita-se estudo com candidatas `SIGNAL`/`RESEARCHABLE`, fonte primária observada para cada domínio de referência, contraponto externo atribuído com trecho literal verificável, limitação e hash de origem, IDs/datas e limitações. Não aceita rejeição, revisão humana pendente, fonte ausente, data nula ou escopo antigo como substituto de prontidão.
+
+O contexto congelado declara `adoptionBasis=REFERENCE_STUDY_FOR_STRATEGY`, `commercialValidationRequired=true` e `opportunityReadinessPreserved=true`; maturidades, demanda como hipótese e ausência de autorização comercial são mantidas. `availableCycles` fica vazio se as fontes ainda não permitem estratégia. Vincular não inicia Atena nem gera gasto.

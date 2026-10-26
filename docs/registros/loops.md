@@ -1424,6 +1424,7 @@ Evidências: `docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`
 - **Prevenção:** testes com dependências locais exigem o mesmo ciclo, lease e callback terminal,
   cobrem sucesso, ausência de evidência nova e limite; backend e tela expõem as tentativas
   persistidas sem interpretar pesquisa como venda.
+- **Separação de finalidade confirmada em 26/10/2026:** a modelagem internacional de produto existente usava o mesmo `DOSSIER_READY` como pré-condição da estratégia e recusava o estudo #73 mesmo com fontes das referências e contrapontos. A adoção agora admite a base explícita `REFERENCE_STUDY_FOR_STRATEGY`, com fonte primária de cada domínio, contraponto externo, datas, observações e limitações, preservando candidatas `SIGNAL`/`RESEARCHABLE`. O gate de dez ofertas e as lentes da descoberta genérica continuam intactos; rejeição ou revisão humana não são contornadas. Testes de adoção, contexto, MySQL e interface protegem as duas finalidades, sem declarar demanda comprovada.
 - **Recorrência fechada em 2026-09-01:** a execução #14 exibiu três lentes, 74 evidências Web e nove
   ofertas, mas o banco preservou somente uma execução do navegador Meta. O worker planejava uma
   consulta por rodada, enquanto o backend congelava `meta_ad_investigation_id` no ciclo inteiro e

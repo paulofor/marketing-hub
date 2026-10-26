@@ -15,7 +15,8 @@ public record ProductDiscoveryResearchPlanRequest(
     String reasoningEffort,
     Long inputTokens,
     Long cachedInputTokens,
-    Long outputTokens) {
+    Long outputTokens,
+    Boolean reusedPlan) {
 
   /** Mantém compatibilidade com executores anteriores à auditoria BPM persistida. */
   public ProductDiscoveryResearchPlanRequest(
@@ -32,6 +33,37 @@ public record ProductDiscoveryResearchPlanRequest(
         null,
         null,
         null,
-        null);
+        null,
+        false);
+  }
+
+  /** Mantém compatibilidade dos callbacks anteriores ao reaproveitamento explícito do plano. */
+  public ProductDiscoveryResearchPlanRequest(
+      String executionLeaseId,
+      String planJson,
+      String rawResponse,
+      String model,
+      String executionMode,
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart,
+      String reasoningEffort,
+      Long inputTokens,
+      Long cachedInputTokens,
+      Long outputTokens) {
+    this(
+        executionLeaseId,
+        planJson,
+        rawResponse,
+        model,
+        executionMode,
+        promptSent,
+        agentPromptPart,
+        activityPromptPart,
+        reasoningEffort,
+        inputTokens,
+        cachedInputTokens,
+        outputTokens,
+        false);
   }
 }

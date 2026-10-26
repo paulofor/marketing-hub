@@ -14,14 +14,17 @@ import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -51,6 +54,9 @@ public class ProductDiscoveryBpmAuditService {
   private final AgentTaskRepository taskRepository;
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
+
+  @Autowired(required = false)
+  private OpenAiPricingService pricingService;
 
   /** Inicializa a correlação com o catálogo publicado e a mesa canônica dos agentes. */
   public ProductDiscoveryBpmAuditService(
@@ -188,6 +194,7 @@ public class ProductDiscoveryBpmAuditService {
         request.cachedInputTokens(),
         request.outputTokens(),
         modelInvocation(request.executionMode()));
+    estimatePersistedUsage(taskId);
   }
 
   /** Atualiza a tarefa com a síntese factual, tokens agregados e URLs realmente consultadas. */
@@ -218,6 +225,38 @@ public class ProductDiscoveryBpmAuditService {
             request.agentPromptPart(),
             request.activityPromptPart(),
             request.accessedUrls() == null ? List.of() : request.accessedUrls()));
+    estimatePersistedUsage(taskId);
+  }
+
+  /**
+   * Estima uso já informado pelo Codex, sem consultar cobrança nem acrescentar tokens novamente.
+   */
+  public void estimatePersistedUsage(Long taskId) {
+    if (pricingService == null) return;
+    taskRepository
+        .findById(taskId)
+        .filter(
+            task ->
+                "MODEL".equals(task.getExecutionMode())
+                    && task.getInputTokens() != null
+                    && task.getCachedInputTokens() != null
+                    && task.getOutputTokens() != null)
+        .ifPresent(
+            task ->
+                pricingService
+                    .estimateTaskCost(
+                        task.getExecutionModelCode(),
+                        "STANDARD",
+                        task.getInputTokens(),
+                        task.getCachedInputTokens(),
+                        task.getOutputTokens())
+                    .ifPresent(
+                        cost -> {
+                          task.setEstimatedCostUsd(cost);
+                          task.setCostEstimationStatus("ESTIMATED");
+                          task.setModelUsageUpdatedAt(Instant.now());
+                          taskRepository.save(task);
+                        }));
   }
 
   /** Conclui a tarefa BPM com decisão, oportunidades e plano estruturados do ciclo real. */

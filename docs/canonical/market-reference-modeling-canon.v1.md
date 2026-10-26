@@ -64,3 +64,8 @@ Fontes só podem ser adotadas no ciclo correto após pesquisa concluída, antes 
 Lacuna observada: a descoberta presumiu produto novo e os agentes não tinham ligação executável entre fonte e decisão de modelagem. Mudança: entrada segregada, adoção congelada e validação da rastreabilidade. Sucesso técnico: nenhum produto duplicado, fontes acessíveis nas passagens, citações ausentes recusadas e histórico preservado. Sucesso comercial: comparar uso do primeiro valor, compras e contribuição na experiência autorizada. Ainda sem evidência de ganho comercial. Reverter novas adoções se houver cruzamento de identidade, mantendo registros históricos.
 
 Homologação: `docs/homologacao/market-reference-modeling-v1.md`. Contrato API documentado em `docs/backend/product-modeling-v1.md`.
+
+
+### Recuperação da coleta com plano preservado — 26/10/2026
+
+A recusa contratual de coleta antes da síntese pode ser retomada explicitamente na mesma pesquisa, preservando plano, resposta, modelo, tentativa e custo anteriores. O backend só oferece navegador Meta quando o mesmo contrato do callback aceita o ciclo (B2C/Instagram); nos demais mantém histórico e fontes públicas, sem interpretar falta de coleta como falta de mercado. O pending entrega snapshot tipado da mesma pesquisa apenas a executor com `supportsPlanReplay=true`. A reutilização do plano é determinística; não autoriza nova geração do plano ou gasto duplicado. Uso informado pelo Codex é estimado pelo catálogo existente, sem exigir extrato da API. STOP, saldo e adoção antes do planejamento continuam obrigatórios.

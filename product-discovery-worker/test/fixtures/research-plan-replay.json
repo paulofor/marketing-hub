@@ -1,0 +1,92 @@
+{
+  "researchLens": "Vega — identidade pessoal e primeiro valor com poucas peças: investigar Whering, Indyx e alternativas brasileiras para situações cotidianas de escolha de roupa,",
+  "expansionAxis": "INITIAL_SCOPE",
+  "expansionRationale": "Primeira e única tentativa do ciclo 73, em research e VALIDATE_MARKET. Começar pelas referências recebidas e investigar esforço inicial, orientação antes de cadastro extenso, uso das próprias roupas e continuidade paga. Preservar Brasil, Instagram, mercado UNSPECIFIED, Big Idea e restrições comerciais. As referências internacionais orientam comparação factual; não são candidatas a copiar nem comprovam demanda brasileira. Nenhuma candidata, vantagem própria, preço ou estratégia será escolhida por",
+  "questions": [
+    "Nas páginas https://www.whering.co/ e https://www.myindyx.com/home/, quais públicos, desejos, ocasiões, entregas e condições comerciais estão explicitamente descritos? Quais informações permanecem inacessíveis?",
+    "Quantas peças, fotos, decisões, permissões e etapas cada referência exige até a primeira orientação útil? É possível observar valor antes de cadastro extenso e pagamento, sem acessar áreas autenticadas?",
+    "Como as referências apresentam visualmente combinações, identidade, personalização e experiência sensorial? O que é demonstrável em fonte pública e o que constitui alegação do vendedor?",
+    "Quais funcionalidades são gratuitas, quais são pagas e o que justificaria continuidade segundo relatos públicos de uso? Registrar preço, moeda, data, periodicidade, condições, taxas e diferenças entre aplicativo e serviço humano.",
+    "Quais sinais públicos de adoção, avaliações, monetização ou investimento existem? Separar usuários declarados, instalações, avaliações, preços anunciados e relatos de pagamento; nenhum desses sinais isoladamente comprova receita ou margem.",
+    "Quais situações pessoais transformam o desejo em ação: sair em poucos minutos, preparar encontro, viagem, evento ou adaptar roupas ao clima? Há prazo, consequência concreta e tentativa anterior frustrada?",
+    "Quais relatos descrevem compra, gasto atual, assinatura, comparação de preço, desistência, cancelamento ou substituição por alternativa gratuita? Quais resultados contradizem a disposição de pagar?",
+    "Como consumidoras brasileiras descrevem reconhecer o próprio estilo, aproveitar roupas existentes e reduzir esforço? Afeto, pertencimento, reconhecimento e alívio de esforço aparecem em pelo menos duas fontes independentes por território?",
+    "No Instagram público, quais cenas pessoais e demonstrações de resultado com poucas peças provocam relatos concretos de uso ou procura? Separar linguagem espontânea, intenção declarada, conteúdo comercial e compra observada.",
+    "Quais tarefas as consumidoras rejeitam fazer com IA: escrever prompts, catalogar o armário inteiro, configurar preferências ou montar combinações manualmente? Há evidência favorável e contrária a receber uma entrega pronta com entrada mínima?",
+    "Quais alternativas atuais no Brasil oferecem orientação pessoal digital, combinações com roupas próprias ou assistência pontual? Comparar público, entrega, prazo, primeiro valor, esforço, preço em reais, pagamento, suporte e condições de cancelamento.",
+    "Quais adaptações para português brasileiro, celular, clima, rotina e preferências aparecem como necessidades observadas? Separar necessidade relatada de hipótese interpretativa e evitar impor categorias de estilo.",
+    "Quais dez ou mais ofertas distintas são efetivamente comparáveis por trabalho pessoal atendido? Identificar separadamente aplicativos, serviços humanos, produtos digitais e alternativas físicas, sem transformar cursos profissionais em comparáveis.",
+    "Quais três dimensões de diferença podem ser documentadas entre as referências e necessidades brasileiras para Atena avaliar vantagens próprias? Que evidências apoiariam ou contrariariam contribuição adicional durante os sete dias já previstos?",
+    "Que estudos primários investigam identidade nas roupas, esforço de decisão e recomendações de combinações? Quais limites impedem extrapolar resultados científicos para demanda, pagamento ou satisfação no Brasil?",
+    "Quais evidências seriam necessárias para avaliar um protótipo privado mensurável: entrada realmente exigida, tempo até orientação útil, reconhecimento do estilo, uso de combinação e contribuição ao longo dos sete dias? Registrar lacunas sem desenhar execução, eventos ou alterar o experimento existente.",
+    "Na Biblioteca Meta, qual é a cobertura brasileira no Instagram, a data da coleta, a quantidade de anúncios e anunciantes observados, a data inicial e o status de cada anúncio? Há limitações que impeçam avaliar atualidade ou longevidade?"
+  ],
+  "publicQueries": [
+    "https://www.whering.co/",
+    "https://www.myindyx.com/home/",
+    "site:whering.co pricing subscription free wardrobe outfits onboarding",
+    "site:myindyx.com pricing styling free wardrobe upload first outfits",
+    "Whering app review uploaded clothes first outfit time effort",
+    "Indyx app review wardrobe upload stylist worth paying",
+    "Whering subscription cancellation complaints outfit recommendations",
+    "Indyx styling service refund cancellation complaints",
+    "Whering users downloads adoption independent report",
+    "Indyx funding users paid styling independent report",
+    "\"não sei o que vestir\" \"amanhã\" roupas",
+    "\"roupas\" \"não combina comigo\" \"estilo\" relato",
+    "\"look\" \"encontro\" \"última hora\" \"roupas\"",
+    "site:instagram.com \"montar looks\" \"roupas que você já tem\"",
+    "\"aplicativo de looks\" \"grátis\" \"Brasil\" avaliação",
+    "\"consultoria de estilo online\" \"R$\" \"looks\"",
+    "\"montagem de looks\" \"online\" \"preço\" \"peças\"",
+    "\"armário digital\" \"assinatura\" \"cancelar\"",
+    "\"consultoria de estilo\" \"reclamação\" \"online\"",
+    "\"Whering\" \"português\" \"clima\"",
+    "\"Indyx\" \"Brasil\" \"pagamento\"",
+    "\"looks\" \"ChatGPT\" \"trabalho\" \"fotos\"",
+    "\"roupas\" \"me reconhecer\" \"pertencimento\" estilo",
+    "clothing identity outfit recommendation decision effort empirical study"
+  ],
+  "marketplaceRequests": [
+    {
+      "marketplace": "HOTMART",
+      "query": "consultoria de estilo pessoal looks com roupas próprias",
+      "maxProducts": 5
+    },
+    {
+      "marketplace": "HOTMART",
+      "query": "montagem de looks guarda roupa digital",
+      "maxProducts": 5
+    },
+    {
+      "marketplace": "CLICKBANK",
+      "query": "personal style outfit wardrobe",
+      "maxProducts": 5
+    }
+  ],
+  "metaAdRequests": [
+    {
+      "query": "consultoria estilo pessoal",
+      "country": "BR",
+      "publisherPlatform": "INSTAGRAM",
+      "maxAds": 10
+    }
+  ],
+  "minimumComparableOffers": 10,
+  "stopConditions": [
+    "Executar somente esta tentativa, com as 24 consultas públicas declaradas, três pedidos de marketplace e uma consulta Meta. Não ampliar chamadas, limites individuais ou orçamento para alcançar uma quota.",
+    "Começar pelas duas URLs de referência. Atribuir IDs persistentes às evidências coletadas e registrar URL exata, data de publicação quando disponível, data de acesso, país, tipo de fonte e trecho factual que sustenta cada observação.",
+    "Separar alegação do vendedor, relato público de cliente, anúncio, fonte independente e artigo científico. Preservar contrapontos, resultados vazios e comportamento não encontrado; não atribuir compra a comentários de intenção.",
+    "Verificar atualidade, preço, moeda, periodicidade, condições, entrega, público e aderência de cada oferta. Preço internacional convertido não equivale a preço praticado no Brasil; qualquer conversão exige data e fonte do câmbio.",
+    "Exigir dez ofertas comparáveis distintas, deduplicadas por oferta e fornecedor. Se os limites não permitirem documentá-las, encerrar com insuficiência explícita, sem incluir ofertas inadequadas ou inventar vendas.",
+    "Nos marketplaces, excluir formação profissional, curso genérico, operação empresarial, revenda e B2B disfarçado. Classificar produtos físicos apenas como alternativas observadas de gasto e linguagem; qualquer futura candidata deve continuar sendo experiência digital entregue por IA.",
+    "Restringir a investigação no Instagram a cenas pessoais, desejos da consumidora, ofertas simples, microvalor no celular e ganchos demonstráveis. Não acessar áreas autenticadas, solicitar credenciais, expor dados pessoais ou contatar pessoas.",
+    "Registrar cobertura Meta, data de coleta, anúncios, anunciantes, status e longevidade observável. Anúncio ativo e longevo indica investimento sustentado, nunca comprova isoladamente vendas. Fonte indisponível ou cobertura incompleta é lacuna.",
+    "Fonte vazia, bloqueada, vencida, sem data necessária ou com placeholder permanece falha de qualidade. Ausência de evidência acessível não equivale a ausência de mercado.",
+    "Aplicar PUBLIC_SOURCES_V1: não solicitar entrevistas, recrutamento, contato externo ou respostas humanas. Buscar confirmação em domínios independentes; depoimentos selecionados pelo vendedor permanecem material comercial.",
+    "Exigir duas fontes independentes para sustentar cada território de afeto, pertencimento, reconhecimento ou alívio de esforço. Se isso não ocorrer, manter o território como hipótese não confirmada.",
+    "Usar R2 e R6 somente como inspiração rastreável sobre esforço e escolhas concretas, sem tratá-los como validação. A orientação RI1-702849682E37, em pesquisas/ia-aplicada/cards/fontes/2026-09-09-ai-assistants-descoberta-produtos.md, exige verificação da fonte original e não autoriza extrapolar consumidores dos EUA para brasileiras.",
+    "Entregar a Atena diferenças observadas e seus IDs de evidência, incluindo contrapontos. Não escolher posicionamento, vantagem própria, formato, preço, canal ou hipótese prioritária.",
+    "Encerrar sem campanha, publicação, compra, nova pesquisa paga, mídia, vídeos, autorização financeira herdada ou alteração do experimento existente. Registrar apenas evidências necessárias para mensuração privada, sem inventar execução ou eventos."
+  ]
+}

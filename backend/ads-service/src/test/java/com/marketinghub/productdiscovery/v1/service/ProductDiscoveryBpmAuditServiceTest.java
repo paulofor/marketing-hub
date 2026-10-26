@@ -64,6 +64,30 @@ class ProductDiscoveryBpmAuditServiceTest {
             processRepository, taskRepository, agentTaskService, new ObjectMapper());
   }
 
+  /** Uso já informado produz estimativa idempotente, sem acrescentar tokens ou exigir fatura. */
+  @Test
+  void estimatesPreservedCodexUsage() {
+    var pricing =
+        org.mockito.Mockito.mock(com.marketinghub.openai.service.OpenAiPricingService.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "pricingService", pricing);
+    var task = new AgentTask();
+    task.setId(819L);
+    task.setExecutionMode("MODEL");
+    task.setExecutionModelCode("gpt-6.1-sol");
+    task.setInputTokens(19901L);
+    task.setCachedInputTokens(0L);
+    task.setOutputTokens(2358L);
+    when(taskRepository.findById(819L)).thenReturn(Optional.of(task));
+    when(pricing.estimateTaskCost("gpt-6.1-sol", "STANDARD", 19901L, 0L, 2358L))
+        .thenReturn(Optional.of(new BigDecimal("0.06338200")));
+    service.estimatePersistedUsage(819L);
+    service.estimatePersistedUsage(819L);
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.06338200");
+    assertThat(task.getInputTokens()).isEqualTo(19901L);
+    assertThat(task.getCostEstimationStatus()).isEqualTo("ESTIMATED");
+    org.mockito.Mockito.verifyNoInteractions(agentTaskService);
+  }
+
   /** Deve abrir a atividade vigente com referência estável e sem criar resultado antecipado. */
   @Test
   void opensCurrentProcessActivityForCycle() {

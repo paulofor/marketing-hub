@@ -17,7 +17,10 @@ import {
   operationalLogger,
   recentOperationalLogLines,
 } from "./operational-log.js";
-import { planDirectedResearch } from "./argos-codex.js";
+import {
+  planDirectedResearch,
+  reusePersistedResearchPlan,
+} from "./argos-codex.js";
 import { synthesizeMarketCandidates } from "./argos-research.js";
 import { selectResearchLibraryContext } from "./research-library.js";
 import { startCodexAuthReconnectConsumer } from "./codex-auth-reconnect.js";
@@ -104,7 +107,7 @@ async function runCycle() {
     }
     for (const stagePath of [INITIAL_STAGE_PATH, GAP_DEEPENING_STAGE_PATH]) {
       const pending = await getJson(
-        `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/pending?supportedEvidencePolicy=PUBLIC_SOURCES_V1`,
+        `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/pending?supportedEvidencePolicy=PUBLIC_SOURCES_V1&supportsPlanReplay=true`,
       );
       for (const job of pending) {
         await processJob(job);
@@ -125,10 +128,12 @@ export async function processJob(job, dependencies = {}) {
   const post = dependencies.postJson || postJson;
   const selectLibrary =
     dependencies.selectResearchLibraryContext || selectResearchLibraryContext;
-  const planResearch = job.supervisedMetaReanalysis
-    ? dependencies.planSupervisedMetaReanalysis ||
-      buildSupervisedMetaReanalysisPlan
-    : dependencies.planDirectedResearch || planDirectedResearch;
+  const planResearch = job.researchPlanReplay
+    ? reusePersistedResearchPlan
+    : job.supervisedMetaReanalysis
+      ? dependencies.planSupervisedMetaReanalysis ||
+        buildSupervisedMetaReanalysisPlan
+      : dependencies.planDirectedResearch || planDirectedResearch;
   const internetSearch = dependencies.searchInternet || searchInternet;
   const collectCommercialEvidence =
     dependencies.collectMarketplaceEvidence || collectMarketplaceEvidence;
@@ -146,10 +151,11 @@ export async function processJob(job, dependencies = {}) {
     const researchLibraryContext = await selectLibrary(job);
     const enrichedJob = { ...job, researchLibraryContext };
     const execution = await executeBoundedMarketResearch(enrichedJob, {
-      maxAttempts:
-        dependencies.maxAttempts ??
-        job.gapResearchPolicy?.maximumAttempts ??
-        process.env.ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS,
+      maxAttempts: job.researchPlanReplay
+        ? 1
+        : (dependencies.maxAttempts ??
+          job.gapResearchPolicy?.maximumAttempts ??
+          process.env.ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS),
       repositoryEvidence: researchLibraryContext.evidence,
       repositoryCoverage: researchLibraryContext.coverage,
       planResearch: async (researchJob) => {
@@ -602,6 +608,7 @@ export function withExecutionLease(job, payload) {
 export function researchPlanCallbackPayload(directed) {
   return {
     planJson: JSON.stringify(directed.plan),
+    ...(directed.reusedPlan ? { reusedPlan: true } : {}),
     rawResponse: directed.rawResponse,
     model: directed.model,
     executionMode: directed.mode,

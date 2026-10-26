@@ -80,7 +80,7 @@ public class ModelingLocalApplication {
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS learning_sales_cycle_v1(id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT,error_message TEXT,decision_summary TEXT,raw_response TEXT) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS product_discovery_cycle(id BIGINT AUTO_INCREMENT PRIMARY KEY,status VARCHAR(32),theme VARCHAR(191),target_audience VARCHAR(191),objective TEXT,reference_sources TEXT,error_message TEXT,decision_summary TEXT,raw_response TEXT,plan_json LONGTEXT,plan_raw LONGTEXT,plan_model VARCHAR(120)) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_audit(cycle_id BIGINT PRIMARY KEY,attempts INT NOT NULL DEFAULT 1) ENGINE=InnoDB");
     jdbc.execute(
@@ -210,6 +210,9 @@ public class ModelingLocalApplication {
               c.setErrorMessage((String) row.get("error_message"));
               c.setDecisionSummary((String) row.get("decision_summary"));
               c.setResearchAnalysisRawResponse((String) row.get("raw_response"));
+              c.setResearchPlanJson((String) row.get("plan_json"));
+              c.setResearchPlanRawResponse((String) row.get("plan_raw"));
+              c.setResearchPlanModel((String) row.get("plan_model"));
               return Optional.of(c);
             });
     when(r.findByIdForUpdate(anyLong()))
@@ -347,7 +350,12 @@ public class ModelingLocalApplication {
               task.setProcessActivityId("marketEvidence");
               task.setSourceReference(ref);
               task.setStatus("BLOCKED");
-              task.setExecutionError("workspace routing discovery unauthorized (401)");
+              String error =
+                  jdbc.queryForObject(
+                      "SELECT error_message FROM product_discovery_cycle WHERE id=?",
+                      String.class,
+                      id);
+              task.setExecutionError(error);
               task.setExecutionMode("MODEL");
               task.setUpdatedAt(java.time.Instant.parse("2026-10-26T13:35:16Z"));
               int attempts =
@@ -472,6 +480,19 @@ public class ModelingLocalApplication {
     public void failAuthentication(@PathVariable Long id) {
       jdbc.update(
           "UPDATE product_discovery_cycle SET status='FAILED',error_message='unauthorized (401)' WHERE id=?",
+          id);
+      jdbc.update("INSERT IGNORE INTO fixture_auth_failure(cycle_id) VALUES (?)", id);
+    }
+
+    /** Simula recusa contratual da coleta mantendo o plano original disponível para recuperação. */
+    @PostMapping("/fixture/fail-collection/{id}")
+    public void failCollection(@PathVariable Long id) {
+      jdbc.update(
+          "UPDATE product_discovery_cycle SET status='FAILED',error_message=?,plan_json=?,plan_raw=?,plan_model=? WHERE id=?",
+          "HTTP 409 /meta-ad-browser-collection: ciclo B2C orientado ao Instagram",
+          "{\"researchLens\":\"Plano original sintético\"}",
+          "Resposta original sintética",
+          "gpt-6.1-sol",
           id);
       jdbc.update("INSERT IGNORE INTO fixture_auth_failure(cycle_id) VALUES (?)", id);
     }

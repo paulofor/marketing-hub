@@ -92,6 +92,28 @@ class ModelingResearchRecoveryTest {
     verify(audit, times(1)).reopenInitialResearch(any(), any());
   }
 
+  /** Recupera a falha de contrato de coleta sem apagar o plano pago ou ampliar o orçamento. */
+  @ParameterizedTest
+  @ValueSource(longs = {73L, 99173L})
+  void reusesPlanAfterCollectionContractFailure(long id) {
+    prepare(id, id + 500);
+    String plan = "{\"researchLens\":\"Plano preservado\"}";
+    cycle.setResearchPlanJson(plan);
+    cycle.setResearchPlanRawResponse(plan);
+    cycle.setResearchPlanModel("gpt-6.1-sol");
+    failed.setInputTokens(19901L);
+    failed.setOutputTokens(2358L);
+    failed.setExecutionError(
+        "Backend recusou HTTP 409 /meta-ad-browser-collection: ciclo B2C orientado ao Instagram");
+    assertThat(service.readiness(cycle).available()).isTrue();
+    service.resume(id);
+    assertThat(cycle.getResearchPlanJson()).isEqualTo(plan);
+    assertThat(cycle.getResearchPlanRawResponse()).isEqualTo(plan);
+    assertThat(cycle.getStatus()).isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    verify(audit).estimatePersistedUsage(failed.getId());
+    verify(audit).reopenInitialResearch(eq(cycle), contains("plano original preservado"));
+  }
+
   /** Uma conexão antiga ou ainda pendente não comprova que a causa foi corrigida. */
   @Test
   void rejectsOldOrPendingAuthentication() {

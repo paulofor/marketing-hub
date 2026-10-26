@@ -11,6 +11,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Locale;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -158,6 +159,13 @@ public class ProductDiscoveryCycle {
   /** Indica a rota de pesquisa pública sem recrutamento. */
   public boolean usesPublicEvidence() {
     return "PUBLIC_SOURCES_V1".equals(evidencePolicy);
+  }
+
+  /** Centraliza a elegibilidade usada ao oferecer e receber a coleta pública de anúncios. */
+  public boolean supportsMetaPublicBrowser() {
+    return marketType == ProductDiscoveryMarketType.B2C
+        && acquisitionChannel != null
+        && acquisitionChannel.toLowerCase(Locale.ROOT).contains("instagram");
   }
 
   /** Retorna o identificador do ciclo. */

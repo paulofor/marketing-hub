@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Retoma somente pesquisa inicial recusada por autenticação, com reconexão posterior comprovada.
+ * Retoma pesquisa interrompida antes da análise, preservando plano, autoria, tentativas e limites.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,10 +35,7 @@ public class ModelingResearchRecovery {
         || cycle.getStatus() != ProductDiscoveryCycleStatus.FAILED
         || !"research".equals(cycle.getStageCode()))
       return blocked("Esta pesquisa não está interrompida na coleta inicial.");
-    if (StringUtils.hasText(cycle.getResearchPlanJson())
-        || StringUtils.hasText(cycle.getResearchPlanModel())
-        || StringUtils.hasText(cycle.getResearchPlanRawResponse())
-        || StringUtils.hasText(cycle.getResearchAnalysisRawResponse())
+    if (StringUtils.hasText(cycle.getResearchAnalysisRawResponse())
         || StringUtils.hasText(cycle.getResearchEvidenceReportJson()))
       return blocked(
           "Há execução ou resultado preservado; confira a recuperação antes de repetir IA.");
@@ -56,6 +53,23 @@ public class ModelingResearchRecovery {
     if (attempts.stream().anyMatch(t -> List.of("PENDING", "IN_PROGRESS").contains(t.getStatus())))
       return blocked("Argos já tem uma tentativa ativa desta pesquisa.");
     var last = attempts.stream().max(Comparator.comparing(AgentTask::getId)).orElse(null);
+    if (last != null
+        && "BLOCKED".equals(last.getStatus())
+        && List.of("marketEvidence", "inspiration", "evidence")
+            .contains(last.getProcessActivityId())
+        && collectionContractFailure(last.getExecutionError())
+        && StringUtils.hasText(cycle.getResearchPlanJson())
+        && StringUtils.hasText(cycle.getResearchPlanRawResponse())
+        && StringUtils.hasText(cycle.getResearchPlanModel())) {
+      return new ModelingResearchRecoveryView(
+          true,
+          "Plano de Argos preservado. Retome somente a coleta corrigida e a análise, sem gerar outro plano nem repetir seu custo.",
+          null);
+    }
+    if (StringUtils.hasText(cycle.getResearchPlanJson())
+        || StringUtils.hasText(cycle.getResearchPlanModel())
+        || StringUtils.hasText(cycle.getResearchPlanRawResponse()))
+      return blocked("Há plano preservado sem recuperação de coleta comprovada.");
     if (last == null
         || !"BLOCKED".equals(last.getStatus())
         || !List.of("marketEvidence", "inspiration", "evidence")
@@ -91,10 +105,19 @@ public class ModelingResearchRecovery {
     var readiness = readiness(cycle);
     if (!readiness.available())
       throw new ResponseStatusException(HttpStatus.CONFLICT, readiness.reason());
+    boolean reusePlan = readiness.reconnectionId() == null;
+    if (reusePlan)
+      tasks
+          .findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:" + cycleId)
+          .stream()
+          .filter(task -> "BLOCKED".equals(task.getStatus()))
+          .forEach(task -> audit.estimatePersistedUsage(task.getId()));
     String reason =
-        "Pesquisa retomada explicitamente após reconexão Codex #"
-            + readiness.reconnectionId()
-            + ". Tentativa anterior preservada; sem plano ou dossiê produzido. Autorizações e limites não foram alterados.";
+        reusePlan
+            ? "Coleta retomada explicitamente com o plano original preservado, sem nova inferência de planejamento. Autorizações e limites não foram alterados."
+            : "Pesquisa retomada explicitamente após reconexão Codex #"
+                + readiness.reconnectionId()
+                + ". Tentativa anterior preservada; sem plano ou dossiê produzido. Autorizações e limites não foram alterados.";
     audit.reopenInitialResearch(cycle, reason);
     cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
     cycle.setErrorMessage(null);
@@ -102,6 +125,14 @@ public class ModelingResearchRecovery {
     cycle.setLeaseExpiresAt(null);
     cycle.setDecisionSummary(reason);
     cycles.save(cycle);
+  }
+
+  /** Limita a recuperação à recusa contratual de coleta anterior à síntese, comprovada no erro. */
+  private boolean collectionContractFailure(String error) {
+    return error != null
+        && error.contains("meta-ad-browser-collection")
+        && error.contains("HTTP 409")
+        && error.contains("ciclo B2C orientado ao Instagram");
   }
 
   /**

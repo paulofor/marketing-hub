@@ -29,7 +29,8 @@ public record ProductDiscoveryPendingResponse(
     List<ProductDiscoveryCustomerInterviewResponse> customerInterviews,
     ProductDiscoveryGapResearchPolicyResponse gapResearchPolicy,
     String evidencePolicy,
-    ProductDiscoverySupervisedMetaReanalysisContext supervisedMetaReanalysis) {
+    ProductDiscoverySupervisedMetaReanalysisContext supervisedMetaReanalysis,
+    ProductDiscoveryResearchPlanReplayResponse researchPlanReplay) {
 
   /** Mantém compatibilidade dos produtores e testes da etapa inicial sem contexto de lacunas. */
   public ProductDiscoveryPendingResponse(
@@ -73,6 +74,59 @@ public record ProductDiscoveryPendingResponse(
         List.of(),
         null,
         "CONSENTED_INTERVIEWS_V1",
+        null,
+        null);
+  }
+
+  /** Mantém compatibilidade dos consumidores anteriores à recuperação do plano. */
+  public ProductDiscoveryPendingResponse(
+      Long cycleId,
+      String pipelineCode,
+      String stageCode,
+      String theme,
+      String targetAudience,
+      String country,
+      String language,
+      String acquisitionChannel,
+      String commercialConstraints,
+      String forbiddenCategories,
+      String objective,
+      ProductDiscoveryResearchMode researchMode,
+      ProductDiscoveryMarketType marketType,
+      String referenceSources,
+      String executionLeaseId,
+      int executionAttempt,
+      ResearchIntelligenceSelectionResponse researchIntelligence,
+      List<ProductDiscoveryOpportunityResponse> previousCandidates,
+      String previousEvidenceReportJson,
+      List<ProductDiscoveryCustomerInterviewResponse> customerInterviews,
+      ProductDiscoveryGapResearchPolicyResponse gapResearchPolicy,
+      String evidencePolicy,
+      ProductDiscoverySupervisedMetaReanalysisContext supervisedMetaReanalysis) {
+    this(
+        cycleId,
+        pipelineCode,
+        stageCode,
+        theme,
+        targetAudience,
+        country,
+        language,
+        acquisitionChannel,
+        commercialConstraints,
+        forbiddenCategories,
+        objective,
+        researchMode,
+        marketType,
+        referenceSources,
+        executionLeaseId,
+        executionAttempt,
+        researchIntelligence,
+        previousCandidates,
+        previousEvidenceReportJson,
+        customerInterviews,
+        gapResearchPolicy,
+        evidencePolicy,
+        supervisedMetaReanalysis,
         null);
   }
 }

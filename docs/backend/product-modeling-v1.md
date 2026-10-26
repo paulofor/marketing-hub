@@ -23,3 +23,12 @@ e os limites; apenas cria uma nova ocorrência auditável. Falha depois de produ
 elegível: exige recuperação do resultado pelo contrato específico, sem nova inferência automática.
 
 Novas preparações persistem `researchScope=INTERNATIONAL_TO_BR_V1`, destino Brasil e intenção própria. `internationalAssessment` expõe somente a decisão aprovada vigente de Atena, com evidências e adaptação; não substitui o estado da cadeia ou métricas comerciais.
+
+
+## Retomada de coleta com plano preservado
+
+`POST /api/product-modeling/v1/{id}/resume` também reconhece a recusa contratual Meta anterior à síntese, com plano/resposta/modelo persistidos e sem tarefa ativa. A resposta `researchRecovery` explica a reutilização. Não cria outra pesquisa, não altera limites e não descarta a tentativa anterior.
+
+`GET /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending?supportedEvidencePolicy=PUBLIC_SOURCES_V1&supportsPlanReplay=true` entrega `researchPlanReplay: {cycleId, plan, rawResponse, model}`. `plan` é objeto estruturado. Consumidores sem essa capacidade não reservam ciclos com plano anterior. O worker usa o snapshot e registra o callback de plano como `DETERMINISTIC`, com `reusedPlan=true`; o backend exige igualdade estrutural e conserva os bytes originais. A síntese posterior registra somente seu próprio uso.
+
+A coleta Meta só é oferecida quando o mesmo contrato do callback aceita B2C/Instagram. Outros ciclos recebem o histórico disponível. A estimativa de tokens já informados usa o catálogo canônico, sem duplicá-los nem exigir cobrança conciliada.

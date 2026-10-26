@@ -38,6 +38,14 @@ public class ProductDiscoveryMetaAdSessionLinkService {
     this.objectMapper = objectMapper;
   }
 
+  /** Consulta a mesma elegibilidade exigida pelo callback antes de oferecer um navegador. */
+  public boolean supportsPublicBrowser(Long cycleId) {
+    return cycleRepository
+        .findById(cycleId)
+        .map(ProductDiscoveryCycle::supportsMetaPublicBrowser)
+        .orElseThrow(() -> new IllegalArgumentException("Ciclo de descoberta não encontrado"));
+  }
+
   /** Recupera a investigação exclusiva da tentativa sem criar vínculo por efeito de leitura. */
   public Optional<MoisMetaAdDtos.InvestigationResponse> linkedAttemptInvestigation(
       Long cycleId, int attemptNumber) {

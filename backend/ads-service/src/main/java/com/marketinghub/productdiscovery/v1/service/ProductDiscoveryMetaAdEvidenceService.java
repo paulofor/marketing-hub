@@ -48,11 +48,21 @@ public class ProductDiscoveryMetaAdEvidenceService {
     this.objectMapper = objectMapper;
   }
 
-  /** Cria ou reutiliza o acompanhamento da categoria e devolve sua cobertura atual. */
+  /** Oferece coleta somente a ciclos elegíveis; nos demais consulta o histórico disponível. */
   public ProductDiscoveryMetaAdEvidenceListResponse requestAndSearch(
       Long cycleId, ProductDiscoveryMetaAdEvidenceRequest request) {
     String country = normalizedCountry(request.country());
     String publisherPlatform = normalizedPublisherPlatform(request.publisherPlatform());
+    if (!sessionLinkService.supportsPublicBrowser(cycleId)) {
+      return searchInternal(
+          cycleId,
+          normalizedQuery(request.query()),
+          country,
+          publisherPlatform,
+          request.limit(),
+          null,
+          false);
+    }
     Optional<MoisMetaAdDtos.InvestigationResponse> supervisedReanalysis =
         sessionLinkService.linkedSupervisedReanalysis(cycleId, request.executionLeaseId());
     if (supervisedReanalysis.isPresent()) {

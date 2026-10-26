@@ -68,3 +68,8 @@ O relatório real expôs zero fontes de Whering/Indyx entre 30 selecionadas apes
 
 
 Complemento após timeout #821: planejador determinístico existente para aprofundamento público com referências, sem nova inferência de planejamento; fontes distribuídas entre candidatas sem duplicar consulta; até cinco referências e três candidatas; análise factual mantém modelo e gates. Plano produzido pelo Node aceito por `ProductDiscoveryGapResearchContractService.validatePlan` real em sandbox; 171 testes do executor PASS. O timeout histórico permanece com custo não informado, sem atribuir zero.
+
+
+## Adoção do estudo internacional — 26/10/2026
+
+Antes dos testes desta passagem: conferir estudo `RESEARCHABLE` com duas fontes primárias e contraponto; recusar fonte ausente, domínio falso, data/texto nulo, limite vazio, rejeição, revisão humana e escopo antigo; preservar `DOSSIER_READY` anterior. Percorrer salvar → iniciar → concluir pesquisa sintética → vincular → consultar contexto → replay/reinício no MySQL 5.7 e na tela em desktop/iPhone/Pixel. Verificar Big Idea, identidade, maturidade, hipóteses, limites e zero tarefa/custo na adoção. Conferir o contrato consumidor de Atena com fontes literais e três alternativas. Antes: os dois casos de estudo retornavam 409 localmente e o caso real também retornou 409 pela tela. Depois: somente estudo factual completo recebe a base preparatória, sem alterar prontidão comercial.

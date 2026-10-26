@@ -150,9 +150,8 @@ function ModelingCard({ item }: { item: ProductModeling }) {
               ))
             ) : (
               <p>
-                Não há preparação sem tarefas disponível. Preserve o ciclo atual
-                e prepare seu sucessor pela cadeia; as fontes ficarão guardadas
-                aqui.
+                Confira as fontes e uma preparação ainda sem execução para
+                vincular este estudo. O histórico permanece preservado.
               </p>
             )}
             <small className="d-block text-secondary">

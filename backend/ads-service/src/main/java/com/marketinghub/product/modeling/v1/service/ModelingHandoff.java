@@ -77,7 +77,9 @@ public class ModelingHandoff {
         .orElse(json.nullNode());
   }
 
-  /** Expõe intenção, dossiês e evidências realmente persistidas; concorrentes não são compras. */
+  /**
+   * Expõe intenção, dossiês, fontes e sua classificação factual persistida, sem declarar compras.
+   */
   public JsonNode context(Long cycleId) {
     var m = modelings.findByDiscoveryCycleId(cycleId).orElse(null);
     if (m == null) return json.nullNode();
@@ -106,6 +108,12 @@ public class ModelingHandoff {
       if (dossier.getProductDiscoveryOpportunity() != null) {
         candidate.put("opportunityId", dossier.getProductDiscoveryOpportunity().getId());
         candidate.put("maturity", dossier.getProductDiscoveryOpportunity().getMaturity().name());
+        String evidenceJson = dossier.getProductDiscoveryOpportunity().getEvidenceJson();
+        if (evidenceJson != null && !evidenceJson.isBlank()) {
+          JsonNode assessment = read(evidenceJson).path("publicEvidenceAssessment");
+          if (assessment.isObject())
+            candidate.set("publicEvidenceAssessment", assessment.deepCopy());
+        }
       }
       for (var source : evidence.findByDossierIdOrderByCreatedAtAsc(dossier.getId())) {
         var fact = facts.addObject();

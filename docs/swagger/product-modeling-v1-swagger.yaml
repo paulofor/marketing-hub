@@ -72,7 +72,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/id'
     post:
-      summary: Congela fontes em um ciclo próprio ainda não executado
+      summary: Congela fontes e lacunas para estratégia em um ciclo próprio ainda não executado
       requestBody:
         required: true
         content:
@@ -84,7 +84,7 @@ paths:
                 cycleId: { type: integer, format: int64, minimum: 1 }
       responses:
         '200':
-          description: Vínculo idempotente sem executar processo ou transferir autorizações
+          description: Vínculo idempotente com dossiê pronto ou estudo internacional factual, sem promover maturidade, executar processo ou transferir autorizações
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ModelingView' }

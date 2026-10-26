@@ -1,5 +1,15 @@
 # Modelagem por referências — registros operacionais
 
+## 26/10/2026 — prontidão factual para estratégia e maturidade comercial
+
+A pesquisa #73 concluiu com duas candidatas `RESEARCHABLE`, 15 fontes persistidas e cobertura primária de Whering/Indyx (evidências #451, #459, #460 e #461). Pela tela, “Usar no ciclo #16” retornou HTTP 409: `ModelingAdoption` exigia `DOSSIER_READY` da descoberta genérica. As lacunas incluíam dez ofertas e também preço brasileiro, diferenciação, pagamentos e continuidade — decisões que Atena/Plutus precisam formular, não fatos que Argos possa comprovar antecipadamente. A tela oferecia o comando apesar dessa recusa previsível.
+
+Foram comparados: ampliar a descoberta genérica (maior amplitude, mais custo e tempo além do estudo pedido), criar pesquisa paralela de concorrentes (contrato específico, mas outra orquestração) e distinguir estudo para estratégia dentro da passagem existente. Adotada a terceira, com cobertura de referências, contraponto, registro e limitações obrigatórios. A oportunidade conserva sua maturidade; rejeições e revisão humana continuam bloqueando. O snapshot explicita que se trata de hipótese e que a validação comercial ainda é necessária.
+
+Regressões locais reproduzem o estudo com duas referências, outra identidade e o caminho antigo `DOSSIER_READY`; recusam referência ausente ou falsa, falta de contraponto, `null`, data ausente, escopo antigo, rejeição e revisão humana. O harness MySQL/UI percorre adoção, replay, persistência após reinício e contexto preservado para estratégia. Os validadores de Atena continuam exigindo três alternativas, citações literais e adaptação brasileira. Essa mudança fecha a aplicação indevida do gate de descoberta no percurso de modelagem, sem alterar os critérios comerciais documentados em `LOOP-ARGOS-RESEARCH-MORE-TERMINAL-SEM-AMPLIACAO`.
+
+Critério de adoção: estudo com fontes e lacunas chega à estratégia, sem nova tarefa na vinculação, promoção de maturidade ou transferência financeira. Reverter a nova base se perder origem, limites ou uma rejeição vigente. Os testes comprovam a passagem, não demanda nem ganho de vendas.
+
 ## 26/10/2026 — planejamento complementar expirado
 
 O aprofundamento #821 recebeu as candidatas da pesquisa inicial, mas o planejamento Codex excedeu 600.000 ms. A sessão preservada não tinha `token_count` ou `task_complete`; não há resposta final recuperável nem custo confirmado. As sessões anteriores do mesmo executor completaram plano e síntese em aproximadamente 70 segundos. A causa interna do provedor permanece desconhecida; o erro não comprova falta de crédito ou nova falha de login.

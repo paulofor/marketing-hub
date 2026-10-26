@@ -141,7 +141,10 @@ public class ModelingService {
     return view(required(id));
   }
 
-  /** Projeta a fila real; criação, fontes e proposta nunca são apresentadas como vendas. */
+  /**
+   * Projeta fila e prontidão factual; fontes e estratégia permanecem distintas de validação
+   * comercial.
+   */
   private ModelingView view(ProductModeling m) {
     var cycle =
         m.getDiscoveryCycleId() == null
@@ -158,7 +161,9 @@ public class ModelingService {
               m.getLearningCycleId() != null
                   ? "Fontes incorporadas à preparação. A cadeia existente coordena planejamento, construção, revisões e teste conforme os aceites e limites."
                   : m.getProductId() != null
-                      ? "Pesquisa pronta. Vincule a uma preparação ainda não executada para Atena receber as fontes. Experimentos históricos permanecem preservados."
+                      ? (adoption.readyForStrategy(m)
+                          ? "Estudo factual concluído. As fontes e lacunas podem orientar Atena em uma preparação ainda não executada; demanda e condições comerciais continuam hipóteses."
+                          : "Pesquisa concluída com pendências de fontes. Confira cobertura das referências, contrapontos e limitações antes do planejamento.")
                       : "Consulte o dossiê e as passagens para Atena, Plutus e Dédalo. Pesquisa concluída não comprova produto entregue nem demanda.";
           case "FAILED" ->
               "Pesquisa interrompida. Confira o diagnóstico preservado antes de retentar; não houve aprovação automática.";

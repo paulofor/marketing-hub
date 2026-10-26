@@ -76,3 +76,9 @@ A recusa contratual de coleta antes da síntese pode ser retomada explicitamente
 Para produto existente no escopo `INTERNATIONAL_TO_BR_V1`, a adoção pode levar à estratégia um estudo factual concluído mesmo que as candidatas continuem `SIGNAL` ou `RESEARCHABLE`. Exigir fontes primárias persistidas para todos os domínios de referência, pelo menos um contraponto externo editorial, científico ou de relato público com trecho literal, limitação e hash de origem registrados, identificadores e datas de registro, observações preenchidas e limitações por candidata. `null` não é texto preenchido. Rejeição ou revisão humana pendente não é convertida em prontidão.
 
 Essa passagem recebe `adoptionBasis=REFERENCE_STUDY_FOR_STRATEGY`, `commercialValidationRequired=true` e mantém `demandStatus=HYPOTHESIS`, maturidades, lacunas, Big Idea, custos e autorizações. Serve para Atena comparar três vantagens próprias e formular a adaptação brasileira; preço, economia e provas da entrega continuam nas etapas responsáveis. Não modifica o gate genérico de dez ofertas, não promove dossiê, não autoriza mercado e não substitui Plutus ou as revisões independentes. O caminho anterior com `DOSSIER_READY` permanece válido. A tela só oferece ciclos para adoção quando a pesquisa satisfaz uma dessas bases.
+
+O schema estrito de Atena declara todos os campos em `required`, inclusive `referenceModelingTrace`
+e `internationalAssessment`. Fora da modelagem, usar lista vazia e avaliação `null`; sem escopo
+internacional ou em decisão sem evidência suficiente, a avaliação pode ser `null`. Aprovação
+internacional continua exigindo o objeto completo, trechos literais e adaptação brasileira no
+validador funcional. Ausência de aplicabilidade não autoriza fabricar referências para preencher JSON.

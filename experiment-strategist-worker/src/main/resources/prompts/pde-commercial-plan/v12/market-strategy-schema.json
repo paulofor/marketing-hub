@@ -15,7 +15,9 @@
     "requiredChanges",
     "rationale",
     "sources",
-    "bigIdea"
+    "bigIdea",
+    "referenceModelingTrace",
+    "internationalAssessment"
   ],
   "properties": {
     "activity": {
@@ -633,7 +635,7 @@
       }
     },
     "internationalAssessment": {
-      "type": "object",
+      "type": ["object", "null"],
       "additionalProperties": false,
       "required": [
         "references",

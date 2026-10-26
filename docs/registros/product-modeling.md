@@ -1,5 +1,25 @@
 # Modelagem por referências — registros operacionais
 
+## 26/10/2026 — formato estrito de Atena na primeira passagem internacional
+
+A adoção do estudo #73 no ciclo #16 foi confirmada no banco com 15 fontes e base
+`REFERENCE_STUDY_FOR_STRATEGY`. A execução #85 criou Atena #823 com a mesma Big Idea,
+fontes e nota financeira atualizada. O Codex recusou o schema antes da análise: os campos
+de modelagem adicionados ao v12 não constavam em `required`. O histórico #811 concluído
+usava v12 antes desses campos; os testes de rigidez cobriam somente v7/v9/v10.
+
+Foram comparados remover os campos (perderia a rastreabilidade), exigir avaliação sempre
+preenchida (induziria referências inventadas em tarefas sem modelagem) e declarar todos os campos
+com avaliação anulável quando não aplicável. Adotada a terceira: lista vazia/`null` nos demais
+casos, objeto completo obrigatório para aprovação internacional pelo validador funcional.
+O teste local reproduziu a recusa antes da alteração e passa a percorrer todas as versões;
+o processo simulado valida o schema entregue, auditoria e replay em duas identidades.
+
+A tentativa #823 permanece como falha técnica com uso/custo não informado; não é prova de nova
+falha de autenticação nem de falta de orçamento. Retomar somente depois de publicar o contrato
+corrigido, preservando o estudo e o teto acumulado. Fonte do contrato externo:
+[Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs#all-fields-must-be-required).
+
 ## 26/10/2026 — prontidão factual para estratégia e maturidade comercial
 
 A pesquisa #73 concluiu com duas candidatas `RESEARCHABLE`, 15 fontes persistidas e cobertura primária de Whering/Indyx (evidências #451, #459, #460 e #461). Pela tela, “Usar no ciclo #16” retornou HTTP 409: `ModelingAdoption` exigia `DOSSIER_READY` da descoberta genérica. As lacunas incluíam dez ofertas e também preço brasileiro, diferenciação, pagamentos e continuidade — decisões que Atena/Plutus precisam formular, não fatos que Argos possa comprovar antecipadamente. A tela oferecia o comando apesar dessa recusa previsível.

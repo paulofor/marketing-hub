@@ -120,7 +120,9 @@ public class LearningCycleSuccessorPreparation {
           "O sucessor existente pertence a outra versão; preserve sua história.");
       if (request.targetAudience() != null && !request.targetAudience().isBlank())
         require(
-            request.targetAudience().trim()
+            request
+                .targetAudience()
+                .trim()
                 .equals(json.read(existing.get().getBriefJson()).path("audience").asText()),
             "O sucessor existente pertence a outro público; preserve sua história.");
       return service.get(productId, existing.get().getId());

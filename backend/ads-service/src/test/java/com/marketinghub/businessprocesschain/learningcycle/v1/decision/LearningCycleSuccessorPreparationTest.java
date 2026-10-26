@@ -232,7 +232,9 @@ class LearningCycleSuccessorPreparationTest {
         .isFalse();
   }
 
-  /** Reproduz expansão de Capella e outra identidade sem reintroduzir público ou hipótese antigos. */
+  /**
+   * Reproduz expansão de Capella e outra identidade sem reintroduzir público ou hipótese antigos.
+   */
   @ParameterizedTest
   @ValueSource(longs = {7, 8017})
   void preparesExplicitMarketChangeWithoutRewritingPredecessor(long productId) throws Exception {
@@ -240,8 +242,11 @@ class LearningCycleSuccessorPreparationTest {
     String before = cycle.getBriefJson();
     var source = experiments.findById(cycle.getExperimentId()).orElseThrow();
     source.setHypothesis("Hipótese anterior restrita");
-    preparation.prepareAdjustmentOnly(productId, cycle.getId(),
-        new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "  Profissionais autônomos de beleza  "));
+    preparation.prepareAdjustmentOnly(
+        productId,
+        cycle.getId(),
+        new PrepareAdjustmentSuccessorRequest(
+            4, "beauty-v1", "  Profissionais autônomos de beleza  "));
     var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
     verify(service).createPreparation(eq(productId), request.capture());
     assertThat(request.getValue().audience()).isEqualTo("Profissionais autônomos de beleza");
@@ -252,8 +257,10 @@ class LearningCycleSuccessorPreparationTest {
     verify(experiments).saveAndFlush(saved.capture());
     assertThat(saved.getValue().getHypothesis()).isEqualTo(request.getValue().hypothesis());
     assertThat(saved.getValue().getMediaSpendLimit()).isZero();
-    var learning = ArgumentCaptor.forClass(
-        com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand.class);
+    var learning =
+        ArgumentCaptor.forClass(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                .LearningCycleCommand.class);
     verify(service).carryPreparedLearning(eq(productId), eq(productId + 400), learning.capture());
     assertThat(learning.getValue().evidence().path("successorAudience").asText())
         .isEqualTo(request.getValue().audience());
@@ -267,10 +274,12 @@ class LearningCycleSuccessorPreparationTest {
   void keepsFullHypothesisWhileBoundingLegacyExperimentSummary() throws Exception {
     var cycle = privateAdjustment(7);
     String hypothesis = "Comunicação específica por especialidade. ".repeat(20);
-    events.findByCycleIdOrderByRevisionAsc(cycle.getId()).get(0)
+    events
+        .findByCycleIdOrderByRevisionAsc(cycle.getId())
+        .get(0)
         .setEvidenceJson(valid().put("nextHypothesis", hypothesis).toString());
-    preparation.prepareAdjustmentOnly(7L, cycle.getId(),
-        new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Beleza"));
+    preparation.prepareAdjustmentOnly(
+        7L, cycle.getId(), new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Beleza"));
     var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
     verify(service).createPreparation(eq(7L), request.capture());
     assertThat(request.getValue().hypothesis()).isEqualTo(hypothesis);
@@ -288,11 +297,17 @@ class LearningCycleSuccessorPreparationTest {
     next.setProductVersion("beauty-v1");
     next.setBriefJson("{\"audience\":\"Profissionais de beleza\"}");
     when(cycles.findByPreviousCycleId(cycle.getId())).thenReturn(Optional.of(next));
-    preparation.prepareAdjustmentOnly(7L, cycle.getId(),
+    preparation.prepareAdjustmentOnly(
+        7L,
+        cycle.getId(),
         new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", " Profissionais de beleza "));
     verify(service).get(7L, 407L);
-    assertThatThrownBy(() -> preparation.prepareAdjustmentOnly(7L, cycle.getId(),
-        new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Todos os negócios")))
+    assertThatThrownBy(
+            () ->
+                preparation.prepareAdjustmentOnly(
+                    7L,
+                    cycle.getId(),
+                    new PrepareAdjustmentSuccessorRequest(4, "beauty-v1", "Todos os negócios")))
         .hasMessageContaining("outro público");
     verify(experiments, never()).saveAndFlush(any());
     verifyNoInteractions(processRuns);

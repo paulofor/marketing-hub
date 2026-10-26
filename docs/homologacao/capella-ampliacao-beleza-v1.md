@@ -59,3 +59,14 @@ da Big Idea e o cadastro preparatório não autorizam ampliar mídia ou audiovis
   Somando US$6,254654 das tarefas #811–817, o conhecido estimado fica US$19,2143756,
   acima do teto US$15. Não é fatura nem autorização retroativa; nenhuma nova tarefa
   deve ser iniciada nesta continuação sem decisão financeira explícita.
+
+## Compatibilidade do pacote de revisão
+
+O CI identificou que Mira privada v47 fixa sete fontes compartilhadas alteradas
+nesta entrega. A revalidação local de 50 testes inclui o preparo privado de Mira
+(produto 10) e outra identidade, recuperação de histórico, limites e caminhos sem
+mudança de público; os testes da tela preservam o envio anterior sem o campo opcional.
+A v48 registra apenas essa compatibilidade. Não renova experiência, homologação,
+autorizações ou pareceres de Mira e mantém a publicação automática desabilitada.
+O manifesto anterior permanece intacto. O construtor real de evidências e seus
+testes passam a integrar esta rodada antes da atualização do PR.

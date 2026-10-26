@@ -65,3 +65,16 @@ local comprova acesso ao comando, não melhora de conversão.
   a validação passou a ser sequencial. O bundle local usa a configuração canônica,
   com a checagem de tipos já executada separadamente para não duplicar seu consumo.
   Nenhum limite ou executável global foi alterado.
+
+## Compatibilidade identificada pelo CI
+
+O primeiro CI recusou corretamente a prova antiga do serviço compartilhado em
+Mira v48. A validação local adicional passou em 14 testes privados de Mira; a
+atestação v49 registra os hashes revalidados sem alterar o manifesto histórico,
+publicar Mira ou renovar pareceres. O empacotador completo de evidências e o
+seletor de deploy integram a conferência local antes da atualização deste PR.
+Detalhes: [compatibilidade pré-mercado](mira-compatibilidade-direcao-premercado-2026-10-26.md).
+
+A conferência adicional passou em 38 testes do empacotador e seletor. O pacote
+validou 665 arquivos de 160 manifestos. A atestação isolada retorna destino `none`
+e `hasDeployment=false`, comprovando que não publica uma nova experiência de Mira.

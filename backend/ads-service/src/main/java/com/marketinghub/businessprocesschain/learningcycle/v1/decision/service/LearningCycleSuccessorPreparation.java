@@ -171,11 +171,12 @@ public class LearningCycleSuccessorPreparation {
     return result;
   }
 
-  /** Confere a última decisão do ajuste ainda sem mercado, preservando o próprio recibo. */
+  /** Confere ajuste pré-mercado, inclusive na autorização, preservando o recibo da decisão. */
   private ObjectNode closedPrivateAdjustment(LearningSalesCycle cycle) {
     if (!"ADJUSTED".equals(cycle.getStatus())
         || cycle.isBaseline()
-        || !java.util.Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())) return null;
+        || !java.util.Set.of("ADJUSTMENT", "VALIDATION", "AUTHORIZATION")
+            .contains(cycle.getStage())) return null;
     var source = experiments.findById(cycle.getExperimentId()).orElse(null);
     if (source == null
         || source.getProduct() == null

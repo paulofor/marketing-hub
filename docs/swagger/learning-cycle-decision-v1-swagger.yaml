@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Proposta comercial de Atena no ciclo da Cadeia de Valor
-  version: 1.5.0
+  version: 1.5.1
   description: >-
     A atividade DECISION do subprocesso chamado por 6.4 recebe uma proposta de Atena.
     O worker apenas propõe. O backend pode preparar sucessor de ajuste KEEP_FOCUS ou inconclusivo humano aprovado com nova hipótese no mesmo foco pela
@@ -26,7 +26,8 @@ paths:
     post:
       summary: Preparar sucessor de ajuste privado com público explicitamente escolhido
       description: >-
-        Exige decisão ADJUST vigente, produto em PLAY e experimento sem exposição ou
+        Exige decisão ADJUST vigente em ADJUSTMENT, VALIDATION ou AUTHORIZATION,
+        produto em PLAY e experimento sem exposição ou
         liberação. Mantém hipótese da decisão, oferta e preço; targetAudience substitui
         apenas o público do novo ciclo e fica na memória auditável. Ausente ou vazio
         preserva público anterior. Experimento recebe a hipótese nova. Mídia zero,

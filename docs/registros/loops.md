@@ -11140,3 +11140,19 @@ depois de materializar o checkout. Provas e limites em
   antes válido. Matriz local cobre copiar, download, retomada, segurança e três dispositivos.
 - **Limite:** correção de apresentação não aprova nova hipótese nem autoriza consumo comercial.
 - **Registro:** [matriz e evidências](../homologacao/capella-interface-sem-diagnostico-2026-10-25.md).
+
+## LOOP-CICLO-AUTORIZACAO-OCULTA-MUDANCA — 26/10/2026
+
+- Evidência: Vega #4, ciclo #13/experimento #106, oferece ADJUST pelo contrato, mas
+  a tela mostra apenas orçamento bloqueado por ausência de janela comercial.
+  A direção nova usa modelagem internacional #2/pesquisa #73, ainda em rascunho.
+- Causas: retorno antecipado do formulário esconde os outros comandos; o preparo
+  do sucessor exclui AUTHORIZATION apesar de ADJUST preservar essa etapa.
+- Correção: apresentar as decisões canônicas antes do orçamento e permitir o
+  ajuste pré-mercado encerrado nessa etapa, com recibo e proteções existentes.
+- Prevenção: testes de tela e service com Vega, outra identidade, caminhos antes
+  válidos, erro/reenvio, publicação solicitada, mercado e recibo ausente. O sucessor
+  permanece sem datas, mídia, tarefa ou aprovações financeiras herdadas.
+- Limite: preparar a direção não inicia Argos nem comprova demanda. A pesquisa e
+  a adoção de suas conclusões continuam pelos contratos próprios da modelagem.
+- Registro: [matriz local](../homologacao/vega-international-direction-v1.md).

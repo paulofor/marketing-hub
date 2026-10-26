@@ -7723,3 +7723,19 @@ Não houve nova medição de vendas, ROI ou demanda.
   idêntico/divergente, validação do endpoint e envio da tela. Hipótese de melhoria:
   menos retrabalho por contexto contraditório; impacto comercial não medido.
 - Matriz e limites: [ampliação de beleza](../homologacao/capella-ampliacao-beleza-v1.md).
+
+## 2026-10-26 — Vega: modelagem internacional para a próxima versão
+
+- Direção solicitada: usar Whering e Indyx como referências para uma experiência
+  própria de estilo pessoal no Brasil, aproveitando a candidata v15 e a Big Idea v2.
+  Modelagem #2/pesquisa #73 já preservam fontes propostas e resultado desejado.
+- O ciclo #13/experimento #106 conserva a v14 e seu histórico. Uma mudança de direção
+  deve preparar um sucessor antes de adotar o dossiê da pesquisa; não alterar os
+  pareceres antigos nem tratar a presença de concorrentes como prova de vendas.
+- Lacuna compartilhada: o formulário ocultava ADJUST na autorização; o backend
+  não preparava o sucessor a partir dessa etapa. Corrigidos os dois lados do percurso,
+  sem atalhos por API, duplicação de pesquisa ou transferência de orçamento.
+- Harness: regressões com duas identidades, caminhos anteriores, recuperação e
+  limites comerciais. Hipótese de melhoria: menos espera e menos contexto divergente
+  entre pesquisa, estratégia e construção. Resultado comercial ainda não medido.
+- [Matriz e evidências locais](../homologacao/vega-international-direction-v1.md).

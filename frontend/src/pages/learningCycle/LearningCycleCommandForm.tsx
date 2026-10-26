@@ -226,8 +226,52 @@ export default function LearningCycleCommandForm({
     }
   }
   if (!cycle.commands.length) return null;
+  const actionSelector = (
+    <label className="form-label">
+      Decisão *
+      <select
+        name="action"
+        className="form-select"
+        value={action}
+        disabled={mutation.isPending}
+        onChange={(event) => {
+          setAction(event.target.value);
+          setRequestKey(createCycleRequestKey());
+          mutation.reset();
+        }}
+      >
+        {cycle.commands.map((item) => (
+          <option
+            key={item.action}
+            value={item.action}
+            disabled={!item.available}
+          >
+            {item.label}
+            {item.available ? "" : " · bloqueado"}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
   if (cycle.stage === "AUTHORIZATION" && action === "COMPLETE")
-    return <CycleBudgetAuthorizationForm cycle={cycle} onUpdated={onUpdated} />;
+    return (
+      <>
+        {cycle.commands.length > 1 && (
+          <section
+            className="card card-body mb-3"
+            aria-label="Escolher próxima passagem"
+          >
+            <h3 className="h5">Próxima ação</h3>
+            {actionSelector}
+            <p className="small text-secondary mb-0">
+              Se o produto mudou, registre a nova direção antes de aprovar o
+              orçamento. Escolher uma opção apenas abre o formulário.
+            </p>
+          </section>
+        )}
+        <CycleBudgetAuthorizationForm cycle={cycle} onUpdated={onUpdated} />
+      </>
+    );
   return (
     <form
       id="cycle-decision"
@@ -300,30 +344,7 @@ export default function LearningCycleCommandForm({
           </nav>
         </div>
       ) : null}
-      <label className="form-label">
-        Decisão *
-        <select
-          name="action"
-          className="form-select"
-          value={action}
-          onChange={(event) => {
-            setAction(event.target.value);
-            setRequestKey(createCycleRequestKey());
-            mutation.reset();
-          }}
-        >
-          {cycle.commands.map((item) => (
-            <option
-              key={item.action}
-              value={item.action}
-              disabled={!item.available}
-            >
-              {item.label}
-              {item.available ? "" : " · bloqueado"}
-            </option>
-          ))}
-        </select>
-      </label>
+      {actionSelector}
       {cycle.commands
         .filter((item) => !item.available)
         .map((item) => (

@@ -1,5 +1,13 @@
 # Modelagem por referências — registros operacionais
 
+## 26/10/2026 — referências explícitas excluídas da pesquisa factual
+
+Depois da recuperação, #820 concluiu a pesquisa inicial da #73 e o backend encaminhou #821 ao aprofundamento. A comparação entre plano e corpus mostrou outra causa compartilhada: Whering e Indyx estavam nas primeiras consultas planejadas, mas nenhuma apareceu nas 30 fontes selecionadas. O executor reordenava consultas comerciais e científicas genéricas antes das referências, depois encerrava ao preencher o limite. A seleção final também podia consumir todas as vagas com ofertas e excluir fontes declaradas já coletadas.
+
+Compararam-se ampliar o número de buscas (aumenta custo sem garantir cobertura), acrescentar texto ao prompt (não altera a fila determinística) e proteger referências na busca/seleção existente. Adotada a terceira: consultar cada domínio declarado primeiro e reservar uma fonte efetivamente observada por domínio antes de equilibrar as demais categorias. Não há exceção por marca, novos gates, fonte inventada ou alteração de maturidade. Sem retorno de uma referência, sua evidência continua ausente.
+
+Regressão local usa o plano preservado do piloto e outro par de domínios, com limite apertado e ofertas suficientes para reproduzir a exclusão. Antes: dois casos falharam; depois: referências preservadas, ofertas mantidas e teto de consultas respeitado. Uma referência sem retorno permanece sem evidência. A suíte anterior sem referências continua validando os caminhos já válidos. Critério de adoção: referências observadas chegam à análise sem remover os limites nem afirmar demanda; reverter se houver perda da origem, conteúdo fabricado ou cruzamento de contexto.
+
 ## 26/10/2026 — coleta incompatível e recuperação do plano já produzido
 
 Após a reconexão comprovada, a tarefa #819 gerou o plano da pesquisa #73 com 19.901 tokens de entrada e 2.358 de saída. A coleta recebeu HTTP 409: o produtor oferecia navegador Meta para mercado UNSPECIFIED, enquanto o callback exigia B2C/Instagram. O plano e a resposta existiam, sem síntese. O histórico anterior B2C/Instagram e seus testes permaneciam válidos, descartando falha de login ou necessidade de refazer a pesquisa.

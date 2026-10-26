@@ -6,7 +6,7 @@
 
 Consulta à listagem de cs.HC do arXiv em 26/10/2026: a listagem de segunda-feira contém 24 entradas; a maior parte dos trabalhos selecionados foi submetida em 22 ou 23 de outubro. A data de divulgação em uma lista não equivale à data da coleta de dados, nem implica revisão por pares. Estudos de 16 a 25/10 já resumidos não foram reapresentados, exceto pela atualização material sobre confiança factual em IA.
 
-**Conclusão:** sinais visuais de credibilidade não substituem provas; a qualidade de experiências gerativas depende de métricas externas (aprendizagem, conclusão efetiva, usabilidade e adequação contextual), não apenas fluência ou tamanho das respostas. Nesta rodada, oito artigos fornecem nove implicações práticas. Um achado atualiza um card já existente na coleção neuromarketing, sem criar uma chave duplicada.
+**Conclusão:** sinais visuais de credibilidade não substituem provas; a qualidade de experiências gerativas depende de métricas externas (aprendizagem, conclusão efetiva, usabilidade e adequação contextual), não apenas fluência ou tamanho das respostas. Nesta rodada, nove artigos oferecem nove implicações práticas. Um achado atualiza um card já existente na coleção neuromarketing, sem criar uma chave duplicada.
 
 ## 1. Indicadores de confiança em chatbots: percepção inicial não é prova de verdade — CARD ATUALIZADO
 
@@ -94,7 +94,7 @@ Consulta à listagem de cs.HC do arXiv em 26/10/2026: a listagem de segunda-feir
 
 **Sem card:** comparação de formatos de código para animação, não evidência audiovisual de experiência do consumidor.
 
-## 7. Ciberenjoo em VR não pode ser lido por uma única métrica ocular
+## 7. Enjoo em VR não pode ser inferido por uma única métrica ocular
 
 **Fonte:** Demirseren et al., *Gaze Under Strain*. Submetido em 23/10, aceito ACM VRST 2026. https://arxiv.org/abs/2610.32019
 

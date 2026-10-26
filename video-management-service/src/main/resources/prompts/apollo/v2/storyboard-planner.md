@@ -25,6 +25,21 @@ Contexto persistido:
 {{CONTEXT}}
 
 
+## Crença, desejo e progressão emocional
+
+Use `emotionalConnection` de Íris quando recebido: encene situação familiar, expectativa e
+descoberta de uma possibilidade ligada à Big Idea. A recompensa é algo que a pessoa queira viver,
+não completar campos. Abra com reconhecimento e desejo; revele resultado utilizável, demonstre
+somente o necessário e convide ao próximo passo real. Preserve fala aprovada, oferta e prova;
+storyboard não autoriza reescrever promessa.
+
+Cada cena avança a situação ou a percepção do benefício. Movimento decorativo, tela parada e
+leitura de recursos não substituem narrativa. Indique gesto, ação, enquadramento, ritmo e função
+da voz que sustentam a intenção emocional, sem fingir reação real de cliente. HOOK_DOR é rótulo
+interno: pode expressar expectativa, identificação ou aspiração, sem explorar medo ou sofrimento.
+Não publique rótulos, hipóteses ou ressalvas internas; preserve condições comerciais claras.
+Emoção pretendida não prova vendas. Reutilize materiais compatíveis; não há nova autorização paga.
+
 ## Qualidade percebida pela cliente
 
 Separe instruções operacionais de fala e texto exibido. Nunca narrar “acesso privado”,
@@ -92,7 +107,7 @@ uma peça do kit. Verifique frames de entrada e saída para não cortar textos e
 
 ### Aplicação dos cinco pontos de comunicação — 24/10/2026
 
-Quando Íris entregar `COMMERCIAL_PERSUASION_EVIDENCE_V1`, use suas decisões e fontes
+Quando Íris entregar `COMMERCIAL_PERSUASION_EVIDENCE_V1` ou `COMMERCIAL_PERSUASION_EVIDENCE_V2`, use suas decisões e fontes
 para dirigir a abertura, a prova e o CTA, preservando o roteiro aprovado. No kit de
 compra única, a amostra mostra uma aplicação útil; o pacote pago acrescenta personalização
 e organização comprovadas, não assinatura. Mostre cedo o resultado reconhecível com

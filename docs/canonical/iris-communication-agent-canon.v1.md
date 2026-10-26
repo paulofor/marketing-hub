@@ -736,6 +736,40 @@ Peças históricas e seus pareceres continuam imutáveis. A próxima produção 
 corrigido e requer seus próprios pareceres; sete regressões inicialmente falhas comprovam
 a mudança de comportamento, com outras identidades e template comercial preservados.
 
+## Crença cotidiana, desejo e conexão emocional — decisão de 26/10/2026
+
+A comunicação parte da vida da pessoa: situação reconhecível → crença cotidiana → desejo →
+nova possibilidade ligada à Big Idea → prova utilizável → próximo passo fácil. A abertura deve
+permitir reconhecer “isso é para mim” e imaginar o benefício antes de explicar funcionamento,
+quantidades ou tecnologia. A ambição é aumentar identificação e desejo com clareza e intensidade;
+não acrescentar adjetivos, gritos, jargão, vergonha ou promessas de resultado sem sustentação.
+
+Íris entrega `COMMERCIAL_PERSUASION_EVIDENCE_V2` nas novas gerações de contrato, com
+`emotionalConnection`: situação, hipótese de crença, desejo, recompensa emocional, reenquadramento
+ligado à direção recebida, abertura, ponte para a prova e próximo passo. Fontes e citações
+pertencem ao contexto da mesma tarefa. A hipótese de crença não vira fato sobre todo o público,
+mesmo quando há linguagem pública compatível. Abertura, prova e ação correspondem às mensagens
+dos cinco critérios; o mapa interno nunca é publicado para a cliente. Recibos V1 continuam
+reutilizáveis sem nova inferência, mas não substituem V2 em uma nova geração.
+
+Atena diferencia crença observada, hipótese e desejo na estratégia/Big Idea já existentes.
+Íris traduz essa direção em conversa e compara três aberturas; Apolo encena a passagem emocional
+e o resultado real; Psique confronta as palavras e a peça final com identificação, desejo e
+facilidade, além de clareza técnica; Têmis preserva verdade e limites. Não criar novo agente,
+subprocesso ou aprovação humana para essa melhoria. Instruções operacionais continuam objetivas:
+não dificultar pagamento, entrega, suporte ou reembolso com persuasão desnecessária.
+
+Preço, condições, limites e prova permanecem acessíveis no ponto de decisão. Emoção não autoriza
+inventar depoimentos, escassez, superioridade, saúde, aceitação social ou vendas. Mercado, produto,
+versão e autorização continuam os do contexto vigente; a ampliação de Capella e a modelagem de
+Vega não autorizam transpor materiais entre produtos nem alterar ciclos encerrados.
+
+Aceite local comprova completude, proveniência, passagem, recuperação e revisão dos contratos;
+não comprova emoção sentida por pessoas nem conversão. Adoção comercial será medida por visita
+qualificada, consumo da prova, compras líquidas, entrega útil e contribuição, comparando uma
+mudança principal e preservando amostra, atribuição e custos estimados. CTR isolado não explica
+vendas. Matriz e evidências em `docs/homologacao/comunicacao-emocional-v2.md`.
+
 ## Roteiro comercial com identificação — 15/10/2026
 
 Íris entrega a fala audiovisual pronta, com situação reconhecível, desejo concreto, explicação

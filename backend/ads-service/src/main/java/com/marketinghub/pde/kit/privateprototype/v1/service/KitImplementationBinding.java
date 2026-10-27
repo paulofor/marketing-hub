@@ -65,6 +65,11 @@ public class KitImplementationBinding {
           "A chave já foi usada com outra seleção.");
       return plan(input.productId(), input.cycleId());
     }
+    var definition = read(architecture.resultJson()).path("productArchitecture");
+    require(
+        definition.path("kitProfileCode").asText("").isBlank()
+            && KitSpecialties.declaredProfile(definition).isEmpty(),
+        "O desenho já declara uma capacidade. Corrija o próprio contrato antes de trocar o perfil.");
     require(cycle.getRevision() == input.expectedRevision(), "A revisão mudou. Atualize o ciclo.");
     require(resolved(cycle, architecture).isEmpty(), "Esta versão já possui capacidade vinculada.");
     var proof =

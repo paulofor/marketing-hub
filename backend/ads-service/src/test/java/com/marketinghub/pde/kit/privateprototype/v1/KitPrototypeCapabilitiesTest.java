@@ -167,6 +167,20 @@ class KitPrototypeCapabilitiesTest {
             fixtures);
     assertThat(result.available()).isFalse();
     assertThat(result.bindingAvailable()).isTrue();
+    assertThat(
+            resolve(
+                    productId,
+                    15,
+                    "Atena aprovada",
+                    "Kit",
+                    "unsupported",
+                    false,
+                    "ADJUSTMENT",
+                    "OPEN",
+                    false,
+                    fixtures)
+                .bindingAvailable())
+        .isFalse();
     ((com.fasterxml.jackson.databind.node.ObjectNode) fixtures).put("providerCallsAuthorized", 1);
     assertThat(
             resolve(

@@ -73,7 +73,7 @@ própria registrada. Preparar código e testar com dependências locais não amp
 - A atestação de Mira v50 registra compatibilidade das fontes compartilhadas
   revalidadas. Preserva v49, experiência, orçamento, pareceres e publicação desabilitada.
 
-- Regressões finais: 262 testes de backend/arquitetura, 231 de Psique e 66 de
+- Regressões finais: 265 testes de backend/arquitetura, 231 de Psique e 66 de
   pagamentos executados sem falhas. Frontend: cinco testes dos componentes alterados, tipagem
   e seis percursos de navegador (dois produtos, desktop/iPhone/Pixel) aprovados.
 - Build local do frontend aprovado com o mesmo código, sem mapas de depuração; a
@@ -90,3 +90,11 @@ CodexStrategistRunner/CodexStrategistRunnerTest, já presentes na base da main.
 A reprodução local confirmou a mesma falha do Spotless. O formatador corrigiu
 somente layout, sem alterar tokens executáveis; 77 testes de Atena e o Spotless
 passaram localmente. O pacote de evidências compartilhadas continuou válido.
+
+A checagem de compatibilidade encontrou o hash antigo do dispatcher compartilhado
+no recibo operacional de Vega v2. A v3 preserva integralmente seus critérios,
+capturas, recibo e data; acrescenta somente a atestação da mudança de roteamento,
+com 23 regressões executadas e um teste local opcional não habilitado. Não redata
+controles antigos nem atribui novo parecer a Vega. O catálogo preserva v2 como
+histórico. A revisão local também protege contra substituir um perfil explicitamente
+declarado por uma seleção de compatibilidade.

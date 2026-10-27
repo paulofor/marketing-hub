@@ -13,7 +13,7 @@
     "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate"
   },
   "status": "EVIDENCE_COMPATIBILITY_ONLY",
-  "boundary": "Compatibilidade da prova privada por especialidade, preservando a experiência, os gates, os históricos e as autorizações de Mira. Backend: 170 testes direcionados aprovados, incluindo Mira privada. Capella: seis especialidades em duas identidades e passagem técnica/pareceres simulados até o gate. Nenhuma nova homologação, publicação ou autorização comercial de Mira.",
+  "boundary": "Compatibilidade da prova privada por especialidade, preservando a experiência, os gates, os históricos e as autorizações de Mira. Backend: 173 testes direcionados aprovados, incluindo Mira privada. Capella: seis especialidades em duas identidades e passagem técnica/pareceres simulados até o gate. Nenhuma nova homologação, publicação ou autorização comercial de Mira.",
   "operationalState": {
     "verifiedAt": "2026-10-21",
     "experimentStatus": "PLANNED",
@@ -229,7 +229,7 @@
     {
       "promptMode": "FULL",
       "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
-      "sha256": "a28a852e1085466030069abf907976a8d88c093dc7febe87b819cd9fa2ac2e74"
+      "sha256": "359c64d60dbccb7dd2b070f3a6cb1246bb2cbe69b61b8f108589c1f54ccb3ee7"
     },
     {
       "promptMode": "FULL",
@@ -570,7 +570,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
-      "sha256": "1a99808e5f8975293fdcdc2b6cb7bdd13bd43c01dd91a824157a169def4b6e0a",
+      "sha256": "6a09d43d435bd1cf0b4e4f711c84ec429a984a809b9ead6d58b14f6eb7513dcd",
       "reviewSummary": "Responsabilidade: impedir uso de prova adulterada, incompleta ou pertencente a outra candidata."
     },
     {
@@ -1174,14 +1174,9 @@
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/mira-private-candidate-v49.json",
     "previousManifestSha256": "9e140011bc2659e1a215b3e4cb39eaa7a6f7e71ee8cdbb53ccd7cc5dc10d8b18",
-    "validatedAt": "2026-10-27T02:48:46.381460+00:00",
-    "scope": "Compatibilidade da prova privada por especialidade, preservando a experiência, os gates, os históricos e as autorizações de Mira. Backend: 168 testes direcionados aprovados, incluindo Mira privada. Capella: seis especialidades em duas identidades e passagem técnica/pareceres simulados até o gate. Nenhuma nova homologação, publicação ou autorização comercial de Mira.",
+    "validatedAt": "2026-10-27T03:36:24.617969+00:00",
+    "scope": "Compatibilidade da prova privada por especialidade, preservando a experiência, os gates, os históricos e as autorizações de Mira. Backend: 173 testes direcionados aprovados, incluindo Mira privada. Capella: seis especialidades em duas identidades e passagem técnica/pareceres simulados até o gate. Nenhuma nova homologação, publicação ou autorização comercial de Mira. A mudança do catálogo operacional preserva a entrada de Mira e versiona somente a compatibilidade do dispatcher de Vega.",
     "changedEvidence": [
-      {
-        "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeRegistrationTest.java",
-        "previousSha256": "32982076595f4356809229aa49de25925fac3020c875cffde73617e0805001fe",
-        "sha256": "e16acf8b697afb239a6979dd75d974af15cd79c43f8adc6ac0f3a829e04eda7a"
-      },
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
         "previousSha256": "ab1f7a7cf5c64511e7e6de51aaaf623d713e75ae951bbc377e162fa32505b38e",
@@ -1203,6 +1198,11 @@
         "sha256": "5ef5db7fc5846d6bf2c6ddf85ce6deacb5ef75538a7774be2c048f67df2ba026"
       },
       {
+        "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
+        "previousSha256": "a28a852e1085466030069abf907976a8d88c093dc7febe87b819cd9fa2ac2e74",
+        "sha256": "359c64d60dbccb7dd2b070f3a6cb1246bb2cbe69b61b8f108589c1f54ccb3ee7"
+      },
+      {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoBinding.java",
         "previousSha256": "54c10e6de1b7ffbcc263c5df953f1a0375e2b80b6eac8c177eb70f6bdc040b72",
         "sha256": "5768227b932b901edcd3effb18588c02789c872f0be76866f72227251be8fe4b"
@@ -1211,6 +1211,16 @@
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValueFlowProjection.java",
         "previousSha256": "7cb85d511243823412cdfbe9d893dc4b57dd01f08060d69ccf4adf9b848ef666",
         "sha256": "e852062e9b01f82b601e6ba95cc0122e20dd1e86da395ea5a14fa6d5a22eb012"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeRegistrationTest.java",
+        "previousSha256": "32982076595f4356809229aa49de25925fac3020c875cffde73617e0805001fe",
+        "sha256": "e16acf8b697afb239a6979dd75d974af15cd79c43f8adc6ac0f3a829e04eda7a"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
+        "previousSha256": "1a99808e5f8975293fdcdc2b6cb7bdd13bd43c01dd91a824157a169def4b6e0a",
+        "sha256": "6a09d43d435bd1cf0b4e4f711c84ec429a984a809b9ead6d58b14f6eb7513dcd"
       }
     ],
     "validationReport": "docs/homologacao/capella-homologacao-beleza-v1.md"

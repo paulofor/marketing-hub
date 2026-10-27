@@ -141,6 +141,45 @@ class KitImplementationBindingTest {
     verify(f.events, never()).saveAndFlush(any());
   }
 
+  /** A seleção de compatibilidade não substitui um perfil explícito, válido ou desconhecido. */
+  @ParameterizedTest
+  @ValueSource(strings = {"nails-v1", "beauty-v1", "unsupported"})
+  void refusesOverridingExplicitArchitectureProfile(String code) {
+    var f = new Fixture(7);
+    var explicit =
+        new AgentTaskFunctionalSnapshot(
+            829L,
+            126L,
+            "pde-commercial-plan-offer",
+            "productArchitecture",
+            "landing-generator",
+            "COMPLETED",
+            Instant.EPOCH,
+            Instant.EPOCH,
+            f.task
+                .resultJson()
+                .replace(
+                    "\"productArchitecture\":{",
+                    "\"productArchitecture\":{\"kitProfileCode\":\"" + code + "\","));
+    when(f.tasks.findFunctionalSnapshots(anyString(), anySet(), any()))
+        .thenReturn(List.of(explicit));
+    var plan = f.service.plan(7L, 15L);
+    assertThatThrownBy(
+            () ->
+                f.service.bind(
+                    new Bind(
+                        UUID.randomUUID(),
+                        2,
+                        7L,
+                        15L,
+                        829L,
+                        plan.architectureSha256(),
+                        "beauty-v1",
+                        "QA")))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    verify(f.events, never()).saveAndFlush(any());
+  }
+
   /** Responsabilidade: fornecer dependências locais, mantendo o contrato histórico do caso real. */
   private static final class Fixture {
     final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);

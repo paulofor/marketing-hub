@@ -88,6 +88,7 @@ public class KitPrototypeCapabilities {
             "O contrato não identifica um perfil de kit suportado e inequívoco; não será inferido por nome ou ID.",
             null,
             Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+                && definition.path("kitProfileCode").asText("").isBlank()
                 && KitSpecialties.privateAdapterSupported(definition));
       return new Capability(
           true,

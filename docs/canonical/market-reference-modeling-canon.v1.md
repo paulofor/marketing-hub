@@ -49,6 +49,20 @@ Plutus estima custos e contribuição sem confundir ausência com zero. Dédalo 
 
 A pesquisa concluída não é produto funcionando; parecer aprovado não é demanda. Concorrência é sinal de mercado, não evidência das nossas vendas. A tela mostra estado real, fontes, passagens e acesso à cadeia, sem afirmar etapas não executadas.
 
+### Memória factual dos sucessores — 27/10/2026
+
+A memória do ciclo pode transportar `inheritedReferenceResearch`: fontes congeladas de uma
+adoção ancestral do mesmo produto, concluída antes da criação do sucessor. Esse bloco é
+histórico (`historicalContextOnly=true`, `adoptionInherited=false`), distinto de
+`referenceModeling`. Não cria outra adoção, não transfere a estratégia aprovada e não substitui
+a adoção própria quando aplicável. A Big Idea, a hipótese e os aceites do novo ciclo prevalecem.
+
+Preservar IDs, datas, observações e limitações; reavaliar atualidade antes de usar. Não repetir
+Argos apenas porque uma passagem deixou de entregar fontes já pagas. Percorrer somente a
+linhagem explícita do mesmo produto, recusando ciclos inválidos, fontes futuras e tarefas
+anteriores ao sucessor. Adoção própria mantém seu contrato e não recebe pesquisa substituta.
+Nenhuma consulta dessa memória inicia tarefa, altera saldo ou registra evidência de mercado.
+
 ### Recuperação após reconexão — 26/10/2026
 
 Reconectar Argos não retoma uma pesquisa automaticamente. A tela deve oferecer retomada explícita

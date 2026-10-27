@@ -7739,3 +7739,9 @@ Não houve nova medição de vendas, ROI ou demanda.
   limites comerciais. Hipótese de melhoria: menos espera e menos contexto divergente
   entre pesquisa, estratégia e construção. Resultado comercial ainda não medido.
 - [Matriz e evidências locais](../homologacao/vega-international-direction-v1.md).
+
+### 27/10/2026 — Capella #108: autorização e contexto das revisões
+
+- Decisão #3786 registrada pela tela: US$30 cumulativos de preparação/revisão e R$89,95 totais de anúncios por cinco dias após homologação, sem novo audiovisual pago. Base conhecida antes da retomada: US$25,5265436 estimados.
+- Retomada da execução #87 produziu Psique #837, bloqueada antes da inferência porque a ressalva condicional da estratégia #827 eliminava indevidamente a identidade do contexto. Arquitetura #829 e homologação #834 permanecem válidas.
+- Correção compartilhada e regressões: [registro de homologação](../homologacao/capella-ressalva-protocolo-2026-10-27.md), [PR #5719](https://github.com/paulofor/marketing-hub/pull/5719). 43 testes backend, 89 de Atena e 16 do pacote de evidências aprovados localmente. A publicação e a continuação operacional serão comprovadas no PR; este registro não declara lançamento ou resultado comercial.

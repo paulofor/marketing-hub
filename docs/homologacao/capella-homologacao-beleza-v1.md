@@ -82,3 +82,11 @@ própria registrada. Preparar código e testar com dependências locais não amp
   componentes reais e as dependências externas foram simuladas.
 - Shell: bash -n e ShellCheck aprovados. Pacote de evidências comerciais e seus
   testes aprovados; a atestação anterior de Mira permanece imutável.
+
+### Ajuste identificado pelo CI
+
+O job de ciclos no MySQL reproduziu formatação pendente nas duas classes
+CodexStrategistRunner/CodexStrategistRunnerTest, já presentes na base da main.
+A reprodução local confirmou a mesma falha do Spotless. O formatador corrigiu
+somente layout, sem alterar tokens executáveis; 77 testes de Atena e o Spotless
+passaram localmente. O pacote de evidências compartilhadas continuou válido.

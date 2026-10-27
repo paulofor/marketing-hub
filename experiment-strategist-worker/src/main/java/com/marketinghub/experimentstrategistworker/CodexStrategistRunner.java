@@ -261,24 +261,27 @@ public class CodexStrategistRunner {
     return command;
   }
 
-  /** Inclui o núcleo estratégico na Big Idea e preserva os contratos próprios das outras pesquisas. */
+  /**
+   * Inclui o núcleo estratégico na Big Idea e preserva os contratos próprios das outras pesquisas.
+   */
   private String prompt(StrategistJob job, boolean clarityAvailable) throws IOException {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
     boolean bigIdea = BigIdeaResearchContract.MODE.equals(job.authorityMode());
-    String activity = read(bigIdea
-            ? "prompts/product-big-idea/v1/research.md"
-            : assumptions
-                ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
-                : "prompts/experiment-strategist/v2/research.md")
-        .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
-        .replace("{{BEHAVIORAL_MEMORY}}", "Incluida no snapshot de evidencias.")
-        .replace("{{BEHAVIORAL_SCIENCE_LIBRARY}}", read("behavioral-science/v1/library.md"))
-        .replace(
-            "{{CLARITY_CAPABILITY}}",
-            clarityAvailable
-                ? "DISPONIVEL: consulte somente snapshots agregados por PAGE, SOURCE e DEVICE."
-                : "INDISPONIVEL: declare a lacuna e use somente o funil interno; não invente dados.")
-        .replace("{{RESEARCH_QUESTION}}", text(job.researchQuestion()));
+    String activity =
+        read(bigIdea
+                ? "prompts/product-big-idea/v1/research.md"
+                : assumptions
+                    ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
+                    : "prompts/experiment-strategist/v2/research.md")
+            .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
+            .replace("{{BEHAVIORAL_MEMORY}}", "Incluida no snapshot de evidencias.")
+            .replace("{{BEHAVIORAL_SCIENCE_LIBRARY}}", read("behavioral-science/v1/library.md"))
+            .replace(
+                "{{CLARITY_CAPABILITY}}",
+                clarityAvailable
+                    ? "DISPONIVEL: consulte somente snapshots agregados por PAGE, SOURCE e DEVICE."
+                    : "INDISPONIVEL: declare a lacuna e use somente o funil interno; não invente dados.")
+            .replace("{{RESEARCH_QUESTION}}", text(job.researchQuestion()));
     return bigIdea
         ? read("prompts/experiment-strategist/v1/agent-core.md") + "\n\n" + activity
         : activity;

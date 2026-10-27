@@ -30,11 +30,11 @@ class PdeOperationalControlEvidenceTest {
         (ObjectNode)
             json.readTree(
                 """
-      {"contractVersion":"PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1","productSlug":"original","prototypeVersion":"v3",
-       "status":"PASS","origin":"LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES","providerCalls":0,"commercialSideEffects":false,
-       "requiredCriteria":["CONCURRENT_SINGLE_CONSUMPTION"],
-       "criteria":[{"code":"CONCURRENT_SINGLE_CONSUMPTION","status":"PASS","testMethod":"concurrentGenerationConsumesOnce"}]}
-      """);
+                {"contractVersion":"PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1","productSlug":"original","prototypeVersion":"v3",
+                 "status":"PASS","origin":"LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES","providerCalls":0,"commercialSideEffects":false,
+                 "requiredCriteria":["CONCURRENT_SINGLE_CONSUMPTION"],
+                 "criteria":[{"code":"CONCURRENT_SINGLE_CONSUMPTION","status":"PASS","testMethod":"concurrentGenerationConsumesOnce"}]}
+                """);
     report.put("generatedAt", Instant.now().minusSeconds(60).toString());
     report.put("frontendSourceFingerprint", "a".repeat(64));
     report.put("testReceiptSha256", "b".repeat(64));
@@ -330,7 +330,7 @@ class PdeOperationalControlEvidenceTest {
         .thenReturn(new ByteArrayResource(bytes));
   }
 
-  /** Confere controles, compatibilidade do despacho e encerramentos sem reclassificar histórico. */
+  /** Confere a compatibilidade v4, preservando os controles e recibos históricos v2 e v3. */
   @Test
   void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
     var real =
@@ -339,7 +339,7 @@ class PdeOperationalControlEvidenceTest {
     var evidence =
         real.resolve("metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
             .orElseThrow();
-    String previousHash = "87b8d3d08032dd54b86b4ed5400f7b3792746d95a5e102376ab9914eb026102e";
+    String previousHash = "6a79f8a5731646c18ecfe4b4ec6547f27a16dd011e20dd5b490e331471968b46";
     var previous =
         real.resolveReviewed(
                 "metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel", previousHash)
@@ -347,6 +347,15 @@ class PdeOperationalControlEvidenceTest {
     assertThat(evidence.path("criteria")).isEqualTo(previous.path("criteria"));
     assertThat(evidence.path("generatedAt")).isEqualTo(previous.path("generatedAt"));
     assertThat(evidence.path("testReceiptSha256")).isEqualTo(previous.path("testReceiptSha256"));
+    var historicalV2 =
+        real.resolveReviewed(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+                "87b8d3d08032dd54b86b4ed5400f7b3792746d95a5e102376ab9914eb026102e")
+            .orElseThrow();
+    assertThat(historicalV2.path("criteria")).isEqualTo(previous.path("criteria"));
+    assertThat(historicalV2.path("testReceiptSha256"))
+        .isEqualTo(previous.path("testReceiptSha256"));
     var compatibility = evidence.path("compatibilityAttestation");
     assertThat(compatibility.path("previousReportSha256").asText()).isEqualTo(previousHash);
     assertThat(fileHash(compatibility.path("evidencePath").asText()))

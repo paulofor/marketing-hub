@@ -235,3 +235,28 @@ Quando o desenho aprovado já declara explicitamente a capacidade (`kitProfileCo
 alias documentado no formato/referência), não exigir outra seleção do operador. O
 registro independente resolve somente contratos anteriores sem esse código. Ambas as
 origens preservam o ID/hash da arquitetura na prova e recusam alteração posterior.
+
+### Demonstração fotográfica versionada — 27/10/2026
+
+A família privada `beauty-v2` usa seis perfis `*-v2`, com referências Pexels locais
+cuja origem, licença e SHA-256 estão em
+`lead-portal-payments-service/src/main/resources/kits/reference-v2/manifest.json`.
+São cinco fotografias por especialidade, reaproveitadas em dez composições; não são
+trabalhos realizados pela profissional e não recebem aprovação comercial implícita.
+A peça deve identificar isso de forma legível. O compositor não chama provedor pago.
+
+O callback existente `/api/pde/kit/private/v1/stage-executions/{id}/result` recebe
+`visualReferences` para esses perfis. O transporte é multipart, com `metadata` JSON
+e `artifact` binário, limitado a 32 MiB; o callback JSON anterior permanece compatível.
+Não elevar globalmente o limite de strings JSON para acomodar base64.
+O backend exige identidade, licença, diversidade,
+hashes e `commercialApproval=false`, persistindo a origem no manifesto do artefato.
+O ZIP continua contendo somente os 36 arquivos úteis. Psique recebe o recibo e a
+captura ampliada da arte; dimensões corretas e download funcional não comprovam
+qualidade visual nem persuasão.
+
+`beauty-v1` e os perfis anteriores continuam imutáveis. A seleção administrativa
+pode vincular a família v2 somente a um desenho compatível sem perfil explícito;
+não substitui um contrato já vinculado nem parecer histórico. Mudança das condições
+da experiência exige sucessor conforme o cânone de ciclos. A biblioteca de entrega
+comercial aprovada, suas quantidades e as revisões independentes permanecem exigidas.

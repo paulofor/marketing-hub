@@ -43,7 +43,7 @@ public class KitImplementationBinding {
         architecture.id(),
         hash(architecture),
         resolved(cycle, architecture).orElse(null),
-        List.of(KitSpecialties.BEAUTY));
+        List.of(KitSpecialties.BEAUTY, KitSpecialties.BEAUTY_REFERENCE));
   }
 
   /** Registra seleção explícita e idempotente; mudança do desenho invalida o vínculo antigo. */
@@ -51,7 +51,7 @@ public class KitImplementationBinding {
   public Plan bind(Bind input) {
     var cycle = cycles.findLocked(input.productId(), input.cycleId()).orElseThrow();
     var architecture = architecture(cycle);
-    require(KitSpecialties.BEAUTY.equals(input.profileCode()), "Capacidade não suportada.");
+    require(KitSpecialties.isFamily(input.profileCode()), "Capacidade não suportada.");
     require(
         Objects.equals(architecture.id(), input.architectureTaskId())
             && hash(architecture).equals(input.architectureSha256()),
@@ -69,7 +69,8 @@ public class KitImplementationBinding {
     require(
         definition.path("kitProfileCode").asText("").isBlank()
             && KitSpecialties.declaredProfile(definition).isEmpty(),
-        "O desenho já declara uma capacidade. Corrija o próprio contrato antes de trocar o perfil.");
+        "O desenho já declara uma capacidade. Corrija o próprio contrato antes de trocar o"
+            + " perfil.");
     require(cycle.getRevision() == input.expectedRevision(), "A revisão mudou. Atualize o ciclo.");
     require(resolved(cycle, architecture).isEmpty(), "Esta versão já possui capacidade vinculada.");
     var proof =
@@ -95,7 +96,8 @@ public class KitImplementationBinding {
     event.setAction(ACTION);
     event.setOperatorName(input.operatorName());
     event.setSummary(
-        "Capacidade de composição por especialidade vinculada. Pacotes e homologação ainda pendentes.");
+        "Capacidade de composição por especialidade vinculada. Pacotes e homologação ainda"
+            + " pendentes.");
     event.setEvidenceReference("internal://tasks/" + architecture.id());
     event.setEvidenceJson(proof.toString());
     event.setCreatedAt(cycle.getUpdatedAt());
@@ -127,7 +129,7 @@ public class KitImplementationBinding {
                     && cycle.getProductVersion().equals(p.path("productVersion").asText())
                     && p.path("architectureTaskId").asLong() == architecture.id()
                     && hash(architecture).equals(p.path("architectureSha256").asText())
-                    && KitSpecialties.BEAUTY.equals(p.path("profileCode").asText()))
+                    && KitSpecialties.isFamily(p.path("profileCode").asText()))
         .map(p -> p.path("profileCode").asText());
   }
 
@@ -158,7 +160,7 @@ public class KitImplementationBinding {
         && "APPROVE".equals(read(task.resultJson()).path("decision").asText())
         && (resolved(cycle, task).isPresent()
             || KitSpecialties.declaredProfile(read(task.resultJson()).path("productArchitecture"))
-                .filter(KitSpecialties.BEAUTY::equals)
+                .filter(KitSpecialties::isFamily)
                 .isPresent());
   }
 

@@ -1,0 +1,131 @@
+{
+  "verifiedAt": "2026-10-27T17:12:20.454072+00:00",
+  "scope": "Compatibilidade do despacho de Vega após acrescentar capturas de arte e recuperação para a família privada beauty-v2; os controles e pareceres anteriores permanecem históricos.",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "testSource": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+  "testSourceSha256": "58d29e595fe7496c0f6b6baf6518eb1b42d42d229a2442c8f29093d303215aea",
+  "executedCases": [
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsAlcyoneWithoutContinuityVersionBeforeLaunchingBrowser",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsMiraCandidateWithMismatchedLineage",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsHumanEvidenceClaimBeforeCallback",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsProductReferenceFromAnotherProduct",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsAnotherProductBeforeLaunchingMiraScenarios",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsPlannedCycleWithoutExecutableUrl",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[3]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[4]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[5]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[6]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[7]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[8]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsAlcyoneSafetyWithStructuredOutcome",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsAlcyoneSafetyWithoutStructuredOutcome",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedVegaVersion(String)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedVegaVersion(String)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedVegaVersion(String)[3]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsMiraCandidateWithoutItsFullMatrix",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsCompleteTechnicalHarnessWithoutPersistingSecret",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "returnsCompleteBlockedHarnessForAuditableFailureCallback",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedScreenshotTypeBeforeCallback",
+      "status": "PASS"
+    }
+  ],
+  "optionalSkipped": 1,
+  "boundaries": [
+    "Os controles e capturas anteriores conservam sua data e seu resultado.",
+    "Esta regressão verifica o roteamento e a validação do contrato; não reexecuta a jornada ou controles de Vega no MySQL.",
+    "Nenhuma nova aprovação independente ou evidência comercial é atribuída."
+  ]
+}

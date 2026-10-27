@@ -40,12 +40,21 @@
     $('video-error').hidden = true;
     video.onerror = () => { $('video-error').hidden = false; };
   }
+  // A ampliação é exclusiva da nova versão; não altera arquivos nem dispara composição.
+  for (const id of ['post', 'story']) $('enlarge-' + id).onclick = () => {
+    $('enlarged-art').src = $(id).src;
+    $('enlarged-art').alt = $(id).alt + ' ampliado';
+    $('art-dialog').showModal();
+  };
+  $('close-art').onclick = () => $('art-dialog').close();
   async function showResult() {
     if (displaying === current.id) return;
     displaying = current.id;
     for (const url of imageUrls) URL.revokeObjectURL(url);
     imageUrls = [];
     const first = current.firstApplication;
+    const references = current.profileCode === 'beauty-v2' || current.profileCode?.endsWith('-v2');
+    for (const id of ['post', 'story']) $('enlarge-' + id).hidden = !references;
     $('caption').value = first.caption;
     $('message').value = first.message;
     const fileLabels = { posts: 'Post', stories: 'Story', legendas: 'Legenda', mensagens: 'Mensagem' };

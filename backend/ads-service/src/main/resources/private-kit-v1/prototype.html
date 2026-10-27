@@ -25,7 +25,7 @@
 </form></section>
 <section id="result" hidden><h2>Primeira aplicação</h2><p>Copie a legenda de hoje ou guarde o pacote completo. Confira abaixo as artes e os textos desta aplicação.</p>
 <div class="primary-actions"><button id="copy-caption">Copiar legenda</button><button id="download" class="secondary">Baixar o pacote completo</button></div><p id="download-status" role="status"></p>
-<div class="art-grid"><figure><img id="post" alt="Post da primeira aplicação"><figcaption>Post · 1080 × 1080</figcaption></figure><figure><img id="story" alt="Story da primeira aplicação"><figcaption>Story · 1080 × 1920</figcaption></figure></div>
+<div class="art-grid"><figure><img id="post" alt="Post da primeira aplicação"><figcaption>Post · 1080 × 1080 <button type="button" id="enlarge-post" class="secondary" hidden>Ampliar post</button></figcaption></figure><figure><img id="story" alt="Story da primeira aplicação"><figcaption>Story · 1080 × 1920 <button type="button" id="enlarge-story" class="secondary" hidden>Ampliar story</button></figcaption></figure></div>
 <label>Legenda pronta<textarea id="caption" readonly rows="5"></textarea></label>
 <label>Mensagem pronta<textarea id="message" readonly rows="3"></textarea></label><button id="copy-message">Copiar mensagem</button>
 <details><summary>Calendário e conteúdo completo</summary><pre id="calendar"></pre><ul id="files"></ul></details>
@@ -33,4 +33,4 @@
 <button id="exit" class="secondary">Sair e retomar depois</button>
 </section><section id="resume" hidden><h2>Seu pacote ficou guardado</h2><p>Você pode retomar esta mesma entrada e seus arquivos sem gerar novamente.</p><button id="return">Retomar o pacote</button></section>
 <details class="video-demo" id="video-demo" hidden><summary>Ver a demonstração do kit</summary><p>O vídeo é opcional. Você pode preparar, copiar e baixar seu kit sem assistir.</p><video id="kit-video" aria-label="Demonstração do kit de divulgação" controls playsinline preload="none"></video><p id="video-error" role="status" hidden>O vídeo não abriu. Você pode continuar e usar seu kit normalmente.</p><details><summary>Ler a explicação do vídeo</summary><p id="video-captions"></p></details></details>
-</main></body></html>
+<dialog id="art-dialog" aria-labelledby="art-dialog-title"><h2 id="art-dialog-title">Confira sua arte</h2><button type="button" id="close-art">Fechar ampliação</button><p>Amplie com o gesto de pinça ou o zoom do navegador para conferir os detalhes.</p><img id="enlarged-art" alt="Arte ampliada para conferência"></dialog></main></body></html>

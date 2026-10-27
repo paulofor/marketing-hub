@@ -39,7 +39,8 @@ public class KitPrototypeCapabilities {
         || !(Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
             || LearningCycleRules.VIDEO_STAGES.contains(cycle.getStage())))
       return unavailable(
-          "A implementação privada exige o mesmo ciclo aberto em ajuste, produção audiovisual ou validação.");
+          "A implementação privada exige o mesmo ciclo aberto em ajuste, produção audiovisual ou"
+              + " validação.");
     try {
       var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
       var planning =
@@ -85,7 +86,8 @@ public class KitPrototypeCapabilities {
         return new Capability(
             false,
             null,
-            "O contrato não identifica um perfil de kit suportado e inequívoco; não será inferido por nome ou ID.",
+            "O contrato não identifica um perfil de kit suportado e inequívoco; não será inferido"
+                + " por nome ou ID.",
             null,
             Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
                 && definition.path("kitProfileCode").asText("").isBlank()
@@ -93,7 +95,11 @@ public class KitPrototypeCapabilities {
       return new Capability(
           true,
           profile.orElseThrow(),
-          "O compositor registrado pode materializar este contrato com fixtures de QA, sem chamadas pagas.",
+          profile.orElseThrow().endsWith("-v2")
+              ? "Demonstração com referências fotográficas licenciadas e rastreáveis; não comprova"
+                    + " trabalho do profissional nem aprovação comercial. Sem chamadas pagas."
+              : "O compositor registrado pode materializar este contrato com fixtures de QA, sem"
+                    + " chamadas pagas.",
           prototypeUrl);
     } catch (Exception ex) {
       log.error(
@@ -103,7 +109,8 @@ public class KitPrototypeCapabilities {
           cycle.getExperimentId(),
           ex);
       return unavailable(
-          "O contrato de implementação não pôde ser conferido. Preserve a versão e corrija a entrada.");
+          "O contrato de implementação não pôde ser conferido. Preserve a versão e corrija a"
+              + " entrada.");
     }
   }
 

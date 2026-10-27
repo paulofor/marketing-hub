@@ -94,4 +94,32 @@ describe("Vínculo do compositor", () => {
       await waitFor(() => expect(button).not.toBeDisabled());
     },
   );
+  it("vincula referências somente por escolha explícita e disponibilidade do backend", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        revision: 2,
+        architectureTaskId: 829,
+        architectureSha256: "a".repeat(64),
+        boundProfileCode: null,
+        installedProfiles: ["beauty-v1", "beauty-v2"],
+      },
+    });
+    vi.mocked(axios.post).mockResolvedValue({ data: {} });
+    show(707);
+    const select = await screen.findByLabelText(/Material da demonstração/);
+    expect(select).toHaveValue("beauty-v1");
+    fireEvent.change(select, { target: { value: "beauty-v2" } });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Preparar implementação por especialidade",
+      }),
+    );
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ productId: 707, profileCode: "beauty-v2" }),
+        expect.any(Object),
+      ),
+    );
+  });
 });

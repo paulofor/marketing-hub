@@ -123,4 +123,32 @@ class LearningCyclePrototypeContextTest {
     assertThat(service.hasSupersededKitProof(cycle)).isFalse();
     assertThat(event.getEvidenceJson()).isEqualTo(original);
   }
+
+  /** Ambas as famílias exigem vínculo atual do desenho, sem herdar aceite por troca de perfil. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"beauty-v1", "beauty-v2"})
+  void requiresCurrentArchitectureForEveryFamily(String profile) {
+    var cycle = new LearningSalesCycle();
+    cycle.setId(2L);
+    cycle.setStatus("OPEN");
+    cycle.setProductVersion("new-v9");
+    var event = new LearningSalesCycleEvent();
+    event.setAction("REGISTER_PROTOTYPE");
+    event.setCreatedAt(Instant.now());
+    var evidence = json.createObjectNode().put("productVersion", "new-v9");
+    var proof =
+        proof()
+            .put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1")
+            .put("profileCode", profile)
+            .put("packageContractVersion", "PDE_PRIVATE_KIT_PACKAGE_V2");
+    evidence.set("privatePrototype", proof);
+    event.setEvidenceJson(evidence.toString());
+    when(events.findByCycleIdOrderByRevisionAsc(2L)).thenReturn(List.of(event));
+    assertThat(service.resolve(cycle)).isEmpty();
+    var binding =
+        mock(com.marketinghub.pde.kit.privateprototype.v1.service.KitImplementationBinding.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "kitBinding", binding);
+    when(binding.currentProof(eq(cycle), any())).thenReturn(true);
+    assertThat(service.resolve(cycle)).isPresent();
+  }
 }

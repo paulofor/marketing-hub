@@ -94,7 +94,9 @@ public class PrivateKitCompositionWorker {
     }
   }
 
-  /** Mantém claim e ZIP duráveis até o backend confirmar o resultado ou a falha terminal. */
+  /**
+   * Mantém claim, ZIP e origem visual duráveis; referências usam transporte binário recuperável.
+   */
   private void process(Path file) {
     String id = file.getFileName().toString().replace(".json", "");
     try {
@@ -144,6 +146,10 @@ public class PrivateKitCompositionWorker {
           var prepared =
               composer.preparePrivateCandidate(briefing, task.path("profileCode").asText(), id);
           job.put("zipPath", prepared.zipPath().toString());
+          job.set(
+              "visualReferences",
+              com.marketinghub.payments.service.kit.LicensedKitReferences.provenance(
+                  task.path("profileCode").asText()));
           atomic(file, json.writeValueAsBytes(job));
           log.info(
               "Compositor privado: arquivo preservado artifactId={} cycleId={} version={}"
@@ -169,21 +175,48 @@ public class PrivateKitCompositionWorker {
       byte[] bytes = Files.readAllBytes(zip);
       String sha = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
       try {
-        client
-            .post()
-            .uri(ROOT + "/" + id + "/result")
-            .body(
-                Map.of(
-                    "claimKey",
-                    claim,
-                    "zipBase64",
-                    Base64.getEncoder().encodeToString(bytes),
-                    "zipSha256",
-                    sha,
-                    "providerCalls",
-                    0))
-            .retrieve()
-            .toBodilessEntity();
+        if (job.path("visualReferences").isObject()) {
+          var multipart = new org.springframework.util.LinkedMultiValueMap<String, Object>();
+          var metadataHeaders = new org.springframework.http.HttpHeaders();
+          metadataHeaders.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+          multipart.add(
+              "metadata",
+              new org.springframework.http.HttpEntity<>(
+                  Map.of(
+                      "claimKey",
+                      claim,
+                      "zipSha256",
+                      sha,
+                      "providerCalls",
+                      0,
+                      "visualReferences",
+                      job.path("visualReferences")),
+                  metadataHeaders));
+          multipart.add("artifact", new org.springframework.core.io.FileSystemResource(zip));
+          client
+              .post()
+              .uri(ROOT + "/" + id + "/result")
+              .contentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA)
+              .body(multipart)
+              .retrieve()
+              .toBodilessEntity();
+        } else {
+          client
+              .post()
+              .uri(ROOT + "/" + id + "/result")
+              .body(
+                  Map.of(
+                      "claimKey",
+                      claim,
+                      "zipBase64",
+                      Base64.getEncoder().encodeToString(bytes),
+                      "zipSha256",
+                      sha,
+                      "providerCalls",
+                      0))
+              .retrieve()
+              .toBodilessEntity();
+        }
       } catch (HttpClientErrorException ex) {
         log.error(
             "Compositor privado: resultado recusado funcionalmente artifactId={} endpoint={}",

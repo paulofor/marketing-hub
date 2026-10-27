@@ -205,13 +205,41 @@ public class KitPrivateController {
   }
 
   /** Aceita o callback apenas após validar quantidade, dimensões, hash e vínculo do arquivo. */
-  @PostMapping("/stage-executions/{id}/result")
+  @PostMapping(value = "/stage-executions/{id}/result", consumes = MediaType.APPLICATION_JSON_VALUE)
   public void complete(
       @RequestHeader(value = "X-Payments-Auth", required = false) String token,
       @PathVariable String id,
       @Valid @RequestBody Result input) {
     authorize(token, compositorToken);
     service.complete(id, input);
+  }
+
+  /** Recebe o ZIP como binário e valida seu tamanho antes de carregar o conteúdo em memória. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Receber composição privada e origem visual sem base64")
+  @PostMapping(
+      value = "/stage-executions/{id}/result",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public void completeBinary(
+      @RequestHeader(value = "X-Payments-Auth", required = false) String token,
+      @PathVariable String id,
+      @Valid @RequestPart("metadata") BinaryResult metadata,
+      @RequestPart("artifact") org.springframework.web.multipart.MultipartFile artifact) {
+    authorize(token, compositorToken);
+    if (artifact.getSize()
+        > com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract.MAX_ZIP_BYTES)
+      throw new ResponseStatusException(
+          HttpStatus.PAYLOAD_TOO_LARGE, "Arquivo privado fora do limite.");
+    try {
+      service.completeBinary(id, metadata, artifact.getBytes());
+    } catch (IOException ex) {
+      log.error(
+          "Kit privado: leitura do ZIP falhou artifactId={} endpoint=stage-executions/result",
+          id,
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Não foi possível ler o arquivo privado.", ex);
+    }
   }
 
   /** Preserva a falha terminal, sem duplicar custo ou apagar a reserva anterior. */
@@ -259,7 +287,8 @@ public class KitPrivateController {
           .headers(privateHeaders())
           .header(
               "Content-Security-Policy",
-              "default-src 'self'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self'"
+              "default-src 'self'; img-src 'self' blob:; script-src 'self'; style-src 'self';"
+                  + " connect-src 'self'; media-src 'self'"
                   + (mediaOrigin.isBlank() ? "" : " " + mediaOrigin)
                   + "; frame-ancestors 'none'; base-uri 'self'")
           .contentType(MediaType.parseMediaType(type))

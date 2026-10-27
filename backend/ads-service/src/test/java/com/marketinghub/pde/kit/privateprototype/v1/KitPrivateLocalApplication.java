@@ -69,6 +69,8 @@ public class KitPrivateLocalApplication {
             "--integrations.pde-platform.internal-token=kit-local-internal-only",
             "--integrations.lead-portal-payments.auth-token=kit-local-payments-only",
             "--spring.mvc.problemdetails.enabled=true",
+            "--spring.servlet.multipart.max-file-size=32MB",
+            "--spring.servlet.multipart.max-request-size=33MB",
             "--spring.jpa.open-in-view=false",
             "--logging.level.root=WARN",
             "--logging.level.com.marketinghub.pde.kit=INFO");
@@ -152,7 +154,7 @@ public class KitPrivateLocalApplication {
 
   /**
    * Usa o resolvedor real sobre contratos sintéticos: formato novo e referência histórica de perfis
-   * distintos, sem substituir a decisão de capacidade.
+   * distintos, incluindo referências v2 quando solicitadas, sem substituir a decisão de capacidade.
    */
   @Bean
   KitPrototypeCapabilities capabilities() {
@@ -174,7 +176,8 @@ public class KitPrivateLocalApplication {
     var architectures =
         Map.of(
             "experiment:9007",
-                "{\"format\":\"Kit privado determinístico para nails-v1\",\"strategyReference\":\"Atena: fixture sintética\"}",
+                "{\"format\":\"Kit privado determinístico para"
+                    + " nails-v1\",\"strategyReference\":\"Atena: fixture sintética\"}",
             "experiment:9018",
                 "{\"format\":\"PRIVATE_HARNESS\",\"strategyReference\":\"Perfil barber-v1\"}",
             "experiment:9029",
@@ -185,6 +188,8 @@ public class KitPrivateLocalApplication {
         .thenAnswer(
             a -> {
               String architecture = architectures.get(a.<String>getArgument(1));
+              if (architecture != null && "true".equals(System.getenv("KIT_TEST_REFERENCE")))
+                architecture = architecture.replace("beauty-v1", "beauty-v2");
               return architecture == null
                   ? List.of()
                   : List.of(

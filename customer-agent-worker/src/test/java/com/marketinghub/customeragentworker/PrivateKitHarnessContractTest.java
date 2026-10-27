@@ -16,7 +16,9 @@ class PrivateKitHarnessContractTest {
   @TempDir Path work;
   private final ObjectMapper json = new ObjectMapper();
 
-  /** Comprova a matriz real e recusa formato anterior, quantidade incorreta e captura ausente. */
+  /**
+   * Comprova as matrizes v1/v2 e recusa formato anterior, quantidade incorreta e captura ausente.
+   */
   @Test
   void validatesLocalNineCaseReport() throws Exception {
     String path = System.getenv("KIT_LOCAL_REPORT");
@@ -42,7 +44,7 @@ class PrivateKitHarnessContractTest {
             "TECHNICAL",
             null,
             expected);
-    assertThat(artifacts).hasSize(15);
+    assertThat(artifacts).hasSize(report.path("profileCode").asText().endsWith("-v2") ? 21 : 15);
     for (String failure :
         List.of(
             "previous-format",

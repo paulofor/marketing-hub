@@ -65,7 +65,7 @@ public class LearningCyclePrototypeContext {
     }
   }
 
-  /** Lê prova da mesma versão e formato compatível sem recorrer a cadastro ou ciclo alheio. */
+  /** Lê prova da mesma versão e desenho das famílias instaladas, sem recorrer a ciclo alheio. */
   public Optional<JsonNode> resolve(LearningSalesCycle cycle) {
     var history = events.findByCycleIdOrderByRevisionAsc(cycle.getId());
     for (int i = history.size() - 1; i >= 0; i--) {
@@ -84,7 +84,8 @@ public class LearningCyclePrototypeContext {
                 .PACKAGE_CONTRACT_VERSION
                 .equals(proof.path("packageContractVersion").asText())) return Optional.empty();
         if ("DETERMINISTIC_PRIVATE_KIT_V1".equals(proof.path("runtimeKind").asText())
-            && "beauty-v1".equals(proof.path("profileCode").asText())
+            && com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.isFamily(
+                proof.path("profileCode").asText())
             && (kitBinding == null || !kitBinding.currentProof(cycle, proof)))
           return Optional.empty();
         ObjectNode acceptance = proof.deepCopy();

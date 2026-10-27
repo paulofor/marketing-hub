@@ -5,6 +5,7 @@ import java.util.List;
 /** Responsabilidade: declarar especialidades implementadas sem inferir capacidade pelo produto. */
 public final class KitSpecialties {
   public static final String BEAUTY = "beauty-v1";
+  public static final String BEAUTY_REFERENCE = "beauty-v2";
   private static final List<Specialty> BEAUTY_PROFILES =
       List.of(
           new Specialty("nails-v1", "Unhas", "Manicure e nail design"),
@@ -21,7 +22,22 @@ public final class KitSpecialties {
   /** Expõe somente opções do contrato executável, sem ampliar perfis históricos. */
   public static List<Specialty> profiles(String code) {
     if (BEAUTY.equals(code)) return BEAUTY_PROFILES;
-    return BEAUTY_PROFILES.stream().filter(p -> p.code().equals(code)).toList();
+    if (BEAUTY_REFERENCE.equals(code)) return referenceProfiles();
+    return java.util.stream.Stream.concat(BEAUTY_PROFILES.stream(), referenceProfiles().stream())
+        .filter(p -> p.code().equals(code))
+        .toList();
+  }
+
+  /** Reconhece as famílias instaladas sem trocar a versão de um contexto histórico. */
+  public static boolean isFamily(String code) {
+    return BEAUTY.equals(code) || BEAUTY_REFERENCE.equals(code);
+  }
+
+  /** Mantém as seis especialidades com identidade própria para as referências licenciadas. */
+  private static List<Specialty> referenceProfiles() {
+    return BEAUTY_PROFILES.stream()
+        .map(p -> new Specialty(p.code().replace("-v1", "-v2"), p.label(), p.serviceExample()))
+        .toList();
   }
 
   /** Resolve códigos explícitos e aliases documentados sem deduzir profissão de nomes ou IDs. */
@@ -32,7 +48,10 @@ public final class KitSpecialties {
     String format = definition.path("format").asText("");
     var matches =
         java.util.stream.Stream.concat(
-                BEAUTY_PROFILES.stream().map(Specialty::code), java.util.stream.Stream.of(BEAUTY))
+                java.util.stream.Stream.concat(
+                        BEAUTY_PROFILES.stream(), referenceProfiles().stream())
+                    .map(Specialty::code),
+                java.util.stream.Stream.of(BEAUTY, BEAUTY_REFERENCE))
             .filter(
                 code ->
                     code.equals(explicit)
@@ -81,7 +100,9 @@ public final class KitSpecialties {
           serviceExample,
           "Seu momento de " + label.toLowerCase(java.util.Locale.ROOT),
           serviceExample
-              + " em Cidade Exemplo. Quer conhecer as opções e os horários? Converse com Studio Exemplo pelo WhatsApp. Demonstração ilustrativa; não representa serviço realizado.");
+              + " em Cidade Exemplo. Quer conhecer as opções e os horários? Converse com Studio"
+              + " Exemplo pelo WhatsApp. Demonstração ilustrativa; não representa serviço"
+              + " realizado.");
     }
   }
 }

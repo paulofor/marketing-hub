@@ -22,6 +22,7 @@ export default function CycleKitImplementationBinding({
   cycle: LearningCycle;
 }) {
   const client = useQueryClient();
+  const [profileCode, setProfileCode] = useState("beauty-v1");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const root = "/api/pde/kit/private/v1/admin/implementations";
@@ -55,7 +56,7 @@ export default function CycleKitImplementationBinding({
           cycleId: cycle.id,
           architectureTaskId: plan.data.architectureTaskId,
           architectureSha256: plan.data.architectureSha256,
-          profileCode: "beauty-v1",
+          profileCode,
           operatorName: "Operador do Marketing Hub",
         },
         { timeout: 30000 },
@@ -81,6 +82,24 @@ export default function CycleKitImplementationBinding({
         os kits de cabelo, barbearia, maquiagem, sobrancelhas/cílios, estética
         não clínica e unhas.
       </p>
+      <label className="form-label d-block">
+        Material da demonstração *
+        <select
+          className="form-select"
+          value={profileCode}
+          onChange={(event) => setProfileCode(event.target.value)}
+          disabled={busy}
+        >
+          <option value="beauty-v1">
+            Ilustrações de teste — versão anterior
+          </option>
+          {plan.data.installedProfiles.includes("beauty-v2") && (
+            <option value="beauty-v2">
+              Referências fotográficas licenciadas — nova versão
+            </option>
+          )}
+        </select>
+      </label>
       <button
         className="btn btn-primary"
         type="button"
@@ -97,8 +116,9 @@ export default function CycleKitImplementationBinding({
       </button>
       <p className="small">
         Vincula o compositor ao desenho desta versão. Os arquivos ainda precisam
-        ser produzidos e testados; ilustrações de teste não aprovam a qualidade
-        comercial. Sem chamada paga, compra ou anúncio.
+        ser produzidos e testados; fotografias de referência e ilustrações de
+        teste não aprovam a qualidade comercial. Sem chamada paga, compra ou
+        anúncio.
       </p>
       {error && (
         <p role="alert" className="alert alert-danger">

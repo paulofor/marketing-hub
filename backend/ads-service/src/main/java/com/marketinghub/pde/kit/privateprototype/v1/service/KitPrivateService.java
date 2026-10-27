@@ -148,7 +148,8 @@ public class KitPrivateService {
     session.setPayloadJson(write(data));
     sessions.saveAndFlush(session);
     log.info(
-        "Kit privado: acesso emitido productId={} cycleId={} experimentId={} sessionId={} version={}",
+        "Kit privado: acesso emitido productId={} cycleId={} experimentId={} sessionId={}"
+            + " version={}",
         cycle.getProductId(),
         cycle.getId(),
         cycle.getExperimentId(),
@@ -201,7 +202,7 @@ public class KitPrivateService {
   /** Vincula a prova multiperfil ao desenho exato, mantendo recibos históricos sem alteração. */
   public com.fasterxml.jackson.databind.node.ObjectNode registrationEvidence(
       com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle cycle) {
-    if (!KitSpecialties.BEAUTY.equals(capabilities.resolve(cycle).profileCode()))
+    if (!KitSpecialties.isFamily(capabilities.resolve(cycle).profileCode()))
       return json.createObjectNode();
     require(implementationBinding != null, "A vinculação do compositor não está disponível.");
     return implementationBinding.registrationEvidence(cycle);
@@ -225,7 +226,7 @@ public class KitPrivateService {
         "Esta experiência usa somente contatos fictícios sem rota externa.");
     var payload = read(session.getPayloadJson());
     String profile = payload.path("profileCode").asText();
-    boolean multi = KitSpecialties.BEAUTY.equals(profile);
+    boolean multi = KitSpecialties.isFamily(profile);
     String selected = multi ? input.specialtyCode() : profile;
     require(
         KitSpecialties.profiles(profile).stream().anyMatch(p -> p.code().equals(selected)),
@@ -266,7 +267,8 @@ public class KitPrivateService {
       require(
           artifacts.countByCycleId(cycle.getId()) < (multi ? 36 : 6)
               && artifacts.countByCycleIdAndFixtureOwner(cycle.getId(), owner) < 2,
-          "O limite de composições da versão e duas por cenário/especialidade foi atingido. Não há renovação por dispositivo ou repetição.");
+          "O limite de composições da versão e duas por cenário/especialidade foi atingido. Não há"
+              + " renovação por dispositivo ou repetição.");
       artifact = new KitPrivateArtifact();
       artifact.setId(UUID.randomUUID().toString());
       artifact.setCycleId(cycle.getId());
@@ -313,23 +315,48 @@ public class KitPrivateService {
     return pending(a);
   }
 
-  /** Valida e aplica o resultado integral sem transformar resposta inválida em sucesso. */
+  /**
+   * Valida arquivos e origem visual e persiste ambos separadamente, sem aceitar resposta inválida.
+   */
   @Transactional
   public void complete(String id, Result input) {
+    completeBinary(
+        id,
+        new BinaryResult(
+            input.claimKey(), input.zipSha256(), input.providerCalls(), input.visualReferences()),
+        Base64.getDecoder().decode(input.zipBase64()));
+  }
+
+  /**
+   * Aplica o mesmo gate ao ZIP binário, sem ampliar limites do parser JSON para toda a aplicação.
+   */
+  @Transactional
+  public void completeBinary(String id, BinaryResult input, byte[] bytes) {
+    require(
+        bytes != null && bytes.length <= KitArtifactContract.MAX_ZIP_BYTES,
+        "Arquivo privado fora do limite.");
     var a = artifacts.locked(id).orElseThrow();
     require(
         input.claimKey().toString().equals(a.getClaimKey()),
         "Callback não pertence à tentativa reservada.");
     require(input.providerCalls() == 0, "A composição privada não admite provedor pago.");
-    byte[] bytes = Base64.getDecoder().decode(input.zipBase64());
     require(hash(bytes).equals(input.zipSha256()), "Hash do arquivo recebido diverge do callback.");
     if ("READY".equals(a.getStatus())) {
       require(input.zipSha256().equals(a.getZipSha256()), "Callback duplicado alterou o artefato.");
+      var references =
+          KitVisualReferenceContract.validate(a.getProfileCode(), input.visualReferences());
+      if (references != null)
+        require(
+            references.equals(read(a.getManifestJson()).path("visualReferences")),
+            "Callback duplicado alterou a origem visual.");
       return;
     }
     require("RUNNING".equals(a.getStatus()), "A tentativa não está em execução.");
     try {
       var manifest = contract.validate(bytes);
+      var references =
+          KitVisualReferenceContract.validate(a.getProfileCode(), input.visualReferences());
+      if (references != null) manifest.set("visualReferences", references);
       a.setZipBytes(bytes);
       a.setZipSha256(input.zipSha256());
       a.setManifestJson(write(manifest));
@@ -337,7 +364,8 @@ public class KitPrivateService {
       a.setFinishedAt(clock.instant());
       artifacts.saveAndFlush(a);
       log.info(
-          "Kit privado: composição aceita artifactId={} productId={} cycleId={} experimentId={} sha256={} bytes={} providerCalls=0",
+          "Kit privado: composição aceita artifactId={} productId={} cycleId={} experimentId={}"
+              + " sha256={} bytes={} providerCalls=0",
           a.getId(),
           a.getProductId(),
           a.getCycleId(),
@@ -467,7 +495,7 @@ public class KitPrivateService {
     var a = artifacts.findById(s.getArtifactId()).orElseThrow();
     var payload = read(s.getPayloadJson());
     String family = payload.path("profileCode").asText();
-    boolean multi = KitSpecialties.BEAUTY.equals(family);
+    boolean multi = KitSpecialties.isFamily(family);
     String selected = multi ? payload.path("input").path("specialtyCode").asText() : family;
     String owner = s.getScenarioCode() + (multi ? ":" + selected : "");
     require(
@@ -512,7 +540,7 @@ public class KitPrivateService {
         s.getScenarioCode(),
         s.getDeviceProfile(),
         data.path("profileCode").asText(),
-        KitSpecialties.BEAUTY.equals(data.path("profileCode").asText())
+        KitSpecialties.isFamily(data.path("profileCode").asText())
             ? "Capella — divulgação para profissionais de beleza"
             : "nails-v1".equals(data.path("profileCode").asText())
                 ? "Agenda Cheia Nail Design"
@@ -548,7 +576,8 @@ public class KitPrivateService {
           .orElse(null);
     } catch (RuntimeException ex) {
       log.error(
-          "Falha no vínculo audiovisual do kit productId={} cycleId={} experimentId={} sessionId={} version={}",
+          "Falha no vínculo audiovisual do kit productId={} cycleId={} experimentId={} sessionId={}"
+              + " version={}",
           session.getProductId(),
           session.getCycleId(),
           session.getExperimentId(),

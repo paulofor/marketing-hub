@@ -4,7 +4,7 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$repo_dir"
 : "${KIT_TEST_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo desta homologação}"
-export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -XX:ActiveProcessorCount=2"
+export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -XX:ActiveProcessorCount=2 -XX:+UseSerialGC"
 if [[ -z "${KIT_TEST_DB_HOST:-}" && "${DOCKER_HOST:-}" == tcp://sandbox-docker:* ]]; then
   export KIT_TEST_DB_HOST=sandbox-docker
 fi
@@ -52,7 +52,7 @@ PYAGENT
 backend_mock_agent="$(mock_agent "$round_dir/backend-classpath")"
 worker_mock_agent="$(mock_agent "$round_dir/worker-classpath")"
 backend_cp="backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat "$round_dir/backend-classpath")"
-java -Xmx384m -javaagent:"$backend_mock_agent" -cp "$backend_cp" com.marketinghub.pde.kit.privateprototype.v1.KitPrivateLocalApplication >"$round_dir/backend.log" 2>&1 &
+java -Xmx384m -Dserver.tomcat.threads.max=4 -Dspring.datasource.hikari.maximum-pool-size=2 -Dspring.datasource.hikari.minimum-idle=1 -javaagent:"$backend_mock_agent" -cp "$backend_cp" com.marketinghub.pde.kit.privateprototype.v1.KitPrivateLocalApplication >"$round_dir/backend.log" 2>&1 &
 backend_pid=$!
 for attempt in {1..60}; do
   if curl --fail --silent http://127.0.0.1:57282/api/pde/kit/private/v1/prototype > /dev/null; then break; fi
@@ -64,7 +64,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout "$round_dir/tls/test.k
 export NODE_EXTRA_CA_CERTS="$round_dir/tls/test.crt"
 pin="$(openssl x509 -in "$round_dir/tls/test.crt" -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl base64 -A)"
 chromium_path="${PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH:-/usr/bin/chromium}"
-printf '#!/usr/bin/env bash\nexec %q --ignore-certificate-errors-spki-list=%q "$@"\n' "$chromium_path" "$pin" >"$round_dir/tls/chromium-local.sh"
+printf '#!/usr/bin/env bash\nexec %q --disable-gpu --renderer-process-limit=2 --ignore-certificate-errors-spki-list=%q "$@"\n' "$chromium_path" "$pin" >"$round_dir/tls/chromium-local.sh"
 chmod +x "$round_dir/tls/chromium-local.sh"
 bash -n "$round_dir/tls/chromium-local.sh"
 shellcheck "$round_dir/tls/chromium-local.sh"
@@ -109,7 +109,7 @@ fi
 if [[ "${KIT_TEST_BEAUTY_ONLY:-false}" != true ]]; then
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/input.json" "$round_dir/report.json" "$round_dir/captures"
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/other-product.json" "$round_dir/other-product-report.json" "$round_dir/other-product-captures"
-KIT_SCENARIO_LOCAL=true KIT_LOCAL_INPUT="$round_dir/input.json" KIT_OTHER_LOCAL_INPUT="$round_dir/other-product.json" KIT_SCENARIO_RESULTS="$round_dir/scenario-results" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx512m' -Dtest=PrivateKitScenarioIntegrationTest test >"$round_dir/scenario-integration-tests.log" 2>&1
+KIT_SCENARIO_LOCAL=true KIT_LOCAL_INPUT="$round_dir/input.json" KIT_OTHER_LOCAL_INPUT="$round_dir/other-product.json" KIT_SCENARIO_RESULTS="$round_dir/scenario-results" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=PrivateKitScenarioIntegrationTest test >"$round_dir/scenario-integration-tests.log" 2>&1
 python3 - "$round_dir" <<'PY'
 import json,pathlib,shutil,sys
 root=pathlib.Path(sys.argv[1])
@@ -124,16 +124,24 @@ for context,report in (('input.json','report.json'),('other-product.json','other
 PY
 for profile in nails-v1 barber-v1; do
   flow_dir="$round_dir/flows/$profile"
-  VEGA_GATE_FLOW_ARTIFACTS="$flow_dir" PDE_OPERATIONAL_REPORT_FILE="" mvn -q -f meta-ad-approver-worker/pom.xml '-DargLine=-Xmx512m' -Dtest=CommercialBpmCycleIntegrationTest test >"$flow_dir/temis-tests.log" 2>&1
-  VEGA_GATE_FLOW_ARTIFACTS="$flow_dir" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx512m' -Dtest=VegaCycleGateFlowIntegrationTest test >"$flow_dir/gate-tests.log" 2>&1
+  VEGA_GATE_FLOW_ARTIFACTS="$flow_dir" PDE_OPERATIONAL_REPORT_FILE="" mvn -q -f meta-ad-approver-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=CommercialBpmCycleIntegrationTest test >"$flow_dir/temis-tests.log" 2>&1
+  VEGA_GATE_FLOW_ARTIFACTS="$flow_dir" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx256m' -Dtest=VegaCycleGateFlowIntegrationTest test >"$flow_dir/gate-tests.log" 2>&1
 done
 fi
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node infra/testing/private-kit/beauty-coverage.mjs "$round_dir/beauty-coverage"
 cat >"$round_dir/beauty-input.json" <<'JSON'
 {"mode":"TECHNICAL","sourceReference":"experiment:9037","productId":8037,"productSlug":"kit-local-beauty","profileCode":"beauty-v1","specialtyCode":"hair-v1","cycleId":7037,"prototypeVersion":"beauty-candidate-v1","captureSessionId":"kit-local-beauty-round","sourceUrl":"https://127.0.0.1:57284/api/pde/kit/private/v1/prototype"}
 JSON
+if [[ "${KIT_TEST_REFERENCE:-false}" == true ]]; then
+  python3 - "$round_dir/beauty-input.json" <<'PYREFERENCE'
+import json,pathlib,sys
+path=pathlib.Path(sys.argv[1]);value=json.loads(path.read_text())
+value.update(profileCode='beauty-v2',specialtyCode='hair-v2')
+path.write_text(json.dumps(value))
+PYREFERENCE
+fi
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/beauty-input.json" "$round_dir/beauty-report.json" "$round_dir/beauty-captures"
-KIT_SCENARIO_LOCAL=true KIT_SCENARIO_INPUT_KEYS=KIT_BEAUTY_LOCAL_INPUT KIT_BEAUTY_LOCAL_INPUT="$round_dir/beauty-input.json" KIT_SCENARIO_RESULTS="$round_dir/beauty-scenario-results" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx512m' -Dtest=PrivateKitScenarioIntegrationTest test >"$round_dir/beauty-scenarios.log" 2>&1
+KIT_SCENARIO_LOCAL=true KIT_SCENARIO_INPUT_KEYS=KIT_BEAUTY_LOCAL_INPUT KIT_BEAUTY_LOCAL_INPUT="$round_dir/beauty-input.json" KIT_SCENARIO_RESULTS="$round_dir/beauty-scenario-results" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=PrivateKitScenarioIntegrationTest test >"$round_dir/beauty-scenarios.log" 2>&1
 python3 - "$round_dir" <<'PYBEAUTY'
 import json,pathlib,shutil,sys
 root=pathlib.Path(sys.argv[1]);flow=root/'beauty-gate';flow.mkdir()
@@ -141,10 +149,10 @@ proof=json.loads((root/'beauty-report.json').read_text());proof['cycleId']=7037
 assert proof['decision']=='APPROVED' and len(proof['scenarios'])==9
 (flow/'TECHNICAL.json').write_text(json.dumps(proof))
 for scenario in ('ADHERENT','RECOVERY','SAFETY'):
-    shutil.copyfile(root/'beauty-scenario-results'/'beauty-v1'/(scenario+'.json'),flow/(scenario+'.json'))
+    shutil.copyfile(root/'beauty-scenario-results'/proof['profileCode']/(scenario+'.json'),flow/(scenario+'.json'))
 PYBEAUTY
-VEGA_GATE_FLOW_ARTIFACTS="$round_dir/beauty-gate" PDE_OPERATIONAL_REPORT_FILE="" mvn -q -f meta-ad-approver-worker/pom.xml '-DargLine=-Xmx512m' -Dtest=CommercialBpmCycleIntegrationTest test >"$round_dir/beauty-temis.log" 2>&1
-VEGA_GATE_FLOW_ARTIFACTS="$round_dir/beauty-gate" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx512m' -Dtest=VegaCycleGateFlowIntegrationTest test >"$round_dir/beauty-gate.log" 2>&1
+VEGA_GATE_FLOW_ARTIFACTS="$round_dir/beauty-gate" PDE_OPERATIONAL_REPORT_FILE="" mvn -q -f meta-ad-approver-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=CommercialBpmCycleIntegrationTest test >"$round_dir/beauty-temis.log" 2>&1
+VEGA_GATE_FLOW_ARTIFACTS="$round_dir/beauty-gate" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx256m' -Dtest=VegaCycleGateFlowIntegrationTest test >"$round_dir/beauty-gate.log" 2>&1
 if [[ "${KIT_TEST_BEAUTY_ONLY:-false}" == true ]]; then
   printf '%s\n' 'Cobertura multiperfil, matriz técnica e três callbacks independentes até Têmis/gate aprovados sem modelo pago.'
   exit 0
@@ -153,8 +161,8 @@ kill "$worker_pid"
 wait "$worker_pid" || true
 worker_pid=''
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node infra/testing/private-kit/controls.mjs "$round_dir/controls.json"
-KIT_LOCAL_REPORT="$round_dir/report.json" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx512m' -Dtest=KitPrivateProofContractTest test >"$round_dir/backend-proof-tests.log" 2>&1
-KIT_LOCAL_REPORT="$round_dir/report.json" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx512m' -Dtest=PrivateKitHarnessContractTest test >"$round_dir/worker-proof-tests.log" 2>&1
+KIT_LOCAL_REPORT="$round_dir/report.json" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx256m' -Dtest=KitPrivateProofContractTest test >"$round_dir/backend-proof-tests.log" 2>&1
+KIT_LOCAL_REPORT="$round_dir/report.json" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=PrivateKitHarnessContractTest test >"$round_dir/worker-proof-tests.log" 2>&1
 python3 - "$round_dir/report.json" "$round_dir/other-product-report.json" <<'PY'
 import json,sys
 report=json.load(open(sys.argv[1]));other=json.load(open(sys.argv[2]))

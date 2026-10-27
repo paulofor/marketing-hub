@@ -7745,3 +7745,19 @@ Não houve nova medição de vendas, ROI ou demanda.
 - Decisão #3786 registrada pela tela: US$30 cumulativos de preparação/revisão e R$89,95 totais de anúncios por cinco dias após homologação, sem novo audiovisual pago. Base conhecida antes da retomada: US$25,5265436 estimados.
 - Retomada da execução #87 produziu Psique #837, bloqueada antes da inferência porque a ressalva condicional da estratégia #827 eliminava indevidamente a identidade do contexto. Arquitetura #829 e homologação #834 permanecem válidas.
 - Correção compartilhada e regressões: [registro de homologação](../homologacao/capella-ressalva-protocolo-2026-10-27.md), [PR #5719](https://github.com/paulofor/marketing-hub/pull/5719). 43 testes backend, 89 de Atena e 16 do pacote de evidências aprovados localmente. A publicação e a continuação operacional serão comprovadas no PR; este registro não declara lançamento ou resultado comercial.
+
+## 2026-10-27 — Capella: parecer 843 e referências visuais privadas
+
+Após corrigir a perda de contexto e registrar o teto cumulativo de US$ 30 da
+solicitação 3786, Psique concluiu a revisão com ADJUST. Causa observada: ilustrações
+abstratas de QA eram usadas como prova de qualidade visual; a prévia reduzia os
+textos sem oferecer ampliação. A homologação 834 comprovava funcionamento, não
+acabamento ou persuasão. Não repetir o parecer sobre o mesmo artefato.
+
+A versão `beauty-v2` separa referências fotográficas licenciadas, origem persistida
+e composição legível da fixture v1. Psique passa a receber captura ampliada e
+origem das imagens, preservando a revisão independente. Matriz e limites em
+`docs/homologacao/capella-referencias-visuais-v2.md`. Nenhuma compra, venda ou
+melhoria de conversão é atribuída aos testes. O critério de adoção é aceite próprio
+da versão, seguido de medição comercial autorizada; reversão preserva v1 e seus
+recibos, sem promover automaticamente o material antigo como peça aprovada.

@@ -6,10 +6,10 @@ services:
       MYSQL_DATABASE: kit_local
       MYSQL_USER: kit
       MYSQL_PASSWORD: kit-local-only
-    command: ['--max-allowed-packet=64M']
-    # O banco da homologação é descartável; evita depender de espaço no disco da engine.
-    tmpfs:
-      - /var/lib/mysql:size=512m
+    command: ['--max-allowed-packet=64M', '--innodb-buffer-pool-size=64M', '--innodb-log-file-size=32M', '--max-connections=20']
+    # Fotografias usam volume descartável; tmpfs acumulava blobs e encerrava o MySQL por memória.
+    volumes:
+      - mysql-data:/var/lib/mysql
     ports:
       - '57283:3306'
     healthcheck:
@@ -17,3 +17,6 @@ services:
       interval: 3s
       retries: 30
     mem_limit: 1024m
+
+volumes:
+  mysql-data:

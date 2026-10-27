@@ -66,7 +66,7 @@ try {
         startName:'Preparar meu kit de exemplo',videoLabel:'Demonstração do kit de divulgação',
         failureMessage:'O vídeo não abriu. Você pode continuar e usar seu kit normalmente.',
       }):null;
-      if(input.profileCode==='beauty-v1' && input.specialtyCode) await page.locator('#specialty').selectOption(input.specialtyCode);
+      if(['beauty-v1','beauty-v2'].includes(input.profileCode) && input.specialtyCode) await page.locator('#specialty').selectOption(input.specialtyCode);
       if(input.profileCode==='barber-v1')await page.locator('[name=services]').fill('Corte e barba');
       // A fixture permanece igual entre dispositivos para comprovar reutilização sem nova composição.
       await page.locator('[name=professionalName]').fill(scenarioCode==='RECOVERY'?'Studio Retomada':'Studio Exemplo');
@@ -93,6 +93,17 @@ try {
         await page.locator('#result').waitFor({state:'visible',timeout:600000});
         await page.locator('#post').evaluate(e=>e.decode());await page.locator('#story').evaluate(e=>e.decode());
         await checkFirstActions(page);
+        if(input.profileCode?.endsWith('-v2')) {
+          const proof=await api('/session',{session:created.sessionToken});
+          const origin=proof.manifest?.visualReferences;
+          if(origin?.contractVersion!=='KIT_LICENSED_REFERENCE_V1'||origin.profileCode!==proof.input.specialtyCode&&origin.profileCode!==proof.profileCode||origin.commercialApproval!==false||origin.assets?.length!==5)throw new Error('Origem visual não comprovada na demonstração.');
+          await page.locator('#enlarge-post').click();
+          await page.locator('#art-dialog').waitFor({state:'visible'});
+          await page.locator('#enlarged-art').evaluate(e=>e.decode());
+          momentKeys.push(await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile+'-ART'));
+          await page.locator('#close-art').click();
+          if(await page.locator('#art-dialog').isVisible())throw new Error('Ampliação não fechou.');
+        }
         if(!(await page.locator('#caption').inputValue()).includes('Cidade Exemplo'))throw new Error('A primeira aplicação perdeu a personalização.');
         // Clipboard é observado no navegador; o stub local só resolve a permissão de mobile Chromium.
         await page.evaluate(()=>{window.__copiedText='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedText=text;}}});});
@@ -126,7 +137,7 @@ try {
       const layout=await page.evaluate(()=>({height:document.documentElement.scrollHeight,noHorizontalOverflow:document.documentElement.scrollWidth<=innerWidth,controlsNamed:[...document.querySelectorAll('button,input,textarea,select')].every(e=>e.textContent?.trim()||e.getAttribute('aria-label')||[...(e.labels||[])].some(l=>l.textContent.trim()))}));
       if(!layout.noHorizontalOverflow||!layout.controlsNamed)throw new Error('Layout ou acessibilidade básica reprovados.');
       const key=await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile);
-      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[...momentKeys,key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,videoPlayback,customerSurface,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
+      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[...momentKeys,key],events:current.events.map(e=>e.code),visualReferences:current.manifest?.visualReferences||null,packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,videoPlayback,customerSurface,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
       await writeFile(outputFile+'.partial',JSON.stringify({status:'IN_PROGRESS',scenarios,artifacts},null,2));
     }finally{await context.close();}
   }

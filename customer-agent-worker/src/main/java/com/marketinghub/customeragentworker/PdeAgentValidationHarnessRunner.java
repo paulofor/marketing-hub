@@ -124,7 +124,14 @@ public class PdeAgentValidationHarnessRunner {
                     "makeup-v1",
                     "brows-v1",
                     "aesthetics-v1",
-                    "beauty-v1")
+                    "beauty-v1",
+                    "beauty-v2",
+                    "nails-v2",
+                    "barber-v2",
+                    "hair-v2",
+                    "makeup-v2",
+                    "brows-v2",
+                    "aesthetics-v2")
                 .contains(acceptance.path("profileCode").asText())
             && prototypeVersion.equals(acceptance.path("prototypeVersion").asText())
             && List.of("/mh-api/pde/kit/private/v1/prototype", "/api/pde/kit/private/v1/prototype")
@@ -263,7 +270,7 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
-   * vinculadas aos cenários e momentos reais do uso antes do parecer.
+   * vinculadas aos cenários e momentos reais, incluindo a arte ampliada nas referências v2.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -438,7 +445,12 @@ public class PdeAgentValidationHarnessRunner {
             "Alcyone não comprovou fixtures estáticas, custo zero e os nove gates.");
       }
     } else if (result.path("scenarios").size() != 1
-        || result.path("artifacts").size() != 1
+        || result.path("artifacts").size()
+            != (privateKit
+                    && result.path("profileCode").asText().endsWith("-v2")
+                    && !"SAFETY".equals(scenarioCode)
+                ? 2
+                : 1)
         || !scenarioCode.equals(result.path("scenarios").get(0).path("scenarioCode").asText())) {
       throw new HarnessException("A execução de Psique misturou cenários sintéticos.");
     } else if (approved
@@ -537,7 +549,7 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige entrada e conteúdo vinculados ao cenário nos três dispositivos, preservando relatórios
-   * antigos.
+   * antigos e exigindo a ampliação nas referências visuais v2.
    */
   private int validateKitCaptureMoments(JsonNode result) {
     if (!result.has("captureMomentsContract")) return 0;
@@ -554,10 +566,13 @@ public class PdeAgentValidationHarnessRunner {
               ? "-FULL_PAGE"
               : "";
       var expectedKeys =
-          Set.of(
-              "ADHERENT-" + device + "-BRIEFING",
-              "ADHERENT-" + device + "-CONTENT",
-              "ADHERENT-" + device + completionSuffix);
+          new java.util.HashSet<>(
+              Set.of(
+                  "ADHERENT-" + device + "-BRIEFING",
+                  "ADHERENT-" + device + "-CONTENT",
+                  "ADHERENT-" + device + completionSuffix));
+      if (result.path("profileCode").asText().endsWith("-v2"))
+        expectedKeys.add("ADHERENT-" + device + "-ART");
       JsonNode scenario = null;
       for (JsonNode value : result.path("scenarios"))
         if ("ADHERENT".equals(value.path("scenarioCode").asText())
@@ -571,6 +586,24 @@ public class PdeAgentValidationHarnessRunner {
         if (expectedKeys.contains(artifact.path("evidenceKey").asText())
             && !device.equals(artifact.path("deviceProfile").asText()))
           throw new HarnessException("Captura de momento pertence a outro dispositivo.");
+    }
+    if (result.path("profileCode").asText().endsWith("-v2")) {
+      for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+        String key = "RECOVERY-" + device + "-ART";
+        boolean linked = false;
+        for (JsonNode scenario : result.path("scenarios"))
+          if ("RECOVERY".equals(scenario.path("scenarioCode").asText())
+              && device.equals(scenario.path("deviceProfile").asText()))
+            for (JsonNode value : scenario.path("screenshotEvidenceKeys"))
+              if (key.equals(value.asText())) linked = true;
+        boolean matchingDevice = false;
+        for (JsonNode artifact : result.path("artifacts"))
+          if (key.equals(artifact.path("evidenceKey").asText())
+              && device.equals(artifact.path("deviceProfile").asText())) matchingDevice = true;
+        if (!linked || !keys.contains(key) || !matchingDevice)
+          throw new HarnessException("A recuperação não preservou a captura ampliada da arte.");
+      }
+      return 12;
     }
     return 6;
   }

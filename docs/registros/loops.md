@@ -11239,3 +11239,18 @@ Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.
   comparação válida de Mira, campos/frases distintos e obrigação incondicional.
 - **Limites e adoção:** [matriz e aprendizado](../homologacao/capella-ressalva-protocolo-2026-10-27.md).
   Sem nova estratégia, aprovação fabricada ou inferência necessária para corrigir o contexto.
+
+## LOOP-KIT-FIXTURE-COMO-PROVA-VISUAL — 27/10/2026
+
+- **Evidência:** Psique 843, Capella ciclo 15, pediu ajuste de repertório e legibilidade;
+  a prova 834 aceitara nove cenários técnicos, sem atestar persuasão ou acabamento.
+- **Causa:** a mesma ilustração abstrata servia à verificação funcional e à avaliação
+  visual; a captura da página reduzia a arte e não disponibilizava ampliação.
+- **Correção:** família explícita v2 com referências licenciadas por especialidade,
+  composição legível, ampliação e origem persistida fora do ZIP funcional. Nenhum
+  aceite comercial é produzido pelo compositor. V1 e o parecer anterior permanecem.
+- **Prevenção:** validação de hashes/licença/diversidade e contexto; harness captura
+  a arte ampliada e preserva origem; matriz de seis especialidades e outro produto.
+- **Limite:** a biblioteca de demonstração não substitui a aprovação comercial;
+  a alteração da experiência exige sucessor e suas autorizações próprias.
+- **Registro:** `docs/homologacao/capella-referencias-visuais-v2.md`.

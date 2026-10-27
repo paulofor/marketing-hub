@@ -55,7 +55,7 @@ public final class KitPrivateContract {
       boolean consentAccepted,
       @com.fasterxml.jackson.annotation.JsonInclude(
               com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-          @Pattern(regexp = "(?:nails|barber|hair|makeup|brows|aesthetics)-v1")
+          @Pattern(regexp = "(?:nails|barber|hair|makeup|brows|aesthetics)-v[12]")
           String specialtyCode) {
     /** Preserva o briefing dos perfis históricos sem seleção adicional. */
     public Input(
@@ -95,7 +95,20 @@ public final class KitPrivateContract {
       @NotNull UUID claimKey,
       @NotBlank @Size(max = 45000000) String zipBase64,
       @NotBlank @Pattern(regexp = "[a-f0-9]{64}") String zipSha256,
-      @Min(0) @Max(0) int providerCalls) {}
+      @Min(0) @Max(0) int providerCalls,
+      JsonNode visualReferences) {
+    /** Preserva callbacks históricos sem atribuir referências fotográficas à versão anterior. */
+    public Result(UUID claimKey, String zipBase64, String zipSha256, int providerCalls) {
+      this(claimKey, zipBase64, zipSha256, providerCalls, null);
+    }
+  }
+
+  /** Separa metadados pequenos do ZIP binário, preservando limites, identidade e auditoria. */
+  public record BinaryResult(
+      @NotNull UUID claimKey,
+      @NotBlank @Pattern(regexp = "[a-f0-9]{64}") String zipSha256,
+      @Min(0) @Max(0) int providerCalls,
+      JsonNode visualReferences) {}
 
   /** Preserva a falha terminal sem retentativa ou inferência automática. */
   public record Failure(@NotNull UUID claimKey, @NotBlank @Size(max = 2000) String error) {}

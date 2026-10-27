@@ -80,6 +80,15 @@ são obrigatórias na v2. Perfis v1 preservam seu contrato anterior. A atestaç�
 Mira v53 comprova apenas compatibilidade do código compartilhado, sem renovar
 pareceres, custo, autorização ou publicação de Mira.
 
+O CI encontrou uma atestação compartilhada adicional de Vega ainda vinculada ao
+hash anterior do runner. A falha foi reproduzida localmente; a atestação v4
+preserva os relatórios v2/v3 e os recibos originais, acrescentando os 23 casos de
+compatibilidade executados, sem renovar parecer comercial. Os testes locais
+de controles e matriz de cenários passaram (24 executados e um opcional sem
+relatório de Mira), assim como os 16 testes do pacote de evidências,
+após a correção. O catálogo atualizado e seu teste também constam na atestação
+Mira v53. Nenhum controle foi relaxado para aceitar o novo hash.
+
 ![Arte ampliada no desktop, somente demonstração](evidencias/capella-referencias-v2/desktop.png)
 
 ![Fluxo em iPhone emulado, somente demonstração](evidencias/capella-referencias-v2/iphone.png)

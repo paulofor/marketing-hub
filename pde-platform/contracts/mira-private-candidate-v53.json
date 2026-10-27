@@ -229,7 +229,7 @@
     {
       "promptMode": "FULL",
       "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
-      "sha256": "359c64d60dbccb7dd2b070f3a6cb1246bb2cbe69b61b8f108589c1f54ccb3ee7"
+      "sha256": "944923a993c4e3010c16be8f2a12cb64408e866749f17d751c9a4cc17d48fa3e"
     },
     {
       "promptMode": "FULL",
@@ -611,7 +611,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
-      "sha256": "6a09d43d435bd1cf0b4e4f711c84ec429a984a809b9ead6d58b14f6eb7513dcd",
+      "sha256": "dfb63925e8e504b76eecf9a8c1c3f66246101cdbfccefea3a7d162eeeeb21540",
       "reviewSummary": "Responsabilidade: impedir uso de prova adulterada, incompleta ou pertencente a outra candidata."
     },
     {
@@ -1233,6 +1233,16 @@
         "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
         "previousSha256": "5ef5db7fc5846d6bf2c6ddf85ce6deacb5ef75538a7774be2c048f67df2ba026",
         "sha256": "401707d70dd661e8e26dd25abea9786f4616bdca88aee32e94176b503acbe98f"
+      },
+      {
+        "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
+        "previousSha256": "359c64d60dbccb7dd2b070f3a6cb1246bb2cbe69b61b8f108589c1f54ccb3ee7",
+        "sha256": "944923a993c4e3010c16be8f2a12cb64408e866749f17d751c9a4cc17d48fa3e"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
+        "previousSha256": "6a09d43d435bd1cf0b4e4f711c84ec429a984a809b9ead6d58b14f6eb7513dcd",
+        "sha256": "dfb63925e8e504b76eecf9a8c1c3f66246101cdbfccefea3a7d162eeeeb21540"
       }
     ],
     "validationReport": "docs/homologacao/capella-referencias-visuais-v2.md"

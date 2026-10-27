@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - include:
+      file: ../vega380/changelog.yaml
+      relativeToChangelogFile: true
+  - changeSet:
+      id: local-vega-style-context
+      author: codex-local
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: UPDATE learning_sales_cycle_v1 SET product_version = 'musa-pde-entry-v16-modelagem-internacional' WHERE id = 91002;

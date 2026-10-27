@@ -163,12 +163,18 @@ validate_v9() {
 }
 
 validate_v10() {
+  local contextual_test=()
+  if [[ -n "${PDE_FRONTEND_CONTRACT_PATH:-}" ]] && python3 -c \
+    'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("privateExperience") else 1)' \
+    "${repository_root}/${PDE_FRONTEND_CONTRACT_PATH}"; then
+    contextual_test=(tests/vega-contextual-private-public.smoke.spec.ts)
+  fi
   (
     cd "${frontend_dir}"
     PDE_PUBLIC_HEALTH_URL=https://v10.clubemusa.com.br \
       PDE_EXPECTED_FRONTEND_SOURCE_SHA256="${frontend_source_sha256}" \
       PDE_EXPECTED_COMMIT="${IMAGE_TAG:?A prova da candidata exige o commit publicado}" \
-      "${npm_command}" exec -- playwright test tests/musa-v15-route-public.smoke.spec.ts --config=playwright.public.config.ts
+      "${npm_command}" exec -- playwright test tests/musa-v15-route-public.smoke.spec.ts "${contextual_test[@]}" --config=playwright.public.config.ts
   )
 }
 

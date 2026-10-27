@@ -1,0 +1,2253 @@
+{
+  "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+  "mode": "TECHNICAL",
+  "decision": "APPROVED",
+  "sourceReference": "experiment:91092",
+  "productId": 91004,
+  "productSlug": "metodo-musa-7-dias",
+  "publicUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+  "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+  "cycleId": 91002,
+  "runtimeContract": "PDE_CONTEXTUAL_STYLE_EXECUTION_V1",
+  "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+  "providerCalls": 0,
+  "modelFunctionalBehaviorClaimed": false,
+  "trafficClass": "AGENT_VALIDATION",
+  "internalMarker": "mh_internal_test",
+  "inputComparisonApplicable": false,
+  "startedAt": "2026-10-27T20:00:11.205Z",
+  "finishedAt": "2026-10-27T20:00:28.959Z",
+  "durationSeconds": 18,
+  "devices": [
+    {
+      "deviceProfile": "DESKTOP_1440",
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "vega-style-9d39a4ca-ccbb-4fe8-bfb2-e47770ba7730",
+        "vega-style-62fd3c52-2fb6-41a9-8147-771676e1f102",
+        "vega-style-7a185625-af48-43cd-970c-5e635f3bda20"
+      ]
+    },
+    {
+      "deviceProfile": "IPHONE_15_PRO",
+      "viewportWidth": 393,
+      "viewportHeight": 659,
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "vega-style-59786309-42b3-4674-ae43-484529d9868b",
+        "vega-style-6d22ded2-38a1-41ad-9a20-98f5e4ede9f9",
+        "vega-style-45606354-4319-4330-952f-cfb196ee054e"
+      ]
+    },
+    {
+      "deviceProfile": "PIXEL_7",
+      "viewportWidth": 412,
+      "viewportHeight": 839,
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "vega-style-9b874ded-0883-4381-ab74-1ab7393a5342",
+        "vega-style-6c208681-f2a3-41f0-b06f-c8d671f660e2",
+        "vega-style-89f9aa38-8925-4ef1-a003-031cb4838dd5"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "9d39a4ca-ccbb-4fe8-bfb2-e47770ba7730",
+      "screenshotEvidenceKeys": [
+        "vega-style-9d39a4ca-ccbb-4fe8-bfb2-e47770ba7730"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": {
+        "requestId": "95db51a2eb8f787cbdfd778c189a50c6",
+        "status": "COMPLETED",
+        "headline": "Um ajuste para a sua situação",
+        "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "signals": [
+          "Sua preferência: Cor e criatividade",
+          "Sua ocasião: almoço",
+          "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+        ],
+        "microActions": [
+          "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+        ],
+        "errorMessage": "",
+        "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+      },
+      "operations": {
+        "95db51a2eb8f787cbdfd778c189a50c6": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "95db51a2eb8f787cbdfd778c189a50c6",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:12.467511840Z",
+          "finishedAt": "2026-10-27T20:00:12.476248066Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "3a8137a550feb928367fbddcdda35a65": {
+          "missionId": "estilo-dia-2",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Relembre o primeiro teste e registre o que vale repetir."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "3a8137a550feb928367fbddcdda35a65",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Relembre o primeiro teste e registre o que vale repetir."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:13.464552457Z",
+          "finishedAt": "2026-10-27T20:00:13.465402632Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "f405286cff50aca534bb0ade5e7a8c35": {
+          "missionId": "estilo-dia-3",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Compare esta forma de usar com seu registro anterior. Você escolhe o que manter."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "f405286cff50aca534bb0ade5e7a8c35",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Compare esta forma de usar com seu registro anterior. Você escolhe o que manter."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:13.741408582Z",
+          "finishedAt": "2026-10-27T20:00:13.741982985Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "268c06e3d59e508594a7cbfd2c6adebf": {
+          "missionId": "estilo-dia-4",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe como a escolha funciona na sua rotina e registre o que quer adaptar."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "268c06e3d59e508594a7cbfd2c6adebf",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe como a escolha funciona na sua rotina e registre o que quer adaptar."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:13.995069994Z",
+          "finishedAt": "2026-10-27T20:00:13.995781167Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "5f3c8f1738f53f02ad291b390c517e32": {
+          "missionId": "estilo-dia-5",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe as cores que você já escolheu e anote uma relação que gostaria de repetir."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "5f3c8f1738f53f02ad291b390c517e32",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe as cores que você já escolheu e anote uma relação que gostaria de repetir."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:14.271059094Z",
+          "finishedAt": "2026-10-27T20:00:14.271488176Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "1e6145466435af4b12c0445d822ea0be": {
+          "missionId": "estilo-dia-6",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Registre sua fórmula: peças escolhidas, forma de usar e ocasião em que funciona."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "1e6145466435af4b12c0445d822ea0be",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Registre sua fórmula: peças escolhidas, forma de usar e ocasião em que funciona."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:14.520126753Z",
+          "finishedAt": "2026-10-27T20:00:14.520831257Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "4774b87497d1c104bda12ef1d8e0e1c9": {
+          "missionId": "estilo-dia-7",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 6; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Revise seus registros e escolha uma fórmula para repetir na próxima semana."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "4774b87497d1c104bda12ef1d8e0e1c9",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 6; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Revise seus registros e escolha uma fórmula para repetir na próxima semana."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:14.786950604Z",
+          "finishedAt": "2026-10-27T20:00:14.787336557Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:12.293987048Z",
+          "requestId": ""
+        },
+        "VALUE_MOMENT": {
+          "occurredAt": "2026-10-27T20:00:12.543137508Z",
+          "requestId": "95db51a2eb8f787cbdfd778c189a50c6"
+        },
+        "READY_RESULT_USED": {
+          "occurredAt": "2026-10-27T20:00:12.658278913Z",
+          "requestId": "95db51a2eb8f787cbdfd778c189a50c6"
+        },
+        "CHECKOUT_STARTED": {
+          "occurredAt": "2026-10-27T20:00:12.702801986Z",
+          "requestId": "95db51a2eb8f787cbdfd778c189a50c6"
+        },
+        "PREFERRED_OVER_FREE": {
+          "occurredAt": "2026-10-27T20:00:12.740047562Z",
+          "requestId": "95db51a2eb8f787cbdfd778c189a50c6"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": false,
+      "journeyComplete": true,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "59786309-42b3-4674-ae43-484529d9868b",
+      "screenshotEvidenceKeys": [
+        "vega-style-59786309-42b3-4674-ae43-484529d9868b"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": {
+        "requestId": "2acbbe4628e75c336886510fc22c1db5",
+        "status": "COMPLETED",
+        "headline": "Um ajuste para a sua situação",
+        "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "signals": [
+          "Sua preferência: Cor e criatividade",
+          "Sua ocasião: almoço",
+          "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+        ],
+        "microActions": [
+          "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+        ],
+        "errorMessage": "",
+        "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+      },
+      "operations": {
+        "2acbbe4628e75c336886510fc22c1db5": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "2acbbe4628e75c336886510fc22c1db5",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:15.938362986Z",
+          "finishedAt": "2026-10-27T20:00:15.938944809Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "db8c535bebe20ee5daa264719048132f": {
+          "missionId": "estilo-dia-2",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Relembre o primeiro teste e registre o que vale repetir."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "db8c535bebe20ee5daa264719048132f",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Relembre o primeiro teste e registre o que vale repetir."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:17.101454959Z",
+          "finishedAt": "2026-10-27T20:00:17.101952382Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "cc072d7f852a378e2de70600935604cd": {
+          "missionId": "estilo-dia-3",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Compare esta forma de usar com seu registro anterior. Você escolhe o que manter."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "cc072d7f852a378e2de70600935604cd",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Compare esta forma de usar com seu registro anterior. Você escolhe o que manter."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:17.333640249Z",
+          "finishedAt": "2026-10-27T20:00:17.334073412Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "1171482b60be50bc8a380bfd96a9c3a6": {
+          "missionId": "estilo-dia-4",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe como a escolha funciona na sua rotina e registre o que quer adaptar."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "1171482b60be50bc8a380bfd96a9c3a6",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe como a escolha funciona na sua rotina e registre o que quer adaptar."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:17.517507516Z",
+          "finishedAt": "2026-10-27T20:00:17.517811729Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "a5c7fa26fa82f5262d01f187df788aed": {
+          "missionId": "estilo-dia-5",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe as cores que você já escolheu e anote uma relação que gostaria de repetir."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "a5c7fa26fa82f5262d01f187df788aed",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe as cores que você já escolheu e anote uma relação que gostaria de repetir."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:17.716000471Z",
+          "finishedAt": "2026-10-27T20:00:17.716400073Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "1166c3a45c9ffbeed3ed644b475feb86": {
+          "missionId": "estilo-dia-6",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Registre sua fórmula: peças escolhidas, forma de usar e ocasião em que funciona."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "1166c3a45c9ffbeed3ed644b475feb86",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Registre sua fórmula: peças escolhidas, forma de usar e ocasião em que funciona."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:17.900086608Z",
+          "finishedAt": "2026-10-27T20:00:17.900390340Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "d1ea1515863f4fdeaa7e19ea55af29a7": {
+          "missionId": "estilo-dia-7",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 6; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Revise seus registros e escolha uma fórmula para repetir na próxima semana."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "d1ea1515863f4fdeaa7e19ea55af29a7",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 6; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Revise seus registros e escolha uma fórmula para repetir na próxima semana."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:18.084964331Z",
+          "finishedAt": "2026-10-27T20:00:18.085397102Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:15.786999820Z",
+          "requestId": ""
+        },
+        "VALUE_MOMENT": {
+          "occurredAt": "2026-10-27T20:00:16.027995097Z",
+          "requestId": "2acbbe4628e75c336886510fc22c1db5"
+        },
+        "READY_RESULT_USED": {
+          "occurredAt": "2026-10-27T20:00:16.101643964Z",
+          "requestId": "2acbbe4628e75c336886510fc22c1db5"
+        },
+        "CHECKOUT_STARTED": {
+          "occurredAt": "2026-10-27T20:00:16.151908108Z",
+          "requestId": "2acbbe4628e75c336886510fc22c1db5"
+        },
+        "PREFERRED_OVER_FREE": {
+          "occurredAt": "2026-10-27T20:00:16.238960726Z",
+          "requestId": "2acbbe4628e75c336886510fc22c1db5"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": false,
+      "journeyComplete": true,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "9b874ded-0883-4381-ab74-1ab7393a5342",
+      "screenshotEvidenceKeys": [
+        "vega-style-9b874ded-0883-4381-ab74-1ab7393a5342"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": {
+        "requestId": "d5cfd6c151f40ad58ba1caa1095f0e1d",
+        "status": "COMPLETED",
+        "headline": "Um ajuste para a sua situação",
+        "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "signals": [
+          "Sua preferência: Cor e criatividade",
+          "Sua ocasião: almoço",
+          "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+        ],
+        "microActions": [
+          "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+        ],
+        "errorMessage": "",
+        "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+      },
+      "operations": {
+        "d5cfd6c151f40ad58ba1caa1095f0e1d": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "d5cfd6c151f40ad58ba1caa1095f0e1d",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:19.158628168Z",
+          "finishedAt": "2026-10-27T20:00:19.159246211Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "4dd9e2a6d30606a13e57aa4ee0380d54": {
+          "missionId": "estilo-dia-2",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Relembre o primeiro teste e registre o que vale repetir."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "4dd9e2a6d30606a13e57aa4ee0380d54",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Relembre o primeiro teste e registre o que vale repetir."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:20.488777245Z",
+          "finishedAt": "2026-10-27T20:00:20.489398058Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "cacf36ce7daf8807173d840c6f4751ed": {
+          "missionId": "estilo-dia-3",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Compare esta forma de usar com seu registro anterior. Você escolhe o que manter."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "cacf36ce7daf8807173d840c6f4751ed",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Compare esta forma de usar com seu registro anterior. Você escolhe o que manter."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:20.691277181Z",
+          "finishedAt": "2026-10-27T20:00:20.691853324Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "f47ca25b9320e9ca867f82325bda7171": {
+          "missionId": "estilo-dia-4",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe como a escolha funciona na sua rotina e registre o que quer adaptar."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "f47ca25b9320e9ca867f82325bda7171",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe como a escolha funciona na sua rotina e registre o que quer adaptar."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:20.890079516Z",
+          "finishedAt": "2026-10-27T20:00:20.890593610Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "3ed0c2e0e78c4db3ec51b3061ad7c1ac": {
+          "missionId": "estilo-dia-5",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe as cores que você já escolheu e anote uma relação que gostaria de repetir."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "3ed0c2e0e78c4db3ec51b3061ad7c1ac",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Observe as cores que você já escolheu e anote uma relação que gostaria de repetir."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:21.086574670Z",
+          "finishedAt": "2026-10-27T20:00:21.086967352Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "5c087ca50033e9af69b1d4f9eaf2c4f9": {
+          "missionId": "estilo-dia-6",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Registre sua fórmula: peças escolhidas, forma de usar e ocasião em que funciona."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "5c087ca50033e9af69b1d4f9eaf2c4f9",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Registre sua fórmula: peças escolhidas, forma de usar e ocasião em que funciona."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:21.266279467Z",
+          "finishedAt": "2026-10-27T20:00:21.266632998Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "aea5cff8d5b8b814554c5f39ec888c27": {
+          "missionId": "estilo-dia-7",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 6; quero repetir esta escolha."
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Revise seus registros e escolha uma fórmula para repetir na próxima semana."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "aea5cff8d5b8b814554c5f39ec888c27",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+              "Seu registro anterior: Registro sintético do dia 1; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 2; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 3; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 4; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 5; quero repetir esta escolha.",
+              "Seu registro anterior: Registro sintético do dia 6; quero repetir esta escolha."
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Revise seus registros e escolha uma fórmula para repetir na próxima semana."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:21.484511314Z",
+          "finishedAt": "2026-10-27T20:00:21.484862326Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:19.004683708Z",
+          "requestId": ""
+        },
+        "VALUE_MOMENT": {
+          "occurredAt": "2026-10-27T20:00:19.233812223Z",
+          "requestId": "d5cfd6c151f40ad58ba1caa1095f0e1d"
+        },
+        "READY_RESULT_USED": {
+          "occurredAt": "2026-10-27T20:00:19.297415017Z",
+          "requestId": "d5cfd6c151f40ad58ba1caa1095f0e1d"
+        },
+        "CHECKOUT_STARTED": {
+          "occurredAt": "2026-10-27T20:00:19.338279292Z",
+          "requestId": "d5cfd6c151f40ad58ba1caa1095f0e1d"
+        },
+        "PREFERRED_OVER_FREE": {
+          "occurredAt": "2026-10-27T20:00:19.426024725Z",
+          "requestId": "d5cfd6c151f40ad58ba1caa1095f0e1d"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": false,
+      "journeyComplete": true,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "62fd3c52-2fb6-41a9-8147-771676e1f102",
+      "screenshotEvidenceKeys": [
+        "vega-style-62fd3c52-2fb6-41a9-8147-771676e1f102"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": {
+        "requestId": "dcc81ccd0ee336cbb178c77052c9929d",
+        "status": "COMPLETED",
+        "headline": "Um ajuste para a sua situação",
+        "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "signals": [
+          "Sua preferência: Cor e criatividade",
+          "Sua ocasião: almoço",
+          "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+        ],
+        "microActions": [
+          "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+        ],
+        "errorMessage": "",
+        "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+      },
+      "operations": {
+        "dcc81ccd0ee336cbb178c77052c9929d": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "dcc81ccd0ee336cbb178c77052c9929d",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:22.529304613Z",
+          "finishedAt": "2026-10-27T20:00:22.529638356Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:22.382340389Z",
+          "requestId": ""
+        },
+        "VALUE_MOMENT": {
+          "occurredAt": "2026-10-27T20:00:22.647991928Z",
+          "requestId": "dcc81ccd0ee336cbb178c77052c9929d"
+        },
+        "READY_RESULT_USED": {
+          "occurredAt": "2026-10-27T20:00:22.715440663Z",
+          "requestId": "dcc81ccd0ee336cbb178c77052c9929d"
+        },
+        "CHECKOUT_STARTED": {
+          "occurredAt": "2026-10-27T20:00:22.762037339Z",
+          "requestId": "dcc81ccd0ee336cbb178c77052c9929d"
+        },
+        "PREFERRED_OVER_FREE": {
+          "occurredAt": "2026-10-27T20:00:22.843392268Z",
+          "requestId": "dcc81ccd0ee336cbb178c77052c9929d"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": true,
+      "journeyComplete": false,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "6d22ded2-38a1-41ad-9a20-98f5e4ede9f9",
+      "screenshotEvidenceKeys": [
+        "vega-style-6d22ded2-38a1-41ad-9a20-98f5e4ede9f9"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": {
+        "requestId": "0f72c030fe623f823377e15f566f32ac",
+        "status": "COMPLETED",
+        "headline": "Um ajuste para a sua situação",
+        "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "signals": [
+          "Sua preferência: Cor e criatividade",
+          "Sua ocasião: almoço",
+          "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+        ],
+        "microActions": [
+          "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+        ],
+        "errorMessage": "",
+        "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+      },
+      "operations": {
+        "0f72c030fe623f823377e15f566f32ac": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "0f72c030fe623f823377e15f566f32ac",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:23.844782349Z",
+          "finishedAt": "2026-10-27T20:00:23.845210241Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:23.686944008Z",
+          "requestId": ""
+        },
+        "VALUE_MOMENT": {
+          "occurredAt": "2026-10-27T20:00:24.002505759Z",
+          "requestId": "0f72c030fe623f823377e15f566f32ac"
+        },
+        "READY_RESULT_USED": {
+          "occurredAt": "2026-10-27T20:00:24.068665588Z",
+          "requestId": "0f72c030fe623f823377e15f566f32ac"
+        },
+        "CHECKOUT_STARTED": {
+          "occurredAt": "2026-10-27T20:00:24.096656634Z",
+          "requestId": "0f72c030fe623f823377e15f566f32ac"
+        },
+        "PREFERRED_OVER_FREE": {
+          "occurredAt": "2026-10-27T20:00:24.133094837Z",
+          "requestId": "0f72c030fe623f823377e15f566f32ac"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": true,
+      "journeyComplete": false,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "6c208681-f2a3-41f0-b06f-c8d671f660e2",
+      "screenshotEvidenceKeys": [
+        "vega-style-6c208681-f2a3-41f0-b06f-c8d671f660e2"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": {
+        "requestId": "b0593b1b25275484f64853b66e8f9ee2",
+        "status": "COMPLETED",
+        "headline": "Um ajuste para a sua situação",
+        "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "signals": [
+          "Sua preferência: Cor e criatividade",
+          "Sua ocasião: almoço",
+          "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+        ],
+        "microActions": [
+          "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+        ],
+        "errorMessage": "",
+        "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+      },
+      "operations": {
+        "b0593b1b25275484f64853b66e8f9ee2": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "actions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "supportingFields": [
+              "existingSelection",
+              "occasion"
+            ],
+            "limitation": ""
+          },
+          "response": {
+            "requestId": "b0593b1b25275484f64853b66e8f9ee2",
+            "status": "COMPLETED",
+            "headline": "Um ajuste para a sua situação",
+            "summary": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "signals": [
+              "Sua preferência: Cor e criatividade",
+              "Sua ocasião: almoço",
+              "Suas peças: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+            ],
+            "microActions": [
+              "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "Experimente e observe se isso combina com o que você gosta e precisa fazer hoje."
+            ],
+            "errorMessage": "",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:25.274685349Z",
+          "finishedAt": "2026-10-27T20:00:25.275228052Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:25.117357140Z",
+          "requestId": ""
+        },
+        "VALUE_MOMENT": {
+          "occurredAt": "2026-10-27T20:00:25.445173476Z",
+          "requestId": "b0593b1b25275484f64853b66e8f9ee2"
+        },
+        "READY_RESULT_USED": {
+          "occurredAt": "2026-10-27T20:00:25.513285255Z",
+          "requestId": "b0593b1b25275484f64853b66e8f9ee2"
+        },
+        "CHECKOUT_STARTED": {
+          "occurredAt": "2026-10-27T20:00:25.548866893Z",
+          "requestId": "b0593b1b25275484f64853b66e8f9ee2"
+        },
+        "PREFERRED_OVER_FREE": {
+          "occurredAt": "2026-10-27T20:00:25.582219459Z",
+          "requestId": "b0593b1b25275484f64853b66e8f9ee2"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": true,
+      "journeyComplete": false,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "7a185625-af48-43cd-970c-5e635f3bda20",
+      "screenshotEvidenceKeys": [
+        "vega-style-7a185625-af48-43cd-970c-5e635f3bda20"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "quero comprar uma roupa nova",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": null,
+      "operations": {
+        "1cd7fc47aa48a29e326f45d88a731ad6": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "quero comprar uma roupa nova",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "BLOCKED",
+            "ruleId": "INPUT_UNSUPPORTED",
+            "headline": "",
+            "summary": "",
+            "signals": [],
+            "actions": [],
+            "supportingFields": [],
+            "limitation": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo."
+          },
+          "response": {
+            "requestId": "1cd7fc47aa48a29e326f45d88a731ad6",
+            "status": "BLOCKED",
+            "headline": "",
+            "summary": "",
+            "signals": [],
+            "microActions": [],
+            "errorMessage": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo.",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:26.566691274Z",
+          "finishedAt": "2026-10-27T20:00:26.567377638Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:26.430358356Z",
+          "requestId": ""
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": false,
+      "recovered": false,
+      "journeyComplete": false,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "45606354-4319-4330-952f-cfb196ee054e",
+      "screenshotEvidenceKeys": [
+        "vega-style-45606354-4319-4330-952f-cfb196ee054e"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "quero comprar uma roupa nova",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": null,
+      "operations": {
+        "0cb5e97c31586fd20cc89fda325a62b5": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "quero comprar uma roupa nova",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "BLOCKED",
+            "ruleId": "INPUT_UNSUPPORTED",
+            "headline": "",
+            "summary": "",
+            "signals": [],
+            "actions": [],
+            "supportingFields": [],
+            "limitation": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo."
+          },
+          "response": {
+            "requestId": "0cb5e97c31586fd20cc89fda325a62b5",
+            "status": "BLOCKED",
+            "headline": "",
+            "summary": "",
+            "signals": [],
+            "microActions": [],
+            "errorMessage": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo.",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:27.502233634Z",
+          "finishedAt": "2026-10-27T20:00:27.502475675Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:27.349424209Z",
+          "requestId": ""
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": false,
+      "recovered": false,
+      "journeyComplete": false,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "89f9aa38-8925-4ef1-a003-031cb4838dd5",
+      "screenshotEvidenceKeys": [
+        "vega-style-89f9aa38-8925-4ef1-a003-031cb4838dd5"
+      ],
+      "input": {
+        "occasion": "almoço",
+        "existingSelection": "quero comprar uma roupa nova",
+        "stylePreference": "Cor e criatividade",
+        "reflection": ""
+      },
+      "card": null,
+      "operations": {
+        "f0df749e6de1f16ff9b1bbc613379732": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "quero comprar uma roupa nova",
+            "stylePreference": "Cor e criatividade",
+            "reflection": ""
+          },
+          "decision": {
+            "status": "BLOCKED",
+            "ruleId": "INPUT_UNSUPPORTED",
+            "headline": "",
+            "summary": "",
+            "signals": [],
+            "actions": [],
+            "supportingFields": [],
+            "limitation": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo."
+          },
+          "response": {
+            "requestId": "f0df749e6de1f16ff9b1bbc613379732",
+            "status": "BLOCKED",
+            "headline": "",
+            "summary": "",
+            "signals": [],
+            "microActions": [],
+            "errorMessage": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo.",
+            "caution": "Esta orientação usa somente o que você contou; você decide o que vale manter."
+          },
+          "startedAt": "2026-10-27T20:00:28.517454104Z",
+          "finishedAt": "2026-10-27T20:00:28.517687815Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "occurredAt": "2026-10-27T20:00:28.364837820Z",
+          "requestId": ""
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "resultReadySeconds": 1,
+      "resumed": false,
+      "recovered": false,
+      "journeyComplete": false,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    }
+  ],
+  "checks": {
+    "sameVersion": true,
+    "desktopAndMobile": true,
+    "happyResultWithinTenMinutes": true,
+    "recoveryPreserved": true,
+    "safetyBlocked": true,
+    "accessibilityBasic": true,
+    "responsiveLayout": true,
+    "privacyPreserved": true,
+    "internalTrafficSegregated": true,
+    "paymentDisabled": true,
+    "publicationDisabled": true,
+    "campaignDisabled": true,
+    "zeroMediaSpend": true,
+    "sevenDayJourney": true
+  },
+  "artifacts": [
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-9d39a4ca-ccbb-4fe8-bfb2-e47770ba7730",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "DESKTOP_1440",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "pageHeightPx": 2833,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:15.222Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/ADHERENT-DESKTOP_1440.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-59786309-42b3-4674-ae43-484529d9868b",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "IPHONE_15_PRO",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 393,
+      "viewportHeight": 659,
+      "pageHeightPx": 3494,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:18.474Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/ADHERENT-IPHONE_15_PRO.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-9b874ded-0883-4381-ab74-1ab7393a5342",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "PIXEL_7",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 412,
+      "viewportHeight": 839,
+      "pageHeightPx": 3438,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:21.887Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/ADHERENT-PIXEL_7.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-62fd3c52-2fb6-41a9-8147-771676e1f102",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "DESKTOP_1440",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "pageHeightPx": 2192,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:23.176Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/RECOVERY-DESKTOP_1440.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-6d22ded2-38a1-41ad-9a20-98f5e4ede9f9",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "IPHONE_15_PRO",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 393,
+      "viewportHeight": 659,
+      "pageHeightPx": 2724,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:24.653Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/RECOVERY-IPHONE_15_PRO.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-6c208681-f2a3-41f0-b06f-c8d671f660e2",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "PIXEL_7",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 412,
+      "viewportHeight": 839,
+      "pageHeightPx": 2697,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:26.051Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/RECOVERY-PIXEL_7.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-7a185625-af48-43cd-970c-5e635f3bda20",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "DESKTOP_1440",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "pageHeightPx": 1496,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:26.861Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/SAFETY-DESKTOP_1440.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-45606354-4319-4330-952f-cfb196ee054e",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "IPHONE_15_PRO",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 393,
+      "viewportHeight": 659,
+      "pageHeightPx": 1678,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:27.879Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/SAFETY-IPHONE_15_PRO.png"
+    },
+    {
+      "captureSessionId": "vega-v16-local-matrix",
+      "evidenceKey": "vega-style-89f9aa38-8925-4ef1-a003-031cb4838dd5",
+      "evidenceType": "FULL_PAGE",
+      "deviceProfile": "PIXEL_7",
+      "pageNumber": 1,
+      "foldNumber": null,
+      "viewportWidth": 412,
+      "viewportHeight": 839,
+      "pageHeightPx": 1649,
+      "scrollY": 0,
+      "sourceUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "finalUrl": "http://127.0.0.1:57188/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "capturedAt": "2026-10-27T20:00:28.869Z",
+      "localPath": "docs/homologacao/evidencias/vega-contextual-v16/SAFETY-PIXEL_7.png"
+    }
+  ],
+  "sideEffects": {
+    "paymentEnabled": false,
+    "published": false,
+    "campaignCreated": false,
+    "mediaSpendBrl": 0
+  },
+  "humanEvidenceClaimed": false,
+  "commercialEvidenceClaimed": false,
+  "evidence": [
+    "9d39a4ca-ccbb-4fe8-bfb2-e47770ba7730",
+    "59786309-42b3-4674-ae43-484529d9868b",
+    "9b874ded-0883-4381-ab74-1ab7393a5342",
+    "62fd3c52-2fb6-41a9-8147-771676e1f102",
+    "6d22ded2-38a1-41ad-9a20-98f5e4ede9f9",
+    "6c208681-f2a3-41f0-b06f-c8d671f660e2",
+    "7a185625-af48-43cd-970c-5e635f3bda20",
+    "45606354-4319-4330-952f-cfb196ee054e",
+    "89f9aa38-8925-4ef1-a003-031cb4838dd5"
+  ],
+  "localExecutionNotice": "Homologação local com identidades e dados sintéticos, MySQL 5.7 e gateway reais; não representa compra, opinião humana nem aprovação independente."
+}

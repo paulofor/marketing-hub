@@ -527,9 +527,13 @@ public class VegaPrivateService {
     return row;
   }
 
-  /** Aplica o prazo do convite sem confundir validade com aprovação comercial. */
+  /**
+   * Restringe o acesso à família legada e aplica seu prazo sem transferir sessão entre runtimes.
+   */
   private void active(VegaPrivateSession row) {
-    if (row.isRevoked() || row.getExpiresAt().isBefore(Instant.now()))
+    if (!SUPPORTED_VERSIONS.contains(row.getPrototypeVersion())
+        || row.isRevoked()
+        || row.getExpiresAt().isBefore(Instant.now()))
       throw fail(401, "Este acesso foi encerrado ou expirou.");
   }
 

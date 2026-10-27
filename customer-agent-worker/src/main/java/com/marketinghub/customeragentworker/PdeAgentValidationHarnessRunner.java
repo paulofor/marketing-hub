@@ -81,7 +81,7 @@ public class PdeAgentValidationHarnessRunner {
   }
 
   /**
-   * Valida identidade e finalidade; capturas complementares usam somente o harness técnico do kit.
+   * Valida identidade, linhagem e família executável; a jornada contextual usa seu próprio harness.
    */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
@@ -150,6 +150,15 @@ public class PdeAgentValidationHarnessRunner {
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
             && lineage.path("productId").asLong() == productId;
+    boolean vegaContextual =
+        "metodo-musa-7-dias".equals(productSlug)
+            && "musa-pde-entry-v16-modelagem-internacional".equals(prototypeVersion)
+            && ("/experiences/" + prototypeVersion + "/agent-validation")
+                .equals(URI.create(sourceUrl).getPath())
+            && identityReference.equals("experiment:" + target.path("experimentId").asLong())
+            && lineage.path("learningCycleId").asLong() > 0
+            && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
+            && lineage.path("productId").asLong() == productId;
     boolean mira =
         "orientacao-digital-rotina-pele-madura".equals(productSlug)
             && prototypeVersion.startsWith("mira-private-v")
@@ -175,12 +184,13 @@ public class PdeAgentValidationHarnessRunner {
           "Captura complementar exige o contrato executável do kit privado.");
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)
         && !vega
+        && !vegaContextual
         && !miraCandidate
         && !privateKit
         && !supplementalProduct) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
-    if (!vega && !mira && !alcyone && !miraCandidate && !privateKit) {
+    if (!vega && !vegaContextual && !mira && !alcyone && !miraCandidate && !privateKit) {
       throw HarnessException.executor(
           "O harness instalado não possui cenários próprios para este produto. "
               + "Implemente-os antes da homologação; não reutilize outro PDE.");
@@ -209,7 +219,7 @@ public class PdeAgentValidationHarnessRunner {
                 productSlug,
                 "prototypeVersion",
                 prototypeVersion));
-    if (vega || miraCandidate || privateKit) {
+    if (vega || vegaContextual || miraCandidate || privateKit) {
       input.put("cycleId", lineage.path("learningCycleId").asLong());
       if (privateKit) {
         input.put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
@@ -223,6 +233,9 @@ public class PdeAgentValidationHarnessRunner {
       executionScript = Path.of(scriptPath).resolveSibling("private-kit-harness.mjs").toString();
     } else if (miraCandidate) {
       executionScript = Path.of(scriptPath).resolveSibling("mira-candidate-harness.mjs").toString();
+    } else if (vegaContextual) {
+      executionScript =
+          Path.of(scriptPath).resolveSibling("vega-contextual-style-harness.mjs").toString();
     } else if (vega) {
       executionScript =
           Path.of(scriptPath).resolveSibling("vega-agent-validation-harness.mjs").toString();
@@ -271,6 +284,7 @@ public class PdeAgentValidationHarnessRunner {
   /**
    * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
    * vinculadas aos cenários e momentos reais, incluindo a arte ampliada nas referências v2.
+   * Avalia PASS no cenário, preservando estados funcionais como BLOCKED dentro da prova segura.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -315,6 +329,17 @@ public class PdeAgentValidationHarnessRunner {
         && REQUIRED_CHECKS.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
       throw new HarnessException("O harness aprovou a execução com gate reprovado.");
     }
+    boolean vegaContextual =
+        "musa-pde-entry-v16-modelagem-internacional".equals(expected.get("prototypeVersion"))
+            && "metodo-musa-7-dias".equals(expected.get("productSlug"));
+    if (vegaContextual
+        && (!"PDE_CONTEXTUAL_STYLE_EXECUTION_V1".equals(result.path("runtimeContract").asText())
+            || !"DETERMINISTIC_CONTEXTUAL_RULES".equals(result.path("generationMode").asText())
+            || result.path("providerCalls").asInt(-1) != 0
+            || result.path("inputComparisonApplicable").asBoolean(true)
+            || (approved && !checks.path("sevenDayJourney").asBoolean(false))))
+      throw new HarnessException(
+          "Vega contextual exige regras reais, jornada, matriz própria e ausência de provedor.");
     boolean privateKit = "DETERMINISTIC_PRIVATE_KIT_V1".equals(expected.get("runtimeKind"));
     if (privateKit) {
       if (!"PDE_PRIVATE_KIT_PACKAGE_V2".equals(result.path("packageContractVersion").asText())
@@ -371,7 +396,8 @@ public class PdeAgentValidationHarnessRunner {
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
       int extraKitCaptures = privateKit || alcyone ? validateKitCaptureMoments(result) : 0;
       int terminalCaptures = validateTerminalResultEvidence(result, expected);
-      int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone || privateKit ? 9 : 5);
+      int expectedScenarioDeviceGates =
+          miraCandidate ? 18 : (alcyone || privateKit || vegaContextual ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
           || result.path("artifacts").size()
@@ -382,11 +408,26 @@ public class PdeAgentValidationHarnessRunner {
             "Cobertura técnica de dispositivos ou cenários está incompleta.");
       }
       if (approved
-          && (result.path("devices").findValues("status").stream()
-                  .anyMatch(status -> !"PASS".equals(status.asText()))
-              || result.path("scenarios").findValues("status").stream()
-                  .anyMatch(status -> !"PASS".equals(status.asText())))) {
+          && (java.util.stream.StreamSupport.stream(result.path("devices").spliterator(), false)
+                  .anyMatch(row -> !"PASS".equals(row.path("status").asText()))
+              || java.util.stream.StreamSupport.stream(
+                      result.path("scenarios").spliterator(), false)
+                  .anyMatch(row -> !"PASS".equals(row.path("status").asText())))) {
         throw new HarnessException("O harness aprovou uma cobertura com percurso reprovado.");
+      }
+      if (vegaContextual) {
+        var observed = new java.util.HashSet<String>();
+        result
+            .path("scenarios")
+            .forEach(
+                s ->
+                    observed.add(
+                        s.path("scenarioCode").asText() + "|" + s.path("deviceProfile").asText()));
+        for (String scenario : List.of("ADHERENT", "RECOVERY", "SAFETY"))
+          for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
+            if (!observed.contains(scenario + "|" + device))
+              throw new HarnessException(
+                  "Vega contextual não comprovou as nove combinações distintas.");
       }
       if (privateKit) {
         var combinations = new java.util.HashSet<String>();

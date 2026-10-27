@@ -1,0 +1,1141 @@
+{
+  "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+  "mode": "TECHNICAL",
+  "decision": "APPROVED",
+  "productId": 91004,
+  "productSlug": "metodo-musa-7-dias",
+  "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+  "cycleId": 91002,
+  "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+  "providerCalls": 0,
+  "modelFunctionalBehaviorClaimed": false,
+  "trafficClass": "AGENT_VALIDATION",
+  "internalMarker": "mh_internal_test",
+  "inputComparisonApplicable": false,
+  "durationSeconds": 17,
+  "devices": [
+    {
+      "deviceProfile": "DESKTOP_1440",
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "vega-style-45cbf1a0-b00e-4bb5-ab00-c58a04f76946",
+        "vega-style-69ec0a1f-b715-47cd-9662-2ab636bd9e64",
+        "vega-style-d5c54db5-41ad-49ef-9f7e-73ef6d4f418e"
+      ]
+    },
+    {
+      "deviceProfile": "IPHONE_15_PRO",
+      "viewportWidth": 393,
+      "viewportHeight": 659,
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "vega-style-eea2746a-ab4a-4a20-a787-2c4a63ab4f6f",
+        "vega-style-02758705-6cf6-4ad8-a1fa-a2fed5cd3932",
+        "vega-style-aa509144-155d-4088-8c88-717c64c033fb"
+      ]
+    },
+    {
+      "deviceProfile": "PIXEL_7",
+      "viewportWidth": 412,
+      "viewportHeight": 839,
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "vega-style-6b71888b-4d1c-4ec8-80c7-0fe50cf16ceb",
+        "vega-style-f2365ccf-0fc9-49bc-bf17-27ef5efdc551",
+        "vega-style-f37a9c2f-5918-46c6-9b04-39b8e5043422"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-0",
+      "card": {
+        "requestId": "synthetic-operation-0-0",
+        "status": "COMPLETED",
+        "microActions": [
+          "Use a alternativa declarada."
+        ]
+      },
+      "operations": {
+        "synthetic-operation-0-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-0",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-0-1": {
+          "missionId": "estilo-dia-2",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-1",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-0-2": {
+          "missionId": "estilo-dia-3",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-2",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-0-3": {
+          "missionId": "estilo-dia-4",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-3",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-0-4": {
+          "missionId": "estilo-dia-5",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-4",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-0-5": {
+          "missionId": "estilo-dia-6",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-5",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-0-6": {
+          "missionId": "estilo-dia-7",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-0-6",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "VALUE_MOMENT": {
+          "requestId": "synthetic-operation-0-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "READY_RESULT_USED": {
+          "requestId": "synthetic-operation-0-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "CHECKOUT_STARTED": {
+          "requestId": "synthetic-operation-0-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "requestId": "synthetic-operation-0-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": false,
+      "journeyComplete": true,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-1",
+      "card": {
+        "requestId": "synthetic-operation-1-0",
+        "status": "COMPLETED",
+        "microActions": [
+          "Use a alternativa declarada."
+        ]
+      },
+      "operations": {
+        "synthetic-operation-1-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-0",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-1-1": {
+          "missionId": "estilo-dia-2",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-1",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-1-2": {
+          "missionId": "estilo-dia-3",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-2",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-1-3": {
+          "missionId": "estilo-dia-4",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-3",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-1-4": {
+          "missionId": "estilo-dia-5",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-4",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-1-5": {
+          "missionId": "estilo-dia-6",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-5",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-1-6": {
+          "missionId": "estilo-dia-7",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-1-6",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "VALUE_MOMENT": {
+          "requestId": "synthetic-operation-1-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "READY_RESULT_USED": {
+          "requestId": "synthetic-operation-1-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "CHECKOUT_STARTED": {
+          "requestId": "synthetic-operation-1-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "requestId": "synthetic-operation-1-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": false,
+      "journeyComplete": true,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-2",
+      "card": {
+        "requestId": "synthetic-operation-2-0",
+        "status": "COMPLETED",
+        "microActions": [
+          "Use a alternativa declarada."
+        ]
+      },
+      "operations": {
+        "synthetic-operation-2-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-0",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-2-1": {
+          "missionId": "estilo-dia-2",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-1",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-2-2": {
+          "missionId": "estilo-dia-3",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-2",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-2-3": {
+          "missionId": "estilo-dia-4",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-3",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-2-4": {
+          "missionId": "estilo-dia-5",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-4",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-2-5": {
+          "missionId": "estilo-dia-6",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-5",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "synthetic-operation-2-6": {
+          "missionId": "estilo-dia-7",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-2-6",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "VALUE_MOMENT": {
+          "requestId": "synthetic-operation-2-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "READY_RESULT_USED": {
+          "requestId": "synthetic-operation-2-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "CHECKOUT_STARTED": {
+          "requestId": "synthetic-operation-2-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "requestId": "synthetic-operation-2-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": false,
+      "journeyComplete": true,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-3",
+      "card": {
+        "requestId": "synthetic-operation-3-0",
+        "status": "COMPLETED",
+        "microActions": [
+          "Use a alternativa declarada."
+        ]
+      },
+      "operations": {
+        "synthetic-operation-3-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-3-0",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "VALUE_MOMENT": {
+          "requestId": "synthetic-operation-3-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "READY_RESULT_USED": {
+          "requestId": "synthetic-operation-3-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "CHECKOUT_STARTED": {
+          "requestId": "synthetic-operation-3-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "requestId": "synthetic-operation-3-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": true,
+      "journeyComplete": false,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-4",
+      "card": {
+        "requestId": "synthetic-operation-4-0",
+        "status": "COMPLETED",
+        "microActions": [
+          "Use a alternativa declarada."
+        ]
+      },
+      "operations": {
+        "synthetic-operation-4-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-4-0",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "VALUE_MOMENT": {
+          "requestId": "synthetic-operation-4-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "READY_RESULT_USED": {
+          "requestId": "synthetic-operation-4-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "CHECKOUT_STARTED": {
+          "requestId": "synthetic-operation-4-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "requestId": "synthetic-operation-4-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": true,
+      "journeyComplete": false,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-5",
+      "card": {
+        "requestId": "synthetic-operation-5-0",
+        "status": "COMPLETED",
+        "microActions": [
+          "Use a alternativa declarada."
+        ]
+      },
+      "operations": {
+        "synthetic-operation-5-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "COMPLETED",
+            "ruleId": "SCARF_MEAL_STRAP"
+          },
+          "response": {
+            "requestId": "synthetic-operation-5-0",
+            "status": "COMPLETED",
+            "microActions": [
+              "Use a alternativa declarada."
+            ]
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "VALUE_MOMENT": {
+          "requestId": "synthetic-operation-5-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "READY_RESULT_USED": {
+          "requestId": "synthetic-operation-5-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "CHECKOUT_STARTED": {
+          "requestId": "synthetic-operation-5-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "requestId": "synthetic-operation-5-0",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": true,
+      "recovered": true,
+      "journeyComplete": false,
+      "safetyBlocked": false,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-6",
+      "card": null,
+      "operations": {
+        "synthetic-operation-6-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "BLOCKED",
+            "ruleId": "UNSUPPORTED"
+          },
+          "response": {
+            "requestId": "synthetic-operation-6-0",
+            "status": "BLOCKED",
+            "microActions": []
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": false,
+      "recovered": false,
+      "journeyComplete": false,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-7",
+      "card": null,
+      "operations": {
+        "synthetic-operation-7-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "BLOCKED",
+            "ruleId": "UNSUPPORTED"
+          },
+          "response": {
+            "requestId": "synthetic-operation-7-0",
+            "status": "BLOCKED",
+            "microActions": []
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": false,
+      "recovered": false,
+      "journeyComplete": false,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "evidenceId": "synthetic-session-8",
+      "card": null,
+      "operations": {
+        "synthetic-operation-8-0": {
+          "missionId": "estilo-dia-1",
+          "input": {
+            "occasion": "almoço",
+            "existingSelection": "lenço e bolsa",
+            "stylePreference": "Cor e criatividade"
+          },
+          "decision": {
+            "status": "BLOCKED",
+            "ruleId": "UNSUPPORTED"
+          },
+          "response": {
+            "requestId": "synthetic-operation-8-0",
+            "status": "BLOCKED",
+            "microActions": []
+          },
+          "startedAt": "2026-01-01T12:00:00Z",
+          "finishedAt": "2026-01-01T12:00:01Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "requestId": "",
+          "occurredAt": "2026-01-01T12:00:02Z"
+        }
+      },
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "resultReadySeconds": 1,
+      "resumed": false,
+      "recovered": false,
+      "journeyComplete": false,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "privacyPreserved": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "providerCalls": 0
+    }
+  ],
+  "checks": {
+    "sameVersion": true,
+    "desktopAndMobile": true,
+    "happyResultWithinTenMinutes": true,
+    "recoveryPreserved": true,
+    "safetyBlocked": true,
+    "accessibilityBasic": true,
+    "responsiveLayout": true,
+    "privacyPreserved": true,
+    "internalTrafficSegregated": true,
+    "paymentDisabled": true,
+    "publicationDisabled": true,
+    "campaignDisabled": true,
+    "zeroMediaSpend": true,
+    "sevenDayJourney": true
+  },
+  "sideEffects": {
+    "paymentEnabled": false,
+    "published": false,
+    "campaignCreated": false,
+    "mediaSpendBrl": 0
+  },
+  "humanEvidenceClaimed": false,
+  "commercialEvidenceClaimed": false,
+  "runtimeContract": "PDE_CONTEXTUAL_STYLE_EXECUTION_V1",
+  "fixtureNotice": "Fixture de contrato derivada do formato observado; não é prova de navegador."
+}

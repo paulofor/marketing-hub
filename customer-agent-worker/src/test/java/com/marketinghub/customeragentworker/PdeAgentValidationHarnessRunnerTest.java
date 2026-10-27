@@ -16,6 +16,101 @@ class PdeAgentValidationHarnessRunnerTest {
   @TempDir Path temporaryDirectory;
   private final ObjectMapper json = new ObjectMapper();
 
+  /** A v16 usa nove combinações próprias e recusa o recibo genérico de uma versão anterior. */
+  @Test
+  void contextualVersionRequiresOwnRulesAndNineDistinctCombinations() throws Exception {
+    Path template = fakeHarness(false, true);
+    String script = Files.readString(template);
+    int start = script.indexOf("{\n", script.indexOf("<<JSON"));
+    int end = script.lastIndexOf("\nJSON");
+    var proof =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(script.substring(start, end));
+    String version = "musa-pde-entry-v16-modelagem-internacional";
+    String url = "http://127.0.0.1:5176/experiences/" + version + "/agent-validation";
+    proof
+        .put("sourceReference", "experiment:91092")
+        .put("productId", 91004)
+        .put("productSlug", "metodo-musa-7-dias")
+        .put("publicUrl", url)
+        .put("prototypeVersion", version)
+        .put("runtimeContract", "PDE_CONTEXTUAL_STYLE_EXECUTION_V1")
+        .put("generationMode", "DETERMINISTIC_CONTEXTUAL_RULES")
+        .put("providerCalls", 0)
+        .put("inputComparisonApplicable", false);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) proof.path("checks"))
+        .put("sevenDayJourney", true);
+    var scenario =
+        (com.fasterxml.jackson.databind.node.ObjectNode) proof.path("scenarios").get(0).deepCopy();
+    var capture =
+        (com.fasterxml.jackson.databind.node.ObjectNode) proof.path("artifacts").get(0).deepCopy();
+    var scenarios = proof.putArray("scenarios");
+    var captures = proof.putArray("artifacts");
+    for (String code : java.util.List.of("ADHERENT", "RECOVERY", "SAFETY"))
+      for (String device : java.util.List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+        var item = scenario.deepCopy();
+        item.put("scenarioCode", code).put("deviceProfile", device);
+        item.putObject("operation").put("status", "SAFETY".equals(code) ? "BLOCKED" : "COMPLETED");
+        scenarios.add(item);
+        var artifact = capture.deepCopy();
+        artifact
+            .put("evidenceKey", code + "-" + device)
+            .put("deviceProfile", device)
+            .put("sourceUrl", url)
+            .put("finalUrl", url);
+        captures.add(artifact);
+      }
+    Path targetScript = template.resolveSibling("vega-contextual-style-harness.mjs");
+    Files.writeString(
+        targetScript,
+        script.substring(0, start) + json.writeValueAsString(proof) + script.substring(end));
+    var target =
+        Map.<String, Object>of(
+            "productId",
+            91004L,
+            "experimentId",
+            91092L,
+            "productSlug",
+            "metodo-musa-7-dias",
+            "experienceVersion",
+            version,
+            "publicUrl",
+            url,
+            "pdeContext",
+            Map.of(
+                "lineage",
+                Map.of("productId", 91004L, "experimentId", 91092L, "learningCycleId", 91002L)));
+    var task =
+        Map.<String, Object>of(
+            "taskId", 91901L, "sourceReference", "experiment:91092", "taskTarget", target);
+    var runner =
+        new PdeAgentValidationHarnessRunner(
+            json, "/bin/sh", template.toString(), "synthetic", true);
+    assertThat(
+            runner
+                .run(task, "TECHNICAL", null, temporaryDirectory.resolve("style-valid"))
+                .result()
+                .path("scenarios")
+                .size())
+        .isEqualTo(9);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) scenarios.get(8))
+        .put("scenarioCode", "RECOVERY");
+    Files.writeString(
+        targetScript,
+        script.substring(0, start) + json.writeValueAsString(proof) + script.substring(end));
+    assertThatThrownBy(
+            () ->
+                runner.run(task, "TECHNICAL", null, temporaryDirectory.resolve("style-duplicate")))
+        .hasMessageContaining("nove combinações distintas");
+    proof.put("generationMode", "DETERMINISTIC_FIXTURE");
+    Files.writeString(
+        targetScript,
+        script.substring(0, start) + json.writeValueAsString(proof) + script.substring(end));
+    assertThatThrownBy(
+            () -> runner.run(task, "TECHNICAL", null, temporaryDirectory.resolve("style-fixture")))
+        .hasMessageContaining("regras reais");
+  }
+
   /** Reproduz #377 e explica ausência de implementação antes de iniciar navegador ou integração. */
   @Test
   void rejectsPlannedCycleWithoutExecutableUrl() {
@@ -409,6 +504,39 @@ class PdeAgentValidationHarnessRunnerTest {
             null,
             expected);
     assertThat((java.util.List<?>) artifacts).hasSize(18);
+  }
+
+  /** Confere o relatório local real da v16 sem repetir as nove execuções nem iniciar modelo. */
+  @Test
+  void validatesExistingContextualEvidenceWhenProvided() throws Exception {
+    String path = System.getenv("VEGA_CONTEXTUAL_LOCAL_REPORT");
+    org.junit.jupiter.api.Assumptions.assumeTrue(path != null && !path.isBlank());
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "synthetic", true);
+    var method =
+        PdeAgentValidationHarnessRunner.class.getDeclaredMethod(
+            "validateOutput",
+            com.fasterxml.jackson.databind.JsonNode.class,
+            String.class,
+            Path.class,
+            String.class,
+            String.class,
+            Map.class);
+    method.setAccessible(true);
+    var input = json.readTree(Path.of(path).resolveSibling("harness-input.json").toFile());
+    var expected =
+        json.convertValue(
+            input, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+    Object artifacts =
+        method.invoke(
+            runner,
+            json.readTree(Path.of(path).toFile()),
+            input.path("captureSessionId").asText(),
+            Path.of(path).resolveSibling("harness-captures"),
+            "TECHNICAL",
+            null,
+            expected);
+    assertThat((java.util.List<?>) artifacts).hasSize(9);
   }
 
   /** Descreve identidades sintéticas distintas do produto operacional e de sua história. */

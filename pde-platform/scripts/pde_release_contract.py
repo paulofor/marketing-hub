@@ -232,6 +232,32 @@ def validate_release_contract(
             )
 
 
+def validate_contextual_dependency(surface: dict[str, Any], contract: dict[str, Any]) -> bool:
+    """Vincula a variante privada contextual sem renomear a raiz pública já existente."""
+    private = contract.get("privateExperience")
+    if private is None:
+        return False
+    version = "musa-pde-entry-v16-modelagem-internacional"
+    expected = {
+        "prototypeVersion": version,
+        "pagePath": f"/experiences/{version}/agent-validation",
+        "contractPath": "/api/pde/vega/style/v1/contract",
+        "backendContractUrl": "http://191.252.181.168/api/pde/vega/style/v1/contract",
+        "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+        "providerCalls": 0,
+        "commercialLaunchClaimed": False,
+    }
+    if surface["deployTarget"] != "v10" or private != expected:
+        raise ValueError("Dependência contextual diverge da identidade ou dos limites privados")
+    if contract.get("deploymentValidation", {}).get("mode") != "COMMERCIAL_CANDIDATE_READ_ONLY":
+        raise ValueError("Dependência contextual exige preservar os gates da raiz pública")
+    if any(contract.get("externalAuthorization", {}).get(key) is not False for key in (
+        "additionalBudgetAuthorized", "mediaAuthorized", "paymentAuthorized", "paidVideoAuthorized"
+    )):
+        raise ValueError("Dependência contextual não autoriza efeitos externos")
+    return True
+
+
 def validate_rollback(before: dict[str, Any], after: dict[str, Any]) -> None:
     """Comprova que um rollback restaurou a identidade observada antes da troca."""
 
@@ -281,6 +307,7 @@ def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str
     """Seleciona a prova privada declarada sem afrouxar a validação das ofertas comerciais."""
 
     validate_release_contract(surface, contract, source)
+    validate_contextual_dependency(surface, contract)
     mode = contract.get("deploymentValidation", {}).get("mode", "COMMERCIAL")
     if mode == "COMMERCIAL_CANDIDATE_READ_ONLY":
         validation = contract.get("deploymentValidation", {})
@@ -309,7 +336,30 @@ def wait_private_capability(
 
     if timeout < 0:
         raise ValueError("Prazo da dependência privada inválido")
-    if smoke_profile(surface, contract, source) != "PRIVATE_PREPARATION_READ_ONLY":
+    profile = smoke_profile(surface, contract, source)
+    if validate_contextual_dependency(surface, contract):
+        expected = contract["privateExperience"]
+        deadline = clock() + timeout
+        while True:
+            try:
+                capability = fetch(expected["backendContractUrl"])
+            except urllib.error.HTTPError as error:
+                if error.code not in (404, 429) and error.code < 500:
+                    raise ValueError(f"Dependência contextual recusou a leitura: HTTP {error.code}") from error
+                capability = None
+            except (urllib.error.URLError, TimeoutError):
+                capability = None
+            if capability is not None:
+                if any(capability.get(key) != expected[key] for key in ("prototypeVersion", "generationMode", "providerCalls")):
+                    raise ValueError("Dependência contextual não comprova a capacidade esperada")
+                if capability.get("trafficClass") != "AGENT_VALIDATION" or capability.get("sessionLimit") != 18:
+                    raise ValueError("Dependência contextual não preserva a segregação e o limite técnico")
+                return True
+            remaining = deadline - clock()
+            if remaining <= 0:
+                raise ValueError("Backend contextual ainda indisponível; a imagem não pode ser promovida")
+            sleep(min(10, remaining))
+    if profile != "PRIVATE_PREPARATION_READ_ONLY":
         return False
     version = contract["publicationContract"].get("privatePrototypeVersion", surface["experienceVersion"])
     url = surface["publicUrl"].rstrip("/") + contract["deploymentValidation"]["contractPath"]

@@ -81,6 +81,35 @@ class PdeReleaseContractTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "processVersion"):
                 MODULE.validate_release_contract(surface, unsafe, source)
 
+    def test_contextual_dependency_waits_for_real_backend_and_preserves_previous_surface(self):
+        surface = MODULE.select_surface(self.inventory, "v10")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-style-v15-preparation-v1.json")
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        version = "musa-pde-entry-v16-modelagem-internacional"
+        contract["privateExperience"] = {
+            "prototypeVersion": version, "pagePath": f"/experiences/{version}/agent-validation",
+            "contractPath": "/api/pde/vega/style/v1/contract",
+            "backendContractUrl": "http://191.252.181.168/api/pde/vega/style/v1/contract",
+            "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES", "providerCalls": 0,
+            "commercialLaunchClaimed": False,
+        }
+        capability = {"prototypeVersion": version, "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+            "providerCalls": 0, "trafficClass": "AGENT_VALIDATION", "sessionLimit": 18}
+        fetch = mock.Mock(side_effect=[urllib.error.HTTPError("http://backend", 404, "missing", {}, None), capability])
+        self.assertTrue(MODULE.wait_private_capability(surface, contract, source, 10, fetch=fetch, sleep=lambda _: None))
+        self.assertEqual(fetch.call_count, 2)
+        self.assertEqual(contract["product"]["experienceVersion"], "musa-pde-entry-v15-estilo-pessoal")
+        for field, wrong in (("generationMode", "DETERMINISTIC_FIXTURE"), ("providerCalls", 1), ("trafficClass", "HUMAN")):
+            with self.assertRaises(ValueError):
+                MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: dict(capability, **{field: wrong}))
+        for field, wrong in (("prototypeVersion", "older-version"), ("backendContractUrl", "https://external.invalid"), ("commercialLaunchClaimed", True)):
+            unsafe = copy.deepcopy(contract)
+            unsafe["privateExperience"][field] = wrong
+            with self.assertRaises(ValueError):
+                MODULE.smoke_profile(surface, unsafe, source)
+        with self.assertRaisesRegex(ValueError, "não pode ser promovida"):
+            MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: (_ for _ in ()).throw(TimeoutError()))
+
     def test_commercial_mira_has_its_own_runtime_identity(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         self.assertEqual(

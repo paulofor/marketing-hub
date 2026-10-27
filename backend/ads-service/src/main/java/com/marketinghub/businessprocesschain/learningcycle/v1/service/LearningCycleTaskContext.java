@@ -26,7 +26,13 @@ public class LearningCycleTaskContext {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private LearningCycleImplementedInputContext implementedInput;
 
-  /** Entrega memória e entrada implementada pela identidade exata, recusando tarefas antigas. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.modeling.v1.service.ModelingHistoricalResearch
+      historicalResearch;
+
+  /**
+   * Entrega memória, fontes históricas e entrada implementada sem criar adoção ou renovar aceite.
+   */
   @Transactional(readOnly = true)
   public Optional<Map<String, Object>> resolve(String reference, Instant taskCreatedAt) {
     if (reference == null || taskCreatedAt == null) return Optional.empty();
@@ -79,6 +85,10 @@ public class LearningCycleTaskContext {
                 if (exactInput != null) context.put("implementedInput", exactInput);
                 context.put(
                     "availableImplementations", implementedInput.availableImplementations(value));
+              }
+              if (historicalResearch != null) {
+                var facts = historicalResearch.forCycle(value, value.getProductId(), taskCreatedAt);
+                if (!facts.isNull()) context.put("inheritedReferenceResearch", facts);
               }
               return context;
             });

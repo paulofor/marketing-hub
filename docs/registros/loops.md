@@ -11286,3 +11286,14 @@ A apresentação corrigida usa a v17 e um sucessor; a v16 mantém os controles
 avaliados no parecer original. O runtime e o harness aceitam somente essas duas
 versões explícitas, com sessão/ciclo isolados. A publicação aguarda capacidade
 v17 no backend antes de promover o frontend; não troca versão de sessões antigas.
+
+### Vega — pesquisa histórica no sucessor (27/10/2026)
+
+Na preparação 16→18, o briefing preservava os identificadores da pesquisa, mas
+não as fontes estruturadas. A adoção exata não deve ser transferida. A memória
+dos agentes agora pode carregar fatos congelados do ancestral, separadamente de
+`referenceModeling`, com identidade e limites temporais. Nenhuma aprovação,
+orçamento ou execução é herdada. Regressão: `ModelingHistoricalResearchTest`
+percorre o contexto real da tarefa para Vega e outra identidade, além de fontes
+futuras, produtos diferentes, adoção própria e linhagem inválida. Evidências em
+`docs/homologacao/vega-successor-research-memory-2026-10-27.md`.

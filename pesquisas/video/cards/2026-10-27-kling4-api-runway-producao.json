@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-kling4-api-runway-producao",
+  "collection": "video",
+  "title": "Experimentar Kling 4.0 por API comercial com 30s e múltiplas referências",
+  "finding": "Runway Dev abriu em 23/10/2026 a API Kling 4.0 (kling_4) com texto/imagem/vídeo para vídeo, 3–30s, som incluído, até 10 referências visuais, até 5 vídeos de referência e saída 720p/1080p. Desconto de 20% até 30/11/2026 UTC.",
+  "mechanism": "Integrar um modelo chinês através de API americana já utilizável e medir a viabilidade de cenas com referências; custo depende da resolução e, quando há vídeo de entrada, também de duração da fonte.",
+  "commercialApplication": "No Marketing Hub testar vídeos publicitários 15–30s com controle de produto, personagem, movimento e áudio versus Wan 3.0/Runway Gen-4.5; validar tratamento de direitos e retenção pela plataforma antes de enviar arquivos.",
+  "evidenceStrength": "Forte para disponibilidade, schema, preço e data do lançamento por documentação oficial Runway; não há demonstração independente de melhor qualidade ou conversão.",
+  "publishedOn": "2026-10-23",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "Pelo menos parte das tomadas de 15–30s preservará identidade visual de produto e terá custo por tomada aprovada competitivo ao pipeline de cenas menores.",
+  "risks": "Viés ou erro de geração, direitos sobre mídia e vozes, falhas de referência, tarifas pós-desconto, custos extras de entrada vídeo, dependência Runway, latência, bloqueios contratuais.",
+  "limits": "Runway kling_4 ativo em 720p/1080p, não 4K. API direta Kling permanece limitada. Sem vídeo de entrada, desconto US$0,1256/s em 720p e US$0,188/s em 1080p. Com vídeo de entrada faturamento soma segundos de saída e máximo entre duração de entrada e saída.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-27-kling4-api-runway-ativo.md",
+  "sourceTitle": "Fonte revisada — Kling 4.0 via API Runway Dev",
+  "sourceSha256": "6f2d983bd6738c3db2306039ba423bfc84397cd43de79c2096a429c1f256d670"
+}

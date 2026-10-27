@@ -50,6 +50,9 @@ public class KitPrivateService {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private LearningCycleVideoBinding videoBinding;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private KitImplementationBinding implementationBinding;
+
   /** Configura persistência canônica e assinatura de acessos sem manter segredo bruto no banco. */
   public KitPrivateService(
       KitPrivateSessionRepository sessions,
@@ -68,6 +71,21 @@ public class KitPrivateService {
     this.json = json;
     this.pepper = pepper;
     this.clock = Clock.systemUTC();
+  }
+
+  /** Consulta o desenho aprovado sem emitir sessão, reserva, parecer ou autorização. */
+  public com.marketinghub.pde.kit.privateprototype.v1.service.implementationPlan.Plan
+      implementationPlan(Long productId, Long cycleId) {
+    require(implementationBinding != null, "A vinculação do compositor não está disponível.");
+    return implementationBinding.plan(productId, cycleId);
+  }
+
+  /** Vincula somente a capacidade instalada ao desenho confirmado pelo operador. */
+  public com.marketinghub.pde.kit.privateprototype.v1.service.implementationPlan.Plan
+      bindImplementation(
+          com.marketinghub.pde.kit.privateprototype.v1.service.bindImplementation.Bind input) {
+    require(implementationBinding != null, "A vinculação do compositor não está disponível.");
+    return implementationBinding.bind(input);
   }
 
   /** Emite acesso idempotente somente após conferir todos os contratos da versão selecionada. */
@@ -145,7 +163,9 @@ public class KitPrivateService {
     return view(active(token, false));
   }
 
-  /** Vincula a prova declarada somente à capacidade e ao arquivo aceito da mesma versão. */
+  /**
+   * Exige arquivos íntegros de todas as especialidades declaradas na mesma versão antes da prova.
+   */
   @Transactional(readOnly = true)
   public void validateRegistration(
       com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle cycle,
@@ -156,35 +176,41 @@ public class KitPrivateService {
             && capability.profileCode().equals(proof.path("profileCode").asText())
             && capability.prototypeUrl().equals(proof.path("privateAccessUrl").asText()),
         "A prova não corresponde ao perfil e à URL da implementação registrada.");
-    require(
-        artifacts
-            .existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
-                cycle.getId(),
-                cycle.getProductId(),
-                cycle.getExperimentId(),
-                cycle.getProductVersion(),
-                capability.profileCode(),
-                "READY"),
-        "Prepare e confira o pacote utilizável desta versão antes de registrar sua prova.");
-    require(
-        artifacts
-            .acceptedManifests(
-                cycle.getId(),
-                cycle.getProductId(),
-                cycle.getExperimentId(),
-                cycle.getProductVersion(),
-                capability.profileCode())
-            .stream()
-            .map(this::read)
-            .anyMatch(
-                manifest ->
-                    KitArtifactContract.PACKAGE_CONTRACT_VERSION.equals(
-                            manifest.path("packageContractVersion").asText())
-                        && manifest.path("files").size() == 36),
-        "A prova exige o pacote corrigido com 36 arquivos individuais. Os pacotes anteriores permanecem no histórico.");
+    for (var specialty : KitSpecialties.profiles(capability.profileCode())) {
+      require(
+          artifacts
+              .acceptedManifests(
+                  cycle.getId(),
+                  cycle.getProductId(),
+                  cycle.getExperimentId(),
+                  cycle.getProductVersion(),
+                  specialty.code())
+              .stream()
+              .map(this::read)
+              .anyMatch(
+                  manifest ->
+                      KitArtifactContract.PACKAGE_CONTRACT_VERSION.equals(
+                              manifest.path("packageContractVersion").asText())
+                          && manifest.path("files").size() == 36),
+          "Falta o pacote íntegro de 36 arquivos para "
+              + specialty.label()
+              + ". A prova de outra especialidade não comprova esta cobertura.");
+    }
   }
 
-  /** Valida o briefing, preserva a causa de segurança e só reserva composição quando permitida. */
+  /** Vincula a prova multiperfil ao desenho exato, mantendo recibos históricos sem alteração. */
+  public com.fasterxml.jackson.databind.node.ObjectNode registrationEvidence(
+      com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle cycle) {
+    if (!KitSpecialties.BEAUTY.equals(capabilities.resolve(cycle).profileCode()))
+      return json.createObjectNode();
+    require(implementationBinding != null, "A vinculação do compositor não está disponível.");
+    return implementationBinding.registrationEvidence(cycle);
+  }
+
+  /**
+   * Valida especialidade e briefing, preservando segurança, cotas por perfil e recuperação sem
+   * recomposição.
+   */
   @Transactional
   public SessionView input(String token, Input input) {
     var session = active(token, true);
@@ -198,6 +224,15 @@ public class KitPrivateService {
         input.email().endsWith("@sandbox.local") && "00000000000".equals(input.whatsapp()),
         "Esta experiência usa somente contatos fictícios sem rota externa.");
     var payload = read(session.getPayloadJson());
+    String profile = payload.path("profileCode").asText();
+    boolean multi = KitSpecialties.BEAUTY.equals(profile);
+    String selected = multi ? input.specialtyCode() : profile;
+    require(
+        KitSpecialties.profiles(profile).stream().anyMatch(p -> p.code().equals(selected)),
+        "Escolha uma especialidade disponível. Não será usado repertório de outra profissão.");
+    require(
+        multi || input.specialtyCode() == null || profile.equals(input.specialtyCode()),
+        "Esta versão não permite trocar a especialidade.");
     String raw = write(input);
     String format = payload.path("packageContractVersion").asText("");
     String digest =
@@ -222,23 +257,23 @@ public class KitPrivateService {
       session.setPayloadJson(write(payload));
       return view(sessions.saveAndFlush(session));
     }
-    String owner = session.getScenarioCode();
+    String owner = session.getScenarioCode() + (multi ? ":" + selected : "");
     var artifact =
         artifacts
             .findByCycleIdAndFixtureOwnerAndInputSha256(cycle.getId(), owner, digest)
             .orElse(null);
     if (artifact == null) {
       require(
-          artifacts.countByCycleId(cycle.getId()) < 6
+          artifacts.countByCycleId(cycle.getId()) < (multi ? 36 : 6)
               && artifacts.countByCycleIdAndFixtureOwner(cycle.getId(), owner) < 2,
-          "O limite de seis composições por ciclo e duas por fixture foi atingido. Não há renovação por dispositivo ou repetição.");
+          "O limite de composições da versão e duas por cenário/especialidade foi atingido. Não há renovação por dispositivo ou repetição.");
       artifact = new KitPrivateArtifact();
       artifact.setId(UUID.randomUUID().toString());
       artifact.setCycleId(cycle.getId());
       artifact.setProductId(cycle.getProductId());
       artifact.setExperimentId(cycle.getExperimentId());
       artifact.setPrototypeVersion(cycle.getProductVersion());
-      artifact.setProfileCode(payload.path("profileCode").asText());
+      artifact.setProfileCode(selected);
       artifact.setFixtureOwner(owner);
       artifact.setInputSha256(digest);
       artifact.setInputJson(raw);
@@ -426,15 +461,22 @@ public class KitPrivateService {
     return s;
   }
 
-  /** Exige artefato íntegro vinculado à sessão autenticada. */
+  /** Exige artefato íntegro da sessão, cenário e especialidade efetivamente escolhida. */
   private KitPrivateArtifact readyArtifact(KitPrivateSession s) {
     require(s.getArtifactId() != null, "O pacote ainda não está disponível.");
     var a = artifacts.findById(s.getArtifactId()).orElseThrow();
+    var payload = read(s.getPayloadJson());
+    String family = payload.path("profileCode").asText();
+    boolean multi = KitSpecialties.BEAUTY.equals(family);
+    String selected = multi ? payload.path("input").path("specialtyCode").asText() : family;
+    String owner = s.getScenarioCode() + (multi ? ":" + selected : "");
     require(
         a.getCycleId().equals(s.getCycleId())
             && a.getProductId().equals(s.getProductId())
             && a.getPrototypeVersion().equals(s.getPrototypeVersion())
-            && a.getFixtureOwner().equals(s.getScenarioCode())
+            && a.getFixtureOwner().equals(owner)
+            && a.getProfileCode().equals(selected)
+            && a.getExperimentId().equals(s.getExperimentId())
             && "READY".equals(a.getStatus()),
         "Pacote indisponível ou incompatível com o acesso.");
     return a;
@@ -470,9 +512,11 @@ public class KitPrivateService {
         s.getScenarioCode(),
         s.getDeviceProfile(),
         data.path("profileCode").asText(),
-        "nails-v1".equals(data.path("profileCode").asText())
-            ? "Agenda Cheia Nail Design"
-            : "Kit de barbearia",
+        KitSpecialties.BEAUTY.equals(data.path("profileCode").asText())
+            ? "Capella — divulgação para profissionais de beleza"
+            : "nails-v1".equals(data.path("profileCode").asText())
+                ? "Agenda Cheia Nail Design"
+                : "Kit de divulgação",
         status,
         reason,
         KitPrivatePresentation.resolve(
@@ -486,7 +530,8 @@ public class KitPrivateService {
         list,
         data.path("transfers").asInt(),
         s.getExpiresAt(),
-        videoIntegration(s));
+        videoIntegration(s),
+        KitSpecialties.profiles(data.path("profileCode").asText()));
   }
 
   /** Apresenta somente vídeos do mesmo contexto; falha do vínculo não impede recuperar o kit. */

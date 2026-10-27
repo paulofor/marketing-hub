@@ -86,6 +86,7 @@ export type CycleValueFlow = {
   observedAt: string;
   implementation: {
     available: boolean;
+    bindingAvailable?: boolean;
     profileCode?: string | null;
     reason: string;
     prototypeUrl?: string | null;
@@ -158,8 +159,7 @@ export type LearningCycle = {
   } | null;
   automaticContinuation?: boolean;
   videoBudget?:
-    | import("../financial/useVideoBudget").VideoBudgetAuthorization
-    | null;
+    import("../financial/useVideoBudget").VideoBudgetAuthorization | null;
   id: number;
   productId: number;
   experimentId: number;

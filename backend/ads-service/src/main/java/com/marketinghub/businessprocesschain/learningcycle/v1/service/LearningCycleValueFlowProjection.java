@@ -82,14 +82,19 @@ public class LearningCycleValueFlowProjection {
     int ready =
         capability.available() && "OPEN".equals(cycle.getStatus())
             ? (int)
-                artifacts
-                    .acceptedManifests(
-                        cycle.getId(),
-                        cycle.getProductId(),
-                        cycle.getExperimentId(),
-                        cycle.getProductVersion(),
+                com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.profiles(
                         capability.profileCode())
                     .stream()
+                    .flatMap(
+                        p ->
+                            artifacts
+                                .acceptedManifests(
+                                    cycle.getId(),
+                                    cycle.getProductId(),
+                                    cycle.getExperimentId(),
+                                    cycle.getProductVersion(),
+                                    p.code())
+                                .stream())
                     .map(json::read)
                     .filter(
                         manifest ->

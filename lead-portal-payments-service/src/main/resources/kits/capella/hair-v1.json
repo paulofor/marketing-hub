@@ -1,0 +1,28 @@
+{
+  "code": "hair-v1",
+  "profession": "Cabelo",
+  "productName": "Capella — divulgação para cabelo",
+  "serviceExamples": "Corte e finalização: informe somente o serviço que você oferece.",
+  "libraryDirectory": "hair-v1",
+  "headlines": [
+    "Seu cabelo, seu jeito",
+    "Um cuidado para renovar o dia",
+    "Consulte os horários desta semana",
+    "Um corte para chamar de seu",
+    "Seu próximo cuidado começa aqui",
+    "Leveza no visual, cuidado nos detalhes",
+    "Conte como você quer se sentir",
+    "Um momento para cuidar de você",
+    "Escolha seu próximo visual",
+    "Vamos combinar seu horário?"
+  ],
+  "calendarDays": [
+    "Apresente seu serviço de corte e finalização",
+    "Convide a consultar horários reais da semana",
+    "Mostre um detalhe do serviço, identificando imagens ilustrativas",
+    "Retome conversas somente com quem autorizou contato",
+    "Divulgue a disponibilidade real dos próximos dias",
+    "Explique como agendar seu serviço",
+    "Reforce o contato e a localização"
+  ]
+}

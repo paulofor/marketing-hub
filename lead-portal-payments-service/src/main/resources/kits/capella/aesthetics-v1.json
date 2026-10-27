@@ -1,0 +1,28 @@
+{
+  "code": "aesthetics-v1",
+  "profession": "Estética não clínica",
+  "productName": "Capella — divulgação para estética não clínica",
+  "serviceExamples": "Cuidados estéticos não clínicos: informe somente o serviço que você oferece.",
+  "libraryDirectory": "aesthetics-v1",
+  "headlines": [
+    "Um momento de cuidado para você",
+    "Inclua você na sua semana",
+    "Seu cuidado merece espaço na agenda",
+    "Uma pausa para se cuidar",
+    "Qual cuidado combina com seu dia?",
+    "Sinta-se acolhida do início ao fim",
+    "Conheça as opções de cuidado",
+    "Reserve um momento só seu",
+    "Consulte serviços e disponibilidade",
+    "Vamos conversar sobre seu cuidado?"
+  ],
+  "calendarDays": [
+    "Apresente seu serviço de cuidados estéticos não clínicos",
+    "Convide a consultar horários reais da semana",
+    "Mostre um detalhe do serviço, identificando imagens ilustrativas",
+    "Retome conversas somente com quem autorizou contato",
+    "Divulgue a disponibilidade real dos próximos dias",
+    "Explique como agendar seu serviço",
+    "Reforce o contato e a localização"
+  ]
+}

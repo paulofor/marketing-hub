@@ -11179,3 +11179,18 @@ depois de materializar o checkout. Provas e limites em
 - Limite: preparar a direção não inicia Argos nem comprova demanda. A pesquisa e
   a adoção de suas conclusões continuam pelos contratos próprios da modelagem.
 - Registro: [matriz local](../homologacao/vega-international-direction-v1.md).
+
+## Recorrência: especificação sem capacidade executora multiperfil — 27/10/2026
+
+Extensão de `LOOP-CICLO-JANELA-SEM-ORIENTACAO` e
+`LOOP-DEDALO-ESPECIFICACAO-EXIGE-PROVA-POSTERIOR`: Capella ciclo 15, tarefas 829/830/831/833,
+concluiu especificações, mas execução 87 chegou sem URL aceita à 3.6. O catálogo executável
+reconhecia somente um perfil explícito. A versão anterior homologada não cobria beleza.
+Ampliar somente a orientação não materializava arquivos das novas especialidades.
+
+A correção amplia o compositor existente e vincula explicitamente sua capacidade ao ID/hash
+do desenho aprovado. Sem inferir suporte pelo nome, ID ou texto livre. A prova exige todos os
+pacotes correspondentes; fixtures técnicas continuam separadas de qualidade visual e gates
+comerciais. Regressões exercitam perfis históricos, seis especialidades, duas identidades,
+recuperação, callbacks, segurança e recusa de arquitetura alterada, sem chamada paga.
+Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.

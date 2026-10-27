@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Slf4j
 public class KitPrivateController {
   private final KitPrivateService service;
+
   private final String pdeToken;
   private final String compositorToken;
   private final String mediaOrigin;
@@ -89,6 +90,33 @@ public class KitPrivateController {
       summary = "Preparar acesso de QA sem inferência, compra ou gasto de mídia")
   public ResponseEntity<Created> adminCreate(@Valid @RequestBody Create input) {
     return privateResponse(service.create(input));
+  }
+
+  /**
+   * Apresenta capacidades instaladas e o desenho aprovado, sem promover especificação a
+   * implementação.
+   */
+  @GetMapping("/admin/implementations")
+  public ResponseEntity<
+          com.marketinghub.pde.kit.privateprototype.v1.service.implementationPlan.Plan>
+      implementationPlan(@RequestParam Long productId, @RequestParam Long cycleId) {
+    return privateResponse(service.implementationPlan(productId, cycleId));
+  }
+
+  /**
+   * Registra uma escolha do operador, preservando versão, desenho, orçamento e revisões
+   * independentes.
+   */
+  @PostMapping("/admin/implementations")
+  @io.swagger.v3.oas.annotations.Operation(
+      summary =
+          "Vincular capacidade instalada ao desenho aprovado sem gasto ou homologação implícita")
+  public ResponseEntity<
+          com.marketinghub.pde.kit.privateprototype.v1.service.implementationPlan.Plan>
+      bindImplementation(
+          @Valid @RequestBody
+              com.marketinghub.pde.kit.privateprototype.v1.service.bindImplementation.Bind input) {
+    return privateResponse(service.bindImplementation(input));
   }
 
   /** Emite acesso para o executor de homologação após autenticação da integração PDE. */

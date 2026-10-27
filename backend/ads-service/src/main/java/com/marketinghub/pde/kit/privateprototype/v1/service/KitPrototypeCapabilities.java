@@ -25,6 +25,9 @@ public class KitPrototypeCapabilities {
   private final BusinessProcessChainDefinitionRepository chains;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private KitImplementationBinding implementationBinding;
+
   @Value(
       "${pde.kit.private-prototype-url:https://pagamentopalf.site/mh-api/pde/kit/private/v1/prototype}")
   private String prototypeUrl;
@@ -73,25 +76,22 @@ public class KitPrototypeCapabilities {
       if (!"APPROVE".equals(result.path("decision").asText()))
         return unavailable("A arquitetura não aprovou esta implementação.");
       var definition = result.path("productArchitecture");
-      String explicit = definition.path("kitProfileCode").asText("");
-      // Aliases do schema v6: formato ou referência identificam explicitamente o mesmo perfil.
-      String reference = definition.path("strategyReference").asText("");
-      String format = definition.path("format").asText("");
-      var matches =
-          List.of("nails-v1", "barber-v1").stream()
-              .filter(
-                  code ->
-                      code.equals(explicit)
-                          || explicit.isBlank()
-                              && (containsProfile(reference, code)
-                                  || containsProfile(format, code)))
-              .toList();
-      if (matches.size() != 1)
-        return unavailable(
-            "O contrato não identifica um perfil de kit suportado e inequívoco; não será inferido por nome ou ID.");
+      var profile = KitSpecialties.declaredProfile(definition);
+      if (profile.isEmpty()
+          && definition.path("kitProfileCode").asText("").isBlank()
+          && implementationBinding != null)
+        profile = implementationBinding.resolved(cycle, architecture);
+      if (profile.isEmpty())
+        return new Capability(
+            false,
+            null,
+            "O contrato não identifica um perfil de kit suportado e inequívoco; não será inferido por nome ou ID.",
+            null,
+            Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+                && KitSpecialties.privateAdapterSupported(definition));
       return new Capability(
           true,
-          matches.getFirst(),
+          profile.orElseThrow(),
           "O compositor registrado pode materializar este contrato com fixtures de QA, sem chamadas pagas.",
           prototypeUrl);
     } catch (Exception ex) {
@@ -104,11 +104,6 @@ public class KitPrototypeCapabilities {
       return unavailable(
           "O contrato de implementação não pôde ser conferido. Preserve a versão e corrija a entrada.");
     }
-  }
-
-  /** Reconhece somente o código completo em campos canônicos, sem inferir pelo produto. */
-  private boolean containsProfile(String value, String code) {
-    return value.matches("(?s).*\\b" + code + "\\b.*");
   }
 
   /** Usa a última tentativa da atividade, sem recuperar aprovação anterior a um bloqueio novo. */

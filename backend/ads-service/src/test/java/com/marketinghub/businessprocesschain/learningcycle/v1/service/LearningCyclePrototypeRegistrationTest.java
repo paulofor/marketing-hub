@@ -202,6 +202,7 @@ class LearningCyclePrototypeRegistrationTest {
     original.setEvidenceJson(originalEvidence.toString());
     history.add(original);
     var kits = mock(com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateService.class);
+    when(kits.registrationEvidence(any())).thenReturn(json.createObjectNode());
     ReflectionTestUtils.setField(service, "privateKits", kits);
     cycle.setWindowStart(Instant.parse("2026-10-08T03:00:00Z"));
     cycle.setWindowEnd(Instant.parse("2026-10-17T02:59:59Z"));

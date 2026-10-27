@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import CycleKitImplementationBinding from "./CycleKitImplementationBinding";
 import type { LearningCycle } from "../../api/learningCycle/useLearningCycles";
 import { cycleError } from "../../api/learningCycle/useLearningCycles";
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
@@ -41,7 +42,10 @@ export default function CyclePrivateKitLaunch({
     return () => window.removeEventListener("message", receive);
   }, []);
   const impl = cycle.valueFlow?.implementation;
-  if (!impl?.available || !impl.prototypeUrl) return null;
+  if (!impl?.available || !impl.prototypeUrl)
+    return impl?.bindingAvailable ? (
+      <CycleKitImplementationBinding cycle={cycle} />
+    ) : null;
   async function launch() {
     if (!impl?.prototypeUrl) return;
     setError("");

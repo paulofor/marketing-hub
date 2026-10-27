@@ -81,6 +81,26 @@
     if (presentation.nextActionPath) $('review-cycle').href = new URL(presentation.nextActionPath, 'http://191.252.181.168:5173').href;
     else $('review-cycle').removeAttribute('href');
     $('briefing').hidden = current.status !== 'INPUT';
+    const options = current.specialties || [];
+    const multiple = options.length > 1;
+    $('specialty-field').hidden = !multiple;
+    $('specialty').required = multiple;
+    if (!$('specialty').options.length && multiple) {
+      $('specialty').replaceChildren(...options.map(option => {
+        const element = document.createElement('option');
+        element.value = option.code; element.textContent = option.label; return element;
+      }));
+      $('specialty').onchange = () => {
+        const selected = options.find(option => option.code === $('specialty').value);
+        if (selected) {
+          document.querySelector('[name=services]').value = selected.serviceExample;
+          $('specialty-sample').hidden = false;
+          $('sample-headline').textContent = selected.sampleHeadline;
+          $('sample-caption').textContent = selected.sampleCaption;
+        }
+      };
+      $('specialty').onchange();
+    }
     $('result').hidden = true;
     $('resume').hidden = true;
     $('prepare').disabled = current.status !== 'INPUT';
@@ -104,6 +124,7 @@
       const form = new FormData(e.target);
       const input = Object.fromEntries(['professionalName','email','cityRegion','whatsapp','services','visualStyle','weeklyGoal','preferredColors','notes'].map(key => [key, String(form.get(key) || '').trim()]));
       input.consentAccepted = form.has('consentAccepted');
+      if (current.specialties?.length > 1) input.specialtyCode = String(form.get('specialtyCode') || '');
       current = await api('/input', 'PUT', input); await render();
     });
   });

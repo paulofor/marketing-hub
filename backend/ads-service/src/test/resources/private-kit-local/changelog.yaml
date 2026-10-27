@@ -45,3 +45,19 @@ databaseChangeLog:
               UPDATE learning_sales_cycle_v1
               SET stage = CASE id WHEN 7007 THEN 'VIDEO_APPROVAL' ELSE 'CAMPAIGN_VIDEO' END
               WHERE id IN (7007,7018);
+
+  - changeSet:
+      id: private-kit-local-beauty-fixtures
+      author: local-test
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO learning_sales_cycle_v1
+                (id,product_id,chain_definition_id,chain_code,process_definition_id,experiment_id,request_key,creation_json,brief_json,inherited_learning_json,stage,status,product_version,budget_limit_brl,open_slot,revision,baseline,created_at,updated_at,version_changed_at)
+                VALUES (7037,8037,8026,'private-kit-local',8125,9037,'00000000-0000-0000-0000-000000007037','{}','{}','{}','ADJUSTMENT','OPEN','beauty-candidate-v1',0,1,0,0,NOW(6),NOW(6),NOW(6)),
+                       (7048,8048,8026,'private-kit-local',8125,9048,'00000000-0000-0000-0000-000000007048','{}','{}','{}','ADJUSTMENT','OPEN','beauty-candidate-v1',0,1,0,0,NOW(6),NOW(6),NOW(6));

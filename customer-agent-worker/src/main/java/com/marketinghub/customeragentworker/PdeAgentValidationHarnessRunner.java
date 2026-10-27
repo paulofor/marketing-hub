@@ -117,7 +117,15 @@ public class PdeAgentValidationHarnessRunner {
     JsonNode acceptance = target.path("pdeContext").path("privatePrototypeAcceptance");
     boolean privateKit =
         "DETERMINISTIC_PRIVATE_KIT_V1".equals(acceptance.path("runtimeKind").asText())
-            && List.of("nails-v1", "barber-v1").contains(acceptance.path("profileCode").asText())
+            && List.of(
+                    "nails-v1",
+                    "barber-v1",
+                    "hair-v1",
+                    "makeup-v1",
+                    "brows-v1",
+                    "aesthetics-v1",
+                    "beauty-v1")
+                .contains(acceptance.path("profileCode").asText())
             && prototypeVersion.equals(acceptance.path("prototypeVersion").asText())
             && List.of("/mh-api/pde/kit/private/v1/prototype", "/api/pde/kit/private/v1/prototype")
                 .contains(URI.create(sourceUrl).getPath())

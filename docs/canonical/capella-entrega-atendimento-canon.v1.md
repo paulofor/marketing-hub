@@ -206,3 +206,32 @@ os dados profissionais localmente nos arquivos que a cliente decide publicar.
 Fontes oficiais consultadas em 21/09/2026: [LGPD, arts. 7, 9, 15, 16 e 18](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm)
 e [OpenAI Services Agreement, seção 4](https://openai.com/policies/services-agreement/).
 A atribuição contratual da saída pelo provedor não substitui a verificação das entradas.
+
+## Construção privada por especialidade — 27/10/2026
+
+A capacidade `beauty-v1` reúne unhas, barbearia, cabelo, maquiagem, sobrancelhas/cílios
+e estética não clínica. A seleção do compositor é explícita na gestão do ciclo e fica
+vinculada ao ID/hash da arquitetura aprovada, sem reescrever o contrato do agente.
+Somente desenho com `PDE_STATIC_RESULT_FIXTURES_V1`, adaptador determinístico, zero
+chamadas autorizadas e ausência de efeitos externos aceita essa vinculação. O recibo
+não é prova de execução nem aprovação. Desenho novo invalida o vínculo anterior.
+
+Cada especialidade recebe entrada e repertório textual próprios. A família de QA tem
+limite de 36 composições no ciclo e duas por cenário/especialidade; dispositivos e
+replay não multiplicam reservas. Perfis históricos conservam seis no ciclo e duas
+por cenário, sem mudança do briefing já persistido. A prova de implementação exige
+um pacote íntegro de 36 arquivos de **cada** especialidade; não se libera cobertura
+multissetor usando somente unhas. A homologação e os pareceres continuam separados.
+
+As ilustrações determinísticas são fixtures de teste, com aviso visível. Não são
+repertório comercial premium, fotografia de cliente ou prova de adequação estética.
+Não liberar checkout de outra profissão antes de biblioteca rastreável, pareceres e
+homologação próprios. A referência comercial histórica de unhas permanece preservada.
+Nenhuma capacidade de teste autoriza novas chamadas de IA, audiovisual ou mídia.
+
+Matriz e limites: [homologação da construção por especialidade](../homologacao/capella-homologacao-beleza-v1.md).
+
+Quando o desenho aprovado já declara explicitamente a capacidade (`kitProfileCode` ou
+alias documentado no formato/referência), não exigir outra seleção do operador. O
+registro independente resolve somente contratos anteriores sem esse código. Ambas as
+origens preservam o ID/hash da arquitetura na prova e recusam alteração posterior.

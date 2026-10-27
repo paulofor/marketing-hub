@@ -1,0 +1,28 @@
+{
+  "code": "brows-v1",
+  "profession": "Sobrancelhas e cílios",
+  "productName": "Capella — divulgação para sobrancelhas e cílios",
+  "serviceExamples": "Design de sobrancelhas: informe somente o serviço que você oferece.",
+  "libraryDirectory": "brows-v1",
+  "headlines": [
+    "Seu olhar, seu jeito",
+    "Um cuidado para a sua rotina",
+    "Detalhes que valorizam você",
+    "Vamos cuidar do seu olhar?",
+    "Seu próximo momento de cuidado",
+    "Um desenho que respeita seus traços",
+    "Conte o que você procura",
+    "Escolha um cuidado para esta semana",
+    "Consulte as opções e os horários",
+    "Seu cuidado começa na conversa"
+  ],
+  "calendarDays": [
+    "Apresente seu serviço de design de sobrancelhas",
+    "Convide a consultar horários reais da semana",
+    "Mostre um detalhe do serviço, identificando imagens ilustrativas",
+    "Retome conversas somente com quem autorizou contato",
+    "Divulgue a disponibilidade real dos próximos dias",
+    "Explique como agendar seu serviço",
+    "Reforce o contato e a localização"
+  ]
+}

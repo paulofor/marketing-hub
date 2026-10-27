@@ -36,7 +36,7 @@ jobs:
       - name: Testar continuidade do ciclo entre versões da cadeia
         run: cd frontend && npm test -- --run src/components/ProductNextProcessSummary.test.tsx src/components/ProductValueChainPositionNavigation.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/learningCycle/LearningCyclesPage.test.tsx
       - name: Testar preparação do sucessor com mudança de público
-        run: cd frontend && npm test -- --run src/pages/learningCycle/CycleAdjustmentPreparationForm.test.tsx src/pages/learningCycle/LearningCycleCommandForm.test.tsx
+        run: cd frontend && npm test -- --run src/pages/learningCycle/CycleAdjustmentPreparationForm.test.tsx src/pages/learningCycle/LearningCycleCommandForm.test.tsx src/pages/learningCycle/CycleKitImplementationBinding.test.tsx src/pages/learningCycle/CyclePrototypeRegistrationForm.test.tsx
       - name: Testar acompanhamento dos produtos em PLAY
         # A visão consultiva não pode transformar PLAY ou espera de decisão em execução.
         run: cd frontend && npm test -- --run src/pages/product/ProductsInPlayPage.test.tsx src/components/MainNavigation.test.tsx

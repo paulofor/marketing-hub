@@ -1,11 +1,41 @@
 openapi: 3.0.3
 info:
   title: Kit privado — sessão e apresentação por estado
-  version: 1.2.0
+  version: 1.3.0
   description: Prova sintética governada pelo backend; não autoriza compra, publicação ou gasto.
 servers:
   - url: http://191.252.181.168
 paths:
+  /api/pde/kit/private/v1/admin/implementations:
+    get:
+      summary: Consulta desenho aprovado e capacidade de teste instalada
+      parameters:
+        - { in: query, name: productId, required: true, schema: { type: integer, format: int64 } }
+        - { in: query, name: cycleId, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: "Revisão, ID/hash da arquitetura e perfis instalados, sem efeito de execução" }
+        '409': { description: "Ciclo, desenho ou adaptador incompatíveis" }
+    post:
+      summary: Vincula capacidade instalada ao desenho exato, sem gasto nem homologação implícita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, productId, cycleId, architectureTaskId, architectureSha256, profileCode, operatorName]
+              properties:
+                requestKey: { type: string, format: uuid }
+                expectedRevision: { type: integer, minimum: 0 }
+                productId: { type: integer, format: int64 }
+                cycleId: { type: integer, format: int64 }
+                architectureTaskId: { type: integer, format: int64 }
+                architectureSha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+                profileCode: { type: string, enum: [beauty-v1] }
+                operatorName: { type: string, maxLength: 160 }
+      responses:
+        '200': { description: "Vínculo idempotente; não altera tarefas, estágio, autorizações ou pareceres" }
+        '409': { description: "Revisão, identidade, conteúdo ou arquitetura incompatíveis" }
   /api/pde/kit/private/v1/internal/sessions:
     post:
       summary: Emite acesso privado para a fixture do mesmo produto, ciclo e versão
@@ -35,7 +65,7 @@ paths:
                   sessionId: { type: string }
                   sessionToken: { type: string }
                   session: { $ref: '#/components/schemas/SessionView' }
-        '400': { description: Entrada inválida ou condição de segurança desconhecida }
+        '400': { description: "Entrada inválida ou condição de segurança desconhecida" }
         '409': { description: 'Ciclo ou contrato sem capacidade privada, identidade divergente ou condição SAFETY usada em outro cenário' }
   /api/pde/kit/private/v1/admin/sessions:
     post:
@@ -46,7 +76,7 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/Create' }
       responses:
-        '200': { description: Mesmo contrato da emissão interna }
+        '200': { description: "Mesmo contrato da emissão interna" }
   /api/pde/kit/private/v1/session:
     get:
       summary: Recupera estado, motivo e apresentação canônica da sessão autenticada
@@ -58,7 +88,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SessionView' }
-        '401': { description: Acesso inválido, expirado ou revogado }
+        '401': { description: "Acesso inválido, expirado ou revogado" }
   /api/pde/kit/private/v1/input:
     put:
       summary: Confere briefing sintético antes da reserva; SAFETY preserva bloqueio e causa
@@ -88,7 +118,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SessionView' }
-        '409': { description: Consentimento, identidade, quota ou contrato incompatíveis }
+        '409': { description: "Consentimento, identidade, quota ou contrato incompatíveis" }
 components:
   parameters:
     SessionToken:
@@ -136,7 +166,26 @@ components:
             nextActionPath:
               type: string
               description: Caminho da revisão administrativa do mesmo produto e ciclo, sem token; vazio quando não há ação interna.
-        input: { type: object }
+        specialties:
+          type: array
+          description: Opções efetivamente suportadas pela família desta sessão. A seleção não troca o perfil de versões históricas.
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              label: { type: string }
+              serviceExample: { type: string }
+              sampleHeadline: { type: string }
+              sampleCaption: { type: string }
+        input:
+          type: object
+          properties:
+            specialtyCode:
+              type: string
+              nullable: true
+              enum: [nails-v1, barber-v1, hair-v1, makeup-v1, brows-v1, aesthetics-v1]
+              description: Obrigatório na família beauty-v1; ausente preserva o perfil histórico. Recusado quando divergente da versão.
+
         firstApplication: { type: object, nullable: true }
         manifest: { type: object, nullable: true }
         events: { type: array, items: { type: object } }

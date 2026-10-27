@@ -3,3 +3,5 @@
 #review-cycle{display:inline-block;background:#713578;color:white;text-decoration:none;border-radius:8px;padding:12px 18px;min-height:48px}#review-cycle:focus-visible{outline:3px solid #241b2b;outline-offset:3px}
 .primary-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.primary-actions button{margin:0}
 .video-demo{margin:20px 0;border-top:1px solid #e8dfe9;padding-top:8px}.video-demo video{display:block;width:min(100%,480px);max-height:70vh;background:#241b2b}.video-demo p{overflow-wrap:anywhere}
+
+.sample-art{padding:2rem;border-radius:1.4rem;background:linear-gradient(140deg,#291b35,#7b3c60);color:#fff;text-align:center;max-width:24rem;box-shadow:0 8px 24px #21102720}.sample-art h3{font-size:1.8rem;line-height:1.2;color:#fff}.sample-art small{display:block;margin-top:1rem;opacity:.8}#sample-caption{max-width:32rem;font-size:.95rem;line-height:1.5;margin-top:1rem}#specialty-sample{margin:1rem 0 2rem}

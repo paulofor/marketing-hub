@@ -22,6 +22,10 @@ import org.springframework.web.server.ResponseStatusException;
 public class LearningCyclePrototypeContext {
   private final LearningSalesCycleEventRepository events;
   private final ObjectMapper json;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.pde.kit.privateprototype.v1.service.KitImplementationBinding kitBinding;
+
   private static final List<String> CHECKS =
       List.of(
           "desktopValidated",
@@ -79,6 +83,10 @@ public class LearningCyclePrototypeContext {
             && !com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
                 .PACKAGE_CONTRACT_VERSION
                 .equals(proof.path("packageContractVersion").asText())) return Optional.empty();
+        if ("DETERMINISTIC_PRIVATE_KIT_V1".equals(proof.path("runtimeKind").asText())
+            && "beauty-v1".equals(proof.path("profileCode").asText())
+            && (kitBinding == null || !kitBinding.currentProof(cycle, proof)))
+          return Optional.empty();
         ObjectNode acceptance = proof.deepCopy();
         acceptance.put("status", "READY");
         acceptance.put("acceptedAt", event.getCreatedAt().toString());

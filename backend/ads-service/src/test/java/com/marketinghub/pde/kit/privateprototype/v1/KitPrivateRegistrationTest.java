@@ -35,16 +35,7 @@ class KitPrivateRegistrationTest {
               .put("profileCode", profile)
               .put("privateAccessUrl", url);
       assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
-          .hasMessageContaining("pacote utilizável");
-      when(artifacts
-              .existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
-                  cycle.getId(),
-                  cycle.getProductId(),
-                  cycle.getExperimentId(),
-                  cycle.getProductVersion(),
-                  profile,
-                  "READY"))
-          .thenReturn(true);
+          .hasMessageContaining("36 arquivos");
       assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
           .hasMessageContaining("36 arquivos");
       when(artifacts.acceptedManifests(
@@ -76,5 +67,42 @@ class KitPrivateRegistrationTest {
       assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
           .hasMessageContaining("perfil e à URL");
     }
+  }
+
+  /**
+   * Recusa cobertura multiperfil parcial, mesmo quando os cinco primeiros pacotes estão corretos.
+   */
+  @Test
+  void requiresAllSixSpecialtiesBeforeAcceptingBeautyProof() {
+    var cycle = new LearningSalesCycle();
+    cycle.setId(15L);
+    cycle.setProductId(7L);
+    cycle.setExperimentId(108L);
+    cycle.setProductVersion("beauty-test-v1");
+    var capabilities = mock(KitPrototypeCapabilities.class);
+    var artifacts = mock(KitPrivateArtifactRepository.class);
+    String url = "https://private.example/api/pde/kit/private/v1/prototype";
+    when(capabilities.resolve(cycle)).thenReturn(new Capability(true, "beauty-v1", "QA", url));
+    var service =
+        new KitPrivateService(null, artifacts, null, capabilities, null, new ObjectMapper(), "QA");
+    var proof =
+        new ObjectMapper()
+            .createObjectNode()
+            .put("profileCode", "beauty-v1")
+            .put("privateAccessUrl", url);
+    String manifest =
+        "{\"packageContractVersion\":\"PDE_PRIVATE_KIT_PACKAGE_V2\",\"files\":"
+            + java.util.stream.IntStream.range(0, 36)
+                .mapToObj(i -> "{}")
+                .collect(java.util.stream.Collectors.joining(",", "[", "]"))
+            + "}";
+    var profiles = KitSpecialties.profiles("beauty-v1");
+    for (int i = 0; i < profiles.size(); i++) {
+      assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
+          .hasMessageContaining("36 arquivos");
+      when(artifacts.acceptedManifests(15L, 7L, 108L, "beauty-test-v1", profiles.get(i).code()))
+          .thenReturn(List.of(manifest));
+    }
+    service.validateRegistration(cycle, proof);
   }
 }

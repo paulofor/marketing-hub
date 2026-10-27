@@ -140,6 +140,13 @@ public class KitPrivateLocalApplication {
                   ? Optional.of(c)
                   : Optional.empty();
             });
+    when(r.saveAndFlush(any(LearningSalesCycle.class)))
+        .thenAnswer(
+            a -> {
+              var saved = em.merge(a.<LearningSalesCycle>getArgument(0));
+              em.flush();
+              return saved;
+            });
     return r;
   }
 
@@ -171,7 +178,9 @@ public class KitPrivateLocalApplication {
             "experiment:9018",
                 "{\"format\":\"PRIVATE_HARNESS\",\"strategyReference\":\"Perfil barber-v1\"}",
             "experiment:9029",
-                "{\"format\":\"PRIVATE_HARNESS\",\"strategyReference\":\"Perfil barber-v1\"}");
+                "{\"format\":\"PRIVATE_HARNESS\",\"strategyReference\":\"Perfil barber-v1\"}",
+            "experiment:9037", "{\"format\":\"PRIVATE_HARNESS\",\"kitProfileCode\":\"beauty-v1\"}",
+            "experiment:9048", "{\"format\":\"PRIVATE_HARNESS\",\"kitProfileCode\":\"beauty-v1\"}");
     when(tasks.findFunctionalSnapshotsByProcessSince(eq(8116L), anyString(), any(Instant.class)))
         .thenAnswer(
             a -> {
@@ -216,6 +225,63 @@ public class KitPrivateLocalApplication {
     ReflectionTestUtils.setField(
         c, "prototypeUrl", "http://127.0.0.1:57282/api/pde/kit/private/v1/prototype");
     return c;
+  }
+
+  /** Usa o comando real de vinculação com recibos locais e desenhos sintéticos segregados. */
+  @Bean
+  KitImplementationBinding implementations(LearningSalesCycleRepository cycles) {
+    var events =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository.class);
+    var history =
+        new ArrayList<
+            com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycleEvent>();
+    when(events.findByCycleIdAndActionOrderByRevisionDesc(anyLong(), anyString()))
+        .thenAnswer(
+            a ->
+                history.stream()
+                    .filter(
+                        e ->
+                            e.getCycleId().equals(a.<Long>getArgument(0))
+                                && e.getAction().equals(a.<String>getArgument(1)))
+                    .sorted(
+                        Comparator.comparing(
+                                com.marketinghub.businessprocesschain.learningcycle.v1
+                                        .LearningSalesCycleEvent
+                                    ::getRevision)
+                            .reversed())
+                    .toList());
+    when(events.findByCycleIdAndRequestKey(anyLong(), anyString()))
+        .thenAnswer(
+            a ->
+                history.stream()
+                    .filter(
+                        e ->
+                            e.getCycleId().equals(a.<Long>getArgument(0))
+                                && e.getRequestKey().equals(a.<String>getArgument(1)))
+                    .findFirst());
+    when(events.saveAndFlush(any()))
+        .thenAnswer(
+            a -> {
+              var event =
+                  a
+                      .<com.marketinghub.businessprocesschain.learningcycle.v1
+                              .LearningSalesCycleEvent>
+                          getArgument(0);
+              history.add(event);
+              return event;
+            });
+    var designs = mock(AgentTaskRepository.class);
+    when(designs.findFunctionalSnapshots(anyString(), anySet(), any()))
+        .thenAnswer(
+            a ->
+                List.of(
+                    snapshot(
+                        6037,
+                        8116,
+                        "pde-commercial-plan-offer",
+                        "productArchitecture",
+                        "{\"decision\":\"APPROVE\",\"productArchitecture\":{\"staticResultFixtures\":{\"contractVersion\":\"PDE_STATIC_RESULT_FIXTURES_V1\",\"mode\":\"DETERMINISTIC_HOMOLOGATION_ONLY\",\"providerCallsAuthorized\":0,\"externalSideEffects\":false,\"commercialEvidenceEligible\":false}}}")));
+    return new KitImplementationBinding(cycles, events, designs, new ObjectMapper());
   }
 
   /** Representa uma aprovação sintética auditável sem chamada paga ou alteração em dados reais. */

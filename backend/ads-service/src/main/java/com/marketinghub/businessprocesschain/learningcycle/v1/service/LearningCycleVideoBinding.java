@@ -57,7 +57,8 @@ public class LearningCycleVideoBinding {
             && com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
                 .PACKAGE_CONTRACT_VERSION
                 .equals(target.path("packageContractVersion").asText())
-            && List.of("nails-v1", "barber-v1").contains(target.path("profileCode").asText())
+            && com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.supported(
+                target.path("profileCode").asText())
             && url.matches("https://[^/]+/(mh-api|api)/pde/kit/private/v1/prototype");
   }
 

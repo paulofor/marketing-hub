@@ -1,0 +1,18 @@
+{
+  "cardKey": "emocao-percebida-sentida-multimodal",
+  "collection": "prazer-audio-visual",
+  "title": "Separar emoção comunicada da emoção efetivamente sentida",
+  "finding": "Em experimento aleatorizado com 165 participantes, rosto, gesto, música ou sua combinação foram avaliados para seis emoções. A expressividade percebida superou a emoção sentida em cerca de sete pontos na média, e a apresentação com todas as modalidades não foi consistentemente superior às condições isoladas.",
+  "mechanism": "A integração de pistas visuais, gestuais e auditivas pode depender da emoção específica; reconhecer emoção expressa não equivale a sentir emoção, e adicionar modalidades pode não melhorar a experiência.",
+  "commercialApplication": "Em vídeos com apresentadores ou avatares, avaliar separadamente qual emoção o público percebe no conteúdo e qual emoção relata sentir; comparar versões com e sem gestos e música.",
+  "evidenceStrength": "Moderada para resultados comportamentais nesse conjunto de performances (N=165); baixa para prazer geral, retenção de anúncios e efeitos comerciais.",
+  "publishedOn": "2026-10-27",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Uma variante com mais pistas audiovisuais não elevará uniformemente a emoção efetivamente sentida; a combinação mais adequada dependerá da emoção que se pretende comunicar.",
+  "risks": "Somar estímulos sem medir sobrecarga ou desconforto; tratar expressão reconhecida como prazer sentido; assumir causalidade neural ou aumento de vendas.",
+  "limits": "Pesquisa com dança e música específicas; julgamento subjetivo em escalas de 0–100; sem experimentos com criativos digitais e sem medidas de dopamina.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-27-emocao-percebida-sentida-multimodal-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Susino et al. (2026): emoção percebida versus sentida",
+  "sourceSha256": "f301822b35056f5f350c8e8dbe10bebd69fca425d097c74895ff3666b86264f6"
+}

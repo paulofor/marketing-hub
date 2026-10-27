@@ -1,0 +1,18 @@
+{
+  "cardKey": "timbre-vocal-naturalidade-tempo-subjetivo",
+  "collection": "prazer-audio-visual",
+  "title": "Timbre vocal altera agrado e passagem subjetiva do tempo",
+  "finding": "Em dois experimentos online (n=76 e n=37 válidos), versões cantadas com voz humana foram avaliadas como mais agradáveis e com passagem do tempo mais rápida do que versões com timbre artificial criado por vocoder; não houve efeito consistente sobre reprodução objetiva de duração.",
+  "mechanism": "Alterações espectrais e naturalidade percebida do timbre podem modificar a resposta estética e sua associação com a velocidade subjetiva da experiência; a mediação completa por prazer não foi demonstrada causalmente.",
+  "commercialApplication": "Para jingles e performances digitais, comparar gravações da mesma melodia com timbres naturais e manipulados, medindo agrado, naturalidade, esforço, percepção do tempo e memória, sem inferir preferência automática por qualquer voz gerada por IA.",
+  "evidenceStrength": "Moderada para efeitos perceptivos em dois experimentos de música vocal; baixa para vozes TTS modernas, vídeos de marketing e vendas.",
+  "publishedOn": "2026-10-27",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Uma versão musical com timbre vocal avaliado como natural será considerada mais agradável e fará o tempo parecer passar mais rápido, sem alterar necessariamente duração estimada ou memória.",
+  "risks": "Confundir vocoder artificializado com toda síntese vocal por IA; declarar que maior velocidade subjetiva implica maior retenção; induzir expectativas artificiais de naturalidade.",
+  "limits": "Tarefas online com julgamento temporal antecipado, repertório curto e predomínio de uma cantora; avaliação de tempo subjetivo distinta de duração estimada; nenhum resultado comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-27-timbre-vocal-tempo-subjetivo-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Silva et al. (2026): timbre vocal, agrado e tempo",
+  "sourceSha256": "763edad5edc152a1eceb0c8be956c7eef863add308bfbfbf48815a23012a7527"
+}

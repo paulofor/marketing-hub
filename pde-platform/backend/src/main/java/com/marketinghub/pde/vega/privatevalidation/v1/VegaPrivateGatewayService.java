@@ -57,13 +57,40 @@ public class VegaPrivateGatewayService {
     if (!path.matches(
         "/(contract|access|session|start|generate|events|finish|internal/sessions(?:/[a-f0-9-]{36})?|internal/cycles/[1-9][0-9]*/report|internal/adjustment/stage-executions/(pending\\?mode=(FIXTURE|PROVIDER)|[1-9][0-9]*/(claim|request|result)))"))
       throw new IllegalArgumentException("Operação fora do contrato privado de Vega.");
-    URI endpoint = backend.resolve("/api/pde/vega/private/v1" + path);
+    return transport(method, "/api/pde/vega/private/v1" + path, body, header, token, null);
+  }
+
+  /** Transporta a família contextual por rotas fechadas, sem conceder credenciais do servidor. */
+  public ResponseEntity<String> forwardStyle(
+      String method, String path, String body, String session, String internal) {
+    if (!path.matches(
+        "/(contract|start|events|access/workspace|access/ai-guidance/[A-Za-z0-9-]{16,80}|access/missions/estilo-dia-[1-7]/(ai-guidance|interactions|complete)|materials/[a-z-]+\\.txt|internal/(sessions|report|events|fixtures/(full-access|expire-entitlement|expire-session|revoke)))"))
+      throw new IllegalArgumentException("Operação fora do contrato contextual de Vega.");
+    return transport(
+        method, "/api/pde/vega/style/v1" + path, body, "X-Vega-Style-Session", session, internal);
+  }
+
+  /**
+   * Negocia o formato tipado e mantém status e conteúdo da resposta oficial sem expor credenciais
+   * nos logs ou no navegador.
+   */
+  private ResponseEntity<String> transport(
+      String method, String path, String body, String header, String token, String internal) {
+    if (backend == null)
+      throw new ResponseStatusException(
+          HttpStatus.SERVICE_UNAVAILABLE, "Integração privada de Vega indisponível.");
+    URI endpoint = backend.resolve(path);
     var builder =
         HttpRequest.newBuilder(endpoint)
             .timeout(Duration.ofSeconds(30))
             .header("Content-Type", "application/json")
-            .header("Accept", "application/json");
+            .header(
+                "Accept",
+                path.startsWith("/api/pde/vega/style/v1/materials/")
+                    ? "text/plain, application/json"
+                    : "application/json");
     if (token != null && !token.isBlank()) builder.header(header, token);
+    if (internal != null && !internal.isBlank()) builder.header("X-PDE-Internal-Token", internal);
     builder.method(
         method,
         body == null
@@ -78,7 +105,9 @@ public class VegaPrivateGatewayService {
             endpoint,
             response.statusCode());
       return ResponseEntity.status(response.statusCode())
-          .header("Content-Type", "application/json")
+          .header(
+              "Content-Type",
+              response.headers().firstValue("Content-Type").orElse("application/json"))
           .header("Cache-Control", "private, no-store")
           .header("Referrer-Policy", "no-referrer")
           .body(response.body());

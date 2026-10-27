@@ -11254,3 +11254,19 @@ Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.
 - **Limite:** a biblioteca de demonstração não substitui a aprovação comercial;
   a alteração da experiência exige sucessor e suas autorizações próprias.
 - **Registro:** `docs/homologacao/capella-referencias-visuais-v2.md`.
+
+
+### Recorrência de especificação sem runtime contextual — Vega, 27/10/2026
+
+Extensão de `LOOP-DEDALO-CONTRATO-MARCADO-COMO-PROTOTIPO`: ciclo 16, execução 88,
+tarefas 838–842. A arquitetura identifica explicitamente a implementação ausente;
+o processo chegou à homologação sem URL da v16. A v15 e a fixture legada não
+executam o comportamento contextual aprovado.
+
+A correção implementa a capacidade no backend principal e sua jornada na UI
+existente. Psique seleciona um harness próprio pela versão e linhagem, exige nove
+combinações distintas, regras reais e custo externo zero. Replay recupera o mesmo
+resultado, inclusive após reinício; não converte uma especificação em aceite.
+Regressões incluem outro contexto/identidade, recursos ausentes, acesso, v15 e
+recusa de fixture antiga. A entrega privada permanece sujeita aos pareceres e
+autorizações próprios. Ver [matriz e evidências](../homologacao/vega-modelagem-internacional-v16.md).

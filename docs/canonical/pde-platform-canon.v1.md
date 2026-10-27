@@ -979,3 +979,22 @@ com os mesmos bytes, SHA-256, texto, pareceres e decisão privada auditados. Ess
 reaproveitamento não transfere aprovação comercial. A revisão do anúncio só é
 solicitada depois de materializar o checkout; revisão independente, aceite humano,
 economia e liberação da campanha continuam próprios do novo contexto.
+
+
+### Jornada contextual privada de Vega v16 — 27/10/2026
+
+A candidata `musa-pde-entry-v16-modelagem-internacional` reutiliza a interface de
+estilo, mas possui contrato e estado próprios em `/api/pde/vega/style/v1`, no
+backend principal. O gateway PDE somente transporta os comandos. A raiz v10
+continua identificando a v15; a variante privada usa o caminho versionado
+`/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation`.
+Não atribuir à variante o aceite nem a disponibilidade comercial da raiz.
+
+Sua homologação executa regras contextuais reais e auditáveis, sem provedor,
+com uma matriz de nove casos e três pareceres independentes posteriores. Não
+aceitar a fixture antiga como prova da nova capacidade. Sessões sintéticas,
+direitos de 90 dias simulados, limite técnico e expiração privada de sete dias
+ficam separados de compras, demanda e quotas comerciais. A publicação verifica
+a dependência do backend antes da promoção e mantém a identidade pública.
+
+Contrato, limites e regressões: [jornada contextual v16](../homologacao/vega-modelagem-internacional-v16.md).

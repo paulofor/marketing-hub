@@ -711,7 +711,7 @@ jobs:
         run: python3 scripts/validate-publisher-recovery.py
 
       - name: Wait for private backend capability before promotion
-        if: env.PDE_DEPLOY_FRONTEND_VERSION == 'v8'
+        if: env.PDE_DEPLOY_FRONTEND_VERSION == 'v8' || env.PDE_DEPLOY_FRONTEND_VERSION == 'v10'
         timeout-minutes: 31
         run: |
           python3 pde-platform/scripts/pde_release_contract.py wait-private-capability \

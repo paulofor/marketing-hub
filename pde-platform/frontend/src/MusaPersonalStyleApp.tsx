@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { pdeAccessHeaders } from "./pdeAccessAuthorization";
 import {
   MUSA_V15_EXPERIENCE_VERSION,
+  MUSA_V16_EXPERIENCE_VERSION,
+  resolveMusaCommercialRoute,
   musaCommercialPath,
 } from "./musaCommercialRoutes";
 import type { ProductExperience, Mission } from "./musaExperiences";
 import "./musaPersonalStyle.css";
 import { trackStyleEvent } from "./musaStyleTracking";
 
-const version = MUSA_V15_EXPERIENCE_VERSION;
+const contextual =
+  resolveMusaCommercialRoute(location.pathname) === MUSA_V16_EXPERIENCE_VERSION;
+const version = contextual
+  ? MUSA_V16_EXPERIENCE_VERSION
+  : MUSA_V15_EXPERIENCE_VERSION;
+const apiBase = contextual ? "/api/pde/vega/style/v1/" : "/api/pde/";
 const slug = "metodo-musa-7-dias";
 const storageKey = `musa:${version}`;
 type Answers = {
@@ -25,6 +32,7 @@ type Guidance = {
   signals: string[];
   microActions: string[];
   caution: string;
+  errorMessage?: string;
 };
 type Workspace = {
   product: ProductExperience;
@@ -33,6 +41,8 @@ type Workspace = {
   subscriptionStatus: string;
   progressPercent: number;
   completedMissionIds: string[];
+  started?: boolean;
+  latestResults?: Record<string, { latestRequestId?: string }>;
   missionInteractions: {
     missionId: string;
     questionKey: string;
@@ -50,13 +60,24 @@ async function api<T>(
   data?: unknown,
   token?: string,
 ): Promise<T> {
-  const response = await fetch(`/api/pde/${path}`, {
+  const response = await fetch(`${apiBase}${path}`, {
     method: data === undefined ? "GET" : "POST",
-    headers: token
-      ? pdeAccessHeaders(token, { json: data !== undefined })
-      : { "Content-Type": "application/json" },
+    headers:
+      token && !contextual
+        ? pdeAccessHeaders(token, { json: data !== undefined })
+        : { "Content-Type": "application/json" },
     ...(data === undefined ? {} : { body: JSON.stringify(data) }),
   });
+  if (!response.ok && contextual) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(
+      body.message ||
+        body.detail ||
+        (response.status === 401
+          ? "Este acesso terminou ou não está disponível. Seus registros anteriores foram preservados."
+          : "Não foi possível concluir. Confira as escolhas; os registros já salvos foram preservados."),
+    );
+  }
   if (!response.ok)
     throw new Error(
       response.status === 403
@@ -66,7 +87,12 @@ async function api<T>(
   return response.status === 204 ? (undefined as T) : response.json();
 }
 
-function readSaved(): { answers?: Answers; requestId?: string } {
+function readSaved(): {
+  answers?: Answers;
+  requestId?: string;
+  operationKey?: string;
+  missionId?: string;
+} {
   try {
     return JSON.parse(sessionStorage.getItem(storageKey) || "{}");
   } catch {
@@ -99,10 +125,13 @@ export default function MusaPersonalStyleApp() {
   );
   const [guidance, setGuidance] = useState<Guidance>();
   const [workspace, setWorkspace] = useState<Workspace>();
-  const [token] = useState(
-    () => new URLSearchParams(location.hash.slice(1)).get("access") || "",
+  const [token] = useState(() =>
+    contextual
+      ? "private-cookie"
+      : new URLSearchParams(location.hash.slice(1)).get("access") || "",
   );
   const [missionId, setMissionId] = useState("");
+  const selectionRevision = useRef(0);
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -120,7 +149,10 @@ export default function MusaPersonalStyleApp() {
     })) ||
     [];
 
-  function selectMission(next: Mission, current: Workspace) {
+  async function selectMission(next: Mission, current: Workspace) {
+    const selectedRevision = ++selectionRevision.current;
+    if (contextual && readSaved().missionId !== next.id)
+      storeSaved({ answers: readSaved().answers, missionId: next.id });
     const prior: Record<string, string> = {};
     for (const day of current.product.missions.filter(
       (m) => m.day <= next.day,
@@ -143,6 +175,20 @@ export default function MusaPersonalStyleApp() {
     setMissionId(next.id);
     setGuidance(undefined);
     setError("");
+    const resultId = current.latestResults?.[next.id]?.latestRequestId;
+    if (contextual && resultId) {
+      try {
+        const saved = await api<Guidance>(
+          `access/ai-guidance/${encodeURIComponent(resultId)}`,
+        );
+        if (selectedRevision !== selectionRevision.current) return;
+        if (saved.status === "COMPLETED") setGuidance(saved);
+        else if (saved.errorMessage) setError(saved.errorMessage);
+      } catch (e) {
+        if (selectedRevision === selectionRevision.current)
+          setError((e as Error).message);
+      }
+    }
   }
   async function reloadWorkspace() {
     const current = await api<Workspace>("access/workspace", undefined, token);
@@ -159,8 +205,9 @@ export default function MusaPersonalStyleApp() {
       current.product.missions.find(
         (m) => !current.completedMissionIds.includes(m.id),
       ) || current.product.missions[6];
-    if (next) selectMission(next, current);
+    if (next) await selectMission(next, current);
   }
+
   useEffect(() => {
     if (!token) void trackStyleEvent("PAGE_VIEW");
     if (token) {
@@ -190,17 +237,27 @@ export default function MusaPersonalStyleApp() {
   }, [token]);
 
   function change(key: string, value: string) {
+    selectionRevision.current++;
     const next = { ...answers, [key]: value };
     setAnswers(next);
     setGuidance(undefined);
     setError("");
-    if (!token) storeSaved({ answers: next });
+    if (!token || contextual) storeSaved({ answers: next, missionId });
   }
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError("");
     setMessage("");
+    setGuidance(undefined);
+    let operationKey = readSaved().operationKey;
+    if (contextual && !operationKey) {
+      operationKey = Array.from(
+        crypto.getRandomValues(new Uint8Array(16)),
+        (byte) => byte.toString(16).padStart(2, "0"),
+      ).join("");
+      storeSaved({ answers, operationKey, missionId });
+    }
     try {
       const result =
         token && mission
@@ -208,7 +265,9 @@ export default function MusaPersonalStyleApp() {
               `access/missions/${mission.id}/ai-guidance`,
               {
                 experienceVersion: version,
-                guidanceType: mission.interaction?.guidanceType,
+                ...(contextual
+                  ? { operationKey }
+                  : { guidanceType: mission.interaction?.guidanceType }),
                 answers,
               },
               token,
@@ -219,11 +278,18 @@ export default function MusaPersonalStyleApp() {
             });
       if (result.status !== "COMPLETED")
         throw new Error(
-          "A orientação ainda não foi concluída. Suas respostas foram preservadas.",
+          result.errorMessage ||
+            "A orientação ainda não foi concluída. Suas respostas foram preservadas.",
         );
       setGuidance(result);
       if (!token) void trackStyleEvent("VALUE_MOMENT", result.requestId);
-      if (!token) storeSaved({ answers, requestId: result.requestId });
+      if (!token || contextual)
+        storeSaved({
+          answers,
+          requestId: result.requestId,
+          operationKey,
+          missionId,
+        });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -290,7 +356,9 @@ export default function MusaPersonalStyleApp() {
   async function material(url: string) {
     setError("");
     try {
-      const response = await fetch(url, { headers: pdeAccessHeaders(token) });
+      const response = await fetch(url, {
+        headers: contextual ? {} : pdeAccessHeaders(token),
+      });
       if (!response.ok)
         throw new Error("O material exige acesso completo vigente.");
       const blob = await response.blob();
@@ -300,6 +368,30 @@ export default function MusaPersonalStyleApp() {
       a.download = url.split("/").pop() || "material";
       a.click();
       setTimeout(() => URL.revokeObjectURL(link), 1000);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function begin() {
+    setError("");
+    try {
+      await api("start", {});
+      await reloadWorkspace();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function signal(eventType: string) {
+    if (!guidance) return;
+    setError("");
+    try {
+      await api("events", { eventType, requestId: guidance.requestId });
+      setMessage(
+        eventType === "CHECKOUT_STARTED"
+          ? "Você pode conhecer a continuidade por R$ 67, pagamento único, com sete dias e três materiais. Esta prévia não realiza cobranças nem libera uma compra."
+          : "Sua ação ficou registrada nesta jornada.",
+      );
     } catch (e) {
       setError((e as Error).message);
     }
@@ -317,7 +409,7 @@ export default function MusaPersonalStyleApp() {
           <a href="#style-login">Já comecei</a>
         )}
       </header>
-      {!workspace && (
+      {(!workspace || (contextual && !workspace.started)) && (
         <section className="style-hero">
           <div>
             <span className="style-eyebrow">VEGA · ESTILO PESSOAL</span>
@@ -326,9 +418,15 @@ export default function MusaPersonalStyleApp() {
               Você não precisa se vestir como outra pessoa. Comece com o que já
               tem e descubra um jeito de usar que combina com você.
             </p>
-            <a className="style-button" href="#style-start">
-              Experimentar com minhas roupas
-            </a>
+            {contextual ? (
+              <button className="style-button" onClick={begin}>
+                Experimentar com minhas roupas
+              </button>
+            ) : (
+              <a className="style-button" href="#style-start">
+                Experimentar com minhas roupas
+              </a>
+            )}
             <small>
               Uma sugestão gratuita. Sem foto, cadastro ou cartão para começar.
             </small>
@@ -362,7 +460,7 @@ export default function MusaPersonalStyleApp() {
         </p>
       )}
       {!product && !error && <p role="status">Carregando sua experiência…</p>}
-      {workspace && (
+      {workspace && (!contextual || workspace.started) && (
         <section className="style-journey">
           <h1>Seu estilo em 7 dias</h1>
           <p>Reaproveite o que funcionou. Mude o que não tem a sua cara.</p>
@@ -384,7 +482,7 @@ export default function MusaPersonalStyleApp() {
           </button>
         </section>
       )}
-      {product && (
+      {product && (!contextual || workspace?.started) && (
         <section
           className="style-panel"
           id="style-start"
@@ -435,9 +533,13 @@ export default function MusaPersonalStyleApp() {
                         maxLength={field.key === "occasion" ? 160 : 300}
                         value={answers[field.key as keyof Answers] || ""}
                         placeholder={
-                          field.key === "occasion"
-                            ? "Ex.: trabalhar e depois encontrar amigos"
-                            : "Ex.: camiseta azul, jeans e tênis"
+                          contextual
+                            ? field.key === "occasion"
+                              ? "Ex.: almoçar e conversar com amigas"
+                              : "Ex.: camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça"
+                            : field.key === "occasion"
+                              ? "Ex.: trabalhar e depois encontrar amigos"
+                              : "Ex.: camiseta azul, jeans e tênis"
                         }
                         onChange={(e) => change(field.key, e.target.value)}
                       />
@@ -485,6 +587,28 @@ export default function MusaPersonalStyleApp() {
                   >
                     Guardar minha orientação
                   </button>
+                  {contextual && (
+                    <div>
+                      <button
+                        className="style-secondary"
+                        onClick={() => signal("VALUE_MOMENT")}
+                      >
+                        Entendi como aplicar
+                      </button>
+                      <button
+                        className="style-secondary"
+                        onClick={() => signal("READY_RESULT_USED")}
+                      >
+                        Apliquei este ajuste
+                      </button>
+                      <button
+                        className="style-secondary"
+                        onClick={() => signal("CHECKOUT_STARTED")}
+                      >
+                        Conhecer a continuidade
+                      </button>
+                    </div>
+                  )}
                 </article>
               )}
               {workspace && guidance && (
@@ -615,11 +739,13 @@ export default function MusaPersonalStyleApp() {
         <details id="style-privacy">
           <summary>Como guardamos suas escolhas</summary>
           <p>
-            Guardamos seu e-mail, suas respostas e seu progresso para recuperar
-            esta jornada. Não precisamos de fotos, informações sobre seu corpo
-            ou dados de outras pessoas. Para consultar, corrigir ou excluir seus
-            dados, fale com contato@digicomdigital.com.br. Você pode baixar seus
-            registros na área da jornada.
+            {contextual
+              ? "Guardamos suas respostas e seu progresso para recuperar esta prévia. Não pedimos e-mail."
+              : "Guardamos seu e-mail, suas respostas e seu progresso para recuperar esta jornada."}{" "}
+            Não precisamos de fotos, informações sobre seu corpo ou dados de
+            outras pessoas. Para consultar, corrigir ou excluir seus dados, fale
+            com contato@digicomdigital.com.br. Você pode baixar seus registros
+            na área da jornada.
           </p>
           <p>
             O primeiro dia é gratuito. A continuidade proposta custa R$ 67, em

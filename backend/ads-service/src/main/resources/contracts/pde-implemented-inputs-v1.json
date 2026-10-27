@@ -50,6 +50,27 @@
       "personalization": "Ações variam pela preferência; os sete dias reutilizam registros persistidos. Não inferir corpo, personalidade ou uma estética obrigatória.",
       "executionMode": "LOCAL_RULES",
       "externalInference": false
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersions": [
+        "musa-pde-entry-v16-modelagem-internacional"
+      ],
+      "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/VegaStyleInput.java",
+      "minimumCustomerInput": "Ocasião, peças e formas de uso disponíveis, preferência declarada. Os mesmos três campos; nenhuma foto, cadastro ou compra antes do primeiro valor.",
+      "requiredFields": [
+        "occasion",
+        "existingSelection",
+        "stylePreference"
+      ],
+      "optionalFields": [
+        "reflection"
+      ],
+      "personalization": "Escolhe uma ação do catálogo contextual por ocasião e recursos explicitamente declarados. Fora da cobertura, bloqueia com orientação de correção. Não usa fixture de resultado nem infere tecido, corpo, clima ou recursos ausentes.",
+      "executionMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+      "externalInference": false,
+      "privateValidationUrlPath": "/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+      "commercialReadinessClaimed": false
     }
   ]
 }

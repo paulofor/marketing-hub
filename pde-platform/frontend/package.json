@@ -37,7 +37,8 @@
     "test:mira-commercial:public": "playwright test tests/mira-commercial.spec.ts --config=playwright.mira-commercial.config.ts",
     "test:alcyone:local": "playwright test tests/alcyone-agent-validation.spec.ts --config=playwright.alcyone.config.ts",
     "test:visual": "playwright test",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "dev:vega-style": "NODE_ENV=development vite --config vite.vega-style.config.ts --host 127.0.0.1"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^6.0.3",

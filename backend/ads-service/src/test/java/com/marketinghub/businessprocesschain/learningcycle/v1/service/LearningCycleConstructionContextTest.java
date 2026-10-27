@@ -149,6 +149,42 @@ class LearningCycleConstructionContextTest {
     verify(cycles, never()).save(any());
   }
 
+  /** Reproduz a estratégia condicional de Capella sem perder identidade nem importar comparação. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {7L, 97007L})
+  void preservesConditionalComparisonWithoutClaimingCapability(long productId) throws Exception {
+    product.setId(productId);
+    cycle.setProductId(productId);
+    var strategyTask = approved.get(2);
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            mapper.readTree(strategyTask.getResultJson());
+    var strategy = result.withObject("/marketStrategicContract");
+    strategy.put(
+        "causalHypothesis",
+        "Homologação: uma rodada técnica da versão congelada, três cenários e três dispositivos; "
+            + "18 combinações somente se implementada a comparação REFERENCE/REDUCED.");
+    strategy
+        .withObject("/agentValidationPlan")
+        .put(
+            "continueCriteria",
+            "Se houver comparação documental implementada, executar 18 combinações: "
+                + "três cenários, três dispositivos e duas condições REFERENCE/REDUCED. "
+                + "Os pareceres não multiplicam a matriz.");
+    strategyTask.setResultJson(result.toString());
+    var target =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    assertThat(target.pdeContext()).isNotNull();
+    assertThat(target.pdeContext().path("lineage").path("productId").asLong()).isEqualTo(productId);
+    assertThat(target.pdeContext().path("lineage").path("learningCycleId").asLong())
+        .isEqualTo(cycle.getId());
+    var plan = target.pdeContext().path("agentValidationPlan");
+    assertThat(plan.path("inputComparisonApplicable").asBoolean()).isFalse();
+    assertThat(plan.path("requiredScenarios").size()).isEqualTo(3);
+    assertThat(plan.has("documentedInputComparison")).isFalse();
+    verify(tasks, never()).save(any());
+  }
+
   /** Conserva a comparação de Mira na construção e recusa sua importação para outro protótipo. */
   @Test
   void preservesScopedComparisonAndBlocksImportedStrategy() throws Exception {

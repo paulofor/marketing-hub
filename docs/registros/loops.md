@@ -11225,3 +11225,17 @@ Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.
   da inferência e replay da outbox sem nova chamada.
 - **Limite:** não recupera modelo já auditado nem fabrica custo zero. Ver
   [contrato de Atena](../canonical/agente-estrategista-experimentos-v1.md).
+
+### Ressalva condicional confundida com obrigação — Capella, 27/10/2026
+
+- **Evidência:** estratégia #827 e arquitetura #829 condicionam REFERENCE/REDUCED
+  à implementação; homologação #834 aceita nove cenários. A nova revisão #837
+  recebeu contexto sem identidade porque a proteção do PR #5715 recusava qualquer
+  menção. A causa não era falta de homologação, orçamento ou autenticação.
+- **Correção compartilhada:** backend e Atena distinguem as ressalvas explícitas
+  por frase e valor JSON, preservando recusa de exigências indevidas. A ressalva
+  não concede capacidade nem altera o protocolo da candidata.
+- **Regressão:** quatro falhas locais antes da correção; Capella, outra identidade,
+  comparação válida de Mira, campos/frases distintos e obrigação incondicional.
+- **Limites e adoção:** [matriz e aprendizado](../homologacao/capella-ressalva-protocolo-2026-10-27.md).
+  Sem nova estratégia, aprovação fabricada ou inferência necessária para corrigir o contexto.

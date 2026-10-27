@@ -1,0 +1,18 @@
+{
+  "cardKey": "groove-sincopacao-moderada-eeg-teta",
+  "collection": "prazer-audio-visual",
+  "title": "Sincopação intermediária: groove e dinâmica teta",
+  "finding": "Em experimento com padrões rítmicos repetidos, a sincopação intermediária produziu as maiores avaliações de vontade de se mover e prazer. A potência teta médio-frontal também foi maior nessa condição, especialmente nas repetições finais; a associação neural não estabelece causalidade.",
+  "mechanism": "Complexidade rítmica intermediária pode envolver atualização de previsões, atenção temporal e processos motores. Atividade teta é um correlato possível, não uma medida de dopamina ou causa demonstrada de prazer.",
+  "commercialApplication": "Em vídeos musicais, transições rítmicas e jogos, comparar versões da mesma sequência com sincopação baixa, média e alta, mantendo intensidade, duração e conteúdo; observar resposta de pessoas reais.",
+  "evidenceStrength": "Moderada para diferenças comportamentais experimentais nesse repertório; exploratória para mecanismos neurais; baixa para transferência a publicidade ou conversão.",
+  "publishedOn": "2026-10-27",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Para alguns públicos e estilos, sincopação intermediária elevará desejo de acompanhar o ritmo e prazer percebido frente a níveis extremos, sem prejudicar compreensão da mensagem.",
+  "risks": "Transformar teta EEG em promessa de dopamina; confundir vontade de se mover com prazer universal; elevar complexidade em usuários sensíveis a estímulos.",
+  "limits": "Pesquisa de laboratório com padrões rítmicos repetidos; generalização depende de contexto, familiaridade e repertório; tamanho da amostra não verificado na fonte resumida; sem medida de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-27-groove-sincopacao-teta-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Ono et al. (2026): groove, sincopação e EEG teta",
+  "sourceSha256": "c08cf19364d0ac1599df7908d80048ddb82acf4845818a927509e18ebef87d33"
+}

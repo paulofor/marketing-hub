@@ -78,3 +78,16 @@ pública é somente leitura e não cria sessões ou pareceres.
 O catálogo contextual ainda é limitado às situações declaradas acima. A matriz
 comprova o funcionamento dessas situações; Psique e Têmis continuam responsáveis
 por julgar a utilidade e a integridade da versão, antes da preparação comercial.
+
+## Compatibilidade adicional observada no CI
+
+O CI executou 18 percursos de Mira com aprovação, mas detectou que a atestação
+histórica da v14 ainda apontava para o executor anterior. Os 26 casos atuais do
+executor e 17 controles locais da família legada passaram, incluindo MySQL 5.7.
+A nova atestação v5 conserva os recibos e as capturas anteriores e registra os
+dois arquivos revalidados, sem simular outra aprovação independente.
+
+O teste de escopo do planejamento ainda afirmava que a v16 não tinha
+implementação. A regressão agora exige sua capacidade contextual real, mantém
+a recusa da comparação documental de outro produto e comprova que uma versão
+ainda não implementada continua sem capacidade atribuída.

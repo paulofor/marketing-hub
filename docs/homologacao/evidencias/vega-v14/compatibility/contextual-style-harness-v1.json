@@ -1,0 +1,232 @@
+{
+  "verifiedAt": "2026-10-27T20:20:25.173769+00:00",
+  "scope": "Compatibilidade da família legada após isolar a jornada contextual v16: roteamento, estados aninhados, isolamento e controles MySQL 5.7 foram conferidos; resultados e pareceres históricos permanecem preservados.",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "testSource": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+  "testSourceSha256": "9390ac12bec91c9eaf60b9f093db7d62673b9dd9a2b66c73eb3cbd94217006f5",
+  "executedCases": [
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsAlcyoneWithoutContinuityVersionBeforeLaunchingBrowser",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsMiraCandidateWithMismatchedLineage",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsHumanEvidenceClaimBeforeCallback",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "validatesExistingLocalCandidateEvidenceWhenProvided",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "validatesExistingContextualEvidenceWhenProvided",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsProductReferenceFromAnotherProduct",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsAnotherProductBeforeLaunchingMiraScenarios",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsPlannedCycleWithoutExecutableUrl",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[3]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[4]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[5]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[6]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[7]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String, String)[8]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsAlcyoneSafetyWithStructuredOutcome",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsAlcyoneSafetyWithoutStructuredOutcome",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedVegaVersion(String)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedVegaVersion(String)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedVegaVersion(String)[3]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsMiraCandidateWithoutItsFullMatrix",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "acceptsCompleteTechnicalHarnessWithoutPersistingSecret",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "contextualVersionRequiresOwnRulesAndNineDistinctCombinations",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "returnsCompleteBlockedHarnessForAuditableFailureCallback",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunnerTest",
+      "method": "rejectsUnsupportedScreenshotTypeBeforeCallback",
+      "status": "PASS"
+    }
+  ],
+  "optionalSkipped": 0,
+  "additionalValidation": [
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "duplicateCallbackPreservesResultAndCost(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "duplicateCallbackPreservesResultAndCost(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "incompatibleContextCannotClaimOrSendRequest(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "incompatibleContextCannotClaimOrSendRequest(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "concurrentRequestsConsumeOnce(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "concurrentRequestsConsumeOnce(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "anotherSessionCannotReadOwnedResult(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "anotherSessionCannotReadOwnedResult(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "revokedAccessCannotReadGenerateOrClaim(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "revokedAccessCannotReadGenerateOrClaim(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "expiredAccessCannotReadGenerateOrClaim(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "expiredAccessCannotReadGenerateOrClaim(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "attemptsRemainBoundedAfterFailuresAndRevocation(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "attemptsRemainBoundedAfterFailuresAndRevocation(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "concurrentSessionCreationEnforcesCapacity(long)[1]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.VegaOperationalControlsMysql57Test",
+      "method": "concurrentSessionCreationEnforcesCapacity(long)[2]",
+      "status": "PASS"
+    },
+    {
+      "class": "com.marketinghub.pde.vega.privateprototype.v1.service.VegaPrivateServiceTest",
+      "method": "validatesFunctionalCard",
+      "status": "PASS"
+    }
+  ],
+  "boundaries": [
+    "As datas, capturas e recibos anteriores foram preservados.",
+    "A revalidação usa dados sintéticos e não atribui nova aprovação independente nem evidência comercial."
+  ]
+}

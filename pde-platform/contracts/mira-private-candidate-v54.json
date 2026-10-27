@@ -229,7 +229,7 @@
     {
       "promptMode": "FULL",
       "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
-      "sha256": "944923a993c4e3010c16be8f2a12cb64408e866749f17d751c9a4cc17d48fa3e"
+      "sha256": "80b22f66c6664e7be2aa68f93ab76639699d6a490e41ca7ca076ad3a90c63e71"
     },
     {
       "promptMode": "FULL",
@@ -471,7 +471,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValidationProtocolTest.java",
-      "sha256": "abbfea5a1c38b194fcc6820d613e922b87797a2d99386b9e0a5cfeed4418b460",
+      "sha256": "cb79235b908d5e19b26a4c9d3bac960343e464a33135bbe403f666a49fc181d9",
       "promptMode": "FULL"
     },
     {
@@ -611,7 +611,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
-      "sha256": "dfb63925e8e504b76eecf9a8c1c3f66246101cdbfccefea3a7d162eeeeb21540",
+      "sha256": "67a758bd8e8e780f11cb3ed90e45790ae2f7f3a2166cf9a271dd5b0f5ef31876",
       "reviewSummary": "Responsabilidade: impedir uso de prova adulterada, incompleta ou pertencente a outra candidata."
     },
     {
@@ -1225,14 +1225,14 @@
     },
     {
       "path": "docs/homologacao/vega-modelagem-internacional-v16.md",
-      "sha256": "b46f776efdad7f2513a965f82a6e47bd6bdb19b75b0664a05a4bc4d5bbe0a3f1",
+      "sha256": "37f7fb228bb0373418ee154deb54f9c993d10c0f6bdb714eca766b21e7f522e1",
       "promptMode": "FULL"
     }
   ],
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/mira-private-candidate-v53.json",
     "previousManifestSha256": "8b744f1035e88afcd184ce604211f527590dd67c9d14f912c9267c3ec691c82f",
-    "validatedAt": "2026-10-27T20:05:17.796588+00:00",
+    "validatedAt": "2026-10-27T20:21:27.490839+00:00",
     "scope": "Compatibilidade da jornada contextual privada de Vega. Preserva raízes, identidades, provas e limites das outras versões; não renova pareceres nem autoriza gasto ou lançamento.",
     "changedEvidence": [
       {
@@ -1246,14 +1246,29 @@
         "sha256": "35037db4d78c4b4dff74d7b4157a0c2797f4cba6fe9fbf8836328c12ebc1f33b"
       },
       {
+        "path": "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
+        "previousSha256": "944923a993c4e3010c16be8f2a12cb64408e866749f17d751c9a4cc17d48fa3e",
+        "sha256": "80b22f66c6664e7be2aa68f93ab76639699d6a490e41ca7ca076ad3a90c63e71"
+      },
+      {
         "path": "backend/ads-service/src/main/resources/contracts/pde-implemented-inputs-v1.json",
         "previousSha256": "2e1f63c4e441f74c44d8dc191f6b2c60f21c3d7a5588a9d37cfd5b0493b52c7c",
         "sha256": "e313ee3c4e1e6d53db6d251f3acf5b635e9cdb535ee00a2537ddf66ec897a24c"
       },
       {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValidationProtocolTest.java",
+        "previousSha256": "abbfea5a1c38b194fcc6820d613e922b87797a2d99386b9e0a5cfeed4418b460",
+        "sha256": "cb79235b908d5e19b26a4c9d3bac960343e464a33135bbe403f666a49fc181d9"
+      },
+      {
         "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
         "previousSha256": "58d29e595fe7496c0f6b6baf6518eb1b42d42d229a2442c8f29093d303215aea",
         "sha256": "9390ac12bec91c9eaf60b9f093db7d62673b9dd9a2b66c73eb3cbd94217006f5"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
+        "previousSha256": "dfb63925e8e504b76eecf9a8c1c3f66246101cdbfccefea3a7d162eeeeb21540",
+        "sha256": "67a758bd8e8e780f11cb3ed90e45790ae2f7f3a2166cf9a271dd5b0f5ef31876"
       }
     ],
     "validationReport": "docs/homologacao/vega-modelagem-internacional-v16.md"

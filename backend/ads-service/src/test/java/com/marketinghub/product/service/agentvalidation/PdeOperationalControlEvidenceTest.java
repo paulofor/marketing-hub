@@ -330,7 +330,7 @@ class PdeOperationalControlEvidenceTest {
         .thenReturn(new ByteArrayResource(bytes));
   }
 
-  /** Confere a compatibilidade v4, preservando os controles e recibos históricos v2 e v3. */
+  /** Confere a compatibilidade v5, preservando os controles e recibos históricos anteriores. */
   @Test
   void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
     var real =
@@ -339,7 +339,7 @@ class PdeOperationalControlEvidenceTest {
     var evidence =
         real.resolve("metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
             .orElseThrow();
-    String previousHash = "6a79f8a5731646c18ecfe4b4ec6547f27a16dd011e20dd5b490e331471968b46";
+    String previousHash = "7764a960f49c0b8269e45c02672f8d06e80467699c518c2dce0acb6e3d554c4a";
     var previous =
         real.resolveReviewed(
                 "metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel", previousHash)
@@ -365,7 +365,8 @@ class PdeOperationalControlEvidenceTest {
             java.nio.file.Path.of("../..")
                 .resolve(compatibility.path("evidencePath").asText())
                 .toFile());
-    assertThat(receipt.path("executedCases").size()).isEqualTo(23);
+    assertThat(receipt.path("executedCases").size()).isEqualTo(26);
+    assertThat(receipt.path("additionalValidation").size()).isEqualTo(17);
     assertThat(receipt.path("providerCalls").asInt()).isZero();
     assertThat(fileHash(receipt.path("testSource").asText()))
         .isEqualTo(receipt.path("testSourceSha256").asText());

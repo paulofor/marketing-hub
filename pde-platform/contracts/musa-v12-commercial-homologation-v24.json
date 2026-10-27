@@ -122,7 +122,7 @@
     },
     {
       "path": "docs/homologacao/vega-modelagem-internacional-v16.md",
-      "sha256": "b46f776efdad7f2513a965f82a6e47bd6bdb19b75b0664a05a4bc4d5bbe0a3f1",
+      "sha256": "37f7fb228bb0373418ee154deb54f9c993d10c0f6bdb714eca766b21e7f522e1",
       "promptMode": "FULL"
     }
   ],
@@ -151,7 +151,7 @@
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v23.json",
     "previousManifestSha256": "dc8c111e53262b240e03536a2df4f2933fee5c813060f4f623ba6cdbec5f9b76",
-    "validatedAt": "2026-10-27T20:05:17.720285+00:00",
+    "validatedAt": "2026-10-27T20:21:27.482374+00:00",
     "scope": "Compatibilidade da jornada contextual privada de Vega. Preserva raízes, identidades, provas e limites das outras versões; não renova pareceres nem autoriza gasto ou lançamento.",
     "changedEvidence": [
       {

@@ -14,6 +14,36 @@ import org.junit.jupiter.params.provider.ValueSource;
 class PdeValidationScopeTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Distingue ressalva condicional de obrigação e impede vazamento entre campos e frases. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource(
+      delimiter = '|',
+      value = {
+        "18 combinações somente se implementada a comparação REFERENCE/REDUCED.|false",
+        "Se houver comparação documental implementada, executar 18 combinações: três cenários, três dispositivos e duas condições REFERENCE/REDUCED.|false",
+        "Comparar REFERENCE e REDUCED em 18 combinações.|true",
+        "18 combinações somente se implementada a comparação REFERENCE/REDUCED. Executar REFERENCE obrigatoriamente.|true",
+        "Se houver comparação documental implementada, executar REFERENCE/REDUCED; exigir REDUCED mesmo sem implementação.|true",
+        "Comparar REFERENCE e REDUCED somente se houver orçamento.|true",
+        "Se houver comparação documental implementada, executar REFERENCE/REDUCED, mas exigir REDUCED mesmo sem implementação.|true",
+        "Exigir REFERENCE e 18 combinações somente se implementada a comparação REFERENCE/REDUCED.|true",
+        "Executar REFERENCE/REDUCED. A comparação só será implementada depois.|true"
+      })
+  void distinguishesConditionalCapabilityFromRequiredComparison(String text, boolean blocked)
+      throws Exception {
+    var result = json.createObjectNode().put("decision", "APPROVE");
+    result
+        .putObject("marketStrategicContract")
+        .putObject("agentValidationPlan")
+        .put("continueCriteria", text)
+        .put("explanation", "Somente se implementada a comparação.");
+    var action =
+        org.assertj.core.api.ThrowableAssert.catchThrowable(
+            () -> PdeValidationScope.validate(result, task(97007L, false)));
+    if (blocked) assertThat(action).isInstanceOf(IllegalArgumentException.class);
+    else assertThat(action).isNull();
+  }
+
   /** Reproduz o planejamento de Vega e outro produto pelo validador real do callback de Atena. */
   @ParameterizedTest
   @ValueSource(longs = {4L, 98004L})

@@ -14,6 +14,12 @@ final class PdeValidationScope {
   private static final Pattern COMPARISON =
       Pattern.compile("\\b(?:REFERENCE|REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\b");
 
+  private static final Pattern IMPLEMENTED_CONDITION =
+      Pattern.compile(
+          "(?iu)(?!(?:.*\\b(?:mas|independentemente|sempre|obrigatoriamente)\\b|.*mesmo sem))(?:se houver comparação documental implementada, executar .*"
+              + "|(?:\\d+ combinações\\s+)?(?:somente|apenas) se implementada a comparação\\s+"
+              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3]))");
+
   /** Impede instâncias de uma validação sem estado operacional. */
   private PdeValidationScope() {}
 
@@ -65,17 +71,39 @@ final class PdeValidationScope {
     }
   }
 
-  /** Recusa aprovação com obrigação comparativa que a candidata não recebeu do backend. */
+  /** Recusa obrigação comparativa sem capacidade; ressalva explícita não habilita outra matriz. */
   static void validate(JsonNode result, JsonNode task) {
     var protocol = protocol(task);
     if (protocol.isMissingNode()
         || protocol.path("inputComparisonApplicable").asBoolean()
         || !"APPROVE".equals(result.path("decision").asText())) return;
     var strategy = result.path("marketStrategicContract");
-    if (COMPARISON.matcher(strategy.path("causalHypothesis").asText()).find()
-        || COMPARISON.matcher(strategy.path("continueCriteria").asText()).find()
-        || COMPARISON.matcher(strategy.path("agentValidationPlan").toString()).find())
+    if (requiresComparison(strategy.path("causalHypothesis"))
+        || requiresComparison(strategy.path("continueCriteria"))
+        || requiresComparison(strategy.path("agentValidationPlan")))
       throw new IllegalArgumentException(
           "Atena exigiu comparação fora do protocolo da candidata; alinhe a hipótese à base disponível.");
+  }
+
+  /**
+   * Examina cada valor e frase isoladamente; uma ressalva não libera outro critério obrigatório.
+   */
+  private static boolean requiresComparison(JsonNode value) {
+    if (value.isContainerNode()) {
+      var fields = value.fields();
+      while (fields.hasNext()) {
+        var field = fields.next();
+        if (COMPARISON.matcher(field.getKey()).find()) return true;
+      }
+      for (var child : value) if (requiresComparison(child)) return true;
+      return false;
+    }
+    if (!value.isTextual()) return false;
+    for (String sentence : value.asText().split("[.!?;\\r\\n]+")) {
+      String clause = sentence.strip();
+      if (COMPARISON.matcher(clause).find() && !IMPLEMENTED_CONDITION.matcher(clause).matches())
+        return true;
+    }
+    return false;
   }
 }

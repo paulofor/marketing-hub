@@ -14,6 +14,12 @@ public final class LearningCycleValidationProtocol {
   private static final Pattern COMPARISON =
       Pattern.compile("\\b(?:REFERENCE|REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\b");
 
+  private static final Pattern IMPLEMENTED_CONDITION =
+      Pattern.compile(
+          "(?iu)(?!(?:.*\\b(?:mas|independentemente|sempre|obrigatoriamente)\\b|.*mesmo sem))(?:se houver comparação documental implementada, executar .*"
+              + "|(?:\\d+ combinações\\s+)?(?:somente|apenas) se implementada a comparação\\s+"
+              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3]))");
+
   /** Impede instâncias de uma política sem estado. */
   private LearningCycleValidationProtocol() {}
 
@@ -59,13 +65,35 @@ public final class LearningCycleValidationProtocol {
     }
   }
 
-  /** Detecta obrigação comparativa importada de outro harness nos critérios da estratégia. */
+  /** Recusa obrigação comparativa sem capacidade, preservando ressalvas condicionais históricas. */
   public static boolean hasUnscopedComparison(JsonNode result, JsonNode protocol) {
     if (!"PDE_VALIDATION_SCOPE_V1".equals(protocol.path("scopeContractVersion").asText())
         || protocol.path("inputComparisonApplicable").asBoolean(false)) return false;
     JsonNode strategy = result.path("marketStrategicContract");
-    return COMPARISON.matcher(strategy.path("causalHypothesis").asText()).find()
-        || COMPARISON.matcher(strategy.path("continueCriteria").asText()).find()
-        || COMPARISON.matcher(strategy.path("agentValidationPlan").toString()).find();
+    return requiresComparison(strategy.path("causalHypothesis"))
+        || requiresComparison(strategy.path("continueCriteria"))
+        || requiresComparison(strategy.path("agentValidationPlan"));
+  }
+
+  /**
+   * Examina cada valor e frase isoladamente; uma ressalva não libera outro critério obrigatório.
+   */
+  private static boolean requiresComparison(JsonNode value) {
+    if (value.isContainerNode()) {
+      var fields = value.fields();
+      while (fields.hasNext()) {
+        var field = fields.next();
+        if (COMPARISON.matcher(field.getKey()).find()) return true;
+      }
+      for (var child : value) if (requiresComparison(child)) return true;
+      return false;
+    }
+    if (!value.isTextual()) return false;
+    for (String sentence : value.asText().split("[.!?;\\r\\n]+")) {
+      String clause = sentence.strip();
+      if (COMPARISON.matcher(clause).find() && !IMPLEMENTED_CONDITION.matcher(clause).matches())
+        return true;
+    }
+    return false;
   }
 }

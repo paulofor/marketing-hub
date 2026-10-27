@@ -11208,3 +11208,20 @@ pacotes correspondentes; fixtures técnicas continuam separadas de qualidade vis
 comerciais. Regressões exercitam perfis históricos, seis especialidades, duas identidades,
 recuperação, callbacks, segurança e recusa de arquitetura alterada, sem chamada paga.
 Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.
+
+## LOOP-ATENA-BPM-RESERVA-SEM-ENTREGA — reserva perdida antes da auditoria
+
+- **Evidência (27/10/2026):** Vega #835 ficou IN_PROGRESS sem prompt, modelo,
+  tokens ou custo. A outbox de Atena não tinha pending.json; o backend apresentava
+  latência e o executor registrava timeouts. O caminho anterior #824 tinha
+  auditoria e resultado, portanto não era candidato a repetição.
+- **Causa:** a reserva podia persistir apesar da perda da resposta HTTP; o próximo
+  polling buscava apenas PENDING, sem reentregar a reserva nunca recebida.
+- **Correção:** recuperação anterior à auditoria, uma vez, na fila e handshake
+  vigentes, preservando a identidade e bloqueando a segunda interrupção.
+- **Prevenção:** AgentTaskServiceTest cobre duas identidades, reentrega única e
+  proteção após auditoria; AtenaUnreceivedLeaseTest cobre os sinais independentes
+  de modelo/consumo e idade. O teste de entrega do worker confirma auditoria antes
+  da inferência e replay da outbox sem nova chamada.
+- **Limite:** não recupera modelo já auditado nem fabrica custo zero. Ver
+  [contrato de Atena](../canonical/agente-estrategista-experimentos-v1.md).

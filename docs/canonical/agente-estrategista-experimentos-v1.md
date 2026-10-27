@@ -345,3 +345,29 @@ ou antiga. Sucessores conservam seus próprios contratos e autorizações.
 A comunicação que aguarda esse planejamento inicial deve ceder a precedência exata
 no coordenador existente, sem pausar o processo, cancelar trabalho ou abrir ciclo
 artificial. [Matriz e evidência](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).
+
+### Reserva BPM perdida antes do modelo — 27/10/2026
+
+Na fila `pde-commercial-plan-offer/marketStrategy`, o handshake
+`ATENA_PDE_MARKET_STRATEGY_V1` implica consumo serializado pelo lock da outbox e
+confirmação de `execution-audit` **antes** de iniciar o modelo. Se a resposta da
+reserva se perder, não haverá outbox local nem auditoria. O backend pode reentregar
+**a mesma tarefa uma única vez**, após cinco minutos sem atualização, somente sem
+prompt, partes da auditoria, modelo, modo, esforço, resultado, evidência, entrega,
+tokens ou custo (inclusive zero). A ausência de auditoria não autoriza recuperar
+uma inferência já iniciada; qualquer campo preenchido impede esta recuperação.
+
+A reentrega mantém contexto, identidade e limites, registra
+`ATENA_UNRECEIVED_LEASE_RECOVERY_ONCE` e não cria outra tarefa. Nova expiração sem
+auditoria encerra como bloqueio técnico auditável; não se repete indefinidamente.
+STOP, pausa de publicação e autorização financeira continuam nos controles
+existentes. Não aumentar timeout ou reiniciar inferência para contornar latência.
+
+Evidência inicial: Vega, tarefa #835, reservada sem prompt, modelo ou consumo e sem
+arquivo pendente no executor, durante latência do backend. A política é genérica
+por contrato, sem IDs de produto. Regressões devem cobrir outra identidade,
+reserva recente, confirmação de auditoria, callback preservado e limite de uma
+reentrega. Métrica operacional: reservas sem auditoria recuperadas sem duplicar
+inferência; vendas e margem dependem de medição comercial posterior. Reverter a
+recuperação se o worker deixar de confirmar auditoria antes do modelo ou de
+serializar o consumo.

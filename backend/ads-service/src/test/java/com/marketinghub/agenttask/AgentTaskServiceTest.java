@@ -2678,6 +2678,79 @@ class AgentTaskServiceTest {
     verify(projector).project(orphan, null);
   }
 
+  /**
+   * Recupera a mesma identidade antes do modelo e impede repetição após confirmação da auditoria.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {835L, 930835L})
+  void recoversUnreceivedAtenaClaimOnceAndProtectsAuditedWork(long id) throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var atena = agent(4L, "experiment-strategist", "Atena");
+    var definition = process("PUBLISHED", "Atena");
+    definition.setProcessCode("pde-commercial-plan-offer");
+    var task = processTask(id, atena, definition, "marketStrategy", "IN_PROGRESS");
+    task.setSourceReference("experiment:" + id);
+    Instant now = Instant.parse("2026-10-27T15:00:00Z");
+    task.setUpdatedAt(now.minusSeconds(600));
+    when(agents.findByAgentKey("experiment-strategist")).thenReturn(Optional.of(atena));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "experiment-strategist", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, agents, Clock.fixed(now, ZoneOffset.UTC));
+    var mvc =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new InternalAgentTaskExecutionController(
+                    service, mock(AgentTaskVisualEvidenceService.class)))
+            .build();
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/internal/agent-tasks/experiment-strategist/stage-executions/pending")
+                .param("processCode", "pde-commercial-plan-offer")
+                .param("activityId", "marketStrategy")
+                .param("workerContract", AtenaBpmWorkerContract.VERSION))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
+                    "$[0].taskId")
+                .value(id));
+    assertThat(task.getSourceReference()).isEqualTo("experiment:" + id);
+    assertThat(task.getExecutionError()).startsWith(AtenaUnreceivedLease.RECOVERED);
+    assertThat(task.getEstimatedCostUsd()).isNull();
+    assertThat(
+            service.claimEligibleProcessTask(
+                "experiment-strategist",
+                "pde-commercial-plan-offer",
+                "marketStrategy",
+                null,
+                AtenaBpmWorkerContract.VERSION))
+        .isEmpty();
+    task.setExecutionPrompt("Entrada confirmada antes de iniciar o modelo");
+    task.setUpdatedAt(now.minusSeconds(600));
+    assertThat(
+            service.claimEligibleProcessTask(
+                "experiment-strategist",
+                "pde-commercial-plan-offer",
+                "marketStrategy",
+                null,
+                AtenaBpmWorkerContract.VERSION))
+        .isEmpty();
+    assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+    task.setExecutionPrompt(null);
+    assertThat(
+            service.claimEligibleProcessTask(
+                "experiment-strategist",
+                "pde-commercial-plan-offer",
+                "marketStrategy",
+                null,
+                AtenaBpmWorkerContract.VERSION))
+        .isEmpty();
+    assertThat(task.getStatus()).isEqualTo("BLOCKED");
+    assertThat(task.getExecutionError()).startsWith("ATENA_UNRECEIVED_LEASE_EXHAUSTED|");
+  }
+
   /** Não reserva trabalho para uma imagem antiga que não declarou o handshake seguro. */
   @Test
   void doesNotClaimAtenaTaskWithoutVersionedWorkerContract() {

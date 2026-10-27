@@ -1748,7 +1748,7 @@ public class AgentTaskService {
     return claimEligibleProcessTask(agentKey, processCode, activityId, executionResourceCode, null);
   }
 
-  /** Exige a imagem compatível antes de reservar trabalho, contexto e recuperação do worker. */
+  /** Exige imagem compatível e recupera reservas anteriores à auditoria sem repetir inferência. */
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
       String agentKey,
@@ -1799,6 +1799,11 @@ public class AgentTaskService {
             psiqueDecisionReplay);
     if (replayable.isPresent())
       return Optional.of(pendingResponse(replayable.get(), apolloAudiovisualContract));
+    Optional<AgentTask> unreceivedAtena =
+        recoverUnreceivedAtenaLease(
+            agentKey, processCode, activityId, executionResourceCode, atenaBpmContract);
+    if (unreceivedAtena.isPresent())
+      return Optional.of(pendingResponse(unreceivedAtena.get(), false));
     Optional<AgentTask> orphaned =
         recoverOrphanedCustomerAgentLease(agentKey, processCode, activityId, executionResourceCode);
     if (orphaned.isPresent())
@@ -2029,6 +2034,52 @@ public class AgentTaskService {
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .findFirst();
+  }
+
+  /**
+   * Reentrega uma reserva de Atena perdida no HTTP antes da auditoria obrigatória. O worker
+   * serializa o consumo e só inicia o modelo após confirmar execution-audit; ausência dessa
+   * auditoria após cinco minutos permite uma reentrega, nunca a repetição de uma inferência.
+   */
+  private Optional<AgentTask> recoverUnreceivedAtenaLease(
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      boolean compatibleWorker) {
+    if (!compatibleWorker) return Optional.empty();
+    Instant now = Instant.now(clock);
+    for (AgentTask task :
+        repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            agentKey.trim(), "WORK", "IN_PROGRESS")) {
+      if (task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)
+          || !AtenaUnreceivedLease.eligible(task, now)) continue;
+      if (task.getExecutionError() != null
+          && task.getExecutionError().startsWith(AtenaUnreceivedLease.RECOVERED)) {
+        String error =
+            "ATENA_UNRECEIVED_LEASE_EXHAUSTED|A entrega da reserva falhou novamente antes do modelo; conferir a conexão do executor com o backend.";
+        task.setExecutionError(error);
+        ensurePreModelFailureAudit(task, null, null);
+        applyBlockerGuidance(task, null, error, null);
+        requireTerminalExecutionAudit(task, false);
+        task.setStatus("BLOCKED");
+      } else {
+        task.setExecutionError(
+            AtenaUnreceivedLease.RECOVERED
+                + "Reserva reentregue sem auditoria, saída ou consumo do modelo; mesma tarefa preservada.");
+      }
+      task.setUpdatedAt(now);
+      AgentTask saved = repository.save(task);
+      synchronizeActivityInstance(saved, now);
+      log.warn(
+          "Atena recuperando reserva anterior ao modelo. taskId={} sourceReference={} status={}",
+          saved.getId(),
+          saved.getSourceReference(),
+          saved.getStatus());
+      if ("IN_PROGRESS".equals(saved.getStatus())) return Optional.of(saved);
+    }
+    return Optional.empty();
   }
 
   /**

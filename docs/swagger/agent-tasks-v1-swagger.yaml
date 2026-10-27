@@ -136,6 +136,9 @@ paths:
             customer-agent recuperar APPROVED, ADJUST e BLOCKED preservados sem inferência.
             O consumidor legado recebe apenas aprovações recuperáveis. Retomada explícita
             de tarefa tecnicamente bloqueada preserva parecer, evidência e custo.
+            ATENA_PDE_MARKET_STRATEGY_V1 permite reentregar uma única reserva de
+            marketStrategy após cinco minutos, somente antes de qualquer auditoria,
+            saída ou consumo. Preserva taskId e bloqueia nova expiração sem auditoria.
       responses:
         "200":
           description: Lista vazia ou uma única atividade reservada com o recurso exigido e orientação persistida do próprio produto quando disponível

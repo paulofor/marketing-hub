@@ -364,6 +364,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "O ciclo de aprendizado não corresponde ao produto e experimento da tarefa.");
       }
       implementedInput(objectMapper.valueToTree(task));
+      PdeValidationScope.protocol(objectMapper.valueToTree(task));
       return;
     }
     if (sourceReference(task).startsWith("experiment:")) {
@@ -474,12 +475,11 @@ public class PdeMarketStrategyBpmTaskConsumer {
     validate(result, sourceReference, false, null);
   }
 
-  /**
-   * Valida identidade, rastreabilidade das fontes, entrada executável e homologação do Processo 2.
-   */
+  /** Valida identidade, fontes, entrada e escopo da homologação antes da passagem do Processo 2. */
   static void validate(
       JsonNode result, String sourceReference, boolean requiresProductIdentity, JsonNode task) {
     ReferenceModelingContract.validate(result, task);
+    PdeValidationScope.validate(result, task);
     if (requiresBigIdea(task)) validateBigIdea(result, task);
     JsonNode contract = result.path("marketStrategicContract");
     boolean agentValidation = requiresAgentValidation(task);

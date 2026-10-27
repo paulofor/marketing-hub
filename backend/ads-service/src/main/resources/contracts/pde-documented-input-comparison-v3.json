@@ -1,0 +1,6 @@
+{
+  "contractVersion": "PDE_DOCUMENTED_INPUT_COMPARISON_V3",
+  "conditions": ["REFERENCE", "REDUCED"],
+  "technicalCombinationCount": 18,
+  "scope": "Somente candidata com comparação documental implementada e declarada: três cenários, três dispositivos e duas condições. Não cria uma hipótese nem uma redução de esforço."
+}

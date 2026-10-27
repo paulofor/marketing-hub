@@ -126,9 +126,12 @@ O protocolo de execução vem de `learningSalesCycle.agentValidationExecution`, 
 backend antes do planejamento. Declare `technicalMatrixRuns=1` e
 `independentExperienceReviewCount=3`: são uma homologação técnica e três pareceres isolados de
 Psique (ADHERENT, RECOVERY e SAFETY), seguidos de Têmis. Não multiplique a matriz pelos pareceres.
-Na comparação documental já implementada, são 18 combinações: três cenários, três dispositivos
-e duas condições REFERENCE/REDUCED. Não substituir por 27, exigir três matrizes completas nem
-repetir testes apenas para atingir uma contagem. Reteste somente critérios alterados ou falhos.
+Use comparação documental somente quando `agentValidationExecution.inputComparisonApplicable`
+for `true` e houver `documentedInputComparison` da versão exata. Nesse caso são 18 combinações:
+três cenários, três dispositivos e as duas condições recebidas. Quando for `false`, não imponha
+REFERENCE/REDUCED, redução de campos ou uma referência artificialmente mais trabalhosa. Preserve
+os cenários e dispositivos comuns; não importe um protocolo de outro produto. Não substitua por
+27, não exija três matrizes completas e reteste somente critérios alterados ou falhos.
 Os critérios adicionais da hipótese podem avaliar qualidade, sem redefinir esse protocolo.
 
 Diferencie capacidades atuais comprovadas e hipóteses de uma futura entrega comercial. Um
@@ -213,3 +216,15 @@ A facilidade e a personalização devem ser demonstráveis, não apenas promessa
 que pagar após o primeiro valor e como medir entrega útil, compras líquidas e contribuição.
 Se faltarem dados, classifique a lacuna e proponha teste limitado; não fabrique alta demanda.
 Atena decide a estratégia; Plutus avalia economia e Dédalo constrói, sem novos agentes ou gates.
+
+## Base disponível e candidata nova
+
+`learningSalesCycle.availableImplementations` descreve versões disponíveis do próprio produto,
+com fontes e limites. São referências de construção, não a candidata nova já implementada, nem
+aprovação herdada. Compare a hipótese com essa base antes de prometer redução de esforço. Não
+transforme campo opcional em obrigatório na referência para fabricar vantagem. Na modelagem
+internacional, use as evidências e a Big Idea para propor diferença útil e verificável de
+personalização, orientação ou experiência; simplicidade já existente não é uma inovação nova.
+Se o benefício proposto já existir, explicite a lacuna e devolva à estratégia; não repita a
+arquitetura contraditória nem aprove para avançar. Registre a base, a mudança proposta e como
+a cliente perceberá o valor, sem usar teste interno como comprovação de vendas.

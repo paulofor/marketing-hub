@@ -7,6 +7,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +58,34 @@ public class LearningCycleImplementedInputContext {
           cycle.getProductVersion(),
           ex);
       throw new IllegalStateException("Entrada implementada indisponível para o planejamento.", ex);
+    }
+  }
+
+  /** Lista bases do próprio produto sem atribuí-las à candidata nem herdar aprovações. */
+  public List<JsonNode> availableImplementations(LearningSalesCycle cycle) {
+    var product = products.findById(cycle.getProductId()).orElse(null);
+    if (product == null) return List.of();
+    try (var input = getClass().getResourceAsStream("/contracts/pde-implemented-inputs-v1.json")) {
+      if (input == null) throw new IOException("Catálogo de entradas implementadas ausente.");
+      var result = new ArrayList<JsonNode>();
+      for (var item : json.readTree(input).path("implementations")) {
+        if (!Objects.equals(product.getSlug(), item.path("productSlug").asText())) continue;
+        ObjectNode reference = item.deepCopy();
+        reference.put("scope", "AVAILABLE_IMPLEMENTATION_REFERENCE");
+        reference.put("productId", cycle.getProductId());
+        reference.put("targetImplementationClaimed", false);
+        reference.put("agentApprovalClaimed", false);
+        reference.put("commercialEvidenceClaimed", false);
+        result.add(reference);
+      }
+      return List.copyOf(result);
+    } catch (IOException ex) {
+      log.error(
+          "Falha ao carregar bases productId={} cycleId={}",
+          cycle.getProductId(),
+          cycle.getId(),
+          ex);
+      throw new IllegalStateException("Bases de implementação indisponíveis.", ex);
     }
   }
 }

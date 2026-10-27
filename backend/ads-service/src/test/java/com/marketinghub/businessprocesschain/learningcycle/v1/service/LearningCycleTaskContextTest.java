@@ -44,8 +44,8 @@ class LearningCycleTaskContextTest {
     var protocol = (com.fasterxml.jackson.databind.JsonNode) result.get("agentValidationExecution");
     assertEquals(1, protocol.path("technicalMatrixRuns").asInt());
     assertEquals(3, protocol.path("independentExperienceReviewCount").asInt());
-    assertEquals(
-        18, protocol.path("documentedInputComparison").path("technicalCombinationCount").asInt());
+    assertFalse(protocol.has("documentedInputComparison"));
+    assertFalse(protocol.path("inputComparisonApplicable").asBoolean());
     assertTrue(context.resolve("experiment:90", now).isEmpty());
   }
 

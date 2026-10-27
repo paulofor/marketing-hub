@@ -10130,6 +10130,20 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   nem renova histórico. Versão desconhecida conserva o caminho sem descrição.
   [Matriz e aprendizado](../homologacao/vega-entrada-implementada-planejamento-v1.md).
 
+### Recorrência em candidata ainda não implementada — 27/10/2026
+
+- Vega ciclo 16, tarefas 824/825/826: estratégia importou a comparação documental
+  REFERENCE/REDUCED do contexto comum, embora a base v15 já tivesse entrada simples.
+  Dédalo bloqueou corretamente; repetir a arquitetura não altera a causa.
+- A descrição da versão exata não cobria candidatas novas. O contexto agora expõe
+  bases do mesmo produto como referências, sem reidentificá-las como implementação
+  da candidata. O protocolo comparativo depende de capacidade da versão exata.
+- Atena valida o escopo antes da inferência e antes do callback; o backend reabre
+  estratégia e pareceres dependentes na ordem existente. Provas históricas,
+  tarefas ativas e a comparação real de Mira permanecem protegidas.
+- [Matriz, alternativas e limites](../homologacao/vega-planejamento-protocolo-especifico-v1.md).
+  A revisão funcional e o limite financeiro continuam obrigatórios.
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

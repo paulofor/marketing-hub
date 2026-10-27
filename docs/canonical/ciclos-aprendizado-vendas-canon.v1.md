@@ -829,3 +829,20 @@ A revisão vigente orienta contextos novos; fotografias antigas, pareceres e mé
 permanecem intactos. Público elegível exige entrega demonstrada por especialidade;
 expansão e acabamento premium não são prova de demanda ou promessa de receita.
 Preparar o sucessor continua sem inferência, orçamento, janela ou autorização herdada.
+
+## Base implementada e protocolo de candidatas — 27/10/2026
+
+O planejamento recebe `implementedInput` somente para a versão exata. Bases
+disponíveis do próprio produto podem chegar em `availableImplementations`, com
+versão e fonte, como referências de construção: não representam implementação,
+parecer ou autorização herdados pela candidata.
+
+`PDE_VALIDATION_SCOPE_V1` delimita o protocolo por produto, ciclo, experimento e
+versão. A comparação documental exige capacidade declarada da implementação exata;
+não é um objetivo obrigatório de todo sucessor. É proibido aumentar artificialmente
+a entrada de referência para alegar redução de esforço. O protocolo comum mantém
+os cenários e dispositivos de homologação e revisões independentes.
+
+Se a estratégia aprovada contradizer esse escopo, o backend revalida a origem e
+os pareceres dependentes antes de repetir Dédalo, preservando tentativas, resultados
+e custos. Isso não autoriza nova inferência sem saldo nem transfere mídia.

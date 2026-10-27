@@ -35,6 +35,9 @@ public class LearningCycleConstructionContext {
   private LearningCycleVideoBinding videoBinding;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private LearningCycleImplementedInputContext implementedInput;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence
       operationalEvidence;
 
@@ -157,8 +160,7 @@ public class LearningCycleConstructionContext {
               : product.getProductTypeDefinition().getInternalName());
       identity.put("format", product.getProductFormat());
       identity.put("deliveryMode", product.getDeliveryMode());
-      try (var input =
-          getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json")) {
+      {
         var plan =
             agentStrategy
                 ? (com.fasterxml.jackson.databind.node.ObjectNode)
@@ -169,7 +171,15 @@ public class LearningCycleConstructionContext {
           plan.set("purchaseScene", historicalPlan.path("purchaseScene"));
           plan.set("customerValueDelivery", historicalPlan.path("humanValueDelivery"));
         }
-        plan.setAll((com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(input));
+        var protocol =
+            LearningCycleValidationProtocol.resolve(
+                mapper,
+                cycle,
+                implementedInput == null ? null : implementedInput.resolve(cycle).orElse(null));
+        if (LearningCycleValidationProtocol.hasUnscopedComparison(strategyResult, protocol))
+          throw new IllegalStateException(
+              "A estratégia exige comparação fora do protocolo da candidata.");
+        plan.setAll(protocol);
         plan.put("sourceReference", "experiment:" + cycle.getExperimentId());
         context.set("agentValidationPlan", plan);
       }

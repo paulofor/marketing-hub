@@ -20,6 +20,7 @@
     },
     {
       "productSlug": "pde-planejado-36",
+      "validationFixtureContract": "PDE_DOCUMENTED_INPUT_COMPARISON_V3",
       "prototypeVersions": [
         "mira-private-candidate-v3"
       ],

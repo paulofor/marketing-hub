@@ -32,7 +32,9 @@ class PdeImplementedInputPlanningHandoffTest {
   @ParameterizedTest
   @CsvSource({
     "91004,metodo-musa-7-dias,musa-pde-entry-v14-primeiro-ajuste-aplicavel",
-    "92010,pde-planejado-36,mira-private-candidate-v3"
+    "92010,pde-planejado-36,mira-private-candidate-v3",
+    "4,metodo-musa-7-dias,musa-pde-entry-v16-modelagem-internacional",
+    "98004,outro-produto,outra-candidata-v2"
   })
   void resumesAtOriginAndKeepsDependentReviewsInOrder(Long productId, String slug, String version)
       throws Exception {
@@ -118,7 +120,9 @@ class PdeImplementedInputPlanningHandoffTest {
               owners[i],
               reference,
               i == 2 ? "BLOCKED" : "COMPLETED",
-              i == 0 ? strategy(json, "Quatro escolhas antigas.") : "{\"decision\":\"APPROVE\"}"));
+              i == 0
+                  ? strategy(json, "Quatro escolhas antigas; comparar REFERENCE e REDUCED.")
+                  : "{\"decision\":\"APPROVE\"}"));
     }
     when(processes.findById(process.getId())).thenReturn(Optional.of(process));
     when(products.findById(productId)).thenReturn(Optional.of(product));
@@ -183,7 +187,12 @@ class PdeImplementedInputPlanningHandoffTest {
             reference,
             "COMPLETED",
             strategy(
-                json, input.resolve(cycle).orElseThrow().path("minimumCustomerInput").asText())));
+                json,
+                input
+                    .resolve(cycle)
+                    .map(v -> v.path("minimumCustomerInput").asText())
+                    .orElse(
+                        "Entrada proposta com preferência declarada, sem alegar implementação existente."))));
     assertThat(service.productProcessExecutions(process.getId(), productId).currentActivityId())
         .isEqualTo("economics");
     assertThat(

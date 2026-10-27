@@ -134,6 +134,8 @@ class LearningCycleConstructionContextTest {
     assertThat(plan.path("contractVersion").asText()).isEqualTo("PDE_AGENT_VALIDATION_V1");
     assertThat(plan.path("requiredScenarios").size()).isEqualTo(3);
     assertThat(plan.path("requiredDevices").size()).isEqualTo(3);
+    assertThat(plan.path("inputComparisonApplicable").asBoolean()).isFalse();
+    assertThat(plan.has("documentedInputComparison")).isFalse();
     assertThat(plan.path("humanEvidenceClaimed").asBoolean()).isFalse();
     assertThat(result.publicUrl()).isNull();
     assertThat(result.commercialCheckoutUrl()).isNull();
@@ -145,6 +147,40 @@ class LearningCycleConstructionContextTest {
         .contains("primeiro resultado");
     assertThat(product.getPdeExperienceJson()).contains("historical-v7");
     verify(cycles, never()).save(any());
+  }
+
+  /** Conserva a comparação de Mira na construção e recusa sua importação para outro protótipo. */
+  @Test
+  void preservesScopedComparisonAndBlocksImportedStrategy() throws Exception {
+    var products = mock(com.marketinghub.repository.jpa.product.ProductRepository.class);
+    product.setSlug("pde-planejado-36");
+    cycle.setProductVersion("mira-private-candidate-v3");
+    when(products.findById(product.getId())).thenReturn(Optional.of(product));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        resolver, "implementedInput", new LearningCycleImplementedInputContext(products, mapper));
+    var current =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    var plan = current.pdeContext().path("agentValidationPlan");
+    assertThat(plan.path("inputComparisonApplicable").asBoolean()).isTrue();
+    assertThat(plan.path("documentedInputComparison").path("technicalCombinationCount").asInt())
+        .isEqualTo(18);
+    cycle.setProductVersion("nova-candidata-v4");
+    var strategyTask = approved.get(2);
+    var strategy =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            mapper.readTree(strategyTask.getResultJson());
+    strategy
+        .withObject("/marketStrategicContract")
+        .put("causalHypothesis", "Comparar REFERENCE e REDUCED");
+    strategyTask.setResultJson(strategy.toString());
+    assertThat(
+            resolver
+                .resolve("experiment:92", experiment, "pde-construction-approval")
+                .orElseThrow()
+                .pdeContext())
+        .isNull();
+    assertThat(strategyTask.getResultJson()).contains("REFERENCE");
+    verify(tasks, never()).save(any());
   }
 
   /** Entrega a prova compilada por versão, preservando a identidade corrente e o limite local. */

@@ -1,5 +1,6 @@
 package com.marketinghub.product.service.agentvalidation;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
@@ -8,6 +9,7 @@ import com.marketinghub.businessprocess.execution.service.agentactivity.AgentPro
 import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadinessProvider;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleImplementedInputContext;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleValidationProtocol;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
@@ -21,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: revalidar o planejamento cuja entrada contradiz a candidata implementada. */
+/** Responsabilidade: revalidar planejamento que contradiz a entrada ou o protocolo da candidata. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -61,7 +63,7 @@ public class PdeImplementedInputPlanningReadinessProvider
     if (!aligned(value))
       return new AgentProductProcessActivityReadiness(
           false,
-          "Atena precisa alinhar a entrada mínima à versão implementada antes desta passagem.");
+          "Atena precisa alinhar a estratégia à base disponível e ao protocolo da candidata antes desta passagem.");
     if ("productArchitecture".equals(activity.getActivityId()) && !currentEconomics(value))
       return new AgentProductProcessActivityReadiness(
           false, "Plutus precisa avaliar a estratégia corrigida antes da arquitetura de Dédalo.");
@@ -110,20 +112,19 @@ public class PdeImplementedInputPlanningReadinessProvider
             .filter(value -> product.getId().equals(value.getProductId()))
             .filter(
                 value -> "OPEN".equals(value.getStatus()) && "PLANNING".equals(value.getStage()));
-    return cycle.flatMap(
-        value ->
-            inputs
-                .resolve(value)
-                .map(
-                    input ->
-                        new PlanningState(
-                            value,
-                            input.path("minimumCustomerInput").asText(),
-                            tasks.findFunctionalSnapshotsByProcessSince(
-                                process.getId(), reference, value.getCreatedAt()))));
+    return cycle.map(
+        value -> {
+          var input = inputs.resolve(value).orElse(null);
+          return new PlanningState(
+              value,
+              input == null ? null : input.path("minimumCustomerInput").asText(),
+              LearningCycleValidationProtocol.resolve(json, value, input),
+              tasks.findFunctionalSnapshotsByProcessSince(
+                  process.getId(), reference, value.getCreatedAt()));
+        });
   }
 
-  /** Confere o resumo canônico sem interpretar uma aprovação antiga como implementação nova. */
+  /** Confere a entrada quando implementada e recusa comparação sem capacidade da candidata. */
   private boolean aligned(PlanningState state) {
     var strategy = latest(state.history(), "marketStrategy");
     if (strategy == null || !"COMPLETED".equals(strategy.status())) return false;
@@ -132,15 +133,17 @@ public class PdeImplementedInputPlanningReadinessProvider
       var result = json.readTree(strategy.resultJson());
       return result != null
           && "APPROVE".equals(result.path("decision").asText())
-          && state
-              .minimumInput()
-              .equals(
-                  result
-                      .path("marketStrategicContract")
-                      .path("agentValidationPlan")
-                      .path("customerValueDelivery")
-                      .path("minimumCustomerInput")
-                      .asText());
+          && !LearningCycleValidationProtocol.hasUnscopedComparison(result, state.protocol())
+          && (state.minimumInput() == null
+              || state
+                  .minimumInput()
+                  .equals(
+                      result
+                          .path("marketStrategicContract")
+                          .path("agentValidationPlan")
+                          .path("customerValueDelivery")
+                          .path("minimumCustomerInput")
+                          .asText()));
     } catch (IOException ex) {
       log.error(
           "Falha ao conferir planejamento taskId={} productId={} cycleId={}",
@@ -173,5 +176,8 @@ public class PdeImplementedInputPlanningReadinessProvider
 
   /** Responsabilidade: agrupar a entrada e as provas do contexto exato durante uma leitura. */
   private record PlanningState(
-      LearningSalesCycle cycle, String minimumInput, List<AgentTaskFunctionalSnapshot> history) {}
+      LearningSalesCycle cycle,
+      String minimumInput,
+      JsonNode protocol,
+      List<AgentTaskFunctionalSnapshot> history) {}
 }

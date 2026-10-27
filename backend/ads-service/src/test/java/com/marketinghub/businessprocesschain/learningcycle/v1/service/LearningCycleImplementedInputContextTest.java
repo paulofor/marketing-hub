@@ -137,7 +137,9 @@ class LearningCycleImplementedInputContextTest {
             context.resolve(
                 "experiment:" + cycle.getExperimentId(), cycle.getCreatedAt().minusSeconds(1)))
         .isEmpty();
-    verify(products, times(1)).findById(94004L);
+    assertThat(task.get("availableImplementations").toString())
+        .contains("AVAILABLE_IMPLEMENTATION_REFERENCE");
+    verify(products, times(2)).findById(94004L);
   }
 
   /** Prepara identidades sintéticas e memória que nunca representam uma execução comercial. */

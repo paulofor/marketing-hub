@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-genie4-mundos-interativos-audio",
+  "collection": "video",
+  "title": "Direção de cenas audiovisuais interativas por modelo de mundo",
+  "finding": "Google DeepMind anunciou em 27/10/2026 o Genie 4, modelo de mundo com áudio em tempo real, mudanças durante a simulação de câmera/clima/objetos e consistência de cenas anunciada de até 2 minutos.",
+  "mechanism": "Em vez de renderizar clipes independentes por prompts estáticos, o usuário ou agente dirige a simulação durante sua evolução, inspeciona quadros e ajusta o mundo/áudio.",
+  "commercialApplication": "Pesquisa de pré-visualização para publicidade, animação e curtas, com possível direção por agente e seleção de cenas quando houver API acessível e direitos comerciais adequados; sem integração imediata ao Marketing Hub.",
+  "evidenceStrength": "Reportagem contemporânea de briefing com Google; capacidades e duração dependem de relatos dos responsáveis e requerem benchmarks independentes.",
+  "publishedOn": "2026-10-27",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "Direção interativa por agentes reduzirá retrabalho de storyboard e aumentará consistência entre cenas frente a gerações desconectadas; ainda precisa de disponibilização de API e teste.",
+  "risks": "Disponibilidade limitada, deriva de identidade de objetos, erros de áudio e texto dentro da cena, falta de preço/licença comercial pública, dependência de hardware/serviço.",
+  "limits": "Somente research preview para trusted testers em 27/10/2026; acesso Google AI Ultra/Project Genie e parceiros de API foi apenas anunciado para semanas posteriores; não é API de produção nem pesos abertos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-27-genie4-mundos-interativos-audio.md",
+  "sourceTitle": "Fonte revisada — Genie 4: mundos interativos com áudio e direção em tempo real",
+  "sourceSha256": "9b9942eb787457a3c3939787623bfa58c7886bc5fd6c0cadf0be12635e10563a"
+}

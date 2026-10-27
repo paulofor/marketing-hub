@@ -44,7 +44,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
   VegaStyleController.class
 })
 public class VegaStyleLocalApplication {
-  /** Inicia apenas a fixture com banco MySQL local e credencial sintética. */
+  /** Inicia as duas versões isoladas com banco MySQL local e credencial sintética. */
   public static void main(String[] ignored) {
     String host = System.getenv().getOrDefault("VEGA_TEST_DB_HOST", "127.0.0.1");
     if (!Set.of("127.0.0.1", "sandbox-docker").contains(host))
@@ -60,7 +60,7 @@ public class VegaStyleLocalApplication {
                 + ":18326/vega_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
             "--spring.datasource.username=vega",
             "--spring.datasource.password=vega-local-only",
-            "--spring.liquibase.change-log=classpath:vega-style/changelog.yaml",
+            "--spring.liquibase.change-log=classpath:vega-style/successor-changelog.yaml",
             "--integrations.pde-platform.internal-token=vega-local-internal-only",
             "--spring.mvc.problemdetails.enabled=true",
             "--spring.jpa.open-in-view=false",

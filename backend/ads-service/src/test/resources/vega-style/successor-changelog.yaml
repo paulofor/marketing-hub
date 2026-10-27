@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - include:
+      file: changelog.yaml
+      relativeToChangelogFile: true
+  - changeSet:
+      id: local-vega-style-successor
+      author: codex-local
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO learning_sales_cycle_v1
+                (id,product_id,chain_definition_id,chain_code,process_definition_id,experiment_id,request_key,creation_json,brief_json,inherited_learning_json,stage,status,product_version,budget_limit_brl,window_start,window_end,revision,baseline,created_at,updated_at,version_changed_at)
+              SELECT 91003,product_id,chain_definition_id,chain_code,process_definition_id,91093,'00000000-0000-0000-0000-000000091003',creation_json,brief_json,inherited_learning_json,stage,status,'musa-pde-entry-v17-continuidade-clara',0,window_start,window_end,0,0,NOW(),NOW(),NOW()
+              FROM learning_sales_cycle_v1 WHERE id = 91002;

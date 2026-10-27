@@ -152,7 +152,10 @@ public class PdeAgentValidationHarnessRunner {
             && lineage.path("productId").asLong() == productId;
     boolean vegaContextual =
         "metodo-musa-7-dias".equals(productSlug)
-            && "musa-pde-entry-v16-modelagem-internacional".equals(prototypeVersion)
+            && List.of(
+                    "musa-pde-entry-v16-modelagem-internacional",
+                    "musa-pde-entry-v17-continuidade-clara")
+                .contains(prototypeVersion)
             && ("/experiences/" + prototypeVersion + "/agent-validation")
                 .equals(URI.create(sourceUrl).getPath())
             && identityReference.equals("experiment:" + target.path("experimentId").asLong())
@@ -283,8 +286,8 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
-   * vinculadas aos cenários e momentos reais, incluindo a arte ampliada nas referências v2.
-   * Avalia PASS no cenário, preservando estados funcionais como BLOCKED dentro da prova segura.
+   * vinculadas aos cenários e momentos reais, incluindo a arte ampliada nas referências v2. Avalia
+   * PASS no cenário, preservando estados funcionais como BLOCKED dentro da prova segura.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -330,7 +333,10 @@ public class PdeAgentValidationHarnessRunner {
       throw new HarnessException("O harness aprovou a execução com gate reprovado.");
     }
     boolean vegaContextual =
-        "musa-pde-entry-v16-modelagem-internacional".equals(expected.get("prototypeVersion"))
+        List.of(
+                    "musa-pde-entry-v16-modelagem-internacional",
+                    "musa-pde-entry-v17-continuidade-clara")
+                .contains(expected.get("prototypeVersion"))
             && "metodo-musa-7-dias".equals(expected.get("productSlug"));
     if (vegaContextual
         && (!"PDE_CONTEXTUAL_STYLE_EXECUTION_V1".equals(result.path("runtimeContract").asText())

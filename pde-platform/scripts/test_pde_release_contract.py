@@ -110,6 +110,23 @@ class PdeReleaseContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "não pode ser promovida"):
             MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: (_ for _ in ()).throw(TimeoutError()))
 
+    def test_contextual_successor_requires_explicit_backend_support(self):
+        surface = MODULE.select_surface(self.inventory, "v10")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-style-v15-preparation-v2.json")
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        successor = "musa-pde-entry-v17-continuidade-clara"
+        contract["privateExperience"]["prototypeVersion"] = successor
+        contract["privateExperience"]["pagePath"] = f"/experiences/{successor}/agent-validation"
+        capability = {"prototypeVersion": "musa-pde-entry-v16-modelagem-internacional", "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES", "providerCalls": 0, "trafficClass": "AGENT_VALIDATION", "sessionLimit": 18}
+        with self.assertRaises(ValueError):
+            MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: capability)
+        capability["supportedPrototypeVersions"] = [capability["prototypeVersion"], successor]
+        self.assertTrue(MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: capability))
+        old = dict(capability, supportedPrototypeVersions=[capability["prototypeVersion"]])
+        fetch = mock.Mock(side_effect=[old, capability])
+        self.assertTrue(MODULE.wait_private_capability(surface, contract, source, 10, fetch=fetch, sleep=lambda _: None))
+        self.assertEqual(fetch.call_count, 2)
+
     def test_commercial_mira_has_its_own_runtime_identity(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         self.assertEqual(

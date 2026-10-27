@@ -28,6 +28,11 @@ em `PDE_LOCAL_COMPOSE_PROJECT`. Nunca reutilize banco ou credenciais produtivos.
 6. `VEGA_CONTEXTUAL_LOCAL_REPORT=<saída>` permite ao teste
    PdeAgentValidationHarnessRunnerTest verificar o relatório real sem nova matriz;
    use os nomes harness-input.json e harness-captures junto à saída.
+   Para a clareza da continuação, execute em `pde-platform/frontend`
+   `npx playwright test --config=playwright.vega-contextual.config.ts`.
+   A regressão consulta eventos persistidos e confirma que concluir o Dia 1 e
+   conhecer a continuidade não exigem download nem feedback de uso. Inclui a
+   apresentação histórica da v15 e três dispositivos, sem provedor pago.
 7. Encerre os processos locais próprios e execute `docker compose -p
    "$PDE_LOCAL_COMPOSE_PROJECT" -f infra/testing/vega-contextual-style/compose.yml
    down --volumes --remove-orphans`.
@@ -36,3 +41,8 @@ O cenário de recuperação perde somente a resposta HTTP, confirma o estado no
 backend e repete a chave original. A regressão complementar da v15 usa o schema
 local e a configuração Playwright já existentes no PDE. Não execute novamente
 toda a matriz apenas para obter contagem; após um ajuste, repita os casos afetados.
+
+A fixture cria também ciclo 91003 / experimento 91093 para
+`musa-pde-entry-v17-continuidade-clara`, mantendo a v16 em 91002 / 91092.
+Os testes de próximo passo usam a v17 e conferem a apresentação preservada da v16.
+Não migre sessões ou registros entre essas identidades.

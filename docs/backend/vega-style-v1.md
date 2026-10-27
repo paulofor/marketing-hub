@@ -1,6 +1,7 @@
 # Vega — jornada contextual privada v1
 
-Versão de produto: `musa-pde-entry-v16-modelagem-internacional`. Estado canônico
+Versões de produto: `musa-pde-entry-v16-modelagem-internacional` e
+`musa-pde-entry-v17-continuidade-clara`. Estado canônico
 no backend principal, agregado na sessão privada existente e serializado pelo
 lock da sessão. Não há novo banco, fila, provedor ou promoção comercial.
 
@@ -11,7 +12,7 @@ navegador, screenshot ou retorno funcional; somente o hash é persistido.
 
 | Método e caminho | Contrato |
 | --- | --- |
-| GET `contract` | Capacidades sem sessão, escrita ou aceite |
+| GET `contract` | Capacidades sem sessão, escrita ou aceite; `supportedPrototypeVersions` informa as versões aceitas e `prototypeVersion` preserva a referência v16 |
 | POST `internal/sessions` | `cycleId`, `prototypeVersion`; exige token interno, ciclo aberto e versão exata; limite 18 sessões sintéticas por ciclo/versão |
 | GET `access/workspace` | Jornada, respostas, progresso e referência ao último resultado da própria sessão |
 | POST `start` | Início explícito; carregar a página não registra uso |
@@ -30,6 +31,12 @@ Entrada: `occasion` (160 caracteres), `existingSelection` (300),
 na conclusão. Campos extras ou vazios são recusados. A chave idempotente com
 outra entrada retorna conflito. Chamadas concorrentes iguais retornam o mesmo
 resultado. Nenhum resultado de outra sessão ou versão é acessível.
+
+A v17 ajusta a hierarquia das ações e explica a continuidade na interface. Ela
+exige ciclo próprio: criar uma sessão não migra a v16 nem herda autorização,
+parecer ou aceite. O workspace e as operações usam a versão da sessão, enquanto
+as regras de orientação permanecem compartilhadas e auditáveis. O publicador
+aguarda a capacidade explícita da versão antes de promover a imagem.
 
 O catálogo aceita apenas relações e recursos declarados; ausências, negações,
 contradições e situações não suportadas produzem BLOCKED sem cartão pronto.

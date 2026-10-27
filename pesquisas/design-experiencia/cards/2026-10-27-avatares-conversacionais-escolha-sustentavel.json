@@ -1,0 +1,18 @@
+{
+  "cardKey": "avatares-conversacionais-escolha-sustentavel",
+  "collection": "neuromarketing",
+  "title": "Avatares conversacionais alteraram escolhas simuladas de produtos sustentáveis",
+  "finding": "Em ensaio randomizado com 576 pessoas, quatro interfaces com avatares visuais, voz e diálogo aumentaram escolhas de produtos com menos embalagem, numa tarefa em tela, frente a chatbot textual e controle sem intervenção. Não houve diferenças significativas entre os avatares.",
+  "mechanism": "Presença social, personificação e proximidade psicológica são hipóteses plausíveis. O desenho variou imagem, voz e canal de interação ao mesmo tempo; não isolou o mecanismo responsável.",
+  "commercialApplication": "Para ofertas com sustentabilidade comprovada, comparar explicação textual com avatar de IA explicitamente identificado. Medir compreensão, consentimento, escolha, recusa e pagamentos reais antes de decidir usar avatares.",
+  "evidenceStrength": "Experimento online randomizado (N=576; 287 no seguimento). Evidência para escolhas simuladas nas condições estudadas, não para compras reais. Retenção longitudinal envolve exposições repetidas.",
+  "publishedOn": "2026-10-27",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Um avatar sintético e transparente aumentará compreensão ou preferência por opções ambientais verificáveis versus texto, sem piorar confiança calibrada ou autonomia; o efeito em vendas será avaliado separadamente.",
+  "risks": "Personificação enganosa, endosso falso de figuras públicas, manipulação emocional, greenwashing e percepção indevida de que uma escolha simulada é uma venda. Exigir consentimento e identificação da IA.",
+  "limits": "Amostra online dos EUA; decisões simuladas entre pares de preço igual; não houve compra ou entrega. Multimodalidade confundida e atrito/retorno no seguimento. Não extrapolar para brasileiros nem atribuir impacto comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-27-avatares-conversacionais-escolha-sustentavel.md",
+  "sourceTitle": "Whale You Go Green? — fonte revisada (Poonsiriwong e Pataranutaporn, 2026)",
+  "sourceSha256": "360b300c7399f87278b422c1f7492d37ec26744782cd924b794c862767f82ebc"
+}

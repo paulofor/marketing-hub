@@ -1,0 +1,31 @@
+{
+  "source": "local synthetic verification",
+  "frontendTestsPassed": 6,
+  "technicalScenariosPassed": 9,
+  "technicalChecks": {
+    "sameVersion": true,
+    "desktopAndMobile": true,
+    "happyResultWithinTenMinutes": true,
+    "recoveryPreserved": true,
+    "safetyBlocked": true,
+    "accessibilityBasic": true,
+    "responsiveLayout": true,
+    "privacyPreserved": true,
+    "internalTrafficSegregated": true,
+    "paymentDisabled": true,
+    "publicationDisabled": true,
+    "campaignDisabled": true,
+    "zeroMediaSpend": true,
+    "sevenDayJourney": true
+  },
+  "providerCalls": 0,
+  "commercialEvidenceClaimed": false,
+  "productIds": [
+    91004
+  ],
+  "cycleIds": [
+    91002
+  ],
+  "reviewToAddress": 845,
+  "report": "docs/homologacao/vega-v16-proximo-passo-2026-10-27.md"
+}

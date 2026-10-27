@@ -245,6 +245,38 @@
   gap: 18px;
   margin: 25px 0;
 }
+.musa-style .style-text-action {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  padding: 10px 0;
+  min-height: 44px;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.style-next-value {
+  border-top: 1px solid #cdd2c5;
+  margin-top: 34px;
+  padding-top: 28px;
+}
+.style-next-value h3,
+.style-reflection h3 {
+  font-size: 24px;
+  line-height: 1.25;
+}
+.style-optional-feedback {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid #e1e3d9;
+  color: var(--muted);
+  font-size: 14px;
+}
+.style-optional-feedback button + button {
+  margin-left: 22px;
+}
 .style-lock,
 .style-notice {
   background: #e6eddc;

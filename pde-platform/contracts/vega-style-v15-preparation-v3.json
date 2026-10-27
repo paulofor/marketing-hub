@@ -1,0 +1,269 @@
+{
+  "contractVersion": "vega-style-v15-preparation.v3",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+    "publicUrl": "https://v10.clubemusa.com.br"
+  },
+  "boundary": "Corrige somente a clareza do próximo passo e da continuidade na candidata privada v16. Preserva raiz v15, oferta, preço, público, ciclo, limites e pareceres históricos.",
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v10",
+    "publicUrl": "https://v10.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "cf4c28a9a23ed1e4b26d87d13cb7ead20d72e7503075f46ba7680c72364f340c"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v10",
+      "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+      "frontendSourceSha256": "cf4c28a9a23ed1e4b26d87d13cb7ead20d72e7503075f46ba7680c72364f340c"
+    }
+  },
+  "deploymentValidation": {
+    "mode": "COMMERCIAL_CANDIDATE_READ_ONLY",
+    "readOnly": true,
+    "checkoutRequiresRunning": true,
+    "commercialLaunchClaimed": false
+  },
+  "externalAuthorization": {
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false,
+    "source": "Continuação autorizada da homologação de Vega; publicação técnica sem alteração dos limites financeiros e comerciais do ciclo."
+  },
+  "validationReport": "docs/homologacao/vega-v16-proximo-passo-2026-10-27.md",
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/vega-style-v15-preparation-v2.json",
+      "sha256": "7b68e632e27f6fc0e66c1eea6c9a7e8e7fad8b82cd2214e51af2ede4bb457ce6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Provas funcionais anteriores preservadas; nova apresentação revalidada sem substituir os pareceres."
+    },
+    {
+      "path": "docs/homologacao/vega-v16-proximo-passo-2026-10-27.md",
+      "sha256": "cc612dc063f31b170080a68d5b03adf28718fa4db7aeb2aa12622e690e2efd36",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/desktop-continuidade.png",
+      "sha256": "21b6534658aa2409e0716f320647e32fc6ebd606322466c5ba5126dfac11cf31",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/desktop-primeiro-resultado.png",
+      "sha256": "c27fc4042228d1348ed2366b21c62a56069dfebd8852cc3a52640a27557ee265",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/iphone-continuidade.png",
+      "sha256": "d5749d4966de5053bb2d941ded7223abee84b1e7032d8f121189fa3cd68071c2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/iphone-primeiro-resultado.png",
+      "sha256": "d02cfda5aa2735863800b6ef66a96dc3d39164eaf2492489864fb762af541f89",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/local-report.json",
+      "sha256": "a1033783a6decabd57944a08a1a4a1d392f97a138ad81b8e6fbc73e065aacc54",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/pixel-continuidade.png",
+      "sha256": "b8b9afc41c871d4962e8ff365d29fd655a87c76e507432dd0731549ec7d64987",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v16-proximo-passo/pixel-primeiro-resultado.png",
+      "sha256": "56860c3f008ba7efb3f92091000a9e0b3fa81a084fd969e86b82811c931d7ff4",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "7343ba0940f677e15e1133097d321a24596c3ad705f22bca340b5e614dd9e13e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/controller/VegaStyleController.java",
+      "sha256": "9528322fde1f01f6711b6e165e3fdef656db43c9eab172d5e7b4fc52d1df407b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/VegaContextualStyleRules.java",
+      "sha256": "81cda8b299c08d0c368cd54939738c57cfb701cf00126588e47b2ea639302303",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/VegaStyleInput.java",
+      "sha256": "6c086e45c7d60f98c4cdf7f04ff5630923985cacb2a9919e53c2a595703d9f1d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/VegaStyleService.java",
+      "sha256": "e9c2d16b6967106b5f4c0e05043f19eddd4a3f7e3f861f43670bef0317cab412",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/contract/VegaStyleContract.java",
+      "sha256": "096577707f6e9f653f94a3052010d5541cbf82d74dab191c39c0f55d31cb642b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
+      "sha256": "c974b5833e44b38d9c49c92fd1bd9be22367ee96e2788c772eff53c71edac253",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeContextualStyleScenarioMatrixV1.java",
+      "sha256": "c5464633f7c44b8e51cb89b68f62997e4e7ad5189e535e5e619b5f9bab4e0704",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/pde/vega/style/v1/product.json",
+      "sha256": "4854796856d27f68ff471ffe937c9b99bf774ce96c7e21ce31a442fcd56a5cff",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/style/v1/VegaStyleLocalApplication.java",
+      "sha256": "22cc68f263ac123c9bd6289337ccc8cdd182930d8aad67a604f7f1e0904e252a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/style/v1/VegaStyleServiceTest.java",
+      "sha256": "0af34076874d7da4a2a15484f6b3a609f64c9b6a377bf0b09e3a2a2466dd50c7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeContextualStyleScenarioMatrixV1Test.java",
+      "sha256": "9623b216b6b0e2ec6afc7107ed7ee052ecd108bf2e2a843e31c88507ddba3251",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "sha256": "35037db4d78c4b4dff74d7b4157a0c2797f4cba6fe9fbf8836328c12ebc1f33b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/vega-contextual-style-harness.mjs",
+      "sha256": "68722d8d89b2a8d5a4706c491110de0a3dfcf0f82b666963bfb8e328ac54db93",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+      "sha256": "9390ac12bec91c9eaf60b9f093db7d62673b9dd9a2b66c73eb3cbd94217006f5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/vega-contextual-style/verify-local.mjs",
+      "sha256": "dac05863e87f55f985d0e14339262b7969d58ba4957f0143dc644364d63b9269",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/MusaPersonalStyleContract.java",
+      "sha256": "c114dc0817fc6f7ee7c049d421bddac2f20610838274a38433287d9c1da2efbb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayService.java",
+      "sha256": "572bf5146e972db1d74b5c7ef5213b54610fb6e4847d440404e1bc6ab2b57f50",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaStyleGatewayController.java",
+      "sha256": "2aa066db81d97fb89d56ef1bfe35bd5cf35c48f51d107e91a5e20bcac94a15aa",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v15-product-v1.json",
+      "sha256": "9081b0139def1e37b7c96b726d5709c81c41c7325ebc806541f9005618e2cd07",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaPersonalStyleJourneyTest.java",
+      "sha256": "e7f0d1e9d93e4259ebf5b5a22f4a2099809d0d1287db49bbbf56cf98228bc49e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaStyleGatewayTest.java",
+      "sha256": "7d641853860d0591734dbb6dc3f82497d7e24f1a44ba104a766b60f8d4bb477c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/playwright.vega-contextual.config.ts",
+      "sha256": "3988fc12db7e845b59dc61197ad69fdf8b25e5918f930c74d95cbe4367dd03f4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "a0a7a37c3de8fb78067d901dff14530ee9906d8bce2a16bc507ef467adb0678b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MusaPersonalStyleApp.tsx",
+      "sha256": "c58b8b90d497f31d1db0ad658d0f638353d3521ca694d296a5638a79bbfa08d9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/musaCommercialRoutes.ts",
+      "sha256": "66a9528082fbb271cffa7e6e474b0aaefa8099c6fee22916e7576a5b77cbf348",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/musaPersonalStyle.css",
+      "sha256": "1b9931d032d70552adab825131e2f945a0b57d32a9c1b767d0f4bbd0cd34d99c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-v15-style.spec.ts",
+      "sha256": "9c8e3e1b31b142a320827c7f4e729c56e5c79e864124f46e22e6ecac8a535ddd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-contextual-next-step.spec.ts",
+      "sha256": "cd36f1c2c4fcbacfeaf669b38e773502d04743213d9885b41d8c0de672eb4772",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-contextual-private-public.smoke.spec.ts",
+      "sha256": "920c2d41fd7600bdbfe50f5a13ff7a6fdad309d09a8c78992a36d22a02ec5109",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/pde_release_contract.py",
+      "sha256": "9e41b70d09c005c064e15f77abd31d22bd4e3c4e204ab15ae4ba6b1b85b0c7f4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
+      "sha256": "90be344d5b246d8b070b06821285c292381830ab21fcfa63b9c36781f08eee42",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "6166223fb57731b7a7ec427b63349aa4a10ba756b86f852510348e7d353d10b9",
+      "promptMode": "FULL"
+    }
+  ],
+  "processVersion": 1,
+  "privateExperience": {
+    "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+    "pagePath": "/experiences/musa-pde-entry-v16-modelagem-internacional/agent-validation",
+    "contractPath": "/api/pde/vega/style/v1/contract",
+    "backendContractUrl": "http://191.252.181.168/api/pde/vega/style/v1/contract",
+    "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+    "providerCalls": 0,
+    "commercialLaunchClaimed": false
+  }
+}

@@ -136,6 +136,7 @@ export default function MusaPersonalStyleApp() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [continuityOpen, setContinuityOpen] = useState(false);
   const mission = workspace?.product.missions.find((m) => m.id === missionId);
   const locked =
     !!mission && mission.day > 1 && workspace?.subscriptionStatus !== "ACTIVE";
@@ -389,7 +390,7 @@ export default function MusaPersonalStyleApp() {
       await api("events", { eventType, requestId: guidance.requestId });
       setMessage(
         eventType === "CHECKOUT_STARTED"
-          ? "Você pode conhecer a continuidade por R$ 67, pagamento único, com sete dias e três materiais. Esta prévia não realiza cobranças nem libera uma compra."
+          ? "As condições da continuidade estão abertas abaixo."
           : "Sua ação ficou registrada nesta jornada.",
       );
     } catch (e) {
@@ -546,7 +547,12 @@ export default function MusaPersonalStyleApp() {
                     )}
                   </label>
                 ))}
-                <button className="style-button" disabled={busy}>
+                <button
+                  className={
+                    contextual && guidance ? "style-secondary" : "style-button"
+                  }
+                  disabled={busy}
+                >
                   {busy ? "Preparando…" : "Ver minha orientação"}
                 </button>
               </form>
@@ -573,7 +579,9 @@ export default function MusaPersonalStyleApp() {
                     <p>{guidance.caution}</p>
                   </details>
                   <button
-                    className="style-secondary"
+                    className={
+                      contextual ? "style-text-action" : "style-secondary"
+                    }
                     onClick={() =>
                       download(
                         [
@@ -588,31 +596,27 @@ export default function MusaPersonalStyleApp() {
                     Guardar minha orientação
                   </button>
                   {contextual && (
-                    <div>
-                      <button
-                        className="style-secondary"
-                        onClick={() => signal("VALUE_MOMENT")}
-                      >
-                        Entendi como aplicar
-                      </button>
-                      <button
-                        className="style-secondary"
-                        onClick={() => signal("READY_RESULT_USED")}
-                      >
-                        Apliquei este ajuste
-                      </button>
-                      <button
-                        className="style-secondary"
-                        onClick={() => signal("CHECKOUT_STARTED")}
-                      >
-                        Conhecer a continuidade
-                      </button>
-                    </div>
+                    <small>
+                      A orientação já está salva aqui. Baixar uma cópia é
+                      opcional.
+                    </small>
                   )}
                 </article>
               )}
               {workspace && guidance && (
                 <div className="style-reflection">
+                  {contextual && (
+                    <div>
+                      <span className="style-eyebrow">SEU PRÓXIMO PASSO</span>
+                      <h3>Guarde uma escolha para amanhã.</h3>
+                      <p>
+                        Escreva o que quer experimentar ou repetir. Não precisa
+                        ter vestido a combinação: uma intenção já vale como
+                        registro. Salvar conclui este dia; você pode voltar
+                        quando quiser.
+                      </p>
+                    </div>
+                  )}
                   <label>
                     O que funcionou para você? O que quer manter ou mudar?
                     <textarea
@@ -633,6 +637,85 @@ export default function MusaPersonalStyleApp() {
                     Salvar e concluir este dia
                   </button>
                 </div>
+              )}
+              {contextual && guidance && (
+                <>
+                  <aside
+                    className="style-next-value"
+                    aria-label="O que a continuidade acrescenta"
+                  >
+                    <span className="style-eyebrow">
+                      UM REPERTÓRIO COM A SUA CARA
+                    </span>
+                    <h3>
+                      Hoje, uma escolha. Em sete dias, sua fórmula para repetir.
+                    </h3>
+                    <p>
+                      Guarde o que combina com você, adapte às próximas ocasiões
+                      e reúna suas escolhas em um mapa de estilo, um checklist e
+                      um roteiro da semana. Seus registros ficam disponíveis
+                      para consultar e baixar.
+                    </p>
+                    <button
+                      className="style-secondary"
+                      aria-expanded={continuityOpen}
+                      aria-controls="style-continuity-conditions"
+                      onClick={() => {
+                        setContinuityOpen(true);
+                        void signal("CHECKOUT_STARTED");
+                      }}
+                    >
+                      Conhecer a continuidade
+                    </button>
+                    <small>
+                      Você pode conhecer os próximos dias sem concluir este
+                      registro nem confirmar que usou a sugestão.
+                    </small>
+                    {continuityOpen && (
+                      <div
+                        id="style-continuity-conditions"
+                        role="region"
+                        aria-label="Condições da continuidade"
+                      >
+                        <p>
+                          <strong>
+                            R$ 67, pagamento único. Sem assinatura.
+                          </strong>
+                        </p>
+                        <p>
+                          O primeiro dia é gratuito. A continuidade inclui os
+                          dias 2 a 7 e os três materiais com suas escolhas.
+                        </p>
+                        <p>
+                          Esta prévia não realiza cobranças nem libera uma
+                          compra.
+                        </p>
+                      </div>
+                    )}
+                  </aside>
+                  <aside
+                    className="style-optional-feedback"
+                    aria-label="Feedback opcional"
+                  >
+                    <p>
+                      <strong>Se quiser, conte como foi.</strong> Estas
+                      respostas são opcionais e não liberam nem bloqueiam a
+                      jornada.
+                    </p>
+                    <button
+                      className="style-text-action"
+                      onClick={() => signal("VALUE_MOMENT")}
+                    >
+                      Entendi como aplicar
+                    </button>
+                    <button
+                      className="style-text-action"
+                      onClick={() => signal("READY_RESULT_USED")}
+                    >
+                      Apliquei este ajuste
+                    </button>
+                  </aside>
+                </>
               )}
             </>
           )}

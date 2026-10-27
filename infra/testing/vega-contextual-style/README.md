@@ -28,6 +28,11 @@ em `PDE_LOCAL_COMPOSE_PROJECT`. Nunca reutilize banco ou credenciais produtivos.
 6. `VEGA_CONTEXTUAL_LOCAL_REPORT=<saída>` permite ao teste
    PdeAgentValidationHarnessRunnerTest verificar o relatório real sem nova matriz;
    use os nomes harness-input.json e harness-captures junto à saída.
+   Para a clareza da continuação, execute em `pde-platform/frontend`
+   `npx playwright test --config=playwright.vega-contextual.config.ts`.
+   A regressão consulta eventos persistidos e confirma que concluir o Dia 1 e
+   conhecer a continuidade não exigem download nem feedback de uso. Inclui a
+   apresentação histórica da v15 e três dispositivos, sem provedor pago.
 7. Encerre os processos locais próprios e execute `docker compose -p
    "$PDE_LOCAL_COMPOSE_PROJECT" -f infra/testing/vega-contextual-style/compose.yml
    down --volumes --remove-orphans`.

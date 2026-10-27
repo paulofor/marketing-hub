@@ -3,6 +3,7 @@ import { pdeAccessHeaders } from "./pdeAccessAuthorization";
 import {
   MUSA_V15_EXPERIENCE_VERSION,
   MUSA_V16_EXPERIENCE_VERSION,
+  MUSA_V17_EXPERIENCE_VERSION,
   resolveMusaCommercialRoute,
   musaCommercialPath,
 } from "./musaCommercialRoutes";
@@ -10,11 +11,10 @@ import type { ProductExperience, Mission } from "./musaExperiences";
 import "./musaPersonalStyle.css";
 import { trackStyleEvent } from "./musaStyleTracking";
 
-const contextual =
-  resolveMusaCommercialRoute(location.pathname) === MUSA_V16_EXPERIENCE_VERSION;
-const version = contextual
-  ? MUSA_V16_EXPERIENCE_VERSION
-  : MUSA_V15_EXPERIENCE_VERSION;
+const routeVersion = resolveMusaCommercialRoute(location.pathname);
+const clarified = routeVersion === MUSA_V17_EXPERIENCE_VERSION;
+const contextual = clarified || routeVersion === MUSA_V16_EXPERIENCE_VERSION;
+const version = contextual ? routeVersion : MUSA_V15_EXPERIENCE_VERSION;
 const apiBase = contextual ? "/api/pde/vega/style/v1/" : "/api/pde/";
 const slug = "metodo-musa-7-dias";
 const storageKey = `musa:${version}`;
@@ -390,7 +390,9 @@ export default function MusaPersonalStyleApp() {
       await api("events", { eventType, requestId: guidance.requestId });
       setMessage(
         eventType === "CHECKOUT_STARTED"
-          ? "As condições da continuidade estão abertas abaixo."
+          ? clarified
+            ? "As condições da continuidade estão abertas abaixo."
+            : "Você pode conhecer a continuidade por R$ 67, pagamento único, com sete dias e três materiais. Esta prévia não realiza cobranças nem libera uma compra."
           : "Sua ação ficou registrada nesta jornada.",
       );
     } catch (e) {
@@ -549,7 +551,7 @@ export default function MusaPersonalStyleApp() {
                 ))}
                 <button
                   className={
-                    contextual && guidance ? "style-secondary" : "style-button"
+                    clarified && guidance ? "style-secondary" : "style-button"
                   }
                   disabled={busy}
                 >
@@ -580,7 +582,7 @@ export default function MusaPersonalStyleApp() {
                   </details>
                   <button
                     className={
-                      contextual ? "style-text-action" : "style-secondary"
+                      clarified ? "style-text-action" : "style-secondary"
                     }
                     onClick={() =>
                       download(
@@ -595,17 +597,39 @@ export default function MusaPersonalStyleApp() {
                   >
                     Guardar minha orientação
                   </button>
-                  {contextual && (
+                  {clarified && (
                     <small>
                       A orientação já está salva aqui. Baixar uma cópia é
                       opcional.
                     </small>
                   )}
+                  {contextual && !clarified && (
+                    <div>
+                      <button
+                        className="style-secondary"
+                        onClick={() => signal("VALUE_MOMENT")}
+                      >
+                        Entendi como aplicar
+                      </button>
+                      <button
+                        className="style-secondary"
+                        onClick={() => signal("READY_RESULT_USED")}
+                      >
+                        Apliquei este ajuste
+                      </button>
+                      <button
+                        className="style-secondary"
+                        onClick={() => signal("CHECKOUT_STARTED")}
+                      >
+                        Conhecer a continuidade
+                      </button>
+                    </div>
+                  )}
                 </article>
               )}
               {workspace && guidance && (
                 <div className="style-reflection">
-                  {contextual && (
+                  {clarified && (
                     <div>
                       <span className="style-eyebrow">SEU PRÓXIMO PASSO</span>
                       <h3>Guarde uma escolha para amanhã.</h3>
@@ -638,7 +662,7 @@ export default function MusaPersonalStyleApp() {
                   </button>
                 </div>
               )}
-              {contextual && guidance && (
+              {clarified && guidance && (
                 <>
                   <aside
                     className="style-next-value"

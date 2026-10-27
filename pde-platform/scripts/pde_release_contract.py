@@ -237,7 +237,9 @@ def validate_contextual_dependency(surface: dict[str, Any], contract: dict[str, 
     private = contract.get("privateExperience")
     if private is None:
         return False
-    version = "musa-pde-entry-v16-modelagem-internacional"
+    version = private.get("prototypeVersion")
+    if version not in ("musa-pde-entry-v16-modelagem-internacional", "musa-pde-entry-v17-continuidade-clara"):
+        raise ValueError("Versão contextual não suportada")
     expected = {
         "prototypeVersion": version,
         "pagePath": f"/experiences/{version}/agent-validation",
@@ -350,11 +352,12 @@ def wait_private_capability(
             except (urllib.error.URLError, TimeoutError):
                 capability = None
             if capability is not None:
-                if any(capability.get(key) != expected[key] for key in ("prototypeVersion", "generationMode", "providerCalls")):
+                if any(capability.get(key) != expected[key] for key in ("generationMode", "providerCalls")):
                     raise ValueError("Dependência contextual não comprova a capacidade esperada")
                 if capability.get("trafficClass") != "AGENT_VALIDATION" or capability.get("sessionLimit") != 18:
                     raise ValueError("Dependência contextual não preserva a segregação e o limite técnico")
-                return True
+                if expected["prototypeVersion"] in capability.get("supportedPrototypeVersions", [capability.get("prototypeVersion")]):
+                    return True
             remaining = deadline - clock()
             if remaining <= 0:
                 raise ValueError("Backend contextual ainda indisponível; a imagem não pode ser promovida")

@@ -1,4 +1,4 @@
-# Vega v16 — clareza após o primeiro resultado
+# Vega v17 — clareza após o primeiro resultado
 
 ## Evidência e causa
 
@@ -15,10 +15,12 @@ destaca salvar a escolha, explica a reflexão como intenção possível, apresen
 os registros reutilizáveis e separa feedback opcional. Condições de R$ 67,
 pagamento único, primeiro dia gratuito e ausência de cobrança permanecem.
 
-É uma correção de apresentação na candidata privada ainda não testada no mercado.
-Não muda oferta, público, preço, hipótese, versão funcional, autorização ou ciclo;
-a nova publicação e as capturas possuem hashes próprios. Pareceres históricos
-não são reescritos e a revisão independente precisa avaliar a apresentação nova.
+A mudança da apresentação segue `CHANGE_PER_CYCLE_V1`: v17 e ciclo sucessor
+próprios, preservando a v16, o parecer #845 e o ciclo #16. O backend compartilha
+somente a capacidade de regras, mantendo sessão, operação, direitos, ciclo e
+versão separados. Nenhuma autorização financeira ou aprovação é herdada.
+A oferta, o público, o preço e a Big Idea permanecem como referências explícitas.
+A nova candidata precisa dos seus próprios aceites, sem reescrever os anteriores.
 
 ## Matriz antes da validação
 
@@ -35,9 +37,19 @@ não são reescritos e a revisão independente precisa avaliar a apresentação 
 
 ## Resultado
 
-Seis testes de apresentação e navegação passaram, incluindo três sessões reais no
-backend/MySQL e os três dispositivos. O harness técnico vigente passou nos nove
-cenários, incluindo sete dias, recuperação e segurança. Build TypeScript/Vite
-aprovado. As capturas do primeiro resultado e das condições foram inspecionadas.
+Nove testes de apresentação e navegação passaram, incluindo sessões reais das versões v16 e v17 no
+backend/MySQL e os três dispositivos. O harness técnico passou nos nove cenários de cada versão, incluindo sete dias, recuperação e segurança. Build TypeScript/Vite aprovado; os controles Java incluem isolamento de versões e aceitação dos relatórios reais de Vega e Mira. As capturas do primeiro resultado e das condições foram inspecionadas.
 Testes técnicos não comprovam satisfação, compra ou margem. A campanha permanece
 dependente das revisões e da autorização do ciclo.
+
+Uma primeira tentativa simultânea dos navegadores excedeu a capacidade de threads
+na sandbox (`pthread_create`, EAGAIN); a execução serial passou. Essa limitação de
+ambiente não foi confundida com rejeição funcional. O teste de apresentação e os
+relatórios persistidos não atribuem uso ou preferência a uma pessoa.
+
+Validação Java final: 247 casos do módulo Psique, sem falhas e dez cenários
+opcionais não aplicáveis sem suas fixtures externas; o runner executou 27/27,
+incluindo os relatórios reais locais de Vega e Mira. As 28 verificações focadas
+do backend e as 28 do publicador passaram. Uma execução ampla foi interrompida
+por espera do cliente HTTP local sob limitação artificial de duas CPUs; a
+mesma suíte com quatro CPUs efetivas terminou, sem alterar o código do cliente.

@@ -42,6 +42,7 @@ import {
   MUSA_V14_EXPERIENCE_VERSION,
   MUSA_V15_EXPERIENCE_VERSION,
   MUSA_V16_EXPERIENCE_VERSION,
+  MUSA_V17_EXPERIENCE_VERSION,
   resolveMusaCommercialRoute,
 } from "./musaCommercialRoutes";
 
@@ -4528,6 +4529,8 @@ root.render(
       MUSA_V15_EXPERIENCE_VERSION ||
       resolveMusaCommercialRoute(window.location.pathname) ===
         MUSA_V16_EXPERIENCE_VERSION ||
+      resolveMusaCommercialRoute(window.location.pathname) ===
+        MUSA_V17_EXPERIENCE_VERSION ||
       (window.location.hostname === "v10.clubemusa.com.br" &&
         !window.location.pathname.startsWith("/experiences/"))) ? (
     <MusaPersonalStyleApp />

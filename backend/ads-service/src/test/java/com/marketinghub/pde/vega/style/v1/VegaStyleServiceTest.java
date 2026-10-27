@@ -28,6 +28,49 @@ class VegaStyleServiceTest {
   private VegaStyleService service;
   private static final String VERSION = VegaStyleService.VERSION;
 
+  /** A sucessora mantém ciclo, versão e sessão próprios sem converter o histórico da v16. */
+  @Test
+  void successorKeepsItsIdentityAndRejectsCrossVersionOperations() {
+    var successor = cycles.findLockedById(92016L).orElseThrow();
+    successor.setProductVersion(VegaStyleService.NEXT_VERSION);
+    String original = create(91016L);
+    String next =
+        service
+            .create(new Session(92016L, VegaStyleService.NEXT_VERSION))
+            .path("sessionToken")
+            .asText();
+    service.start(original);
+    service.start(next);
+    assertThat(service.workspace(original).path("product").path("experienceVersion").asText())
+        .isEqualTo(VERSION);
+    assertThat(service.workspace(next).path("product").path("experienceVersion").asText())
+        .isEqualTo(VegaStyleService.NEXT_VERSION);
+    assertThat(
+            service
+                .workspace(next)
+                .path("product")
+                .path("commercialAccess")
+                .path("experienceVersion")
+                .asText())
+        .isEqualTo(VegaStyleService.NEXT_VERSION);
+    var request =
+        new Generate(
+            VegaStyleService.NEXT_VERSION,
+            "successor-operation-001",
+            answers("almoço", "Cor e criatividade"));
+    var result = service.generate(next, "estilo-dia-1", request);
+    assertThat(service.generate(next, "estilo-dia-1", request)).isEqualTo(result);
+    assertThatThrownBy(() -> service.generate(original, "estilo-dia-1", request))
+        .isInstanceOf(ResponseStatusException.class);
+    assertThatThrownBy(() -> service.create(new Session(91016L, VegaStyleService.NEXT_VERSION)))
+        .isInstanceOf(ResponseStatusException.class);
+    assertThat(service.report(original).path("operations").size()).isZero();
+    assertThat(service.report(next).path("prototypeVersion").asText())
+        .isEqualTo(VegaStyleService.NEXT_VERSION);
+    assertThat(service.contract().path("supportedPrototypeVersions").toString())
+        .contains(VERSION, VegaStyleService.NEXT_VERSION);
+  }
+
   /** Simula cadastros e mantém objetos persistidos para exercitar os comandos reais do serviço. */
   @BeforeEach
   void setUp() {

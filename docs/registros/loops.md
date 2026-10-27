@@ -11280,4 +11280,9 @@ principal de salvar, download e feedback opcionais, ganho adicional e condiçõe
 acessíveis sem declarar uso. Nenhuma aprovação ou sinal comercial é fabricado.
 A regressão percorre o caminho sem feedback, consulta os eventos persistidos,
 confere recuperação, direitos e a apresentação histórica em três dispositivos.
-Registro: `docs/homologacao/vega-v16-proximo-passo-2026-10-27.md`.
+Registro: `docs/homologacao/vega-v17-proximo-passo-2026-10-27.md`.
+
+A apresentação corrigida usa a v17 e um sucessor; a v16 mantém os controles
+avaliados no parecer original. O runtime e o harness aceitam somente essas duas
+versões explícitas, com sessão/ciclo isolados. A publicação aguarda capacidade
+v17 no backend antes de promover o frontend; não troca versão de sessões antigas.

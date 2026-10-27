@@ -28,6 +28,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Slf4j
 public class VegaStyleService {
   public static final String VERSION = VegaContextualStyleRules.VERSION;
+  public static final String NEXT_VERSION = "musa-pde-entry-v17-continuidade-clara";
+  private static final Set<String> SUPPORTED_VERSIONS = Set.of(VERSION, NEXT_VERSION);
   private final VegaPrivateSessionRepository sessions;
   private final LearningSalesCycleRepository cycles;
   private final ProductRepository products;
@@ -59,13 +61,15 @@ public class VegaStyleService {
     }
   }
 
-  /** Informa capacidades executáveis sem criar sessão, custo ou aceite de homologação. */
+  /** Informa versões compatíveis sem criar sessão, custo, migração ou aceite de homologação. */
   @Transactional(readOnly = true)
   public JsonNode contract() {
     return json.valueToTree(
         Map.of(
             "prototypeVersion",
             VERSION,
+            "supportedPrototypeVersions",
+            SUPPORTED_VERSIONS,
             "model",
             VegaContextualStyleRules.MODEL,
             "generationMode",
@@ -102,12 +106,12 @@ public class VegaStyleService {
             && "OPEN".equals(cycle.getStatus())
             && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
             && !cycle.isBaseline()
-            && VERSION.equals(request.prototypeVersion())
-            && VERSION.equals(cycle.getProductVersion()),
+            && SUPPORTED_VERSIONS.contains(request.prototypeVersion())
+            && request.prototypeVersion().equals(cycle.getProductVersion()),
         "A sessão exige o ciclo aberto da versão contextual de Vega.");
     require(
         sessions.countByCycleIdAndPrototypeVersionAndOriginIn(
-                cycle.getId(), VERSION, List.of("AGENT_VALIDATION"))
+                cycle.getId(), request.prototypeVersion(), List.of("AGENT_VALIDATION"))
             < 18,
         "O limite desta homologação foi atingido. Preserve as provas existentes.");
     var row = new VegaPrivateSession();
@@ -115,7 +119,7 @@ public class VegaStyleService {
     row.setCycleId(cycle.getId());
     row.setProductId(cycle.getProductId());
     row.setExperimentId(cycle.getExperimentId());
-    row.setPrototypeVersion(VERSION);
+    row.setPrototypeVersion(request.prototypeVersion());
     row.setOrigin("AGENT_VALIDATION");
     row.setCreatedAt(Instant.now());
     row.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
@@ -133,7 +137,7 @@ public class VegaStyleService {
         "Vega: sessão contextual criada cycleId={} sessionId={} version={}",
         row.getCycleId(),
         row.getId(),
-        VERSION);
+        row.getPrototypeVersion());
     return view;
   }
 
@@ -146,8 +150,12 @@ public class VegaStyleService {
     var data = data(row);
     boolean full = fullAccess(data);
     ObjectNode response = json.createObjectNode();
-    response.set("product", product.deepCopy());
-    response.put("experienceVersion", VERSION);
+    ObjectNode selectedProduct = product.deepCopy();
+    selectedProduct.put("experienceVersion", row.getPrototypeVersion());
+    ((ObjectNode) selectedProduct.path("commercialAccess"))
+        .put("experienceVersion", row.getPrototypeVersion());
+    response.set("product", selectedProduct);
+    response.put("experienceVersion", row.getPrototypeVersion());
     response.put("email", "");
     response.put("accessSource", "AGENT_VALIDATION");
     response.put("subscriptionStatus", full ? "ACTIVE" : "TRIAL");
@@ -200,7 +208,7 @@ public class VegaStyleService {
     require(
         events(row).has("EXPERIENCE_STARTED"), "Comece a experiência antes de pedir a orientação.");
     require(
-        VERSION.equals(request.experienceVersion())
+        row.getPrototypeVersion().equals(request.experienceVersion())
             && request.operationKey() != null
             && request.operationKey().matches("[A-Za-z0-9-]{16,80}"),
         "Operação ou versão inválida.");
@@ -223,7 +231,7 @@ public class VegaStyleService {
             .orElseThrow(() -> fail(404, "Ciclo não encontrado."));
     require(
         "OPEN".equals(cycle.getStatus())
-            && VERSION.equals(cycle.getProductVersion())
+            && row.getPrototypeVersion().equals(cycle.getProductVersion())
             && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage()),
         "O ciclo não permite novas operações desta versão.");
     long attempts =
@@ -453,7 +461,7 @@ public class VegaStyleService {
         sessions
             .findBySessionHash(hash(secret))
             .orElseThrow(() -> fail(401, "Este acesso não foi autorizado."));
-    if (!VERSION.equals(row.getPrototypeVersion())
+    if (!SUPPORTED_VERSIONS.contains(row.getPrototypeVersion())
         || !"AGENT_VALIDATION".equals(row.getOrigin())
         || row.isRevoked()) throw fail(401, "Este acesso não foi autorizado.");
     if (!row.getExpiresAt().isAfter(Instant.now()))

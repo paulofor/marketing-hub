@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
-const version = "musa-pde-entry-v16-modelagem-internacional";
+const version = "musa-pde-entry-v17-continuidade-clara";
 const base = "/api/pde/vega/style/v1";
 const headers = { "X-PDE-Internal-Token": "vega-local-internal-only" };
 
@@ -12,7 +12,7 @@ test("continuidade e conclusão não exigem download nem feedback de uso", async
 }, info) => {
   const response = await request.post(`${base}/internal/sessions`, {
     headers,
-    data: { cycleId: 91002, prototypeVersion: version },
+    data: { cycleId: 91003, prototypeVersion: version },
   });
   expect(response.ok()).toBeTruthy();
   const session = await response.json();
@@ -148,4 +148,56 @@ test("apresentação histórica da v15 permanece independente da revisão privad
   await expect(
     page.getByRole("button", { name: "Ver minha orientação" }),
   ).toBeVisible();
+});
+
+test("v16 preserva a apresentação avaliada no ciclo predecessor", async ({
+  page,
+  request,
+  context,
+}) => {
+  const priorVersion = "musa-pde-entry-v16-modelagem-internacional";
+  const created = await request.post(`${base}/internal/sessions`, {
+    headers,
+    data: { cycleId: 91002, prototypeVersion: priorVersion },
+  });
+  expect(created.ok()).toBeTruthy();
+  const session = await created.json();
+  await context.addCookies([
+    {
+      name: "vega-style-session",
+      value: session.sessionToken,
+      domain: "127.0.0.1",
+      path: base,
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+  ]);
+  await page.goto(`/experiences/${priorVersion}/agent-validation`);
+  await page
+    .getByRole("button", {
+      name: "Experimentar com minhas roupas",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel("Onde você vai usar?").fill("almoço");
+  await page
+    .getByLabel("Quais roupas você já tem em mente?")
+    .fill("camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça");
+  await page
+    .getByLabel("O que você quer sentir")
+    .selectOption("Cor e criatividade");
+  await page
+    .getByRole("button", { name: "Ver minha orientação", exact: true })
+    .click();
+  const card = page.getByRole("article", { name: "Sua orientação pronta" });
+  await expect(card).toContainText("alça da bolsa");
+  await expect(
+    card.getByRole("button", { name: "Entendi como aplicar", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Guarde uma escolha para amanhã." }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("complementary", { name: "Feedback opcional" }),
+  ).toHaveCount(0);
 });

@@ -1,0 +1,176 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v25",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-alcyone-runtime-v3-commercial-lineage",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Compatibilidade após incluir a candidata privada v17 de Vega. Preserva raízes, identidades, provas e limites das versões anteriores; não renova pareceres nem autoriza gasto ou lançamento.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "experimentStatus": "INVALIDATED",
+    "commercialOfferExpected": false,
+    "deploymentAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v18.json",
+    "reason": "Preservar a atestação imutável de Alcyone v3 e voltar a declarar diretamente os sinais comerciais mínimos que o carregador limitado precisa entregar a Psique.",
+    "includedChanges": [
+      "Manifesto v18 preservado por hash como referência atestada",
+      "CTA e condições comerciais históricas de Vega declaradas diretamente no contrato vigente",
+      "Prompt de Psique volta a receber contexto verificável sem percorrer recursivamente toda a cadeia"
+    ],
+    "excludedChanges": [
+      "Oferta, preço, checkout, vídeos ou experiência executável de Vega",
+      "Promoção ou publicação do experimento 92",
+      "Campanha, tráfego, gasto, cobrança ou contato humano"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v18.json",
+      "sha256": "970f59642a2d2980b8c8de4c8466d9cbb0b7d46b0f3be013e8e1c88f19f8347b",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v18 comprova que Alcyone v3 preserva o runtime e o estado comercial de Vega; a v19 mantém essa prova imutável e restaura diretamente o contexto comercial mínimo da revisão."
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v19.json",
+      "sha256": "16de36f2ee1c66d5620e69a1687c5af95c03916f79dcc19f209690bdd68122b1",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a prova anterior e seu runtime; somente compatibilidade das fontes foi conferida."
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo7-compatibilidade-v1.md",
+      "sha256": "e65eadf7e0bf9bc93165e34bd27cb1a1810255bd48ada8163c33a6f0f0742c6a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v20.json",
+      "sha256": "d65faebcfe40cc982f123429676be4d83508702d50f0408616387ffed057eec9",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a atestação e o estado comercial anteriores; apenas compatibilidade de fontes foi testada."
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo7-rota-privada-v1.md",
+      "sha256": "c1de7ae96e187eb14351fd533b188ff21b1274252b7857602a57e36f7901a580",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v21.json",
+      "sha256": "88e9b035d072c1bec569500a8862303bf1f72479b7c822f45bd0cebacbf03863",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico e fronteiras preservados; somente as provas listadas nesta compatibilidade foram revalidadas."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-commercial-continuity-v1.json",
+      "sha256": "a8488bb80dbfa9dbd6b906763e664f7c3cd292381260304dfa2092067f4d4a1c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v22.json",
+      "sha256": "2b096acd4a40650fa480718b8715ed0604643c588cf261943d1eba1b1a69f611",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado; esta revalidação não renova aceites comerciais."
+    },
+    {
+      "path": "docs/homologacao/vega-estilo-experiencia-v15.md",
+      "sha256": "f6d8cfd2af2afa183eb9aa45073375e59aca50c0d5c8aef67f31847109ce3f30",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v23.json",
+      "sha256": "dc8c111e53262b240e03536a2df4f2933fee5c813060f4f623ba6cdbec5f9b76",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade da jornada contextual privada de Vega. Preserva raízes, identidades, provas e limites das outras versões; não renova pareceres nem autoriza gasto ou lançamento."
+    },
+    {
+      "path": "docs/homologacao/vega-modelagem-internacional-v16.md",
+      "sha256": "37f7fb228bb0373418ee154deb54f9c993d10c0f6bdb714eca766b21e7f522e1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v24.json",
+      "sha256": "f9ff837549a83b665108610e40046ef39c152e811603c27ea3bd9fc614ed94c1",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade após incluir a candidata privada v17 de Vega. Preserva raízes, identidades, provas e limites das versões anteriores; não renova pareceres nem autoriza gasto ou lançamento."
+    },
+    {
+      "path": "docs/homologacao/vega-v17-proximo-passo-2026-10-27.md",
+      "sha256": "daad6e501590e811afb382784c48d95760a180cffc18aba343e9d127ace616d8",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "43893799a26cdcbb1a12928d0dd605c8ac867fdf60672a034225982df475afa9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "a5123f562e390570dbf374b6eac3778edc7377525349b4e7281a9974e635a2b6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A aplicação compartilhada preserva a superfície Vega v8 enquanto expõe Alcyone v3 em identidade e rota próprias."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "77b966d8c5cd40eb04d174abb907458c2e09d0937ed59919e33685e52129a8c9",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "O smoke local comprova que a rota privada de Alcyone v3 não substitui nem redireciona a superfície Vega v8."
+    }
+  ],
+  "validationReport": "docs/homologacao/pde-atestacao-linhagem-comercial-v19-2026-09-30.md",
+  "compatibilityAttestation": {
+    "previousManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v24.json",
+    "previousManifestSha256": "f9ff837549a83b665108610e40046ef39c152e811603c27ea3bd9fc614ed94c1",
+    "validatedAt": "2026-10-27T21:51:57.167380+00:00",
+    "scope": "Compatibilidade após incluir a candidata privada v17 de Vega. Preserva raízes, identidades, provas e limites das versões anteriores; não renova pareceres nem autoriza gasto ou lançamento.",
+    "changedEvidence": [
+      {
+        "path": "pde-platform/frontend/src/App.tsx",
+        "previousSha256": "a0a7a37c3de8fb78067d901dff14530ee9906d8bce2a16bc507ef467adb0678b",
+        "sha256": "a5123f562e390570dbf374b6eac3778edc7377525349b4e7281a9974e635a2b6"
+      }
+    ],
+    "validationReport": "docs/homologacao/vega-v17-proximo-passo-2026-10-27.md"
+  }
+}

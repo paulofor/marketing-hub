@@ -41,3 +41,8 @@ O cenário de recuperação perde somente a resposta HTTP, confirma o estado no
 backend e repete a chave original. A regressão complementar da v15 usa o schema
 local e a configuração Playwright já existentes no PDE. Não execute novamente
 toda a matriz apenas para obter contagem; após um ajuste, repita os casos afetados.
+
+A fixture cria também ciclo 91003 / experimento 91093 para
+`musa-pde-entry-v17-continuidade-clara`, mantendo a v16 em 91002 / 91092.
+Os testes de próximo passo usam a v17 e conferem a apresentação preservada da v16.
+Não migre sessões ou registros entre essas identidades.

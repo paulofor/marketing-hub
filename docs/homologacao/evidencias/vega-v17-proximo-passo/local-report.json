@@ -1,7 +1,10 @@
 {
   "source": "local synthetic verification",
-  "frontendTestsPassed": 6,
-  "technicalScenariosPassed": 9,
+  "frontendTestsPassed": 9,
+  "technicalScenariosPassed": {
+    "v16": 9,
+    "v17": 9
+  },
   "technicalChecks": {
     "sameVersion": true,
     "desktopAndMobile": true,
@@ -24,8 +27,9 @@
     91004
   ],
   "cycleIds": [
-    91002
+    91002,
+    91003
   ],
   "reviewToAddress": 845,
-  "report": "docs/homologacao/vega-v16-proximo-passo-2026-10-27.md"
+  "report": "docs/homologacao/vega-v17-proximo-passo-2026-10-27.md"
 }

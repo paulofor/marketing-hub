@@ -16,9 +16,17 @@ class PdeAgentValidationHarnessRunnerTest {
   @TempDir Path temporaryDirectory;
   private final ObjectMapper json = new ObjectMapper();
 
-  /** A v16 usa nove combinações próprias e recusa o recibo genérico de uma versão anterior. */
-  @Test
-  void contextualVersionRequiresOwnRulesAndNineDistinctCombinations() throws Exception {
+  /**
+   * V16 e sucessora exigem nove combinações próprias e recusam recibos genéricos ou incompletos.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "musa-pde-entry-v16-modelagem-internacional",
+        "musa-pde-entry-v17-continuidade-clara"
+      })
+  void contextualVersionRequiresOwnRulesAndNineDistinctCombinations(String version)
+      throws Exception {
     Path template = fakeHarness(false, true);
     String script = Files.readString(template);
     int start = script.indexOf("{\n", script.indexOf("<<JSON"));
@@ -26,7 +34,6 @@ class PdeAgentValidationHarnessRunnerTest {
     var proof =
         (com.fasterxml.jackson.databind.node.ObjectNode)
             json.readTree(script.substring(start, end));
-    String version = "musa-pde-entry-v16-modelagem-internacional";
     String url = "http://127.0.0.1:5176/experiences/" + version + "/agent-validation";
     proof
         .put("sourceReference", "experiment:91092")

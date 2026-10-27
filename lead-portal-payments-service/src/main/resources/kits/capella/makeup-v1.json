@@ -1,0 +1,28 @@
+{
+  "code": "makeup-v1",
+  "profession": "Maquiagem",
+  "productName": "Capella — divulgação para maquiagem",
+  "serviceExamples": "Maquiagem para ocasiões: informe somente o serviço que você oferece.",
+  "libraryDirectory": "makeup-v1",
+  "headlines": [
+    "Sua beleza, do seu jeito",
+    "A ocasião merece o seu brilho",
+    "Maquiagem que combina com você",
+    "Seu estilo também aparece nos detalhes",
+    "O convite chegou. Vamos preparar seu visual?",
+    "Um momento seu, um cuidado especial",
+    "Qual é a ocasião da sua semana?",
+    "Realce o que você gosta em você",
+    "Prepare-se para o seu momento",
+    "Vamos combinar sua maquiagem?"
+  ],
+  "calendarDays": [
+    "Apresente seu serviço de maquiagem para ocasiões",
+    "Convide a consultar horários reais da semana",
+    "Mostre um detalhe do serviço, identificando imagens ilustrativas",
+    "Retome conversas somente com quem autorizou contato",
+    "Divulgue a disponibilidade real dos próximos dias",
+    "Explique como agendar seu serviço",
+    "Reforce o contato e a localização"
+  ]
+}

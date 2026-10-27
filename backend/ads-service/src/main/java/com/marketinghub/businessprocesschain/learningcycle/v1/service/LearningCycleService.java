@@ -1079,6 +1079,8 @@ public class LearningCycleService {
               "packageContractVersion",
               com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
                   .PACKAGE_CONTRACT_VERSION);
+      ((com.fasterxml.jackson.databind.node.ObjectNode) validatedProof)
+          .setAll(privateKits.registrationEvidence(cycle));
       proof.set("privatePrototype", validatedProof);
     }
     proof.put("externalSpendAuthorized", false);

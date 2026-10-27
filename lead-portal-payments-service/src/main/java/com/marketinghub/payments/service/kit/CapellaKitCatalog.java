@@ -12,7 +12,9 @@ public final class CapellaKitCatalog {
     public static final String BARBER = "barber-v1";
     private static final Logger log = LoggerFactory.getLogger(CapellaKitCatalog.class);
     private static final Map<String, CapellaKitProfile> PROFILES = Map.of(
-            NAILS, load(NAILS), BARBER, load(BARBER));
+            NAILS, load(NAILS), BARBER, load(BARBER),
+            "hair-v1", load("hair-v1"), "makeup-v1", load("makeup-v1"),
+            "brows-v1", load("brows-v1"), "aesthetics-v1", load("aesthetics-v1"));
 
     /** Impede instanciação de um catálogo imutável compartilhado. */
     private CapellaKitCatalog() {}

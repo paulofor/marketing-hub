@@ -141,6 +141,64 @@ class KitPrototypeCapabilitiesTest {
         .isFalse();
   }
 
+  /**
+   * Oferece vinculação somente quando o desenho do caso real permite o adaptador sem chamadas
+   * pagas.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {7, 707})
+  void offersBindingFromExplicitAdapterContractWithoutGuessingProduct(long productId)
+      throws Exception {
+    var fixtures =
+        new ObjectMapper()
+            .readTree(
+                "{\"contractVersion\":\"PDE_STATIC_RESULT_FIXTURES_V1\",\"mode\":\"DETERMINISTIC_HOMOLOGATION_ONLY\",\"providerCallsAuthorized\":0,\"externalSideEffects\":false,\"commercialEvidenceEligible\":false}");
+    var result =
+        resolve(
+            productId,
+            15,
+            "Atena aprovada",
+            "Kit por especialidade",
+            "",
+            false,
+            "ADJUSTMENT",
+            "OPEN",
+            false,
+            fixtures);
+    assertThat(result.available()).isFalse();
+    assertThat(result.bindingAvailable()).isTrue();
+    assertThat(
+            resolve(
+                    productId,
+                    15,
+                    "Atena aprovada",
+                    "Kit",
+                    "unsupported",
+                    false,
+                    "ADJUSTMENT",
+                    "OPEN",
+                    false,
+                    fixtures)
+                .bindingAvailable())
+        .isFalse();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) fixtures).put("providerCallsAuthorized", 1);
+    assertThat(
+            resolve(
+                    productId,
+                    15,
+                    "Atena aprovada",
+                    "Kit por especialidade",
+                    "",
+                    false,
+                    "ADJUSTMENT",
+                    "OPEN",
+                    false,
+                    fixtures)
+                .bindingAvailable())
+        .isFalse();
+    assertThat(resolve(productId, 15, "Atena aprovada", false).bindingAvailable()).isFalse();
+  }
+
   /** Preserva as fixtures anteriores que identificavam o perfil somente pela referência. */
   private com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract
           .Capability
@@ -178,6 +236,24 @@ class KitPrototypeCapabilitiesTest {
           String stage,
           String status,
           boolean baseline) {
+    return resolve(
+        productId, cycleId, profile, format, explicit, blocked, stage, status, baseline, null);
+  }
+
+  /** Inclui a capacidade privada declarada sem alterar perfil, estado ou recibos históricos. */
+  private com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract
+          .Capability
+      resolve(
+          long productId,
+          long cycleId,
+          String profile,
+          String format,
+          String explicit,
+          boolean blocked,
+          String stage,
+          String status,
+          boolean baseline,
+          com.fasterxml.jackson.databind.JsonNode fixtures) {
     var tasks = mock(AgentTaskRepository.class);
     var chains = mock(BusinessProcessChainDefinitionRepository.class);
     var cycle = new LearningSalesCycle();
@@ -251,7 +327,8 @@ class KitPrototypeCapabilitiesTest {
                                 .createObjectNode()
                                 .put("strategyReference", profile)
                                 .put("format", format)
-                                .put("kitProfileCode", explicit))
+                                .put("kitProfileCode", explicit)
+                                .set("staticResultFixtures", fixtures))
                         .toString())));
     var result = new KitPrototypeCapabilities(tasks, chains, new ObjectMapper()).resolve(cycle);
     if (result.available() || blocked) {

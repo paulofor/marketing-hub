@@ -330,7 +330,7 @@ class PdeOperationalControlEvidenceTest {
         .thenReturn(new ByteArrayResource(bytes));
   }
 
-  /** Confere controles executados e doze encerramentos reutilizados sem reclassificar histórico. */
+  /** Confere controles, compatibilidade do despacho e encerramentos sem reclassificar histórico. */
   @Test
   void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
     var real =
@@ -339,6 +339,30 @@ class PdeOperationalControlEvidenceTest {
     var evidence =
         real.resolve("metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
             .orElseThrow();
+    String previousHash = "87b8d3d08032dd54b86b4ed5400f7b3792746d95a5e102376ab9914eb026102e";
+    var previous =
+        real.resolveReviewed(
+                "metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel", previousHash)
+            .orElseThrow();
+    assertThat(evidence.path("criteria")).isEqualTo(previous.path("criteria"));
+    assertThat(evidence.path("generatedAt")).isEqualTo(previous.path("generatedAt"));
+    assertThat(evidence.path("testReceiptSha256")).isEqualTo(previous.path("testReceiptSha256"));
+    var compatibility = evidence.path("compatibilityAttestation");
+    assertThat(compatibility.path("previousReportSha256").asText()).isEqualTo(previousHash);
+    assertThat(fileHash(compatibility.path("evidencePath").asText()))
+        .isEqualTo(compatibility.path("evidenceSha256").asText());
+    var receipt =
+        json.readTree(
+            java.nio.file.Path.of("../..")
+                .resolve(compatibility.path("evidencePath").asText())
+                .toFile());
+    assertThat(receipt.path("executedCases").size()).isEqualTo(23);
+    assertThat(receipt.path("providerCalls").asInt()).isZero();
+    assertThat(fileHash(receipt.path("testSource").asText()))
+        .isEqualTo(receipt.path("testSourceSha256").asText());
+    receipt
+        .path("executedCases")
+        .forEach(item -> assertThat(item.path("status").asText()).isEqualTo("PASS"));
     assertThat(evidence.path("criteria").size()).isEqualTo(25);
     assertThat(evidence.path("testedProductIds").get(0).asLong()).isEqualTo(91004L);
     assertThat(evidence.path("testedProductIds").get(1).asLong()).isEqualTo(97004L);

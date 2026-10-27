@@ -27,10 +27,13 @@ class PrivateKitScenarioIntegrationTest {
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
   /**
-   * Usa os dois contextos reais da matriz local, evitando identidades comerciais fixas no teste.
+   * Usa os contextos declarados da matriz local, evitando identidades comerciais fixas no teste.
    */
   static Stream<Arguments> cases() {
-    return Stream.of("KIT_LOCAL_INPUT", "KIT_OTHER_LOCAL_INPUT")
+    return Arrays.stream(
+            System.getenv()
+                .getOrDefault("KIT_SCENARIO_INPUT_KEYS", "KIT_LOCAL_INPUT,KIT_OTHER_LOCAL_INPUT")
+                .split(","))
         .flatMap(
             key ->
                 Stream.of("ADHERENT", "RECOVERY", "SAFETY")

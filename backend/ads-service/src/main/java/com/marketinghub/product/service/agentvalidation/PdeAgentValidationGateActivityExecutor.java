@@ -466,7 +466,8 @@ public class PdeAgentValidationGateActivityExecutor
     if ("PDE_PRIVATE_KIT_FIXTURES_V1".equals(fixtureContract)) {
       if (!com.marketinghub.pde.kit.privateprototype.v1.service.PrivateKitProofCompatibility
               .current(result)
-          || !List.of("nails-v1", "barber-v1").contains(result.path("profileCode").asText())
+          || !com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.supported(
+              result.path("profileCode").asText())
           || result.path("providerCalls").asInt(-1) != 0
           || result.path("scenarios").size() != 9) return false;
       Set<String> expected = new LinkedHashSet<>(), observed = new LinkedHashSet<>();

@@ -52,7 +52,37 @@ public final class KitPrivateContract {
       @NotBlank @Size(max = 200) String weeklyGoal,
       @Size(max = 100) String preferredColors,
       @Size(max = 500) String notes,
-      boolean consentAccepted) {}
+      boolean consentAccepted,
+      @com.fasterxml.jackson.annotation.JsonInclude(
+              com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+          @Pattern(regexp = "(?:nails|barber|hair|makeup|brows|aesthetics)-v1")
+          String specialtyCode) {
+    /** Preserva o briefing dos perfis históricos sem seleção adicional. */
+    public Input(
+        String email,
+        String professionalName,
+        String cityRegion,
+        String whatsapp,
+        String services,
+        String visualStyle,
+        String weeklyGoal,
+        String preferredColors,
+        String notes,
+        boolean consentAccepted) {
+      this(
+          email,
+          professionalName,
+          cityRegion,
+          whatsapp,
+          services,
+          visualStyle,
+          weeklyGoal,
+          preferredColors,
+          notes,
+          consentAccepted,
+          null);
+    }
+  }
 
   /** Registra uma ação técnica idempotente, nunca uma evidência humana. */
   public record Event(@NotNull UUID eventId, @NotBlank String code) {}
@@ -90,7 +120,9 @@ public final class KitPrivateContract {
       List<JsonNode> events,
       int transfers,
       Instant expiresAt,
-      JsonNode videoIntegration) {}
+      JsonNode videoIntegration,
+      List<com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.Specialty>
+          specialties) {}
 
   /** Separa mensagens próprias para a interface das causas técnicas preservadas na auditoria. */
   public record Presentation(
@@ -123,5 +155,14 @@ public final class KitPrivateContract {
 
   /** Declara disponibilidade real da capacidade de materialização para a mesma versão. */
   public record Capability(
-      boolean available, String profileCode, String reason, String prototypeUrl) {}
+      boolean available,
+      String profileCode,
+      String reason,
+      String prototypeUrl,
+      boolean bindingAvailable) {
+    /** Preserva contratos anteriores sem oferecer uma operação não declarada pelo backend. */
+    public Capability(boolean available, String profileCode, String reason, String prototypeUrl) {
+      this(available, profileCode, reason, prototypeUrl, false);
+    }
+  }
 }

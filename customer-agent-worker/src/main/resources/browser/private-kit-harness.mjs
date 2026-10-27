@@ -66,6 +66,7 @@ try {
         startName:'Preparar meu kit de exemplo',videoLabel:'Demonstração do kit de divulgação',
         failureMessage:'O vídeo não abriu. Você pode continuar e usar seu kit normalmente.',
       }):null;
+      if(input.profileCode==='beauty-v1' && input.specialtyCode) await page.locator('#specialty').selectOption(input.specialtyCode);
       if(input.profileCode==='barber-v1')await page.locator('[name=services]').fill('Corte e barba');
       // A fixture permanece igual entre dispositivos para comprovar reutilização sem nova composição.
       await page.locator('[name=professionalName]').fill(scenarioCode==='RECOVERY'?'Studio Retomada':'Studio Exemplo');

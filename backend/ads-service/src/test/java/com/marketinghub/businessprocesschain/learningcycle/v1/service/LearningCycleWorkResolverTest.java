@@ -12,6 +12,8 @@ import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChain
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Responsabilidade: manter a continuidade na cadeia sem repetir tarefas ou saltar bloqueios. */
 class LearningCycleWorkResolverTest {
@@ -54,7 +56,7 @@ class LearningCycleWorkResolverTest {
     return item;
   }
 
-  /** Delega a posição da atividade à mesma projeção oficial utilizada pela tela. */
+  /** Delega a posição à projeção compacta, mantendo a identidade completa da passagem. */
   private void state(long id, boolean complete, String status) {
     var response = mock(ProductProcessActivityExecutionHistoryResponse.class);
     when(response.objectiveAchieved()).thenReturn(complete);
@@ -69,7 +71,9 @@ class LearningCycleWorkResolverTest {
       when(response.currentActivityId()).thenReturn("deliverables");
       when(response.activities()).thenReturn(List.of(activity));
     }
-    when(executions.productProcessExecutions(id, 4L, 2L, 14L)).thenReturn(response);
+    when(executions.productProcessExecutions(
+            id, cycle.getProductId(), cycle.getId(), cycle.getChainDefinitionId(), false))
+        .thenReturn(response);
   }
 
   /** Processo concluído conduz à atividade seguinte mantendo produto, ciclo, cadeia e retorno. */
@@ -91,7 +95,7 @@ class LearningCycleWorkResolverTest {
   void preservesBlockedActivityInsteadOfSkippingIt() {
     state(67, false, "BLOCKED");
     assertThat(resolver.resolve(cycle).state()).isEqualTo("BLOCKED");
-    verify(executions, never()).productProcessExecutions(70L, 4L, 2L, 14L);
+    verify(executions, never()).productProcessExecutions(70L, 4L, 2L, 14L, false);
   }
 
   /** Um processo completo não aprova a etapa ou o ciclo sem o comando e as provas exigidas. */
@@ -102,7 +106,7 @@ class LearningCycleWorkResolverTest {
     assertThat(resolver.resolve(cycle)).isNull();
     assertThat(resolver.resolvePreparation(cycle).completed()).isTrue();
     assertThat(cycle.getStage()).isEqualTo("PLANNING");
-    verify(executions, never()).productProcessExecutions(70L, 4L, 2L, 14L);
+    verify(executions, never()).productProcessExecutions(70L, 4L, 2L, 14L, false);
   }
 
   /** A conclusão da preparação se distingue de contexto ausente sem modificar a etapa. */
@@ -158,7 +162,7 @@ class LearningCycleWorkResolverTest {
   void missingCurrentActivityIsNotCompletion() {
     var state = mock(ProductProcessActivityExecutionHistoryResponse.class);
     when(state.activities()).thenReturn(List.of());
-    when(executions.productProcessExecutions(67L, 4L, 2L, 14L)).thenReturn(state);
+    when(executions.productProcessExecutions(67L, 4L, 2L, 14L, false)).thenReturn(state);
     assertThat(resolver.resolvePreparation(cycle).completed()).isFalse();
   }
 
@@ -171,5 +175,34 @@ class LearningCycleWorkResolverTest {
     cycle.setStage("DECISION");
     assertThat(resolver.resolve(cycle)).isNull();
     verifyNoInteractions(executions);
+  }
+
+  /** Preserva bloqueios e identidades sem consultar auditorias no card ou na continuação. */
+  @ParameterizedTest
+  @CsvSource({"4,18,111,27", "7,17,110,27", "93004,93018,93111,93027"})
+  void resolvesDifferentProductsWithoutLoadingPromptHistory(
+      long productId, long cycleId, long experimentId, long chainId) {
+    var chain = chains.findById(14L).orElseThrow();
+    when(chains.findById(chainId)).thenReturn(Optional.of(chain));
+    cycle.setProductId(productId);
+    cycle.setId(cycleId);
+    cycle.setExperimentId(experimentId);
+    cycle.setChainDefinitionId(chainId);
+    state(67, true, null);
+    state(70, false, "BLOCKED");
+
+    var work = resolver.resolve(cycle);
+
+    assertThat(work.state()).isEqualTo("BLOCKED");
+    assertThat(work.responsible()).isEqualTo("Dédalo");
+    assertThat(work.url())
+        .isEqualTo(
+            "/products/" + productId + "/value-chain-history/processes/70/activities?learningCycleId="
+                + cycleId + "&chainId=" + chainId + "#activity-deliverables");
+    verify(executions).productProcessExecutions(67L, productId, cycleId, chainId, false);
+    verify(executions).productProcessExecutions(70L, productId, cycleId, chainId, false);
+    verifyNoMoreInteractions(executions);
+    assertThat(cycle.getStatus()).isEqualTo("OPEN");
+    assertThat(cycle.getStage()).isEqualTo("ADJUSTMENT");
   }
 }

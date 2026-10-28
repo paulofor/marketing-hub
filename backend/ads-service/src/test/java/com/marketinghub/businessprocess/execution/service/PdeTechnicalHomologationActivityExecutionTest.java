@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
@@ -53,10 +54,44 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
- * Comprova leitura e comando HTTP da tarefa #377 com service e gate reais, sem escrever em
- * produção.
+ * Responsabilidade: comprovar leitura, continuidade e comando HTTP com service e gate reais,
+ * sem escrever em produção nem exigir auditorias na navegação.
  */
 class PdeTechnicalHomologationActivityExecutionTest {
+  /** Reproduz a projeção persistida sem disponibilizar prompt, resposta bruta ou auditoria. */
+  private AgentTaskProcessExecutionListSnapshot compactSnapshot(AgentTask task) {
+    return new AgentTaskProcessExecutionListSnapshot(
+        task.getId(),
+        task.getProcessDefinition().getId(),
+        task.getProcessDefinition().getProcessCode(),
+        task.getProcessDefinition().getVersionNumber(),
+        task.getTitle(),
+        task.getStatus(),
+        task.getSourceReference(),
+        task.getAssignedAgent().getAgentKey(),
+        task.getAssignedAgent().getNickname(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName(),
+        task.getExecutionError(),
+        task.getInputTokens(),
+        task.getCachedInputTokens(),
+        task.getOutputTokens(),
+        task.getEstimatedCostUsd(),
+        task.getCostEstimationStatus(),
+        task.getCreatedAt(),
+        task.getReceivedAt(),
+        task.getDeliveredAt(),
+        task.getUpdatedAt(),
+        task.getExecutionModelCode(),
+        task.getExecutionMode(),
+        task.getExecutionReasoningEffort(),
+        task.getBlockerCategory(),
+        task.getBlockerAction(),
+        task.getActivityInstance() == null
+            ? null
+            : task.getActivityInstance().getActivityDefinition().getProcessDefinition().getId());
+  }
+
   /**
    * Preserva o bloqueio, oferece a correção configurada e mantém a homologação sujeita aos
    * pré-requisitos; concentra tarefas na origem e remove a dependência de correção concluída.
@@ -233,6 +268,8 @@ class PdeTechnicalHomologationActivityExecutionTest {
     when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
             "experiment:92", "pde-construction-approval"))
         .thenReturn(history);
+    when(tasks.findProcessExecutionListSnapshots("experiment:92", "pde-construction-approval"))
+        .thenAnswer(ignored -> history.stream().map(this::compactSnapshot).toList());
     when(tasks.findPdeValidationTaskSnapshots("experiment:92", "pde-construction-approval"))
         .thenAnswer(
             ignored ->
@@ -320,7 +357,13 @@ class PdeTechnicalHomologationActivityExecutionTest {
     learningCycle.setChainDefinitionId(14L);
     learningCycle.setStage("ADJUSTMENT");
     learningCycle.setStatus("OPEN");
+    clearInvocations(tasks, experiments);
     var next = new LearningCycleWorkResolver(chains, service).resolve(learningCycle);
+    verify(tasks).findProcessExecutionListSnapshots("experiment:92", "pde-construction-approval");
+    verify(tasks, never())
+        .findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            anyString(), anyString());
+    verify(experiments, never()).findByProductIdOrderByUpdatedAtDescIdDesc(anyLong());
     assertThat(next.responsible()).isEqualTo(recoveryEnabled ? "Dédalo" : "Psique");
     assertThat(next.activityNumber()).isEqualTo(recoveryEnabled ? 6 : 5);
     assertThat(next.reason()).contains(recoveryEnabled ? "#377" : "implementação");

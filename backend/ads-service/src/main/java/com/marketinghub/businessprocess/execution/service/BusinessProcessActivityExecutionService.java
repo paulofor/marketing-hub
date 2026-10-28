@@ -322,7 +322,9 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, learningCycleId, chainId, includePromptAudit, null);
   }
 
-  /** Consulta somente o contexto escolhido no resumo e ordena atividades pelo grafo versionado. */
+  /**
+   * Consulta somente a referência ou o ciclo escolhido no resumo e mantém a auditoria sob demanda.
+   */
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId,
@@ -333,9 +335,15 @@ public class BusinessProcessActivityExecutionService {
       String requestedReference) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
-    String explicitReference =
+    String selectedReference =
         exactReference(
             product, selectedProcess, learningCycleId, chainId, requestedReference, false);
+    String explicitReference =
+        selectedReference != null
+            ? selectedReference
+            : learningCycleId != null && !includePromptAudit
+                ? cycleSource(learningCycleId, product, selectedProcess, false)
+                : null;
     var salesFlow =
         salesFlowResolver == null || explicitReference != null && learningCycleId == null
             ? null

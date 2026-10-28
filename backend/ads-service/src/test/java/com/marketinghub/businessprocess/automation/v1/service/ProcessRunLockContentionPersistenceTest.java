@@ -68,7 +68,10 @@ class ProcessRunLockContentionPersistenceTest {
             guidance,
             activities,
             new ObjectMapper().findAndRegisterModules(),
-            manager);
+            manager,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     when(products.findById(anyLong()))
         .thenAnswer(i -> Optional.of(Product.builder().id(i.getArgument(0)).build()));
   }

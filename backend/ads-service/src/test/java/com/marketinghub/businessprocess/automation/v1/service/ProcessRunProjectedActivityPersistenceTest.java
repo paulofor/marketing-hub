@@ -594,7 +594,10 @@ class ProcessRunProjectedActivityPersistenceTest {
             guidance,
             activities,
             json,
-            transactions);
+            transactions,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     snapshot(96011L, "IN_PROGRESS", false, false, false, false);
     snapshot(96012L, "NOT_STARTED", false, false, false, false);
   }

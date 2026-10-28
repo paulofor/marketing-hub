@@ -38,6 +38,7 @@ public class ProcessRunService {
   private final BusinessProcessActivityExecutionService activities;
   private final ObjectMapper json;
   private final TransactionTemplate transaction;
+  private final ProcessRunOwnerPortrait ownerPortrait;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.businessprocesschain.learningcycle.v1.service
@@ -52,7 +53,7 @@ public class ProcessRunService {
           .LearningCycleProcessContinuation
       cycleContinuation;
 
-  /** Configura transações curtas e os contratos responsáveis pela execução real das atividades. */
+  /** Configura transações curtas, contratos de execução e identificação visual do responsável. */
   public ProcessRunService(
       ProcessRunRepository runs,
       ProcessRunEventRepository events,
@@ -63,7 +64,8 @@ public class ProcessRunService {
       ProcessRunGuidance guidance,
       BusinessProcessActivityExecutionService activities,
       ObjectMapper json,
-      PlatformTransactionManager manager) {
+      PlatformTransactionManager manager,
+      ProcessRunOwnerPortrait ownerPortrait) {
     this.runs = runs;
     this.events = events;
     this.products = products;
@@ -71,6 +73,7 @@ public class ProcessRunService {
     this.navigation = navigation;
     this.subprocesses = subprocesses;
     this.guidance = guidance;
+    this.ownerPortrait = ownerPortrait;
     this.activities = activities;
     this.json = json;
     this.transaction = new TransactionTemplate(manager);
@@ -1226,7 +1229,8 @@ public class ProcessRunService {
 
   /**
    * Expõe o encerramento e o progresso das provas consultadas sem reescrever a pausa histórica nem
-   * apresentar uma atividade encerrada como trabalho atual.
+   * apresentar uma atividade encerrada como trabalho atual; o retrato acompanha o mesmo
+   * responsável.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
@@ -1263,6 +1267,14 @@ public class ProcessRunService {
                         Objects.equals(activity.activityId(), readiness.currentActivityId()))
                 .findFirst()
                 .orElse(null);
+    String ownerName =
+        closed
+            ? null
+            : userAction != null
+                ? userAction.responsible()
+                : readiness == null
+                    ? run.getCurrentOwnerName()
+                    : currentActivity == null ? null : currentActivity.activityOwnerName();
     return new ProcessRunResponse(
         run.getId(),
         run.getProductId(),
@@ -1288,13 +1300,8 @@ public class ProcessRunService {
         closed
             ? null
             : readiness == null ? run.getCurrentActivityName() : readiness.currentActivityName(),
-        closed
-            ? null
-            : userAction != null
-                ? userAction.responsible()
-                : readiness == null
-                    ? run.getCurrentOwnerName()
-                    : currentActivity == null ? null : currentActivity.activityOwnerName(),
+        ownerName,
+        ownerPortrait.resolve(ownerName),
         closed
             ? null
             : readiness == null

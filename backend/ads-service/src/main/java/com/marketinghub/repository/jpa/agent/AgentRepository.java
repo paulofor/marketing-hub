@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Repositório JPA responsável pela persistência de Agent. */
 public interface AgentRepository extends JpaRepository<Agent, Long> {
@@ -15,6 +17,11 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
 
   /** Recupera a identidade técnica usada por integrações dos agentes. */
   Optional<Agent> findByAgentKey(String agentKey);
+
+  /** Consulta somente o retrato cadastrado para o apelido exato do responsável. */
+  @Query(
+      "select portrait.url from Agent agent join agent.portraitAsset portrait where agent.nickname = :nickname")
+  Optional<String> findPortraitUrlByNickname(@Param("nickname") String nickname);
 
   /** Bloqueia o cadastro durante a troca do estado operacional PLAY/STOP. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)

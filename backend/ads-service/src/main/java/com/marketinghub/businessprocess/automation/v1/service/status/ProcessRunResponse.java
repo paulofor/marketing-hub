@@ -17,6 +17,7 @@ public record ProcessRunResponse(
     String currentActivityId,
     String currentActivityName,
     String currentOwnerName,
+    String currentOwnerPortraitUrl,
     Integer currentSequence,
     int totalActivities,
     int completedActivities,

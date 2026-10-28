@@ -350,7 +350,10 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
             mock(ProcessRunGuidance.class),
             service,
             json,
-            transactions);
+            transactions,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     var http =
         MockMvcBuilders.standaloneSetup(new ProcessRunController(motor, "fixture-only", ""))
             .build();

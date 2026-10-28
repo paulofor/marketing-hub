@@ -43,6 +43,7 @@ class ProcessRunQueueBlockerPersistenceTest {
   @Autowired private ProcessRunEventRepository events;
   @Autowired private PlatformTransactionManager transactions;
   @Autowired private EntityManager entityManager;
+  @Autowired private com.marketinghub.repository.jpa.agent.AgentRepository agents;
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
   private final ProcessRunContext context = mock(ProcessRunContext.class);
   private final BusinessProcessActivityExecutionService activities =
@@ -81,7 +82,8 @@ class ProcessRunQueueBlockerPersistenceTest {
             mock(ProcessRunGuidance.class),
             activities,
             json,
-            transactions);
+            transactions,
+            new ProcessRunOwnerPortrait(agents));
     mvc =
         MockMvcBuilders.standaloneSetup(new ProcessRunController(service, "qa-only", ""))
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
@@ -351,6 +353,74 @@ class ProcessRunQueueBlockerPersistenceTest {
     assertThat(runs.findById(waiting.getId()).orElseThrow().getCompletedActivities()).isEqualTo(3);
     assertThat(events.count()).isZero();
     verifyNoInteractions(activities);
+  }
+
+  /** O retrato acompanha o responsável de cada produto por HTTP, sem movimentar a fila. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"95001,Plutus", "95201,Psique"})
+  void exposesRegisteredOwnerPortraitWithoutExecutingWork(long productId, String nickname)
+      throws Exception {
+    String portrait = "https://assets.example.test/" + nickname + ".png";
+    registerAgent(nickname, portrait);
+    var run =
+        productId == 95001L
+            ? queued
+            : runs.saveAndFlush(run(productId, 95012L, "experiment:95022", "QUEUED"));
+    run.setCurrentActivityId("review");
+    run.setCurrentOwnerName(nickname);
+    entityManager.flush();
+    long revision = run.getRevision();
+    mvc.perform(
+            get("/api/business-processes/95012/products/{product}/automation/v1", productId)
+                .param("chainId", "95014")
+                .param("sourceReference", "experiment:95022"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.currentOwnerName").value(nickname))
+        .andExpect(jsonPath("$.currentOwnerPortraitUrl").value(portrait))
+        .andExpect(jsonPath("$.status").value("QUEUED"));
+    entityManager.flush();
+    assertThat(run.getRevision()).isEqualTo(revision);
+    assertThat(events.count()).isZero();
+    verifyNoInteractions(activities);
+    run.setCurrentOwnerName("Backend");
+    assertThat(
+            service
+                .status(productId, 95012L, new ProcessRunCommand(95014L, null, "experiment:95022"))
+                .currentOwnerPortraitUrl())
+        .isNull();
+  }
+
+  /** Não associa retratos por substring nem a agentes sem imagem cadastrada. */
+  @ParameterizedTest
+  @ValueSource(strings = {"Backend", "Você · Plutus", "Íris", ""})
+  void preservesOwnersWithoutPortrait(String owner) {
+    registerAgent("Plutus", "https://assets.example.test/plutus.png");
+    registerAgent("Íris", null);
+    queued.setCurrentOwnerName(owner);
+    assertThat(readStatus().currentOwnerPortraitUrl()).isNull();
+    assertThat(readStatus().currentOwnerName()).isEqualTo(owner);
+    assertThat(events.count()).isZero();
+    verifyNoInteractions(activities);
+  }
+
+  /** Cria cadastro sintético de agente e retrato no mesmo banco local do contrato HTTP. */
+  private void registerAgent(String nickname, String portraitUrl) {
+    var theme = com.marketinghub.agent.AgentTheme.builder().name("Tema " + nickname).build();
+    entityManager.persist(theme);
+    com.marketinghub.media.Asset portrait = null;
+    if (portraitUrl != null) {
+      portrait = com.marketinghub.media.Asset.builder().url(portraitUrl).build();
+      entityManager.persist(portrait);
+    }
+    entityManager.persist(
+        com.marketinghub.agent.Agent.builder()
+            .name("Agente " + nickname)
+            .nickname(nickname)
+            .theme(theme)
+            .executionMode("CODEX_APP_SERVER")
+            .portraitAsset(portrait)
+            .build());
+    entityManager.flush();
   }
 
   /** Consulta o serviço no escopo idempotente gravado, sem retomar nem conciliar processos. */

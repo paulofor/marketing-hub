@@ -187,7 +187,10 @@ class ProcessRunCreativeRecoveryPersistenceTest {
             mock(ProcessRunGuidance.class),
             activities,
             json,
-            transactions);
+            transactions,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     mvc =
         MockMvcBuilders.standaloneSetup(new ProcessRunController(service, "qa-process-only", ""))
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
@@ -354,7 +357,10 @@ class ProcessRunCreativeRecoveryPersistenceTest {
             (BusinessProcessActivityExecutionService)
                 org.springframework.test.util.ReflectionTestUtils.getField(previous, "activities"),
             json,
-            transactions);
+            transactions,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     mvc =
         MockMvcBuilders.standaloneSetup(new ProcessRunController(service, "qa-process-only", ""))
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))

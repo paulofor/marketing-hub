@@ -1040,6 +1040,15 @@
   text-decoration: none;
   font-weight: 600;
 }
+.product-process-automation__portrait {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid #dce5f5;
+  object-fit: cover;
+  background: #f3f6fc;
+}
 .product-process-automation__current > svg {
   flex-shrink: 0;
 }

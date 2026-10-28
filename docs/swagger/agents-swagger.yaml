@@ -18,6 +18,9 @@ paths:
   /api/agents/work-monitor:
     get:
       summary: Lista o trabalho e o consumo diário de tokens dos agentes
+      description: >-
+        Consulta somente a última tarefa por agente, com limite no SQL e sem prompts ou resultados.
+        Uma tarefa concluída mais recente prevalece sobre bloqueios históricos.
       responses:
         "200":
           description: Estado operacional persistido, atualizado automaticamente pela tela.

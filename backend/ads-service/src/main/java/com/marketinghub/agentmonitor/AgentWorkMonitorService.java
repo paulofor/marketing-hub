@@ -1,7 +1,6 @@
 package com.marketinghub.agentmonitor;
 
 import com.marketinghub.agent.Agent;
-import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.codextelemetry.CodexAgentExecutionTelemetry;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -348,12 +348,12 @@ public class AgentWorkMonitorService {
         tokens);
   }
 
-  /** Usa a tarefa aberta mais recente como fallback para qualquer agente. */
+  /** Consulta somente a tarefa mais recente e impede ressuscitar bloqueios históricos. */
   private AgentWorkMonitorResponse task(Agent agent, DailyTokenSnapshot tokens) {
-    List<AgentTask> history =
-        taskRepository.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc(agent.getAgentKey());
+    List<AgentWorkTaskSnapshot> history =
+        taskRepository.findWorkMonitorSnapshots(agent.getAgentKey(), PageRequest.of(0, 1));
     if (history.isEmpty()
-        || !List.of("PENDING", "IN_PROGRESS", "BLOCKED").contains(history.getFirst().getStatus())) {
+        || !List.of("PENDING", "IN_PROGRESS", "BLOCKED").contains(history.getFirst().status())) {
       return response(
           agent,
           "IDLE",
@@ -372,34 +372,34 @@ public class AgentWorkMonitorService {
   }
 
   /** Traduz uma solicitação da caixa de entrada para o monitor. */
-  private AgentWorkMonitorResponse task(Agent agent, AgentTask task, DailyTokenSnapshot tokens) {
+  private AgentWorkMonitorResponse task(
+      Agent agent, AgentWorkTaskSnapshot task, DailyTokenSnapshot tokens) {
     if (TEMIS.equals(agent.getAgentKey())) {
       AgentWorkMonitorResponse creativeWork = temisReviewWork(agent, task, tokens);
       if (creativeWork != null) return creativeWork;
     }
-    boolean blocked = "BLOCKED".equals(task.getStatus());
-    boolean gate =
-        "GATE_DECISION".equals(task.getTaskKind()) && "PENDING".equals(task.getGateStatus());
-    boolean pending = "PENDING".equals(task.getStatus());
+    boolean blocked = "BLOCKED".equals(task.status());
+    boolean gate = "GATE_DECISION".equals(task.taskKind()) && "PENDING".equals(task.gateStatus());
+    boolean pending = "PENDING".equals(task.status());
     return response(
         agent,
         gate ? "DECISION_REQUIRED" : blocked ? "BLOCKED" : pending ? "WAITING" : "WORKING",
-        task.getTitle(),
-        task.getDescription(),
+        task.title(),
+        task.description(),
         blocked ? "Tarefa marcada como bloqueada." : null,
         gate,
-        gate ? "Decisão externa pendente no gate " + task.getGateCode() + "." : null,
-        task.getSourceReference(),
-        task.getId(),
+        gate ? "Decisão externa pendente no gate " + task.gateCode() + "." : null,
+        task.sourceReference(),
+        task.id(),
         null,
-        task.getUpdatedAt(),
+        task.updatedAt(),
         tokens);
   }
 
   /** Prioriza a revisão real de Têmis sobre o status histórico da tarefa agregadora. */
   private AgentWorkMonitorResponse temisReviewWork(
-      Agent agent, AgentTask task, DailyTokenSnapshot tokens) {
-    Long experimentId = experimentId(task.getSourceReference());
+      Agent agent, AgentWorkTaskSnapshot task, DailyTokenSnapshot tokens) {
+    Long experimentId = experimentId(task.sourceReference());
     if (experimentId == null) return null;
     return creativeRepository.findTemisOpenReviews(experimentId).stream()
         .findFirst()
@@ -409,7 +409,7 @@ public class AgentWorkMonitorService {
 
   /** Traduz somente a revisão comercial mais recente em tarefa, execução e bloqueio atuais. */
   private AgentWorkMonitorResponse temisReviewWork(
-      Agent agent, AgentTask task, Creative creative, DailyTokenSnapshot tokens) {
+      Agent agent, AgentWorkTaskSnapshot task, Creative creative, DailyTokenSnapshot tokens) {
     CreativeAgentReviewStatus review = creative.getAgentReviewStatus();
     boolean reviewing =
         review == CreativeAgentReviewStatus.PENDING
@@ -418,7 +418,7 @@ public class AgentWorkMonitorService {
         review == CreativeAgentReviewStatus.ADJUST
             || review == CreativeAgentReviewStatus.REJECTED
             || review == CreativeAgentReviewStatus.FAILED;
-    if (!reviewing && !blocked && !"BLOCKED".equals(task.getStatus())) return null;
+    if (!reviewing && !blocked && !"BLOCKED".equals(task.status())) return null;
     String phase = reviewing ? "Revisando a integridade comercial" : "Revisão comercial bloqueada";
     String difficulty =
         blocked
@@ -428,15 +428,15 @@ public class AgentWorkMonitorService {
     return response(
         agent,
         blocked ? "BLOCKED" : "WORKING",
-        "Tarefa #" + task.getId() + " — " + task.getTitle(),
+        "Tarefa #" + task.id() + " — " + task.title(),
         phase + " · criativo #" + creative.getId(),
         difficulty,
         false,
         null,
-        task.getSourceReference(),
-        task.getId(),
+        task.sourceReference(),
+        task.id(),
         creative.getId(),
-        creative.getAgentReviewedAt() != null ? creative.getAgentReviewedAt() : task.getUpdatedAt(),
+        creative.getAgentReviewedAt() != null ? creative.getAgentReviewedAt() : task.updatedAt(),
         tokens);
   }
 

@@ -16,14 +16,14 @@ audit_v2_cleanup() {
 
 audit_v2_db_scalar() {
   audit_v2_compose exec -T mysql57-agent-task-actionable-audit-v2 \
-    mysql -N -s -umarketinghub -pmarketinghub-local marketinghub_local \
+    mysql --raw -N -s -umarketinghub -pmarketinghub-local marketinghub_local \
     -e "$1" 2>/dev/null
 }
 
 audit_v2_db_execute() {
   audit_v2_compose exec -T mysql57-agent-task-actionable-audit-v2 \
     mysql -umarketinghub -pmarketinghub-local marketinghub_local \
-    -e "$1" >/dev/null 2>&1
+    -e "$1" >/dev/null
 }
 
 audit_v2_assert_equal() {
@@ -46,6 +46,50 @@ audit_v2_compose run --rm --build liquibase-agent-task-actionable-audit-v2
 audit_v2_compose run --rm --build liquibase-psique-visual-evidence
 audit_v2_compose run --rm --build liquibase-agent-task-prompt-parts-v1
 audit_v2_compose run --rm --build liquibase-agent-task-history-source-index
+
+audit_v2_compose run --rm --build liquibase-geralanding-queue-index
+# Reaplicar deve preservar o índice e o controle de execução do Liquibase.
+audit_v2_compose run --rm liquibase-geralanding-queue-index
+
+audit_v2_assert_equal \
+  "índice da fila GeraLanding" \
+  "stage_code,status,execution_requested_at" \
+  "$(audit_v2_db_scalar "SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index)
+    FROM information_schema.statistics WHERE table_schema = 'marketinghub_local'
+      AND table_name = 'gera_landing_stage_execution'
+      AND index_name = 'idx_geralanding_stage_status_requested';")"
+
+# Dados exclusivamente sintéticos: backlog encerrado e uma fila seletiva atual.
+audit_v2_db_execute "CREATE TABLE perf_digits (n INT PRIMARY KEY);
+  INSERT INTO perf_digits VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+  INSERT INTO gera_landing_stage_execution (id_job, stage_code, status, execution_requested_at)
+  SELECT CAST(a.n + 10*b.n + 100*c.n + 1000*d.n AS CHAR),
+    'landing-generation-agent-v1',
+    IF(a.n = 0 AND b.n = 0, 'FALHA', 'CONCLUIDO'),
+    TIMESTAMPADD(SECOND, a.n + 10*b.n + 100*c.n + 1000*d.n, '2026-10-28 00:00:00')
+  FROM perf_digits a CROSS JOIN perf_digits b CROSS JOIN perf_digits c CROSS JOIN perf_digits d;
+  ANALYZE TABLE gera_landing_stage_execution;
+  DROP TABLE perf_digits;"
+audit_v2_db_scalar "EXPLAIN FORMAT=JSON SELECT id_job FROM gera_landing_stage_execution
+  WHERE stage_code = 'landing-generation-agent-v1' AND status = 'FALHA'
+  ORDER BY execution_requested_at LIMIT 20;" | python3 -c '
+import json, sys
+plan = json.loads(sys.stdin.read())
+def tables(node):
+    if isinstance(node, dict):
+        if "table_name" in node:
+            yield node
+        for value in node.values():
+            yield from tables(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from tables(value)
+selected = next(table for table in tables(plan) if table["table_name"] == "gera_landing_stage_execution")
+assert selected.get("key") == "idx_geralanding_stage_status_requested", plan
+assert selected.get("rows_examined_per_scan", 10000) <= 200, plan
+assert "\"using_filesort\": true" not in json.dumps(plan), plan
+print("Fila validada com índice, sem filesort e sem varrer o histórico sintético de 10 mil itens.")
+'
 
 audit_v2_assert_equal \
   "índice do histórico por origem" \

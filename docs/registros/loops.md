@@ -4834,6 +4834,25 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   isolamento contra mutação e nova leitura em outra transação; a latência publicada só poderá ser
   medida depois do PR e deploy autorizados.
 
+- **Recorrência investigada em 2026-10-28 — resumos carregando auditoria:** o HTML administrativo
+  respondeu em aproximadamente 0,36 s, mas o resumo global de vídeos levou 8–13 s (162 bytes),
+  a posição dos produtos 6–8 s e o monitor de agentes permaneceu carregando além de 15 s.
+  O monitor consultava todas as tarefas de cada agente para usar somente a primeira; o resumo de
+  vídeos reconstruía DTOs, evidências e gates de todo o histórico a cada 30 s. A visão do processo
+  com referência explícita também percorria experimentos e ocorrências de outros contextos.
+  O banco registrava leituras integrais de `agent_task` (cerca de 295 MiB de dados) e polling de
+  GeraLanding sem índice por etapa/status/horário. O host do backend tinha 164 MiB disponíveis e
+  swap em uso; ampliar memória sozinho não elimina essas leituras.
+- **Correção e prevenção desta recorrência:** projeções escalares para monitor e contadores,
+  limite de uma tarefa no SQL preservando o estado concluído mais recente, consulta exata de
+  ocorrências BPM e índice incremental `idx_geralanding_stage_status_requested`. Revisões de
+  vídeos atuais mantêm a mesma validação independente; decisões e histórico não são reabertos.
+  O frontend compartilha o resumo por 30 s, respeita invalidação após decisão e cancela consultas
+  sem observador. Os testes de persistência exigem zero entidades de auditoria hidratadas;
+  regressões cobrem outro produto, linhagens e todos os estados. A fixture MySQL 5.7 existente
+  valida aplicação/reaplicação e plano de consulta sobre 10 mil itens sintéticos.
+  Evidências e resultados: `docs/registros/performance-painel-2026-10-28.md`.
+
 ## LOOP-IRIS-DEPLOY-CONCORRENTE-COM-APP — health do agente disputa reinício do backend
 
 - **Data:** 2026-09-01.

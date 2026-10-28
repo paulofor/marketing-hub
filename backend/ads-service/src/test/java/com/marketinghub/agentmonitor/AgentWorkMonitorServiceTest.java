@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageRequest;
 
 /** Responsabilidade: proteger a leitura comum de paralelismo, bloqueios e decisões dos agentes. */
 class AgentWorkMonitorServiceTest {
@@ -165,8 +166,8 @@ class AgentWorkMonitorServiceTest {
     obsolete.setId(10L);
     obsolete.setStatus("BLOCKED");
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(argos));
-    when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("market-radar"))
-        .thenReturn(List.of(completed, obsolete));
+    when(tasks.findWorkMonitorSnapshots("market-radar", PageRequest.of(0, 1)))
+        .thenReturn(List.of(snapshot(completed)));
 
     AgentWorkMonitorResponse result =
         new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
@@ -315,8 +316,8 @@ class AgentWorkMonitorServiceTest {
             .completedAt(Instant.parse("2026-08-29T12:00:00Z"))
             .build();
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
-    when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("landing-generator"))
-        .thenReturn(List.of(productTask));
+    when(tasks.findWorkMonitorSnapshots("landing-generator", PageRequest.of(0, 1)))
+        .thenReturn(List.of(snapshot(productTask)));
     when(landings.findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1"))
         .thenReturn(Optional.of(historicalLanding));
 
@@ -531,8 +532,8 @@ class AgentWorkMonitorServiceTest {
             .agentImprovementStatus(CreativeImprovementStatus.COMPLETED)
             .build();
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(temis));
-    when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("meta-ad-approver"))
-        .thenReturn(List.of(task));
+    when(tasks.findWorkMonitorSnapshots("meta-ad-approver", PageRequest.of(0, 1)))
+        .thenReturn(List.of(snapshot(task)));
     when(creatives.findTemisOpenReviews(88L)).thenReturn(List.of(creative));
 
     AgentWorkMonitorResponse result =
@@ -586,5 +587,19 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.progressDetail()).contains("Produzindo");
     assertThat(result.sourceReference()).isEqualTo("experiment:88");
     assertThat(result.executionId()).isEqualTo(326L);
+  }
+
+  /** Reproduz a projeção leve usada pelo monitor sem transportar a auditoria da entidade. */
+  private AgentWorkTaskSnapshot snapshot(AgentTask task) {
+    return new AgentWorkTaskSnapshot(
+        task.getId(),
+        task.getStatus(),
+        task.getTitle(),
+        task.getDescription(),
+        task.getTaskKind(),
+        task.getGateStatus(),
+        task.getGateCode(),
+        task.getSourceReference(),
+        task.getUpdatedAt());
   }
 }

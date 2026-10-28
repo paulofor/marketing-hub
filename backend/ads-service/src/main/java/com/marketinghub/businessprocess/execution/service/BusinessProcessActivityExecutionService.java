@@ -322,7 +322,7 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, learningCycleId, chainId, includePromptAudit, null);
   }
 
-  /** Consulta a referência escolhida e projeta atividades na ordem causal do grafo versionado. */
+  /** Consulta somente o contexto escolhido no resumo e ordena atividades pelo grafo versionado. */
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId,
@@ -341,7 +341,11 @@ public class BusinessProcessActivityExecutionService {
             ? null
             : salesFlowResolver.resolve(productId, selectedProcess, chainId, learningCycleId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
-    List<Experiment> productExperiments = productExperiments(productId);
+    // O contexto exato já foi validado; o resumo não precisa dos demais experimentos.
+    List<Experiment> productExperiments =
+        explicitReference != null && !includePromptAudit
+            ? List.of()
+            : productExperiments(productId);
     Map<Long, Long> compactTaskStateProcessIds = Map.of();
     List<AgentTask> tasks;
     if (explicitReference != null && !includePromptAudit) {
@@ -354,8 +358,12 @@ public class BusinessProcessActivityExecutionService {
               productPlans, productExperiments, productId, selectedProcess.getProcessCode());
     }
     List<BusinessProcessActivityInstance> instances =
-        productProcessActivityInstances(
-            productPlans, productExperiments, productId, selectedProcess.getProcessCode());
+        explicitReference != null
+            ? activityInstanceRepository
+                .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                    selectedProcess.getProcessCode(), explicitReference)
+            : productProcessActivityInstances(
+                productPlans, productExperiments, productId, selectedProcess.getProcessCode());
     List<BusinessProcessActivityDefinition> selectedActivities =
         BusinessProcessGraphTopology.orderActivities(
             processDiagram(selectedProcess),

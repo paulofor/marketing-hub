@@ -39,6 +39,7 @@ describe("GlobalAutomationAlerts", () => {
     ).toBeInTheDocument();
     expect(get).toHaveBeenCalledWith("/api/creatives/video-review/summary", {
       params: { productId: 81, experimentId: 820 },
+      signal: expect.any(AbortSignal),
     });
     expect(
       screen.getByRole("link", { name: "Ver aprovações necessárias" }),
@@ -60,6 +61,7 @@ describe("GlobalAutomationAlerts", () => {
     await waitFor(() =>
       expect(get).toHaveBeenCalledWith("/api/creatives/video-review/summary", {
         params: { productId: 82, experimentId: undefined },
+        signal: expect.any(AbortSignal),
       }),
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

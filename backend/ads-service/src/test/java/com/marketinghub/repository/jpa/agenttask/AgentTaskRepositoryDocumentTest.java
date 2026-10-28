@@ -30,6 +30,31 @@ class AgentTaskRepositoryDocumentTest {
   @Autowired private EntityManager entityManager;
   @Autowired private org.springframework.transaction.PlatformTransactionManager transactions;
 
+  /** Limita a última tarefa no banco e não ressuscita falhas antigas nem hidrata prompts. */
+  @Test
+  void monitorReadsOnlyLatestTaskIncludingCompletedWithoutAudit() {
+    var agent = persistedAgent();
+    var process = persistedProcess();
+    var now = Instant.parse("2026-10-28T12:00:00Z");
+    for (int index = 0; index < 20; index++) {
+      var old = task(agent, process, "test", "BLOCKED", "{}", now.minusSeconds(index + 1));
+      old.setExecutionPrompt("auditoria-sintetica-".repeat(5000));
+      tasks.save(old);
+    }
+    var current = tasks.save(task(agent, process, "test", "COMPLETED", "{}", now));
+    entityManager.flush();
+    entityManager.clear();
+
+    var result = tasks.findWorkMonitorSnapshots(agent.getAgentKey(), PageRequest.of(0, 1));
+
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().id()).isEqualTo(current.getId());
+    assertThat(result.getFirst().status()).isEqualTo("COMPLETED");
+    assertThat(tasks.findWorkMonitorSnapshots("outro-agente", PageRequest.of(0, 1))).isEmpty();
+    assertThat(entityManager.unwrap(org.hibernate.Session.class).getStatistics().getEntityCount())
+        .isZero();
+  }
+
   /** Prova que prontidão usa resultados escalares e ignora auditoria volumosa e outras origens. */
   @Test
   void functionalSnapshotsDoNotHydrateAuditAndPreserveExactScope() {

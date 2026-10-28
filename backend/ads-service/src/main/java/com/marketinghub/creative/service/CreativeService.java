@@ -338,14 +338,47 @@ public class CreativeService {
         .toList();
   }
 
-  /** Consolida decisões necessárias, candidatas opcionais e demais estados oficiais da fila. */
+  /** Resume a fila com projeções leves e revalida evidências somente das decisões atuais. */
   @Transactional(readOnly = true)
   public VideoReviewSummary videoReviewSummary(Long productId, Long experimentId) {
-    Map<VideoReviewState, Long> counts =
-        listVideoReviewQueue(null, productId, experimentId, null).stream()
-            .collect(
-                java.util.stream.Collectors.groupingBy(
-                    video -> video.eligibility().state(), java.util.stream.Collectors.counting()));
+    Map<VideoReviewState, Long> counts = new java.util.EnumMap<>(VideoReviewState.class);
+    List<Creative> creatives =
+        CreativeVideoSummarySnapshot.eligibleCreatives(
+            repository.findVideoSummarySnapshots(productId, experimentId));
+    Map<Long, Long> replacements = VideoReviewPolicy.supersededBy(creatives);
+    for (Creative creative : creatives) {
+      var state =
+          VideoReviewPolicy.classify(
+                  creative.getStatus(),
+                  VideoReviewPolicy.historicalReason(
+                      creative.getExperiment(), replacements.get(creative.getId())),
+                  agentReviewApprovalBlockReason(creative),
+                  false)
+              .state();
+      counts.merge(state, 1L, Long::sum);
+    }
+    for (var video :
+        experimentVideoAssetRepository.findVideoSummarySnapshots(productId, experimentId)) {
+      CreativeStatus status = toCreativeStatus(video.reviewStatus());
+      String historical =
+          VideoReviewPolicy.historicalReason(
+              Experiment.builder().status(video.experimentStatus()).build(), null);
+      // Aprovações, reprovações e histórico têm precedência e não pedem novos pareceres.
+      String blocker = null;
+      if (status != CreativeStatus.READY
+          && status != CreativeStatus.REJECTED
+          && historical == null) {
+        var current = experimentVideoAssetRepository.findById(video.id()).orElse(null);
+        blocker =
+            current == null
+                ? "Vídeo indisponível para revisão. Atualize a consulta."
+                : experimentVideoApprovalBlockReason(current);
+      }
+      var state =
+          VideoReviewPolicy.classify(status, historical, blocker, false, video.requiredForRelease())
+              .state();
+      counts.merge(state, 1L, Long::sum);
+    }
     return new VideoReviewSummary(
         productId,
         experimentId,
@@ -1594,6 +1627,7 @@ public class CreativeService {
    * Converte vídeo de experimento em revisão necessária ou opcional, preservando decisões e gates.
    */
   private CreativeVideoReviewDto toVideoReviewDto(ExperimentVideoAsset videoAsset) {
+    String approvalBlockReason = experimentVideoApprovalBlockReason(videoAsset);
     Experiment experiment = videoAsset.getExperiment();
     Hypothesis hypothesis = experiment != null ? experiment.getHypothesisRef() : null;
     MarketNiche niche =
@@ -1623,7 +1657,7 @@ public class CreativeService {
         toCreativeStatus(videoAsset.getReviewStatus()),
         null,
         null,
-        experimentVideoApprovalBlockReason(videoAsset),
+        approvalBlockReason,
         videoAsset.getRejectionReason(),
         videoAsset.getReviewedAt(),
         videoAsset.getCreatedAt(),
@@ -1643,7 +1677,7 @@ public class CreativeService {
         VideoReviewPolicy.classify(
             toCreativeStatus(videoAsset.getReviewStatus()),
             VideoReviewPolicy.historicalReason(experiment, null),
-            experimentVideoApprovalBlockReason(videoAsset),
+            approvalBlockReason,
             false,
             videoAsset.isRequiredForRelease()));
   }

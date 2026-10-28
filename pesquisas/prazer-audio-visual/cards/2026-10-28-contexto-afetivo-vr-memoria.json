@@ -1,0 +1,18 @@
+{
+  "cardKey": "contexto-afetivo-vr-memoria-episodica",
+  "collection": "prazer-audio-visual",
+  "title": "Testar memória imersiva com controles audiovisuais equivalentes",
+  "finding": "Experimento 2×3 em VR com 234 adultos jovens encontrou menor recordação livre na condição desagradável do que neutra (p de Holm=0,030; omega-quadrado=0,031), sem benefício geral robusto do controle de navegação.",
+  "mechanism": "Contexto afetivo e atenção na codificação podem alterar memória; condição neutra não possuía fluxo audiovisual equivalente, impedindo isolar efeito da valência.",
+  "commercialApplication": "Em experiências interativas, controlar presença, densidade, intensidade e duração das pistas sonoras/visuais ao avaliar recordação, erros e conforto entre condições afetivas.",
+  "evidenceStrength": "Moderada para contraste específico de recordação livre; baixa para efeito causal isolado da valência e resultados comerciais.",
+  "publishedOn": "2026-10-28",
+  "validUntil": "2026-12-12",
+  "experimentHypothesis": "Com áudio equivalente entre condições, a valência do contexto poderá alterar a recordação episódica; magnitude e direção precisam ser testadas.",
+  "risks": "Atribuir memória à valência sem controlar carga atencional; provocar desconforto; usar lembrança como proxy de venda.",
+  "limits": "Adultos jovens; episódio de VR; condição neutra sem áudio comparável; interação espacial exploratória não resistiu à correção (p=0,192); sem dopamina ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-28-contexto-afetivo-vr-memoria-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Apostolaki & Roussos (2026), afeto e memória em VR",
+  "sourceSha256": "4405e6d153b5febf3f54edec862f1a52734e12a2b44fe8a9627c607fa84469c0"
+}

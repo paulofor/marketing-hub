@@ -13,6 +13,12 @@ Os 85 testes relevantes passaram: 12 do resolvedor (incluindo três identidades)
 O teste integrado reproduziu a leitura indevida antes do ajuste e passou depois,
 exigindo ausência de consulta integral de tarefas e do histórico de experimentos.
 
+Outros 52 testes de persistência da automação passaram após atualizar a simulação
+da consulta usada pelo resolvedor. A falha do CI foi reproduzida localmente nos seis
+casos de continuidade: a fixture ainda respondia somente à assinatura com auditoria.
+Agora ela fornece a projeção compacta e exige que o caminho antigo não seja chamado,
+mantendo evento único, destino pausado e ausência de nova execução indevida.
+
 Os caminhos bloqueado, concluído, recuperação, decisão humana, contexto divergente
 e leitura histórica permanecem cobertos. Não há chamadas pagas nem alteração de
 produto, experimento, autorização ou parecer independente.

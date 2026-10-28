@@ -54,8 +54,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
- * Responsabilidade: comprovar leitura, continuidade e comando HTTP com service e gate reais,
- * sem escrever em produção nem exigir auditorias na navegação.
+ * Responsabilidade: comprovar leitura, continuidade e comando HTTP com service e gate reais, sem
+ * escrever em produção nem exigir auditorias na navegação.
  */
 class PdeTechnicalHomologationActivityExecutionTest {
   /** Reproduz a projeção persistida sem disponibilizar prompt, resposta bruta ou auditoria. */

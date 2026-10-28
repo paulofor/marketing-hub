@@ -104,3 +104,10 @@ todo o histórico de experimentos na resolução do próximo trabalho. Os cenár
 cobrem Vega, Capella e identificadores sintéticos distintos; bloqueios e seleção
 humana permanecem preservados. A melhora desta segunda passagem deve ser medida
 após a publicação correspondente.
+
+Na validação completa, a fixture de automação ainda simulava a assinatura que
+carrega auditorias. Os seis casos de continuidade falharam também na reprodução
+local; a fixture foi alinhada à consulta compacta, sem alteração adicional de
+produção. Seus 52 testes passaram, incluindo preservação de pausa, evento único
+de continuidade e proibição explícita da consulta integral. A formatação de todos
+os arquivos Java alterados foi conferida com a mesma ferramenta do CI.

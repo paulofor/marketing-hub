@@ -420,7 +420,8 @@ class ProcessRunProjectedActivityPersistenceTest {
   }
 
   /**
-   * Conclusão, início com provas e recuperação explícita preservam o destino, inclusive pausado.
+   * Conclusão, início com provas e recuperação preservam o destino pausado usando estado sem
+   * auditorias.
    */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({
@@ -480,7 +481,7 @@ class ProcessRunProjectedActivityPersistenceTest {
       item.setProcessDefinition(definition);
       item.setSequenceNumber((int) (id - 96009));
       chain.getItems().add(item);
-      when(activities.productProcessExecutions(id, 96001L, 96031L, 96014L))
+      when(activities.productProcessExecutions(id, 96001L, 96031L, 96014L, false))
           .thenAnswer(inv -> snapshots.get(id));
     }
     when(chains.findById(96014L)).thenReturn(Optional.of(chain));
@@ -523,6 +524,10 @@ class ProcessRunProjectedActivityPersistenceTest {
         .hasSize(1)
         .allSatisfy(
             e -> assertThat(e.getDetailsJson()).contains("96031", "experiment:96021", "nextRunId"));
+    for (long id : List.of(96011L, 96012L)) {
+      verify(activities, atLeastOnce()).productProcessExecutions(id, 96001L, 96031L, 96014L, false);
+    }
+    verify(activities, never()).productProcessExecutions(anyLong(), anyLong(), any(), any());
     verifyNoInteractions(cycleService);
   }
 

@@ -814,9 +814,15 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeTechnicalHomologationActivityExecutionTest.java",
-      "sha256": "ec7ebd126032cb0ebc2bfa6802b461c76ed4292af6d09238331b39583d125e8c",
+      "sha256": "afaee32bf4e54dfc594cb2c0f04b63d2f09756f9203de94365b480b18b57d9a4",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Regressão local da consulta compacta, bloqueios e recuperação; não renova parecer comercial."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunProjectedActivityPersistenceTest.java",
+      "sha256": "27031add221633a7db5c0e94040dad289f7ded29b9edceb35abe7a9c6c5e1429",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Comprova continuidade persistida com consulta compacta, evento único e preservação da pausa, sem nova tarefa indevida."
     }
   ],
   "validationReport": "docs/homologacao/contexto-ciclo-performance-compatibilidade-2026-10-28.md",
@@ -835,7 +841,7 @@
     },
     {
       "path": "docs/homologacao/contexto-ciclo-performance-compatibilidade-2026-10-28.md",
-      "sha256": "551c4200e6678b701a0ea3a4e6df50f467e1f5b6ccf15c1bc9b3cde470fcddf9",
+      "sha256": "54059e3801f7e736dfa6ad13dbd16b2d4db1ebe1f4f692294e266ba0dd217849",
       "promptMode": "FULL"
     }
   ],

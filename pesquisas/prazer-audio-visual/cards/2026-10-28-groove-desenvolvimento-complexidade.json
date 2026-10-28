@@ -1,0 +1,18 @@
+{
+  "cardKey": "groove-desenvolvimento-complexidade",
+  "collection": "prazer-audio-visual",
+  "title": "Complexidade rítmica intermediária e diferenças individuais de groove",
+  "finding": "Em estudo transversal (N=290) e longitudinal (N=105) com adolescentes de 11 a 15 anos, a vontade prazerosa de mover-se apresentou padrão em U invertido em função da complexidade rítmica, com pico intermediário; respostas à alta complexidade variaram ao longo do desenvolvimento.",
+  "mechanism": "Expectativas temporais aprendidas e integração entre percepção e planejamento motor podem modular groove; o mecanismo dopaminérgico não foi diretamente testado.",
+  "commercialApplication": "Testar em Apolo variantes de complexidade rítmica baixa, moderada e alta, avaliando com Psique groove, prazer, compreensão e desconforto em público voluntário, sem pressupor preferências universais.",
+  "evidenceStrength": "Moderada para padrão comportamental em desenhos transversal e longitudinal; baixa para causalidade neural ou ganhos comerciais.",
+  "publishedOn": "2026-10-28",
+  "validUntil": "2026-12-12",
+  "experimentHypothesis": "A complexidade rítmica intermediária poderá elevar groove autorrelatado para certos grupos, sem ganho garantido em memória, CTA ou conversão.",
+  "risks": "Perfilamento etário indevido, segmentação de menores, confundir desejo de mover com prazer geral ou vendas, sobrecarregar trilha.",
+  "limits": "Estímulos e população de 11–15 anos; resposta subjetiva; sem medição direta de dopamina, EEG ou desempenho publicitário.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-28-groove-desenvolvimento-complexidade-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Lippolis et al. (2026), groove e desenvolvimento",
+  "sourceSha256": "52c45ba6897102706c216ada42295f64ba9c6aeb409adf8c2fb7f690af3699e5"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-runway-ads-ciclo-criativo-com-dados-reais",
+  "collection": "video",
+  "title": "Testar geração de variantes guiada por dados reais de campanhas",
+  "finding": "Runway Ads deixou de ser piloto e ficou disponível em 27/10/2026 para todos os planos pagos, unindo métricas Meta/Google/TikTok, variações audiovisuais de anúncios, Brand Kit, revisão humana e publicação controlada.",
+  "mechanism": "O agente lê desempenho de criativos existentes, isola variável a testar e cria novos vídeos/imagens on-brand, redimensiona e localiza para diferentes canais; anúncio só é enviado após aprovação e entra pausado no grupo de anúncios.",
+  "commercialApplication": "Comparar o laço de experimentação do Marketing Hub com Runway Ads, usando 10 criativos de referência e métricas autorizadas. Medir custo por vídeo aprovado, tempo de produção, fidelidade de marca e capacidade de gerar hipóteses.",
+  "evidenceStrength": "Forte para lançamento, disponibilidade, capacidades e preço de módulo por anúncio e documentação oficiais de 27/10; métricas de eficiência são autorrelato sem validação independente.",
+  "publishedOn": "2026-10-27",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "O uso de desempenho efetivo para gerar variantes aumentará a proporção de anúncios aprovados por unidade de tempo sem elevar defeitos de marca.",
+  "risks": "Dependência de SaaS, acesso a dados de anúncios, erros na atribuição causal, privacidade, uso de imagens de clientes, custos de créditos, aprovações de plataformas e política das contas.",
+  "limits": "Ativo em todos os planos pagos web desktop; não há endpoint público dedicado a Runway Ads confirmado. O módulo não cobra complemento mas cada geração consome créditos. Resultados internos Runway de cerca de 1.000 criativos/semana e -41% custo por assinante não provam ROI externo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-28-runway-ads-disponibilidade-geral.md",
+  "sourceTitle": "Fonte revisada — Runway Ads em disponibilidade geral",
+  "sourceSha256": "2ee2084c6b539cbcf02c769d484b5fa3299194ea162dbb047c1520aa15695a1f"
+}

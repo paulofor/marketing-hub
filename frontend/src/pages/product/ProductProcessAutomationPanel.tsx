@@ -5,6 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Loader2, PauseCircle, PlayCircle } from "lucide-react";
 import axios from "axios";
 import ProductProcessContextCopy from "./ProductProcessContextCopy";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import type { ProcessContext } from "./productProcessContext";
 import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
 import type { ProductLearningCycleNavigation } from "../../api/product/useProductValueChainPositions";
@@ -54,6 +55,12 @@ export default function ProductProcessAutomationPanel({
   const client = useQueryClient();
   const observed = useRef<string | undefined>(undefined);
   const data = status.data;
+  const [failedPortrait, setFailedPortrait] = useState<string | null>(null);
+  const portraitUrl = resolveAssetUrl(data?.currentOwnerPortraitUrl);
+  const portraitIdentity = JSON.stringify([
+    data?.currentOwnerName,
+    portraitUrl,
+  ]);
   useEffect(() => {
     if (!data) return;
     const progress = JSON.stringify([
@@ -176,6 +183,19 @@ export default function ProductProcessAutomationPanel({
                 hash: `#activity-${data.currentActivityId}`,
               }}
             >
+              {data.currentOwnerName &&
+                portraitUrl &&
+                failedPortrait !== portraitIdentity && (
+                  <img
+                    key={portraitIdentity}
+                    className="product-process-automation__portrait"
+                    src={portraitUrl}
+                    alt={`Figura mitológica de ${data.currentOwnerName}`}
+                    width={48}
+                    height={48}
+                    onError={() => setFailedPortrait(portraitIdentity)}
+                  />
+                )}
               <span>
                 Atividade {data.currentSequence} — {data.currentActivityName}
                 {data.currentOwnerName ? ` · ${data.currentOwnerName}` : ""}

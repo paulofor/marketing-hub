@@ -176,6 +176,10 @@ components:
                 description: Nos controles pausados, encerrados e concluídos, acompanha a mesma projeção de provas do relatório consultado; a leitura preserva o estado persistido e não dispara tarefas.
               currentActivityName: {type: string, nullable: true}
               currentOwnerName: {type: string, nullable: true}
+              currentOwnerPortraitUrl:
+                type: string
+                nullable: true
+                description: Retrato do cadastro canônico do agente com o apelido exato de currentOwnerName. Nulo sem cadastro ou imagem, em responsabilidade humana/backend ou contexto encerrado. Atualizado na mesma leitura do responsável; não indica execução ativa.
               currentSequence: {type: integer, nullable: true}
               totalActivities: {type: integer}
               completedActivities:

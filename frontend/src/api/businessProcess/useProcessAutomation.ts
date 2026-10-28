@@ -13,6 +13,7 @@ export interface ProcessAutomation {
   currentActivityId: string | null;
   currentActivityName: string | null;
   currentOwnerName: string | null;
+  currentOwnerPortraitUrl?: string | null;
   currentSequence: number | null;
   totalActivities: number;
   completedActivities: number;

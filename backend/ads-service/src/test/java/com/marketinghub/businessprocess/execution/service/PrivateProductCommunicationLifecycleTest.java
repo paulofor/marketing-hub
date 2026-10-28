@@ -182,7 +182,10 @@ class PrivateProductCommunicationLifecycleTest {
             mock(ProcessRunGuidance.class),
             service,
             json,
-            transactions);
+            transactions,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     var scope = new ProcessRunCommand(chain.getId(), null, "product:900004@agent-validation-v1");
     var ready = runService.status(product.getId(), process.getId(), scope);
     assertThat(ready.canStart()).isTrue();

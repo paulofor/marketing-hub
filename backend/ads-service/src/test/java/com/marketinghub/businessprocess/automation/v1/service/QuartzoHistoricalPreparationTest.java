@@ -297,7 +297,10 @@ class QuartzoHistoricalPreparationTest {
             mock(com.marketinghub.businessprocess.automation.v1.service.ProcessRunGuidance.class),
             activityCommands,
             json,
-            transactions);
+            transactions,
+            mock(
+                com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait
+                    .class));
     var control =
         MockMvcBuilders.standaloneSetup(
                 new com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController(

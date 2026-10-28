@@ -5,12 +5,39 @@ import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
+import java.util.HashSet;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /** Responsabilidade: detectar dependências ausentes na fixture antes da rodada MySQL completa. */
 class ProcessAutomationFixtureWiringTest {
+  /** Confere os imports e beans das duas aplicações locais contra o construtor real do motor. */
+  @Test
+  void fixturesProvideEveryRequiredExecutionDependency() {
+    for (Class<?> fixture :
+        java.util.List.of(
+            ProcessAutomationLocalApplication.class,
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleLocalApplication.class)) {
+      var available =
+          new HashSet<Class<?>>(Arrays.asList(fixture.getAnnotation(Import.class).value()));
+      Arrays.stream(fixture.getDeclaredMethods())
+          .filter(method -> method.isAnnotationPresent(Bean.class))
+          .map(java.lang.reflect.Method::getReturnType)
+          .forEach(available::add);
+      for (Class<?> dependency : ProcessRunService.class.getConstructors()[0].getParameterTypes()) {
+        if (!dependency.getName().startsWith("com.marketinghub.")) continue;
+        assertThat(available.stream().anyMatch(dependency::isAssignableFrom))
+            .as(
+                "[ARQUITETURA] %s deve fornecer %s ao motor real",
+                fixture.getSimpleName(), dependency.getSimpleName())
+            .isTrue();
+      }
+    }
+  }
+
   /** Inicializa o contexto real com os beans declarados pela fixture e JDBC sem acesso externo. */
   @Test
   void fixtureProvidesEveryRequiredContextDependency() throws ReflectiveOperationException {

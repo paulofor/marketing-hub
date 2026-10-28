@@ -101,6 +101,94 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("exibe o retrato oficial e o atualiza junto com o responsável", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        currentOwnerName: "Plutus",
+        currentOwnerPortraitUrl: "/uploads/plutus.png",
+      },
+    });
+    const client = setup();
+    const portrait = await screen.findByRole("img", {
+      name: "Figura mitológica de Plutus",
+    });
+    expect(portrait).toHaveAttribute(
+      "src",
+      expect.stringContaining("/uploads/plutus.png"),
+    );
+    expect(portrait).toHaveAttribute("width", "48");
+    expect(portrait.closest("a")).toHaveAttribute(
+      "href",
+      expect.stringContaining("#activity-a"),
+    );
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        currentOwnerName: "Psique",
+        currentOwnerPortraitUrl: "/uploads/psique.png",
+      },
+    });
+    await client.invalidateQueries({ queryKey: ["process-automation", 92001] });
+    expect(
+      await screen.findByRole("img", { name: "Figura mitológica de Psique" }),
+    ).toHaveAttribute("src", expect.stringContaining("/uploads/psique.png"));
+    expect(
+      screen.queryByRole("img", { name: "Figura mitológica de Plutus" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("preserva a atividade se a imagem falhar e permite o retrato do próximo responsável", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        currentOwnerName: "Plutus",
+        currentOwnerPortraitUrl: "/uploads/indisponivel.png",
+      },
+    });
+    const client = setup();
+    fireEvent.error(
+      await screen.findByRole("img", { name: "Figura mitológica de Plutus" }),
+    );
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Atividade 2 — Criar oferta · Plutus/ }),
+    ).toBeVisible();
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        currentOwnerName: "Atena",
+        currentOwnerPortraitUrl: "/uploads/atena.png",
+      },
+    });
+    await client.invalidateQueries({ queryKey: ["process-automation", 92001] });
+    expect(
+      await screen.findByRole("img", { name: "Figura mitológica de Atena" }),
+    ).toBeVisible();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it.each(["Backend", "Íris", "Você"])(
+    "mantém %s sem inventar imagem",
+    async (owner) => {
+      vi.mocked(axios.get).mockResolvedValue({
+        data: {
+          ...running,
+          currentOwnerName: owner,
+          currentOwnerPortraitUrl: null,
+        },
+      });
+      setup();
+      expect(
+        await screen.findByRole("link", {
+          name: new RegExp(`Criar oferta · ${owner}`),
+        }),
+      ).toBeVisible();
+      expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    },
+  );
+
   it("preserva a causa de encerramento de subprocesso dispensado", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

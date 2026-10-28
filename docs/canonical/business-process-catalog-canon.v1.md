@@ -1015,6 +1015,11 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
 
 - Pacote backend: `businessprocess.automation.v1`; executor: `process-execution-worker/src/v1`.
 - Entrada administrativa: `/api/business-processes/{processId}/products/{productId}/automation/v1`.
+- Desde 28/10/2026, esse retorno inclui `currentOwnerPortraitUrl`, reutilizando o retrato do
+  cadastro de agentes para o apelido exato do responsável apresentado. O quadro de execução
+  mostra a imagem pequena junto à atividade; a troca de responsável troca o retrato. Ausência
+  ou falha da imagem preserva nome, status e navegação. Responsáveis humanos, backend e
+  contextos encerrados não recebem um agente por aproximação. Retrato não comprova execução.
 - Entrada do conciliador: `/api/internal/business-processes/automation/v1/stage-executions/pending`.
 - Persistência: `product_process_run_v1` e `product_process_run_event_v1`; chaves de escopo e de
   entrada impedem duplicação. O lock do produto ordena comandos concorrentes e interage com STOP.

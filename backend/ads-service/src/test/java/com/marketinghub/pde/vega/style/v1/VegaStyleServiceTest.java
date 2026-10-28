@@ -16,6 +16,8 @@ import com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Comprova decisões contextuais, direitos, recuperação e isolamento sem provedor ou gasto. */
@@ -69,6 +71,8 @@ class VegaStyleServiceTest {
         .isEqualTo(VegaStyleService.NEXT_VERSION);
     assertThat(service.contract().path("supportedPrototypeVersions").toString())
         .contains(VERSION, VegaStyleService.NEXT_VERSION);
+    assertThat(service.contract().path("optionalReflectionPrototypeVersions"))
+        .isEqualTo(json.valueToTree(List.of(VegaStyleService.NEXT_VERSION)));
   }
 
   /** Simula cadastros e mantém objetos persistidos para exercitar os comandos reais do serviço. */
@@ -247,6 +251,107 @@ class VegaStyleServiceTest {
     assertThatThrownBy(
             () -> service.event(token, new Event("VALUE_MOMENT", "operation-event-0002"), false))
         .isInstanceOf(ResponseStatusException.class);
+  }
+
+  /** Conclui sete dias em identidades distintas sem exigir escrita ou fabricar sinais de uso. */
+  @ParameterizedTest
+  @ValueSource(longs = {91016L, 92016L})
+  void optionalReflectionPreservesSevenDaysAndExplicitRecords(long cycleId) {
+    String token = createSuccessor(cycleId);
+    service.start(token);
+    assertThat(service.workspace(token).path("reflectionRequiredForCompletion").asBoolean())
+        .isFalse();
+    service.fixture(token, "full-access");
+    for (int day = 1; day <= 7; day++) {
+      String missionId = "estilo-dia-" + day;
+      var input = new LinkedHashMap<>(answers("almoço", "Discrição"));
+      service.generate(
+          token,
+          missionId,
+          new Generate(VegaStyleService.NEXT_VERSION, "optional-operation-000" + day, input));
+      if (day % 2 == 0) input.put("reflection", "Meu registro sintético do dia " + day);
+      service.reflect(token, missionId, new Reflection(input));
+      service.complete(token, missionId);
+      service.complete(token, missionId);
+      assertThat(service.report(token).path("missions").path(missionId).path("answers"))
+          .isEqualTo(json.valueToTree(input));
+    }
+    service = new VegaStyleService(sessions, cycles, products, json);
+    assertThat(service.workspace(token).path("completedMissionIds").size()).isEqualTo(7);
+    assertThat(service.workspace(token).path("progressPercent").asInt()).isEqualTo(100);
+    assertThat(service.report(token).path("operations").size()).isEqualTo(7);
+    assertThat(service.report(token).path("events").size()).isEqualTo(1);
+    assertThat(service.report(token).path("events").has("EXPERIENCE_STARTED")).isTrue();
+    assertThat(service.material(token, "mapa-do-meu-estilo.txt"))
+        .contains("Meu registro sintético do dia 2", "Meu registro sintético do dia 6", "Minha orientação:", "alça da bolsa")
+        .doesNotContain("Meu registro sintético do dia 1", "Meu registro sintético do dia 7");
+  }
+
+  /** Comentário opcional não libera orientação ausente, bloqueada, escolhas divergentes ou dias pagos. */
+  @Test
+  void optionalReflectionKeepsFunctionalAndAccessGuards() {
+    String token = createSuccessor(91016L);
+    service.start(token);
+    assertThatThrownBy(() -> service.complete(token, "estilo-dia-1"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("orientação válida");
+    var input = new LinkedHashMap<>(answers("almoço", "Discrição"));
+    service.generate(
+        token,
+        "estilo-dia-1",
+        new Generate(VegaStyleService.NEXT_VERSION, "optional-guard-0001", input));
+    var changed = new LinkedHashMap<>(input);
+    changed.put("occasion", "videochamada");
+    assertThatThrownBy(() -> service.reflect(token, "estilo-dia-1", new Reflection(changed)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("escolhas mudaram");
+    input.put("reflection", "   ");
+    service.reflect(token, "estilo-dia-1", new Reflection(input));
+    service.complete(token, "estilo-dia-1");
+    assertThatThrownBy(() -> service.complete(token, "estilo-dia-2"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("acesso completo");
+    String blockedToken = createSuccessor(92016L);
+    service.start(blockedToken);
+    input.put("existingSelection", "quero comprar uma roupa nova");
+    service.generate(
+        blockedToken,
+        "estilo-dia-1",
+        new Generate(VegaStyleService.NEXT_VERSION, "optional-guard-0002", input));
+    assertThatThrownBy(() -> service.complete(blockedToken, "estilo-dia-1"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("orientação válida");
+    assertThatThrownBy(() -> service.reflect(blockedToken, "estilo-dia-1", new Reflection(input)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("orientação válida");
+  }
+
+  /** A v16 conserva sua exigência de comentário e não recebe a política da v17. */
+  @Test
+  void predecessorStillRequiresReflectionAfterValidGuidance() {
+    String token = create(91016L);
+    service.start(token);
+    assertThat(service.workspace(token).path("reflectionRequiredForCompletion").asBoolean())
+        .isTrue();
+    var input = new LinkedHashMap<>(answers("almoço", "Discrição"));
+    service.generate(token, "estilo-dia-1", request("legacy-optional-0001", input));
+    assertThatThrownBy(() -> service.reflect(token, "estilo-dia-1", new Reflection(input)))
+        .isInstanceOf(ResponseStatusException.class);
+    assertThatThrownBy(() -> service.complete(token, "estilo-dia-1"))
+        .isInstanceOf(ResponseStatusException.class);
+    input.put("reflection", "Registro histórico sintético");
+    service.reflect(token, "estilo-dia-1", new Reflection(input));
+    service.complete(token, "estilo-dia-1");
+    assertThat(service.workspace(token).path("completedMissionIds").size()).isEqualTo(1);
+  }
+
+  /** Seleciona a sucessora apenas no cadastro sintético da própria identidade. */
+  private String createSuccessor(long cycleId) {
+    cycles.findLockedById(cycleId).orElseThrow().setProductVersion(VegaStyleService.NEXT_VERSION);
+    return service
+        .create(new Session(cycleId, VegaStyleService.NEXT_VERSION))
+        .path("sessionToken")
+        .asText();
   }
 
   /** Cria uma identidade técnica independente, sem codificar IDs produtivos na implementação. */

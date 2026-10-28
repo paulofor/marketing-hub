@@ -1,0 +1,270 @@
+{
+  "observedAt": "2026-10-28T13:03:07.536688+00:00",
+  "scope": "LOCAL_SYNTHETIC_ONLY",
+  "backendDatabase": "MySQL 5.7",
+  "providerCalls": 0,
+  "humanEvidenceClaimed": false,
+  "commercialEvidenceClaimed": false,
+  "matrix": {
+    "candidate": {
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
+      "decision": "APPROVED",
+      "mode": "TECHNICAL",
+      "startedAt": "2026-10-28T12:52:42.202Z",
+      "finishedAt": "2026-10-28T12:52:58.159Z",
+      "checks": {
+        "sameVersion": true,
+        "desktopAndMobile": true,
+        "happyResultWithinTenMinutes": true,
+        "recoveryPreserved": true,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "responsiveLayout": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "sevenDayJourney": true
+      },
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": true,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": true,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": true,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": false,
+          "resumed": false
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": false,
+          "resumed": false
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": false,
+          "resumed": false
+        }
+      ]
+    },
+    "predecessor": {
+      "prototypeVersion": "musa-pde-entry-v16-modelagem-internacional",
+      "decision": "APPROVED",
+      "mode": "TECHNICAL",
+      "startedAt": "2026-10-28T12:54:51.356Z",
+      "finishedAt": "2026-10-28T12:55:10.165Z",
+      "checks": {
+        "sameVersion": true,
+        "desktopAndMobile": true,
+        "happyResultWithinTenMinutes": true,
+        "recoveryPreserved": true,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "responsiveLayout": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "sevenDayJourney": true
+      },
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": true,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": true,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": true,
+          "resumed": true
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": false,
+          "resumed": false
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": false,
+          "resumed": false
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "journeyComplete": false,
+          "recovered": false,
+          "resumed": false
+        }
+      ]
+    },
+    "materialDelta": {
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
+      "decision": "APPROVED",
+      "mode": "EXPERIENCE",
+      "startedAt": "2026-10-28T13:01:25.594Z",
+      "finishedAt": "2026-10-28T13:01:28.921Z",
+      "checks": {
+        "sameVersion": true,
+        "desktopAndMobile": true,
+        "happyResultWithinTenMinutes": true,
+        "recoveryPreserved": true,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "responsiveLayout": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "sevenDayJourney": true
+      },
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "journeyComplete": true,
+          "recovered": false,
+          "resumed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "backendUnitTests": 25,
+    "workerUnitTestsPassed": 26,
+    "workerOptionalFixtureNotApplicable": 1,
+    "browserCases": 12,
+    "publisherTests": 29,
+    "evidenceBuilderTests": 16,
+    "restartRecovery": true,
+    "syntheticIdentitiesIsolated": true,
+    "paidDaysRemainProtected": true,
+    "usageEventsNotInferred": true,
+    "optionalCommentsPreserved": true,
+    "currentGuidanceIncludedInMaterials": true,
+    "miraCatalogEntrySemanticallyPreserved": true
+  }
+}

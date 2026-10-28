@@ -91,6 +91,7 @@
       "executionMode": "DETERMINISTIC_CONTEXTUAL_RULES",
       "externalInference": false,
       "privateValidationUrlPath": "/experiences/musa-pde-entry-v17-continuidade-clara/agent-validation",
+      "completionRequirement": "Orientação contextual válida e ação explícita de salvar e concluir. reflection é opcional também na conclusão dos sete dias; comentário, aplicação, preferência, download ou compra não liberam o avanço. Dias 2 a 7 continuam protegidos pelo direito de acesso. O workspace informa reflectionRequiredForCompletion=false.",
       "commercialReadinessClaimed": false
     }
   ]

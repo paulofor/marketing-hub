@@ -127,6 +127,25 @@ class PdeReleaseContractTest(unittest.TestCase):
         self.assertTrue(MODULE.wait_private_capability(surface, contract, source, 10, fetch=fetch, sleep=lambda _: None))
         self.assertEqual(fetch.call_count, 2)
 
+    def test_contextual_completion_waits_for_optional_reflection_capability(self):
+        surface = MODULE.select_surface(self.inventory, "v10")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-style-v15-preparation-v3.json")
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        contract["privateExperience"]["reflectionOptional"] = True
+        version = contract["privateExperience"]["prototypeVersion"]
+        capability = {"prototypeVersion": version, "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+                      "providerCalls": 0, "trafficClass": "AGENT_VALIDATION", "sessionLimit": 18}
+        with self.assertRaisesRegex(ValueError, "não pode ser promovida"):
+            MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: capability)
+        ready = dict(capability, optionalReflectionPrototypeVersions=[version])
+        fetch = mock.Mock(side_effect=[capability, ready])
+        self.assertTrue(MODULE.wait_private_capability(surface, contract, source, 10, fetch=fetch, sleep=lambda _: None))
+        self.assertEqual(fetch.call_count, 2)
+        for invalid in (False, "true", None):
+            contract["privateExperience"]["reflectionOptional"] = invalid
+            with self.assertRaisesRegex(ValueError, "comentário opcional"):
+                MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: ready)
+
     def test_commercial_mira_has_its_own_runtime_identity(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         self.assertEqual(

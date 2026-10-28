@@ -64,7 +64,7 @@ public class VegaStyleService {
   /** Informa versões compatíveis sem criar sessão, custo, migração ou aceite de homologação. */
   @Transactional(readOnly = true)
   public JsonNode contract() {
-    return json.valueToTree(
+    ObjectNode response = json.valueToTree(
         Map.of(
             "prototypeVersion",
             VERSION,
@@ -86,6 +86,8 @@ public class VegaStyleService {
             "AGENT_VALIDATION",
             "internalMarker",
             "mh_internal_test"));
+    response.putArray("optionalReflectionPrototypeVersions").add(NEXT_VERSION);
+    return response;
   }
 
   /**
@@ -156,6 +158,7 @@ public class VegaStyleService {
         .put("experienceVersion", row.getPrototypeVersion());
     response.set("product", selectedProduct);
     response.put("experienceVersion", row.getPrototypeVersion());
+    response.put("reflectionRequiredForCompletion", reflectionRequired(row));
     response.put("email", "");
     response.put("accessSource", "AGENT_VALIDATION");
     response.put("subscriptionStatus", full ? "ACTIVE" : "TRIAL");
@@ -298,7 +301,7 @@ public class VegaStyleService {
     return operation.path("response");
   }
 
-  /** Salva a reflexão somente para a entrada que gerou a orientação aceita. */
+  /** Salva escolhas e comentário opcional da v17 somente para a orientação correspondente. */
   public void reflect(String secret, String missionId, Reflection request) {
     var row = session(secret);
     var data = data(row);
@@ -315,23 +318,32 @@ public class VegaStyleService {
               request.answers().get(field), operation.path("input").path(field).asText()),
           "As escolhas mudaram. Gere a orientação correspondente antes de concluir.");
     require(
-        request.answers().getOrDefault("reflection", "").trim().length() > 0,
+        !reflectionRequired(row) || !request.answers().getOrDefault("reflection", "").isBlank(),
         "Registre o que funcionou para você.");
     ((ObjectNode) mission).set("answers", json.valueToTree(request.answers()));
     row.setInputJson(write(data));
   }
 
-  /** Conclui a missão após reflexão própria e preserva a progressão da jornada no backend. */
+  /** Conclui explicitamente uma orientação válida, respeitando a política de comentário da versão. */
   public void complete(String secret, String missionId) {
     var row = session(secret);
     var data = data(row);
     authorizeMission(data, missionId);
     var mission = data.path("missions").path(missionId);
+    var operation = data.path("operations").path(mission.path("latestRequestId").asText());
     require(
-        !mission.path("answers").path("reflection").asText().isBlank(),
+        "COMPLETED".equals(operation.path("response").path("status").asText()),
+        "Conclua uma orientação válida antes de registrar seu dia.");
+    require(
+        !reflectionRequired(row) || !mission.path("answers").path("reflection").asText().isBlank(),
         "Registre sua escolha antes de concluir o dia.");
     ((ObjectNode) mission).put("completed", true);
     row.setInputJson(write(data));
+  }
+
+  /** Preserva a exigência histórica da v16 sem transformar comentário opcional da v17 em gate. */
+  private boolean reflectionRequired(VegaPrivateSession row) {
+    return !NEXT_VERSION.equals(row.getPrototypeVersion());
   }
 
   /** Registra ações explícitas com pré-condições e impede opinião sintética pelo navegador. */
@@ -357,7 +369,7 @@ public class VegaStyleService {
         Map.of("recorded", true, "checkoutMode", "SIMULATED_NO_CHARGE", "paymentEnabled", false));
   }
 
-  /** Disponibiliza materiais da própria jornada somente com direito sintético integral vigente. */
+  /** Exporta escolhas e orientações da própria jornada somente com direito integral vigente. */
   public String material(String secret, String name) {
     var row = session(secret);
     var data = data(row);
@@ -391,6 +403,20 @@ public class VegaStyleService {
                   .append("\nMeu registro: ")
                   .append(answers.path("reflection").asText())
                   .append("\n");
+              if (NEXT_VERSION.equals(row.getPrototypeVersion())) {
+                var response =
+                    data.path("operations")
+                        .path(entry.getValue().path("latestRequestId").asText())
+                        .path("response");
+                if ("COMPLETED".equals(response.path("status").asText())) {
+                  text.append("Minha orientação: ")
+                      .append(response.path("summary").asText())
+                      .append("\n");
+                  response
+                      .path("microActions")
+                      .forEach(action -> text.append("- ").append(action.asText()).append("\n"));
+                }
+              }
             });
     return text.toString();
   }

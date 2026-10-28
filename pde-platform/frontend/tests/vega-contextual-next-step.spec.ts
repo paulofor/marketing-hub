@@ -5,7 +5,7 @@ const version = "musa-pde-entry-v17-continuidade-clara";
 const base = "/api/pde/vega/style/v1";
 const headers = { "X-PDE-Internal-Token": "vega-local-internal-only" };
 
-test("continuidade e conclusão não exigem download nem feedback de uso", async ({
+test("continuidade e conclusão não exigem comentário, download nem feedback de uso", async ({
   page,
   request,
   context,
@@ -56,6 +56,10 @@ test("continuidade e conclusão não exigem download nem feedback de uso", async
   const primary = page.locator("#style-start button.style-button");
   await expect(primary).toHaveCount(1);
   await expect(primary).toHaveText("Salvar e concluir este dia");
+  await expect(primary).toBeEnabled();
+  await expect(
+    page.getByLabel("Quer anotar algo para depois? (opcional)"),
+  ).toHaveValue("");
   await expect(
     page.getByRole("complementary", {
       name: "O que a continuidade acrescenta",
@@ -80,9 +84,6 @@ test("continuidade e conclusão não exigem download nem feedback de uso", async
     fullPage: true,
   });
   await page
-    .getByLabel("O que funcionou para você?")
-    .fill("Quero experimentar a alça amanhã; ainda não vesti a combinação.");
-  await page
     .getByRole("button", { name: "Salvar e concluir este dia", exact: true })
     .click();
   await expect(
@@ -106,16 +107,107 @@ test("continuidade e conclusão não exigem download nem feedback de uso", async
   ]);
   expect(report.sideEffects.paymentEnabled).toBe(false);
   expect(report.trafficClass).toBe("AGENT_VALIDATION");
+  expect(report.missions["estilo-dia-1"].answers.reflection || "").toBe("");
   const workspace = await (
     await request.get(`${base}/access/workspace`, { headers: ownHeaders })
   ).json();
   expect(workspace.completedMissionIds).toEqual(["estilo-dia-1"]);
   expect(workspace.subscriptionStatus).toBe("TRIAL");
+  expect(workspace.reflectionRequiredForCompletion).toBe(false);
+  const locked = await request.post(
+    `${base}/access/missions/estilo-dia-2/complete`,
+    {
+      headers: ownHeaders,
+      data: {},
+    },
+  );
+  expect(locked.status()).toBe(409);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBeTruthy();
+});
+
+test("comentário voluntário permanece e orientação bloqueada não oferece conclusão", async ({
+  page,
+  request,
+  context,
+}) => {
+  const created = await request.post(`${base}/internal/sessions`, {
+    headers,
+    data: { cycleId: 91003, prototypeVersion: version },
+  });
+  expect(created.ok()).toBeTruthy();
+  const session = await created.json();
+  const ownHeaders = {
+    ...headers,
+    "X-Vega-Style-Session": session.sessionToken,
+  };
+  await context.addCookies([
+    {
+      name: "vega-style-session",
+      value: session.sessionToken,
+      domain: "127.0.0.1",
+      path: base,
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+  ]);
+  const missing = await request.post(
+    `${base}/access/missions/estilo-dia-1/complete`,
+    {
+      headers: ownHeaders,
+      data: {},
+    },
+  );
+  expect(missing.status()).toBe(409);
+  await page.goto(`/experiences/${version}/agent-validation`);
+  await page
+    .getByRole("button", {
+      name: "Experimentar com minhas roupas",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel("Onde você vai usar?").fill("almoço");
+  const selection = page.getByLabel("Quais roupas você já tem em mente?");
+  await selection.fill("quero comprar uma roupa nova");
+  await page.getByLabel("O que você quer sentir").selectOption("Discrição");
+  await page
+    .getByRole("button", { name: "Ver minha orientação", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Salvar e concluir este dia",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await selection.fill(
+    "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+  );
+  await page
+    .getByRole("button", { name: "Ver minha orientação", exact: true })
+    .click();
+  const note = "Quero repetir esta escolha amanhã; ainda não a usei.";
+  await page.getByLabel("Quer anotar algo para depois? (opcional)").fill(note);
+  await page
+    .getByRole("button", { name: "Salvar e concluir este dia", exact: true })
+    .click();
+  await expect(
+    page.getByText("Seu dia e suas escolhas ficaram salvos."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Dia 1$/ }).click();
+  await page.reload();
+  await page.getByRole("button", { name: /Dia 1$/ }).click();
+  await expect(
+    page.getByLabel("Quer anotar algo para depois? (opcional)"),
+  ).toHaveValue(note);
+  const report = await (
+    await request.get(`${base}/internal/report`, { headers: ownHeaders })
+  ).json();
+  expect(report.missions["estilo-dia-1"].answers.reflection).toBe(note);
+  expect(Object.keys(report.events)).toEqual(["EXPERIENCE_STARTED"]);
 });
 
 test("apresentação histórica da v15 permanece independente da revisão privada", async ({

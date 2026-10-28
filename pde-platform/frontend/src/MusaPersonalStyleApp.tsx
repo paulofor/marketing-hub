@@ -41,6 +41,7 @@ type Workspace = {
   subscriptionStatus: string;
   progressPercent: number;
   completedMissionIds: string[];
+  reflectionRequiredForCompletion?: boolean;
   started?: boolean;
   latestResults?: Record<string, { latestRequestId?: string }>;
   missionInteractions: {
@@ -298,7 +299,14 @@ export default function MusaPersonalStyleApp() {
     }
   }
   async function complete() {
-    if (!mission || !answers.reflection?.trim()) return;
+    if (
+      !mission ||
+      !guidance ||
+      guidance.status !== "COMPLETED" ||
+      (workspace?.reflectionRequiredForCompletion !== false &&
+        !answers.reflection?.trim())
+    )
+      return;
     setBusy(true);
     setError("");
     try {
@@ -627,22 +635,23 @@ export default function MusaPersonalStyleApp() {
                   )}
                 </article>
               )}
-              {workspace && guidance && (
+              {workspace && guidance?.status === "COMPLETED" && (
                 <div className="style-reflection">
                   {clarified && (
                     <div>
                       <span className="style-eyebrow">SEU PRÓXIMO PASSO</span>
                       <h3>Guarde uma escolha para amanhã.</h3>
                       <p>
-                        Escreva o que quer experimentar ou repetir. Não precisa
-                        ter vestido a combinação: uma intenção já vale como
-                        registro. Salvar conclui este dia; você pode voltar
-                        quando quiser.
+                        Sua orientação e suas escolhas já estão guardadas. Salve
+                        e conclua este dia quando quiser; você pode voltar
+                        depois. Se desejar, acrescente um comentário.
                       </p>
                     </div>
                   )}
                   <label>
-                    O que funcionou para você? O que quer manter ou mudar?
+                    {workspace.reflectionRequiredForCompletion === false
+                      ? "Quer anotar algo para depois? (opcional)"
+                      : "O que funcionou para você? O que quer manter ou mudar?"}
                     <textarea
                       rows={3}
                       maxLength={300}
@@ -655,7 +664,11 @@ export default function MusaPersonalStyleApp() {
                   </label>
                   <button
                     className="style-button"
-                    disabled={busy || !answers.reflection?.trim()}
+                    disabled={
+                      busy ||
+                      (workspace.reflectionRequiredForCompletion !== false &&
+                        !answers.reflection?.trim())
+                    }
                     onClick={complete}
                   >
                     Salvar e concluir este dia

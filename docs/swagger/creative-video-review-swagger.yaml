@@ -46,6 +46,10 @@ paths:
   /api/creatives/video-review/summary:
     get:
       summary: Contagens oficiais da fila no escopo consultado
+      description: >-
+        Usa projeções leves, preservando a mesma classificação da fila detalhada.
+        Aprovações, reprovações e histórico não carregam auditorias integrais.
+        Decisões atuais continuam exigindo as evidências independentes vigentes.
       parameters:
         - { $ref: "#/components/parameters/productId" }
         - { $ref: "#/components/parameters/experimentId" }

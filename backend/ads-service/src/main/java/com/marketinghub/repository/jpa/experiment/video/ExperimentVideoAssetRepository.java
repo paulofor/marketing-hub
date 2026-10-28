@@ -156,6 +156,22 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
   List<ExperimentVideoAsset> findByExperimentIdAndVisualSourceKey(
       Long experimentId, String visualSourceKey);
 
+  /** Projeta os mesmos vídeos da fila sem carregar o conteúdo de produções já encerradas. */
+  @Query(
+      """
+      select new com.marketinghub.creative.service.videoreview.ExperimentVideoSummarySnapshot(
+        v.id, e.status, v.reviewStatus, v.requiredForRelease)
+      from ExperimentVideoAsset v join v.experiment e left join e.product p
+      where v.status = com.marketinghub.experiment.video.ExperimentVideoStatus.READY
+        and (:productId is null or p.id = :productId)
+        and (:experimentId is null or e.id = :experimentId)
+        and ((v.assetUrl is not null and trim(v.assetUrl) <> '') or v.asset is not null)
+        and v.hasAudio = true
+      """)
+  List<com.marketinghub.creative.service.videoreview.ExperimentVideoSummarySnapshot>
+      findVideoSummarySnapshots(
+          @Param("productId") Long productId, @Param("experimentId") Long experimentId);
+
   /** Consulta peças prontas e com áudio no escopo oficial do produto e experimento. */
   @EntityGraph(
       attributePaths = {

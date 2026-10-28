@@ -149,6 +149,25 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   List<Creative> findAgentImprovementQueue(
       @Param("statuses") java.util.Set<CreativeImprovementStatus> statuses);
 
+  /** Lê a linhagem leve no escopo e marca os vídeos visíveis sem hidratar experimentos. */
+  @Query(
+      """
+      select new com.marketinghub.creative.service.videoreview.CreativeVideoSummarySnapshot(
+        c.id, e.id, e.status, source.id, c.status, c.agentReviewStatus,
+        c.primaryText, c.headline, c.description,
+        case when upper(coalesce(c.format, '')) = 'VIDEO'
+          and ((c.videoId is not null and trim(c.videoId) <> '')
+            or (c.videoUrl is not null and trim(c.videoUrl) <> '')) then true else false end)
+      from Creative c join c.experiment e join e.niche n
+        left join e.product p left join c.sourceCreative source
+      where (:productId is null or p.id = :productId)
+        and (:experimentId is null or e.id = :experimentId)
+      order by c.id desc
+      """)
+  List<com.marketinghub.creative.service.videoreview.CreativeVideoSummarySnapshot>
+      findVideoSummarySnapshots(
+          @Param("productId") Long productId, @Param("experimentId") Long experimentId);
+
   /** Consulta vídeos no escopo solicitado, preservando os filtros no banco. */
   @Query(
       """

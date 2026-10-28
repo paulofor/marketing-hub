@@ -20,6 +20,18 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Limita no SQL a tarefa mais recente, inclusive concluída, sem hidratar sua auditoria. */
+  @Query(
+      """
+      select new com.marketinghub.agentmonitor.AgentWorkTaskSnapshot(
+        task.id, task.status, task.title, task.description, task.taskKind,
+        task.gateStatus, task.gateCode, task.sourceReference, task.updatedAt)
+      from AgentTask task where task.assignedAgent.agentKey = :agentKey
+      order by task.createdAt desc, task.id desc
+      """)
+  List<com.marketinghub.agentmonitor.AgentWorkTaskSnapshot> findWorkMonitorSnapshots(
+      @Param("agentKey") String agentKey, Pageable pageable);
+
   /** Filtra a atividade no banco e inclui a tentativa atual mesmo quando ainda não foi aprovada. */
   @Query(
       """

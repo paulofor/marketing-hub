@@ -62,13 +62,14 @@ export function useVideoReviewScope(): VideoReviewScope {
 export function useVideoReviewSummary(scope: VideoReviewScope) {
   return useQuery({
     queryKey: ["creative-video-reviews", "summary", scope],
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
         await axios.get<VideoReviewSummary>(
           "/api/creatives/video-review/summary",
-          { params: scope },
+          { params: scope, signal },
         )
       ).data,
+    staleTime: 30000,
     refetchInterval: 30000,
   });
 }

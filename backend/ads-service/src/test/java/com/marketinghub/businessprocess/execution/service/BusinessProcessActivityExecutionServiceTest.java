@@ -689,13 +689,17 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(historical));
     when(coverages.findAllByAgentTaskIdIn(List.of(411L))).thenReturn(List.of());
     when(instances
-            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
-                "pde-communication-sales-journey", "product:3001@"))
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-communication-sales-journey", reference))
         .thenReturn(List.of());
 
     var history =
         executionService.productProcessExecutions(95L, 3001L, null, null, false, reference);
 
+    verify(experiments, never()).findByProductIdOrderByUpdatedAtDescIdDesc(3001L);
+    verify(instances, never())
+        .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+            anyString(), anyString());
     assertThat(history.completedActivityCount()).isZero();
     assertThat(history.remainingActivityCount()).isOne();
     assertThat(history.objectiveAchieved()).isFalse();
@@ -779,8 +783,8 @@ class BusinessProcessActivityExecutionServiceTest {
     when(tasks.findProcessExecutionListSnapshots(reference, "pde-communication-sales-journey"))
         .thenReturn(List.of());
     when(instances
-            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
-                "pde-communication-sales-journey", "product:3002@"))
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-communication-sales-journey", reference))
         .thenReturn(List.of(completed));
     when(readiness.supports(selected, creatives)).thenReturn(true);
     when(readiness.readiness(selected, creatives, product, reference))

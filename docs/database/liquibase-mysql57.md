@@ -302,3 +302,11 @@ no MySQL 5.7. Confere API real, concorrência, isolamento, histórico, fixação
 reinício e reaplicação. Executar `python3 infra/testing/product-big-idea/run-local.py` com
 `BIG_IDEA_COMPOSE_PROJECT` exclusivo e `BIG_IDEA_DB_HOST=sandbox-docker` na sandbox.
 Dados sintéticos; a topologia é removida no encerramento.
+
+## Índice da fila e resumos administrativos — 28/10/2026
+
+A fixture existente `validate-agent-task-actionable-audit-v2-mysql57.sh` também aplica e reaplica
+`2026-10-28-geralanding-queue-index.yaml`. Com 10 mil linhas sintéticas, exige o índice por
+etapa/status/horário no EXPLAIN, sem filesort e com no máximo 200 linhas estimadas na seleção.
+O mesmo job físico do PR executa essa regressão. O índice usa `ALGORITHM=INPLACE, LOCK=NONE`;
+a migração não modifica tarefas, resultados ou autorizações e possui rollback explícito.

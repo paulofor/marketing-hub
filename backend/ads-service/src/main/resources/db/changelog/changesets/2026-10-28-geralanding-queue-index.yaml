@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-28-geralanding-queue-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            indexExists:
+              tableName: gera_landing_stage_execution
+              indexName: idx_geralanding_stage_status_requested
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_landing_stage_execution
+                ADD INDEX idx_geralanding_stage_status_requested
+                  (stage_code, status, execution_requested_at),
+                ALGORITHM=INPLACE, LOCK=NONE;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_landing_stage_execution
+                DROP INDEX idx_geralanding_stage_status_requested,
+                ALGORITHM=INPLACE, LOCK=NONE;

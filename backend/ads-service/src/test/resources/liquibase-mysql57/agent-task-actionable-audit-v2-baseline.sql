@@ -12,6 +12,9 @@ CREATE TABLE agent_task (
 
 CREATE TABLE gera_landing_stage_execution (
   id_job VARBINARY(36) NOT NULL,
+  stage_code VARCHAR(100) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  execution_requested_at DATETIME(3) NOT NULL,
   prompt LONGTEXT NULL,
   PRIMARY KEY (id_job)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

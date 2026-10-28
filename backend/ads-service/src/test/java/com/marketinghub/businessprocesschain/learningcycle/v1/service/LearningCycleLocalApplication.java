@@ -104,6 +104,13 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleController.class
 })
 public class LearningCycleLocalApplication {
+  /** Isola o cadastro de retratos, coberto pelo teste de persistência do contrato de execução. */
+  @Bean
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait ownerPortrait() {
+    return mock(
+        com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait.class);
+  }
+
   static final Map<Long, Experiment> EXPERIMENTS = new ConcurrentHashMap<>();
   static final Map<Long, ExperimentRun> RUNS = new ConcurrentHashMap<>();
   static final Map<Long, HistoricalCampaignReceipt> CAMPAIGNS = new ConcurrentHashMap<>();

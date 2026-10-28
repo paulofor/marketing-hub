@@ -52,6 +52,12 @@ import org.springframework.web.server.ResponseStatusException;
   ProcessAutomationLocalApplication.FixtureController.class
 })
 public class ProcessAutomationLocalApplication {
+  /** Isola o cadastro de retratos, coberto pelo teste de persistência do contrato de execução. */
+  @Bean
+  ProcessRunOwnerPortrait ownerPortrait() {
+    return mock(ProcessRunOwnerPortrait.class);
+  }
+
   /** Isola a orientação financeira, coberta na fixture integrada de ciclos e orçamento reais. */
   @Bean
   ProcessRunGuidance guidance() {

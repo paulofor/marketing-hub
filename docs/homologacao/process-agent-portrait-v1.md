@@ -42,3 +42,19 @@ acompanhamento ou navegação. Impacto comercial não foi medido.
   falha HTTP da imagem, responsável Backend, navegação e ausência de mutações.
 - Prévia local conferida com o retrato real já cadastrado de Dédalo.
 - Comentários Java de responsabilidade, métodos alterados e novos revisados; Spotless aplicado.
+
+## Inicialização das aplicações de teste
+
+O primeiro CI detectou que as aplicações mínimas de ciclos e automação importavam o
+motor por uma lista explícita, sem o novo auxiliar de retratos. O log identificou
+`UnsatisfiedDependencyException` no parâmetro `ProcessRunOwnerPortrait`; a aplicação
+produtiva usa descoberta de componentes. As duas fixtures agora isolam a consulta de
+retratos, já coberta pela integração HTTP/JPA, sem acrescentar tabelas ao seu cenário.
+O teste existente de wiring passou a comparar as dependências do construtor real
+com os imports e beans das duas fixtures. A regressão falhou antes e passou depois
+da correção, detectando essa classe de omissão antes da rodada MySQL.
+
+A validação local de persistência dos ciclos com MySQL 5.7 passou após a correção,
+incluindo início da API, decisões por HTTP, retornos entre processos, contexto de ciclo,
+migração, reaplicação e idempotência. Foram usados exclusivamente o projeto Compose
+da sandbox e o host `sandbox-docker`, sem acesso produtivo. Topologia e volumes removidos.

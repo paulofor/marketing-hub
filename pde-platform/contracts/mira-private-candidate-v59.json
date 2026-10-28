@@ -808,7 +808,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleWorkResolverTest.java",
-      "sha256": "9662e48d0fe6aa7a822e25a805d11fd6bd3a6d1e7eebbc82fa31cf11857b7303",
+      "sha256": "773460e15cb126cbf0a3d7035084f87888eab73f59ba065488a406c565555e8a",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Regressão local da consulta compacta, bloqueios e recuperação; não renova parecer comercial."
     },

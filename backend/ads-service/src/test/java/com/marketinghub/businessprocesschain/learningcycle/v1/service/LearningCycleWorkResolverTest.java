@@ -197,8 +197,13 @@ class LearningCycleWorkResolverTest {
     assertThat(work.responsible()).isEqualTo("Dédalo");
     assertThat(work.url())
         .isEqualTo(
-            "/products/" + productId + "/value-chain-history/processes/70/activities?learningCycleId="
-                + cycleId + "&chainId=" + chainId + "#activity-deliverables");
+            "/products/"
+                + productId
+                + "/value-chain-history/processes/70/activities?learningCycleId="
+                + cycleId
+                + "&chainId="
+                + chainId
+                + "#activity-deliverables");
     verify(executions).productProcessExecutions(67L, productId, cycleId, chainId, false);
     verify(executions).productProcessExecutions(70L, productId, cycleId, chainId, false);
     verifyNoMoreInteractions(executions);

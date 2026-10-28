@@ -12,6 +12,8 @@ on:
       - "scripts/test-payments-ssh-workflow.mjs"
       - "scripts/verify-public-artifacts.py"
       - "scripts/test-verify-public-artifacts.py"
+      - "scripts/check-clubemusa-tls.py"
+      - "scripts/test-clubemusa-tls.py"
   pull_request:
     paths:
       - "lead-portal-payments-service/**"
@@ -22,8 +24,17 @@ on:
       - "scripts/test-payments-ssh-workflow.mjs"
       - "scripts/verify-public-artifacts.py"
       - "scripts/test-verify-public-artifacts.py"
+      - "scripts/check-clubemusa-tls.py"
+      - "scripts/test-clubemusa-tls.py"
+  schedule:
+    - cron: '41 5,17 * * *'
   workflow_dispatch:
     inputs:
+      operation:
+        description: "Publicar serviço ou somente renovar/verificar TLS de Vega"
+        type: choice
+        default: deploy
+        options: [deploy, renew_tls]
       recovery_sha:
         description: "Revisão esperada pelo reconciliador automático; vazio preserva a execução normal"
         required: false
@@ -83,6 +94,7 @@ on:
 
 jobs:
   test:
+    if: github.event_name != 'schedule' && inputs.operation != 'renew_tls'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -111,6 +123,9 @@ jobs:
           node --test src/test/js/agenda-cheia-post-purchase.test.cjs
           node ../scripts/test-payments-ssh-workflow.mjs
           python3 ../scripts/test-verify-public-artifacts.py
+          bash -n scripts/renew-clubemusa-tls.sh
+          shellcheck scripts/renew-clubemusa-tls.sh
+          python3 ../scripts/test-clubemusa-tls.py
           bash ../scripts/test-configure-vps-ssh-fallback.sh
           mvn -B test
 
@@ -167,8 +182,60 @@ jobs:
         id: image_tag
         run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
+  renew-tls:
+    name: Renew and verify Clube MUSA TLS
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.operation == 'renew_tls'))
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-vps-163-245-200-7
+      queue: max
+      cancel-in-progress: false
+    env:
+      DEPLOY_HOST: 163.245.200.7
+      DEPLOY_USER: root
+      RECOVERY_SHA: ${{ inputs.recovery_sha || '' }}
+      RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha || '' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate coordinated recovery revision
+        run: python3 scripts/validate-publisher-recovery.py
+      - name: Validate TLS renewal locally
+        run: |
+          bash -n lead-portal-payments-service/scripts/renew-clubemusa-tls.sh
+          shellcheck lead-portal-payments-service/scripts/renew-clubemusa-tls.sh
+          python3 scripts/test-clubemusa-tls.py
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY_PRIMARY: ${{ secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_1: ${{ secrets.PDE_PLATFORM_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_CHAVE }}
+          VPS_SSH_KEY_FALLBACK_3: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_4: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: bash scripts/configure-vps-ssh-fallback.sh "$DEPLOY_HOST" "$DEPLOY_USER" "$GITHUB_ENV"
+      - name: Renew existing certificate and reload only TLS
+        run: |
+          # shellcheck disable=SC2086
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s \
+            < lead-portal-payments-service/scripts/renew-clubemusa-tls.sh
+      - name: Verify trusted TLS from outside the host
+        run: |
+          for attempt in 1 2 3; do
+            if python3 scripts/check-clubemusa-tls.py; then exit 0; fi
+            echo "Verificação HTTPS pendente; tentativa ${attempt}/3."
+            sleep 2
+          done
+          exit 1
+
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.operation != 'renew_tls'
     needs:
       - test
       - docker

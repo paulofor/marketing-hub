@@ -11297,3 +11297,18 @@ orçamento ou execução é herdada. Regressão: `ModelingHistoricalResearchTest
 percorre o contexto real da tarefa para Vega e outra identidade, além de fontes
 futuras, produtos diferentes, adoção própria e linhagem inválida. Evidências em
 `docs/homologacao/vega-successor-research-memory-2026-10-27.md`.
+
+## LOOP-VEGA-TLS-SEM-RENOVACAO — 28/10/2026
+
+- **Evidência:** watchdog #40620478013 / issue #5727 detectou certificado de
+  `clubemusa.com.br` vencido às 01:46:56 UTC; disco e certificado servido concordam.
+  Não havia timer/cron da linhagem; logs recentes renovavam somente outro domínio.
+- **Causa:** emissão era uma opção de deploy, não uma rotina de manutenção.
+  A publicação #40556092887 terminou sem solicitá-la. Build verde não prova validade TLS.
+- **Correção compartilhada:** pipeline existente renova a linhagem e todos seus nomes
+  duas vezes ao dia, com reload restrito; operação manual não recria aplicações.
+- **Prevenção:** shell real com CA local, falhas simuladas de desafio/CA/cópia/reload,
+  isolamento de outro produto e confiança/identidade/validade HTTPS verificadas.
+- **Limite:** não emitir domínios novos, trocar DNS, desativar verificação TLS ou
+  aceitar saúde da aplicação como substituto da confiança pública.
+- **Registro:** `docs/homologacao/chatgpt-ads-3783-tls-vega.md`.

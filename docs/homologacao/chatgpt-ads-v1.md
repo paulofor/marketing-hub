@@ -27,7 +27,7 @@ ativada. A homologação simulada não comprova habilitação da conta nem resul
   de conta, resposta adulterada, replay de callback e credencial ausente.
 - MySQL 5.7: migração aplicada e reaplicada sem duplicação; 13 cenários do serviço com SQL real.
   Topologia exclusiva removida com volumes após a execução.
-- Frontend: 37 testes sem falha (canal, criação e detalhes de experimentos), incluindo retorno ao contexto correto.
+- Frontend: 39 testes sem falha (canal, criação e detalhes de experimentos), incluindo retorno ao contexto correto.
 - Interface: desktop, iPhone 15 Pro e Pixel 7 em Chromium, usando APIs sintéticas e capturas
   segregadas em `artifacts/chatgpt-ads-3783/browser`. As ações sem aceite permanecem bloqueadas.
 - Provisionamento: `bash -n`, ShellCheck e fixture SSH local aprovados; segredo segue por stdin,
@@ -48,3 +48,5 @@ Regressões usam outro produto, outro ID de conta, cenário antes válido e falh
 Métricas futuras: publicação duplicada deve permanecer zero; medir tempo até primeira exposição,
 custo por compra conciliada e contribuição na moeda correta. Os testes comprovam controles, não
 melhoria de vendas. Reverter a adoção do canal se conta, orçamento, material ou prova divergirem.
+
+Regressão de contrato: o cadastro pode devolver ID como texto ou número. A navegação normaliza o identificador, preserva o experimento selecionado e exclui outros contextos. A suíte do canal integra o workflow de frontend.

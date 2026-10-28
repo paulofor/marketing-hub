@@ -215,7 +215,8 @@ export default function ChatgptAdsPage() {
                   ?.filter(
                     (e) =>
                       e.platform === "CHATGPT_ADS" &&
-                      (!selectedExperiment || e.id === selectedExperiment),
+                      (!selectedExperiment ||
+                        Number(e.id) === selectedExperiment),
                   )
                   .map((e) => (
                     <option key={e.id} value={e.id}>

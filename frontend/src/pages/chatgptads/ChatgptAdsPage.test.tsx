@@ -42,7 +42,10 @@ const campaign = {
   metrics: {},
   updatedAt: "2030-01-01T00:00:00Z",
 };
-function mount(path = "/chatgpt-ads") {
+function mount(
+  path = "/chatgpt-ads",
+  experimentIdentity: string | number = "901",
+) {
   vi.mocked(axios.get).mockImplementation(async (url) => ({
     data: String(url).includes("chatgpt-ads")
       ? {
@@ -53,7 +56,22 @@ function mount(path = "/chatgpt-ads") {
           },
           campaigns: [campaign],
         }
-      : [],
+      : String(url) === "/api/experiments"
+        ? [
+            {
+              id: experimentIdentity,
+              name: "Experimento correto",
+              status: "PLANNED",
+              platform: "CHATGPT_ADS",
+            },
+            {
+              id: "995",
+              name: "Outro contexto",
+              status: "PLANNED",
+              platform: "CHATGPT_ADS",
+            },
+          ]
+        : [],
   }));
   const client = new QueryClient({
     defaultOptions: {
@@ -84,6 +102,18 @@ describe("ChatGPT Ads", () => {
     expect(axios.post).not.toHaveBeenCalled();
     client.clear();
   });
+  it.each(["901", 901])(
+    "abre o experimento %s usando o formato de ID recebido do cadastro",
+    async (id) => {
+      const client = mount("/chatgpt-ads?experimentId=901", id);
+      await screen.findByRole("option", { name: "Experimento correto · #901" });
+      expect(
+        screen.queryByRole("option", { name: /Outro contexto/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Experimento *")).toHaveValue("901");
+      client.clear();
+    },
+  );
   it("mostra pendências e nunca transforma ausência de medição em vendas", async () => {
     const c = mount();
     await screen.findByText("Piloto sintético");

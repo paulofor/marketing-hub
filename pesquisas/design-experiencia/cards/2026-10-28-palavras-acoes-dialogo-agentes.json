@@ -1,0 +1,18 @@
+{
+  "cardKey": "declaracoes-versus-acoes-em-dialogos-com-agentes",
+  "collection": "neuromarketing",
+  "title": "Em diálogo com agentes, declarações podem receber peso excessivo na previsão de decisões",
+  "finding": "Em jogos repetidos com 42 pessoas (1.260 rodadas), oito LLMs preditores valorizaram excessivamente declarações de decisão. O histórico de ações alcançou AUC ~0,80; adicionar diálogo não trouxe ganho detectável. Em declarações descumpridas, a precisão caiu de 0,65 para 0,17 ao incluir diálogo.",
+  "mechanism": "Uma intenção expressa verbalmente pode ser interpretada como compromisso firme, embora decisões futuras dependam de comportamento anterior e do contexto da interação. Essa é interpretação compatível com um jogo experimental, não uma lei de consumo.",
+  "commercialApplication": "Íris e Psique podem testar pesquisa de leads com eventos consentidos: distinguir intenção declarada, clique, checkout e pagamento reconciliado. Têmis deve impedir que promessas ou falas sejam tratadas como vendas comprovadas.",
+  "evidenceStrength": "Estudo experimental de predição offline em jogo de baixo risco (42 universitários chineses, 1.260 rodadas, 8 modelos). Evidência para erro de previsão no jogo, sem demonstração de compras ou conversão comercial.",
+  "publishedOn": "2026-10-28",
+  "validUntil": "2026-12-12",
+  "experimentHypothesis": "Em leads com consentimento, um estimador que separa falas de ações verificadas reduzirá falsos positivos de intenção de compra frente a um estimador baseado apenas no diálogo; medir calibração, Brier, checkout e pagamento real.",
+  "risks": "Perfilamento não consentido, violação de privacidade/LGPD, tratamento discriminatório, automação de concessões injustas, redução da autonomia e classificação equivocada de consumidores.",
+  "limits": "Não foi realizado teste com consumidores nem vendas. Jogos de curta duração, estudantes chineses e agentes GPT-4o com personas confundidas com política de ação; preditores offline sem raciocínio explícito. Sem causalidade nem extrapolação automática.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-28-palavras-acoes-dialogo-agentes.md",
+  "sourceTitle": "Words or Deeds? — evidência revisada (Zhang et al., 2026)",
+  "sourceSha256": "70df3921a265b8ccf488298fbcba7d245ee4e027f48ead9bd9ce29a66594c928"
+}

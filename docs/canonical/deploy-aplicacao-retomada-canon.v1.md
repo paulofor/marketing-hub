@@ -45,6 +45,22 @@ Os logs da autoridade certificadora são persistidos no volume do MCP, sem versi
 
 Matriz e causas: [renovação TLS MCP](../homologacao/mcp-tls-renovacao-2026-10-20.md).
 
+### TLS de Clube MUSA/Vega — prevenção de 28/10/2026
+
+O pipeline de pagamentos mantém a renovação da linhagem `clubemusa.com.br`
+duas vezes ao dia e pela operação `renew_tls` na main. Essa operação não publica
+imagens nem recria pagamentos ou proxy; reutiliza volumes e instalador existentes,
+restringe a cópia à linhagem conferida e recarrega Nginx. Compartilha a fila do VPS
+`163.245.200.7`, sem cancelar publicações. Os escopos do coordenador que cobrem
+esse workflow também cobrem sua agenda; nenhuma pausa anterior é revogada.
+
+Validar nomes, desafio HTTP, montagem efetiva, validade mínima de 14 dias e TLS
+externo confiável. Erros de emissão, cópia, reload ou confiança bloqueiam o resultado.
+Não remover hosts históricos do monitor para ocultar certificado vencido. A emissão
+manual opcional durante deploy não substitui manutenção periódica. Logs Certbot
+permanecem no volume existente, sem expor chaves.
+Matriz e causa: [TLS observado na entrega #3783](../homologacao/chatgpt-ads-3783-tls-vega.md).
+
 ### Intervenções autorizadas e versão em homologação
 
 Antes de uma intervenção autorizada em um serviço publicado, usar o coordenador

@@ -50,3 +50,9 @@ custo por compra conciliada e contribuição na moeda correta. Os testes comprov
 melhoria de vendas. Reverter a adoção do canal se conta, orçamento, material ou prova divergirem.
 
 Regressão de contrato: o cadastro pode devolver ID como texto ou número. A navegação normaliza o identificador, preserva o experimento selecionado e exclui outros contextos. A suíte do canal integra o workflow de frontend.
+
+O CI completo encontrou uma asserção histórica que limitava o catálogo a dois canais, apesar
+da coluna já ser extensível. A falha foi reproduzida localmente; a regressão agora preserva os
+canais existentes e ChatGPT Ads, verificando também que todos cabem no VARCHAR(40). O banco
+e os canais históricos permanecem protegidos sem impedir extensões compatíveis. Os dois jobs
+que falharam apontaram exclusivamente essa asserção; o ajuste foi validado antes do novo push.

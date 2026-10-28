@@ -7,6 +7,22 @@
 
 ## Estilo pessoal como direção vigente — decisão de 25/10/2026
 
+### Comentário opcional no percurso aprovado — correção de 28/10/2026
+
+Na candidata `musa-pde-entry-v17-continuidade-clara`, a opcionalidade de
+`reflection` aprovada por Atena vale também para concluir os sete dias. O backend
+declara essa política no workspace; a interface não acrescenta uma quarta entrada
+obrigatória. Orientação válida e ação explícita continuam necessárias. Não inferir
+aplicação, preferência, satisfação ou compra da conclusão. Os direitos dos dias
+pagos permanecem protegidos; a v16 preserva sua exigência histórica.
+
+O harness de Psique deve executar dias com e sem comentário, preservando o texto
+real quando fornecido e a ausência quando omitido. Sempre preencher um comentário
+sintético não comprova a opcionalidade. Ver
+[evidência e matriz preventiva](../homologacao/vega-comentario-opcional-v1.md).
+
+### Direção do produto
+
 Vega passa de **presença elegante** para **estilo pessoal com as próprias roupas**.
 A Big Idea e o cadastro do produto são a origem compartilhada para novos contextos.
 Elegância é uma preferência possível; não impor feminilidade, formalidade ou minimalismo.

@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Vega — conclusão da jornada contextual privada
+  version: 1.0.0
+  description: >-
+    Complementa docs/backend/vega-style-v1.md. Sessão e versão próprias, tráfego
+    AGENT_VALIDATION e nenhuma autorização comercial. A v17 permite concluir
+    sem comentário; a v16 preserva comentário obrigatório.
+paths:
+  /api/pde/vega/style/v1/access/workspace:
+    get:
+      summary: Recuperar a jornada e sua política de conclusão
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Dados funcionais da própria sessão
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [experienceVersion, reflectionRequiredForCompletion, completedMissionIds]
+                properties:
+                  experienceVersion:
+                    type: string
+                  reflectionRequiredForCompletion:
+                    type: boolean
+                    description: false na v17; true na v16 histórica
+                  completedMissionIds:
+                    type: array
+                    items:
+                      type: string
+  /api/pde/vega/style/v1/access/missions/{missionId}/interactions:
+    post:
+      summary: Preservar escolhas e comentário voluntário da orientação válida
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/missionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              properties:
+                answers:
+                  type: object
+                  additionalProperties: false
+                  required: [occasion, existingSelection, stylePreference]
+                  properties:
+                    occasion:
+                      type: string
+                      maxLength: 160
+                    existingSelection:
+                      type: string
+                      maxLength: 300
+                    stylePreference:
+                      type: string
+                    reflection:
+                      type: string
+                      maxLength: 300
+                      description: Opcional na v17, inclusive vazio; obrigatório na v16
+      responses:
+        '204':
+          description: Escolhas preservadas sem alterar a orientação
+        '409':
+          description: Orientação ausente/bloqueada, escolhas divergentes ou comentário obrigatório ausente
+  /api/pde/vega/style/v1/access/missions/{missionId}/complete:
+    post:
+      summary: Concluir explicitamente uma orientação válida sem inferir uso ou compra
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/missionId'
+      responses:
+        '204':
+          description: Conclusão idempotente, sem geração nem eventos de uso inferidos
+        '409':
+          description: Orientação ausente/bloqueada, direito insuficiente ou pré-condição da versão não cumprida
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: vega-style-session
+  parameters:
+    missionId:
+      name: missionId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^estilo-dia-[1-7]$'

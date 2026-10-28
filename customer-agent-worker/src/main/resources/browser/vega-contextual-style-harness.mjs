@@ -8,6 +8,7 @@ const [inputPath, outputPath, evidenceDirectory] = process.argv.slice(2);
 const input = JSON.parse(await readFile(inputPath, 'utf8'));
 const base = '/api/pde/vega/style/v1';
 const version = input.prototypeVersion;
+const optionalReflection = version === 'musa-pde-entry-v17-continuidade-clara';
 assert.ok(['musa-pde-entry-v16-modelagem-internacional', 'musa-pde-entry-v17-continuidade-clara'].includes(version));
 const internal = process.env.PDE_INTERNAL_API_TOKEN;
 assert.ok(internal && input.cycleId);
@@ -122,7 +123,9 @@ try {
           if (day > 1) {
             await page.getByRole('button', { name: 'Ver minha orientação', exact: true }).click(); await card.waitFor();
           }
-          await page.getByLabel('O que funcionou para você?').fill(`Registro sintético do dia ${day}; quero repetir esta escolha.`);
+          // A candidata precisa funcionar também sem escrita; preencher sempre ocultava esse gate.
+          const reflection = optionalReflection && day % 2 === 1 ? '' : `Registro sintético do dia ${day}; quero repetir esta escolha.`;
+          await page.getByLabel(optionalReflection ? 'Quer anotar algo para depois? (opcional)' : 'O que funcionou para você?').fill(reflection);
           const complete = page.waitForResponse(r => r.url().endsWith(`/estilo-dia-${day}/complete`) && r.ok());
           await page.getByRole('button', { name: 'Salvar e concluir este dia', exact: true }).click(); await complete;
           await page.getByRole('status').filter({ hasText: 'ficaram salvos' }).waitFor();
@@ -130,12 +133,25 @@ try {
         assert.equal((await api('/access/workspace', undefined, session.sessionToken)).progressPercent, 100);
         for (const name of ['mapa-do-meu-estilo', 'antes-de-sair', 'minhas-formulas']) {
           const material = await fetch(new URL(`${base}/materials/${name}.txt`, input.sourceUrl), { headers: { 'X-Vega-Style-Session': session.sessionToken } });
-          assert.equal(material.status, 200); assert.match(await material.text(), /Registro sintético do dia 7/);
+          assert.equal(material.status, 200);
+          const text = await material.text();
+          assert.match(text, optionalReflection ? /Registro sintético do dia 6/ : /Registro sintético do dia 7/);
+          if (optionalReflection) {
+            assert.doesNotMatch(text, /Registro sintético do dia [1357]/);
+            assert.match(text, /Minha orientação:/);
+            assert.match(text, /alça da bolsa/);
+          }
         }
         await page.getByRole('button', { name: /Dia 1$/, exact: false }).first().click();
         await card.waitFor();
         assert.match(await card.innerText(), /alça da bolsa/);
-        assert.equal(Object.keys((await api('/internal/report', undefined, session.sessionToken)).operations).length, 7);
+        const journeyReport = await api('/internal/report', undefined, session.sessionToken);
+        assert.equal(Object.keys(journeyReport.operations).length, 7);
+        if (optionalReflection) {
+          assert.equal((await api('/access/workspace', undefined, session.sessionToken)).reflectionRequiredForCompletion, false);
+          assert.equal(journeyReport.missions['estilo-dia-1'].answers.reflection, '');
+          assert.equal(journeyReport.missions['estilo-dia-7'].answers.reflection, '');
+        }
         journeyComplete = true;
         // A primeira orientação já foi capturada; a prova adicional dos sete dias permanece no relatório.
       }

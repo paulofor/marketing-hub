@@ -249,6 +249,10 @@ def validate_contextual_dependency(surface: dict[str, Any], contract: dict[str, 
         "providerCalls": 0,
         "commercialLaunchClaimed": False,
     }
+    if "reflectionOptional" in private:
+        if version != "musa-pde-entry-v17-continuidade-clara" or private["reflectionOptional"] is not True:
+            raise ValueError("Política de comentário opcional incompatível com a candidata")
+        expected["reflectionOptional"] = True
     if surface["deployTarget"] != "v10" or private != expected:
         raise ValueError("Dependência contextual diverge da identidade ou dos limites privados")
     if contract.get("deploymentValidation", {}).get("mode") != "COMMERCIAL_CANDIDATE_READ_ONLY":
@@ -356,7 +360,8 @@ def wait_private_capability(
                     raise ValueError("Dependência contextual não comprova a capacidade esperada")
                 if capability.get("trafficClass") != "AGENT_VALIDATION" or capability.get("sessionLimit") != 18:
                     raise ValueError("Dependência contextual não preserva a segregação e o limite técnico")
-                if expected["prototypeVersion"] in capability.get("supportedPrototypeVersions", [capability.get("prototypeVersion")]):
+                reflection_ready = not expected.get("reflectionOptional") or expected["prototypeVersion"] in capability.get("optionalReflectionPrototypeVersions", [])
+                if reflection_ready and expected["prototypeVersion"] in capability.get("supportedPrototypeVersions", [capability.get("prototypeVersion")]):
                     return True
             remaining = deadline - clock()
             if remaining <= 0:

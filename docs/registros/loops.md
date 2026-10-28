@@ -1,3 +1,18 @@
+## LOOP-VEGA-COMENTARIO-OPCIONAL-BLOQUEIA-JORNADA — 28/10/2026
+
+- **Evidência:** Dédalo #848 bloqueou o ciclo #18/experimento #111. Atena #846
+  preservou o comentário opcional, mas interface e backend exigiam texto para
+  concluir cada dia. A homologação #844 e os testes sempre forneciam esse texto.
+- **Causa:** opcionalidade descrita somente na entrada e não verificada no percurso
+  completo; a fixture eliminava a ausência que deveria testar.
+- **Correção:** o backend declara a regra da versão no workspace e permite concluir
+  orientação válida sem comentário na v17. A interface consome essa regra. A v16
+  mantém o contrato histórico; dias pagos e resultados bloqueados conservam gates.
+- **Prevenção:** sete dias alternando comentário e omissão no harness executável,
+  regressão com outra identidade sintética, preservação de notas voluntárias,
+  eventos não fabricados, recuperação e recusa sem orientação válida. Matriz e
+  resultados em `docs/homologacao/vega-comentario-opcional-v1.md`.
+
 ## LOOP-CICLO-EXIGE-VIDEO-DISPENSADO — 21/10/2026
 
 - A mesma limitação aparecia na preparação comercial Opala: `creative` só aceitava

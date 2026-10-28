@@ -46,7 +46,9 @@ public class LearningCycleWorkResolver {
     return resolvePreparation(cycle, true);
   }
 
-  /** Preserva o recorte histórico e inclui comunicação somente quando a continuação a exige. */
+  /**
+   * Consulta o estado compacto do contexto, sem auditorias, e inclui comunicação quando exigida.
+   */
   private Resolution resolvePreparation(LearningSalesCycle cycle, boolean includeCommunication) {
     if (!"OPEN".equals(cycle.getStatus())
         || !Set.of("PLANNING", "ADJUSTMENT", "VIDEO_BRIEF", "VALIDATION")
@@ -87,7 +89,11 @@ public class LearningCycleWorkResolver {
       var process = item.getProcessDefinition();
       var state =
           executions.productProcessExecutions(
-              process.getId(), cycle.getProductId(), cycle.getId(), cycle.getChainDefinitionId());
+              process.getId(),
+              cycle.getProductId(),
+              cycle.getId(),
+              cycle.getChainDefinitionId(),
+              false);
       if (state.objectiveAchieved()) continue;
       var activity =
           state.activities().stream()

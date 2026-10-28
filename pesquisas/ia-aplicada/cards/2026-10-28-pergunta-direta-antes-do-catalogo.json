@@ -1,0 +1,18 @@
+{
+  "cardKey": "pergunta-direta-antes-do-catalogo",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Pergunta direta antes do catálogo na decisão de compra",
+  "finding": "Em pesquisa de setembro de 2026 com 1.300 adultos usuários recentes de IA na Malásia, 42% preferiram caixa de busca em sites e apps, contra 17% que preferiram menus; 78% desejavam experiências que facilitassem decisões como ferramentas de IA. Resultados autorrelatados.",
+  "mechanism": "Hipótese: permitir que a pessoa formule sua necessidade em linguagem natural e receba alternativas explicadas pode reduzir esforço percebido na seleção, sem substituir conferência e decisão humana.",
+  "commercialApplication": "Na landing de uma oferta digital com alternativas, comparar entrada por pergunta e respostas verificáveis versus catálogo/menu, preservando preço e checkout; medir receita incremental e custos.",
+  "evidenceStrength": "Pesquisa transversal autorrelatada (n=1.300 usuários recentes de IA, Malásia); evidência descritiva de preferência, sem teste causal, pagamentos verificados ou validação no Brasil.",
+  "publishedOn": "2026-10-28",
+  "validUntil": "2026-12-12",
+  "experimentHypothesis": "Para o mesmo tráfego, preço e oferta, a entrada por pergunta elevará pagamentos confirmados por visitante sem elevar custo de atendimento, devoluções ou reclamações.",
+  "risks": "Alucinações da IA, recomendações interessadas ou enviesadas, exposição de dados, respostas imprecisas e fricção adicional para usuários que preferem navegação convencional.",
+  "limits": "Amostra selecionada de usuários de IA na Malásia; metodologia e microdados não auditados; preferências e decisões autorrelatadas não estabelecem causalidade nem disposição a pagar; nenhuma venda incremental foi observada no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-28-entermind-decisao-por-pergunta.md",
+  "sourceTitle": "Busca direta e apoio à decisão — Entermind (27/10/2026)",
+  "sourceSha256": "842d158206cd7fe84c2bc9aa93b7fe7fe9fe7cce885562e8ee0cb29d4923fe7e"
+}

@@ -23,6 +23,12 @@ cambial implícita ou herança da autorização de outro canal.
 - Imagem é o formato inicial; vídeo pode permanecer no destino. Não prometer vídeo no anúncio.
 - Insights são dados do provedor, com horário e moeda. Compras confirmadas continuam no relatório canônico do experimento, sem atribuí-las automaticamente ao ChatGPT Ads.
   Eventos de teste são isolados; clique no checkout não é compra. Atribuição não é causalidade.
+- A fonte canônica de aquisição alimenta cockpit, custo e aprendizado com o gasto deste
+  canal uma única vez. Valor em moeda diferente de BRL mantém contribuição desconhecida
+  até conciliação cambial; não reutilizar métricas da Meta nem presumir custo zero.
+- Depois da pausa, Hermes consulta o gasto final em um intervalo que cubra a confirmação
+  da parada. A fotografia registra horário, cobertura e motivo da parada; reativação
+  invalida essa marca final sem apagar o gasto acumulado.
 
 ## Fontes oficiais consultadas
 

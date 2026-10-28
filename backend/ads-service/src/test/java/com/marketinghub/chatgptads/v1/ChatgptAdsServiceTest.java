@@ -478,4 +478,41 @@ class ChatgptAdsServiceTest {
     assertEquals("Outra experiência", service.overview(null).campaigns().getFirst().productName());
     assertEquals("READY", repository.get(id).status());
   }
+
+  /** Após a pausa, espera cobertura da última hora antes de declarar a conciliação final. */
+  @Test
+  void reconcilesFinalSpendAfterPauseWithoutReactivatingOrRepeatingForever() throws Exception {
+    long id = published();
+    service.pause(id);
+    reply("PAUSE", campaignResponse("paused"));
+    assertNull(service.pending());
+    var remote =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            mapper.readTree(repository.get(id).remote());
+    remote.put("stopCompletedAt", Instant.now().minusSeconds(3600).toString());
+    repository.state(id, "PAUSED", remote.toString(), Instant.now().minusSeconds(120));
+    reply(
+        "METRICS",
+        Map.of(
+            "data",
+            List.of(
+                Map.of("campaign_id", "camp_test", "spend", 4.5, "impressions", 100, "clicks", 3)),
+            "has_more",
+            false));
+    var metrics = mapper.readTree(repository.get(id).metrics());
+    assertTrue(metrics.hasNonNull("finalSyncedAt"));
+    assertEquals("PAUSED", repository.get(id).status());
+    assertNull(service.pending());
+    assertTrue(repository.monitored().isEmpty());
+    var canonical =
+        new com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsReader(
+                repository, mapper)
+            .read(experiment);
+    assertEquals(new BigDecimal("4.5"), canonical.spendBrl());
+    assertNotNull(canonical.finalSyncedAt());
+    assertEquals("OPERATOR_PAUSE", canonical.stopReason());
+    service.activate(id);
+    assertFalse(mapper.readTree(repository.get(id).metrics()).hasNonNull("finalSyncedAt"));
+    assertFalse(mapper.readTree(repository.get(id).remote()).hasNonNull("stopCompletedAt"));
+  }
 }

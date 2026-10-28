@@ -494,6 +494,13 @@ export default function ChatgptAdsPage() {
                     — significa ainda não informado. Ativa no provedor não
                     comprova exposição ou venda.
                   </small>
+                  {c.draft.currency !== "BRL" && (
+                    <p className="mt-2">
+                      A contribuição em reais aguarda a conciliação do câmbio. O
+                      gasto permanece na moeda da conta, sem conversão
+                      presumida.
+                    </p>
+                  )}
                   <p className="mt-2">
                     <Link to={`/experiments/${c.experimentId}`}>
                       Abrir homologação, compras e resultado do experimento

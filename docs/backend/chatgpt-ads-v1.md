@@ -54,6 +54,11 @@ Impressões, cliques e gasto são preservados com moeda e horário; ausência é
 Parâmetros UTM e `oppref` vão ao destino. Compras, entrega, reembolso e contribuição continuam no
 relatório canônico do experimento. Não se cria compra a partir de clique nem de um insight externo.
 Não somar BRL a USD sem câmbio rastreável; esta integração não faz conversão automática.
+O leitor canônico de aquisição projeta o gasto em BRL no cockpit, custo e aprendizado,
+uma única vez, separado das métricas históricas da Meta. Em outra moeda, a tela preserva
+o valor nativo e informa a pendência de câmbio; totais e contribuição ficam desconhecidos.
+Após a pausa, Hermes coleta uma fotografia cujo intervalo cubra a confirmação da parada.
+Isso preserva gasto e motivo para o fechamento, sem chamar clique de compra.
 
 Pixel e Conversions API não estão implementados nesta v1. Assim, não há otimização por compra na
 OpenAI nem promessa de atribuição individual de vendas ao canal. A integração usa campanha de

@@ -21,18 +21,20 @@ ativada. A homologação simulada não comprova habilitação da conta nem resul
 
 ## Resultado local — 28/10/2026
 
-- Backend: 202 testes sem falha nas suítes do canal (21), arquitetura (92), serviço de
-  experimentos (54), controller de runs (27) e compatibilidade Quartzo (8).
+- Backend: 198 testes sem falha na rodada final de serviço do canal, aquisição, custo,
+  cockpit, aprendizado, arquitetura e experimentos. Preservados os testes aprovados de
+  autenticação (4), controller de runs (27), compatibilidade Quartzo (8) e catálogo (2).
 - Hermes: 42 testes sem falha, incluindo HTTP local, assinaturas de ida e volta, isolamento
   de conta, resposta adulterada, replay de callback e credencial ausente.
-- MySQL 5.7: migração aplicada e reaplicada sem duplicação; 13 cenários do serviço com SQL real.
+- MySQL 5.7: migração aplicada e reaplicada sem duplicação; 18 cenários do serviço com SQL real.
   Topologia exclusiva removida com volumes após a execução.
-- Frontend: 39 testes sem falha (canal, criação e detalhes de experimentos), incluindo retorno ao contexto correto.
+- Frontend: suíte completa com 1.019 testes em 205 arquivos aprovada localmente, incluindo
+  canal, criação, edição e detalhes de experimentos e retorno ao contexto correto.
 - Interface: desktop, iPhone 15 Pro e Pixel 7 em Chromium, usando APIs sintéticas e capturas
   segregadas em `artifacts/chatgpt-ads-3783/browser`. As ações sem aceite permanecem bloqueadas.
 - Provisionamento: `bash -n`, ShellCheck e fixture SSH local aprovados; segredo segue por stdin,
   sem aparecer em argumentos/logs, e configuração ausente preserva a existente.
-- Tipos TypeScript conferidos. Bundle local concluído com a configuração de homologação existente, sem sourcemaps, e tipos verificados separadamente. O build completo com sourcemaps excedeu a memória da sandbox, inclusive na engine local; o CI verificará essa etapa de empacotamento.
+- Tipos TypeScript conferidos. Bundle local concluído com a configuração de homologação existente, sem sourcemaps, e tipos verificados separadamente. O build completo com sourcemaps excedeu a memória da sandbox, inclusive na engine local; o CI já aprovou essa etapa de empacotamento.
 
 Nenhuma conta de anunciante foi conectada ou campanha real usada como teste. O segredo interno
 foi cadastrado de forma protegida para os workflows; a chave Advertiser API permanece ausente.
@@ -56,3 +58,14 @@ da coluna já ser extensível. A falha foi reproduzida localmente; a regressão 
 canais existentes e ChatGPT Ads, verificando também que todos cabem no VARCHAR(40). O banco
 e os canais históricos permanecem protegidos sem impedir extensões compatíveis. Os dois jobs
 que falharam apontaram exclusivamente essa asserção; o ajuste foi validado antes do novo push.
+
+A revisão do relatório encontrou outra lacuna concreta: cockpit, consolidação financeira
+e aprendizado ainda liam apenas a fonte Meta. O leitor canônico passou a projetar a fonte
+exata do experimento, sem duplicar gasto. Regressões cobrem dois produtos, moeda diferente,
+métricas incompletas e os canais anteriores. A coleta final após pausa inclui cobertura e
+causa da parada; uma nova ativação invalida a fotografia final anterior.
+
+A suíte integral da interface revelou a mesma hipótese de catálogo fechado na edição:
+duas asserções contavam opções em vez de verificar a proibição do canal direto. A falha
+foi reproduzida localmente e corrigida, preservando a opção histórica desabilitada. Essa
+suíte agora também está no workflow rápido de frontend, junto da criação e do novo canal.

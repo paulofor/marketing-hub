@@ -215,10 +215,10 @@ public class ChatgptAdsRepository {
         id);
   }
 
-  /** Lista campanhas que precisam de sincronização ou trava temporal. */
+  /** Inclui campanhas pausadas até a fotografia final, sem consultar JSON específico do banco. */
   public List<Campaign> monitored() {
     return jdbc.query(
-        "SELECT * FROM chatgpt_ads_campaign WHERE status IN ('ACTIVE','AWAITING_REVIEW','READY','ACTIVATING','PAUSING') ORDER BY id LIMIT 100",
+        "SELECT * FROM chatgpt_ads_campaign WHERE status IN ('ACTIVE','AWAITING_REVIEW','READY','ACTIVATING','PAUSING') OR (status='PAUSED' AND (metrics_json IS NULL OR metrics_json NOT LIKE '%\"finalSyncedAt\":%')) ORDER BY id LIMIT 100",
         this::campaign);
   }
 

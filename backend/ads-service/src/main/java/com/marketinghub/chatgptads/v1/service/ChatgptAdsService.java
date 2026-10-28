@@ -160,17 +160,36 @@ public class ChatgptAdsService {
         json(c.remote()).path("reviewApproved").asBoolean(),
         "A revisão do provedor precisa estar aprovada.");
     require(!draft(c).startsAt().isAfter(Instant.now()), "A janela autorizada ainda não começou.");
-    state(c, "ACTIVATING", json(c.remote()));
+    var activating = (ObjectNode) json(c.remote());
+    activating.remove(
+        List.of("stopRequestedAt", "stopCompletedAt", "stopReason", "stopExplanation"));
+    var previousMetrics = (ObjectNode) json(c.metrics());
+    if (previousMetrics.has("finalSyncedAt")) {
+      previousMetrics.remove("finalSyncedAt");
+      repository.metrics(c.id(), previousMetrics.toString(), Instant.now());
+    }
+    state(c, "ACTIVATING", activating);
     queue(id, "VERIFY_CAMPAIGN", "GET", "/campaigns/" + remoteId(c, "campaignId"), Map.of());
     return view(repository.get(id));
   }
 
-  /** Pausa somente esta campanha, preservando histórico e autorização. */
+  /** Solicita pausa e preserva sua causa para a conciliação final do gasto. */
   public CampaignView pause(long id) {
+    return pause(id, "OPERATOR_PAUSE", "Pausa solicitada explicitamente pelo operador.");
+  }
+
+  /** Registra a causa exata da parada sem apagar uma solicitação já em andamento. */
+  private CampaignView pause(long id, String reason, String explanation) {
     repository.lockQueue();
     var c = repository.lock(id);
     require(json(c.remote()).hasNonNull("campaignId"), "Ainda não há campanha externa.");
-    state(c, "PAUSING", json(c.remote()));
+    var remote = (ObjectNode) json(c.remote());
+    if (!remote.hasNonNull("stopRequestedAt")) {
+      remote.put("stopRequestedAt", Instant.now().toString());
+      remote.put("stopReason", reason);
+      remote.put("stopExplanation", explanation);
+    }
+    state(c, "PAUSING", remote);
     queue(id, "PAUSE", "POST", "/campaigns/" + remoteId(c, "campaignId") + "/pause", Map.of());
     return view(repository.get(id));
   }
@@ -181,6 +200,10 @@ public class ChatgptAdsService {
     var c = repository.lock(id);
     require(!repository.busy(id), "Há uma operação em andamento.");
     require(json(c.remote()).hasNonNull("adId"), "A publicação ainda não terminou.");
+    if (Set.of("ACTIVE", "PAUSED").contains(c.status())) {
+      metrics(c);
+      return view(c);
+    }
     queue(
         id,
         "INSPECT",
@@ -209,9 +232,21 @@ public class ChatgptAdsService {
     repository.lockQueue();
     for (var c : repository.monitored()) {
       if (repository.busy(c.id())) continue;
-      if (!draft(c).endsAt().isAfter(Instant.now())
-          || (!blockers(c).isEmpty() && c.status().equals("ACTIVE"))) {
-        pause(c.id());
+      if (c.status().equals("PAUSED")) {
+        var remote = json(c.remote());
+        if (remote.hasNonNull("stopCompletedAt")
+            && !json(c.metrics()).hasNonNull("finalSyncedAt")
+            && !Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600)
+                .isBefore(Instant.parse(remote.path("stopCompletedAt").asText()))
+            && c.updatedAt().isBefore(Instant.now().minusSeconds(90))) metrics(c);
+        continue;
+      }
+      if (!draft(c).endsAt().isAfter(Instant.now())) {
+        pause(c.id(), "AUTHORIZED_WINDOW_ENDED", "A janela de mídia autorizada terminou.");
+        continue;
+      }
+      if (!blockers(c).isEmpty() && c.status().equals("ACTIVE")) {
+        pause(c.id(), "COMMERCIAL_GATE_CHANGED", String.join(" ", blockers(c)));
         continue;
       }
       if (c.updatedAt().isBefore(Instant.now().minusSeconds(90))) {
@@ -381,7 +416,9 @@ public class ChatgptAdsService {
           remote.set("servingIssues", response.path("serving_issues"));
           state(
               c,
-              c.status().equals("ACTIVE") ? "ACTIVE" : approved ? "READY" : "AWAITING_REVIEW",
+              Set.of("ACTIVE", "PAUSED").contains(c.status())
+                  ? c.status()
+                  : approved ? "READY" : "AWAITING_REVIEW",
               remote);
         }
         case "VERIFY_CAMPAIGN" -> {
@@ -456,6 +493,7 @@ public class ChatgptAdsService {
         }
         case "PAUSE" -> {
           require("paused".equals(response.path("status").asText()), "Pausa não confirmada.");
+          remote.put("stopCompletedAt", Instant.now().toString());
           boolean unresolved = repository.lastFailedKind(c.id()) != null;
           if (!unresolved) remote.remove("errorCode");
           state(c, unresolved ? "BLOCKED" : "PAUSED", remote);
@@ -470,6 +508,8 @@ public class ChatgptAdsService {
           ObjectNode m = mapper.createObjectNode();
           m.put("observedAt", Instant.now().toString());
           m.put("currency", d.currency());
+          long coverageEnd = json(op.request()).path("coverageEnd").asLong();
+          m.put("coverageEnd", coverageEnd);
           if (rows.size() == 1) {
             var row = rows.get(0);
             require(
@@ -478,17 +518,33 @@ public class ChatgptAdsService {
             for (String field : List.of("impressions", "clicks", "spend"))
               if (row.hasNonNull(field)) {
                 require(
-                    row.get(field).isNumber() && row.get(field).decimalValue().signum() >= 0,
+                    row.get(field).isNumber()
+                        && row.get(field).decimalValue().signum() >= 0
+                        && (field.equals("spend")
+                            || (row.get(field).isIntegralNumber()
+                                && row.get(field).canConvertToLong())),
                     "Métrica inválida.");
                 m.set(field, row.get(field));
               }
           }
+          if (c.status().equals("PAUSED")
+              && remote.hasNonNull("stopCompletedAt")
+              && !Instant.ofEpochSecond(coverageEnd)
+                  .isBefore(Instant.parse(remote.path("stopCompletedAt").asText()))
+              && m.hasNonNull("spend")
+              && m.hasNonNull("impressions")
+              && m.hasNonNull("clicks")) m.put("finalSyncedAt", m.path("observedAt").asText());
           repository.metrics(c.id(), m.toString(), Instant.now());
           if (c.status().equals("RECOVERING")) state(c, "PAUSED", remote);
           if (c.status().equals("ACTIVE") && m.path("impressions").asLong() > 0)
             lifecycle(c, "EXPOSED", Instant.now());
-          if (m.has("spend") && m.path("spend").decimalValue().compareTo(d.totalBudget()) >= 0)
-            pause(c.id());
+          if (c.status().equals("ACTIVE")
+              && m.has("spend")
+              && m.path("spend").decimalValue().compareTo(d.totalBudget()) >= 0)
+            pause(
+                c.id(),
+                "MEDIA_SPEND_LIMIT_REACHED",
+                "O gasto informado atingiu o teto total autorizado para ChatGPT Ads.");
         }
         default -> throw new ResponseStatusException(HttpStatus.CONFLICT, "Operação desconhecida.");
       }
@@ -574,7 +630,7 @@ public class ChatgptAdsService {
             });
   }
 
-  /** Prepara consulta agregada em horas completas, preservando a moeda da conta. */
+  /** Persiste o intervalo agregado consultado para comprovar cobertura inclusive após a pausa. */
   private void metrics(Campaign c) {
     long end = Instant.now().getEpochSecond() / 3600 * 3600;
     long start = draft(c).startsAt().getEpochSecond() / 3600 * 3600;
@@ -583,15 +639,17 @@ public class ChatgptAdsService {
         java.net.URLEncoder.encode(
             tree(Map.of("type", "unix_range", "start", start, "end", end)).toString(),
             java.nio.charset.StandardCharsets.UTF_8);
-    queue(
-        c.id(),
-        "METRICS",
-        "GET",
+    String path =
         "/campaigns/"
             + remoteId(c, "campaignId")
             + "/insights?time_granularity=none&aggregation_level=campaign&fields[]=campaign.impressions&fields[]=campaign.clicks&fields[]=campaign.spend&time_ranges[]="
-            + range,
-        Map.of());
+            + range;
+    repository.enqueue(
+        c.id(),
+        "METRICS",
+        tree(Map.of("method", "GET", "path", path, "body", Map.of(), "coverageEnd", end))
+            .toString(),
+        Instant.now());
   }
 
   /**

@@ -1,7 +1,9 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsReader;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.repository.jpa.experiment.pipeline.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -22,6 +24,7 @@ public class ExperimentCostReconciliationService {
       geraSalesPagePublicationStageAuditRepository;
   private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
   private final CommercialPlanImageStudioJobRepository imageStudioJobRepository;
+  private final ExperimentAcquisitionMetricsReader acquisition;
 
   /** Inicializa o serviço com fontes auditáveis de custo técnico e financeiro. */
   public ExperimentCostReconciliationService(
@@ -30,7 +33,8 @@ public class ExperimentCostReconciliationService {
       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
       GeraSalesPagePublicationStageAuditRepository geraSalesPagePublicationStageAuditRepository,
       ExperimentVideoAssetRepository experimentVideoAssetRepository,
-      CommercialPlanImageStudioJobRepository imageStudioJobRepository) {
+      CommercialPlanImageStudioJobRepository imageStudioJobRepository,
+      ExperimentAcquisitionMetricsReader acquisition) {
     this.currencyConversionService = currencyConversionService;
     this.pipelineJobRepository = pipelineJobRepository;
     this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
@@ -38,21 +42,29 @@ public class ExperimentCostReconciliationService {
         geraSalesPagePublicationStageAuditRepository;
     this.experimentVideoAssetRepository = experimentVideoAssetRepository;
     this.imageStudioJobRepository = imageStudioJobRepository;
+    this.acquisition = acquisition;
   }
 
-  /** Preenche no DTO o total rastreável e a diferença frente ao legado persistido. */
+  /** Soma o gasto do canal uma única vez e mantém custo desconhecido sem contribuição presumida. */
   public ExperimentDto enrich(Experiment experiment, ExperimentDto dto) {
     if (experiment == null || dto == null || experiment.getId() == null) {
       return dto;
     }
+    BigDecimal mediaBrl =
+        experiment.getCampaignMetric() == null ? null : experiment.getCampaignMetric().getSpend();
+    if (experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS) {
+      var snapshot = acquisition.read(experiment);
+      if (snapshot.spendBrl() == null || snapshot.lastError() != null) {
+        dto.setAuditableTotalCost(null);
+        dto.setLegacyTotalCost(round(money(experiment.getTotalCost())));
+        dto.setUnreconciledLegacyCost(null);
+        dto.setTotalCost(null);
+        return dto;
+      }
+      mediaBrl = snapshot.spendBrl();
+    }
     BigDecimal baseBrl =
-        money(experiment.getCost())
-            .add(money(experiment.getExpense()))
-            .add(
-                money(
-                    experiment.getCampaignMetric() != null
-                        ? experiment.getCampaignMetric().getSpend()
-                        : null));
+        money(experiment.getCost()).add(money(experiment.getExpense())).add(money(mediaBrl));
     BigDecimal technicalCostBrl =
         currencyConversionService.usdToBrl(totalTechnicalCostUsd(experiment.getId()));
     BigDecimal auditableTotal = round(baseBrl.add(money(technicalCostBrl)));

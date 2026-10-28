@@ -5,7 +5,10 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsReader;
+import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsSnapshot;
 import com.marketinghub.finance.CurrencyConversionProperties;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.repository.jpa.experiment.pipeline.ExperimentPipelineGenerationJobRepository;
@@ -33,6 +36,7 @@ class ExperimentCostReconciliationServiceTest {
   @Mock private ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
   @Mock private CommercialPlanImageStudioJobRepository imageStudioJobRepository;
+  @Mock private ExperimentAcquisitionMetricsReader acquisition;
 
   private ExperimentCostReconciliationService service;
 
@@ -46,7 +50,8 @@ class ExperimentCostReconciliationServiceTest {
             geraLandingStageExecutionRepository,
             geraSalesPagePublicationStageAuditRepository,
             experimentVideoAssetRepository,
-            imageStudioJobRepository);
+            imageStudioJobRepository,
+            acquisition);
   }
 
   /** Garante que o custo de vídeo auditável entra no total exibido para o experimento 69. */
@@ -98,5 +103,45 @@ class ExperimentCostReconciliationServiceTest {
 
     assertThat(result.getAuditableTotalCost()).isEqualByComparingTo("67.89");
     assertThat(result.getTotalCost()).isEqualByComparingTo("67.89");
+  }
+
+  /** Usa gasto do canal exato uma vez e não apresenta contribuição quando falta conciliação. */
+  @Test
+  void reconcilesChatgptSpendAndKeepsUnknownCostsUnknown() {
+    var experiment =
+        Experiment.builder()
+            .id(194L)
+            .platform(ExperimentPlatform.CHATGPT_ADS)
+            .cost(new BigDecimal("2.00"))
+            .expense(new BigDecimal("1.00"))
+            .campaignMetric(ExperimentCampaignMetric.builder().spend(new BigDecimal("999")).build())
+            .build();
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.CHATGPT_ADS,
+                new BigDecimal("4.50"),
+                java.time.Instant.now(),
+                null,
+                null,
+                100L,
+                3L,
+                true));
+    assertThat(service.enrich(experiment, new ExperimentDto()).getAuditableTotalCost())
+        .isEqualByComparingTo("7.50");
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.CHATGPT_ADS,
+                null,
+                java.time.Instant.now(),
+                null,
+                "Câmbio pendente",
+                100L,
+                3L,
+                true));
+    var result = service.enrich(experiment, new ExperimentDto());
+    assertThat(result.getAuditableTotalCost()).isNull();
+    assertThat(result.getTotalCost()).isNull();
   }
 }

@@ -68,9 +68,10 @@ describe("persistedProductUnitPrice", () => {
 });
 
 describe("contrato de planejamento do experimento", () => {
-  it("oferece somente Instagram Ads para novas divulgações", () => {
+  it("oferece os dois canais pagos implementados sem abordagem direta", () => {
     expect(newExperimentAcquisitionOptions).toEqual([
       { value: "FACEBOOK", label: "Instagram Ads (via Meta Ads)" },
+      { value: "CHATGPT_ADS", label: "ChatGPT Ads" },
     ]);
   });
 

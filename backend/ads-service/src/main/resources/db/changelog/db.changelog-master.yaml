@@ -2247,3 +2247,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-25-product-discovery-audience-context.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-27-chatgpt-ads-v1.yaml
+      relativeToChangelogFile: true

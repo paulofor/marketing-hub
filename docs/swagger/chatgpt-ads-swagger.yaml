@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: ChatGPT Ads v1
+  version: 1.0.0
+  description: Preparação e operação pelo Hermes; orçamento exclusivo e homologação obrigatórios. Nenhuma chave da OpenAI transita pelo navegador.
+paths:
+  /api/chatgpt-ads/v1:
+    get:
+      summary: Listar conexão, campanhas, bloqueios, ações e métricas persistidas
+      parameters:
+        - in: query
+          name: experimentId
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          {
+            description: Conexão segura e campanhas; métricas ausentes permanecem desconhecidas,
+          }
+  /api/chatgpt-ads/v1/connection/check:
+    post:
+      summary: Enfileirar conferência da conta no Hermes
+      responses:
+        "200": { description: Conferência enfileirada }
+        "503": { description: Conexão interna ainda não configurada }
+  /api/chatgpt-ads/v1/campaigns:
+    post:
+      summary: Salvar preparação sem gasto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Draft" }
+      responses:
+        "200": { description: Preparação persistida }
+        "409": { description: Contrato inválido ou experimento já preparado }
+  /api/chatgpt-ads/v1/campaigns/{id}:
+    parameters: [{ $ref: "#/components/parameters/id" }]
+    put:
+      summary: Editar somente rascunho; invalida autorização anterior
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Draft" }
+      responses:
+        "200": { description: Rascunho atualizado }
+  /api/chatgpt-ads/v1/campaigns/{id}/{action}:
+    parameters:
+      - { $ref: "#/components/parameters/id" }
+      - in: path
+        name: action
+        required: true
+        schema:
+          {
+            type: string,
+            enum: [authorize, publish, activate, pause, sync, retry],
+          }
+    post:
+      summary: Registrar decisão ou operar campanha pelos gates atuais
+      description: authorize exige fingerprint, decidedBy e confirmation igual a AUTORIZO CHATGPT ADS. Demais ações não recebem corpo. publish cria pausada; activate revalida conta, orçamento e homologação. retry preserva a operação e chave idempotente.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fingerprint: { type: string }
+                decidedBy: { type: string }
+                confirmation: { type: string }
+      responses:
+        "200": { description: Projeção persistida da campanha }
+        "409":
+          { description: Gate, identidade, autorização ou estado incompatível }
+  /api/internal/chatgpt-ads/v1/delivery/stage-executions/pending:
+    post:
+      summary: Reservar próxima operação, recuperando a mesma chave após timeout
+      security: [{ workerSignature: [] }]
+      responses:
+        "200":
+          {
+            description: id,
+            campaignId,
+            lease,
+            kind,
+            method,
+            path,
+            body,
+            idempotencyKey e accountId,
+          }
+        "204": { description: Sem operação }
+        "401": { description: Executor não autenticado }
+  /api/internal/chatgpt-ads/v1/delivery/stage-executions/{id}/result:
+    parameters: [{ $ref: "#/components/parameters/id" }]
+    post:
+      summary: Registrar recibo sanitizado e decidir próxima operação no backend
+      security: [{ workerSignature: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lease, httpStatus, response]
+              properties:
+                lease: { type: string }
+                httpStatus: { type: integer }
+                response: { type: object }
+                errorCode: { type: string, nullable: true }
+      responses:
+        "200": { description: Recibo aplicado ou repetição reconhecida }
+        "401": { description: Executor não autenticado }
+        "409": { description: Reserva incompatível }
+components:
+  securitySchemes:
+    workerSignature:
+      {
+        type: apiKey,
+        in: header,
+        name: X-Mkt-Ads-Signature,
+        description: "HMAC-SHA256 de POST + rota + X-Mkt-Ads-Time + X-Mkt-Ads-Nonce + SHA256 do corpo, separados por nova linha; prazo 300s e nonce único. Respostas retornam X-Mkt-Ads-Response com HMAC de RESPONSE, status, nonce do request e SHA256 do corpo, separados por nova linha.",
+      }
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer, format: int64 }
+  schemas:
+    Draft:
+      type: object
+      required:
+        [
+          experimentId,
+          creativeId,
+          name,
+          title,
+          body,
+          imageUrl,
+          targetUrl,
+          contextHints,
+          currency,
+          totalBudget,
+          maxCpc,
+          startsAt,
+          endsAt,
+        ]
+      properties:
+        experimentId: { type: integer, format: int64 }
+        creativeId: { type: integer, format: int64 }
+        name: { type: string, minLength: 3, maxLength: 200 }
+        title: { type: string, minLength: 3, maxLength: 50 }
+        body: { type: string, minLength: 1, maxLength: 100 }
+        imageUrl: { type: string, format: uri }
+        targetUrl: { type: string, format: uri }
+        contextHints:
+          {
+            type: array,
+            minItems: 1,
+            maxItems: 10,
+            items: { type: string, maxLength: 300 },
+          }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+        totalBudget: { type: number, minimum: 1, maximum: 1000000 }
+        maxCpc: { type: number, minimum: 0.01 }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }

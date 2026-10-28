@@ -12,7 +12,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE: ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE:-/run/secrets/harness_library_internal_signing_key}
-      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/pde/
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/pde/,optional:configtree:/run/secrets/chatgpt-ads/
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       MOIS_SALES_PAGE_BACKFILL_ENABLED: ${MOIS_SALES_PAGE_BACKFILL_ENABLED:-false}
       LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:?LEAD_PORTAL_PAYMENTS_AUTH_TOKEN is required}
@@ -37,6 +37,7 @@ services:
       - "80:8000"
       - "8000:8000"
     volumes:
+      - ${CHATGPT_ADS_SECRETS_HOST_DIR:-/root/infra/chatgpt-ads}:/run/secrets/chatgpt-ads:ro
       - ./volumes/backend/uploads:/app/uploads
       - ./volumes/process-execution/token:/run/secrets/process-execution-token:ro
       - ./volumes/backend/logs:/app/logs

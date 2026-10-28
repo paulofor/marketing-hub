@@ -373,7 +373,9 @@ public class BackendExperimentRunService {
             distributionGateGroup(experiment),
             experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE
                 ? "Canal direto consentido, origem, amostra e ausência de gasto ainda não foram comprovados neste run."
-                : "Status efetivo da distribuição Meta ainda não foi comprovado neste run.",
+                : experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS
+                    ? "Conta, criativo, teto, janela e medição ChatGPT Ads ainda não foram comprovados neste run."
+                    : "Status efetivo da distribuição Meta ainda não foi comprovado neste run.",
             evaluatedAt),
         pendingGate(
             run,
@@ -426,15 +428,19 @@ public class BackendExperimentRunService {
     return isSalesExperiment(experiment) ? SALES_JOURNEY_GATE : FORM_GATE;
   }
 
-  /** Exige evidência do canal efetivamente escolhido, sem forçar contrato Meta no canal direto. */
+  /** Exige evidência própria de Meta, ChatGPT Ads ou canal direto histórico. */
   private String distributionGateCode(Experiment experiment) {
+    if (experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS)
+      return "CHATGPT_ADS_READINESS_CONFIRMED";
     return experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE
         ? DIRECT_DISTRIBUTION_GATE
         : META_DISTRIBUTION_GATE;
   }
 
-  /** Separa distribuição direta da publicação Meta na persistência do relatório de preflight. */
+  /** Separa os canais de distribuição para não atribuir gates Meta ao ChatGPT Ads. */
   private ExperimentRunGateGroup distributionGateGroup(Experiment experiment) {
+    if (experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS)
+      return ExperimentRunGateGroup.DISTRIBUTION;
     return experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE
         ? ExperimentRunGateGroup.DISTRIBUTION
         : ExperimentRunGateGroup.META_PUBLICATION;

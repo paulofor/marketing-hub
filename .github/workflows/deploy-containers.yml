@@ -600,6 +600,11 @@ jobs:
             | ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
                 'set -euo pipefail; install -m 700 -d /root/infra/harness-library/secrets; temporary=/root/infra/harness-library/secrets/internal_signing_key.tmp; umask 077; dd of="${temporary}" status=none; test "$(wc -c < "${temporary}")" -ge 32; mv "${temporary}" /root/infra/harness-library/secrets/internal_signing_key; chmod 600 /root/infra/harness-library/secrets/internal_signing_key'
 
+      - name: Provision optional ChatGPT Ads worker token
+        env:
+          CHATGPT_ADS_WORKER_TOKEN: ${{ secrets.CHATGPT_ADS_WORKER_TOKEN }}
+        run: bash scripts/provision-chatgpt-ads-secrets.sh backend "${VPS_USER}@${APP_VPS_IP}" /root/infra/chatgpt-ads
+
       - name: Copy deployment descriptors
         env:
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes

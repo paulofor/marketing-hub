@@ -833,6 +833,7 @@ export default function EditExperimentPage() {
                           Histórico — abordagem individual indisponível
                         </option>
                       )}
+                      <option value="CHATGPT_ADS">ChatGPT Ads</option>
                       <option value="FACEBOOK">
                         Instagram Ads (via Meta Ads)
                       </option>
@@ -840,7 +841,7 @@ export default function EditExperimentPage() {
                     <div className="form-text">
                       {platformValue === "DIRECT_ONE_TO_ONE"
                         ? "Este canal permanece visível apenas para preservar o histórico. Selecione Instagram Ads para uma nova divulgação."
-                        : "Toda divulgação comercial usa mídia paga no Instagram; público, campanha, teto e janela precisam ser aprovados antes da execução."}
+                        : "Instagram e ChatGPT Ads possuem limites e homologação próprios; o cadastro não autoriza gasto."}
                     </div>
                   </div>
                   {isLowTicketProduct && (

@@ -77,6 +77,7 @@ export function persistedProductUnitPrice(
 
 export const newExperimentAcquisitionOptions = [
   { value: "FACEBOOK" as const, label: "Instagram Ads (via Meta Ads)" },
+  { value: "CHATGPT_ADS" as const, label: "ChatGPT Ads" },
 ];
 
 type FormState = {
@@ -843,7 +844,7 @@ export default function NewExperimentPage() {
         ))}
       </select>
       <div className="form-text mb-3">
-        Toda divulgação comercial usa mídia paga no Instagram. Público,
+        Instagram e ChatGPT Ads usam contas e limites próprios. Público,
         campanha, teto e janela precisam ser aprovados antes da execução; este
         cadastro não autoriza gasto.
       </div>

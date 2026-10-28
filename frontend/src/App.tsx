@@ -1,3 +1,4 @@
+import ChatgptAdsPage from "./pages/chatgptads/ChatgptAdsPage";
 import ProductModelingPage from "./pages/product/ProductModelingPage";
 import ProductBigIdeaPage from "./pages/product/ProductBigIdeaPage";
 import CatalogoVivoOpalaPage from "./pages/catalogoVivo/CatalogoVivoOpalaPage";
@@ -246,7 +247,7 @@ export default function App() {
       <div className="app-shell__content">
         <main className="app-shell__main">
           <div className="container-fluid py-4">
-            <GlobalAutomationAlerts />
+            {location.pathname !== "/chatgpt-ads" && <GlobalAutomationAlerts />}
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route
@@ -266,6 +267,7 @@ export default function App() {
                 path="/social-distribution"
                 element={<SocialDistributionPage />}
               />
+              <Route path="/chatgpt-ads" element={<ChatgptAdsPage />} />
               <Route path="/media" element={<MediaListPage />} />
               <Route path="/media/new" element={<NewMediaPage />} />
               <Route path="/media/:id" element={<MediaDetailPage />} />

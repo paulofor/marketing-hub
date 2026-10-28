@@ -117,6 +117,10 @@ public class ExperimentService {
   private final ExperimentDirectPdeActivationService directPdeActivationService;
   private final PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
   private final FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy;
+
+  private final com.marketinghub.repository.jdbc.chatgptads.ChatgptAdsRepository
+      chatgptAdsRepository;
+
   private static final String VALIDATION_OK = "OK";
 
   /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
@@ -154,7 +158,9 @@ public class ExperimentService {
       CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository,
       ExperimentDirectPdeActivationService directPdeActivationService,
       PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService,
-      FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy) {
+      FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy,
+      com.marketinghub.repository.jdbc.chatgptads.ChatgptAdsRepository chatgptAdsRepository) {
+    this.chatgptAdsRepository = chatgptAdsRepository;
     this.repository = repository;
     this.statusChangeRepository = statusChangeRepository;
     this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
@@ -436,7 +442,9 @@ public class ExperimentService {
         HttpStatus.BAD_REQUEST, "Território não pertence ao produto selecionado");
   }
 
-  /** Cria um experimento de aquisição paga no Instagram com seu contrato comercial inicial. */
+  /**
+   * Cria um experimento de aquisição paga no canal escolhido com seu contrato comercial inicial.
+   */
   @Transactional
   public Experiment create(Long nicheId, CreateExperimentRequest request) {
     MarketNiche niche = attachNiche(nicheId);
@@ -1219,6 +1227,10 @@ public class ExperimentService {
 
   /** Valida as evidências mínimas antes de aceitar experimento como em execução. */
   private void validateRunningStatusTransition(Experiment exp) {
+    if (exp.getPlatform() == ExperimentPlatform.CHATGPT_ADS)
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Use a operação ChatGPT Ads para ativar e confirmar exposição no provedor.");
     if (exp.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
       return;
     }
@@ -1358,6 +1370,7 @@ public class ExperimentService {
    * Atualiza os campos mutáveis sem exigir nova autorização de mídia para corrigir apenas conteúdo;
    * qualquer mudança de canal, verba ou período revalida integralmente o plano de mídia. Registros
    * diretos históricos continuam editáveis, mas uma candidata paga não pode voltar ao canal direto.
+   * Campanhas encaminhadas à Meta ou ChatGPT Ads preservam seu canal; mudança exige sucessor.
    */
   @Transactional
   public Experiment update(Long id, UpdateExperimentRequest request) {
@@ -1421,13 +1434,21 @@ public class ExperimentService {
           && exp.getPlatform() != ExperimentPlatform.DIRECT_ONE_TO_ONE) {
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST,
-            "Novas divulgações usam exclusivamente mídia paga no Instagram; o canal direto permanece apenas no histórico.");
+            "Novas divulgações usam Meta Ads ou ChatGPT Ads; o canal direto permanece apenas no histórico.");
       }
       if (resolvedPlatform != exp.getPlatform() && exp.getStatus() != ExperimentStatus.PLANNED) {
         throw new ResponseStatusException(
             HttpStatus.CONFLICT,
             "O canal de aquisição só pode ser alterado enquanto o experimento estiver PLANNED");
       }
+      if (resolvedPlatform != exp.getPlatform()
+          && ((exp.getPlatform() == ExperimentPlatform.FACEBOOK
+                  && facebookAdsCampaignRepository.existsByExperimentId(exp.getId()))
+              || (exp.getPlatform() == ExperimentPlatform.CHATGPT_ADS
+                  && chatgptAdsRepository.hasPublication(exp.getId()))))
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "Campanha já encaminhada ao provedor. Crie outro experimento para mudar o canal.");
       exp.setPlatform(resolvedPlatform);
       if (resolvedPlatform == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
         exp.setDailyBudget(null);
@@ -2188,12 +2209,12 @@ public class ExperimentService {
     return requestedPlatform != null ? requestedPlatform : ExperimentPlatform.FACEBOOK;
   }
 
-  /** Impede novos experimentos em canais que dependem de contatos ou audiência própria. */
+  /** Permite os canais pagos implementados, preservando limites próprios e históricos. */
   private void requirePaidInstagramForNewCommercialExperiment(ExperimentPlatform platform) {
-    if (platform != ExperimentPlatform.FACEBOOK) {
+    if (platform != ExperimentPlatform.FACEBOOK && platform != ExperimentPlatform.CHATGPT_ADS) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Novas divulgações usam exclusivamente mídia paga no Instagram via Meta Ads.");
+          "Novas divulgações usam Meta Ads ou ChatGPT Ads, com limites próprios por canal.");
     }
   }
 

@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - growth-operator-worker/**
+      - scripts/provision-chatgpt-ads-secrets.sh
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
   pull_request:
     paths:
       - growth-operator-worker/**
+      - scripts/provision-chatgpt-ads-secrets.sh
       - .github/workflows/growth-operator-worker-ci.yml
       - config/agents/codex-agent-health-compliance.json
       - scripts/test-codex-agent-health-standard.mjs
@@ -194,6 +196,12 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/growth-operator-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete growth-operator-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/growth-operator-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+
+      - name: Provision optional ChatGPT Ads connection
+        env:
+          CHATGPT_ADS_WORKER_TOKEN: ${{ secrets.CHATGPT_ADS_WORKER_TOKEN }}
+          OPENAI_ADS_API_KEY: ${{ secrets.OPENAI_ADS_API_KEY }}
+        run: bash scripts/provision-chatgpt-ads-secrets.sh worker "${VPS_USER}@${VPS_IP}" /opt/growth-operator/agents/growth-operator/codex-home/chatgpt-ads
 
       - name: Start validated worker
         run: |

@@ -2066,10 +2066,10 @@ export default function ExperimentDetailPage() {
 
   const hasExperimentPipelineContent = Boolean(
     data.campaignAngle ||
-    data.adCopy ||
-    data.adImageBriefing ||
-    data.creativeTextPrompt ||
-    data.creativeImagePrompt,
+      data.adCopy ||
+      data.adImageBriefing ||
+      data.creativeTextPrompt ||
+      data.creativeImagePrompt,
   );
   const hasGeraLandingPipelineReady =
     readinessSummary?.hasGeraLandingPipeline ?? false;
@@ -2081,6 +2081,7 @@ export default function ExperimentDetailPage() {
   const hasAudienceSelection = hasPublisherTargeting;
   const isLowTicketProduct = data.experimentType === "LOW_TICKET_PRODUCT";
   const isDirectOneToOne = data.platform === "DIRECT_ONE_TO_ONE";
+  const isChatgptAds = data.platform === "CHATGPT_ADS";
   const isPdeMembershipSubscriptionFunnel =
     data.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const pdeMonitor = pdeMonitorQuery.data;
@@ -2527,7 +2528,7 @@ export default function ExperimentDetailPage() {
           ) : null}
         </div>
       ) : null}
-      {isLowTicketProduct ? (
+      {isLowTicketProduct && !isChatgptAds ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
@@ -2809,234 +2810,260 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       ) : null}
-      <div className="card border-0 shadow-sm rounded-3 mt-3">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-            <div>
-              <h5 className="card-title mb-1">
-                {experimentAlreadyStarted
-                  ? "Gate de publicação aprovado"
-                  : "Gate para iniciar o experimento"}
-              </h5>
-              <p className="text-muted small mb-0">
-                {experimentAlreadyStarted
-                  ? "Auditoria dos requisitos usados na liberação. O estado atual vem da campanha e do experimento, não deste checklist histórico."
-                  : "Fonte canônica dos requisitos para a transição segura de PLANNED para RUNNING."}
-              </p>
-            </div>
-            <span
-              className={`badge ${
-                experimentAlreadyStarted || readinessSummary?.eligibleForRunning
-                  ? "text-bg-success"
-                  : "text-bg-warning"
-              }`}
+      {isChatgptAds ? (
+        <section className="card mt-3" aria-label="Operação ChatGPT Ads">
+          <div className="card-body">
+            <h2 className="h5">ChatGPT Ads</h2>
+            <p>
+              A preparação, a autorização, a revisão do anúncio e o
+              acompanhamento deste canal ficam no painel próprio. Compras e
+              entrega continuam no relatório deste experimento.
+            </p>
+            <Link
+              className="btn btn-primary"
+              to={`/chatgpt-ads?experimentId=${expId}`}
             >
-              {experimentAlreadyStarted
-                ? data.status
-                : readinessSummary?.eligibleForRunning
-                  ? "PRONTO PARA RUNNING"
-                  : "PLANNED — requisitos pendentes"}
-            </span>
+              Abrir preparação e operação do canal
+            </Link>
           </div>
-          {isLoadingReadiness ? (
-            <div
-              className="d-flex align-items-center gap-2 mt-3 text-muted"
-              role="status"
-            >
-              <span
-                className="spinner-border spinner-border-sm"
-                aria-hidden="true"
-              />
-              <span>Consolidando requisitos...</span>
-            </div>
-          ) : (
-            <div className="list-group list-group-flush mt-3">
-              {(readinessSummary?.runningGateRequirements ?? []).map(
-                (requirement) => (
-                  <div
-                    key={requirement.code}
-                    className="list-group-item px-0 d-flex gap-3 align-items-start"
-                  >
-                    <span
-                      className={`badge mt-1 ${requirement.ready ? "text-bg-success" : "text-bg-danger"}`}
-                    >
-                      {requirement.ready ? "OK" : "PENDENTE"}
-                    </span>
-                    <div>
-                      <div className="fw-semibold">{requirement.title}</div>
-                      <div className="small text-body-secondary">
-                        {requirement.detail}
-                      </div>
-                      {!requirement.ready ? (
-                        <div className="small mt-1">
-                          <strong>Próxima ação:</strong>{" "}
-                          {requirement.recommendation}
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-          {canStartDirectExperiment(
-            data.status,
-            data.platform,
-            readinessSummary?.eligibleForRunning,
-          ) ? (
-            <div className="border-top mt-3 pt-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-              <div className="small text-body-secondary">
-                A ativação abre o piloto individual consentido e avança o
-                produto para Venda, Entrega e Aprendizado. Não cria mídia paga.
-              </div>
-              <button
-                type="button"
-                className="btn btn-success text-nowrap"
-                disabled={updateExperimentStatus.isPending}
-                onClick={handleStartDirectExperiment}
-              >
-                {updateExperimentStatus.isPending ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    />
-                    Iniciando...
-                  </>
-                ) : (
-                  "Colocar experimento em RUNNING"
-                )}
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </div>
-      <div className="card border-0 shadow-sm rounded-3 mt-3">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start">
-            <h5 className="card-title mb-0">
-              {primaryFacebookCampaign
-                ? "Campanha Meta publicada"
-                : isDirectOneToOne
-                  ? "Abordagem individual consentida"
-                  : isPdeMembershipSubscriptionFunnel
-                    ? "Campanha de Facebook Ads para assinatura PDE"
-                    : isLowTicketProduct
-                      ? "Campanha de Facebook Ads para venda"
-                      : "Campanha de Facebook Ads"}
-            </h5>
-            <span
-              className={`badge ${
-                primaryFacebookCampaign?.status === "ACTIVE"
-                  ? "text-bg-success"
-                  : primaryFacebookCampaign
-                    ? "text-bg-secondary"
-                    : isReadyForRunning
+        </section>
+      ) : (
+        <>
+          <div className="card border-0 shadow-sm rounded-3 mt-3">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                <div>
+                  <h5 className="card-title mb-1">
+                    {experimentAlreadyStarted
+                      ? "Gate de publicação aprovado"
+                      : "Gate para iniciar o experimento"}
+                  </h5>
+                  <p className="text-muted small mb-0">
+                    {experimentAlreadyStarted
+                      ? "Auditoria dos requisitos usados na liberação. O estado atual vem da campanha e do experimento, não deste checklist histórico."
+                      : "Fonte canônica dos requisitos para a transição segura de PLANNED para RUNNING."}
+                  </p>
+                </div>
+                <span
+                  className={`badge ${
+                    experimentAlreadyStarted ||
+                    readinessSummary?.eligibleForRunning
                       ? "text-bg-success"
                       : "text-bg-warning"
-              }`}
-            >
-              {isLoadingFacebookCampaigns
-                ? "Carregando"
-                : (primaryFacebookCampaign?.status ??
-                  (isReadyForRunning ? "Pronto" : "Pendente"))}
-            </span>
-          </div>
-          <p className="card-text mt-2">
-            {primaryFacebookCampaign
-              ? "A campanha, o conjunto e o anúncio abaixo são a verdade operacional persistida pelo backend."
-              : isDirectOneToOne
-                ? `Checklist para executar a amostra de ${data.sampleSize ?? 0} contatos sem mídia paga, comunicação em massa ou dependência da Meta.`
-                : isPdeMembershipSubscriptionFunnel
-                  ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
-                  : isLowTicketProduct
-                    ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
-                    : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
-          </p>
-          {isLoadingReadiness ? (
-            <div
-              className="alert alert-light d-flex align-items-center gap-2 mt-3"
-              role="status"
-            >
-              <span
-                className="spinner-border spinner-border-sm"
-                role="status"
-                aria-hidden="true"
-              />
-              <span>Carregando pendências básicas...</span>
-            </div>
-          ) : null}
-          {primaryFacebookCampaign ? (
-            <div className="row g-2 mt-1" aria-label="Estrutura Meta publicada">
-              <PublishedMetaItem
-                label="Campanha"
-                id={primaryFacebookCampaign.id}
-                status={primaryFacebookCampaign.status}
-              />
-              <PublishedMetaItem
-                label="Conjunto"
-                id={primaryFacebookAdSet?.id}
-                status={primaryFacebookAdSet?.status}
-              />
-              <PublishedMetaItem
-                label="Anúncio"
-                id={primaryFacebookAd?.id}
-                status={primaryFacebookAd?.status}
-              />
-            </div>
-          ) : null}
-          <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
-            {isDirectOneToOne ? (
-              <span className="badge text-bg-light border text-body px-3 py-2">
-                Sem mídia paga
-              </span>
-            ) : primaryFacebookCampaign ? (
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={() => openExperimentTab("campaign")}
-              >
-                Ver campanha publicada
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleFacebookRelease}
-                disabled={releaseButtonDisabled}
-              >
-                {releaseInProgress
-                  ? "Liberando..."
-                  : isPausedPublicationRetry
-                    ? "Retomar publicação no Facebook Ads Worker"
-                    : "Liberar para Facebook Ads Worker"}
-              </button>
-            )}
-            <div className="small text-body-secondary">
-              {primaryFacebookCampaign
-                ? primaryFacebookCampaign.metricsLastError
-                  ? `A sincronização de métricas informa: ${primaryFacebookCampaign.metricsLastError}`
-                  : "A publicação já ocorreu. Novas decisões devem usar resultados, saúde e comportamento atribuídos a este experimento."
-                : isDirectOneToOne
-                  ? isReadyForRunning
-                    ? "O gate comercial está pronto; a abordagem continua manual, individual, consentida e atribuível."
-                    : "Resolva os bloqueios do gate antes de iniciar qualquer contato."
-                  : isReadyForRunning
-                    ? isPausedPublicationRetry
-                      ? "A homologação atual permite retomar a publicação sem apagar o funil nem criar uma campanha duplicada."
-                      : isSalesObjectiveExperiment
-                        ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
-                        : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
-                    : "Resolva os bloqueios para habilitar a liberação automática."}
-              {lastReleaseLabel ? (
-                <div className="mt-1">
-                  Última liberação: <strong>{lastReleaseLabel}</strong>
+                  }`}
+                >
+                  {experimentAlreadyStarted
+                    ? data.status
+                    : readinessSummary?.eligibleForRunning
+                      ? "PRONTO PARA RUNNING"
+                      : "PLANNED — requisitos pendentes"}
+                </span>
+              </div>
+              {isLoadingReadiness ? (
+                <div
+                  className="d-flex align-items-center gap-2 mt-3 text-muted"
+                  role="status"
+                >
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  />
+                  <span>Consolidando requisitos...</span>
+                </div>
+              ) : (
+                <div className="list-group list-group-flush mt-3">
+                  {(readinessSummary?.runningGateRequirements ?? []).map(
+                    (requirement) => (
+                      <div
+                        key={requirement.code}
+                        className="list-group-item px-0 d-flex gap-3 align-items-start"
+                      >
+                        <span
+                          className={`badge mt-1 ${requirement.ready ? "text-bg-success" : "text-bg-danger"}`}
+                        >
+                          {requirement.ready ? "OK" : "PENDENTE"}
+                        </span>
+                        <div>
+                          <div className="fw-semibold">{requirement.title}</div>
+                          <div className="small text-body-secondary">
+                            {requirement.detail}
+                          </div>
+                          {!requirement.ready ? (
+                            <div className="small mt-1">
+                              <strong>Próxima ação:</strong>{" "}
+                              {requirement.recommendation}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
+              {canStartDirectExperiment(
+                data.status,
+                data.platform,
+                readinessSummary?.eligibleForRunning,
+              ) ? (
+                <div className="border-top mt-3 pt-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                  <div className="small text-body-secondary">
+                    A ativação abre o piloto individual consentido e avança o
+                    produto para Venda, Entrega e Aprendizado. Não cria mídia
+                    paga.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-success text-nowrap"
+                    disabled={updateExperimentStatus.isPending}
+                    onClick={handleStartDirectExperiment}
+                  >
+                    {updateExperimentStatus.isPending ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Colocar experimento em RUNNING"
+                    )}
+                  </button>
                 </div>
               ) : null}
             </div>
           </div>
-        </div>
-      </div>
+          <div className="card border-0 shadow-sm rounded-3 mt-3">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start">
+                <h5 className="card-title mb-0">
+                  {primaryFacebookCampaign
+                    ? "Campanha Meta publicada"
+                    : isDirectOneToOne
+                      ? "Abordagem individual consentida"
+                      : isPdeMembershipSubscriptionFunnel
+                        ? "Campanha de Facebook Ads para assinatura PDE"
+                        : isLowTicketProduct
+                          ? "Campanha de Facebook Ads para venda"
+                          : "Campanha de Facebook Ads"}
+                </h5>
+                <span
+                  className={`badge ${
+                    primaryFacebookCampaign?.status === "ACTIVE"
+                      ? "text-bg-success"
+                      : primaryFacebookCampaign
+                        ? "text-bg-secondary"
+                        : isReadyForRunning
+                          ? "text-bg-success"
+                          : "text-bg-warning"
+                  }`}
+                >
+                  {isLoadingFacebookCampaigns
+                    ? "Carregando"
+                    : (primaryFacebookCampaign?.status ??
+                      (isReadyForRunning ? "Pronto" : "Pendente"))}
+                </span>
+              </div>
+              <p className="card-text mt-2">
+                {primaryFacebookCampaign
+                  ? "A campanha, o conjunto e o anúncio abaixo são a verdade operacional persistida pelo backend."
+                  : isDirectOneToOne
+                    ? `Checklist para executar a amostra de ${data.sampleSize ?? 0} contatos sem mídia paga, comunicação em massa ou dependência da Meta.`
+                    : isPdeMembershipSubscriptionFunnel
+                      ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
+                      : isLowTicketProduct
+                        ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
+                        : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
+              </p>
+              {isLoadingReadiness ? (
+                <div
+                  className="alert alert-light d-flex align-items-center gap-2 mt-3"
+                  role="status"
+                >
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                  <span>Carregando pendências básicas...</span>
+                </div>
+              ) : null}
+              {primaryFacebookCampaign ? (
+                <div
+                  className="row g-2 mt-1"
+                  aria-label="Estrutura Meta publicada"
+                >
+                  <PublishedMetaItem
+                    label="Campanha"
+                    id={primaryFacebookCampaign.id}
+                    status={primaryFacebookCampaign.status}
+                  />
+                  <PublishedMetaItem
+                    label="Conjunto"
+                    id={primaryFacebookAdSet?.id}
+                    status={primaryFacebookAdSet?.status}
+                  />
+                  <PublishedMetaItem
+                    label="Anúncio"
+                    id={primaryFacebookAd?.id}
+                    status={primaryFacebookAd?.status}
+                  />
+                </div>
+              ) : null}
+              <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
+                {isDirectOneToOne ? (
+                  <span className="badge text-bg-light border text-body px-3 py-2">
+                    Sem mídia paga
+                  </span>
+                ) : primaryFacebookCampaign ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => openExperimentTab("campaign")}
+                  >
+                    Ver campanha publicada
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleFacebookRelease}
+                    disabled={releaseButtonDisabled}
+                  >
+                    {releaseInProgress
+                      ? "Liberando..."
+                      : isPausedPublicationRetry
+                        ? "Retomar publicação no Facebook Ads Worker"
+                        : "Liberar para Facebook Ads Worker"}
+                  </button>
+                )}
+                <div className="small text-body-secondary">
+                  {primaryFacebookCampaign
+                    ? primaryFacebookCampaign.metricsLastError
+                      ? `A sincronização de métricas informa: ${primaryFacebookCampaign.metricsLastError}`
+                      : "A publicação já ocorreu. Novas decisões devem usar resultados, saúde e comportamento atribuídos a este experimento."
+                    : isDirectOneToOne
+                      ? isReadyForRunning
+                        ? "O gate comercial está pronto; a abordagem continua manual, individual, consentida e atribuível."
+                        : "Resolva os bloqueios do gate antes de iniciar qualquer contato."
+                      : isReadyForRunning
+                        ? isPausedPublicationRetry
+                          ? "A homologação atual permite retomar a publicação sem apagar o funil nem criar uma campanha duplicada."
+                          : isSalesObjectiveExperiment
+                            ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
+                            : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
+                        : "Resolva os bloqueios para habilitar a liberação automática."}
+                  {lastReleaseLabel ? (
+                    <div className="mt-1">
+                      Última liberação: <strong>{lastReleaseLabel}</strong>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       {false ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">

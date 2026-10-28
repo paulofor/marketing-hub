@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-heygen-1-preco-baixo-com-audio-nativo",
+  "collection": "video",
+  "title": "Avaliar HeyGen Video 1 para clipes baratos com som sincronizado",
+  "finding": "A documentação HeyGen atualizada em 26/10/2026 confirma API ativa heygen-video-1 com geração de imagens e áudio em uma chamada, T2V/I2V de até 30s em configurações turbo/quality, e preço promocional de US$0,018/s em 768p até 31/10 para clipes até 15s.",
+  "mechanism": "Modelo proprietário pós-treinado de MiniMax H3 gera imagem, fala e efeitos; modos possuem durações diferentes. A rota reference_to_video ou MCP limita 15s, e os vídeos >15s têm tarifa maior.",
+  "commercialApplication": "No Marketing Hub criar lote de dez anúncios de produto de 8–12s em 768p com áudio, comparando com Kling 4.0 e MiniMax H3 em fidelidade, fluidez, CTA, custo por aprovado e riscos comerciais.",
+  "evidenceStrength": "Forte para API, limites e preço nas documentações oficiais; alegação de liderança em qualidade vem do fornecedor/avaliação que exige conferência independente. Evento não deve ser reclassificado como lançamento inédito em 28/10.",
+  "publishedOn": "2026-10-26",
+  "validUntil": "2026-10-31",
+  "experimentHypothesis": "Para cenas curtas com áudio, o custo por aprovado do HeyGen Video 1 pode ser menor que modelos premium, se a qualidade e fidelidade à embalagem forem suficientes.",
+  "risks": "Preço promocional termina em 31/10, divergência de valores em páginas comerciais, modos com limites distintos, falta de pesos abertos, direitos de pessoas/vozes, armazenamento de arquivos e uso comercial a revisar.",
+  "limits": "Até 15s promocional US$0,01/s em 480p, US$0,018/s em 768p; vídeos >15s custam US$0,075/s em 768p. Até 30s somente T2V/I2V turbo/quality; Ref2V/MCP até 15s. API requer chave paga.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-28-heygen-video-1-api-30s-preco.md",
+  "sourceTitle": "Fonte revisada — HeyGen Video 1: API, duração e tarifa de outubro",
+  "sourceSha256": "9e8b1a21d8a38079ccac43b34ac91fc78779bea3cd3414514cbd34121f0bd7a1"
+}

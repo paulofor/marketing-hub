@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-apps-criativos-a-partir-de-workflows-runway",
+  "collection": "video",
+  "title": "Encapsular workflows de vídeo em aplicativos reutilizáveis",
+  "finding": "Runway App Studio foi lançado em 26/10/2026 para todos os assinantes pagos: transforma descrições, sessões de agente e Workflows em apps com UI própria que executam modelos de imagem, vídeo e áudio, com Brand Kit e arquivos da equipe.",
+  "mechanism": "O agente gera código, testa e publica interfaces com entradas controladas, modelos e referências fixados, com revisão, rollback, links e regras de acesso no ecossistema Runway.",
+  "commercialApplication": "Criar protótipo de imagem de produto -> substituição de embalagem -> cenas de câmera e comparar com pipeline Marketing Hub e ComfyUI, mensurando custo por saída, manutenção, governança e portabilidade.",
+  "evidenceStrength": "Forte para status, funções e cobrança por fonte oficial Runway 26/10 e help center; ainda sem benchmarks independentes ou prova de exportação e hospedagem externa dos apps.",
+  "publishedOn": "2026-10-26",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "Empacotar uma sequência criativa como aplicativo reduz erro operacional e variabilidade de prompt frente à execução manual, mas pode ampliar dependência de fornecedor.",
+  "risks": "Lock-in, necessidade de contas Runway, consumo por build/geração/hosting, restrições de compartilhamento, direitos dos assets, diferenças de suporte a APIs externas.",
+  "limits": "Ativo em planos pagos; links públicos pedem conta Runway; usuários gastam créditos próprios; código visível não prova licença open-source, exportabilidade nem implantação externa.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-28-runway-app-studio-apps-audiovisuais.md",
+  "sourceTitle": "Fonte revisada — Runway App Studio para aplicativos criativos",
+  "sourceSha256": "8bab416956097cef44b90c3ce8e0d8dc785ff39081d8ccb1df825c4dd770bee8"
+}

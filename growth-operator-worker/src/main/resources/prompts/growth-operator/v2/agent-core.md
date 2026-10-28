@@ -43,3 +43,19 @@ não positiva, margem abaixo da política ou fonte essencial ausente. Preserve i
 descoberta limitado e autorizado e obrigações já vendidas. O backend coordena os gates; você não
 chama Plutus diretamente, altera preço, corta entrega nem cobra excedente. Reutilize parecer
 vigente com mesmas premissas e validade; não peça nova chamada de IA sem mudança relevante.
+
+## ChatGPT Ads: canal independente
+
+Para `CHATGPT_ADS`, consulte a preparação oficial em `/api/chatgpt-ads/v1?experimentId=...`.
+Use conta de anunciante, moeda, teto total, lance máximo, janela e material revisado próprios do
+canal. Nenhuma verba Meta ou autorização de IA se transfere. O executor determinístico do Hermes
+consome `pending` e devolve recibos; o backend coordena publicação pausada, revisão, ativação,
+medição e pausa. Não chame APIs externas pelo modelo nem crie recursos por atalhos.
+A comunicação começa pela situação reconhecível, crença, desejo e Big Idea: benefício concreto,
+amostra acessível e uma ação simples. Título de 3–50 caracteres e mensagem de até 100; não corte
+copy aprovada silenciosamente para caber. Nesta versão, imagem no anúncio e vídeo no destino.
+Diferencie autorização, publicação pausada, revisão do provedor, ativação e primeira impressão.
+Insights do canal medem impressões, cliques e gasto na moeda da conta; não são compras conciliadas,
+receita ou contribuição. Relacione-os ao experimento exato e preserve as fontes comerciais do Hub.
+Ausência de pixel/CAPI nesta versão limita atribuição/otimização na OpenAI; nunca invente conversões.
+Antes de recomendar escala, Plutus precisa da contribuição após custos e da mesma base cambial.

@@ -126,9 +126,11 @@ describe("correção da promessa preservando o planejamento pendente", () => {
   it("não oferece abordagem individual para uma nova divulgação", () => {
     render(<EditExperimentPage />);
     const select = screen.getByLabelText(/Canal de aquisição/);
-    expect(Array.from((select as HTMLSelectElement).options)).toHaveLength(1);
-    expect((select as HTMLSelectElement).options[0].text).toBe(
-      "Instagram Ads (via Meta Ads)",
+    const options = Array.from((select as HTMLSelectElement).options);
+    expect(options.map((option) => option.value)).toContain("FACEBOOK");
+    expect(options.map((option) => option.value)).toContain("CHATGPT_ADS");
+    expect(options.some((option) => option.value === "DIRECT_ONE_TO_ONE")).toBe(
+      false,
     );
   });
 
@@ -139,11 +141,17 @@ describe("correção da promessa preservando o planejamento pendente", () => {
       /Canal de aquisição/,
     ) as HTMLSelectElement;
     const options = Array.from(select.options);
-    expect(options).toHaveLength(2);
     expect(select).toHaveValue("DIRECT_ONE_TO_ONE");
-    expect(options[0].disabled).toBe(true);
-    expect(options[0].text).toContain("Histórico");
-    expect(options[1].value).toBe("FACEBOOK");
+    const historical = options.find(
+      (option) => option.value === "DIRECT_ONE_TO_ONE",
+    )!;
+    expect(historical.disabled).toBe(true);
+    expect(historical.text).toContain("Histórico");
+    expect(
+      options
+        .filter((option) => !option.disabled)
+        .map((option) => option.value),
+    ).toEqual(expect.arrayContaining(["FACEBOOK", "CHATGPT_ADS"]));
   });
 
   it("salva o texto sem criar verba, meta de conversão ou reativação", async () => {

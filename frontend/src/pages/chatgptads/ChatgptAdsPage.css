@@ -1,0 +1,144 @@
+.chatgpt-ads-page {
+  max-width: 1160px;
+  margin: auto;
+  padding: 24px;
+  color: #192f30;
+}
+.ads-hero {
+  background: #143c39;
+  color: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.ads-hero h1 {
+  color: inherit;
+}
+.ads-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #a6e6d1;
+  font-weight: 700;
+}
+.ads-hero p {
+  margin-bottom: 0;
+  max-width: 560px;
+}
+.ads-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 20px 0;
+  color: #42635d;
+  font-size: 14px;
+}
+.ads-panel {
+  border: 1px solid #dbe5e1;
+  border-radius: 16px;
+  background: #fff;
+  padding: 24px;
+  margin: 0 0 20px;
+}
+.ads-panel h2 {
+  font-size: 21px;
+}
+.ads-panel h3 {
+  font-size: 19px;
+}
+.ads-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.ads-grid label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ads-grid small {
+  display: block;
+  font-weight: 400;
+  color: #526968;
+  margin-top: 6px;
+}
+.ads-state {
+  background: #edf2f1;
+  border-radius: 24px;
+  padding: 8px 14px;
+  font-size: 13px;
+  align-self: start;
+}
+.ads-active {
+  background: #d1f3de;
+  color: #164c2e;
+}
+.ads-preview {
+  padding: 16px;
+  border: 1px solid #e1e9e5;
+  border-radius: 12px;
+  max-width: 380px;
+}
+.ads-preview img {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+  margin-bottom: 12px;
+  background: #f3f6f4;
+}
+.ads-preview strong {
+  display: block;
+}
+.ads-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin: 20px 0;
+}
+.ads-metrics strong {
+  display: block;
+  font-size: 22px;
+}
+.ads-metrics span {
+  display: block;
+  font-size: 13px;
+}
+.ads-decision {
+  border: 2px solid #2e7266;
+}
+.ads-panel details {
+  overflow-wrap: anywhere;
+}
+.ads-panel a {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 650px) {
+  .chatgpt-ads-page {
+    padding: 12px;
+  }
+  .ads-hero {
+    display: block;
+    padding: 24px;
+  }
+  .ads-hero a {
+    margin-top: 20px;
+  }
+  .ads-panel {
+    padding: 18px;
+  }
+  .ads-grid {
+    grid-template-columns: 1fr;
+  }
+  .ads-steps {
+    display: grid;
+    gap: 8px;
+  }
+}
+
+.ads-hero .page-title-text {
+  background: none;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}

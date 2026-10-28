@@ -713,6 +713,21 @@ dentro dos limites financeiros, registrando a autorização humana sem antecipar
 | **5.4** | Executar homologação técnica do experimento | Backend usa `experiment-homologation-activation` e as evidências técnicas vigentes para validar superfícies, compra simulada, acesso, entrega, falhas, eventos, segregação e controles de consumo. |
 | **5.5** | Autorizar ativação, orçamento e janela      | Decisão humana aprova a versão exata, canais, teto, período e condições de parada; nenhum parecer técnico autoriza gasto.                                                                          |
 
+### ChatGPT Ads — decisão de 27/10/2026
+
+ChatGPT Ads passa a ser um canal adicional explícito de aquisição paga, operado por Hermes.
+O cadastro, a preparação e a homologação podem ocorrer sem ativação. O canal exige conta de
+anunciante própria, autorização específica de moeda, teto total e janela, criativo aprovado e
+prova vigente da compra/entrega. Limites de Meta/Instagram nunca autorizam gasto na OpenAI.
+As cadeias e experimentos históricos mantêm sua política; a adesão ao canal é explícita em um
+experimento ainda não publicado. Não migrar campanhas ou autorizações históricas.
+
+O backend governa a fila e os aceites; Hermes executa as chamadas oficiais e reporta os recibos.
+Criação sempre pausada, orçamento vitalício nativo, chaves idempotentes e recuperação do mesmo
+resultado impedem repetição de publicação. Estado ativo, impressões, conversões atribuídas pelo
+provedor e compras conciliadas são fatos distintos. Falta de métricas não significa zero.
+Ver [contrato de ChatGPT Ads](chatgpt-ads-canon.v1.md).
+
 ### Política de aquisição comercial da cadeia v22
 
 Decisão de 24/09/2026: toda nova divulgação comercial usa **mídia paga no Instagram**,
@@ -877,7 +892,7 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 **Trabalho essencial:**
 
 - operar aquisição dentro do teto autorizado;
-- operar e comparar criativos e públicos somente na rota paga do Instagram aprovada, pagando mídia
+- operar e comparar criativos e públicos na rota paga aprovada do canal implementado (Instagram ou ChatGPT Ads), pagando mídia
   apenas conforme contrato, teto, janela e atribuição auditável;
 - acompanhar o gargalo real do funil;
 - manter registros `DIRECT_ONE_TO_ONE` anteriores somente como evidência histórica segregada; não

@@ -44,6 +44,7 @@ processo. Não altere banco, campanha, orçamento, preço, landing, checkout, me
   identidade first-party, deduplicação, segregação e consistência dos placares. Divergência bloqueia.
 - Para `FACEBOOK`, confirme campanha Meta, estado efetivo, gasto, primeira impressão real e percurso
   Meta → landing → checkout. Ausência desses elementos bloqueia somente esse canal pago.
+- Para `CHATGPT_ADS`, confira `/api/chatgpt-ads/v1?experimentId=...`: conta, moeda, teto total, janela, revisão, exposição e gasto próprios. Métricas da Meta não se aplicam; compras continuam exigindo conciliação. Não opere o canal pelo modelo: use a fila oficial do Hermes.
 - Para `DIRECT_ONE_TO_ONE`, campanha Meta, impressão Meta e orçamento diário não se aplicam e sua
   ausência nunca pode bloquear. Exija no preflight mais recente os gates
   `DIRECT_CHANNEL_READINESS_CONFIRMED`, `CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED` e

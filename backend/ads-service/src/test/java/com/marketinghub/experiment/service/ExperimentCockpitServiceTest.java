@@ -24,6 +24,8 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
+import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsReader;
+import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsSnapshot;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeCommercialOutcomeSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
@@ -49,12 +51,78 @@ class ExperimentCockpitServiceTest {
   @Mock private ExperimentFunnelDiagnosticService funnelDiagnosticService;
   @Mock private ExperimentDirectContactService directContactService;
   @Mock private PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader;
+  @Mock private ExperimentAcquisitionMetricsReader acquisition;
 
   @Spy
   private ExperimentSampleDecisionService sampleDecisionService =
       new ExperimentSampleDecisionService(new ExperimentBinomialConfidenceService());
 
   @InjectMocks private ExperimentCockpitService service;
+
+  /** O novo canal usa sua fonte de gasto e não apresenta saldo positivo quando falta conversão. */
+  @Test
+  void chatgptScoreboardPreservesChannelAndUnknownCosts() {
+    long id = 901L;
+    var experiment =
+        Experiment.builder()
+            .id(id)
+            .platform(ExperimentPlatform.CHATGPT_ADS)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .campaignMetric(ExperimentCampaignMetric.builder().spend(new BigDecimal("999")).build())
+            .build();
+    when(experimentRepository.findById(id)).thenReturn(Optional.of(experiment));
+    when(readinessService.summarize(id))
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
+    when(diagnosticsService.diagnose(id))
+        .thenReturn(
+            new ExperimentDiagnosticsDto(
+                ExperimentDiagnosticsSeverity.INFO,
+                "Teste",
+                "Fontes sintéticas",
+                null,
+                List.of(),
+                null));
+    when(funnelService.summarizeLandingAnalytics(id))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+    when(funnelService.summarize(id)).thenReturn(List.of());
+    when(funnelDiagnosticService.diagnose(id))
+        .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+    when(funnelService.approvedRevenue(id)).thenReturn(new BigDecimal("10.00"));
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.CHATGPT_ADS,
+                new BigDecimal("4.50"),
+                java.time.Instant.now(),
+                null,
+                null,
+                100L,
+                3L,
+                true));
+    var complete = service.getCockpit(id).scoreboard();
+    assertEquals(new BigDecimal("4.50"), complete.spend());
+    assertEquals(100L, complete.impressions());
+    assertEquals(new BigDecimal("5.50"), complete.margin());
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.CHATGPT_ADS,
+                null,
+                java.time.Instant.now(),
+                null,
+                "Câmbio pendente",
+                100L,
+                3L,
+                true));
+    var incomplete = service.getCockpit(id).scoreboard();
+    assertNull(incomplete.spend());
+    assertNull(incomplete.margin());
+    assertNull(incomplete.roas());
+  }
 
   /** Garante que experimento fake usa métricas reais atribuídas ao teste em vez de massa fixa. */
   @Test

@@ -170,6 +170,44 @@ class LearningCycleMeasurementCollectorTest {
     assertThat(result.evidence().path("sourceFingerprint").asText()).hasSize(64);
   }
 
+  /** Leva o gasto do novo canal ao aprendizado sem inventar conversão ou usar métricas Meta. */
+  @Test
+  void reconcilesChatgptSourceAndBlocksIncompleteCurrencyReconciliation() {
+    experiment.setPlatform(ExperimentPlatform.CHATGPT_ADS);
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.CHATGPT_ADS,
+                new BigDecimal("27.25"),
+                NOW,
+                NOW,
+                null,
+                120L,
+                5L,
+                true));
+    var result = collector.collect(cycle, experiment, NOW);
+    assertThat(result.ready()).isTrue();
+    assertThat(result.evidence().path("spendBrl").decimalValue()).isEqualByComparingTo("27.25");
+    assertThat(result.evidence().path("contributionBrl").decimalValue())
+        .isEqualByComparingTo("-27.30");
+    assertThat(result.evidence().toString()).contains("CHATGPT_ADS_INSIGHTS");
+    when(acquisition.read(experiment))
+        .thenReturn(
+            new ExperimentAcquisitionMetricsSnapshot(
+                ExperimentPlatform.CHATGPT_ADS,
+                null,
+                NOW,
+                NOW,
+                "Conciliação cambial pendente",
+                120L,
+                5L,
+                true));
+    var blocked = collector.collect(cycle, experiment, NOW);
+    assertThat(blocked.ready()).isFalse();
+    assertThat(blocked.evidence().path("blocker").asText()).contains("cambial");
+    assertThat(blocked.evidence().has("contributionBrl")).isFalse();
+  }
+
   /** Reproduz o kit Quartzo sem slot, cuja fonte canônica está no Lead Portal. */
   @Test
   void reconcilesQuartzoWithoutInventingPdeSlot() {

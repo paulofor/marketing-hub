@@ -757,4 +757,28 @@ class BackendExperimentRunControllerTest {
             .build();
     return experimentRepository.save(experiment).getId();
   }
+
+  /** O novo canal exige sua própria prova de distribuição sem herdar aceite Meta. */
+  @Test
+  void chatgptAdsPreflightKeepsItsOwnDistributionGate() throws Exception {
+    Long experimentId = createExperiment();
+    var experiment = experimentRepository.findById(experimentId).orElseThrow();
+    experiment.setPlatform(ExperimentPlatform.CHATGPT_ADS);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setUnitPrice(new BigDecimal("67"));
+    experiment.setSampleSize(100);
+    experiment.setTargetCvr(new BigDecimal("0.05"));
+    experimentRepository.saveAndFlush(experiment);
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+    mockMvc
+        .perform(post("/api/experiment-runs/{id}/preflight", runId))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'CHATGPT_ADS_READINESS_CONFIRMED')].status")
+                .value(hasItem("PENDING")))
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'META_EFFECTIVE_STATUS_CONFIRMED')]").isEmpty())
+        .andExpect(jsonPath("$.hasBlockers").value(true));
+  }
 }

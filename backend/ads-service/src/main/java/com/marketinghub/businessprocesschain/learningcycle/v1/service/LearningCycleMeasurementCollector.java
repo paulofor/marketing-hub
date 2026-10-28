@@ -487,9 +487,18 @@ public class LearningCycleMeasurementCollector {
       return new MediaEvidence(
           BigDecimal.ZERO.setScale(2), "DIRECT_ONE_TO_ONE", null, true, 0, 0, null);
     requireSource(
-        experiment.getPlatform() == ExperimentPlatform.FACEBOOK,
+        experiment.getPlatform() == ExperimentPlatform.FACEBOOK
+            || experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS,
         "O canal deste experimento ainda não possui uma fonte automática de gasto.");
     ExperimentAcquisitionMetricsSnapshot metric = acquisition.read(experiment);
+    requireSource(
+        metric.platform() == experiment.getPlatform(),
+        "A fonte de aquisição pertence a outro canal.");
+    requireSource(
+        metric.lastError() == null || metric.lastError().isBlank(),
+        metric.lastError() == null
+            ? "A fonte de aquisição está indisponível."
+            : metric.lastError());
     requireSource(
         metric.campaignLinked(),
         "A campanha ainda não possui métricas persistidas para conciliação.");
@@ -522,7 +531,9 @@ public class LearningCycleMeasurementCollector {
         "A última sincronização da campanha terminou com erro.");
     return new MediaEvidence(
         money(metric.spendBrl()),
-        "META_INSIGHTS",
+        experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS
+            ? "CHATGPT_ADS_INSIGHTS"
+            : "META_INSIGHTS",
         observedAt,
         finalSnapshot,
         value(metric.impressions()),

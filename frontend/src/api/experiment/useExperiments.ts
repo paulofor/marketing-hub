@@ -22,7 +22,10 @@ export type ExperimentType =
   | "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
   | "FAKE_EXPERIMENT";
 export type ExperimentCreationSource = "SYSTEM_FLOW" | "MANUAL_FLOW";
-export type ExperimentPlatform = "FACEBOOK" | "DIRECT_ONE_TO_ONE";
+export type ExperimentPlatform =
+  | "FACEBOOK"
+  | "DIRECT_ONE_TO_ONE"
+  | "CHATGPT_ADS";
 export type ProductAiSubtype =
   | "AI_VISUAL_PREVIEW"
   | "AI_PERSONALIZED_SAMPLE"
@@ -183,7 +186,12 @@ export interface Experiment {
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
   creativeGenerationStatus?:
-    "IDLE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED" | "TIMEOUT";
+    | "IDLE"
+    | "REQUESTED"
+    | "PROCESSING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMEOUT";
   creativeGenerationRequestedAt?: string | null;
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;

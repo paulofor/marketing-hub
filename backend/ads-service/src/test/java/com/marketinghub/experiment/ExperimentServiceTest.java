@@ -1784,7 +1784,7 @@ class ExperimentServiceTest {
     request.setJourneyTemplateId(createJourneyTemplate().getId());
     assertThatThrownBy(() -> service.create(request))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-        .hasMessageContaining("exclusivamente mídia paga no Instagram");
+        .hasMessageContaining("Meta Ads ou ChatGPT Ads");
   }
 
   /** Impede converter uma candidata de mídia paga em convite individual. */

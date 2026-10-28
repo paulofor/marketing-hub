@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-27-chatgpt-ads-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE chatgpt_ads_connection (
+                id BIGINT NOT NULL PRIMARY KEY,
+                details_json LONGTEXT NOT NULL
+              );
+              INSERT INTO chatgpt_ads_connection(id, details_json)
+              VALUES(1, '{"status":"NOT_CONNECTED","message":"Conecte uma conta de anunciante ChatGPT Ads."}');
+              CREATE TABLE chatgpt_ads_campaign (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                experiment_id BIGINT NOT NULL,
+                draft_json LONGTEXT NOT NULL,
+                fingerprint VARCHAR(64) NOT NULL,
+                authorization_json LONGTEXT NULL,
+                status VARCHAR(32) NOT NULL,
+                remote_json LONGTEXT NOT NULL,
+                metrics_json LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                UNIQUE KEY uk_chatgpt_ads_experiment(experiment_id),
+                CONSTRAINT fk_chatgpt_ads_experiment FOREIGN KEY(experiment_id) REFERENCES experiment(id)
+              );
+              CREATE TABLE chatgpt_ads_operation (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                campaign_id BIGINT NULL,
+                kind VARCHAR(32) NOT NULL,
+                request_json LONGTEXT NOT NULL,
+                response_json LONGTEXT NULL,
+                status VARCHAR(24) NOT NULL,
+                lease_token VARCHAR(64) NULL,
+                lease_until DATETIME NULL,
+                attempts INT NOT NULL,
+                created_at DATETIME NOT NULL,
+                finished_at DATETIME NULL,
+                KEY ix_chatgpt_ads_pending(status, lease_until, id),
+                CONSTRAINT fk_chatgpt_ads_operation_campaign FOREIGN KEY(campaign_id) REFERENCES chatgpt_ads_campaign(id)
+              );

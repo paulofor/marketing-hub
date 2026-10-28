@@ -93,6 +93,11 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Contas",
     items: [
       {
+        to: "/chatgpt-ads",
+        label: "ChatGPT Ads",
+        icon: Play,
+      },
+      {
         to: "/accounts/facebook",
         label: "Contas do Facebook",
         icon: Users,

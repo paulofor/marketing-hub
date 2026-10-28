@@ -22,7 +22,7 @@ class ExperimentPlatformChangelogTest {
         .containsSubsequence("file: " + PLATFORM_CHANGELOG, "relativeToChangelogFile: true");
   }
 
-  /** Confirma que novos canais Java não ficam limitados pelo antigo ENUM físico do MySQL. */
+  /** Preserva canais vigentes e permite expansão compatível com a coluna VARCHAR do MySQL. */
   @Test
   void shouldPersistExperimentPlatformAsExtensibleVarchar() throws Exception {
     String changelog = Files.readString(CHANGELOG_ROOT.resolve(PLATFORM_CHANGELOG));
@@ -30,7 +30,11 @@ class ExperimentPlatformChangelogTest {
         Files.readString(Path.of("src/main/java/com/marketinghub/experiment/Experiment.java"));
 
     assertThat(ExperimentPlatform.values())
-        .containsExactly(ExperimentPlatform.FACEBOOK, ExperimentPlatform.DIRECT_ONE_TO_ONE);
+        .contains(
+            ExperimentPlatform.FACEBOOK,
+            ExperimentPlatform.DIRECT_ONE_TO_ONE,
+            ExperimentPlatform.CHATGPT_ADS)
+        .allSatisfy(platform -> assertThat(platform.name()).hasSizeLessThanOrEqualTo(40));
     assertThat(changelog)
         .contains("ALTER TABLE experiment")
         .contains("MODIFY COLUMN platform VARCHAR(40) NULL")

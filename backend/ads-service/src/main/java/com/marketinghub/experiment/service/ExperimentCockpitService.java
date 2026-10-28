@@ -15,6 +15,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsReader;
 import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitActionDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitBottleneckDto;
@@ -51,6 +52,7 @@ public class ExperimentCockpitService {
   private final ExperimentDirectContactService directContactService;
   private final ExperimentSampleDecisionService sampleDecisionService;
   private final PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader;
+  private final ExperimentAcquisitionMetricsReader acquisition;
 
   /** Inicializa o cockpit com fontes canônicas de experimento, prontidão, funil e diagnóstico. */
   public ExperimentCockpitService(
@@ -61,7 +63,8 @@ public class ExperimentCockpitService {
       ExperimentFunnelDiagnosticService funnelDiagnosticService,
       ExperimentDirectContactService directContactService,
       ExperimentSampleDecisionService sampleDecisionService,
-      PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader) {
+      PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader,
+      ExperimentAcquisitionMetricsReader acquisition) {
     this.experimentRepository = experimentRepository;
     this.readinessService = readinessService;
     this.diagnosticsService = diagnosticsService;
@@ -70,6 +73,7 @@ public class ExperimentCockpitService {
     this.directContactService = directContactService;
     this.sampleDecisionService = sampleDecisionService;
     this.pdeExperimentAnalyticsReader = pdeExperimentAnalyticsReader;
+    this.acquisition = acquisition;
   }
 
   /** Monta a visão consolidada do cockpit para um experimento. */
@@ -177,7 +181,9 @@ public class ExperimentCockpitService {
         buildNextActions(experiment.getId(), bottleneck));
   }
 
-  /** Calcula o placar financeiro e de conversão a partir de métricas persistidas. */
+  /**
+   * Usa a fonte do canal e mantém saldo e razões desconhecidos quando o gasto não está conciliado.
+   */
   private ExperimentCockpitScoreboardDto buildScoreboard(
       Experiment experiment,
       List<ExperimentFunnelStageDto> funnelStages,
@@ -185,8 +191,16 @@ public class ExperimentCockpitService {
       BigDecimal revenue,
       long humanVisitors) {
     ExperimentCampaignMetric metric = experiment.getCampaignMetric();
-    BigDecimal spend = money(metric != null ? metric.getSpend() : null);
-    boolean awaitingVerifiedExposure = isAwaitingVerifiedExposure(metric);
+    var channel =
+        experiment.getPlatform() == ExperimentPlatform.CHATGPT_ADS
+            ? acquisition.read(experiment)
+            : null;
+    BigDecimal spend =
+        channel != null ? channel.spendBrl() : money(metric != null ? metric.getSpend() : null);
+    boolean awaitingVerifiedExposure =
+        channel != null
+            ? channel.impressions() == null || channel.impressions() == 0
+            : isAwaitingVerifiedExposure(metric);
     long measuredPageViews =
         awaitingVerifiedExposure
             ? 0L
@@ -198,8 +212,9 @@ public class ExperimentCockpitService {
     long completeVideoViews = stageTotal(funnelStages, ExperimentFunnelStage.VIDEO_VISTO_COMPLETO);
     long checkoutAccesses = stageTotal(funnelStages, ExperimentFunnelStage.ACESSO_CHECKOUT);
     long purchases = stageTotal(funnelStages, ExperimentFunnelStage.COMPRA);
-    Long impressions = metric != null ? metric.getImpressions() : null;
-    Long clicks = metric != null ? metric.getClicks() : null;
+    Long impressions =
+        channel != null ? channel.impressions() : metric != null ? metric.getImpressions() : null;
+    Long clicks = channel != null ? channel.clicks() : metric != null ? metric.getClicks() : null;
     long directContacts =
         isDirectOneToOne(experiment)
             ? directContactService.countRecordedContacts(experiment.getId())
@@ -209,12 +224,14 @@ public class ExperimentCockpitService {
     return new ExperimentCockpitScoreboardDto(
         spend,
         revenue,
-        money(revenue).subtract(money(spend)),
+        spend == null ? null : money(revenue).subtract(spend),
         divide(revenue, spend),
         impressions,
         clicks,
         percentage(clicks, impressions),
-        clicks != null && clicks > 0 && metric != null ? metric.getCpc() : null,
+        channel != null
+            ? (clicks == null ? null : divide(spend, clicks))
+            : clicks != null && clicks > 0 && metric != null ? metric.getCpc() : null,
         directContacts,
         directContactTarget,
         humanVisitors,

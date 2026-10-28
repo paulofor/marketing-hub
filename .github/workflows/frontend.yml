@@ -42,6 +42,8 @@ jobs:
         run: cd frontend && npm test -- --run src/pages/product/ProductsInPlayPage.test.tsx src/components/MainNavigation.test.tsx
       - name: Testar preparação e adoção de referências de mercado
         run: cd frontend && npm test -- --run src/pages/product/ProductModelingPage.test.tsx
+      - name: Testar autorização, navegação e recuperação do canal ChatGPT Ads
+        run: cd frontend && npm test -- --run src/pages/chatgptads/ChatgptAdsPage.test.tsx src/pages/experiment/NewExperimentPage.test.ts src/pages/experiment/EditExperimentPage.test.tsx src/pages/experiment/ExperimentDetailPage.test.ts --maxWorkers=1 --minWorkers=1
       - name: Type-check
         run: cd frontend && npm run typecheck
       - name: Build

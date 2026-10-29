@@ -646,7 +646,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeRevalidationActivityExecutionTest.java",
-      "sha256": "5e7e949b2dd68d4e4209adc0ef760a5455b696060dcdf00354a5fba967209d37",
+      "sha256": "88c94dbd446f2bded6b414a0bc1f23bbef4ebae1325d73b8dd1172a1dad626f4",
       "reviewSummary": "Comprova leitura e comando da revalidação sem reaproveitar conclusão histórica ou duplicar\ntrabalho ativo."
     },
     {
@@ -846,7 +846,7 @@
     },
     {
       "path": "docs/homologacao/vega-revalidacao-seguranca-v1.md",
-      "sha256": "7ae9c6ce63010c0c1fc58e68dc3d3c11523104531698259f450831093f16c979",
+      "sha256": "46269e08f13015ed880d1b347efdf7939e3d005ae982f61592f9ee9ace240b7d",
       "promptMode": "FULL"
     }
   ],
@@ -880,6 +880,16 @@
         "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProviderTest.java",
         "previousSha256": "6a28df93806fbe5e9eedc1a64223456f1a545d82625a8ec688ad77d95a8f837b",
         "sha256": "31d3aa3e54be8de4564b92674ee296d27b84b99b651184225c550e7e0f0f0d96"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeRevalidationActivityExecutionTest.java",
+        "previousSha256": "5e7e949b2dd68d4e4209adc0ef760a5455b696060dcdf00354a5fba967209d37",
+        "sha256": "88c94dbd446f2bded6b414a0bc1f23bbef4ebae1325d73b8dd1172a1dad626f4"
+      },
+      {
+        "path": "docs/homologacao/vega-revalidacao-seguranca-v1.md",
+        "previousSha256": "7ae9c6ce63010c0c1fc58e68dc3d3c11523104531698259f450831093f16c979",
+        "sha256": "46269e08f13015ed880d1b347efdf7939e3d005ae982f61592f9ee9ace240b7d"
       }
     ],
     "removedMutableEvidence": [],

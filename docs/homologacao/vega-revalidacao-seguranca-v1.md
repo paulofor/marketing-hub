@@ -76,9 +76,15 @@ memória livre, sem consulta longa no momento da inspeção.
 
 ## Validação local concluída
 
-228 testes de backend/arquitetura (incluindo consulta JPA sem auditoria e comando
+240 testes de backend/arquitetura (incluindo consulta JPA sem auditoria e comando
 real do BPM), 40 do executor de Psique e 17 do empacotador aprovados. O gate direto
 recusa SAFETY antigo mesmo diante de um parecer de integridade aprovado; libera
 somente após a revisão independente posterior com a citação da prova atual.
 O pacote de evidências foi reconstruído com manifestos de compatibilidade novos,
 sem editar os anteriores. Nenhuma chamada paga foi usada para essa validação.
+
+A rodada completa do CI identificou quatro simulações antigas de retomada que
+omitiam `updatedAt` na projeção. As quatro falhas foram reproduzidas localmente;
+o fixture passou a fornecer a data persistida, conforme a consulta real já testada.
+Os 12 cenários dessa integração e 96 testes relacionados passaram, incluindo a
+proibição de buscar entidades completas. Nenhuma regra de cronologia foi relaxada.

@@ -29,7 +29,10 @@ class VegaCycleScenarioIntegrationTest {
       Long.parseLong(System.getenv().getOrDefault("VEGA_LOCAL_EXPERIMENT_ID", "91092"));
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
-  /** Executa cada cenário no produto real local; somente fila, upload e modelo são simulados. */
+  /**
+   * Executa cenários no produto local e confere a prova de conclusão entregue ao modelo simulado.
+   * Somente fila, upload e modelo são simulados.
+   */
   @ParameterizedTest
   @ValueSource(strings = {"ADHERENT", "RECOVERY", "SAFETY"})
   void consumesCycleWithActualSessionAndReturnsValidatedScenario(String scenario) throws Exception {
@@ -182,8 +185,24 @@ class VegaCycleScenarioIntegrationTest {
               "versionedExperienceEvidence",
               "revisão humana da validação privada",
               "vega-local-internal-only");
+      boolean contextual =
+          Set.of(
+                  "musa-pde-entry-v16-modelagem-internacional",
+                  "musa-pde-entry-v17-continuidade-clara")
+              .contains(target.get("experienceVersion"));
       if (!"SAFETY".equals(scenario))
-        assertThat(prompt).contains("cardId", "READY_RESULT_USED", "CHECKOUT_STARTED");
+        assertThat(prompt)
+            .contains(contextual ? "requestId" : "cardId", "READY_RESULT_USED", "CHECKOUT_STARTED");
+      if (contextual && "RECOVERY".equals(scenario))
+        assertThat(prompt)
+            .contains(
+                "MISSION_COMPLETION_RECOVERY_V1",
+                "missionCompleted",
+                "beforeCompletion",
+                "afterCompletion",
+                "afterReopen",
+                "afterRepeat",
+                "completedMissionIds");
       assertThat(prompt).doesNotContain("screenshotEvidenceIds\":[]");
     } finally {
       server.stop(0);

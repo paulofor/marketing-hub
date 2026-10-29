@@ -3,6 +3,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { videoBrowserOptions } from './learning-cycle-video-checks.mjs';
+import { missionRecoveryEvidence } from './mission-recovery-evidence.mjs';
 
 const [inputPath, outputPath, evidenceDirectory] = process.argv.slice(2);
 const input = JSON.parse(await readFile(inputPath, 'utf8'));
@@ -89,7 +90,7 @@ try {
     await page.getByRole('button', { name: 'Ver minha orientação', exact: true }).click();
     const result = await (await response).json();
     const resultReadySeconds = Math.ceil((Date.now() - firstInteractionAt) / 1000);
-    let resumed = false, journeyComplete = false;
+    let resumed = false, journeyComplete = false, completionRecovery = null;
     const screenshot = resolve(evidenceDirectory, `${scenarioCode}-${deviceProfile}.png`);
     if (scenarioCode === 'SAFETY') {
       await page.getByRole('alert').waitFor();
@@ -114,6 +115,33 @@ try {
       assert.equal(report.operations[result.requestId].response.requestId, result.requestId);
       assert.equal(report.operations[result.requestId].decision.ruleId, 'SCARF_MEAL_STRAP');
       assert.equal((await api('/access/workspace', undefined, session.sessionToken)).subscriptionStatus, 'TRIAL');
+      if (scenarioCode === 'RECOVERY') {
+        // A orientação recuperada não comprova que a cliente concluiu o dia: executar o comando real.
+        const snapshot = async () => ({
+          report: await api('/internal/report', undefined, session.sessionToken),
+          workspace: await api('/access/workspace', undefined, session.sessionToken),
+        });
+        const observations = { beforeCompletion: await snapshot() };
+        const reflection = optionalReflection ? '' : 'Registro sintético para conferir a retomada.';
+        await page.getByLabel(optionalReflection ? 'Quer anotar algo para depois? (opcional)' : 'O que funcionou para você?').fill(reflection);
+        const completed = page.waitForResponse(r => r.url().endsWith('/estilo-dia-1/complete') && r.request().method() === 'POST' && r.ok());
+        await page.getByRole('button', { name: 'Salvar e concluir este dia', exact: true }).click();
+        await completed;
+        await page.getByRole('status').filter({ hasText: 'ficaram salvos' }).waitFor();
+        observations.afterCompletion = await snapshot();
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.getByRole('button', { name: /Dia 1$/ }).click();
+        await card.waitFor();
+        observations.afterReopen = await snapshot();
+        // Reenvio de transporte da conclusão já aceita, sem nova inferência ou direito pago.
+        await api('/access/missions/estilo-dia-1/complete', {}, session.sessionToken);
+        observations.afterRepeat = await snapshot();
+        completionRecovery = missionRecoveryEvidence(observations, {
+          id: session.id, productId: input.productId, cycleId: input.cycleId,
+          experimentId: Number(input.sourceReference.split(':')[1]), prototypeVersion: version,
+        }, 'estilo-dia-1', result.requestId, reflection);
+        assert.equal(observations.afterRepeat.workspace.subscriptionStatus, 'TRIAL');
+      }
       await page.screenshot({ path: screenshot, fullPage: true });
       if (scenarioCode === 'ADHERENT') {
         // O direito de teste é concedido pelo runner, separado do simulador de compra.
@@ -176,7 +204,8 @@ try {
       sourceUrl: input.sourceUrl, finalUrl: page.url(), capturedAt: new Date().toISOString(), localPath: screenshot });
     scenarios.push({ scenarioCode, deviceProfile, status: 'PASS', prototypeVersion: version,
       evidenceId: session.id, screenshotEvidenceKeys: [evidenceKey], input: report.operations[result.requestId].input,
-      card: result.status === 'COMPLETED' ? result : null, operations: report.operations, events: report.events,
+      card: result.status === 'COMPLETED' ? result : null, operations: report.operations, missions: report.missions,
+      events: report.events, completionRecovery,
       trafficClass: 'AGENT_VALIDATION', mhInternalTest: true, providerCalls: Object.values(report.operations).reduce((sum, operation) => sum + operation.providerCalls, 0), resultReadySeconds, resumed, recovered, journeyComplete,
       safetyBlocked: scenarioCode === 'SAFETY', accessibilityBasic, noHorizontalOverflow, privacyPreserved,
       humanEvidenceClaimed: false, commercialEvidenceClaimed: false, sideEffects });
@@ -190,7 +219,9 @@ const deviceResults = [...new Set(plans.map(p => p[1]))].map(deviceProfile => ({
 const checks = { sameVersion: scenarios.every(s => s.prototypeVersion === version),
   desktopAndMobile: input.mode !== 'TECHNICAL' || deviceResults.length === 3,
   happyResultWithinTenMinutes: scenarios.filter(s => s.scenarioCode === 'ADHERENT').every(s => s.resultReadySeconds <= 600),
-  recoveryPreserved: input.mode !== 'TECHNICAL' || scenarios.some(s => s.recovered && s.resumed),
+  recoveryPreserved: scenarios.filter(s => s.scenarioCode === 'RECOVERY')
+    .every(s => s.recovered && s.resumed && s.completionRecovery?.missionCompleted
+      && s.completionRecovery.preservedAfterReopen && s.completionRecovery.repeatedWithoutDuplicate),
   safetyBlocked: input.mode !== 'TECHNICAL' || scenarios.some(s => s.safetyBlocked),
   accessibilityBasic: scenarios.every(s => s.accessibilityBasic), responsiveLayout: scenarios.every(s => s.noHorizontalOverflow),
   privacyPreserved: scenarios.every(s => s.privacyPreserved), internalTrafficSegregated: true,

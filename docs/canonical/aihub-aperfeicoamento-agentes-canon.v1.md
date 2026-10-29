@@ -53,6 +53,18 @@ devem compor evento persistido, resolução do alvo e disponibilidade da homolog
 ausência original, outra identidade, prova histórica e o caminho anteriormente válido. Instrução
 no prompt, isoladamente, não comprova aprendizado ou execução.
 
+No cenário de recuperação, orientação pronta e reaberta não comprovam conclusão
+da atividade pela cliente. O harness deve executar a ação final e conferir o
+estado persistido após concluir, reabrir e repetir, preservando identidade,
+operação, escolhas e progresso sem duplicação ou eventos de uso inventados.
+Relatório e captura devem distinguir orientação, missão e jornada completa.
+Quando a lacuna for exclusivamente de prova, o suplemento versionado pode reabrir
+somente o parecer afetado da mesma implementação: identidade, referência, horário,
+ID e hash do parecer devem coincidir. Não substitui nova revisão independente,
+não aprova automaticamente nem libera outra tentativa depois de uma nova recusa.
+Mudança funcional continua submetida ao sucessor e às revisões correspondentes.
+Caso e regressão: [Vega, recuperação da conclusão](../homologacao/vega-recuperacao-conclusao-v1.md).
+
 O harness técnico também deve confrontar o estado persistido com a mensagem terminal.
 Bloquear uma entrada e não gerar cartão não permite anunciar um resultado disponível.
 O verificador compartilhado `private-result-state-checks.mjs` usa os termos do contrato do

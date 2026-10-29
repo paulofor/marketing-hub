@@ -30,10 +30,11 @@ import org.springframework.web.server.ResponseStatusException;
  * trabalho ativo.
  */
 class PdeRevalidationActivityExecutionTest {
-  /** Reabre somente Têmis e encerra o retorno condicional após um novo parecer independente. */
+  /** Exercita tela e comando reais para reavaliar somente a prova suplementada, sem autoaprovação. */
   @ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 110L})
-  void reopensIntegrityWithCompiledEvidenceAndPreservesCompletedReviews(long productId) {
+  @CsvSource({"10,commercialIntegrityReview", "110,commercialIntegrityReview", "4,psiqueRecovery", "97004,psiqueRecovery"})
+  void reopensReviewWithCompiledEvidenceAndPreservesCompletedReviews(long productId, String reviewActivity) throws Exception {
+    int reviewIndex = "psiqueRecovery".equals(reviewActivity) ? 2 : 4;
     var json = new ObjectMapper();
     var processes = mock(BusinessProcessDefinitionRepository.class);
     var definitions = mock(BusinessProcessActivityDefinitionRepository.class);
@@ -106,17 +107,17 @@ class PdeRevalidationActivityExecutionTest {
       }
       activity.setDefinitionJson(node.toString());
       activityList.add(activity);
-      var task = task(627L + index, process, code, index < 4 ? "COMPLETED" : "BLOCKED");
+      var task = task(627L + index, process, code, index < reviewIndex ? "COMPLETED" : "BLOCKED");
       task.setSourceReference(reference);
-      task.setDeliveredAt(index < 4 ? task.getCreatedAt() : null);
-      task.setBlockerCategory(index < 4 ? null : "FUNCTIONAL_ADJUSTMENT");
+      task.setDeliveredAt(index < reviewIndex ? task.getCreatedAt() : null);
+      task.setBlockerCategory(index < reviewIndex ? null : "FUNCTIONAL_ADJUSTMENT");
       task.setResultJson(
           "{\"decision\":\""
-              + (index < 4 ? "APPROVED" : "BLOCKED")
+              + (index < reviewIndex ? "APPROVED" : "BLOCKED")
               + "\",\"prototypeVersion\":\""
               + version
               + "\"}");
-      history.add(task);
+      if (reviewIndex == 4 || index <= reviewIndex) history.add(task);
     }
     var gateNode =
         nodes
@@ -132,8 +133,8 @@ class PdeRevalidationActivityExecutionTest {
     when(processes.findById(70L)).thenReturn(Optional.of(process));
     when(products.findById(productId)).thenReturn(Optional.of(product));
     when(definitions.findAllByProcessDefinitionIdOrderByIdAsc(70L)).thenReturn(activityList);
-    when(definitions.findByProcessDefinitionIdAndActivityId(70L, "commercialIntegrityReview"))
-        .thenReturn(Optional.of(activityList.get(4)));
+    when(definitions.findByProcessDefinitionIdAndActivityId(70L, reviewActivity))
+        .thenReturn(Optional.of(activityList.get(reviewIndex)));
     when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
             "product:" + productId + "@"))
         .thenReturn(history);
@@ -141,7 +142,24 @@ class PdeRevalidationActivityExecutionTest {
             .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
                 "product:" + productId + "@", "pde-construction-approval"))
         .thenReturn(history);
-    when(tasks.findById(631L)).thenReturn(Optional.of(history.get(4)));
+    when(tasks.findById(627L + reviewIndex)).thenReturn(Optional.of(history.get(reviewIndex)));
+    if (reviewIndex == 2) {
+      var rejected = history.get(reviewIndex);
+      var report = json.createObjectNode();
+      report.put("generatedAt", Instant.now().minusSeconds(60).toString());
+      report.put("reportSha256", "a".repeat(64));
+      report.put("agentApprovalClaimed", false);
+      report.putObject("reviewReevaluation")
+          .put("contractVersion", "PDE_REVIEW_EVIDENCE_SUPPLEMENT_V1")
+          .put("reasonCode", "MISSING_EXECUTION_EVIDENCE")
+          .put("implementationChanged", false).put("independentReviewRequired", true)
+          .put("productId", productId).put("sourceReference", reference)
+          .put("activityId", reviewActivity).put("blockedTaskId", rejected.getId())
+          .put("blockedResultSha256", java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(rejected.getResultJson().getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+      var evidence = mock(com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence.class);
+      when(evidence.resolve(product.getSlug(), version)).thenReturn(Optional.of(report));
+      org.springframework.test.util.ReflectionTestUtils.setField(gate, "operationalEvidence", evidence);
+    }
     when(tasks.findPdeValidationTaskSnapshots(reference, "pde-construction-approval"))
         .thenAnswer(
             ignored ->
@@ -162,31 +180,31 @@ class PdeRevalidationActivityExecutionTest {
         .thenReturn(mock(AgentTaskResponse.class));
 
     var before = service.productProcessExecutions(70L, productId);
-    assertThat(before.currentActivityId()).isEqualTo("commercialIntegrityReview");
+    assertThat(before.currentActivityId()).isEqualTo(reviewActivity);
     assertThat(
             before.activities().stream()
                 .filter(a -> a.executionRequestAvailable())
                 .map(a -> a.activityId())
                 .toList())
-        .containsExactly("commercialIntegrityReview");
+        .containsExactly(reviewActivity);
     assertThat(
             service
-                .requestProductActivityExecution(70L, productId, "commercialIntegrityReview")
+                .requestProductActivityExecution(70L, productId, reviewActivity)
                 .tasks())
         .hasSize(1);
     verify(agentTasks)
         .retryBlockedByHumanOrRefreshPending(
-            argThat(request -> "commercialIntegrityReview".equals(request.processActivityId())),
+            argThat(request -> reviewActivity.equals(request.processActivityId())),
             eq(true));
 
-    var approved = task(633L, process, "commercialIntegrityReview", "COMPLETED");
+    var approved = task(633L, process, reviewActivity, "COMPLETED");
     approved.setSourceReference(reference);
     approved.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"" + version + "\"}");
     history.add(approved);
     var after = service.productProcessExecutions(70L, productId);
     assertThat(after.objectiveAchieved()).isFalse();
-    assertThat(after.currentActivityId()).isEqualTo("agentValidationGate");
-    assertThat(
+    assertThat(after.currentActivityId()).isEqualTo(reviewIndex == 4 ? "agentValidationGate" : "psiqueSafety");
+    if (reviewIndex == 4) assertThat(
             after.activities().stream()
                 .filter(
                     a ->
@@ -200,9 +218,9 @@ class PdeRevalidationActivityExecutionTest {
                 .findFirst()
                 .orElseThrow()
                 .operationalState())
-        .isEqualTo("RECORDED");
-    assertThat(history.get(4).getStatus()).isEqualTo("BLOCKED");
-    assertThat(history.get(5).getStatus()).isEqualTo("BLOCKED");
+        .isEqualTo(reviewIndex == 4 ? "RECORDED" : "NOT_STARTED");
+    assertThat(history.get(reviewIndex).getStatus()).isEqualTo("BLOCKED");
+    if (reviewIndex == 4) assertThat(history.get(5).getStatus()).isEqualTo("BLOCKED");
   }
 
   /** Exercita o serviço da tela junto ao gate real de retrabalho e preserva a prova anterior. */

@@ -13,7 +13,10 @@ const EVIDENCE_COLLECTIONS = [
 
 const PROMPT_MODES = new Set(["FULL", "ATTESTED_REFERENCE"]);
 
-const MUTABLE_ACTIVE_EVIDENCE_PATHS = new Set(["docs/registros/loops.md"]);
+const MUTABLE_ACTIVE_EVIDENCE_PATHS = new Set([
+  "docs/registros/loops.md",
+  "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json",
+]);
 
 export const FIXED_REVIEW_PATHS = [
   "pde-platform/contracts/kit-whatsapp-pronto-v1.json",

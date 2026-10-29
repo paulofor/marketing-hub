@@ -81,3 +81,18 @@ O registro #861 permanece bloqueado no histórico, sem edição ou apagamento.
 O primeiro ensaio local revelou que reabrir seleciona o próximo dia; o verificador
 passou a abrir explicitamente o dia recuperado antes da captura, sem mudar a aplicação.
 Aprovação técnica não é parecer independente nem evidência de vendas.
+
+## Compatibilidade das provas empacotadas
+
+O primeiro CI detectou que a atestação de Mira incluía o catálogo global de
+controles. A inclusão da prova de Vega mudou esse arquivo, embora o relatório de
+Mira fosse idêntico. A nova atestação de compatibilidade retém o relatório
+específico de Mira, preserva a anterior e registra os hashes do gate e testes
+revalidados. O empacotador passa a recusar catálogos globais nas atestações
+vigentes, como já fazia com o diário de loops.
+
+A atestação de Vega também é renovada para o harness efetivamente testado.
+Não muda a experiência, não renova parecer comercial e não amplia autorizações.
+Validação complementar local aprovada: 17 testes do empacotador, pacote completo
+com 749 arquivos e 183 manifestos, 29 testes do contrato de publicação e os leitores
+de Têmis (13 testes) e Psique (12 testes). Não houve inferência nem renovação comercial.

@@ -195,9 +195,9 @@ test("empacota revisão vigente íntegra e preserva a prova histórica sem reesc
   );
 });
 
-test("preserva diário global no histórico e o recusa como prova da atestação vigente", async (t) => {
+for (const mutablePath of ["docs/registros/loops.md", "backend/ads-service/src/main/resources/contracts/pde-operational-controls-catalog-v1.json"])
+test(`preserva ${mutablePath} no histórico e exige prova específica na atestação vigente`, async (t) => {
   const { root, destination } = await fixture(t);
-  const mutablePath = "docs/registros/loops.md";
   const mutableContent = "diário global sujeito a novos registros";
   const mutableFile = path.join(root, mutablePath);
   await fs.mkdir(path.dirname(mutableFile), { recursive: true });
@@ -221,7 +221,7 @@ test("preserva diário global no histórico e o recusa como prova da atestação
       error.message,
       /Prova mutável não pode compor atestação vigente/,
     );
-    assert.match(error.message, /docs\/registros\/loops\.md/);
+    assert.ok(error.message.includes(mutablePath));
     assert.match(error.message, /produto=rigel/);
     return true;
   });

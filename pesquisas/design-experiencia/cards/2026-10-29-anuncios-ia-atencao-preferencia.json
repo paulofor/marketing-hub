@@ -1,0 +1,18 @@
+{
+  "cardKey": "atencao-vs-preferencia-anuncios-gerados-ia",
+  "collection": "neuromarketing",
+  "title": "Atenção visual e preferência não são equivalentes em anúncios produzidos com IA",
+  "finding": "Em 858 julgamentos de 39 jovens, anúncios integralmente gerados por IA foram escolhidos em 58,97% das comparações com anúncios humanos (OR 1,44; p=0,0015). Imagens humanas refinadas com IA não diferiram em escolha (49,88%; p=0,978). Ambas as modalidades com IA apresentaram mais fixações e sacadas menores; o padrão de olhar não prova preferência.",
+  "mechanism": "A exploração visual pode depender de complexidade e composição da peça; maior número de fixações não implica preferência ou compra. As imagens processadas por IA tinham maior densidade de bordas, impedindo atribuição causal exclusiva à autoria.",
+  "commercialApplication": "Íris e Psique podem comparar criativos humanos, IA integral e IA refinada em testes consentidos, avaliando separadamente atenção, compreensão da oferta e preferência. Têmis deve exigir evidência de CTA, checkout e pagamento antes de alegar resultado comercial.",
+  "evidenceStrength": "Artigo revisado por pares (Sensors, 10/10/2026), experimento de eye tracking e escolha forçada, N=39, 858 julgamentos. Evidência laboratorial moderada para diferenças de exploração/preferência nessas condições; sem teste de conversão ou vendas.",
+  "publishedOn": "2026-10-29",
+  "validUntil": "2026-12-13",
+  "experimentHypothesis": "Sob oferta e composição controladas, diferenças na exploração visual entre criativos humanos e gerados com IA não predirão necessariamente maior compreensão, CTA ou pagamento. Testar com alocação aleatória e custo por criativo aprovado.",
+  "risks": "Inferir vendas a partir de fixações, ocultar origem sintética quando devida, persuasão enganosa, vieses de amostra, erro de leitura de preço/benefício e coleta indevida de dados oculares.",
+  "limits": "Amostra de 39 adultos jovens e muito familiarizados com IA; escolhas binárias sem dinheiro, sem divulgação da autoria e com densidade de bordas desigual. A diferença entre efeitos de escolha de IA integral e IA refinada não foi demonstrada estatisticamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-29-anuncios-ia-atencao-preferencia.md",
+  "sourceTitle": "Gonçalves et al. (2026), Sensors: anúncios humanos, gerados e refinados com IA — evidência revisada",
+  "sourceSha256": "724ae1a127662ec9360db8ee7106e8e5b83e5c5112248e480e16939a1e70076b"
+}

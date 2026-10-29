@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-kling4-api-direta-vs-intermediario",
+  "collection": "video",
+  "title": "Comparar API direta Kling 4.0 e Runway antes de contratar",
+  "finding": "Em 28/10/2026, observadores das notas oficiais reportaram a Kling 4.0 API direta como plenamente disponivel; antes estava em abertura progressiva. O mesmo modelo ja era acessivel via Runway Dev.",
+  "mechanism": "Uma segunda superficie de integracao para o mesmo gerador cria escolha de fornecedor, precificacao e termos; nao implica aumento de qualidade do modelo.",
+  "commercialApplication": "Marketing Hub: manter primeiro o piloto via Runway Dev, que publica desconto de 20% ate 30/11, e cotar a API direta so se houver volume e vantagem contratual ou operacional comprovada.",
+  "evidenceStrength": "Media para data de abertura direta (reproducao convergente de notas do fabricante por terceiros, sem requisicao autenticada); forte para status e preco da API Runway por fonte primaria.",
+  "publishedOn": "2026-10-28",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "No volume inicial de criativos, a Runway com desconto e compra por uso tera custo de entrada inferior ao pacote direto, sem perda relevante de qualidade ao usar o mesmo Kling 4.0.",
+  "risks": "Precos da API direta variam por pacote; relatos de compra minima; direitos de uso comercial devem ser revisados por contrato; custo de video de entrada; expiracao de creditos; latencia e moderacao.",
+  "limits": "API Kling 4.0 em 720p/1080p para clipes 3-30s; 4K/HDR/extensao nao confirmados via API. Nenhum teste pago ou autenticado. Tarifas Runway promocionais US$0.1256/s 720p e US$0.188/s 1080p ate 30/11; valores sem entrada video.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-29-kling4-api-direta-precos.md",
+  "sourceTitle": "Fonte revisada - API direta Kling 4.0 e precos por canal",
+  "sourceSha256": "e0c7a81d9ab02a1ea18d441435eaa189694c18660ff119c8aaf2bb86be9b6089"
+}

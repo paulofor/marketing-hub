@@ -12,6 +12,12 @@
       "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
       "resource": "contracts/operational-evidence/vega-operational-controls-v6.json",
       "sha256": "05cd57ab9932e22e62d638cbf014e832961d8edf7f0aab4740d7ce00d6c5c339"
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
+      "resource": "contracts/operational-evidence/vega-recovery-completion-v1.json",
+      "sha256": "c3f74ca3dfa34cec1a63bc2f55b31171c9be766d943225da3c334feee2cb0273"
     }
   ],
   "historicalReports": [

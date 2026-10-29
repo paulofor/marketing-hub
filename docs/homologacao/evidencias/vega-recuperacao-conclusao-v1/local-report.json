@@ -1,0 +1,449 @@
+{
+  "date": "2026-10-29",
+  "environment": "LOCAL_MYSQL_57",
+  "providerCalls": 0,
+  "commercialEvidence": false,
+  "originalTask": 861,
+  "runs": [
+    {
+      "mode": "TECHNICAL",
+      "version": "musa-pde-entry-v17-continuidade-clara",
+      "decision": "APPROVED",
+      "checks": {
+        "sameVersion": true,
+        "desktopAndMobile": true,
+        "happyResultWithinTenMinutes": true,
+        "recoveryPreserved": true,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "responsiveLayout": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "sevenDayJourney": true
+      },
+      "scenarios": [
+        {
+          "scenario": "ADHERENT",
+          "device": "DESKTOP_1440",
+          "status": "PASS",
+          "completionRecovery": null,
+          "imageSha256": "a28e4beb2061d8bc373507e507275d8dc7b6a44649cf872198750c31bbdce613"
+        },
+        {
+          "scenario": "ADHERENT",
+          "device": "IPHONE_15_PRO",
+          "status": "PASS",
+          "completionRecovery": null,
+          "imageSha256": "85d993879b19625e43d58e86f37cc1c856e6188a75f24260818ce310dfdb7aae"
+        },
+        {
+          "scenario": "ADHERENT",
+          "device": "PIXEL_7",
+          "status": "PASS",
+          "completionRecovery": null,
+          "imageSha256": "329e13415a7c72ee659241fd22d104a741db464aa2575a3c544063c8c6460696"
+        },
+        {
+          "scenario": "RECOVERY",
+          "device": "DESKTOP_1440",
+          "status": "PASS",
+          "completionRecovery": {
+            "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+            "missionId": "estilo-dia-1",
+            "requestId": "aba0319cab911440c35c8e623e0d4806",
+            "guidanceStatus": "COMPLETED",
+            "missionCompleted": true,
+            "emptyReflection": true,
+            "preservedAfterReopen": true,
+            "repeatedWithoutDuplicate": true,
+            "observations": {
+              "beforeCompletion": {
+                "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+                "mission": {
+                  "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  }
+                },
+                "completedMissionIds": [],
+                "progressPercent": 0,
+                "operationCount": 1
+              },
+              "afterCompletion": {
+                "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+                "mission": {
+                  "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterReopen": {
+                "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+                "mission": {
+                  "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterRepeat": {
+                "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+                "mission": {
+                  "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              }
+            }
+          },
+          "imageSha256": "bc6337eba4363df3b63d1d6c0804f90c0f2c5371c581e8c88c146b3f6e1b1e85"
+        },
+        {
+          "scenario": "RECOVERY",
+          "device": "IPHONE_15_PRO",
+          "status": "PASS",
+          "completionRecovery": {
+            "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+            "missionId": "estilo-dia-1",
+            "requestId": "6292231a79b978f1fd4940c331f0f9d2",
+            "guidanceStatus": "COMPLETED",
+            "missionCompleted": true,
+            "emptyReflection": true,
+            "preservedAfterReopen": true,
+            "repeatedWithoutDuplicate": true,
+            "observations": {
+              "beforeCompletion": {
+                "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+                "mission": {
+                  "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  }
+                },
+                "completedMissionIds": [],
+                "progressPercent": 0,
+                "operationCount": 1
+              },
+              "afterCompletion": {
+                "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+                "mission": {
+                  "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterReopen": {
+                "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+                "mission": {
+                  "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterRepeat": {
+                "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+                "mission": {
+                  "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              }
+            }
+          },
+          "imageSha256": "70af199c9688631e3ff054479f3e81a5a253b2929da2ddb9aa43952478744dc8"
+        },
+        {
+          "scenario": "RECOVERY",
+          "device": "PIXEL_7",
+          "status": "PASS",
+          "completionRecovery": {
+            "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+            "missionId": "estilo-dia-1",
+            "requestId": "17da3fc4d34492dd8af6c68b33532dfb",
+            "guidanceStatus": "COMPLETED",
+            "missionCompleted": true,
+            "emptyReflection": true,
+            "preservedAfterReopen": true,
+            "repeatedWithoutDuplicate": true,
+            "observations": {
+              "beforeCompletion": {
+                "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+                "mission": {
+                  "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  }
+                },
+                "completedMissionIds": [],
+                "progressPercent": 0,
+                "operationCount": 1
+              },
+              "afterCompletion": {
+                "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+                "mission": {
+                  "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterReopen": {
+                "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+                "mission": {
+                  "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterRepeat": {
+                "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+                "mission": {
+                  "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              }
+            }
+          },
+          "imageSha256": "dbc9b286d5bc11cf89e039eeeb0172181295f09cf13a36f1eb9a91fc8be38521"
+        },
+        {
+          "scenario": "SAFETY",
+          "device": "DESKTOP_1440",
+          "status": "PASS",
+          "completionRecovery": null,
+          "imageSha256": "56770551ee6a5704a256819fbdffb2ba046c60716df79e12ecadeb30e1496a15"
+        },
+        {
+          "scenario": "SAFETY",
+          "device": "IPHONE_15_PRO",
+          "status": "PASS",
+          "completionRecovery": null,
+          "imageSha256": "cc59aba007d40486b777206fd3664bb3ffc4e93d7c908b1468c3db2f9d28ff66"
+        },
+        {
+          "scenario": "SAFETY",
+          "device": "PIXEL_7",
+          "status": "PASS",
+          "completionRecovery": null,
+          "imageSha256": "da3abc9abcf78dbe16baf581f7decd023df4d503fb99e0405d349ac12f6bb8fe"
+        }
+      ]
+    },
+    {
+      "mode": "SCENARIO",
+      "version": "musa-pde-entry-v16-modelagem-internacional",
+      "decision": "APPROVED",
+      "checks": {
+        "sameVersion": true,
+        "desktopAndMobile": true,
+        "happyResultWithinTenMinutes": true,
+        "recoveryPreserved": true,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "responsiveLayout": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "sevenDayJourney": true
+      },
+      "scenarios": [
+        {
+          "scenario": "RECOVERY",
+          "device": "IPHONE_15_PRO",
+          "status": "PASS",
+          "completionRecovery": {
+            "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+            "missionId": "estilo-dia-1",
+            "requestId": "adabb71edccce94ce9c46388d85231cf",
+            "guidanceStatus": "COMPLETED",
+            "missionCompleted": true,
+            "emptyReflection": false,
+            "preservedAfterReopen": true,
+            "repeatedWithoutDuplicate": true,
+            "observations": {
+              "beforeCompletion": {
+                "evidenceId": "86b8e155-47d5-4f2b-a366-dcd8f7ac485c",
+                "mission": {
+                  "latestRequestId": "adabb71edccce94ce9c46388d85231cf",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": ""
+                  }
+                },
+                "completedMissionIds": [],
+                "progressPercent": 0,
+                "operationCount": 1
+              },
+              "afterCompletion": {
+                "evidenceId": "86b8e155-47d5-4f2b-a366-dcd8f7ac485c",
+                "mission": {
+                  "latestRequestId": "adabb71edccce94ce9c46388d85231cf",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": "Registro sintético para conferir a retomada."
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterReopen": {
+                "evidenceId": "86b8e155-47d5-4f2b-a366-dcd8f7ac485c",
+                "mission": {
+                  "latestRequestId": "adabb71edccce94ce9c46388d85231cf",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": "Registro sintético para conferir a retomada."
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              },
+              "afterRepeat": {
+                "evidenceId": "86b8e155-47d5-4f2b-a366-dcd8f7ac485c",
+                "mission": {
+                  "latestRequestId": "adabb71edccce94ce9c46388d85231cf",
+                  "answers": {
+                    "occasion": "almoço",
+                    "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                    "stylePreference": "Cor e criatividade",
+                    "reflection": "Registro sintético para conferir a retomada."
+                  },
+                  "completed": true
+                },
+                "completedMissionIds": [
+                  "estilo-dia-1"
+                ],
+                "progressPercent": 14,
+                "operationCount": 1
+              }
+            }
+          },
+          "imageSha256": "e8dc1726308133932f2d30d4d9572eb812412ca9ddc05b18bc3b364da5c567e6"
+        }
+      ]
+    }
+  ],
+  "sourceSha256": {
+    "customer-agent-worker/src/main/resources/browser/vega-contextual-style-harness.mjs": "aff8f6203e42760908a9f92e75c7ba53925a81c411fca8d71f8782fccdc9c936",
+    "customer-agent-worker/src/main/resources/browser/mission-recovery-evidence.mjs": "35e3875c395c1fd50420c66c5911c9000adb085c392bf33fc52ae244b52b8491"
+  }
+}

@@ -46,3 +46,11 @@ A fixture cria também ciclo 91003 / experimento 91093 para
 `musa-pde-entry-v17-continuidade-clara`, mantendo a v16 em 91002 / 91092.
 Os testes de próximo passo usam a v17 e conferem a apresentação preservada da v16.
 Não migre sessões ou registros entre essas identidades.
+
+RECOVERY também precisa concluir o Dia 1 pelo botão real após recuperar a
+orientação. Na v17, deixar o comentário vazio; na v16, preservar sua exigência.
+O relatório `completionRecovery` distingue orientação pronta, missão concluída
+e jornada inteira, com estados após conclusão, reabertura e repetição. Conferir
+mesma operação, escolhas e progresso sem duplicação; a captura é posterior à
+conclusão. Para uma lacuna somente nesse cenário, usar `mode: SCENARIO` e
+`scenarioCode: RECOVERY`, sem refazer a matriz inteira já aceita.

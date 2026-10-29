@@ -1,3 +1,23 @@
+## LOOP-PSIQUE-RECUPERACAO-SEM-CONCLUSAO — 29/10/2026
+
+- **Evidência:** Vega #18/#111, homologação #859 aprovada e Psique #861 bloqueada.
+  A orientação foi recuperada, mas a captura permanecia em 0%; o relatório não
+  distinguia conclusão da orientação, missão e jornada de sete dias.
+- **Causa:** RECOVERY terminava antes da ação final. ADHERENT testava conclusão,
+  mas não comprovava a mesma sequência após falha de transporte e retomada.
+- **Correção:** executar a conclusão real, com comentário vazio na v17, conferir
+  relatório e workspace após concluir, reabrir e repetir, e capturar o estado final.
+  Preservar comentário obrigatório na v16 e os pareceres históricos. O suplemento
+  versionado abre somente nova revisão da prova, vinculado ao ID/hash da recusa,
+  sem exigir mudança de produto para uma lacuna exclusiva do verificador.
+- **Prevenção:** verificador compartilhado recusa missão incompleta, progresso
+  duplicado, operação/identidade divergente e evento inventado; cobre outra
+  identidade, caminho válido e integração real com MySQL e três dispositivos.
+- **Métrica e limite:** eliminar a repetição de parecer por evidência terminal
+  ausente, sem confundir teste técnico com satisfação ou venda. Reversão não pode
+  aceitar novamente orientação pronta como conclusão da missão. [Matriz e
+  resultados](../homologacao/vega-recuperacao-conclusao-v1.md).
+
 ## LOOP-DEDALO-RESPOSTA-PERDIDA-NO-CALLBACK — arquitetura pronta aparece bloqueada
 
 - **Evidência (29/10/2026):** Capella, ciclo 17/experimento 110. Atena 850 e Plutus 851 aceitos;

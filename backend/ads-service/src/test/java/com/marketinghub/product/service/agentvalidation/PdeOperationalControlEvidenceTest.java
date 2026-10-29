@@ -433,4 +433,24 @@ class PdeOperationalControlEvidenceTest {
                     java.nio.file.Files.readAllBytes(
                         java.nio.file.Path.of("../..").resolve(relativePath))));
   }
+
+  /** Confere o suplemento real da recuperação, seus recibos e o limite de reavaliação. */
+  @Test
+  void recoverySupplementMatchesExecutedProofAndCurrentHarness() throws Exception {
+    var real = new PdeOperationalControlEvidence(json, new org.springframework.core.io.DefaultResourceLoader());
+    var evidence = real.resolve("metodo-musa-7-dias", "musa-pde-entry-v17-continuidade-clara").orElseThrow();
+    assertThat(evidence.path("criteria").size()).isEqualTo(3);
+    for (var criterion : evidence.path("criteria")) {
+      var result = criterion.path("result");
+      assertThat(result.path("contractVersion").asText()).isEqualTo("MISSION_COMPLETION_RECOVERY_V1");
+      for (String key : java.util.List.of("missionCompleted", "emptyReflection", "preservedAfterReopen", "repeatedWithoutDuplicate"))
+        assertThat(result.path(key).asBoolean()).as(key).isTrue();
+    }
+    for (var source : evidence.path("sourceFiles"))
+      assertThat(fileHash(source.path("path").asText())).isEqualTo(source.path("sha256").asText());
+    assertThat(fileHash(evidence.path("testReceiptPath").asText())).isEqualTo(evidence.path("testReceiptSha256").asText());
+    assertThat(evidence.path("reviewReevaluation").path("implementationChanged").asBoolean(true)).isFalse();
+    assertThat(evidence.path("reviewReevaluation").path("independentReviewRequired").asBoolean()).isTrue();
+    assertThat(evidence.path("agentApprovalClaimed").asBoolean(true)).isFalse();
+  }
 }

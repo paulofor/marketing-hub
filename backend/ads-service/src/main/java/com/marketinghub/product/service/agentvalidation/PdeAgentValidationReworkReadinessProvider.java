@@ -158,7 +158,7 @@ public class PdeAgentValidationReworkReadinessProvider
             .isPresent();
     if (currentBlock)
       return latest
-          .filter(task -> freshIntegrityEvidence(task, product, version, sourceReference))
+          .filter(task -> freshReviewEvidence(task, product, version, sourceReference))
           .isPresent();
     if (CORRECTION_ACTIVITY.equals(activityId)) {
       return correctionSource(history, version, product, sourceReference).isPresent();
@@ -287,19 +287,21 @@ public class PdeAgentValidationReworkReadinessProvider
             .filter(task -> rejected.processActivityId().equals(task.processActivityId()))
             .filter(task -> "COMPLETED".equals(task.status()))
             .anyMatch(task -> approvedForVersion(task, task.processActivityId(), expectedVersion));
-    if (reviewedAgain || freshIntegrityEvidence(rejected, product, expectedVersion, reference))
+    if (reviewedAgain || freshReviewEvidence(rejected, product, expectedVersion, reference))
       return Optional.empty();
     long correctionId = latestCorrectionId(history, expectedVersion);
     return correctionId > rejection.orElseThrow().id() ? Optional.empty() : rejection;
   }
 
-  /** Compara a prova ao horário do bloqueio, que não possui deliveredAt, e abre só novo parecer. */
-  private boolean freshIntegrityEvidence(
+  /**
+   * Abre somente novo parecer com prova posterior: cenários exigem vínculo ao bloqueio exato;
+   * preserva o contrato anterior dos suplementos de integridade e todas as aprovações independentes.
+   */
+  private boolean freshReviewEvidence(
       PdeValidationTaskSnapshot rejected, Product product, String version, String reference) {
     if (operationalEvidence == null
         || product == null
         || version == null
-        || !"commercialIntegrityReview".equals(rejected.processActivityId())
         || !"FUNCTIONAL_ADJUSTMENT".equals(rejected.blockerCategory())) return false;
     var evidence = operationalEvidence.resolve(product.getSlug(), version);
     if (evidence.isEmpty()) return false;
@@ -308,7 +310,11 @@ public class PdeAgentValidationReworkReadinessProvider
         || task.getUpdatedAt() == null
         || !java.util.Objects.equals(reference, task.getSourceReference())) return false;
     try {
-      return !approvedForVersion(rejected, "commercialIntegrityReview", version)
+      boolean eligible =
+          "commercialIntegrityReview".equals(rejected.processActivityId())
+              || PdeReviewEvidenceReevaluation.matches(evidence.get(), task, product.getId(), reference);
+      return eligible
+          && !approvedForVersion(rejected, rejected.processActivityId(), version)
           && version.equals(json.readTree(rejected.resultJson()).path("prototypeVersion").asText())
           && java.time.Instant.parse(evidence.get().path("generatedAt").asText())
               .isAfter(task.getUpdatedAt());

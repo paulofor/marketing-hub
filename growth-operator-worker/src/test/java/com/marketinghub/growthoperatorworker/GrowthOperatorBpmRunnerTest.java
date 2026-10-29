@@ -100,7 +100,7 @@ class GrowthOperatorBpmRunnerTest {
             "--output-schema",
             "/tmp/schema.json",
             "approval_policy=\"never\"",
-            "model_reasoning_effort=\"high\"")
+            "model_reasoning_effort=\"max\"")
         .doesNotContain("--dangerously-bypass-approvals-and-sandbox");
     assertThat(command)
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")

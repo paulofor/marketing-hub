@@ -7,6 +7,7 @@ import {
   parseUsage,
   refreshedProcessContext,
   resolveContract,
+  resolveReasoningEffort,
   runAuditedModel,
   taskFromPayload,
   validateResult,
@@ -228,4 +229,12 @@ test("permite aprovar economia hipotética com envelope e travas futuras", async
     prompt,
     /nunca orçamento, campanha,\s+contato, publicação ou gasto/,
   );
+});
+
+test("executor comercial exige max antes de reservar trabalho", () => {
+  assert.equal(resolveReasoningEffort(), "max");
+  assert.equal(resolveReasoningEffort(" max "), "max");
+  for (const effort of [null, "", "high", "medium", "xhigh"]) {
+    assert.throws(() => resolveReasoningEffort(effort), /deve ser max/);
+  }
 });

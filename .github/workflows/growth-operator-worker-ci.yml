@@ -213,6 +213,7 @@ jobs:
                    MARKETING_HUB_URL=http://191.252.181.168 \
                    MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
                    COMMERCIAL_PLAN_ID=2 \
+                   CODEX_REASONING_EFFORT=max \
                    CODEX_MODEL=gpt-6.1-sol \
                    AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}' \
                    GROWTH_OPERATOR_IMAGE=marketing-hub/growth-operator-worker:${DEPLOY_SOURCE_SHA} \

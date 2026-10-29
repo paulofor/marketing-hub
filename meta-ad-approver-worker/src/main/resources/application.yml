@@ -22,7 +22,7 @@ meta-ad-approver:
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   codex-command: ${CODEX_COMMAND:codex}
   model: ${CODEX_MODEL:gpt-6.1-sol}
-  reasoning-effort: ${CODEX_REASONING_EFFORT:high}
+  reasoning-effort: ${CODEX_REASONING_EFFORT:max}
   codex-timeout: ${META_AD_APPROVER_CODEX_TIMEOUT:PT40M}
   commercial-model-inactivity-timeout: ${TEMIS_COMMERCIAL_MODEL_INACTIVITY_TIMEOUT:PT10M}
   commercial-model-absolute-timeout: ${TEMIS_COMMERCIAL_MODEL_ABSOLUTE_TIMEOUT:PT40M}

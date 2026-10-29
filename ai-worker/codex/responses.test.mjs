@@ -219,3 +219,33 @@ test('não substitui automaticamente modelo indisponível', async t => {
   await assert.rejects(execute({ ...body(), model: 'modelo-ausente' }, options), /indisponível/);
   assert.equal((await calls(options)).filter(c => c.method === 'turn/start').length, 0);
 });
+
+for (const requested of [undefined, 'high', 'medium', 'max']) {
+  test(`Worker IA envia max ao App Server e audita solicitação ${requested}`, async t => {
+    const options = await setup(t);
+    const request = { ...body(`max-${requested}`), ...(requested ? { reasoning: { effort: requested } } : {}) };
+    const response = await execute(request, options);
+    const turn = (await calls(options)).find(c => c.method === 'turn/start');
+    assert.equal(turn.params.effort, 'max');
+    assert.equal(response.codex_app_server.request.turn.effort, 'max');
+    assert.equal(response.codex_app_server.requestedReasoningEffort, requested || null);
+    assert.equal(response.codex_app_server.effectiveReasoningEffort, 'max');
+    const before = (await calls(options)).length;
+    assert.deepEqual(await execute(request, options), response);
+    assert.equal((await calls(options)).length, before);
+  });
+}
+
+test('recibo histórico preserva esforço original sem abrir inferência para atualizá-lo', async t => {
+  const options = await setup(t);
+  const request = { ...body('legacy-effort'), reasoning: { effort: 'medium' } };
+  const legacy = await execute(request, options);
+  legacy.codex_app_server.request.turn.effort = 'medium';
+  delete legacy.codex_app_server.effectiveReasoningEffort;
+  delete legacy.codex_app_server.requestedReasoningEffort;
+  const file = (await readdir(options.cacheDirectory)).find(name => name.endsWith('.json'));
+  await writeFile(join(options.cacheDirectory, file), JSON.stringify(legacy));
+  const before = (await calls(options)).length;
+  assert.deepEqual(await execute(request, options), legacy);
+  assert.equal((await calls(options)).length, before);
+});

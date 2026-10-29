@@ -19,11 +19,14 @@ test("permite auditoria no snapshot sem depender de namespace aninhado", () => {
   assert.equal(CODEX_SANDBOX, "danger-full-access");
 });
 
-test("mantém Psique em raciocínio máximo sem ampliar a regra aos demais agentes", () => {
-  assert.equal(resolveReasoningEffort("psique"), "max");
-  assert.equal(resolveReasoningEffort("temis"), "high");
-  assert.equal(resolveReasoningEffort("dedalo", "xhigh"), "xhigh");
-  assert.throws(() => resolveReasoningEffort("psique", "high"), /deve ser max/);
+test("exige max dos três agentes também no executor local", () => {
+  for (const agent of ["psique", "temis", "dedalo"]) {
+    assert.equal(resolveReasoningEffort(agent), "max");
+    assert.equal(resolveReasoningEffort(agent, " max "), "max");
+    for (const effort of ["high", "xhigh", "", "medium"]) {
+      assert.throws(() => resolveReasoningEffort(agent, effort), /deve ser max/);
+    }
+  }
 });
 
 test("preserva a última telemetria cumulativa", () => {

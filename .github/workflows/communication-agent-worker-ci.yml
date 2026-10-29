@@ -204,7 +204,7 @@ jobs:
                    BACKEND_URL=http://191.252.181.168 \
                    MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
                    CODEX_MODEL=gpt-6.1-sol \
-                   CODEX_REASONING_EFFORT=high \
+                   CODEX_REASONING_EFFORT=max \
                    CODEX_SERVICE_TIER=default \
                    AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}' \
                    COMMUNICATION_AGENT_IMAGE=marketing-hub/communication-agent-worker:${DEPLOY_SOURCE_SHA} \

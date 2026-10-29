@@ -28,14 +28,21 @@ final class CreativeEvidenceReader {
         boolean retry = attempt < MAX_ATTEMPTS && transientRead(ex);
         log.warn(
             "Falha na leitura de prova de Têmis. taskId={} endpoint={} attempt={} maxAttempts={} retry={}",
-            taskId, endpoint, attempt, MAX_ATTEMPTS, retry, ex);
+            taskId,
+            endpoint,
+            attempt,
+            MAX_ATTEMPTS,
+            retry,
+            ex);
         if (!retry) throw ex;
         try {
           Thread.sleep(250L * attempt);
         } catch (InterruptedException interrupted) {
           log.warn(
               "Recuperação da leitura de prova interrompida. taskId={} endpoint={}",
-              taskId, endpoint, interrupted);
+              taskId,
+              endpoint,
+              interrupted);
           Thread.currentThread().interrupt();
           throw new IOException("Recuperação da leitura de prova interrompida.", interrupted);
         }

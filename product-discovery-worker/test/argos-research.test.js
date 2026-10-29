@@ -61,7 +61,7 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
   assert.match(prompt, /R1/);
   assert.doesNotMatch(prompt, /{{[^}]+}}/);
   assert.deepEqual(result.synthesis, expected);
-  assert.equal(result.reasoningEffort, "medium");
+  assert.equal(result.reasoningEffort, "max");
   assert.equal(executionOptions.phaseName, "síntese factual");
   assert.deepEqual(result.usage, {
     inputTokens: 300,
@@ -490,4 +490,12 @@ test("JSON malformado fica no envelope de falha sem derrubar o callback de audit
       return true;
     },
   );
+});
+
+test("síntese recusa override inferior sem executar inferência", async () => {
+  let calls = 0;
+  await assert.rejects(synthesizeMarketCandidates(researchContext(), {
+    enabled: true, reasoningEffort: "medium", execute: async () => { calls++; },
+  }), /deve ser max/);
+  assert.equal(calls, 0);
 });

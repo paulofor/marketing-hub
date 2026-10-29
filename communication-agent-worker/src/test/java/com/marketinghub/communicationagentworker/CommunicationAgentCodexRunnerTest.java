@@ -344,7 +344,7 @@ class CommunicationAgentCodexRunnerTest {
             "--search",
             "--skip-git-repo-check",
             "approval_policy=\"never\"",
-            "model_reasoning_effort=\"high\"",
+            "model_reasoning_effort=\"max\"",
             "service_tier=\"default\"")
         .containsSubsequence("--sandbox", "read-only")
         .contains("mcp_servers.iris_communication.command=\"node\"")

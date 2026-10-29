@@ -178,6 +178,37 @@ pesquisa web do Codex.
 
 ## Baseline dos agentes operacionais
 
+### Raciocínio máximo em todos os agentes — decisão de 29/10/2026
+
+Toda nova chamada de raciocínio de Argos, Atena, Plutus, Dédalo, Íris, Apolo,
+Psique, Têmis e Hermes deve usar esforço `max`, inclusive atividades operacionais,
+planejamento, síntese, revisão e executores locais. A seleção de modelo por agente
+e atividade continua vigente. O Worker IA deve enviar `effort: "max"` no turno
+Codex e registrar a configuração efetiva no recibo.
+
+Defaults do executor, Spring, Compose e publicador devem concordar. Configuração
+antiga inferior deve ser recusada antes da chamada ou substituída explicitamente
+na montagem do turno, com o valor solicitado e o efetivo auditados. Não basta
+instruir o prompt. A regressão compartilhada deve cobrir os nove agentes, as
+variantes de execução e os publicadores, sem depender de credenciais reais.
+
+Chamadas já iniciadas e recibos históricos preservam sua configuração original;
+recuperar callback não autoriza repetir inferência para obter `max`. Etapas
+determinísticas continuam `NOT_APPLICABLE`; geração de imagem, voz e escuta
+preservam seus contratos especializados quando não oferecem esse parâmetro.
+Os tetos financeiros e as aprovações existentes permanecem aplicáveis.
+
+O histórico `LOOP-VIDEO-ANALISE-SAIDA-CONSUMIDA-PELO-RACIOCINIO` exige atenção à
+capacidade de saída: a análise de referências de Apolo usa 32.000 tokens como
+limite técnico para `max`, mantendo reserva, teto, auditoria de respostas
+incompletas e ausência de repetição automática. Esse limite não é autorização de
+consumo. Raciocínio máximo pode aumentar latência e consumo; não comprova melhor
+conversão. A adoção segue a decisão do usuário e a qualidade comercial será
+medida nas entregas e experimentos autorizados.
+
+Referências oficiais: [configuração Codex](https://learn.chatgpt.com/docs/config-file/config-reference)
+e [turnos do App Server](https://learn.chatgpt.com/docs/app-server).
+
 ### Seleção proporcional de modelo — decisão de 19/10/2026
 
 Usar os dois níveis: padrão explícito por agente e precedência da atividade quando

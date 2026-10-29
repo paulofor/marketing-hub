@@ -13,7 +13,7 @@ public class FinancialAgentProperties {
   private String codexCommand;
   private String model;
   private String strategicModel = "gpt-6-astra";
-  private String reasoningEffort = "high";
+  private String reasoningEffort = "max";
   private String serviceTier = "default";
   private String serviceTierExceptionReason =
       "O catálogo do Codex OAuth não anuncia Flex para os modelos disponíveis ao harness.";
@@ -82,9 +82,9 @@ public class FinancialAgentProperties {
         : getModel();
   }
 
-  /** Retorna o esforço de raciocínio auditado. */
+  /** Retorna max validado para chamadas e auditorias, recusando configuração inferior. */
   public String getReasoningEffort() {
-    return reasoningEffort;
+    return requiredReasoningEffort();
   }
 
   /** Configura o esforço de raciocínio auditado. */
@@ -92,13 +92,13 @@ public class FinancialAgentProperties {
     this.reasoningEffort = reasoningEffort;
   }
 
-  /** Exige o esforço explícito compartilhado pelo comando e pela auditoria de Plutus. */
+  /** Exige max antes da chamada e mantém comando e auditoria com a mesma configuração. */
   public String requiredReasoningEffort() {
-    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+    if (reasoningEffort == null || !"max".equals(reasoningEffort.trim())) {
       throw new IllegalStateException(
-          "FINANCIAL_AGENT_REASONING_EFFORT é obrigatório para auditar Plutus.");
+          "CODEX_REASONING_EFFORT deve ser max, obrigatório para auditar Plutus.");
     }
-    return reasoningEffort.trim();
+    return "max";
   }
 
   /** Retorna o tier solicitado ao runtime Codex. */

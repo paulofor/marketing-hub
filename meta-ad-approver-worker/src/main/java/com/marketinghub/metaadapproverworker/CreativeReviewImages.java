@@ -27,8 +27,8 @@ final class CreativeReviewImages implements AutoCloseable {
   }
 
   /**
-   * Recupera leituras transitórias pelo contrato reservado do backend e confere os pixels antes
-   * de permitir a inferência.
+   * Recupera leituras transitórias pelo contrato reservado do backend e confere os pixels antes de
+   * permitir a inferência.
    */
   static CreativeReviewImages load(RestClient backend, Map<String, Object> task)
       throws IOException {
@@ -221,7 +221,8 @@ final class CreativeReviewImages implements AutoCloseable {
     byte[] bytes = verifiedDownloads.get(content);
     boolean reused = bytes != null;
     if (!reused) {
-      log.info("Baixando prova de origem/destino para Têmis. taskId={} endpoint={}", taskId, content);
+      log.info(
+          "Baixando prova de origem/destino para Têmis. taskId={} endpoint={}", taskId, content);
       bytes = CreativeEvidenceReader.read(backend, content, taskId, byte[].class);
     }
     if (bytes == null || !sha(bytes).equals(source.path("evidence").path("sha256").asText()))

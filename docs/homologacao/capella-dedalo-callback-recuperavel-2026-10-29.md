@@ -68,3 +68,8 @@ Na preparação do replay, a resposta textual do MCP substituiu um booleano não
 por `[REDACTED]`. A política recusou HTTP 409 sem mutação. A comparação de hashes identificou a
 diferença e o transporte dos bytes originais permitiu preservar exatamente a auditoria. Nenhum
 segredo ou prompt completo foi publicado; não relaxar a igualdade para contornar anonimização.
+
+O CI complementar identificou que o arquivo de testes antigo integra uma prova de Mira. Ele foi
+preservado byte a byte; as regressões novas ficam em `ProcessRunRecoveredCostTest`, sem mudar
+atestação ou produto alheio. Validação local: 161 testes pertinentes de automação, 16 testes do
+empacotador e empacotamento íntegro de 181 manifestos; Spotless e diff aprovados.

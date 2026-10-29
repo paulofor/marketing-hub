@@ -359,6 +359,300 @@ class PdeAgentValidationReworkReadinessProviderTest {
           .isFalse();
   }
 
+  /** Reabre apenas SAFETY e retém Têmis até parecer independente sobre os controles corrigidos. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {4, 97004})
+  void scopedControlsReopenSafetyAndRequireIndependentCitation(long productId) throws Exception {
+    var report = prepareScopedSafety(productId);
+    String source = "product:" + productId + "@agent-validation-v1";
+    assertThat(provider.requiresFreshExecution(process, activity("psiqueSafety"), product, source))
+        .isTrue();
+    assertThat(provider.readiness(process, activity("psiqueSafety"), product, source).ready())
+        .isTrue();
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isFalse();
+    for (String preserved : List.of("technicalHomologation", "psiqueAdherent", "psiqueRecovery"))
+      assertThat(provider.requiresFreshExecution(process, activity(preserved), product, source))
+          .isFalse();
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+        .isFalse();
+    var next = task(505L, process, "psiqueSafety", "COMPLETED");
+    next.setSourceReference(source);
+    next.setUpdatedAt(Instant.now());
+    var result = new ObjectMapper().createObjectNode();
+    result.put("decision", "APPROVED").put("prototypeVersion", "mira-private-v2");
+    next.setResultJson(result.toString());
+    history.add(next);
+    when(tasks.findById(505L)).thenReturn(java.util.Optional.of(next));
+    assertThat(provider.requiresFreshExecution(process, activity("psiqueSafety"), product, source))
+        .isFalse();
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isFalse();
+    result.putArray("evidence").add("Controles revisados: " + report.path("reportSha256").asText());
+    next.setResultJson(result.toString());
+    assertThat(provider.requiresFreshExecution(process, activity("psiqueSafety"), product, source))
+        .isFalse();
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isTrue();
+    var finalReview = task(506L, process, "commercialIntegrityReview", "COMPLETED");
+    finalReview.setSourceReference(source);
+    finalReview.setResultJson(result.toString());
+    history.add(finalReview);
+    assertThat(provider.requiresFreshExecution(process, activity("psiqueSafety"), product, source))
+        .isFalse();
+    assertThat(
+            provider.requiresFreshExecution(
+                process, activity("commercialIntegrityReview"), product, source))
+        .isFalse();
+    assertThat(history.get(4).getStatus()).isEqualTo("BLOCKED");
+  }
+
+  /** Exercita o comando real do BPM: reabre SAFETY concluído e impede Têmis antes do parecer. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {4, 97004})
+  void actualCommandReopensOnlyScopedReview(long productId) throws Exception {
+    prepareScopedSafety(productId);
+    String source = "product:" + productId + "@agent-validation-v1";
+    product.setAutomaticExecutionEnabled(true);
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V1");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"psiqueSafety\",\"type\":\"TASK\",\"label\":\"Segurança\",\"responsibleAgentKeys\":[\"customer-agent\"]},{\"id\":\"commercialIntegrityReview\",\"type\":\"TASK\",\"responsibleAgentKeys\":[\"meta-ad-approver\"]}]}");
+    var safety = activity("psiqueSafety");
+    safety.setDefinitionJson("{\"responsibleAgentKeys\":[\"customer-agent\"]}");
+    var integrity = activity("commercialIntegrityReview");
+    integrity.setDefinitionJson("{\"responsibleAgentKeys\":[\"meta-ad-approver\"]}");
+    var processes =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    var definitions =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess
+                .BusinessProcessActivityDefinitionRepository.class);
+    var products = mock(com.marketinghub.repository.jpa.product.ProductRepository.class);
+    var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    var instances =
+        mock(
+            com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository
+                .class);
+    var commands = mock(com.marketinghub.agenttask.AgentTaskService.class);
+    var completed = new com.marketinghub.agenttask.BusinessProcessActivityInstance();
+    completed.setId(901L);
+    completed.setActivityDefinition(safety);
+    completed.setSourceReference(source);
+    completed.setStatus("COMPLETED");
+    completed.setObjectiveAchieved(true);
+    completed.setOccurrenceNumber(1);
+    completed.setCreatedAt(Instant.now().minusSeconds(600));
+    completed.setUpdatedAt(completed.getCreatedAt());
+    when(processes.findById(process.getId())).thenReturn(java.util.Optional.of(process));
+    when(products.findById(productId)).thenReturn(java.util.Optional.of(product));
+    when(definitions.findByProcessDefinitionIdAndActivityId(process.getId(), "psiqueSafety"))
+        .thenReturn(java.util.Optional.of(safety));
+    when(definitions.findByProcessDefinitionIdAndActivityId(
+            process.getId(), "commercialIntegrityReview"))
+        .thenReturn(java.util.Optional.of(integrity));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                process.getProcessCode(), "product:" + productId + "@"))
+        .thenReturn(List.of(completed));
+    when(commands.retryBlockedByHumanOrRefreshPending(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(true)))
+        .thenReturn(mock(com.marketinghub.agenttask.AgentTaskResponse.class));
+    var service =
+        new com.marketinghub.businessprocess.execution.service
+            .BusinessProcessActivityExecutionService(
+            processes,
+            definitions,
+            tasks,
+            mock(
+                com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository
+                    .class),
+            instances,
+            mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class),
+            null,
+            products,
+            experiments,
+            commands,
+            new ObjectMapper(),
+            List.of(),
+            List.of(),
+            List.of(provider));
+    var response =
+        service.requestProductActivityExecution(
+            process.getId(), productId, "psiqueSafety", null, null, source);
+    assertThat(response.tasks()).hasSize(1);
+    var captured =
+        org.mockito.ArgumentCaptor.forClass(
+            com.marketinghub.agenttask.CreateAgentTaskRequest.class);
+    org.mockito.Mockito.verify(commands)
+        .retryBlockedByHumanOrRefreshPending(
+            captured.capture(), org.mockito.ArgumentMatchers.eq(true));
+    assertThat(captured.getValue().assignedAgentKey()).isEqualTo("customer-agent");
+    assertThat(captured.getValue().sourceReference()).isEqualTo(source);
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.requestProductActivityExecution(
+                    process.getId(), productId, "commercialIntegrityReview", null, null, source))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("Psique · limite e segurança");
+    org.mockito.Mockito.verifyNoMoreInteractions(commands);
+    org.mockito.Mockito.verify(tasks, org.mockito.Mockito.never())
+        .findById(org.mockito.ArgumentMatchers.anyLong());
+  }
+
+  /** Não transporta a solicitação de revisão de um contexto para outro já validado. */
+  @Test
+  void doesNotReopenAnotherContextUsingTheSameVersion() throws Exception {
+    var report = prepareScopedSafety(97004);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) report.path("scopedRevalidation"))
+        .put("productId", 4)
+        .put("sourceReference", "experiment:111");
+    history.get(4).setStatus("COMPLETED");
+    history
+        .get(4)
+        .setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"mira-private-v2\"}");
+    String source = "product:97004@agent-validation-v1";
+    assertThat(provider.requiresFreshExecution(process, activity("psiqueSafety"), product, source))
+        .isFalse();
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isTrue();
+  }
+
+  /** Não repete novo parecer recusado usando o pedido ligado ao parecer antigo. */
+  @Test
+  void scopedSafetyRejectionRequiresNewDiagnosis() throws Exception {
+    prepareScopedSafety(4);
+    String source = "product:4@agent-validation-v1";
+    var rejected = task(505L, process, "psiqueSafety", "BLOCKED");
+    rejected.setSourceReference(source);
+    rejected.setUpdatedAt(Instant.now());
+    rejected.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    rejected.setResultJson("{\"decision\":\"BLOCKED\",\"prototypeVersion\":\"mira-private-v2\"}");
+    history.add(rejected);
+    when(tasks.findById(505L)).thenReturn(java.util.Optional.of(rejected));
+    assertThat(provider.requiresFreshExecution(process, activity("psiqueSafety"), product, source))
+        .isFalse();
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isFalse();
+  }
+
+  /** Rejeita mudanças funcionais, provas incompletas ou identidades trocadas sem liberar Têmis. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "productId",
+        "sourceReference",
+        "blockedTaskId",
+        "previousSafetyTaskId",
+        "blockedResultSha256",
+        "previousSafetyResultSha256",
+        "customerExperienceChanged",
+        "backendRevision",
+        "sourceSha256",
+        "testReceiptSha256",
+        "evidenceReference",
+        "retainedActivities",
+        "generatedAt",
+        "missingScope"
+      })
+  void invalidScopedBindingNeverPromotesOldSafetyApproval(String defect) throws Exception {
+    var report = prepareScopedSafety(4);
+    var scope = (com.fasterxml.jackson.databind.node.ObjectNode) report.path("scopedRevalidation");
+    var acceptance =
+        (com.fasterxml.jackson.databind.node.ObjectNode) scope.path("technicalAcceptance");
+    switch (defect) {
+      case "productId", "blockedTaskId", "previousSafetyTaskId" -> scope.put(defect, 999999);
+      case "sourceReference", "blockedResultSha256", "previousSafetyResultSha256" ->
+          scope.put(defect, "wrong");
+      case "customerExperienceChanged" -> scope.put(defect, true);
+      case "backendRevision", "sourceSha256", "testReceiptSha256", "evidenceReference" ->
+          acceptance.remove(defect);
+      case "retainedActivities" -> scope.putArray(defect).add("technicalHomologation");
+      case "generatedAt" -> report.put(defect, "2020-01-01T00:00:00Z");
+      case "missingScope" -> report.remove("scopedRevalidation");
+      default -> throw new IllegalArgumentException(defect);
+    }
+    String source = "product:4@agent-validation-v1";
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isFalse();
+  }
+
+  /** Monta suplemento íntegro de uma correção técnica sem mudar a experiência válida. */
+  private com.fasterxml.jackson.databind.node.ObjectNode prepareScopedSafety(long productId)
+      throws Exception {
+    String source = prepareIntegrityEvidence(productId, true);
+    var mapper = new ObjectMapper();
+    var report = mapper.createObjectNode();
+    report.put("generatedAt", Instant.now().minusSeconds(120).toString());
+    report.put("prototypeVersion", "mira-private-v2");
+    report.put("operationalControlsContract", "PDE_CONTEXTUAL_EXECUTION_CONTROLS_V1");
+    report.put("agentApprovalClaimed", false);
+    report.put("reportSha256", "a".repeat(64));
+    report.put("testReceiptSha256", "b".repeat(64));
+    report
+        .putObject("implementationChange")
+        .put("closedContextProtectionChanged", true)
+        .put("validContextExperienceChanged", false);
+    report
+        .putArray("sourceFiles")
+        .addObject()
+        .put("path", "src/Control.java")
+        .put("sha256", "c".repeat(64));
+    var scope = report.putObject("scopedRevalidation");
+    scope.put("contractVersion", "PDE_SCOPED_SAFETY_REVALIDATION_V1");
+    scope.put("scope", "PRIVATE_CONTEXT_CONTROLS");
+    scope.put("productId", productId).put("sourceReference", source);
+    scope.put("customerExperienceChanged", false).put("independentReviewRequired", true);
+    scope.put("blockedTaskId", 504).put("previousSafetyTaskId", 503);
+    scope.put("affectedActivityId", "psiqueSafety");
+    scope.putArray("retainedActivities").add("psiqueAdherent").add("psiqueRecovery");
+    for (var task : history)
+      when(tasks.findById(task.getId())).thenReturn(java.util.Optional.of(task));
+    scope.put("blockedResultSha256", resultDigest(history.get(4).getResultJson()));
+    scope.put("previousSafetyResultSha256", resultDigest(history.get(3).getResultJson()));
+    var acceptance = scope.putObject("technicalAcceptance");
+    acceptance.put("origin", "OPERATOR_VALIDATION").put("decision", "ACCEPTED_CONTROLS");
+    acceptance
+        .put("backendRevision", "d".repeat(40))
+        .put("evidenceReference", "Local deterministic controls receipt");
+    acceptance.put("sourcePath", "src/Control.java").put("sourceSha256", "c".repeat(64));
+    acceptance.put("testReceiptSha256", "b".repeat(64));
+    var evidence = mock(PdeOperationalControlEvidence.class);
+    when(evidence.resolve(product.getSlug(), "mira-private-v2"))
+        .thenReturn(java.util.Optional.of(report));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "operationalEvidence", evidence);
+    return report;
+  }
+
+  /** Calcula a identidade dos bytes originais do parecer usado na regressão. */
+  private String resultDigest(String value) throws Exception {
+    return java.util.HexFormat.of()
+        .formatHex(
+            java.security.MessageDigest.getInstance("SHA-256")
+                .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+  }
+
   /** Uma prova anterior ao bloqueio não autoriza repetir o parecer com entradas iguais. */
   @Test
   void unchangedEvidencePreservesBlock() throws Exception {
@@ -434,7 +728,9 @@ class PdeAgentValidationReworkReadinessProviderTest {
     return source;
   }
 
-  /** Reavalia somente a prova incompleta, preservando matriz, aprovações e a decisão independente. */
+  /**
+   * Reavalia somente a prova incompleta, preservando matriz, aprovações e a decisão independente.
+   */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {4, 97004})
   void supplementReopensOnlyAffectedScenario(long productId) throws Exception {
@@ -442,14 +738,16 @@ class PdeAgentValidationReworkReadinessProviderTest {
     String source = "product:" + productId + "@agent-validation-v1";
     assertThat(provider.readiness(process, activity("psiqueRecovery"), product, source).ready())
         .isTrue();
-    assertThat(provider.requiresFreshExecution(process, activity("psiqueRecovery"), product, source))
+    assertThat(
+            provider.requiresFreshExecution(process, activity("psiqueRecovery"), product, source))
         .isTrue();
     for (String previous : List.of("technicalHomologation", "psiqueAdherent"))
       assertThat(provider.requiresFreshExecution(process, activity(previous), product, source))
           .isFalse();
     assertThat(provider.readiness(process, activity("psiqueSafety"), product, source).ready())
         .isFalse();
-    assertThat(provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
         .isFalse();
     assertThat(history.getLast().getStatus()).isEqualTo("BLOCKED");
     assertThat(report.path("agentApprovalClaimed").asBoolean()).isFalse();
@@ -457,7 +755,8 @@ class PdeAgentValidationReworkReadinessProviderTest {
     var approved = task(505, process, "psiqueRecovery", "COMPLETED");
     approved.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"mira-private-v2\"}");
     history.add(approved);
-    assertThat(provider.requiresFreshExecution(process, activity("psiqueRecovery"), product, source))
+    assertThat(
+            provider.requiresFreshExecution(process, activity("psiqueRecovery"), product, source))
         .isFalse();
     assertThat(provider.readiness(process, activity("psiqueSafety"), product, source).ready())
         .isTrue();
@@ -465,13 +764,25 @@ class PdeAgentValidationReworkReadinessProviderTest {
 
   /** Prova velha, funcional, de outro contexto ou reaproveitada após nova recusa não abre gasto. */
   @ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {
-    "old", "product", "reference", "activity", "task", "hash", "implementation", "approval",
-    "independent", "reason", "missing", "newRejection"
-  })
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "old",
+        "product",
+        "reference",
+        "activity",
+        "task",
+        "hash",
+        "implementation",
+        "approval",
+        "independent",
+        "reason",
+        "missing",
+        "newRejection"
+      })
   void unrelatedOrUnchangedSupplementDoesNotReopenScenario(String mutation) throws Exception {
     var report = prepareScenarioSupplement(4);
-    var supplement = (com.fasterxml.jackson.databind.node.ObjectNode) report.path("reviewReevaluation");
+    var supplement =
+        (com.fasterxml.jackson.databind.node.ObjectNode) report.path("reviewReevaluation");
     switch (mutation) {
       case "old" -> report.put("generatedAt", Instant.now().minusSeconds(600).toString());
       case "product" -> supplement.put("productId", 99);
@@ -497,7 +808,8 @@ class PdeAgentValidationReworkReadinessProviderTest {
     String source = "product:4@agent-validation-v1";
     assertThat(provider.readiness(process, activity("psiqueRecovery"), product, source).ready())
         .isFalse();
-    assertThat(provider.requiresFreshExecution(process, activity("psiqueRecovery"), product, source))
+    assertThat(
+            provider.requiresFreshExecution(process, activity("psiqueRecovery"), product, source))
         .isFalse();
   }
 
@@ -505,14 +817,16 @@ class PdeAgentValidationReworkReadinessProviderTest {
   private com.fasterxml.jackson.databind.node.ObjectNode prepareScenarioSupplement(long productId)
       throws Exception {
     String source = prepareIntegrityEvidence(productId, true);
-    history.removeIf(task -> List.of("psiqueRecovery", "psiqueSafety").contains(task.getProcessActivityId()));
+    history.removeIf(
+        task -> List.of("psiqueRecovery", "psiqueSafety").contains(task.getProcessActivityId()));
     var rejected = history.getLast();
     rejected.setProcessActivityId("psiqueRecovery");
     var report = new ObjectMapper().createObjectNode();
     report.put("generatedAt", Instant.now().minusSeconds(120).toString());
     report.put("reportSha256", "b".repeat(64));
     report.put("agentApprovalClaimed", false);
-    report.putObject("reviewReevaluation")
+    report
+        .putObject("reviewReevaluation")
         .put("contractVersion", "PDE_REVIEW_EVIDENCE_SUPPLEMENT_V1")
         .put("reasonCode", "MISSING_EXECUTION_EVIDENCE")
         .put("implementationChanged", false)
@@ -521,11 +835,20 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .put("sourceReference", source)
         .put("activityId", "psiqueRecovery")
         .put("blockedTaskId", rejected.getId())
-        .put("blockedResultSha256", java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(rejected.getResultJson().getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        .put(
+            "blockedResultSha256",
+            java.util.HexFormat.of()
+                .formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256")
+                        .digest(
+                            rejected
+                                .getResultJson()
+                                .getBytes(java.nio.charset.StandardCharsets.UTF_8))));
     var evidence = mock(PdeOperationalControlEvidence.class);
     when(evidence.resolve(product.getSlug(), "mira-private-v2"))
         .thenReturn(java.util.Optional.of(report));
-    org.springframework.test.util.ReflectionTestUtils.setField(provider, "operationalEvidence", evidence);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "operationalEvidence", evidence);
     return report;
   }
 
@@ -604,6 +927,7 @@ class PdeAgentValidationReworkReadinessProviderTest {
         task.getBlockerCategory(),
         task.getBlockerAction(),
         task.getResultJson(),
-        task.getExecutionError());
+        task.getExecutionError(),
+        task.getUpdatedAt());
   }
 }

@@ -30,10 +30,19 @@ import org.springframework.web.server.ResponseStatusException;
  * trabalho ativo.
  */
 class PdeRevalidationActivityExecutionTest {
-  /** Exercita tela e comando reais para reavaliar somente a prova suplementada, sem autoaprovação. */
+  /**
+   * Exercita tela e comando reais com a cronologia da projeção persistida, sem carregar a entidade
+   * completa nem conceder autoaprovação.
+   */
   @ParameterizedTest
-  @CsvSource({"10,commercialIntegrityReview", "110,commercialIntegrityReview", "4,psiqueRecovery", "97004,psiqueRecovery"})
-  void reopensReviewWithCompiledEvidenceAndPreservesCompletedReviews(long productId, String reviewActivity) throws Exception {
+  @CsvSource({
+    "10,commercialIntegrityReview",
+    "110,commercialIntegrityReview",
+    "4,psiqueRecovery",
+    "97004,psiqueRecovery"
+  })
+  void reopensReviewWithCompiledEvidenceAndPreservesCompletedReviews(
+      long productId, String reviewActivity) throws Exception {
     int reviewIndex = "psiqueRecovery".equals(reviewActivity) ? 2 : 4;
     var json = new ObjectMapper();
     var processes = mock(BusinessProcessDefinitionRepository.class);
@@ -142,23 +151,37 @@ class PdeRevalidationActivityExecutionTest {
             .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
                 "product:" + productId + "@", "pde-construction-approval"))
         .thenReturn(history);
-    when(tasks.findById(627L + reviewIndex)).thenReturn(Optional.of(history.get(reviewIndex)));
     if (reviewIndex == 2) {
       var rejected = history.get(reviewIndex);
       var report = json.createObjectNode();
       report.put("generatedAt", Instant.now().minusSeconds(60).toString());
       report.put("reportSha256", "a".repeat(64));
       report.put("agentApprovalClaimed", false);
-      report.putObject("reviewReevaluation")
+      report
+          .putObject("reviewReevaluation")
           .put("contractVersion", "PDE_REVIEW_EVIDENCE_SUPPLEMENT_V1")
           .put("reasonCode", "MISSING_EXECUTION_EVIDENCE")
-          .put("implementationChanged", false).put("independentReviewRequired", true)
-          .put("productId", productId).put("sourceReference", reference)
-          .put("activityId", reviewActivity).put("blockedTaskId", rejected.getId())
-          .put("blockedResultSha256", java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(rejected.getResultJson().getBytes(java.nio.charset.StandardCharsets.UTF_8))));
-      var evidence = mock(com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence.class);
+          .put("implementationChanged", false)
+          .put("independentReviewRequired", true)
+          .put("productId", productId)
+          .put("sourceReference", reference)
+          .put("activityId", reviewActivity)
+          .put("blockedTaskId", rejected.getId())
+          .put(
+              "blockedResultSha256",
+              java.util.HexFormat.of()
+                  .formatHex(
+                      java.security.MessageDigest.getInstance("SHA-256")
+                          .digest(
+                              rejected
+                                  .getResultJson()
+                                  .getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+      var evidence =
+          mock(
+              com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence.class);
       when(evidence.resolve(product.getSlug(), version)).thenReturn(Optional.of(report));
-      org.springframework.test.util.ReflectionTestUtils.setField(gate, "operationalEvidence", evidence);
+      org.springframework.test.util.ReflectionTestUtils.setField(
+          gate, "operationalEvidence", evidence);
     }
     when(tasks.findPdeValidationTaskSnapshots(reference, "pde-construction-approval"))
         .thenAnswer(
@@ -174,7 +197,8 @@ class PdeRevalidationActivityExecutionTest {
                                 task.getBlockerCategory(),
                                 task.getBlockerAction(),
                                 task.getResultJson(),
-                                task.getExecutionError()))
+                                task.getExecutionError(),
+                                task.getUpdatedAt()))
                     .toList());
     when(agentTasks.retryBlockedByHumanOrRefreshPending(any(), eq(true)))
         .thenReturn(mock(AgentTaskResponse.class));
@@ -187,15 +211,11 @@ class PdeRevalidationActivityExecutionTest {
                 .map(a -> a.activityId())
                 .toList())
         .containsExactly(reviewActivity);
-    assertThat(
-            service
-                .requestProductActivityExecution(70L, productId, reviewActivity)
-                .tasks())
+    assertThat(service.requestProductActivityExecution(70L, productId, reviewActivity).tasks())
         .hasSize(1);
     verify(agentTasks)
         .retryBlockedByHumanOrRefreshPending(
-            argThat(request -> reviewActivity.equals(request.processActivityId())),
-            eq(true));
+            argThat(request -> reviewActivity.equals(request.processActivityId())), eq(true));
 
     var approved = task(633L, process, reviewActivity, "COMPLETED");
     approved.setSourceReference(reference);
@@ -203,15 +223,17 @@ class PdeRevalidationActivityExecutionTest {
     history.add(approved);
     var after = service.productProcessExecutions(70L, productId);
     assertThat(after.objectiveAchieved()).isFalse();
-    assertThat(after.currentActivityId()).isEqualTo(reviewIndex == 4 ? "agentValidationGate" : "psiqueSafety");
-    if (reviewIndex == 4) assertThat(
-            after.activities().stream()
-                .filter(
-                    a ->
-                        !"prototypeCorrection".equals(a.activityId())
-                            && !"agentValidationGate".equals(a.activityId()))
-                .allMatch(a -> a.objectiveAchieved()))
-        .isTrue();
+    assertThat(after.currentActivityId())
+        .isEqualTo(reviewIndex == 4 ? "agentValidationGate" : "psiqueSafety");
+    if (reviewIndex == 4)
+      assertThat(
+              after.activities().stream()
+                  .filter(
+                      a ->
+                          !"prototypeCorrection".equals(a.activityId())
+                              && !"agentValidationGate".equals(a.activityId()))
+                  .allMatch(a -> a.objectiveAchieved()))
+          .isTrue();
     assertThat(
             after.activities().stream()
                 .filter(a -> "prototypeCorrection".equals(a.activityId()))
@@ -221,6 +243,7 @@ class PdeRevalidationActivityExecutionTest {
         .isEqualTo(reviewIndex == 4 ? "RECORDED" : "NOT_STARTED");
     assertThat(history.get(reviewIndex).getStatus()).isEqualTo("BLOCKED");
     if (reviewIndex == 4) assertThat(history.get(5).getStatus()).isEqualTo("BLOCKED");
+    verify(tasks, never()).findById(anyLong());
   }
 
   /** Exercita o serviço da tela junto ao gate real de retrabalho e preserva a prova anterior. */

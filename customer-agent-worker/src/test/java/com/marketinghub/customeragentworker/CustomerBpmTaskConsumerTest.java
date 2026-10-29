@@ -408,6 +408,75 @@ class CustomerBpmTaskConsumerTest {
         .doesNotContain("duas leituras humanas persistidas");
   }
 
+  /**
+   * Preserva a revisão técnica e o escopo independente recebido do backend para duas identidades.
+   */
+  @Test
+  void carriesScopedSafetyEvidenceToTheActualPrompt() throws Exception {
+    var consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000",
+            "codex",
+            "fixture",
+            "max",
+            "/workspace-inexistente",
+            "/workspace-inexistente",
+            json);
+    for (long productId : List.of(4L, 97004L)) {
+      var report =
+          Map.of(
+              "reportSha256",
+              "a".repeat(64),
+              "scopedRevalidation",
+              Map.of(
+                  "contractVersion",
+                  "PDE_SCOPED_SAFETY_REVALIDATION_V1",
+                  "productId",
+                  productId,
+                  "independentReviewRequired",
+                  true,
+                  "customerExperienceChanged",
+                  false,
+                  "technicalAcceptance",
+                  Map.of("origin", "OPERATOR_VALIDATION", "backendRevision", "b".repeat(40))));
+      var task =
+          Map.<String, Object>of(
+              "taskId",
+              productId + 100000L,
+              "processCode",
+              "pde-construction-approval",
+              "activityId",
+              "psiqueSafety",
+              "sourceReference",
+              "product:" + productId + "@agent-validation-v1",
+              "taskTarget",
+              Map.of(
+                  "productId",
+                  productId,
+                  "productSlug",
+                  "synthetic-" + productId,
+                  "pdeContext",
+                  Map.of("operationalControlEvidence", report)));
+      String prompt = consumer.prompt(task, List.of());
+      assertThat(prompt)
+          .contains(
+              "a".repeat(64),
+              "b".repeat(40),
+              "synthetic-" + productId,
+              "PDE_SCOPED_SAFETY_REVALIDATION_V1",
+              "cite literalmente",
+              "Não dispense Têmis",
+              "OPERATOR_VALIDATION",
+              "commercialEvidenceClaimed=false");
+      assertThat(
+              json.valueToTree(task)
+                  .at(
+                      "/taskTarget/pdeContext/operationalControlEvidence/scopedRevalidation/productId")
+                  .asLong())
+          .isEqualTo(productId);
+    }
+  }
+
   /** Reproduz a referência da #384 e exige cenário autenticado sem pacote global ou modo humano. */
   @Test
   void routesLearningCycleScenariosToAuthenticatedHarnessAndSyntheticPrompt() throws Exception {

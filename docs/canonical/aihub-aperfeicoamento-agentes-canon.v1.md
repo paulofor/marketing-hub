@@ -613,3 +613,19 @@ Evidência e limites: `docs/homologacao/fluidez-produtos-capella-v1.md`.
 
 Resumos públicos registram somente ações, achados, resultados e bloqueios em português.
 Os objetivos concretos pertencem ao checklist de execução, sem campo de objetivo no resumo.
+
+### Revalidação seletiva de controles privados — 29/10/2026
+
+A evidência de Vega #865 identificou alteração de proteção do backend posterior ao
+parecer de segurança. Aceites do percurso válido não comprovam a proteção alterada.
+O suplemento `PDE_SCOPED_SAFETY_REVALIDATION_V1` deve vincular bloqueio e parecer
+anteriores por hash, revisão e fonte do backend, aceite técnico `OPERATOR_VALIDATION`
+e critérios afetados. Psique reavalia somente SAFETY e cita o relatório atual; Têmis
+aguarda esse parecer. Não modifica nem fabrica aprovações anteriores.
+
+Esta capacidade restringe-se a controles de contexto privado inválido/encerrado com
+experiência válida e condições testadas preservadas. Mudança de experiência, oferta
+ou variável continua exigindo sucessor pelo cânone de ciclos. Nova recusa ou ausência
+de prova não permite repetir automaticamente a mesma chamada. Os testes cobrem
+comando real, outra identidade, isolamento, rejeições e caminhos anteriores; não
+comprovam impacto comercial. [Evidência e critérios](../homologacao/vega-revalidacao-seguranca-v1.md).

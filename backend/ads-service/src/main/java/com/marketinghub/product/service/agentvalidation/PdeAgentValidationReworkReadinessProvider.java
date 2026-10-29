@@ -116,7 +116,8 @@ public class PdeAgentValidationReworkReadinessProvider
     if (expectedVersion == null) {
       return blocked("A versão aceita do protótipo ainda não foi persistida no produto.");
     }
-    if (!hasCurrentApproval(history, process, requiredActivity, expectedVersion)) {
+    if (!hasCurrentApproval(
+        history, process, requiredActivity, expectedVersion, product, sourceReference)) {
       return blocked(
           "Conclua primeiro "
               + activityLabel(requiredActivity)
@@ -130,7 +131,8 @@ public class PdeAgentValidationReworkReadinessProvider
   }
 
   /**
-   * Reabre apenas o parecer que recebeu nova prova compatível; bloqueios sem mudança permanecem.
+   * Reabre somente parecer com prova nova ou SAFETY explicitamente afetado por controle privado;
+   * bloqueios posteriores não repetem automaticamente a mesma revalidação.
    */
   @Override
   public boolean requiresFreshExecution(
@@ -144,6 +146,10 @@ public class PdeAgentValidationReworkReadinessProvider
     String activityId = activityDefinition.getActivityId();
     Optional<PdeValidationTaskSnapshot> latest =
         latestCurrentProcessTask(history, process, activityId);
+    if ("psiqueSafety".equals(activityId)) {
+      var state = scopedSafetyState(history, process, product, version, sourceReference);
+      if (state != SafetyState.NOT_REQUIRED) return state == SafetyState.PENDING;
+    }
     if (TECHNICAL_HOMOLOGATION_ACTIVITY.equals(activityId)
         && latest.filter(this::retryableExecutorFailure).isPresent()) {
       return true;
@@ -164,15 +170,27 @@ public class PdeAgentValidationReworkReadinessProvider
       return correctionSource(history, version, product, sourceReference).isPresent();
     }
     return version == null
-        || !hasCurrentApproval(history, process, activityDefinition.getActivityId(), version);
+        || !hasCurrentApproval(
+            history,
+            process,
+            activityDefinition.getActivityId(),
+            version,
+            product,
+            sourceReference);
   }
 
-  /** Exige prova atual após a correção e, nos kits, após a matriz do pacote corrigido. */
+  /** Exige prova atual após a correção, a matriz do kit e a revalidação seletiva aplicável. */
   private boolean hasCurrentApproval(
       List<PdeValidationTaskSnapshot> history,
       BusinessProcessDefinition process,
       String activityId,
-      String version) {
+      String version,
+      Product product,
+      String reference) {
+    if ("psiqueSafety".equals(activityId)) {
+      var state = scopedSafetyState(history, process, product, version, reference);
+      if (state != SafetyState.NOT_REQUIRED && state != SafetyState.REVIEWED) return false;
+    }
     long correctionId = latestCorrectionId(history, version);
     long currentKitMatrix =
         TECHNICAL_HOMOLOGATION_ACTIVITY.equals(activityId)
@@ -189,6 +207,83 @@ public class PdeAgentValidationReworkReadinessProvider
         .filter(task -> task.id() > currentKitMatrix)
         .filter(task -> approvedForVersion(task, activityId, version))
         .isPresent();
+  }
+
+  /** Estados internos da revalidação; nenhuma condição concede parecer em nome de Psique. */
+  private enum SafetyState {
+    NOT_REQUIRED,
+    INVALID,
+    PENDING,
+    REVIEWED
+  }
+
+  /**
+   * Vincula o pedido ao bloqueio e parecer originais. Somente um novo parecer aprovado, posterior e
+   * que cite o suplemento resolve a pendência; falhas posteriores não repetem a mesma chamada.
+   */
+  private SafetyState scopedSafetyState(
+      List<PdeValidationTaskSnapshot> history,
+      BusinessProcessDefinition process,
+      Product product,
+      String version,
+      String reference) {
+    if (operationalEvidence == null || product == null || reference == null || version == null)
+      return SafetyState.NOT_REQUIRED;
+    var proof = operationalEvidence.resolve(product.getSlug(), version);
+    if (proof.isEmpty()
+        || !proof
+            .get()
+            .path("implementationChange")
+            .path("closedContextProtectionChanged")
+            .asBoolean(false)) return SafetyState.NOT_REQUIRED;
+    var report = proof.get();
+    var scope = report.path("scopedRevalidation");
+    if (scope.isObject()
+        && scope.has("sourceReference")
+        && scope.has("productId")
+        && (!reference.equals(scope.path("sourceReference").asText())
+            || product.getId() != scope.path("productId").asLong()))
+      return SafetyState.NOT_REQUIRED;
+    var rejectedSnapshot =
+        history.stream()
+            .filter(task -> process.getId().equals(task.processDefinitionId()))
+            .filter(task -> task.id() == scope.path("blockedTaskId").asLong(-1))
+            .findFirst();
+    var previousSnapshot =
+        history.stream()
+            .filter(task -> process.getId().equals(task.processDefinitionId()))
+            .filter(task -> task.id() == scope.path("previousSafetyTaskId").asLong(-1))
+            .findFirst();
+    var current = latestCurrentProcessTask(history, process, "psiqueSafety");
+    if (rejectedSnapshot.isEmpty()
+        || previousSnapshot.isEmpty()
+        || current.isEmpty()
+        || !approvedForVersion(previousSnapshot.get(), "psiqueSafety", version))
+      return SafetyState.INVALID;
+    var rejected = rejectedSnapshot.get().reviewProof(reference);
+    var previous = previousSnapshot.get().reviewProof(reference);
+    try {
+      if (!PdeScopedSafetyRevalidation.matches(
+          report, rejected, previous, product.getId(), reference, version))
+        return SafetyState.INVALID;
+      if (current.get().id().equals(previous.getId())) return SafetyState.PENDING;
+      if (current.get().id() <= previous.getId()
+          || !"COMPLETED".equals(current.get().status())
+          || !approvedForVersion(current.get(), "psiqueSafety", version))
+        return SafetyState.INVALID;
+      var actual = current.get().reviewProof(reference);
+      return PdeScopedSafetyRevalidation.reviewed(report, actual, json)
+          ? SafetyState.REVIEWED
+          : SafetyState.INVALID;
+    } catch (Exception ex) {
+      log.warn(
+          "Revalidação seletiva indisponível productId={} sourceReference={} taskId={}",
+          product.getId(),
+          reference,
+          rejectedSnapshot.get().id(),
+          ex);
+      return SafetyState.INVALID;
+    }
   }
 
   /** Identifica o contrato estruturado de kit sem inferir identidade pelo texto do parecer. */
@@ -295,7 +390,8 @@ public class PdeAgentValidationReworkReadinessProvider
 
   /**
    * Abre somente novo parecer com prova posterior: cenários exigem vínculo ao bloqueio exato;
-   * preserva o contrato anterior dos suplementos de integridade e todas as aprovações independentes.
+   * preserva o contrato anterior dos suplementos de integridade e todas as aprovações
+   * independentes.
    */
   private boolean freshReviewEvidence(
       PdeValidationTaskSnapshot rejected, Product product, String version, String reference) {
@@ -305,14 +401,19 @@ public class PdeAgentValidationReworkReadinessProvider
         || !"FUNCTIONAL_ADJUSTMENT".equals(rejected.blockerCategory())) return false;
     var evidence = operationalEvidence.resolve(product.getSlug(), version);
     if (evidence.isEmpty()) return false;
-    var task = tasks.findById(rejected.id()).orElse(null);
+    var scope = evidence.get().path("scopedRevalidation");
+    if (scope.isObject()
+        && (!reference.equals(scope.path("sourceReference").asText())
+            || product.getId() != scope.path("productId").asLong(-1))) return false;
+    var task = rejected.reviewProof(reference);
     if (task == null
         || task.getUpdatedAt() == null
         || !java.util.Objects.equals(reference, task.getSourceReference())) return false;
     try {
       boolean eligible =
           "commercialIntegrityReview".equals(rejected.processActivityId())
-              || PdeReviewEvidenceReevaluation.matches(evidence.get(), task, product.getId(), reference);
+              || PdeReviewEvidenceReevaluation.matches(
+                  evidence.get(), task, product.getId(), reference);
       return eligible
           && !approvedForVersion(rejected, rejected.processActivityId(), version)
           && version.equals(json.readTree(rejected.resultJson()).path("prototypeVersion").asText())

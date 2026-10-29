@@ -55,6 +55,35 @@ class AgentTaskRepositoryDocumentTest {
         .isZero();
   }
 
+  /** Entrega revisão temporal e resultado do parecer sem carregar prompts nem auditoria. */
+  @Test
+  void safetyReadinessReadsTimestampAndResultWithoutAudit() {
+    var agent = persistedAgent();
+    var process = persistedProcess();
+    var now = Instant.parse("2026-10-29T12:00:00Z");
+    var record =
+        task(agent, process, "psiqueSafety", "COMPLETED", "{\"decision\":\"APPROVED\"}", now);
+    record.setSourceReference("experiment:99111");
+    record.setUpdatedAt(now);
+    record.setExecutionPrompt("auditoria-sintetica-".repeat(50000));
+    record.setEvidenceJson("{\"audit\":\"" + "x".repeat(200000) + "\"}");
+    tasks.saveAndFlush(record);
+    entityManager.clear();
+    var result = tasks.findPdeValidationTaskSnapshots("experiment:99111", process.getProcessCode());
+    assertThat(result)
+        .singleElement()
+        .satisfies(
+            proof -> {
+              assertThat(proof.updatedAt()).isEqualTo(now);
+              assertThat(proof.resultJson()).isEqualTo("{\"decision\":\"APPROVED\"}");
+              assertThat(proof.processActivityId()).isEqualTo("psiqueSafety");
+            });
+    assertThat(tasks.findPdeValidationTaskSnapshots("experiment:99112", process.getProcessCode()))
+        .isEmpty();
+    assertThat(entityManager.unwrap(org.hibernate.Session.class).getStatistics().getEntityCount())
+        .isZero();
+  }
+
   /** Prova que prontidão usa resultados escalares e ignora auditoria volumosa e outras origens. */
   @Test
   void functionalSnapshotsDoNotHydrateAuditAndPreserveExactScope() {

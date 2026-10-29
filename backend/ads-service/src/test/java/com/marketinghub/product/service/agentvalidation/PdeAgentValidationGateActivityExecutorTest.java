@@ -142,6 +142,107 @@ class PdeAgentValidationGateActivityExecutorTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
+  /** Nem o comando direto do gate pode substituir a revisão de segurança por um aceite antigo. */
+  @Test
+  void directGateRequiresScopedSafetyReviewAndItsEvidence() throws Exception {
+    var previous = completedTasks.get(3);
+    var rejected = completedTasks.get(4);
+    var blocked =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(rejected.getResultJson());
+    blocked.put("decision", "BLOCKED");
+    rejected.setResultJson(blocked.toString());
+    rejected.setStatus("BLOCKED");
+    rejected.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    rejected.setUpdatedAt(rejected.getDeliveredAt());
+    var report = json.createObjectNode();
+    String version = json.readTree(previous.getResultJson()).path("prototypeVersion").asText();
+    report.put("prototypeVersion", version).put("reportSha256", "a".repeat(64));
+    report.put("generatedAt", NOW.minusSeconds(80).toString());
+    report.put("operationalControlsContract", "PDE_CONTEXTUAL_EXECUTION_CONTROLS_V1");
+    report.put("agentApprovalClaimed", false).put("testReceiptSha256", "b".repeat(64));
+    report
+        .putObject("implementationChange")
+        .put("closedContextProtectionChanged", true)
+        .put("validContextExperienceChanged", false);
+    report
+        .putArray("sourceFiles")
+        .addObject()
+        .put("path", "src/Control.java")
+        .put("sha256", "c".repeat(64));
+    var scope = report.putObject("scopedRevalidation");
+    scope
+        .put("contractVersion", "PDE_SCOPED_SAFETY_REVALIDATION_V1")
+        .put("scope", "PRIVATE_CONTEXT_CONTROLS");
+    scope.put("productId", product.getId()).put("sourceReference", SOURCE);
+    scope.put("blockedTaskId", rejected.getId()).put("previousSafetyTaskId", previous.getId());
+    scope.put(
+        "blockedResultSha256",
+        java.util.HexFormat.of()
+            .formatHex(
+                java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(
+                        rejected
+                            .getResultJson()
+                            .getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+    scope.put(
+        "previousSafetyResultSha256",
+        java.util.HexFormat.of()
+            .formatHex(
+                java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(
+                        previous
+                            .getResultJson()
+                            .getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+    scope
+        .put("customerExperienceChanged", false)
+        .put("independentReviewRequired", true)
+        .put("affectedActivityId", "psiqueSafety");
+    scope.putArray("retainedActivities").add("psiqueAdherent").add("psiqueRecovery");
+    scope
+        .putObject("technicalAcceptance")
+        .put("origin", "OPERATOR_VALIDATION")
+        .put("decision", "ACCEPTED_CONTROLS")
+        .put("backendRevision", "d".repeat(40))
+        .put("evidenceReference", "Local controls receipt")
+        .put("testReceiptSha256", "b".repeat(64))
+        .put("sourcePath", "src/Control.java")
+        .put("sourceSha256", "c".repeat(64));
+    var evidence = mock(PdeOperationalControlEvidence.class);
+    when(evidence.resolve(product.getSlug(), version)).thenReturn(Optional.of(report));
+    ReflectionTestUtils.setField(executor, "operationalEvidence", evidence);
+    completedTasks.add(
+        task(
+            106L,
+            "commercialIntegrityReview",
+            "meta-ad-approver",
+            "MODEL",
+            "fixture",
+            temisResult(),
+            NOW.minusSeconds(10)));
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> executor.execute(process, gate, product, SOURCE))
+        .hasMessageContaining("reavaliar os controles de segurança");
+    var reviewed =
+        task(
+            105L,
+            "psiqueSafety",
+            "customer-agent",
+            "MODEL",
+            "fixture",
+            psiqueResult("SAFETY"),
+            NOW.minusSeconds(20));
+    reviewed.setUpdatedAt(reviewed.getDeliveredAt());
+    completedTasks.add(reviewed);
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(reviewed.getResultJson());
+    result.withArray("evidence").add("Controles conferidos: " + "a".repeat(64));
+    reviewed.setResultJson(result.toString());
+    var finalReadiness = executor.readiness(process, gate, product, SOURCE);
+    assertThat(finalReadiness.ready()).as(finalReadiness.reason()).isTrue();
+  }
+
   /** Libera somente comunicação em revisões compatíveis e preserva mercado, pagamento e mídia. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(ints = {8, 9, 42})

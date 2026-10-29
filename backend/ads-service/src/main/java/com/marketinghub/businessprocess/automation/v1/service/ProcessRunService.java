@@ -8,6 +8,7 @@ import com.marketinghub.businessprocess.execution.service.BusinessProcessActivit
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.*;
 import com.marketinghub.repository.jpa.processautomation.*;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -896,11 +897,16 @@ public class ProcessRunService {
             snapshot.selectedActivityCount()
                 - snapshot.completedActivityCount()
                 - snapshot.remainingActivityCount()));
-    run.setKnownCostUsd(
-        Set.of("NO_EXECUTIONS", "NOT_REPORTED").contains(snapshot.costCoverage())
-            ? null
-            : snapshot.knownEstimatedCostUsd());
+    run.setKnownCostUsd(knownCost(snapshot));
     run.setCostCoverage(snapshot.costCoverage());
+  }
+
+  /** Preserva ausência de custo e usa somente estimativas presentes nas provas consultadas. */
+  private BigDecimal knownCost(ProductProcessActivityExecutionHistoryResponse snapshot) {
+    return snapshot.costCoverage() == null
+            || Set.of("NO_EXECUTIONS", "NOT_REPORTED").contains(snapshot.costCoverage())
+        ? null
+        : snapshot.knownEstimatedCostUsd();
   }
 
   /** Mantém no cabeçalho a atividade e o responsável escolhidos pelo backend. */
@@ -1228,9 +1234,9 @@ public class ProcessRunService {
   }
 
   /**
-   * Expõe o encerramento e o progresso das provas consultadas sem reescrever a pausa histórica nem
-   * apresentar uma atividade encerrada como trabalho atual; o retrato acompanha o mesmo
-   * responsável.
+   * Expõe progresso e custos das provas consultadas, incluindo callbacks tardios, sem reescrever a
+   * pausa histórica ou apresentar atividade encerrada como trabalho atual; o retrato acompanha o
+   * mesmo responsável.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
@@ -1312,8 +1318,8 @@ public class ProcessRunService {
         remaining,
         omitted,
         applicable <= 0 ? 0 : Math.min(100, completed * 100 / applicable),
-        run.getKnownCostUsd(),
-        run.getCostCoverage(),
+        readiness == null ? run.getKnownCostUsd() : knownCost(readiness),
+        readiness == null ? run.getCostCoverage() : readiness.costCoverage(),
         !closed && !persisted && "READY".equals(run.getStatus()),
         !closed
             && persisted

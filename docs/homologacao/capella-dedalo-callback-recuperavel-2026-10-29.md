@@ -49,3 +49,22 @@ Validações locais, PR, versão publicada e aceite real devem ser registrados n
 O parecer recuperado aprova a arquitetura, não substitui implementação, homologação e revisões.
 Métricas: zero inferências novas na recuperação e ausência de duplicação de custos; impacto em
 compras e contribuição depende de teste comercial posterior autorizado.
+
+## Conferência publicada e projeção financeira
+
+PR #5739 integrado em `113944da2cefd2554fd2c90133139c82913c2c28`. Retornos originais aceitos
+pelos endpoints oficiais: 852/failure e 858/result, ambos HTTP 204. Banco confirma 858 COMPLETED /
+APPROVE e US$4,949172; 852 permanece BLOCKED, sem resultado inventado, com US$2,685676 conhecidos.
+Execução 90 permanece PAUSED, agora com três atividades aceitas em três; nenhuma tarefa nova.
+
+A conferência detectou uma projeção incompleta: o quadro pausado consultava provas atuais para o
+progresso, mas usava o custo congelado do controle (US$3,6663). A soma atual do mesmo processo é
+US$11,301148. A correção usa a mesma consulta de provas para custo e cobertura, sem alterar a pausa,
+autorizar continuação ou reescrever o recibo. Regressões verificam pausa/conclusão/encerramento,
+isolamento entre execuções e custos desconhecidos/parciais. Não se introduz nova consulta nem
+recomputação no frontend.
+
+Na preparação do replay, a resposta textual do MCP substituiu um booleano não secreto `false`
+por `[REDACTED]`. A política recusou HTTP 409 sem mutação. A comparação de hashes identificou a
+diferença e o transporte dos bytes originais permitiu preservar exatamente a auditoria. Nenhum
+segredo ou prompt completo foi publicado; não relaxar a igualdade para contornar anonimização.

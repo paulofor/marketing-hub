@@ -937,6 +937,56 @@ class ProcessRunProjectedActivityPersistenceTest {
           java.nio.file.Path.of(output), json.writeValueAsString(result));
   }
 
+  /**
+   * Atualiza custos recuperados na consulta sem retomar, alterar o recibo ou misturar execuções.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"PAUSED", "COMPLETED", "CLOSED"})
+  void projectsRecoveredCostsWithoutMutatingOrResumingStoppedRun(String state) throws Exception {
+    authorized = true;
+    parent.setStatus(state);
+    parent.setCostCoverage("PARTIAL");
+    snapshot(96011L, "COMPLETED", false, true, false, true);
+    var value =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+    value.put("knownEstimatedCostUsd", new BigDecimal("11.301148"));
+    snapshots.put(
+        96011L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    var result = service.status(96001L, 96011L, context.command(parent));
+    assertThat(result.knownCostUsd()).isEqualByComparingTo("11.301148");
+    assertThat(result.costCoverage()).isEqualTo("COMPLETE");
+    assertThat(result.status()).isEqualTo(state);
+    assertThat(result.completedActivities()).isEqualTo(1);
+    assertThat(service.status(96001L, 96012L, context.command(next)).knownCostUsd())
+        .isEqualByComparingTo("0.75");
+    entityManager.flush();
+    entityManager.clear();
+    var saved = runs.findById(parent.getId()).orElseThrow();
+    assertThat(saved.getStatus()).isEqualTo(state);
+    assertThat(saved.getKnownCostUsd()).isEqualByComparingTo("0.75");
+    assertThat(saved.getCostCoverage()).isEqualTo("PARTIAL");
+    assertThat(events.findAll()).isEmpty();
+    verifyNoInteractions(activities, subprocesses);
+  }
+
+  /** Ausência de consumo informado permanece desconhecida; a projeção não fabrica custo zero. */
+  @ParameterizedTest
+  @ValueSource(strings = {"NO_EXECUTIONS", "NOT_REPORTED", "PARTIAL"})
+  void preservesUnknownAndPartialCostsInPausedProjection(String coverage) throws Exception {
+    parent.setStatus("PAUSED");
+    var value =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+    value.put("knownEstimatedCostUsd", new BigDecimal("1.25"));
+    value.put("costCoverage", coverage);
+    snapshots.put(
+        96011L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    var result = service.status(96001L, 96011L, context.command(parent));
+    assertThat(result.costCoverage()).isEqualTo(coverage);
+    if ("PARTIAL".equals(coverage)) assertThat(result.knownCostUsd()).isEqualByComparingTo("1.25");
+    else assertThat(result.knownCostUsd()).isNull();
+    verifyNoInteractions(activities, subprocesses);
+  }
+
   /** Monta a projeção com estado, prova, tarefa e controle independentes, como o contrato real. */
   private void snapshot(
       long process,

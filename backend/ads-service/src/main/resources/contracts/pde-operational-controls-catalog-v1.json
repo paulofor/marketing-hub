@@ -16,8 +16,8 @@
     {
       "productSlug": "metodo-musa-7-dias",
       "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
-      "resource": "contracts/operational-evidence/vega-contextual-controls-v1.json",
-      "sha256": "eab8139834b99e90e40018eb848c451c2e0ec4cf876972698f7a94e2f6d724d0"
+      "resource": "contracts/operational-evidence/vega-contextual-controls-v2.json",
+      "sha256": "69789426acd3c615b3aac39fa4baf52c60731d7e42c91ee37fb3c1b4f97217d2"
     }
   ],
   "historicalReports": [
@@ -62,6 +62,12 @@
       "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
       "resource": "contracts/operational-evidence/vega-recovery-completion-v1.json",
       "sha256": "c3f74ca3dfa34cec1a63bc2f55b31171c9be766d943225da3c334feee2cb0273"
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
+      "resource": "contracts/operational-evidence/vega-contextual-controls-v1.json",
+      "sha256": "eab8139834b99e90e40018eb848c451c2e0ec4cf876972698f7a94e2f6d724d0"
     }
   ]
 }

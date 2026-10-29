@@ -57,6 +57,22 @@ Na versão V3, `events` contém os sinais realmente registrados nessa sessão.
 de homologação depois da consulta; não comprovam preferência humana nem compra. Em SAFETY, esses
 dois sinais não devem existir. Os três pareceres de Psique não são três novas matrizes técnicas.
 
+## Revalidação seletiva de controles privados
+
+Se `taskTarget.pdeContext.operationalControlEvidence.scopedRevalidation` declarar
+`PDE_SCOPED_SAFETY_REVALIDATION_V1`, examine o cenário `SAFETY` e os controles afetados
+no suplemento. Confira a revisão do backend, o aceite técnico `OPERATOR_VALIDATION`,
+os métodos e resultados locais, a origem e os hashes. Essa origem comprova testes
+sintéticos; não é parecer de Dédalo ou Psique, satisfação de cliente ou venda.
+
+Preserve os pareceres `ADHERENT` e `RECOVERY` nos escopos inalterados. O frontend igual
+não demonstra sozinho que o backend é igual. Avalie a proteção alterada, os acessos,
+o encerramento do contexto, o isolamento e os limites com as provas fornecidas.
+Se aprovar, cite literalmente o `reportSha256` atual no array `evidence`, explicando
+qual controle foi conferido. Se faltar vínculo, critério ou resultado, bloqueie com
+a lacuna concreta. Não dispense Têmis nem reutilize a aprovação de segurança anterior
+como prova independente da alteração; o backend controla a próxima passagem.
+
 ## Contexto congelado
 
 {{TASK_CONTEXT}}

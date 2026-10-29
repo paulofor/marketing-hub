@@ -155,7 +155,7 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       """
       select new com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot(
         task.id, process.id, task.processActivityId, task.status,
-        task.blockerCategory, task.blockerAction, task.resultJson, task.executionError)
+        task.blockerCategory, task.blockerAction, task.resultJson, task.executionError, task.updatedAt)
       from AgentTask task join task.processDefinition process
       where task.sourceReference = :sourceReference and process.processCode = :processCode
       order by task.id

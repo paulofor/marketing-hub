@@ -11398,3 +11398,12 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - **Limite:** não emitir domínios novos, trocar DNS, desativar verificação TLS ou
   aceitar saúde da aplicação como substituto da confiança pública.
 - **Registro:** `docs/homologacao/chatgpt-ads-3783-tls-vega.md`.
+
+## LOOP-PDE-REVALIDACAO-SELETIVA-DE-SEGURANCA — 2026-10-29
+
+- **Caso:** Vega v17, Têmis #865. Correção dos controles privados publicada depois de SAFETY #863; frontend idêntico não identificava o backend revisado.
+- **Causa compartilhada:** prontidão reabria parecer bloqueado, mas não o cenário anteriormente aprovado e explicitamente afetado pela correção.
+- **Correção:** suplemento ligado por hashes ao bloqueio e ao parecer original, revisão do backend, aceite técnico dos testes e nova revisão independente de SAFETY. ADHERENT e RECOVERY preservados. Têmis aguarda o parecer novo com citação da prova atual.
+- **Prevenção:** `PdeAgentValidationReworkReadinessProviderTest` executa o comando real, outra identidade, vínculos inválidos, nova recusa e caminhos anteriores. Nenhuma repetição automática de inferência por resultado incompleto.
+- **Limite:** somente controles de contexto privado fora do percurso válido; mudanças das condições testadas exigem sucessor. Não constitui autorização financeira ou aprovação comercial.
+- **Registro:** [revalidação seletiva](../homologacao/vega-revalidacao-seguranca-v1.md).

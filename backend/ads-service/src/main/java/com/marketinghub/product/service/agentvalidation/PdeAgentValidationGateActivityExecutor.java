@@ -303,6 +303,8 @@ public class PdeAgentValidationGateActivityExecutor
       psique.put(activity, task);
       psiqueApproved &= validatePsique(task, activity, contract, issues);
     }
+    psiqueApproved &=
+        validateScopedSafety(processTasks, psique.get("psiqueSafety"), product, contract, issues);
     AgentTask temis = completedTask(processTasks, "commercialIntegrityReview").orElse(null);
     boolean temisApproved = validateTemis(temis, contract, issues);
     boolean chronologyApproved = validateChronology(technical, psique, temis, issues);
@@ -335,6 +337,59 @@ public class PdeAgentValidationGateActivityExecutor
         temis,
         List.copyOf(evidenceTasks),
         correctionOrder.evidenceResolution());
+  }
+
+  /** Impede o gate direto de usar SAFETY anterior à correção de controles privados. */
+  private boolean validateScopedSafety(
+      List<AgentTask> history,
+      AgentTask safety,
+      Product product,
+      AgentValidationContract contract,
+      List<String> issues) {
+    if (operationalEvidence == null || product == null || !contract.valid()) return true;
+    var proof = operationalEvidence.resolve(product.getSlug(), contract.prototypeVersion());
+    if (proof.isEmpty()
+        || !proof
+            .get()
+            .path("implementationChange")
+            .path("closedContextProtectionChanged")
+            .asBoolean(false)) return true;
+    var report = proof.get();
+    var scope = report.path("scopedRevalidation");
+    if (scope.isObject()
+        && scope.has("sourceReference")
+        && scope.has("productId")
+        && (!contract.sourceReference().equals(scope.path("sourceReference").asText())
+            || product.getId() != scope.path("productId").asLong())) return true;
+    var rejected =
+        history.stream()
+            .filter(t -> t.getId() == scope.path("blockedTaskId").asLong(-1))
+            .findFirst()
+            .orElse(null);
+    var previous =
+        history.stream()
+            .filter(t -> t.getId() == scope.path("previousSafetyTaskId").asLong(-1))
+            .findFirst()
+            .orElse(null);
+    try {
+      if (PdeScopedSafetyRevalidation.matches(
+              report,
+              rejected,
+              previous,
+              product.getId(),
+              contract.sourceReference(),
+              contract.prototypeVersion())
+          && PdeScopedSafetyRevalidation.reviewed(report, safety, json)) return true;
+    } catch (Exception ex) {
+      log.warn(
+          "Gate de revalidação seletiva indisponível productId={} sourceReference={}",
+          product.getId(),
+          contract.sourceReference(),
+          ex);
+    }
+    issues.add(
+        "Psique deve reavaliar os controles de segurança alterados e citar a prova técnica atual antes do gate.");
+    return false;
   }
 
   /** Valida o contrato inicial ou a revalidação da mesma versão em um ciclo comercial aberto. */

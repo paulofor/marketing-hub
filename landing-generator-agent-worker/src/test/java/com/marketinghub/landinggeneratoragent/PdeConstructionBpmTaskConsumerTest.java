@@ -78,9 +78,11 @@ class PdeConstructionBpmTaskConsumerTest {
    * distintas.
    */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(longs = {900092L, 800087L})
+  @org.junit.jupiter.params.provider.CsvSource({"900092,0", "800087,0", "900092,2", "800087,2"})
   void consumesAgentPlanningThroughRealWorker(
-      long experimentId, @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory)
+      long experimentId,
+      int failedDeliveries,
+      @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory)
       throws Exception {
     var planning =
         (com.fasterxml.jackson.databind.node.ObjectNode)
@@ -126,6 +128,8 @@ class PdeConstructionBpmTaskConsumerTest {
     java.nio.file.Files.copy(getClass().getResourceAsStream("/bpm/fake-codex.mjs"), executable);
     assertThat(executable.toFile().setExecutable(true)).isTrue();
     var operations = new java.util.ArrayList<String>();
+    var deliveryCount = new java.util.concurrent.atomic.AtomicInteger();
+    var deliveredBodies = new java.util.ArrayList<JsonNode>();
     var callback = new AtomicReference<JsonNode>();
     var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext(
@@ -147,7 +151,11 @@ class PdeConstructionBpmTaskConsumerTest {
             String operation = java.nio.file.Path.of(path).getFileName().toString();
             operations.add(operation);
             var payload = json.readTree(exchange.getRequestBody().readAllBytes());
-            if (!"execution-audit".equals(operation)) callback.set(payload);
+            if (!"execution-audit".equals(operation)) {
+              callback.set(payload);
+              deliveredBodies.add(payload);
+              if (deliveryCount.incrementAndGet() <= failedDeliveries) status = 503;
+            }
           }
           exchange.getResponseHeaders().set("Content-Type", "application/json");
           exchange.sendResponseHeaders(status, response.length == 0 ? -1 : response.length);
@@ -159,6 +167,7 @@ class PdeConstructionBpmTaskConsumerTest {
       var properties = new LandingGeneratorAgentProperties();
       properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
       properties.setRepositoryPath(directory.toString());
+      properties.setBpmStateDirectory(directory.resolve("outbox").toString());
       properties.setCodexCommand(executable.toString());
       properties.setModel("fixture-dedalo-no-network");
       properties.setCodexTimeout(java.time.Duration.ofSeconds(10));
@@ -171,7 +180,25 @@ class PdeConstructionBpmTaskConsumerTest {
               new AutomaticExecutionControl(properties.getBackendUrl()),
               telemetry)
           .processOne();
-      assertThat(operations).containsExactly("execution-audit", "result");
+      for (int attempt = 0; attempt < failedDeliveries; attempt++) {
+        // Um novo consumidor representa reinício do container após perder a resposta HTTP.
+        new PdeConstructionBpmTaskConsumer(
+                properties,
+                json,
+                new AutomaticExecutionControl(properties.getBackendUrl()),
+                telemetry)
+            .processOne();
+      }
+      assertThat(operations).hasSize(failedDeliveries + 2);
+      assertThat(operations.getFirst()).isEqualTo("execution-audit");
+      assertThat(operations.subList(1, operations.size())).containsOnly("result");
+      assertThat(deliveredBodies).allMatch(deliveredBodies.getFirst()::equals);
+      verify(telemetry).monitorBpmTask(eq(taskId), any(), any());
+      assertThat(
+              new PdeConstructionOutbox(
+                      java.nio.file.Path.of(properties.getBpmStateDirectory()), json)
+                  .read())
+          .isNull();
       var arguments =
           json.readTree(java.nio.file.Files.readString(directory.resolve("arguments.json")));
       assertThat(arguments.toString())
@@ -1297,7 +1324,7 @@ class PdeConstructionBpmTaskConsumerTest {
   }
 
   /** Retorna uma arquitetura genérica completa usada para comprovar replay sem inferência. */
-  private String validProductArchitectureResult() {
+  String validProductArchitectureResult() {
     return """
         {"decision":"APPROVE","rationale":"Arquitetura privada, limitada e auditável.",
          "selectedApproach":"Experiência guiada com resultado pessoal pronto e verificável.",

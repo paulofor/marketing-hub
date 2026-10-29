@@ -87,6 +87,7 @@ class PdeSpecificationFlowTest {
       var properties = new LandingGeneratorAgentProperties();
       properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
       properties.setRepositoryPath(directory.toString());
+      properties.setBpmStateDirectory(directory.resolve("outbox").toString());
       properties.setCodexCommand(executable.toString());
       properties.setModel("fixture-specification-no-network");
       properties.setCodexTimeout(Duration.ofSeconds(10));

@@ -101,3 +101,26 @@ Dédalo separa memória de estratégia promovida. Uma hipótese só entra no pla
 de comparar baseline e candidata nos mesmos casos congelados, passar em holdout fora da amostra,
 regressão, custo e validação local. O conjunto mínimo é de dez replays e cinco casos de holdout. O
 agente consulta promoções pelo MCP, mas não executa a avaliação nem promove a própria hipótese.
+
+
+## Entrega BPM recuperável — 29/10/2026
+
+A indisponibilidade do backend depois da inferência não autoriza executar o modelo de novo.
+O consumidor BPM conserva snapshot, auditoria, resposta bruta, eventos e envelope terminal em
+armazenamento persistente exclusivo sob o Codex Home já montado. Grava o envelope atomicamente
+antes do envio; confirma e remove apenas após o aceite HTTP. A recuperação precede novos claims e
+pode entregar resultado já produzido mesmo quando novas execuções estão pausadas.
+
+Resposta bruta completa após reinício passa pelos mesmos validadores; ausência ou resposta inválida
+vira falha auditada, preservando tokens conhecidos. O modelo e o esforço originais não são inferidos
+da configuração do novo deploy. Transporte indisponível (conexão/5xx/429) permite reenviar o mesmo
+recibo idempotente, uma vez por passagem do executor, sem nova inferência. Duas recusas permanentes
+4xx conservam o envelope e interrompem seu reenvio automático até correção operacional.
+
+O backend aceita callback tardio apenas para lease técnica perdida de Dédalo, com auditoria
+exatamente igual à registrada antes da chamada e sem resultado/consumo já aplicado. A conclusão
+não pode substituir tentativa posterior da mesma atividade e contexto. Falha histórica pode
+receber seu consumo sem ser aprovada. Replay confirmado não acumula custo nem repete efeitos.
+Isso recupera entrega, não concede autorização financeira, comercial ou aprovação independente.
+
+Evidência e matriz: `docs/homologacao/capella-dedalo-callback-recuperavel-2026-10-29.md`.

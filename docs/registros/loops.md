@@ -1,3 +1,22 @@
+## LOOP-DEDALO-RESPOSTA-PERDIDA-NO-CALLBACK — arquitetura pronta aparece bloqueada
+
+- **Evidência (29/10/2026):** Capella, ciclo 17/experimento 110. Atena 850 e Plutus 851 aceitos;
+  Dédalo 858 terminou com `APPROVE` em 28/10 às 18:29:42 UTC. Logs registram timeout de conexão
+  nos callbacks de resultado e falha. A sessão persistente conserva resposta e tokens; 852
+  conserva consumo, mas não tem resposta final. Vega 853 concluiu o mesmo contrato com callback
+  recebido; portanto não é falta de capacidade de arquitetura nem duração máxima do modelo.
+- **Causa:** saída temporária apagada antes da confirmação remota e ausência de entrega durável
+  no consumidor BPM. A proteção de lease evita inferência duplicada, mas não recuperava o recibo.
+- **Correção:** outbox persistente no volume existente, validação e reenvio do mesmo retorno,
+  recuperação de saída bruta e consumo; backend reconhece somente auditoria original e recusa
+  aprovação de tentativa substituída, cancelada ou rejeitada funcionalmente.
+- **Prevenção:** HTTP 503 com reinício entre tentativas, 409 permanente, duas identidades, caminho
+  válido, resposta incompleta, custos idempotentes e consulta de tentativas no banco local.
+  Sem nova chamada de IA para recuperar 852/858. Registro e limites na matriz de homologação.
+- **Métrica de adoção:** uma inferência por tarefa e um efeito/custo por recibo confirmado; zero
+  perda de callback nos testes. Aumento de vendas não medido. Reversão deve conservar o diretório
+  de pendências; não removê-lo nem tratar ausência de resposta como custo zero.
+
 ## LOOP-VEGA-COMENTARIO-OPCIONAL-BLOQUEIA-JORNADA — 28/10/2026
 
 - **Evidência:** Dédalo #848 bloqueou o ciclo #18/experimento #111. Atena #846

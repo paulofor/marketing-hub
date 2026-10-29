@@ -20,6 +20,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 /** Responsabilidade: materializar as atividades de construção do PDE atribuídas a Dédalo. */
 @Component
@@ -118,6 +119,7 @@ public class PdeConstructionBpmTaskConsumer {
   private final LandingGeneratorAgentProperties properties;
   private final AutomaticExecutionControl automaticExecution;
   private final CodexTelemetryReporter telemetry;
+  private final PdeConstructionOutbox outbox;
 
   /** Configura a fila canônica, o Codex somente leitura e os contratos versionados do PDE. */
   public PdeConstructionBpmTaskConsumer(
@@ -130,49 +132,169 @@ public class PdeConstructionBpmTaskConsumer {
     this.json = json;
     this.automaticExecution = automaticExecution;
     this.telemetry = telemetry;
+    this.outbox = new PdeConstructionOutbox(Path.of(properties.getBpmStateDirectory()), json);
   }
 
-  /**
-   * Reserva uma atividade e executa modelo ou captura local explícita, sem decidir o avanço do
-   * processo.
-   */
+  /** Recupera entregas antes de reservar nova atividade, preservando o controle do backend. */
   @Scheduled(cron = "20 */1 * * * *")
-  public void processOne() {
-    if (!automaticExecution.allowsAutomaticExecution()) return;
-    Map<String, Object> task = null;
-    BpmExecution execution = null;
-    try {
-      task = claimNext();
+  public synchronized void processOne() {
+    try (var lock = outbox.lock()) {
+      if (lock == null) return;
+      var pending = outbox.read();
+      if (pending != null && pending.callback() != null) {
+        deliver(pending);
+        return;
+      }
+      if (pending != null && pending.modelStarted()) {
+        recoverInterrupted(pending);
+        return;
+      }
+      if (!automaticExecution.allowsAutomaticExecution()) return;
+      Map<String, Object> task = pending == null ? claimNext() : pending.task();
       if (task == null) return;
-      BpmContract contract = contractFor(task);
-      PreservedCallback callback = preservedCallback(json, task, contract);
-      if (callback != null) {
-        replay(task, contract, callback);
-        return;
+      if (pending == null) {
+        // Remove somente sobras de uma entrega confirmada antes de registrar a próxima identidade.
+        outbox.acknowledge();
+        outbox.save(new PdeConstructionOutbox.Pending(task, null, false, null, null));
       }
-      validateTaskContext(task, contract, json);
-      var capture = new OpalaCommercialUiProofCapture(backend, json);
-      JsonNode proofInput = capture.input(task);
-      if (proofInput != null) {
-        capture.complete(task, proofInput);
-        return;
-      }
-      execution = execute(task);
-      validate(execution.result(), contract);
-      validateCorrectionContext(task, execution.result(), contract, json);
-      if (contract.successDecision().equals(execution.result().path("decision").asText())) {
-        report(task, execution);
-      } else {
-        block(task, execution);
+      BpmExecution execution = null;
+      try {
+        BpmContract contract = contractFor(task);
+        PreservedCallback callback = preservedCallback(json, task, contract);
+        if (callback != null) {
+          replay(task, contract, callback);
+          return;
+        }
+        validateTaskContext(task, contract, json);
+        var capture = new OpalaCommercialUiProofCapture(backend, json);
+        JsonNode proofInput = capture.input(task);
+        if (proofInput != null) {
+          capture.complete(task, proofInput);
+          outbox.acknowledge();
+          return;
+        }
+        execution = execute(task);
+        finish(task, execution);
+      } catch (Exception ex) {
+        log.error(
+            "Falha na construção BPM do PDE. taskId={} activityId={}",
+            taskId(task),
+            activityId(task),
+            ex);
+        // Uma falha de transporte nunca substitui o parecer já preservado por outra resposta.
+        var saved = outbox.read();
+        if (saved == null || saved.callback() == null) fail(task, ex, execution);
       }
     } catch (Exception ex) {
       log.error(
-          "Falha na construção BPM do PDE por Dédalo. taskId={} activityId={}",
-          taskId(task),
-          activityId(task),
+          "Dédalo preservou a entrega para recuperação sem nova inferência. backend={}",
+          properties.getBackendUrl(),
           ex);
-      fail(task, ex, execution);
     }
+  }
+
+  /** Valida o resultado antes de encaminhar o parecer ao callback canônico. */
+  private void finish(Map<String, Object> task, BpmExecution execution) throws IOException {
+    BpmContract contract = contractFor(task);
+    validate(execution.result(), contract);
+    validateCorrectionContext(task, execution.result(), contract, json);
+    if (contract.successDecision().equals(execution.result().path("decision").asText())) {
+      report(task, execution);
+    } else {
+      block(task, execution);
+    }
+  }
+
+  /** Recupera resposta e tokens do mesmo processo interrompido, sem executar novamente o modelo. */
+  private void recoverInterrupted(PdeConstructionOutbox.Pending pending) throws IOException {
+    BpmExecution execution = null;
+    try {
+      if (pending.audit() == null)
+        throw new IOException("Execução sem auditoria local preservada.");
+      execution =
+          new BpmExecution(
+              json.readTree(Files.readString(outbox.output())),
+              readTokenUsage(json, outbox.events()),
+              String.valueOf(pending.audit().get("promptSent")),
+              (String) pending.audit().get("agentPromptPart"),
+              (String) pending.audit().get("activityPromptPart"));
+      finish(pending.task(), execution);
+    } catch (Exception ex) {
+      log.error("Dédalo recuperou execução interrompida. taskId={}", taskId(pending.task()), ex);
+      var saved = outbox.read();
+      if (saved != null && saved.callback() != null) return;
+      var body = failureBody(pending.task(), ex, execution);
+      if (pending.audit() != null) body.put("executionAudit", pending.audit());
+      if (Files.exists(outbox.output())) body.put("resultJson", Files.readString(outbox.output()));
+      putModelUsage(body, readTokenUsage(json, outbox.events()), pending.task());
+      body.put(
+          "error",
+          "DEDALO_INTERRUPTED_OUTPUT|Execução interrompida; saída e consumo preservados, sem nova inferência.");
+      enqueue(pending.task(), "failure", body);
+    }
+  }
+
+  /** Persiste o envelope integral antes de qualquer envio ao backend. */
+  private void enqueue(Map<String, Object> task, String operation, Map<String, Object> body)
+      throws IOException {
+    var previous = outbox.read();
+    if (previous != null && previous.modelStarted() && previous.audit() != null) {
+      body.put("executionAudit", previous.audit());
+      if (body.get("modelUsages") instanceof List<?> usages && !usages.isEmpty()) {
+        @SuppressWarnings("unchecked")
+        var usage = new HashMap<>((Map<String, Object>) usages.getFirst());
+        usage.put("modelCode", previous.audit().get("modelCode"));
+        body.put("modelUsages", List.of(usage));
+      }
+    }
+    var pending =
+        new PdeConstructionOutbox.Pending(
+            task,
+            previous == null ? null : previous.audit(),
+            previous != null && previous.modelStarted(),
+            operation,
+            body);
+    outbox.save(pending);
+    deliver(pending);
+  }
+
+  /** Reenvia transporte transitório; duas recusas de contrato preservam o retorno para correção. */
+  private void deliver(PdeConstructionOutbox.Pending pending) throws IOException {
+    if (pending.deliveryRefusals() >= 2) {
+      log.warn(
+          "Callback de Dédalo preservado após duas recusas de contrato. taskId={} operation={}",
+          taskId(pending.task()),
+          pending.operation());
+      return;
+    }
+    log.info(
+        "Dédalo reenviando retorno preservado. taskId={} operation={}",
+        taskId(pending.task()),
+        pending.operation());
+    try {
+      backend
+          .post()
+          .uri(
+              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/{operation}",
+              AGENT_KEY,
+              taskId(pending.task()),
+              pending.operation())
+          .body(pending.callback())
+          .retrieve()
+          .toBodilessEntity();
+    } catch (RestClientResponseException ex) {
+      log.error(
+          "Backend não confirmou callback de Dédalo. taskId={} operation={} status={}",
+          taskId(pending.task()),
+          pending.operation(),
+          ex.getStatusCode(),
+          ex);
+      if (ex.getStatusCode().is4xxClientError() && ex.getStatusCode().value() != 429) {
+        outbox.save(pending.refused());
+      }
+      throw ex;
+    }
+    outbox.acknowledge();
   }
 
   /** Prioriza entrega paga e percorre somente os contratos de produto pertencentes a Dédalo. */
@@ -196,7 +318,8 @@ public class PdeConstructionBpmTaskConsumer {
   /**
    * Reenvia o resultado já pago para o endpoint terminal correto sem executar o modelo novamente.
    */
-  private void replay(Map<String, Object> task, BpmContract contract, PreservedCallback callback) {
+  private void replay(Map<String, Object> task, BpmContract contract, PreservedCallback callback)
+      throws IOException {
     JsonNode result = callback.result();
     boolean completed = contract.successDecision().equals(result.path("decision").asText());
     Map<String, Object> body = new HashMap<>();
@@ -210,16 +333,7 @@ public class PdeConstructionBpmTaskConsumer {
         "Reenviando callback preservado de Dédalo sem nova chamada ao modelo. taskId={} operation={}",
         taskId(task),
         completed ? "result" : "failure");
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/{operation}",
-            AGENT_KEY,
-            taskId(task),
-            completed ? "result" : "failure")
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
+    enqueue(task, completed ? "result" : "failure", body);
   }
 
   /** Lê o callback preservado e falha fechado quando apenas metade do envelope foi recebida. */
@@ -244,17 +358,23 @@ public class PdeConstructionBpmTaskConsumer {
     return original.isBlank() ? null : original;
   }
 
-  /** Valida antes de criar temporários e executa o prompt com os contadores oficiais do Codex. */
+  /** Preserva entrada, saída e eventos até o backend confirmar a entrega da mesma execução. */
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
     BpmContract contract = contractFor(task);
     PromptComposition prompt = promptComposition(task);
-    Path output = Files.createTempFile("dedalo-pde-result-", ".json");
-    Path processLog = Files.createTempFile("dedalo-pde-process-", ".jsonl");
+    Path output = outbox.output();
+    Path processLog = outbox.events();
     Path schema = materialize(contract.schemaResource(), ".json");
+    var audit =
+        executionAudit(
+            task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
+    outbox.save(new PdeConstructionOutbox.Pending(task, audit, false, null, null));
+    Process process = null;
     try {
       recordExecutionStart(
           task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
-      Process process =
+      outbox.save(new PdeConstructionOutbox.Pending(task, audit, true, null, null));
+      process =
           new ProcessBuilder(command(output, schema, contract))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
@@ -308,8 +428,7 @@ public class PdeConstructionBpmTaskConsumer {
         }
       }
     } finally {
-      Files.deleteIfExists(output);
-      Files.deleteIfExists(processLog);
+      if (process != null && process.isAlive()) terminateTree(process);
       Files.deleteIfExists(schema);
     }
   }
@@ -408,15 +527,7 @@ public class PdeConstructionBpmTaskConsumer {
             execution.promptSent(),
             execution.agentPromptPart(),
             execution.activityPromptPart()));
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
+    enqueue(task, "result", body);
   }
 
   /** Bloqueia o processo quando Dédalo identifica contrato incompleto ou dependência oculta. */
@@ -435,15 +546,7 @@ public class PdeConstructionBpmTaskConsumer {
             execution.agentPromptPart(),
             execution.activityPromptPart()));
     body.put("blockerGuidance", functionalGuidance(result));
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
+    enqueue(task, "failure", body);
   }
 
   /** Registra falha técnica preservando contexto e eventual consumo de modelo. */
@@ -451,24 +554,14 @@ public class PdeConstructionBpmTaskConsumer {
     if (task == null) return;
     try {
       Map<String, Object> body = failureBody(task, ex, execution);
-      backend
-          .post()
-          .uri(
-              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-              AGENT_KEY,
-              taskId(task))
-          .body(body)
-          .retrieve()
-          .toBodilessEntity();
+      enqueue(task, "failure", body);
     } catch (Exception callbackEx) {
       log.error(
           "Falha ao registrar bloqueio da construção do PDE. taskId={}", taskId(task), callbackEx);
     }
   }
 
-  /**
-   * Monta o bloqueio preservando a saída produzida e tornando a segunda falha de callback terminal.
-   */
+  /** Monta bloqueio técnico preservando a saída produzida e o consumo da mesma tentativa. */
   Map<String, Object> failureBody(Map<String, Object> task, Exception ex, BpmExecution execution)
       throws IOException {
     BpmExecutionException bpm = ex instanceof BpmExecutionException value ? value : null;
@@ -555,6 +648,10 @@ public class PdeConstructionBpmTaskConsumer {
   /** Declara o contexto acessado e comprova ausência de publicação ou gasto. */
   private String evidence(Map<String, Object> task) throws IOException {
     var result = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(baseEvidence(task));
+    var pending = outbox.read();
+    if (pending != null && taskId(pending.task()) == taskId(task) && pending.audit() != null) {
+      result.put("model", String.valueOf(pending.audit().get("modelCode")));
+    }
     if ("opala-commercial-preparation-v1".equals(processCode(task)))
       result.set(
           "opalaScope",

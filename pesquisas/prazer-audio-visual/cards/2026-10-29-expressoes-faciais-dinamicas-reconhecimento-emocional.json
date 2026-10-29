@@ -1,0 +1,18 @@
+{
+  "cardKey": "expressoes-faciais-dinamicas-reconhecimento-emocional",
+  "collection": "prazer-audio-visual",
+  "title": "Movimento, voz e reconhecimento de emoção facial",
+  "finding": "Em 73 adultos, reconhecimento de emoções atuadas foi maior com vídeo audiovisual (média 0,84), seguido por vídeo sem som (0,76) e rosto estático (0,69); nenhum padrão único de fixações oculares previu acurácia superior.",
+  "mechanism": "Movimento facial e pistas vocais acrescentam informações à interpretação da expressão; o modo de observar o rosto também pode mudar. Reconhecimento de emoção não equivale a emoção efetivamente sentida.",
+  "commercialApplication": "Apolo pode comparar representações estáticas, dinâmicas silenciosas e audiovisuais de um mesmo personagem; Psique deve medir acerto no reconhecimento, compreensão, naturalidade, prazer e esforço separadamente.",
+  "evidenceStrength": "Moderada para reconhecimento de emoções atuadas em laboratório; baixa para prazer, avatares comerciais e conversão.",
+  "publishedOn": "2026-10-29",
+  "validUntil": "2026-12-13",
+  "experimentHypothesis": "Na mesma mensagem e personagem, versões audiovisuais poderão melhorar o reconhecimento da emoção comunicada, mas não necessariamente o prazer ou a lembrança factual.",
+  "risks": "Confundir reconhecimento com emoção sentida; aumentar estímulos sem função; supor que fixar olhos ou boca é sempre melhor; comprometer acessibilidade.",
+  "limits": "73 participantes majoritariamente jovens; somente três personagens e frases curtas; sem publicidade, memória comercial, medição de dopamina ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-29-expressoes-faciais-dinamicas-reconhecimento-emocional-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Cooper et al. (2026), expressões faciais e rastreamento ocular",
+  "sourceSha256": "a53ecc54ef00c43aa9f958ab52060fac5294423c10de9999b036e9e28736f5aa"
+}

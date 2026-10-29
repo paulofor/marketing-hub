@@ -3317,7 +3317,10 @@ public class AgentTaskService {
     }
   }
 
-  /** Conclui trabalho após o gate auditivo ou confirma replay sem repetir efeitos e consumo. */
+  /**
+   * Conclui trabalho ou recupera retorno original após lease perdida, sem duplicar efeitos e
+   * consumo.
+   */
   @Transactional
   public void completeClaimedProcessTask(
       String agentKey, Long taskId, CompleteAgentTaskRequest request) {
@@ -3330,7 +3333,7 @@ public class AgentTaskService {
         request.evidenceJson(),
         null,
         request.executionAudit())) return;
-    requireClaimed(task);
+    requireClaimedOrOriginalDedaloCallback(task, request.executionAudit(), true);
     if (audioReviews != null) audioReviews.validateCompletion(task, request.resultJson());
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
@@ -3459,8 +3462,7 @@ public class AgentTaskService {
   }
 
   /**
-   * Bloqueia trabalho reservado ou arquiva falha após cancelamento, sem reabrir nem duplicar
-   * consumo.
+   * Preserva falha e consumo de trabalho reservado, cancelado ou interrompido por lease perdida.
    */
   @Transactional
   public void failClaimedProcessTask(String agentKey, Long taskId, FailAgentTaskRequest request) {
@@ -3473,7 +3475,7 @@ public class AgentTaskService {
         request.evidenceJson(),
         request.error(),
         request.executionAudit())) return;
-    requireClaimed(task);
+    requireClaimedOrOriginalDedaloCallback(task, request.executionAudit(), false);
     task.setExecutionError(request.error());
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
@@ -4054,6 +4056,30 @@ public class AgentTaskService {
     if (!"IN_PROGRESS".equals(task.getStatus())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Tarefa não está reservada.");
     }
+  }
+
+  /**
+   * Recupera somente o retorno auditado perdido; tentativas substituídas não liberam a atividade.
+   */
+  private void requireClaimedOrOriginalDedaloCallback(
+      AgentTask task, AgentTaskExecutionAuditRequest audit, boolean completing) {
+    if (DedaloLateCallback.recoverable(task, audit)) {
+      if (completing
+          && repository.existsNewerAttemptForCallback(
+              task.getSourceReference(), task.getProcessDefinition().getProcessCode(),
+              task.getProcessActivityId(), task.getId())) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "Uma tentativa posterior já governa esta atividade; preserve o retorno antigo como falha auditada.");
+      }
+      log.info(
+          "Recuperando callback original de Dédalo sem nova inferência. taskId={} sourceReference={} completing={}",
+          task.getId(),
+          task.getSourceReference(),
+          completing);
+      return;
+    }
+    requireClaimed(task);
   }
 
   /** Confirma identidade e lease antes de aceitar callback operacional. */

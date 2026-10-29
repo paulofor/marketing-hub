@@ -15,6 +15,7 @@ public class LandingGeneratorAgentProperties {
   private String strategicModel = "gpt-6-astra";
   private String reasoningEffort = "max";
   private String buildReference = "local";
+  private String bpmStateDirectory = System.getProperty("user.home") + "/.codex/dedalo-bpm";
   private Duration codexTimeout = Duration.ofMinutes(40);
 
   /** Retorna a URL do backend. */
@@ -125,6 +126,16 @@ public class LandingGeneratorAgentProperties {
   /** Define a identidade imutável do deploy atual. */
   public void setBuildReference(String value) {
     buildReference = value;
+  }
+
+  /** Retorna o diretório persistente dos resultados BPM ainda não confirmados. */
+  public String getBpmStateDirectory() {
+    return bpmStateDirectory;
+  }
+
+  /** Define armazenamento exclusivo do executor para recuperar callbacks após reinícios. */
+  public void setBpmStateDirectory(String value) {
+    bpmStateDirectory = value;
   }
 
   /** Retorna o timeout. */

@@ -364,6 +364,20 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       """)
   List<AgentTask> findReplayableClaimedCallbackCandidates(@Param("agentKey") String agentKey);
 
+  /** Impede que um callback tardio conclua uma atividade já substituída no mesmo contexto. */
+  @Query(
+      """
+      select (count(task) > 0) from AgentTask task
+      where task.sourceReference = :reference
+        and task.processDefinition.processCode = :processCode
+        and task.processActivityId = :activityId and task.id > :taskId
+      """)
+  boolean existsNewerAttemptForCallback(
+      @Param("reference") String reference,
+      @Param("processCode") String processCode,
+      @Param("activityId") String activityId,
+      @Param("taskId") Long taskId);
+
   /** Lista as tarefas da mesma execução de processo para validar predecessoras e gates. */
   List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
       Long processDefinitionId, String sourceReference);

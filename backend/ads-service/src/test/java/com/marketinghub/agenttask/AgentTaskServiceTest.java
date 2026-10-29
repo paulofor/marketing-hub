@@ -3569,6 +3569,110 @@ class AgentTaskServiceTest {
     assertThat(task.getAuditLinks()).noneMatch(link -> "BLOCKER_HELP".equals(link.getLinkType()));
   }
 
+  /** Aceita somente a resposta original após indisponibilidade, sem duplicar custo ou conclusão. */
+  @ParameterizedTest
+  @ValueSource(longs = {858L, 1858L})
+  void restoresOriginalDedaloCallbackAfterLostLease(long id) {
+    var repository = mock(AgentTaskRepository.class);
+    var task = interruptedDedaloTask(id);
+    when(repository.findLockedById(id)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var request =
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"APPROVE\"}",
+            "{\"original\":true}",
+            List.of(new AgentTaskModelUsageRequest("gpt-test", "STANDARD", 100L, 20L, 10L)),
+            modelExecutionAudit());
+    service.completeClaimedProcessTask("landing-generator", id, request);
+    service.completeClaimedProcessTask("landing-generator", id, request);
+    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+    assertThat(task.getInputTokens()).isEqualTo(100L);
+    assertThat(task.getResultJson()).isEqualTo(request.resultJson());
+    assertThat(task.getExecutionError()).isNull();
+    verify(repository).save(task);
+    verify(repository)
+        .existsNewerAttemptForCallback(
+            task.getSourceReference(),
+            task.getProcessDefinition().getProcessCode(),
+            task.getProcessActivityId(),
+            id);
+  }
+
+  /**
+   * Recusa retorno que substitua outra tentativa, auditoria, autoria, bloqueio funcional ou
+   * consumo.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"newer", "audit", "owner", "functional", "cost", "cancelled", "evidence"})
+  void rejectsUnrelatedLateDedaloCallbacks(String cause) {
+    var repository = mock(AgentTaskRepository.class);
+    var task = interruptedDedaloTask(858L);
+    when(repository.findLockedById(858L)).thenReturn(Optional.of(task));
+    when(repository.existsNewerAttemptForCallback(any(), any(), any(), any()))
+        .thenReturn("newer".equals(cause));
+    if ("audit".equals(cause)) task.setExecutionPrompt("Outro prompt");
+    if ("owner".equals(cause)) task.setAssignedAgent(agent(3L, "customer-agent", "Psique"));
+    if ("functional".equals(cause))
+      task.setExecutionError("Revisão funcional rejeitou o protótipo");
+    if ("cost".equals(cause)) task.setInputTokens(100L);
+    if ("cancelled".equals(cause)) task.setStatus("CANCELLED");
+    if ("evidence".equals(cause)) task.setEvidenceJson("{\"alreadyReceived\":true}");
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var request =
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"APPROVE\"}", "{\"original\":true}", null, modelExecutionAudit());
+    assertThatThrownBy(() -> service.completeClaimedProcessTask("landing-generator", 858L, request))
+        .isInstanceOf(ResponseStatusException.class);
+    verify(repository, never()).save(any());
+  }
+
+  /** Preserva custo de tentativa antiga sem aprová-la nem substituir a tarefa posterior. */
+  @Test
+  void recordsOriginalInterruptedDedaloUsageWithoutApprovingOldAttempt() {
+    var repository = mock(AgentTaskRepository.class);
+    var task = interruptedDedaloTask(852L);
+    when(repository.findLockedById(852L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var request =
+        new FailAgentTaskRequest(
+            "Modelo interrompido antes da resposta final",
+            null,
+            "{\"recoveredUsage\":true}",
+            List.of(new AgentTaskModelUsageRequest("gpt-test", "STANDARD", 100L, 20L, 10L)),
+            modelExecutionAudit(),
+            null);
+    service.failClaimedProcessTask("landing-generator", 852L, request);
+    service.failClaimedProcessTask("landing-generator", 852L, request);
+    assertThat(task.getStatus()).isEqualTo("BLOCKED");
+    assertThat(task.getDeliveredAt()).isNull();
+    assertThat(task.getInputTokens()).isEqualTo(100L);
+    verify(repository).save(task);
+    verify(repository, never()).existsNewerAttemptForCallback(any(), any(), any(), any());
+  }
+
+  /** Reproduz a lease perdida com auditoria anterior imutável e nenhuma resposta persistida. */
+  private AgentTask interruptedDedaloTask(long id) {
+    var task =
+        processTask(
+            id,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "productArchitecture",
+            "BLOCKED");
+    task.setSourceReference("experiment:" + id);
+    task.setExecutionError("DEDALO_LEASE_RECOVERY_EXHAUSTED|Saída observada, retorno não recebido");
+    var audit = modelExecutionAudit();
+    task.setExecutionMode(audit.executionMode());
+    task.setExecutionModelCode(audit.modelCode());
+    task.setExecutionReasoningEffort(audit.reasoningEffort());
+    task.setExecutionPrompt(audit.promptSent());
+    task.setExecutionAgentPrompt(audit.agentPromptPart());
+    task.setExecutionActivityPrompt(audit.activityPromptPart());
+    return task;
+  }
+
   /** Confirma resposta perdida após commit sem repetir efeitos, tokens ou avanço no BPM. */
   @Test
   void acknowledgesTerminalReplayWithoutDuplicatingUsageOrHooks() {

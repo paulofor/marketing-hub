@@ -26,3 +26,4 @@ landing-generator-agent:
   build-reference: ${AGENT_BUILD_REFERENCE:local}
   codex-command: ${CODEX_COMMAND:codex}
   codex-timeout: ${LANDING_GENERATOR_CODEX_TIMEOUT:PT40M}
+  bpm-state-directory: ${LANDING_GENERATOR_BPM_STATE_DIRECTORY:${CODEX_HOME:/home/landingagent/.codex}/dedalo-bpm}

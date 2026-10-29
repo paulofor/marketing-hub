@@ -25,6 +25,45 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private AgentTaskRepository repository;
   @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
 
+  /** O retorno tardio consulta somente tentativas posteriores da atividade e origem exatas. */
+  @Test
+  void isolatesNewerAttemptsAcrossProductsActivitiesAndProcessVersions() {
+    var agent = agent();
+    var process = process("pde-commercial-plan-offer", 1);
+    var old = task(agent, process, "productArchitecture", 852, "2026-10-28T14:00:00Z");
+    old.setSourceReference("experiment:110");
+    task(agent, process, "productArchitecture", 853, "2026-10-28T15:00:00Z")
+        .setSourceReference("experiment:111");
+    task(agent, process, "economics", 854, "2026-10-28T15:00:00Z")
+        .setSourceReference("experiment:110");
+    entityManager.flush();
+    assertThat(
+            repository.existsNewerAttemptForCallback(
+                "experiment:110", "pde-commercial-plan-offer", "productArchitecture", old.getId()))
+        .isFalse();
+    var newer =
+        task(
+            agent,
+            process("pde-commercial-plan-offer", 2),
+            "productArchitecture",
+            858,
+            "2026-10-28T18:00:00Z");
+    newer.setSourceReference("experiment:110");
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(
+            repository.existsNewerAttemptForCallback(
+                "experiment:110", "pde-commercial-plan-offer", "productArchitecture", old.getId()))
+        .isTrue();
+    assertThat(
+            repository.existsNewerAttemptForCallback(
+                "experiment:110",
+                "pde-commercial-plan-offer",
+                "productArchitecture",
+                newer.getId()))
+        .isFalse();
+  }
+
   /** Capturas adicionais não substituem a prova aprovada nem reabrem o contexto do produto. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {90105, 90218})

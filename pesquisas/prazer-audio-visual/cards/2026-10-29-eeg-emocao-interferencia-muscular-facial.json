@@ -1,0 +1,18 @@
+{
+  "cardKey": "eeg-emocao-interferencia-muscular-facial",
+  "collection": "prazer-audio-visual",
+  "title": "Validar artefatos musculares antes de inferir emoção por EEG",
+  "finding": "Em tarefas de vocalização imaginada, um classificador EEG identificou categorias emocionais acima do acaso (36,4% contra 20%), mas parte do sinal útil refletia atividade facial muscular involuntária corroborada por sEMG.",
+  "mechanism": "Sinais eletromiográficos faciais podem contaminar canais laterais e frequências altas do EEG, criando marcadores preditivos que não correspondem necessariamente a atividade neural emocional.",
+  "commercialApplication": "Quando avaliações de mídia usarem EEG, exigir controle de artefatos musculares, validação cruzada por pessoa e medidas humanas de emoção sentida, atenção e compreensão antes de aceitar alegações de prazer.",
+  "evidenceStrength": "Moderada para confusão EEG/sEMG no paradigma de vocalização; baixa para extrapolação a espectadores de vídeo, prazer ou desempenho comercial.",
+  "publishedOn": "2026-10-29",
+  "validUntil": "2026-12-13",
+  "experimentHypothesis": "Em um estudo controlado com espectadores, modelos de emoção baseados em EEG apresentarão alterações de desempenho após remoção rigorosa de artefatos EMG; a diferença deverá ser medida e não presumida.",
+  "risks": "Interpretar artefatos como recompensa neural; usar classificação emocional invasiva sem consentimento; superestimar modelos de IA, inclusive métricas obtidas por amostras pequenas.",
+  "limits": "Experimentos n=14 e n=21, sEMG simultâneo apenas em cinco participantes; tarefa de vocalização, não visualização de anúncio; nenhum teste de compra.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-29-eeg-emocao-interferencia-muscular-facial-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Tang et al. (2026), interferência facial no EEG",
+  "sourceSha256": "f73a41cfbf21a8aec1e25e9d02b319b7ab03f82347887f4a366d6596236d5f64"
+}

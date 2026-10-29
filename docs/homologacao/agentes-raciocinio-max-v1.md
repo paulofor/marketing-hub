@@ -45,6 +45,10 @@ mudança e os nove executores serão conferidos após a publicação.
 - 20 contratos de configuração e publicação aprovados; executor comercial com
   11 testes aprovados; política máxima do executor local de construção aprovada.
 - Validações de arquitetura, proteção da publicação, shell e workflows aprovadas.
+- O primeiro CI identificou um contrato de deploy que ainda exigia `medium` e
+  8.000 tokens na análise de Apolo. A expectativa foi alinhada à decisão de
+  `max` e 32.000, e o teste isolado foi reproduzido e validado localmente antes
+  de atualizar o mesmo PR.
 
 Uma comparação legada em `run-pde-construction-v2-agent.test.mjs` já falha na
 `main`: confronta o contrato MUSA atual com uma migração histórica imutável.

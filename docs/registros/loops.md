@@ -1,3 +1,16 @@
+## LOOP-PDE-CONTROLES-DE-IMPLEMENTACAO-ANTERIOR — 29/10/2026
+
+- **Evidência:** Têmis #864 recebeu a v17 com recuperação comprovada, mas faltavam
+  controles próprios de concorrência, limites e acesso. O relatório da v14 usa outro
+  serviço e não serve como prova da implementação atual.
+- **Causa confirmada:** os testes novos reproduziram, em duas identidades, gravação
+  de reflexão em ciclo encerrado. Só o comando de gerar conferia o contexto.
+- **Correção:** proteção comum nos comandos mutáveis; histórico permanece legível.
+  Contrato contextual exige 11 controles e duas identidades, sem callback inventado.
+- **Prevenção e resultado:** 15 testes MySQL e nove do serviço aprovados, incluídos
+  no CI; prova de recuperação preservada por hash. Não renova pareceres nem autoriza
+  mídia. [Matriz, evidência e limites](../homologacao/vega-v17-controles-operacionais-v1.md).
+
 ## LOOP-PSIQUE-RECUPERACAO-SEM-CONCLUSAO — 29/10/2026
 
 - **Evidência:** Vega #18/#111, homologação #859 aprovada e Psique #861 bloqueada.

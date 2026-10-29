@@ -112,15 +112,21 @@ public class PdeOperationalControlEvidence {
     return !required.isEmpty() && codes.equals(required) && validOperationalControls(report);
   }
 
-  /** Impede que contagens observadas substituam testes de limites, concorrência e acesso. */
+  /** Confere os controles executados do modo declarado, preservando contratos históricos. */
   private boolean validOperationalControls(JsonNode report) throws java.io.IOException {
     JsonNode declared = report.path("operationalControlsContract");
     if (declared.isMissingNode()) return true;
+    String policyResource =
+        switch (declared.asText()) {
+          case "PDE_PRIVATE_EXECUTION_CONTROLS_V1" ->
+              "contracts/pde-private-execution-controls-v1.json";
+          case "PDE_CONTEXTUAL_EXECUTION_CONTROLS_V1" ->
+              "contracts/pde-contextual-execution-controls-v1.json";
+          default -> null;
+        };
+    if (policyResource == null) return false;
     JsonNode policy;
-    try (var input =
-        resources
-            .getResource("classpath:contracts/pde-private-execution-controls-v1.json")
-            .getInputStream()) {
+    try (var input = resources.getResource("classpath:" + policyResource).getInputStream()) {
       policy = json.readTree(input);
     }
     if (!policy.path("contractVersion").equals(declared)) return false;

@@ -1,0 +1,803 @@
+{
+  "contractVersion": "PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1",
+  "productSlug": "metodo-musa-7-dias",
+  "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
+  "status": "PASS",
+  "origin": "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "generatedAt": "2026-10-29T12:00:20.973980087Z",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "agentApprovalClaimed": false,
+  "frontendSourceFingerprint": "843beca93e7e2593f1149eb27bd05427a5bbd9c3bec5d5c62baa46c910740652",
+  "testReceiptPath": "docs/homologacao/evidencias/vega-v17-operational/controls-result.json",
+  "testReceiptSha256": "160bf81a7dffda96e7f6acc2f6f3d765cd8cd252e6bf7b35e2cfaae96769ef55",
+  "requiredCriteria": [
+    "RECOVERY_COMPLETION_DESKTOP_1440",
+    "RECOVERY_COMPLETION_IPHONE_15_PRO",
+    "RECOVERY_COMPLETION_PIXEL_7",
+    "CONCURRENT_SINGLE_CONSUMPTION",
+    "SESSION_LIMIT",
+    "ATTEMPT_LIMIT",
+    "IDEMPOTENT_REQUEST",
+    "IDEMPOTENT_COMPLETION",
+    "INVALID_ACCESS_REJECTED",
+    "EXPIRED_ACCESS_REJECTED",
+    "REVOKED_ACCESS_REJECTED",
+    "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+    "INCOMPATIBLE_CONTEXT_REJECTED",
+    "CROSS_SESSION_ISOLATION"
+  ],
+  "criteria": [
+    {
+      "code": "RECOVERY_COMPLETION_DESKTOP_1440",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "vega-contextual-style-harness.mjs RECOVERY / missionRecoveryEvidence",
+      "result": {
+        "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+        "missionId": "estilo-dia-1",
+        "requestId": "aba0319cab911440c35c8e623e0d4806",
+        "guidanceStatus": "COMPLETED",
+        "missionCompleted": true,
+        "emptyReflection": true,
+        "preservedAfterReopen": true,
+        "repeatedWithoutDuplicate": true,
+        "observations": {
+          "beforeCompletion": {
+            "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+            "mission": {
+              "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              }
+            },
+            "completedMissionIds": [],
+            "progressPercent": 0,
+            "operationCount": 1
+          },
+          "afterCompletion": {
+            "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+            "mission": {
+              "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          },
+          "afterReopen": {
+            "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+            "mission": {
+              "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          },
+          "afterRepeat": {
+            "evidenceId": "0b2f4bf8-5150-4f1a-bc7f-d54ac38800aa",
+            "mission": {
+              "latestRequestId": "aba0319cab911440c35c8e623e0d4806",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          }
+        }
+      },
+      "resultSha256": "8670bd26fec348897699cb74fbfc247a146e1139e8f9701e25f740e58bfdc398",
+      "screenshotSha256": "bc6337eba4363df3b63d1d6c0804f90c0f2c5371c581e8c88c146b3f6e1b1e85"
+    },
+    {
+      "code": "RECOVERY_COMPLETION_IPHONE_15_PRO",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "vega-contextual-style-harness.mjs RECOVERY / missionRecoveryEvidence",
+      "result": {
+        "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+        "missionId": "estilo-dia-1",
+        "requestId": "6292231a79b978f1fd4940c331f0f9d2",
+        "guidanceStatus": "COMPLETED",
+        "missionCompleted": true,
+        "emptyReflection": true,
+        "preservedAfterReopen": true,
+        "repeatedWithoutDuplicate": true,
+        "observations": {
+          "beforeCompletion": {
+            "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+            "mission": {
+              "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              }
+            },
+            "completedMissionIds": [],
+            "progressPercent": 0,
+            "operationCount": 1
+          },
+          "afterCompletion": {
+            "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+            "mission": {
+              "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          },
+          "afterReopen": {
+            "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+            "mission": {
+              "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          },
+          "afterRepeat": {
+            "evidenceId": "1814ab7e-8530-4b95-aa5f-4382cb11f64c",
+            "mission": {
+              "latestRequestId": "6292231a79b978f1fd4940c331f0f9d2",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          }
+        }
+      },
+      "resultSha256": "7e78e3458f91e7b33004fadbe9bcf214e33a5fbdf0b6182894696306aae17682",
+      "screenshotSha256": "70af199c9688631e3ff054479f3e81a5a253b2929da2ddb9aa43952478744dc8"
+    },
+    {
+      "code": "RECOVERY_COMPLETION_PIXEL_7",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "vega-contextual-style-harness.mjs RECOVERY / missionRecoveryEvidence",
+      "result": {
+        "contractVersion": "MISSION_COMPLETION_RECOVERY_V1",
+        "missionId": "estilo-dia-1",
+        "requestId": "17da3fc4d34492dd8af6c68b33532dfb",
+        "guidanceStatus": "COMPLETED",
+        "missionCompleted": true,
+        "emptyReflection": true,
+        "preservedAfterReopen": true,
+        "repeatedWithoutDuplicate": true,
+        "observations": {
+          "beforeCompletion": {
+            "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+            "mission": {
+              "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              }
+            },
+            "completedMissionIds": [],
+            "progressPercent": 0,
+            "operationCount": 1
+          },
+          "afterCompletion": {
+            "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+            "mission": {
+              "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          },
+          "afterReopen": {
+            "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+            "mission": {
+              "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          },
+          "afterRepeat": {
+            "evidenceId": "c13a358c-ffb6-4378-a8f8-729fec3bb99b",
+            "mission": {
+              "latestRequestId": "17da3fc4d34492dd8af6c68b33532dfb",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa, lenço e bolsa; posso usar o lenço no pescoço ou na alça",
+                "stylePreference": "Cor e criatividade",
+                "reflection": ""
+              },
+              "completed": true
+            },
+            "completedMissionIds": [
+              "estilo-dia-1"
+            ],
+            "progressPercent": 14,
+            "operationCount": 1
+          }
+        }
+      },
+      "resultSha256": "8c47c4835346791d22135f7cafb965d71babeee22683e5362bf8f9b24fb34d22",
+      "screenshotSha256": "dbc9b286d5bc11cf89e039eeeb0172181295f09cf13a36f1eb9a91fc8be38521"
+    },
+    {
+      "code": "CONCURRENT_SINGLE_CONSUMPTION",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "CONCURRENT_SINGLE_CONSUMPTION",
+            "productId": 91004,
+            "observed": {
+              "replayPreservesState": true,
+              "concurrentRequests": 8,
+              "divergentInputRejected": true,
+              "persistedOperations": 1,
+              "distinctResults": 1
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "CONCURRENT_SINGLE_CONSUMPTION",
+            "productId": 97004,
+            "observed": {
+              "replayPreservesState": true,
+              "concurrentRequests": 8,
+              "divergentInputRejected": true,
+              "persistedOperations": 1,
+              "distinctResults": 1
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "1fd9785fae9855bdb40f743bf6b558815ad175b8bd3cb55b186cf3a8c9df3907"
+    },
+    {
+      "code": "SESSION_LIMIT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentSessionsRespectLimit",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "concurrentSessionsRespectLimit",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "SESSION_LIMIT",
+            "productId": 91004,
+            "observed": {
+              "persistedSessions": 18,
+              "requests": 24,
+              "rejected409": 6,
+              "revocationDoesNotRestoreCapacity": true,
+              "accepted": 18
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "concurrentSessionsRespectLimit",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "SESSION_LIMIT",
+            "productId": 97004,
+            "observed": {
+              "persistedSessions": 18,
+              "requests": 24,
+              "rejected409": 6,
+              "revocationDoesNotRestoreCapacity": true,
+              "accepted": 18
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "689fbe072ed733ca9d2ffde0c5f350fb7e403fe20ae27ffaa76fbd6a27dfd729"
+    },
+    {
+      "code": "ATTEMPT_LIMIT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "distinctOperationsRespectLimit",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "distinctOperationsRespectLimit",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "ATTEMPT_LIMIT",
+            "productId": 91004,
+            "observed": {
+              "concurrentRequests": 8,
+              "persistedOperations": 2,
+              "rejected409": 6,
+              "accepted": 2,
+              "extraRequestPreservesState": true
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "distinctOperationsRespectLimit",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "ATTEMPT_LIMIT",
+            "productId": 97004,
+            "observed": {
+              "concurrentRequests": 8,
+              "persistedOperations": 2,
+              "rejected409": 6,
+              "accepted": 2,
+              "extraRequestPreservesState": true
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "f99aea420c4655b89613561669a812d46cf47d2adce25721112da871257230bb"
+    },
+    {
+      "code": "IDEMPOTENT_REQUEST",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "IDEMPOTENT_REQUEST",
+            "productId": 91004,
+            "observed": {
+              "replayPreservesState": true,
+              "concurrentRequests": 8,
+              "divergentInputRejected": true,
+              "persistedOperations": 1,
+              "distinctResults": 1
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "IDEMPOTENT_REQUEST",
+            "productId": 97004,
+            "observed": {
+              "replayPreservesState": true,
+              "concurrentRequests": 8,
+              "divergentInputRejected": true,
+              "persistedOperations": 1,
+              "distinctResults": 1
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "b158cca7571a81cfae0416e7d62cfc74162c0d1d9650683a8f4006fe8e0dbaa4"
+    },
+    {
+      "code": "IDEMPOTENT_COMPLETION",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "completionIsIdempotent",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "completionIsIdempotent",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "IDEMPOTENT_COMPLETION",
+            "productId": 91004,
+            "observed": {
+              "reopenAndRepeatPreserveState": true,
+              "completedMissions": 1,
+              "concurrentCompletions": 8,
+              "persistedOperations": 1,
+              "progressPercent": 14
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "completionIsIdempotent",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "IDEMPOTENT_COMPLETION",
+            "productId": 97004,
+            "observed": {
+              "reopenAndRepeatPreserveState": true,
+              "completedMissions": 1,
+              "concurrentCompletions": 8,
+              "persistedOperations": 1,
+              "progressPercent": 14
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "d642ed120a02caa2c2fc1e5f5d865ea9edf4e1e04a78924c420fe33dbf01d2b8"
+    },
+    {
+      "code": "INVALID_ACCESS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "INVALID_ACCESS_REJECTED",
+            "productId": 91004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "readRequestsRejected": 2,
+              "mutationRequestsRejected": 5
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "INVALID_ACCESS_REJECTED",
+            "productId": 97004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "readRequestsRejected": 2,
+              "mutationRequestsRejected": 5
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "138d3a4cb7d5582bd47fb46ef22882b88dc242e8675f7de49ec87fe28d37e8e2"
+    },
+    {
+      "code": "EXPIRED_ACCESS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "EXPIRED_ACCESS_REJECTED",
+            "productId": 91004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "readRequestsRejected": 2,
+              "mutationRequestsRejected": 5
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "EXPIRED_ACCESS_REJECTED",
+            "productId": 97004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "readRequestsRejected": 2,
+              "mutationRequestsRejected": 5
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "80f592ab89357ed667ddcdf3fb886e2a73f27df47d26a39b8e6e90425e3b85c4"
+    },
+    {
+      "code": "REVOKED_ACCESS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "REVOKED_ACCESS_REJECTED",
+            "productId": 91004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "readRequestsRejected": 2,
+              "mutationRequestsRejected": 5
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "REVOKED_ACCESS_REJECTED",
+            "productId": 97004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "readRequestsRejected": 2,
+              "mutationRequestsRejected": 5
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "0037a0e3e2e995cd7943b6de206dda3af3745c3a590c67f339207bce68e82d5f"
+    },
+    {
+      "code": "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "closedOrIncompatibleContextCannotMutate",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "closedOrIncompatibleContextCannotMutate",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+            "productId": 91004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "historicalResultReadable": true,
+              "mutationRequestsRejected": 6
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "closedOrIncompatibleContextCannotMutate",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+            "productId": 97004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "historicalResultReadable": true,
+              "mutationRequestsRejected": 6
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "90c7b77e0ad987de0de7390106b7e3d3fb47cfe69c9104362b0f6e8ea939ccc5"
+    },
+    {
+      "code": "INCOMPATIBLE_CONTEXT_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "closedOrIncompatibleContextCannotMutate",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "closedOrIncompatibleContextCannotMutate",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "INCOMPATIBLE_CONTEXT_REJECTED",
+            "productId": 91004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "historicalResultReadable": true,
+              "mutationRequestsRejected": 6
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "closedOrIncompatibleContextCannotMutate",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "INCOMPATIBLE_CONTEXT_REJECTED",
+            "productId": 97004,
+            "observed": {
+              "persistedStateUnchanged": true,
+              "historicalResultReadable": true,
+              "mutationRequestsRejected": 6
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "066e3439af8e9c01b788d3803a4668dfeb1835abd97d4bc36e7eb0a8dd113c18"
+    },
+    {
+      "code": "CROSS_SESSION_ISOLATION",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "sessionsRemainIsolated",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "testMethod": "sessionsRemainIsolated",
+            "status": "PASS",
+            "cycleId": 171004,
+            "code": "CROSS_SESSION_ISOLATION",
+            "productId": 91004,
+            "observed": {
+              "crossSessionReadRejected": true,
+              "ownerStateUnchanged": true,
+              "crossSessionMutationsRejected": 2
+            },
+            "experimentId": 172004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          },
+          {
+            "testMethod": "sessionsRemainIsolated",
+            "status": "PASS",
+            "cycleId": 177004,
+            "code": "CROSS_SESSION_ISOLATION",
+            "productId": 97004,
+            "observed": {
+              "crossSessionReadRejected": true,
+              "ownerStateUnchanged": true,
+              "crossSessionMutationsRejected": 2
+            },
+            "experimentId": 178004,
+            "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+          }
+        ]
+      },
+      "resultSha256": "589da45c126a30b98d31cda84d932ed63c7c7fe109b0c128c718f8bc8db6dc9a"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/vega-contextual-style-harness.mjs",
+      "sha256": "aff8f6203e42760908a9f92e75c7ba53925a81c411fca8d71f8782fccdc9c936"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mission-recovery-evidence.mjs",
+      "sha256": "35e3875c395c1fd50420c66c5911c9000adb085c392bf33fc52ae244b52b8491"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/style/v1/VegaStyleOperationalControlsMysql57Test.java",
+      "sha256": "b1fa6d3cf32a9467588c8a4d0a7909947716aef26ac8e9645240f11fffc160bf"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/VegaStyleService.java",
+      "sha256": "8ebbc7108d4606f8dec9403c9fdc482fd7f7195fe6736e448e6e048b69d43853"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidence.java",
+      "sha256": "87dbd1e54f134310a1356d4e39eb920b5eedb605ec10625ce9a4c381bf1a2ea3"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/pde-contextual-execution-controls-v1.json",
+      "sha256": "e5a78521c2afb5f4380bbb7030e101dac193a73f3a20a6213168194a2cd3a93e"
+    }
+  ],
+  "operationalControlsContract": "PDE_CONTEXTUAL_EXECUTION_CONTROLS_V1",
+  "executionMode": "SYNCHRONOUS_DETERMINISTIC_CONTEXTUAL_RULES",
+  "testedProductIds": [
+    91004,
+    97004
+  ],
+  "reusedRecoveryEvidence": {
+    "reportSha256": "c3f74ca3dfa34cec1a63bc2f55b31171c9be766d943225da3c334feee2cb0273",
+    "generatedAt": "2026-10-29T10:42:19.467120+00:00",
+    "testReceiptPath": "docs/homologacao/evidencias/vega-recuperacao-conclusao-v1/local-report.json",
+    "testReceiptSha256": "bd73041624266f40f6e80819fdd3d6fe96756212ebf0159fd0d8a04ee922ad06"
+  },
+  "implementationChange": {
+    "closedContextProtectionChanged": true,
+    "validContextExperienceChanged": false,
+    "independentReviewRequired": true,
+    "description": "Comandos mutáveis verificam ciclo, etapa, produto, experimento e versão. Histórico e caminho válido preservados."
+  }
+}

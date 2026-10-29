@@ -54,3 +54,10 @@ e jornada inteira, com estados após conclusão, reabertura e repetição. Confe
 mesma operação, escolhas e progresso sem duplicação; a captura é posterior à
 conclusão. Para uma lacuna somente nesse cenário, usar `mode: SCENARIO` e
 `scenarioCode: RECOVERY`, sem refazer a matriz inteira já aceita.
+
+Para controles HTTP/transacionais da implementação contextual, execute no backend
+`VEGA_TEST_DB_HOST=sandbox-docker mvn -Dtest=VegaStyleOperationalControlsMysql57Test test`
+com o MySQL isolado ativo. `VEGA_OPERATIONAL_REPORT=<arquivo>` grava somente
+observações sanitizadas, sem tokens. A suíte cria duas identidades sintéticas próprias,
+testa concorrência, limites, acesso, conclusão e ciclo encerrado, e preserva o caminho
+válido da v16. O CI usa o mesmo teste com banco `vega_local` isolado na porta 3306.

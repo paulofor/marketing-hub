@@ -1,0 +1,352 @@
+{
+  "origin": "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "databaseVersion": "5.7.44",
+  "generatedAt": "2026-10-29T12:00:20.973980087Z",
+  "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "observations": [
+    {
+      "testMethod": "distinctOperationsRespectLimit",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "ATTEMPT_LIMIT",
+      "productId": 91004,
+      "observed": {
+        "concurrentRequests": 8,
+        "persistedOperations": 2,
+        "rejected409": 6,
+        "accepted": 2,
+        "extraRequestPreservesState": true
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "distinctOperationsRespectLimit",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "ATTEMPT_LIMIT",
+      "productId": 97004,
+      "observed": {
+        "concurrentRequests": 8,
+        "persistedOperations": 2,
+        "rejected409": 6,
+        "accepted": 2,
+        "extraRequestPreservesState": true
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "sessionsRemainIsolated",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "CROSS_SESSION_ISOLATION",
+      "productId": 91004,
+      "observed": {
+        "crossSessionReadRejected": true,
+        "ownerStateUnchanged": true,
+        "crossSessionMutationsRejected": 2
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "sessionsRemainIsolated",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "CROSS_SESSION_ISOLATION",
+      "productId": 97004,
+      "observed": {
+        "crossSessionReadRejected": true,
+        "ownerStateUnchanged": true,
+        "crossSessionMutationsRejected": 2
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "concurrentSessionsRespectLimit",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "SESSION_LIMIT",
+      "productId": 91004,
+      "observed": {
+        "persistedSessions": 18,
+        "requests": 24,
+        "rejected409": 6,
+        "revocationDoesNotRestoreCapacity": true,
+        "accepted": 18
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "concurrentSessionsRespectLimit",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "SESSION_LIMIT",
+      "productId": 97004,
+      "observed": {
+        "persistedSessions": 18,
+        "requests": 24,
+        "rejected409": 6,
+        "revocationDoesNotRestoreCapacity": true,
+        "accepted": 18
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "INVALID_ACCESS_REJECTED",
+      "productId": 91004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "readRequestsRejected": 2,
+        "mutationRequestsRejected": 5
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "EXPIRED_ACCESS_REJECTED",
+      "productId": 91004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "readRequestsRejected": 2,
+        "mutationRequestsRejected": 5
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "REVOKED_ACCESS_REJECTED",
+      "productId": 91004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "readRequestsRejected": 2,
+        "mutationRequestsRejected": 5
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "INVALID_ACCESS_REJECTED",
+      "productId": 97004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "readRequestsRejected": 2,
+        "mutationRequestsRejected": 5
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "EXPIRED_ACCESS_REJECTED",
+      "productId": 97004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "readRequestsRejected": 2,
+        "mutationRequestsRejected": 5
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "invalidExpiredAndRevokedAccessCannotMutate",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "REVOKED_ACCESS_REJECTED",
+      "productId": 97004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "readRequestsRejected": 2,
+        "mutationRequestsRejected": 5
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "closedOrIncompatibleContextCannotMutate",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+      "productId": 91004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "historicalResultReadable": true,
+        "mutationRequestsRejected": 6
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "closedOrIncompatibleContextCannotMutate",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "INCOMPATIBLE_CONTEXT_REJECTED",
+      "productId": 91004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "historicalResultReadable": true,
+        "mutationRequestsRejected": 6
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "closedOrIncompatibleContextCannotMutate",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+      "productId": 97004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "historicalResultReadable": true,
+        "mutationRequestsRejected": 6
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "closedOrIncompatibleContextCannotMutate",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "INCOMPATIBLE_CONTEXT_REJECTED",
+      "productId": 97004,
+      "observed": {
+        "persistedStateUnchanged": true,
+        "historicalResultReadable": true,
+        "mutationRequestsRejected": 6
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "completionIsIdempotent",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "IDEMPOTENT_COMPLETION",
+      "productId": 91004,
+      "observed": {
+        "reopenAndRepeatPreserveState": true,
+        "completedMissions": 1,
+        "concurrentCompletions": 8,
+        "persistedOperations": 1,
+        "progressPercent": 14
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "completionIsIdempotent",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "IDEMPOTENT_COMPLETION",
+      "productId": 97004,
+      "observed": {
+        "reopenAndRepeatPreserveState": true,
+        "completedMissions": 1,
+        "concurrentCompletions": 8,
+        "persistedOperations": 1,
+        "progressPercent": 14
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "CONCURRENT_SINGLE_CONSUMPTION",
+      "productId": 91004,
+      "observed": {
+        "replayPreservesState": true,
+        "concurrentRequests": 8,
+        "divergentInputRejected": true,
+        "persistedOperations": 1,
+        "distinctResults": 1
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+      "status": "PASS",
+      "cycleId": 171004,
+      "code": "IDEMPOTENT_REQUEST",
+      "productId": 91004,
+      "observed": {
+        "replayPreservesState": true,
+        "concurrentRequests": 8,
+        "divergentInputRejected": true,
+        "persistedOperations": 1,
+        "distinctResults": 1
+      },
+      "experimentId": 172004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "CONCURRENT_SINGLE_CONSUMPTION",
+      "productId": 97004,
+      "observed": {
+        "replayPreservesState": true,
+        "concurrentRequests": 8,
+        "divergentInputRejected": true,
+        "persistedOperations": 1,
+        "distinctResults": 1
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    },
+    {
+      "testMethod": "concurrentGenerationAndReplayConsumeOnce",
+      "status": "PASS",
+      "cycleId": 177004,
+      "code": "IDEMPOTENT_REQUEST",
+      "productId": 97004,
+      "observed": {
+        "replayPreservesState": true,
+        "concurrentRequests": 8,
+        "divergentInputRejected": true,
+        "persistedOperations": 1,
+        "distinctResults": 1
+      },
+      "experimentId": 178004,
+      "prototypeVersion": "musa-pde-entry-v17-continuidade-clara"
+    }
+  ],
+  "testSource": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/style/v1/VegaStyleOperationalControlsMysql57Test.java",
+  "testSourceSha256": "b1fa6d3cf32a9467588c8a4d0a7909947716aef26ac8e9645240f11fffc160bf",
+  "tests": 15,
+  "failures": 0,
+  "errors": 0,
+  "priorFailure": {
+    "tests": 15,
+    "failures": 2,
+    "cause": "Reflection mutation accepted in a closed cycle in both independent identities"
+  },
+  "compatiblePreviousVersion": {
+    "version": "musa-pde-entry-v16-modelagem-internacional",
+    "result": "PASS"
+  }
+}

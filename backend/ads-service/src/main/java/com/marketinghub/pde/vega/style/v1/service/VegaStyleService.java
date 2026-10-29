@@ -64,28 +64,29 @@ public class VegaStyleService {
   /** Informa versões compatíveis sem criar sessão, custo, migração ou aceite de homologação. */
   @Transactional(readOnly = true)
   public JsonNode contract() {
-    ObjectNode response = json.valueToTree(
-        Map.of(
-            "prototypeVersion",
-            VERSION,
-            "supportedPrototypeVersions",
-            SUPPORTED_VERSIONS,
-            "model",
-            VegaContextualStyleRules.MODEL,
-            "generationMode",
-            "DETERMINISTIC_CONTEXTUAL_RULES",
-            "requiredSignals",
-            SIGNALS,
-            "inputComparisonApplicable",
-            false,
-            "providerCalls",
-            0,
-            "sessionLimit",
-            18,
-            "trafficClass",
-            "AGENT_VALIDATION",
-            "internalMarker",
-            "mh_internal_test"));
+    ObjectNode response =
+        json.valueToTree(
+            Map.of(
+                "prototypeVersion",
+                VERSION,
+                "supportedPrototypeVersions",
+                SUPPORTED_VERSIONS,
+                "model",
+                VegaContextualStyleRules.MODEL,
+                "generationMode",
+                "DETERMINISTIC_CONTEXTUAL_RULES",
+                "requiredSignals",
+                SIGNALS,
+                "inputComparisonApplicable",
+                false,
+                "providerCalls",
+                0,
+                "sessionLimit",
+                18,
+                "trafficClass",
+                "AGENT_VALIDATION",
+                "internalMarker",
+                "mh_internal_test"));
     response.putArray("optionalReflectionPrototypeVersions").add(NEXT_VERSION);
     return response;
   }
@@ -194,9 +195,12 @@ public class VegaStyleService {
     return response;
   }
 
-  /** Registra o começo intencional e a ciência sintética, sem confundir carregamento com uso. */
+  /**
+   * Registra o começo intencional somente no contexto vigente, sem confundir carregamento com uso.
+   */
   public JsonNode start(String secret) {
     var row = session(secret);
+    requireMutableContext(row);
     if ("NEW".equals(row.getState())) row.setState("INPUT");
     if (row.getConsentedAt() == null) row.setConsentedAt(Instant.now());
     emit(row, "EXPERIENCE_STARTED", "");
@@ -228,15 +232,7 @@ public class VegaStyleService {
     require(
         !data.path("missions").path(missionId).path("completed").asBoolean(),
         "Este dia já ficou salvo. Continue para o próximo ou consulte seus registros.");
-    var cycle =
-        cycles
-            .findLockedById(row.getCycleId())
-            .orElseThrow(() -> fail(404, "Ciclo não encontrado."));
-    require(
-        "OPEN".equals(cycle.getStatus())
-            && row.getPrototypeVersion().equals(cycle.getProductVersion())
-            && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage()),
-        "O ciclo não permite novas operações desta versão.");
+    requireMutableContext(row);
     long attempts =
         java.util.stream.StreamSupport.stream(operations.spliterator(), false)
             .filter(item -> missionId.equals(item.path("missionId").asText()))
@@ -301,9 +297,10 @@ public class VegaStyleService {
     return operation.path("response");
   }
 
-  /** Salva escolhas e comentário opcional da v17 somente para a orientação correspondente. */
+  /** Salva escolhas e comentário opcional somente para a orientação e o contexto vigentes. */
   public void reflect(String secret, String missionId, Reflection request) {
     var row = session(secret);
+    requireMutableContext(row);
     var data = data(row);
     authorizeMission(data, missionId);
     VegaStyleInput.validate(request.answers());
@@ -324,9 +321,10 @@ public class VegaStyleService {
     row.setInputJson(write(data));
   }
 
-  /** Conclui explicitamente uma orientação válida, respeitando a política de comentário da versão. */
+  /** Conclui uma orientação válida no contexto vigente, respeitando o comentário da versão. */
   public void complete(String secret, String missionId) {
     var row = session(secret);
+    requireMutableContext(row);
     var data = data(row);
     authorizeMission(data, missionId);
     var mission = data.path("missions").path(missionId);
@@ -346,9 +344,10 @@ public class VegaStyleService {
     return !NEXT_VERSION.equals(row.getPrototypeVersion());
   }
 
-  /** Registra ações explícitas com pré-condições e impede opinião sintética pelo navegador. */
+  /** Registra ações no contexto vigente e impede opinião sintética pelo navegador. */
   public JsonNode event(String secret, Event request, boolean internal) {
     var row = session(secret);
+    requireMutableContext(row);
     require(
         SIGNALS.contains(request.eventType()) && !"EXPERIENCE_STARTED".equals(request.eventType()),
         "Sinal inválido.");
@@ -421,12 +420,13 @@ public class VegaStyleService {
     return text.toString();
   }
 
-  /** Controla direitos e expirações exclusivamente por fixtures internas, sem compra ou gateway. */
+  /** Concede direito somente no contexto vigente; permite revogar acesso histórico sem gateway. */
   public JsonNode fixture(String secret, String action) {
     var row = session(secret);
     var data = data(row);
     switch (action) {
       case "full-access" -> {
+        requireMutableContext(row);
         data.put("entitlement", "COMPLETE");
         data.put("entitlementExpiresAt", row.getCreatedAt().plus(90, ChronoUnit.DAYS).toString());
       }
@@ -493,6 +493,22 @@ public class VegaStyleService {
     if (!row.getExpiresAt().isAfter(Instant.now()))
       throw fail(401, "A sessão terminou. Recupere um acesso autorizado para continuar.");
     return row;
+  }
+
+  /** Impede mutações fora da identidade e etapa vigentes sem retirar a leitura do histórico. */
+  private void requireMutableContext(VegaPrivateSession row) {
+    var cycle =
+        cycles
+            .findLockedById(row.getCycleId())
+            .orElseThrow(() -> fail(404, "Ciclo não encontrado."));
+    require(
+        "OPEN".equals(cycle.getStatus())
+            && !cycle.isBaseline()
+            && Objects.equals(row.getProductId(), cycle.getProductId())
+            && Objects.equals(row.getExperimentId(), cycle.getExperimentId())
+            && row.getPrototypeVersion().equals(cycle.getProductVersion())
+            && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage()),
+        "O ciclo não permite novas operações desta versão.");
   }
 
   /** O backend exige a missão anterior e o direito integral antes dos dias pagos. */

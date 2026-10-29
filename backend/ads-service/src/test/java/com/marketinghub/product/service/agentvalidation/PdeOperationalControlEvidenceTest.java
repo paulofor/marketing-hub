@@ -189,13 +189,17 @@ class PdeOperationalControlEvidenceTest {
 
   /** Monta recibo sintético do contrato compartilhado sem exceções por produto ou versão. */
   private void operationalReport() throws Exception {
+    operationalReport("pde-private-execution-controls-v1.json");
+  }
+
+  /** Carrega a política explícita do modo executado, sem inventar callbacks inexistentes. */
+  private void operationalReport(String policyName) throws Exception {
     byte[] raw;
-    try (var input =
-        getClass().getResourceAsStream("/contracts/pde-private-execution-controls-v1.json")) {
+    try (var input = getClass().getResourceAsStream("/contracts/" + policyName)) {
       raw = input.readAllBytes();
     }
     var policy = json.readTree(raw);
-    when(resources.getResource("classpath:contracts/pde-private-execution-controls-v1.json"))
+    when(resources.getResource("classpath:contracts/" + policyName))
         .thenReturn(new ByteArrayResource(raw));
     report.put("operationalControlsContract", policy.path("contractVersion").asText());
     report.set("requiredCriteria", policy.path("requiredCriteria").deepCopy());
@@ -437,20 +441,97 @@ class PdeOperationalControlEvidenceTest {
   /** Confere o suplemento real da recuperação, seus recibos e o limite de reavaliação. */
   @Test
   void recoverySupplementMatchesExecutedProofAndCurrentHarness() throws Exception {
-    var real = new PdeOperationalControlEvidence(json, new org.springframework.core.io.DefaultResourceLoader());
-    var evidence = real.resolve("metodo-musa-7-dias", "musa-pde-entry-v17-continuidade-clara").orElseThrow();
+    var real =
+        new PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader());
+    var current =
+        real.resolve("metodo-musa-7-dias", "musa-pde-entry-v17-continuidade-clara").orElseThrow();
+    var evidence =
+        real.resolveReviewed(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v17-continuidade-clara",
+                current.path("reusedRecoveryEvidence").path("reportSha256").asText())
+            .orElseThrow();
     assertThat(evidence.path("criteria").size()).isEqualTo(3);
     for (var criterion : evidence.path("criteria")) {
       var result = criterion.path("result");
-      assertThat(result.path("contractVersion").asText()).isEqualTo("MISSION_COMPLETION_RECOVERY_V1");
-      for (String key : java.util.List.of("missionCompleted", "emptyReflection", "preservedAfterReopen", "repeatedWithoutDuplicate"))
+      assertThat(result.path("contractVersion").asText())
+          .isEqualTo("MISSION_COMPLETION_RECOVERY_V1");
+      for (String key :
+          java.util.List.of(
+              "missionCompleted",
+              "emptyReflection",
+              "preservedAfterReopen",
+              "repeatedWithoutDuplicate"))
         assertThat(result.path(key).asBoolean()).as(key).isTrue();
     }
     for (var source : evidence.path("sourceFiles"))
       assertThat(fileHash(source.path("path").asText())).isEqualTo(source.path("sha256").asText());
-    assertThat(fileHash(evidence.path("testReceiptPath").asText())).isEqualTo(evidence.path("testReceiptSha256").asText());
-    assertThat(evidence.path("reviewReevaluation").path("implementationChanged").asBoolean(true)).isFalse();
-    assertThat(evidence.path("reviewReevaluation").path("independentReviewRequired").asBoolean()).isTrue();
+    assertThat(fileHash(evidence.path("testReceiptPath").asText()))
+        .isEqualTo(evidence.path("testReceiptSha256").asText());
+    assertThat(evidence.path("reviewReevaluation").path("implementationChanged").asBoolean(true))
+        .isFalse();
+    assertThat(evidence.path("reviewReevaluation").path("independentReviewRequired").asBoolean())
+        .isTrue();
+    assertThat(evidence.path("agentApprovalClaimed").asBoolean(true)).isFalse();
+  }
+
+  /** Exige todos os controles contextuais nas duas identidades e recusa cobertura parcial. */
+  @Test
+  void contextualControlsRequireClosedContextAndIndependentContexts() throws Exception {
+    operationalReport("pde-contextual-execution-controls-v1.json");
+    catalog(false);
+    assertThat(provider.resolve("original", "v3")).isPresent();
+    report.put("productSlug", "another-product");
+    catalog(false);
+    assertThat(provider.resolve("another-product", "v3")).isPresent();
+    var criteria = report.withArray("criteria");
+    for (int index = 0; index < criteria.size(); index++) {
+      if (criteria.get(index).path("code").asText().equals("CLOSED_CONTEXT_MUTATIONS_REJECTED")) {
+        criteria.remove(index);
+        report.withArray("requiredCriteria").remove(index);
+        break;
+      }
+    }
+    catalog(false);
+    assertThat(provider.resolve("another-product", "v3")).isEmpty();
+  }
+
+  /**
+   * Confere recibos MySQL reais, fonte atual e recuperação anterior preservada sem renovar aceites.
+   */
+  @Test
+  void contextualPublishedReceiptMatchesExecutedControls() throws Exception {
+    var real =
+        new PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader());
+    var evidence =
+        real.resolve("metodo-musa-7-dias", "musa-pde-entry-v17-continuidade-clara").orElseThrow();
+    assertThat(evidence.path("operationalControlsContract").asText())
+        .isEqualTo("PDE_CONTEXTUAL_EXECUTION_CONTROLS_V1");
+    assertThat(evidence.path("criteria").size()).isEqualTo(14);
+    int controls = 0;
+    for (var criterion : evidence.path("criteria")) {
+      if (criterion.path("code").asText().startsWith("RECOVERY_COMPLETION_")) continue;
+      controls++;
+      assertThat(criterion.path("result").path("contexts").size()).isEqualTo(2);
+      for (var context : criterion.path("result").path("contexts"))
+        assertThat(context.path("status").asText()).isEqualTo("PASS");
+    }
+    assertThat(controls).isEqualTo(11);
+    for (var source : evidence.path("sourceFiles"))
+      assertThat(fileHash(source.path("path").asText()))
+          .as(source.path("path").asText())
+          .isEqualTo(source.path("sha256").asText());
+    assertThat(fileHash(evidence.path("testReceiptPath").asText()))
+        .isEqualTo(evidence.path("testReceiptSha256").asText());
+    assertThat(evidence.path("providerCalls").asInt(-1)).isZero();
+    assertThat(
+            evidence
+                .path("implementationChange")
+                .path("closedContextProtectionChanged")
+                .asBoolean())
+        .isTrue();
     assertThat(evidence.path("agentApprovalClaimed").asBoolean(true)).isFalse();
   }
 }

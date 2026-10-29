@@ -65,6 +65,13 @@ não aprova automaticamente nem libera outra tentativa depois de uma nova recusa
 Mudança funcional continua submetida ao sucessor e às revisões correspondentes.
 Caso e regressão: [Vega, recuperação da conclusão](../homologacao/vega-recuperacao-conclusao-v1.md).
 
+Uma prova complementar de cenário não substitui os controles operacionais da
+implementação vigente. Declarar o modo executado e comprovar concorrência, limites,
+isolamento, acesso e recusa de mutações em contexto encerrado/incompatível em duas
+identidades. Implementação síncrona deve provar conclusão idempotente, sem inventar
+callback externo. Preservar recibos e revisões anteriores; novas provas não aprovam
+o produto automaticamente. [Caso, correção e testes](../homologacao/vega-v17-controles-operacionais-v1.md).
+
 O harness técnico também deve confrontar o estado persistido com a mensagem terminal.
 Bloquear uma entrada e não gerar cartão não permite anunciar um resultado disponível.
 O verificador compartilhado `private-result-state-checks.mjs` usa os termos do contrato do

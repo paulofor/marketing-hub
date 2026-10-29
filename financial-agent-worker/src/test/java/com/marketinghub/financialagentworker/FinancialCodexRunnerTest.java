@@ -55,7 +55,7 @@ class FinancialCodexRunnerTest {
     assertThat(command)
         .contains(
             "service_tier=\"default\"",
-            "model_reasoning_effort=\"high\"",
+            "model_reasoning_effort=\"max\"",
             "mcp_servers.financial_agent.command=\"node\"",
             "mcp_servers.financial_agent.args=[\"/tmp/financial-agent.mjs\"]",
             "mcp_servers.financial_agent.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\"]");
@@ -79,7 +79,7 @@ class FinancialCodexRunnerTest {
     FinancialAgentProperties properties = new FinancialAgentProperties();
 
     assertThat(properties.getCodexTimeout()).isEqualTo(Duration.ofMinutes(40));
-    assertThat(properties.getReasoningEffort()).isEqualTo("high");
+    assertThat(properties.getReasoningEffort()).isEqualTo("max");
     assertThat(properties.getServiceTier()).isEqualTo("default");
     assertThat(properties.getServiceTierExceptionReason()).contains("Flex", "Codex OAuth");
   }
@@ -195,7 +195,7 @@ class FinancialCodexRunnerTest {
     var command = runner.buildVideoReviewCommand(Path.of("/tmp/out"), Path.of("/tmp/schema"));
 
     assertThat(command).contains("--json", "service_tier=\"default\"");
-    assertThat(command).contains("model_reasoning_effort=\"high\"");
+    assertThat(command).contains("model_reasoning_effort=\"max\"");
     assertThat(command).doesNotContain("--search");
   }
 

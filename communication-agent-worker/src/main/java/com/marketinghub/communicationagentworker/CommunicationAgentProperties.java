@@ -13,7 +13,7 @@ public class CommunicationAgentProperties {
   private String codexCommand;
   private String model;
   private String strategicModel = "gpt-6-astra";
-  private String reasoningEffort = "high";
+  private String reasoningEffort = "max";
   private String serviceTier = "default";
   private String serviceTierExceptionReason =
       "O catálogo do Codex OAuth não anuncia Flex para os modelos disponíveis ao harness.";
@@ -83,9 +83,9 @@ public class CommunicationAgentProperties {
     return strategic ? getStrategicModel() : getModel();
   }
 
-  /** Retorna o esforço de raciocínio auditado. */
+  /** Retorna max validado para chamadas e auditorias, recusando configuração inferior. */
   public String getReasoningEffort() {
-    return reasoningEffort;
+    return requiredReasoningEffort();
   }
 
   /** Configura o esforço de raciocínio auditado. */
@@ -93,13 +93,13 @@ public class CommunicationAgentProperties {
     this.reasoningEffort = reasoningEffort;
   }
 
-  /** Exige o esforço explícito usado tanto no comando quanto na auditoria de Íris. */
+  /** Exige max antes da chamada e mantém comando e auditoria com a mesma configuração. */
   public String requiredReasoningEffort() {
-    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+    if (reasoningEffort == null || !"max".equals(reasoningEffort.trim())) {
       throw new IllegalStateException(
-          "COMMUNICATION_AGENT_REASONING_EFFORT é obrigatório para auditar Íris.");
+          "CODEX_REASONING_EFFORT deve ser max, obrigatório para auditar Íris.");
     }
-    return reasoningEffort.trim();
+    return "max";
   }
 
   /** Retorna o tier realmente solicitado ao runtime Codex. */

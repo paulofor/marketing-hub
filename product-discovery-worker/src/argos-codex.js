@@ -5,6 +5,14 @@ import { join } from "node:path";
 import { readStrictOutputSchema } from "./strict-output-schema.js";
 import { referenceSourceDomains } from "./research.js";
 
+/** Exige max para novas inferências; recibos históricos mantêm sua configuração original. */
+export function requireMaximumReasoningEffort(value) {
+  if (typeof value !== "string" || value.trim() !== "max") {
+    throw new Error("ARGOS_CODEX_REASONING_EFFORT deve ser max em toda nova execução de Argos.");
+  }
+  return "max";
+}
+
 /** Cria com Codex um plano de investigação; nenhuma credencial de marketplace entra no prompt. */
 export async function planDirectedResearch(job, options = {}) {
   const enabled =
@@ -16,15 +24,16 @@ export async function planDirectedResearch(job, options = {}) {
     schemaResource.url,
     schemaResource.name,
   );
+  const reasoningEffort = requireMaximumReasoningEffort(
+    options.reasoningEffort ??
+      process.env.ARGOS_CODEX_PLAN_REASONING_EFFORT ??
+      process.env.ARGOS_CODEX_REASONING_EFFORT ??
+      "max",
+  );
   const directory = await mkdtemp(join(tmpdir(), "argos-plan-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
   const model = options.model || process.env.ARGOS_CODEX_MODEL || "gpt-6.1-sol";
-  const reasoningEffort =
-    options.reasoningEffort ||
-    process.env.ARGOS_CODEX_PLAN_REASONING_EFFORT ||
-    process.env.ARGOS_CODEX_REASONING_EFFORT ||
-    "medium";
   let execution;
   try {
     await writeFile(schema, schemaContract);

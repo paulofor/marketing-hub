@@ -9,6 +9,7 @@ import {
   parseCodexFailure,
   parseCodexUsage,
   planDirectedResearch,
+  requireMaximumReasoningEffort,
   validatePlan,
 } from "../src/argos-codex.js";
 
@@ -282,7 +283,7 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   assert.equal(result.model, "modelo-teste");
   assert.equal(result.mode, "CODEX");
   assert.equal(result.prompt, receivedInput);
-  assert.equal(result.reasoningEffort, "medium");
+  assert.equal(result.reasoningEffort, "max");
 });
 
 test("aprofundamento envia somente o schema estrito da própria atividade", async () => {
@@ -370,7 +371,7 @@ test("planejamento resume a biblioteca viva sem transportar artigos integrais", 
     },
   );
 
-  assert.equal(result.reasoningEffort, "medium");
+  assert.equal(result.reasoningEffort, "max");
   assert.match(receivedInput, /TRECHO-INICIAL/);
   assert.doesNotMatch(receivedInput, /TRECHO-FINAL/);
   assert.doesNotMatch(receivedInput, /ARTIGO-INTEGRAL-NAO-DEVE-IR/);
@@ -429,7 +430,7 @@ test("resposta inválida preserva prompt e raciocínio para o bloqueio auditáve
       {
         enabled: true,
         model: "modelo-teste",
-        reasoningEffort: "high",
+        reasoningEffort: "max",
         execute: async (_command, args) => {
           const outputIndex = args.indexOf("--output-last-message") + 1;
           await writeFile(args[outputIndex], "{}");
@@ -441,7 +442,7 @@ test("resposta inválida preserva prompt e raciocínio para o bloqueio auditáve
       assert.deepEqual(error.executionAudit, {
         executionMode: "MODEL",
         modelCode: "modelo-teste",
-        reasoningEffort: "high",
+        reasoningEffort: "max",
         promptSent: error.executionAudit.promptSent,
         agentPromptPart: error.executionAudit.agentPromptPart,
         activityPromptPart: error.executionAudit.activityPromptPart,
@@ -571,4 +572,21 @@ test("contabiliza os tokens emitidos pelo Codex", () => {
     cachedInputTokens: 11008,
     outputTokens: 5,
   });
+});
+
+// Política operacional: o comando novo usa max; fixtures históricas permanecem intactas.
+for (const configured of [undefined, null, "", "high", "medium", "xhigh"]) {
+  test(`raciocínio inválido de Argos bloqueia antes de iniciar subprocesso: ${configured}`, async () => {
+    assert.throws(() => requireMaximumReasoningEffort(configured), /deve ser max/);
+  });
+}
+test("normaliza max explícito sem reduzir o esforço", () => {
+  assert.equal(requireMaximumReasoningEffort(" max "), "max");
+});
+test("planejamento recusa override inferior sem executar inferência", async () => {
+  let calls = 0;
+  await assert.rejects(planDirectedResearch({ cycleId: 901, theme: "rotina", targetAudience: "profissionais" }, {
+    enabled: true, reasoningEffort: "high", execute: async () => { calls++; },
+  }), /deve ser max/);
+  assert.equal(calls, 0);
 });

@@ -12,7 +12,7 @@ public class MetaAdApproverProperties {
   private String repositoryPath = "/workspace/marketing-hub";
   private String codexCommand = "codex";
   private String model = "gpt-6.1-sol";
-  private String reasoningEffort = "high";
+  private String reasoningEffort = "max";
   private Duration codexTimeout = Duration.ofMinutes(40);
   private Duration backendConnectTimeout = Duration.ofSeconds(10);
   private Duration backendReadTimeout = Duration.ofSeconds(30);
@@ -85,9 +85,9 @@ public class MetaAdApproverProperties {
     model = value;
   }
 
-  /** Retorna o esforço de raciocínio. */
+  /** Retorna max validado para chamadas e auditorias, recusando configuração inferior. */
   public String getReasoningEffort() {
-    return reasoningEffort;
+    return requiredReasoningEffort();
   }
 
   /** Define o esforço de raciocínio. */
@@ -95,13 +95,13 @@ public class MetaAdApproverProperties {
     reasoningEffort = value;
   }
 
-  /** Exige o esforço explícito compartilhado pelo comando e pela auditoria de Têmis. */
+  /** Exige max antes da chamada e mantém comando e auditoria com a mesma configuração. */
   public String requiredReasoningEffort() {
-    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+    if (reasoningEffort == null || !"max".equals(reasoningEffort.trim())) {
       throw new IllegalStateException(
-          "META_AD_APPROVER_REASONING_EFFORT é obrigatório para auditar Têmis.");
+          "CODEX_REASONING_EFFORT deve ser max, obrigatório para auditar Têmis.");
     }
-    return reasoningEffort.trim();
+    return "max";
   }
 
   /** Retorna o timeout da sandbox. */

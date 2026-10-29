@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.referenceanalysisv1.pipeline.analyze;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,7 +37,7 @@ class ReferenceAnalysisAiClientTest {
         server.shutdown();
     }
 
-    /** Envia GPT 6.1 Sol, imagens, raciocínio limitado, Flex e schema sem armazenamento remoto. */
+    /** Envia GPT 6.1 Sol, imagens, raciocínio máximo, Flex e schema sem armazenamento remoto. */
     @Test
     void shouldSendVersionedMultimodalContractWithoutRemoteStorage() throws Exception {
         server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
@@ -70,9 +71,9 @@ class ReferenceAnalysisAiClientTest {
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer openai-test-key");
         assertThat(payload.path("model").asText()).isEqualTo("gpt-6.1-sol");
         assertThat(payload.path("service_tier").asText()).isEqualTo("flex");
-        assertThat(payload.at("/reasoning/effort").asText()).isEqualTo("medium");
+        assertThat(payload.at("/reasoning/effort").asText()).isEqualTo("max");
         assertThat(payload.path("store").asBoolean()).isFalse();
-        assertThat(payload.path("max_output_tokens").asLong()).isEqualTo(8000);
+        assertThat(payload.path("max_output_tokens").asLong()).isEqualTo(32000);
         assertThat(payload.at("/text/verbosity").asText()).isEqualTo("low");
         assertThat(payload.path("input").get(0).path("content")).hasSize(3);
         assertThat(payload.at("/input/0/content/0/text").asText())
@@ -85,4 +86,24 @@ class ReferenceAnalysisAiClientTest {
         assertThat(interaction.request()).isEqualTo(payload);
         assertThat(interaction.response().path("usage").isObject()).isTrue();
     }
+    /** Recusa configuração antiga antes de enviar áudio ou imagens ao provedor. */
+    @Test
+    void shouldRejectLowerReasoningBeforeExternalRequest() {
+        VideoManagementProperties properties = new VideoManagementProperties();
+        properties.getReferenceAnalysis().setOpenAiBaseUrl(server.url("/").uri());
+        properties.getReferenceAnalysis().setApiKey("openai-test-key");
+        properties.getReferenceAnalysis().setReasoningEffort("medium");
+        ReferenceAnalysisAiClient client = new ReferenceAnalysisAiClient(
+                properties, objectMapper, WebClient.builder());
+        ReferenceAnalysisStageContext context = new ReferenceAnalysisStageContext(
+                91091L, 91003L, "tenant-test", 1, "producer-test",
+                objectMapper.createObjectNode(), Instant.now());
+        ReferenceMediaInspector.Evidence evidence = new ReferenceMediaInspector.Evidence(
+                objectMapper.createObjectNode(), List.of(), null);
+
+        assertThatThrownBy(() -> client.analyze(context, evidence, null))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("max");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
 }

@@ -24,7 +24,7 @@ experiment-strategist:
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   codex-command: ${CODEX_COMMAND:codex}
   model: ${CODEX_MODEL:gpt-6-astra}
-  reasoning-effort: ${EXPERIMENT_STRATEGIST_REASONING_EFFORT:high}
+  reasoning-effort: ${EXPERIMENT_STRATEGIST_REASONING_EFFORT:max}
   codex-timeout: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:PT40M}
   clarity-api-token-file: ${CLARITY_API_TOKEN_FILE:}
   bpm-state-directory: ${EXPERIMENT_STRATEGIST_BPM_STATE_DIRECTORY:/var/lib/atena/bpm-market-strategy}

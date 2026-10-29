@@ -28,16 +28,12 @@ export const CONTRACTS = Object.freeze({
   }
 });
 
-/** Mantém Psique em esforço máximo e preserva configuração explícita dos demais agentes. */
+/** Exige max de todos os agentes no executor local antes de abrir o modelo. */
 export function resolveReasoningEffort(agent, configuredEffort) {
-  const configured = String(configuredEffort || "").trim();
-  if (agent === "psique") {
-    if (configured && configured !== "max") {
-      throw new Error("O esforço de raciocínio de Psique deve ser max.");
-    }
-    return "max";
-  }
-  return configured || "high";
+  if (!CONTRACTS[agent]) throw new Error("Agente de revisão não suportado.");
+  const configured = String(configuredEffort ?? "max").trim();
+  if (configured !== "max") throw new Error(`O esforço de raciocínio de ${agent} deve ser max.`);
+  return "max";
 }
 
 /** Lê a última telemetria cumulativa emitida pelo Codex. */

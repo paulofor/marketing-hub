@@ -450,9 +450,18 @@ async function callback(
     );
 }
 
+/** Exige max antes de reservar uma tarefa ou consumir o modelo no executor local. */
+export function resolveReasoningEffort(configured = "max") {
+  if (typeof configured !== "string" || configured.trim() !== "max") {
+    throw new Error("O esforço de raciocínio dos agentes deve ser max.");
+  }
+  return "max";
+}
+
 /** Executa uma atividade e mantém os arquivos resultantes apenas no diretório solicitado. */
 export async function main(argv = process.argv.slice(2)) {
   const args = parseArguments(argv);
+  const reasoningEffort = resolveReasoningEffort(args["reasoning-effort"]);
   const agentKey = args["agent-key"];
   const activityId = args["activity-id"];
   const contract = resolveContract(agentKey, activityId);
@@ -481,7 +490,6 @@ export async function main(argv = process.argv.slice(2)) {
       .replace("{{TASK_CONTEXT}}", JSON.stringify(task))
       .trim();
     const prompt = `${agentPromptPart}\n\n${activityPromptPart}`;
-    const reasoningEffort = args["reasoning-effort"] || "high";
     const executionAuditPayload = executionAudit(
       prompt,
       agentPromptPart,

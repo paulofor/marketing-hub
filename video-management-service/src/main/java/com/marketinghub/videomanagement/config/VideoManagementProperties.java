@@ -80,9 +80,9 @@ public class VideoManagementProperties {
         @Min(1)
         private long maxTranscriptionBytes = 25L * 1024L * 1024L;
         @Min(1)
-        private int maxOutputTokens = 8000;
+        private int maxOutputTokens = 32000;
         @NotBlank
-        private String reasoningEffort = "medium";
+        private String reasoningEffort = ApolloReasoningPolicy.MAXIMUM;
         private BigDecimal budgetLimitUsd = new BigDecimal("0.75");
         private BigDecimal reservationUsd = new BigDecimal("0.25");
         private BigDecimal inputPricePerMillionUsd = new BigDecimal("4.00");

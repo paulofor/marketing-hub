@@ -351,6 +351,9 @@ jobs:
           export ARGOS_CODEX_HOME="/root/infra/argos/codex-home"
           export ARGOS_CODEX_ENABLED="true"
           export ARGOS_CODEX_MODEL="gpt-6.1-sol"
+          export ARGOS_CODEX_REASONING_EFFORT="max"
+          export ARGOS_CODEX_PLAN_REASONING_EFFORT="max"
+          export ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT="max"
           export ARGOS_AGENT_VERSION="9"
 
           bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"

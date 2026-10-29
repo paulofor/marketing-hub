@@ -28,7 +28,7 @@ class CodexReadOnlyRunnerTest {
     assertThat(command)
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
         .anyMatch(value -> value.startsWith("mcp_servers.marketing_hub_readonly.args="));
-    assertThat(command).contains("model_reasoning_effort=\"high\"");
+    assertThat(command).contains("model_reasoning_effort=\"max\"");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 

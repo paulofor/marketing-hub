@@ -5,7 +5,11 @@ import {
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { executeCodexWithInput, parseCodexUsage } from "./argos-codex.js";
+import {
+  executeCodexWithInput,
+  parseCodexUsage,
+  requireMaximumReasoningEffort,
+} from "./argos-codex.js";
 import { readStrictOutputSchema } from "./strict-output-schema.js";
 
 /** Sintetiza candidatas factuais usando somente os identificadores coletados pelo executor. */
@@ -23,15 +27,16 @@ export async function synthesizeMarketCandidates(context, options = {}) {
     ),
     "síntese factual de Argos",
   );
+  const reasoningEffort = requireMaximumReasoningEffort(
+    options.reasoningEffort ??
+      process.env.ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT ??
+      process.env.ARGOS_CODEX_REASONING_EFFORT ??
+      "max",
+  );
   const directory = await mkdtemp(join(tmpdir(), "argos-research-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
   const model = options.model || process.env.ARGOS_CODEX_MODEL || "gpt-6.1-sol";
-  const reasoningEffort =
-    options.reasoningEffort ||
-    process.env.ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT ||
-    process.env.ARGOS_CODEX_REASONING_EFFORT ||
-    "medium";
   let execution;
   let rawResponse;
   try {

@@ -648,7 +648,7 @@ class IrisCreativeMaterializerTest {
   private CommunicationAgentProperties properties() {
     var properties = new CommunicationAgentProperties();
     properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
-    properties.setReasoningEffort("high");
+    properties.setReasoningEffort("max");
     return properties;
   }
 

@@ -151,9 +151,8 @@ export async function execute(body, options) {
     if (translated.developerInstructions) threadParams.developerInstructions = translated.developerInstructions;
     const thread = await server.request('thread/start', threadParams);
     threadId = thread.thread.id;
-    turnParams = { threadId, input: translated.input };
+    turnParams = { threadId, input: translated.input, effort: 'max' };
     if (translated.schema) turnParams.outputSchema = translated.schema;
-    if (body.reasoning?.effort) turnParams.effort = body.reasoning.effort;
     const messages = new Map();
     const completed = new Promise((resolve, reject) => {
       server.listeners.add((event, error) => {
@@ -182,7 +181,7 @@ export async function execute(body, options) {
       id: `codex:${threadId}:${turn.id}`, status: 'completed', model: body.model, service_tier: 'default', output_text: text,
       output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
       usage: usage ? { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens, total_tokens: usage.totalTokens } : null,
-      codex_app_server: { version: 1, threadId, turnId: turn.id, metadata: body.metadata || {}, request: { thread: threadParams, turn: turnParams }, requestedServiceTier: body.service_tier || 'flex', effectiveServiceTier: 'default', compatibilityReason: COMPATIBILITY_REASON, events: structuredClone(server.events) },
+      codex_app_server: { version: 1, threadId, turnId: turn.id, metadata: body.metadata || {}, request: { thread: threadParams, turn: turnParams }, requestedReasoningEffort: body.reasoning?.effort || null, effectiveReasoningEffort: 'max', requestedServiceTier: body.service_tier || 'flex', effectiveServiceTier: 'default', compatibilityReason: COMPATIBILITY_REASON, events: structuredClone(server.events) },
     };
     // Salva a saída crua antes da validação: resposta inválida também é recuperável e auditável.
     if (receipt) {

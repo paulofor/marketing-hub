@@ -12,7 +12,7 @@ public class WorkerProperties {
   private String repositoryPath;
   private String codexCommand;
   private String model;
-  private String reasoningEffort = "high";
+  private String reasoningEffort = "max";
   private String marketingHubUrl;
   private Long commercialPlanId;
   private Duration codexTimeout = Duration.ofMinutes(40);
@@ -57,9 +57,9 @@ public class WorkerProperties {
     this.model = model;
   }
 
-  /** Retorna o esforço de raciocínio aplicado ao diagnóstico. */
+  /** Retorna max validado para chamadas e auditorias, recusando configuração inferior. */
   public String getReasoningEffort() {
-    return reasoningEffort;
+    return requiredReasoningEffort();
   }
 
   /** Configura o esforço de raciocínio aplicado ao diagnóstico. */
@@ -67,13 +67,13 @@ public class WorkerProperties {
     this.reasoningEffort = reasoningEffort;
   }
 
-  /** Exige o esforço explícito compartilhado pelo comando e pela auditoria de Hermes. */
+  /** Exige max antes da chamada e mantém comando e auditoria com a mesma configuração. */
   public String requiredReasoningEffort() {
-    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+    if (reasoningEffort == null || !"max".equals(reasoningEffort.trim())) {
       throw new IllegalStateException(
-          "GROWTH_OPERATOR_REASONING_EFFORT é obrigatório para auditar Hermes.");
+          "CODEX_REASONING_EFFORT deve ser max, obrigatório para auditar Hermes.");
     }
-    return reasoningEffort.trim();
+    return "max";
   }
 
   /** Retorna a URL publica usada pelo Codex para consultar o Marketing Hub. */

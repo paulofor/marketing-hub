@@ -196,7 +196,7 @@ jobs:
                    MARKETING_HUB_REPOSITORY_PATH='${REPOSITORY_DIR}' \
                    COMMERCIAL_PLAN_ID=2 \
                    CODEX_MODEL=gpt-6.1-sol \
-                   CODEX_REASONING_EFFORT=high \
+                   CODEX_REASONING_EFFORT=max \
                    CODEX_SERVICE_TIER=default \
                    AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}' \
             && cd '${REPOSITORY_DIR}/financial-agent-worker' \

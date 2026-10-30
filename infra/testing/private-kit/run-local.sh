@@ -59,6 +59,18 @@ for attempt in {1..60}; do
   if ! kill -0 "$backend_pid" 2>/dev/null || (( attempt == 60 )); then cat "$round_dir/backend.log"; exit 1; fi
   sleep 1
 done
+# O servidor abre a porta antes dos ApplicationRunners; aguardar a prova física do armazenamento.
+for attempt in {1..60}; do
+  if rg -q 'PRIVATE_KIT_STORAGE_OK' "$round_dir/backend.log"; then break; fi
+  if ! kill -0 "$backend_pid" 2>/dev/null || (( attempt == 60 )); then cat "$round_dir/backend.log"; exit 1; fi
+  sleep 1
+done
+if [[ "${KIT_TEST_STORAGE_ONLY:-false}" == true ]]; then
+  # A prova física termina sem abrir navegador ou iniciar o compositor.
+  curl --fail --silent http://127.0.0.1:57282/api/pde/kit/private/v1/prototype > /dev/null
+  printf 'Persistência MySQL 5.7 aprovada com pacote de 16 MiB.\n'
+  exit 0
+fi
 mkdir -p "$round_dir/tls"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout "$round_dir/tls/test.key" -out "$round_dir/tls/test.crt" -subj /CN=127.0.0.1 -addext subjectAltName=IP:127.0.0.1 >"$round_dir/tls/generation.log" 2>&1
 export NODE_EXTRA_CA_CERTS="$round_dir/tls/test.crt"
@@ -136,11 +148,18 @@ if [[ "${KIT_TEST_REFERENCE:-false}" == true ]]; then
   python3 - "$round_dir/beauty-input.json" <<'PYREFERENCE'
 import json,pathlib,sys
 path=pathlib.Path(sys.argv[1]);value=json.loads(path.read_text())
-value.update(profileCode='beauty-v2',specialtyCode='hair-v2')
+value.update(profileCode='beauty-v2',specialtyCode='nails-v2')
 path.write_text(json.dumps(value))
 PYREFERENCE
 fi
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node customer-agent-worker/src/main/resources/browser/private-kit-harness.mjs "$round_dir/beauty-input.json" "$round_dir/beauty-report.json" "$round_dir/beauty-captures"
+# A matriz técnica já materializou as mesmas fixtures. Revisores devem reutilizar os ZIPs,
+# sem manter o compositor e seu heap durante as capturas executadas pelo processo Maven.
+if [[ "${KIT_TEST_REFERENCE:-false}" == true ]]; then
+  kill "$worker_pid"
+  wait "$worker_pid" || true
+  worker_pid=''
+fi
 KIT_SCENARIO_LOCAL=true KIT_SCENARIO_INPUT_KEYS=KIT_BEAUTY_LOCAL_INPUT KIT_BEAUTY_LOCAL_INPUT="$round_dir/beauty-input.json" KIT_SCENARIO_RESULTS="$round_dir/beauty-scenario-results" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=PrivateKitScenarioIntegrationTest test >"$round_dir/beauty-scenarios.log" 2>&1
 python3 - "$round_dir" <<'PYBEAUTY'
 import json,pathlib,shutil,sys
@@ -157,9 +176,11 @@ if [[ "${KIT_TEST_BEAUTY_ONLY:-false}" == true ]]; then
   printf '%s\n' 'Cobertura multiperfil, matriz técnica e três callbacks independentes até Têmis/gate aprovados sem modelo pago.'
   exit 0
 fi
-kill "$worker_pid"
-wait "$worker_pid" || true
-worker_pid=''
+if [[ -n "$worker_pid" ]]; then
+  kill "$worker_pid"
+  wait "$worker_pid" || true
+  worker_pid=''
+fi
 PDE_INTERNAL_API_TOKEN=kit-local-internal-only node infra/testing/private-kit/controls.mjs "$round_dir/controls.json"
 KIT_LOCAL_REPORT="$round_dir/report.json" mvn -q -f backend/ads-service/pom.xml '-DargLine=-Xmx256m' -Dtest=KitPrivateProofContractTest test >"$round_dir/backend-proof-tests.log" 2>&1
 KIT_LOCAL_REPORT="$round_dir/report.json" mvn -q -f customer-agent-worker/pom.xml '-DargLine=-Xmx256m' -Dtest=PrivateKitHarnessContractTest test >"$round_dir/worker-proof-tests.log" 2>&1

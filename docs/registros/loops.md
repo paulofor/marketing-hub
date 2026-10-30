@@ -11420,3 +11420,18 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - **Prevenção:** `PdeAgentValidationReworkReadinessProviderTest` executa o comando real, outra identidade, vínculos inválidos, nova recusa e caminhos anteriores. Nenhuma repetição automática de inferência por resultado incompleto.
 - **Limite:** somente controles de contexto privado fora do percurso válido; mudanças das condições testadas exigem sucessor. Não constitui autorização financeira ou aprovação comercial.
 - **Registro:** [revalidação seletiva](../homologacao/vega-revalidacao-seguranca-v1.md).
+
+## LOOP-KIT-PERSISTENCIA-PACOTE-SQL — 30/10/2026
+
+- Evidência: pacote Capella fotográfico válido excedeu os 16 MiB do MySQL publicado;
+  fixture usava 64 MiB. O catch amplo converteu falha de armazenamento em 409 terminal.
+- Causa sistêmica: transporte multipart corrigido sem alinhar persistência binária
+  ao limite real; classificação misturava contrato inválido e indisponibilidade.
+- Prevenção: partes transacionais de 1 MiB, integridade por hash, erro técnico 503,
+  replay autenticado sem nova produção e preservação da falha original.
+- Harness: fixture MySQL usa 16 MiB e exige prova física de limite, rollback,
+  isolamento e compatibilidade antes de abrir os testes de navegador.
+- Contratos: `KitPrivateStorageTest`, `KitPrivateStorageLocalFixture` e
+  `infra/testing/private-kit/run-local.sh`.
+- Escopo/limite: kits privados de até 32 MiB, sem alterar autorização de mercado ou
+  aprovação independente; [matriz](../homologacao/capella-persistencia-pacotes-v1.md).

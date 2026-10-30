@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-30-private-kit-chunks-v1
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE kit_private_artifact_chunk_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                artifact_id CHAR(36) NOT NULL,
+                part_number INT NOT NULL,
+                part_bytes MEDIUMBLOB NOT NULL,
+                UNIQUE KEY uk_kit_private_chunk (artifact_id, part_number),
+                CONSTRAINT fk_kit_private_chunk_artifact FOREIGN KEY (artifact_id) REFERENCES kit_private_artifact_v1(id)
+              );
+              ALTER TABLE kit_private_artifact_v1 ADD COLUMN recovered_at DATETIME(6) NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SELECT 'Rollback preserva os pacotes privados e a auditoria de recuperação';

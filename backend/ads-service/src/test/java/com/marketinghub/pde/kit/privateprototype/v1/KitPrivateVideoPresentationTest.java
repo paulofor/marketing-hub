@@ -26,7 +26,17 @@ class KitPrivateVideoPresentationTest {
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
   private final LearningCycleVideoBinding videos = mock(LearningCycleVideoBinding.class);
   private final KitPrivateService service =
-      new KitPrivateService(sessions, artifacts, cycles, null, null, json, "local-only");
+      new KitPrivateService(
+          new com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateArtifactStorage(
+              org.mockito.Mockito.mock(
+                  com.marketinghub.repository.jpa.kit.KitPrivateArtifactChunkRepository.class)),
+          sessions,
+          artifacts,
+          cycles,
+          null,
+          null,
+          json,
+          "local-only");
   private final KitPrivateSession session = new KitPrivateSession();
   private final LearningSalesCycle cycle = new LearningSalesCycle();
 

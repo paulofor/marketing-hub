@@ -54,7 +54,17 @@ class KitPrivateAssetIsolationTest {
     when(artifacts.findById("artifact-test")).thenReturn(Optional.of(artifact));
     when(contract.image(any(), eq("post-01.png"))).thenReturn(new byte[] {2});
     var service =
-        new KitPrivateService(sessions, artifacts, null, null, contract, json, "private-test");
+        new KitPrivateService(
+            new com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateArtifactStorage(
+                org.mockito.Mockito.mock(
+                    com.marketinghub.repository.jpa.kit.KitPrivateArtifactChunkRepository.class)),
+            sessions,
+            artifacts,
+            null,
+            null,
+            contract,
+            json,
+            "private-test");
     assertThat(service.asset("private-access", "post-01.png")).containsExactly((byte) 2);
     artifact.setProfileCode("different-v1");
     assertThatThrownBy(() -> service.asset("private-access", "post-01.png"))

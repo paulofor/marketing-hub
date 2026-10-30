@@ -1,0 +1,18 @@
+{
+  "cardKey": "ritmo-auditivo-vies-velocidade-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Ritmo auditivo altera julgamento de velocidade visual",
+  "finding": "Três experimentos indicaram que ritmos auditivos lentos e rápidos deslocaram em sentidos opostos os julgamentos de mudança da velocidade visual, sem melhora confiável da precisão; na extrapolação, apenas um contraste manual apresentou diferença de cerca de 32 ms.",
+  "mechanism": "Pistas temporais auditivas podem enviesar estimativas perceptivas de movimento e expectativas sobre eventos visuais; diferenças entre tarefas não permitem inferir efeito geral ou prazer.",
+  "commercialApplication": "Comparar animações idênticas com trilhas de andamento lento, rápido e neutro, medindo velocidade percebida, naturalidade, conforto, compreensão e preferência separadamente.",
+  "evidenceStrength": "Moderada para o viés de velocidade percebida em experimento controlado; baixa para extrapolação, prazer, memória, retenção ou resultados comerciais.",
+  "publishedOn": "2026-10-30",
+  "validUntil": "2026-12-14",
+  "experimentHypothesis": "Em animações equivalentes, alterar o andamento da trilha modificará a avaliação subjetiva da velocidade do movimento sem necessariamente elevar sua precisão, prazer ou compreensão.",
+  "risks": "Confundir viés perceptivo com melhoria; manipulação enganosa da velocidade; aumentar excitação ou desconforto; supor efeito universal de pitch ou ritmo.",
+  "limits": "Experimentos perceptivos, não anúncios; efeito de extrapolação parcial e contrastes nulos; sem medição de dopamina, prazer, intenção de compra ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-30-ritmo-auditivo-vies-velocidade-visual-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Liu & Chen (2026), ritmo auditivo e velocidade visual",
+  "sourceSha256": "89ab582104ecbb247cc2c13be8e19d59314f6ae939ba000ec6158cc32bd7f60f"
+}

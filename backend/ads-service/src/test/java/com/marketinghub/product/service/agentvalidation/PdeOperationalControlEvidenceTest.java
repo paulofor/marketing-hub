@@ -334,7 +334,7 @@ class PdeOperationalControlEvidenceTest {
         .thenReturn(new ByteArrayResource(bytes));
   }
 
-  /** Confere a compatibilidade v6, preservando os controles e recibos históricos anteriores. */
+  /** Confere a compatibilidade v7 do runner de kits, preservando os controles e recibos de Vega. */
   @Test
   void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
     var real =
@@ -343,7 +343,7 @@ class PdeOperationalControlEvidenceTest {
     var evidence =
         real.resolve("metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel")
             .orElseThrow();
-    String previousHash = "fdf3783c20a06004f979b6153040e43ae15fc34cd3fe56ca19529a6bc07930ed";
+    String previousHash = "05cd57ab9932e22e62d638cbf014e832961d8edf7f0aab4740d7ce00d6c5c339";
     var previous =
         real.resolveReviewed(
                 "metodo-musa-7-dias", "musa-pde-entry-v14-primeiro-ajuste-aplicavel", previousHash)
@@ -364,11 +364,20 @@ class PdeOperationalControlEvidenceTest {
     assertThat(compatibility.path("previousReportSha256").asText()).isEqualTo(previousHash);
     assertThat(fileHash(compatibility.path("evidencePath").asText()))
         .isEqualTo(compatibility.path("evidenceSha256").asText());
+    assertThat(compatibility.path("modelCalls").asInt(-1)).isZero();
+    assertThat(compatibility.path("commercialApprovalRenewed").asBoolean(true)).isFalse();
+    for (var changed : compatibility.path("changedSources")) {
+      assertThat(fileHash(changed.path("path").asText()))
+          .isEqualTo(changed.path("sha256").asText());
+    }
+    var previousCompatibility = previous.path("compatibilityAttestation");
     var receipt =
         json.readTree(
             java.nio.file.Path.of("../..")
-                .resolve(compatibility.path("evidencePath").asText())
+                .resolve(previousCompatibility.path("evidencePath").asText())
                 .toFile());
+    assertThat(fileHash(previousCompatibility.path("evidencePath").asText()))
+        .isEqualTo(previousCompatibility.path("evidenceSha256").asText());
     assertThat(receipt.path("executedCases").size()).isEqualTo(27);
     assertThat(receipt.path("additionalValidation").size()).isEqualTo(17);
     assertThat(receipt.path("providerCalls").asInt()).isZero();

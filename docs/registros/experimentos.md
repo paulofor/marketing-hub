@@ -7761,3 +7761,20 @@ origem das imagens, preservando a revisão independente. Matriz e limites em
 melhoria de conversão é atribuída aos testes. O critério de adoção é aceite próprio
 da versão, seguido de medição comercial autorizada; reversão preserva v1 e seus
 recibos, sem promover automaticamente o material antigo como peça aprovada.
+
+## 2026-10-30 — Capella: a entrada também precisa de revisão visual
+
+O relato da demonstração sem acabamento foi comparado com o MCP e a tela do ciclo 17,
+experimento 110, `capella-beleza-v2`. A revisão 843 havia pedido ajuste na versão anterior;
+não havia um parecer da nova versão. A prévia do formulário ainda usava um cartão genérico
+e não fazia parte dos screenshots enviados ao revisor independente.
+
+A correção reutiliza as referências licenciadas e o compositor v2 na prévia. Psique passa a
+receber entrada, resultado, post e story, com notas e evidências por captura; funcionamento
+sem acabamento forte, placeholder ou déficit crítico não permitem aprovação. A alteração
+é compartilhada por kits e preserva identidades, versões, custos e pareceres históricos.
+
+Critérios, fontes, regressões e limites em
+[homologação visual](../homologacao/capella-revisao-visual-premium-v1.md).
+A hipótese é melhorar a percepção de valor e evitar repetição de ajustes visuais; ainda não
+há medição de conversão ou vendas atribuível a esta mudança. Não foi iniciada campanha.

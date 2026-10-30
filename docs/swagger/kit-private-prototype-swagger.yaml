@@ -6,6 +6,23 @@ info:
 servers:
   - url: http://191.252.181.168
 paths:
+  /api/pde/kit/private/v1/samples/{profile}.png:
+    get:
+      summary: Amostra ilustrativa versionada do mesmo compositor do kit, sem dados de sessão
+      parameters:
+        - in: path
+          name: profile
+          required: true
+          schema:
+            type: string
+            enum: [nails-v2, barber-v2, hair-v2, makeup-v2, brows-v2, aesthetics-v2]
+      responses:
+        '200':
+          description: PNG 1080x1080 com fotografia de referência identificada, sem autorização comercial
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        '404': { description: Perfil sem amostra ou desconhecido; não substitui versões históricas }
   /api/pde/kit/private/v1/admin/implementations:
     get:
       summary: Consulta desenho aprovado e capacidade de teste instalada

@@ -527,7 +527,11 @@ class CustomerBpmTaskConsumerTest {
           .put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
       Map<String, Object> input = json.convertValue(task, Map.class);
       assertThat(consumer.prompt(input, List.of()))
-          .contains("revisão sintética de cenário de kit v6", "Separar a experiência da auditoria")
+          .contains(
+              "revisão sintética de cenário de kit v7",
+              "Separar a experiência da auditoria",
+              "Gate de acabamento visual",
+              "PDE_KIT_PREMIUM_VISUAL_V1")
           .doesNotContain("revisão sintética de cenário PDE v5");
     }
   }

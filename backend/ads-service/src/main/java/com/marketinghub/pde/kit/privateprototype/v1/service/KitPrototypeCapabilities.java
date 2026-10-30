@@ -97,9 +97,9 @@ public class KitPrototypeCapabilities {
           profile.orElseThrow(),
           profile.orElseThrow().endsWith("-v2")
               ? "Demonstração com referências fotográficas licenciadas e rastreáveis; não comprova"
-                    + " trabalho do profissional nem aprovação comercial. Sem chamadas pagas."
+                  + " trabalho do profissional nem aprovação comercial. Sem chamadas pagas."
               : "O compositor registrado pode materializar este contrato com fixtures de QA, sem"
-                    + " chamadas pagas.",
+                  + " chamadas pagas.",
           prototypeUrl);
     } catch (Exception ex) {
       log.error(

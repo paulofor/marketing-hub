@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-pika-h3-flex-audio-stems-pesos",
+  "collection": "video",
+  "title": "Testar Pika H3 Flex para iteracao audiovisual com trilhas de audio separadas",
+  "finding": "Pika lançou em 29/10/2026 o H3 Flex com API ativa, adaptadores derivados de MiniMax H3 e inferencia publicados, 5-15 s, audio estereo sincronizado e stems de dialogo, trilha, efeitos, foley e ambiente como recurso de API.",
+  "mechanism": "Destilacao para seis passos acelera a amostragem; referencias multimodais ajudam a manter produto e personagem; trilhas de audio separadas permitem remixagem seletiva sem regenerar a cena inteira.",
+  "commercialApplication": "Marketing Hub: comparar o modelo com Kling 4.0, HeyGen Video e FastH3-Omni para 6-10 criativos, separando custo por tomada aprovada, qualidade de movimento, fidelidade visual, lipsync, audio e iteracoes.",
+  "evidenceStrength": "Alta para lancamento, API, precos, licencas, artefatos HF/GitHub e especificacoes documentadas; limitada para velocidade ponta a ponta e ranking de qualidade, reportados pela Pika.",
+  "publishedOn": "2026-10-29",
+  "validUntil": "2026-11-05",
+  "experimentHypothesis": "Rascunho em 768p mais acabamento final com stems reduzirão o retrabalho na pos-producao de anuncios em comparacao com regenerar video inteiro para alterar a trilha.",
+  "risks": "Pesos sob MiniMax H3 Community License, nao Apache; territorios excluidos (EUA, UE, Reino Unido e Coreia do Sul); acesso a clientes globais exige revisar licenca; pesos locais nao incluem stems/upscaler hospedados; uso de imagem/voz exige permissao.",
+  "limits": "Duracao 5-15s, nativo 480p/768p e 24fps; 1080p/2K/4K por upscaling; 15s em 7s corresponde a DiT apenas, sem garantia de latencia final; promo Pika API Club 29/10-05/11: US$0.02/s 768p, US$0.08/s 4K; precos normais dobram; audio stems US$0.001/s.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-30-pika-h3-flex-pesos-api.md",
+  "sourceTitle": "Fonte revisada - Pika H3 Flex, API, pesos, licenca e stems",
+  "sourceSha256": "3b80ba2da3133ae86659d8486c1ad38e2e5b4b9550b57c6267f714707412767b"
+}

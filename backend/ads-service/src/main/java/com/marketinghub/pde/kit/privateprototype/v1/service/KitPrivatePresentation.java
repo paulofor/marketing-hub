@@ -15,17 +15,15 @@ final class KitPrivatePresentation {
       case "EXTERNAL_ACTION" ->
           "Esta tentativa pediu publicação, envio ou cobrança fora da prova privada. A ação foi bloqueada antes da composição.";
       default ->
-          "O teste de segurança interrompeu a preparação. Esta sessão não registrou qual limite foi acionado; confira a revisão interna.";
+          "A preparação foi interrompida por segurança. Esta tentativa não registrou qual limite foi acionado; o motivo precisa ser conferido pela equipe do produto.";
     };
   }
 
   /**
-   * Vincula mensagens seguras e ação ao estado, sem exibir erros brutos ou prometer resultado
-   * ausente.
+   * Explica quem resolve a pendência e mantém a continuação na experiência, sem delegar controles
+   * administrativos à cliente nem prometer um resultado ausente.
    */
   static Presentation resolve(String status, String safetyCase, Long productId, Long cycleId) {
-    String cyclePath =
-        "/business-process-chains/learning-cycles?productId=" + productId + "&cycleId=" + cycleId;
     return switch (status) {
       case "READY" ->
           new Presentation(
@@ -48,25 +46,27 @@ final class KitPrivatePresentation {
       case "BLOCKED_SAFE" ->
           new Presentation(
               "A preparação deste kit foi bloqueada",
-              "Nenhum pacote foi gerado nesta tentativa. Sua entrada permanece preservada para a revisão.",
+              "Nenhum pacote foi gerado nesta tentativa. Seus dados continuam guardados.",
               safetyReason(safetyCase),
               safetyCase,
               "UNVERIFIED_VISUAL_ORIGIN".equals(safetyCase)
-                  ? "Na revisão deste ciclo, confira a origem das imagens e prepare uma entrada compatível. Esta tentativa continuará bloqueada."
+                  ? "A verificação da origem das imagens cabe à equipe do produto. Você não precisa alterar seus dados nem conferir a biblioteca. Esta tentativa permanece bloqueada e não disponibiliza um pacote."
                   : "EXTERNAL_ACTION".equals(safetyCase)
-                      ? "Volte à revisão deste ciclo para conferir os limites. A prova privada não publica, envia mensagens nem cobra; esta tentativa continuará bloqueada."
-                      : "Abra a revisão deste ciclo para identificar o limite acionado e a continuidade permitida. Esta tentativa continuará bloqueada.",
-              "Abrir a revisão deste ciclo",
-              cyclePath);
+                      ? "Esta demonstração não publica, envia mensagens nem cobra. A equipe do produto é responsável por conferir qualquer ação fora desses limites. Nenhuma correção dos seus dados libera esta tentativa; ela permanece bloqueada."
+                      : "A equipe do produto precisa conferir o motivo antes de permitir uma nova preparação. Você não precisa reenviar seus dados. Esta tentativa permanece bloqueada.",
+              "UNVERIFIED_VISUAL_ORIGIN".equals(safetyCase)
+                  ? "Entender a verificação das imagens"
+                  : "Entender o limite desta demonstração",
+              "#kit-continuation");
       case "FAILED" ->
           new Presentation(
               "A preparação do kit foi interrompida",
               "O pacote desta tentativa não ficou disponível. Sua entrada e o motivo da falha foram preservados.",
               "Não foi possível preparar este kit. Seus dados estão guardados para retomar com segurança.",
               "COMPOSITION_FAILED",
-              "Confira a falha na revisão deste ciclo antes de uma nova tentativa.",
-              "Abrir a revisão deste ciclo",
-              cyclePath);
+              "A equipe do produto precisa conferir a interrupção antes de uma nova preparação. Você não precisa reenviar seus dados; esta tentativa ainda não disponibiliza um pacote.",
+              "Entender como continuar",
+              "#kit-continuation");
       default ->
           new Presentation(
               "Prepare o primeiro post do seu kit",

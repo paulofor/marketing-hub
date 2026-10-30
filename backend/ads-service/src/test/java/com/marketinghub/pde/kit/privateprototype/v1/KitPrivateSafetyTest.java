@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: impedir resultado falso e causa fabricada nos bloqueios dos kits privados. */
 class KitPrivateSafetyTest {
-  /** Confere bloqueio, causa preservada e ação do mesmo ciclo em dois produtos distintos. */
+  /** Confere proteção preservada e continuação local sem delegar a operação à cliente. */
   @Test
   void preservesExplainedBlockWithoutArtifactOrValueEvent() {
     for (long productId : List.of(8107L, 9218L)) {
@@ -42,12 +42,11 @@ class KitPrivateSafetyTest {
                 safetyCase == SafetyCase.UNVERIFIED_VISUAL_ORIGIN
                     ? "origem das imagens"
                     : "publicação, envio ou cobrança");
-        assertThat(blocked.presentation().nextActionPath())
-            .isEqualTo(
-                "/business-process-chains/learning-cycles?productId="
-                    + productId
-                    + "&cycleId="
-                    + (productId + 100));
+        assertThat(blocked.presentation().nextActionPath()).isEqualTo("#kit-continuation");
+        assertThat(blocked.presentation().nextStep())
+            .contains("equipe do produto", "permanece bloqueada")
+            .doesNotContain("ciclo", "entrada compatível", "revisão interna");
+        assertThat(blocked.presentation().nextActionLabel()).doesNotContain("ciclo", "revisão");
         assertThat(blocked.manifest()).isNull();
         assertThat(fixture.service.session(access.sessionToken())).isEqualTo(blocked);
         assertThat(fixture.service.create(request).sessionId()).isEqualTo(access.sessionId());

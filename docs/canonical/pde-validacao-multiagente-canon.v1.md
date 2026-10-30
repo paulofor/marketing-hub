@@ -138,6 +138,28 @@ artefatos e custos anteriores ficam no predecessor; autorizações não são her
 Uma autorização explícita para a preparação do produto deve ser registrada no novo
 contexto com o mesmo teto cumulativo, sem duplicar o limite ou apagar consumo.
 
+### Continuação do bloqueio dentro do produto — 30/10/2026
+
+O parecer #880 identificou uma lacuna na orientação histórica de 09/10: o bloqueio
+era correto, mas exigia que a profissional conferisse uma biblioteca e abrisse a
+revisão administrativa. O harness exigia esse destino, em vez de verificar se a
+ação era compreensível e executável pela cliente.
+
+Nos próximos percursos, bloqueio e falha de composição mantêm a ajuda dentro da
+mesma experiência. O backend identifica o que depende da equipe do produto, conserva
+os dados e explica a indisponibilidade, sem inventar uma verificação em execução.
+A cliente pode abrir os detalhes da orientação; essa ação não remove a proteção,
+não reenvia a entrada, não gera arquivos nem registra valor ou intenção de compra.
+Referências administrativas permanecem no relatório restrito.
+
+O gate determinístico clica na ação, confere a explicação visível e o destino no
+mesmo protótipo, sem parâmetros, credenciais ou painel administrativo. Reabrir
+preserva a entrada, o bloqueio, os eventos e a orientação. A revisão independente
+continua necessária. A mudança de mensagem/CTA segue para uma candidata sucessora
+conforme `CHANGE_PER_CYCLE_V1`; provas e custos históricos não são reescritos.
+
+Evidências e limites: [continuação segura de Capella](../homologacao/capella-continuacao-segura-2026-10-30.md).
+
 ### Prova compatível do pacote de kits — 08/10/2026
 
 O compositor deve cumprir a organização e a quantidade de arquivos dos contratos

@@ -27,7 +27,8 @@ async function api(path,{method='GET',body,session}={}) {
   return response.status===204?null:response.json();
 }
 async function observeSafety(page) {
-  return {title:await page.locator('#title').innerText(),introduction:await page.locator('#introduction').innerText(),reason:await page.locator('#status').innerText(),nextStep:await page.locator('#next-step').innerText(),actionLabel:await page.locator('#review-cycle').innerText(),nextActionUrl:await page.locator('#review-cycle').getAttribute('href'),actionVisible:await page.locator('#review-cycle').isVisible(),resultHidden:await page.locator('#result').isHidden()};
+  await page.locator('#review-cycle').click();
+  return {title:await page.locator('#title').innerText(),introduction:await page.locator('#introduction').innerText(),reason:await page.locator('#status').innerText(),nextStep:await page.locator('#next-step').innerText(),actionLabel:await page.locator('#review-cycle').innerText(),nextActionUrl:await page.locator('#review-cycle').getAttribute('href'),actionVisible:await page.locator('#review-cycle').isVisible(),continuationVisible:await page.locator('#next-step').isVisible(),resultHidden:await page.locator('#result').isHidden()};
 }
 // Mede a tela realmente exibida, sem rolar o navegador para fazer o critério passar.
 async function checkFirstActions(page) {
@@ -92,7 +93,7 @@ try {
         await page.locator('#status').filter({hasText:'bloqueada antes da composição'}).waitFor();
         await page.locator('#blocked').waitFor({state:'visible'});
         const blocked=await api('/session',{session:created.sessionToken});
-        const safetyContext={productId:input.productId,cycleId:input.cycleId,safetyCase};
+        const safetyContext={productId:input.productId,cycleId:input.cycleId,safetyCase,sourceUrl:input.sourceUrl};
         validateKitSafety(blocked,await observeSafety(page),safetyContext);
         await page.reload();await page.locator('#blocked').waitFor({state:'visible'});
         const preserved=await api('/session',{session:created.sessionToken});

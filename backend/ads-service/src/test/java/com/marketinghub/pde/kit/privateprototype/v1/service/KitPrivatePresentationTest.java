@@ -2,6 +2,7 @@ package com.marketinghub.pde.kit.privateprototype.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -23,6 +24,23 @@ class KitPrivatePresentationTest {
       if (!"INPUT".equals(status)) assertThat(presentation.statusMessage()).isNotBlank();
       if ("FAILED".equals(status))
         assertThat(presentation.statusMessage()).contains("dados estão guardados");
+    }
+  }
+
+  /** Impede o retorno ao painel administrativo tanto no bloqueio quanto na falha de composição. */
+  @Test
+  void keepsFailureGuidanceInsideCustomerExperience() {
+    for (String status : new String[] {"BLOCKED_SAFE", "FAILED"}) {
+      for (String reason :
+          new String[] {"UNVERIFIED_VISUAL_ORIGIN", "EXTERNAL_ACTION", "REVIEW_REQUIRED"}) {
+        var presentation = KitPrivatePresentation.resolve(status, reason, 9918L, 8831L);
+        assertThat(presentation.nextActionPath()).isEqualTo("#kit-continuation");
+        assertThat(presentation.nextActionLabel()).isNotBlank().doesNotContain("ciclo");
+        assertThat(presentation.nextStep())
+            .contains("equipe do produto")
+            .doesNotContain("8831", "9918", "entrada compatível", "revisão deste ciclo");
+        assertThat(presentation.statusMessage()).doesNotContain("revisão interna");
+      }
     }
   }
 }

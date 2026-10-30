@@ -121,8 +121,13 @@
     $('blocked').hidden = !presentation.nextActionPath;
     $('next-step').textContent = presentation.nextStep;
     $('review-cycle').textContent = presentation.nextActionLabel;
-    if (presentation.nextActionPath) $('review-cycle').href = new URL(presentation.nextActionPath, 'http://191.252.181.168:5173').href;
+    if (presentation.nextActionPath === '#kit-continuation') $('review-cycle').href = new URL(presentation.nextActionPath, location.origin + location.pathname).href;
     else $('review-cycle').removeAttribute('href');
+    $('review-cycle').onclick = e => {
+      e.preventDefault();
+      $('kit-continuation').open = true;
+      $('kit-continuation').querySelector('summary').focus();
+    };
     $('briefing').hidden = current.status !== 'INPUT';
     const options = current.specialties || [];
     const multiple = options.length > 1;

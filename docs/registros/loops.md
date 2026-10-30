@@ -11297,6 +11297,26 @@ depois de materializar o checkout. Provas e limites em
 - **Limite:** correção de apresentação não aprova nova hipótese nem autoriza consumo comercial.
 - **Registro:** [matriz e evidências](../homologacao/capella-interface-sem-diagnostico-2026-10-25.md).
 
+### Recorrência na continuação SAFETY — 30/10/2026
+
+- **Evidência:** Capella, ciclo #17/experimento #110, homologação #877 aceita e
+  parecer #880 `ADJUST`. A proteção permanecia correta, mas a ação mandava a
+  profissional abrir a revisão de ciclo e conferir a origem de uma biblioteca.
+- **Causa confirmada:** `KitPrivatePresentation` entregava essa orientação e o
+  próprio `private-kit-safety-contract.mjs` exigia o endereço administrativo.
+  A verificação textual anterior não cobria responsabilidade e destino da ação.
+- **Correção compartilhada:** explicação de responsabilidade entregue pelo backend,
+  divulgação progressiva na experiência e ausência de navegação administrativa.
+  Sem prometer análise ativa nem converter o bloqueio em resultado disponível.
+- **Prevenção executada:** nove cenários em desktop/iPhone/Pixel com backend,
+  compositor e MySQL 5.7 reais; outro produto/perfil legado; clique e reabertura
+  preservam dados e eventos. Testes recusam painel administrativo, outro endereço,
+  ajuda escondida e instrução para a cliente resolver uma pendência da equipe.
+- **Limite:** nenhuma aprovação ou autorização é herdada automaticamente; a
+  candidata corrigida conserva os vínculos de origem e passa pelos gates próprios.
+  Prontidão local não é evidência de demanda, compra ou contribuição.
+- **Registro:** [matriz da continuação](../homologacao/capella-continuacao-segura-2026-10-30.md).
+
 ## LOOP-CICLO-AUTORIZACAO-OCULTA-MUDANCA — 26/10/2026
 
 - Evidência: Vega #4, ciclo #13/experimento #106, oferece ADJUST pelo contrato, mas

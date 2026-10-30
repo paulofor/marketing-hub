@@ -3,6 +3,9 @@ package com.marketinghub.payments.service.kit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,14 @@ public final class CapellaKitCatalog {
 
   /** Impede instanciação de um catálogo imutável compartilhado. */
   private CapellaKitCatalog() {}
+
+  /** Declara somente perfis realmente carregados, incluindo suas variantes fotográficas. */
+  public static Set<String> supportedProfiles() {
+    return Stream.concat(
+            PROFILES.keySet().stream(),
+            PROFILES.keySet().stream().map(code -> code.replace("-v1", "-v2")))
+        .collect(Collectors.toUnmodifiableSet());
+  }
 
   /** Resolve somente perfis explicitamente versionados, sem fallback de outra profissão. */
   public static CapellaKitProfile byCode(String code) {

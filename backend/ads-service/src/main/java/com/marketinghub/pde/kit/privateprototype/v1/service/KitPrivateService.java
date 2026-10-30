@@ -293,18 +293,24 @@ public class KitPrivateService {
     return view(session);
   }
 
-  /** Fornece somente trabalho previamente reservado pelo backend para o compositor. */
+  /**
+   * Filtra no banco as reservas dos perfis instalados e não entrega trabalho a executores antigos.
+   */
   @Transactional(readOnly = true)
-  public List<Pending> pending() {
-    return artifacts.pending(PageRequest.of(0, 3)).stream()
+  public List<Pending> pending(Set<String> supportedProfiles) {
+    if (supportedProfiles.isEmpty()) return List.of();
+    return artifacts.pending(supportedProfiles, PageRequest.of(0, 3)).stream()
         .map(id -> pending(artifacts.findById(id).orElseThrow()))
         .toList();
   }
 
-  /** Reserva a tentativa exata sem permitir claims concorrentes ou reabrir uma falha terminal. */
+  /** Reserva a tentativa exata somente para perfil suportado, sem reabrir falhas terminais. */
   @Transactional
-  public Pending claim(String id, Claim input) {
+  public Pending claim(String id, Claim input, Set<String> supportedProfiles) {
     var a = artifacts.locked(id).orElseThrow();
+    require(
+        supportedProfiles.contains(a.getProfileCode()),
+        "O compositor não declarou suporte ao perfil desta reserva. Atualize o executor.");
     require(
         "OPEN".equals(cycles.findById(a.getCycleId()).orElseThrow().getStatus()),
         "O ciclo foi encerrado.");

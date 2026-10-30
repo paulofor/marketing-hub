@@ -190,6 +190,26 @@
 
 # Registros de loops operacionais — Experimentos
 
+## LOOP-KIT-COMPOSITOR-SEM-CAPACIDADE — 30/10/2026
+
+- **Evidência:** Capella #7, ciclo #17 / experimento #110, estava sem prova executável
+  registrada na 3.6. A preparação de `hair-v2` falhou no artefato
+  `5168cf4b-487a-4649-8ed6-447afbecf344`: a instalação legada de pagamentos registrou
+  `IllegalArgumentException: Perfil de kit não suportado`; a instalação PDE recebeu 409
+  porque a reserva já havia sido consumida. O mesmo fluxo passou na sandbox.
+- **Causa:** duas imagens com catálogos diferentes consumiam a mesma fila sem declarar
+  capacidades. Autenticação e estado saudável eram tratados como capacidade de execução.
+- **Alternativas:** sincronizar sempre as duas imagens depende de coordenação permanente;
+  desabilitar um consumidor por host depende de configuração e não protege filas antigas;
+  declarar perfis instalados e conferir no backend protege também versões divergentes.
+  Foi adotada a terceira opção.
+- **Correção:** catálogo instalado alimenta `X-Kit-Supported-Profiles`; SQL filtra antes
+  do limite; claim atômico repete a conferência. Legados recebem fila vazia e claims
+  incompatíveis deixam estado, chave e horário intactos. Callbacks e recuperação preservados.
+- **Prevenção:** regressões HTTP, reserva de duas identidades, perfil anterior válido,
+  fila filtrada e replay sem recomposição. Matriz e limites em
+  `docs/homologacao/capella-compositor-capacidades-2026-10-30.md`.
+
 ## LOOP-CICLO-JANELA-SEM-ORIENTACAO — 06/10/2026
 
 - **Histórico confirmado:** Capella, ciclo 5/experimento 98, salvou a primeira janela no evento 34,

@@ -5,6 +5,7 @@ import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -42,10 +43,10 @@ public interface KitPrivateArtifactRepository extends JpaRepository<KitPrivateAr
       @Param("version") String version,
       @Param("profile") String profile);
 
-  /** Seleciona trabalho enfileirado cujo ciclo continua aberto, sem hidratar artefatos. */
+  /** Seleciona no banco apenas perfis suportados de ciclos abertos, sem hidratar artefatos. */
   @Query(
-      "select a.id from KitPrivateArtifact a, LearningSalesCycle c where a.cycleId = c.id and c.status = 'OPEN' and a.status = 'QUEUED' order by a.createdAt")
-  List<String> pending(Pageable page);
+      "select a.id from KitPrivateArtifact a, LearningSalesCycle c where a.cycleId = c.id and c.status = 'OPEN' and a.status = 'QUEUED' and a.profileCode in :profiles order by a.createdAt")
+  List<String> pending(@Param("profiles") Set<String> profiles, Pageable page);
 
   /** Serializa claim e callback para impedir resultados duplicados. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)

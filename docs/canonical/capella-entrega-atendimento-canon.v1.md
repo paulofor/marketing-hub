@@ -260,3 +260,21 @@ pode vincular a família v2 somente a um desenho compatível sem perfil explíci
 não substitui um contrato já vinculado nem parecer histórico. Mudança das condições
 da experiência exige sucessor conforme o cânone de ciclos. A biblioteca de entrega
 comercial aprovada, suas quantidades e as revisões independentes permanecem exigidas.
+
+## Compatibilidade do compositor privado — correção de 30/10/2026
+
+O compositor informa `X-Kit-Supported-Profiles` com os códigos individuais carregados do
+catálogo da própria imagem. O backend filtra esses perfis no SQL do `pending`, antes da
+paginação, e confere novamente o perfil sob lock no `claim`. Consumidor sem declaração
+recebe fila vazia e não pode reservar trabalho, inclusive a partir de uma fila antiga.
+Famílias, códigos desconhecidos e declarações inválidas não comprovam capacidade.
+
+Essa proteção fecha a disputa observada entre duas instalações de pagamentos: a antiga
+reservou `hair-v2` sem suportá-lo, enquanto a instalação PDE compatível recebeu conflito.
+Não basta um container estar saudável ou autenticar: ele precisa suportar o contrato da
+reserva. A regra vale para qualquer produto/ciclo e não depende de IP, nome ou ID de produto.
+
+Callbacks já produzidos conservam autenticação, bytes, hash, custo e replay existentes.
+Falhas anteriores não são apagadas nem convertidas em sucesso. A aceitação privada continua
+exigindo pacote íntegro de cada especialidade na versão exata, testes determinísticos e
+registro da prova antes dos pareceres independentes. Não autoriza mídia nem audiovisual pago.

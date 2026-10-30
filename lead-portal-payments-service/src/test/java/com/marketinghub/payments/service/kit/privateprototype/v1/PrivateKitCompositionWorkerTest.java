@@ -38,6 +38,9 @@ class PrivateKitCompositionWorkerTest {
         "/api/pde/kit/private/v1/stage-executions",
         exchange -> {
           String path = exchange.getRequestURI().getPath();
+          assertThat(exchange.getRequestHeaders().getFirst("X-Kit-Supported-Profiles"))
+              .isEqualTo(String.join(",", new java.util.TreeSet<>(
+                  com.marketinghub.payments.service.kit.CapellaKitCatalog.supportedProfiles())));
           String response =
               path.endsWith("pending")
                   ? (attempts.get() == 0 ? "[{\"id\":\"" + id + "\"}]" : "[]")
@@ -85,5 +88,15 @@ class PrivateKitCompositionWorkerTest {
     } finally {
       server.stop(0);
     }
+  }
+
+  /** Confere que todo perfil anunciado resolve um contrato instalado, incluindo a fotografia v2. */
+  @org.junit.jupiter.api.Test
+  void advertisedProfilesAreInstalledAndVersioned() {
+    var profiles = com.marketinghub.payments.service.kit.CapellaKitCatalog.supportedProfiles();
+    assertThat(profiles).hasSize(12).contains("hair-v2", "barber-v2", "nails-v1");
+    profiles.forEach(profile -> assertThat(
+        com.marketinghub.payments.service.kit.CapellaKitCatalog.byCode(profile).code())
+        .isEqualTo(profile));
   }
 }

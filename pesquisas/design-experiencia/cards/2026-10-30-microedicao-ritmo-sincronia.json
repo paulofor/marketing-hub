@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-microedicao-ritmo-atencao-sincronia",
+  "collection": "video",
+  "title": "Microedições de ritmo e ponto de vista em vídeos narrativos",
+  "finding": "Em cenas de diálogo, ferramentas para ajustes finos de pausas e cortes reduziram operações mecânicas dos editores e, em avaliação perceptiva, cortes dentro da janela de sincronismo pareceram mais naturais. Tempo total de edição não diminuiu.",
+  "mechanism": "Separar ritmo da transição visual e expor opções reversíveis reduz o esforço de manipulação de quadros; pode favorecer exploração de reações e continuidade, mas não há efeito publicitário demonstrado.",
+  "commercialApplication": "Apolo: comparar montagem inicial com e sem refinamento orientado de pausas, J/L-cuts e planos de reação, com revisão humana antes da aprovação do vídeo.",
+  "evidenceStrength": "Pesquisa UIST 2026; estudos com 16 editores, nove logs válidos e teste perceptivo de 47 participantes (quatro excluídos). Evidência localizada de UX/edição; nenhuma evidência de vendas.",
+  "publishedOn": "2026-10-30",
+  "validUntil": "2026-12-14",
+  "experimentHypothesis": "Vídeos refinados terão menos erros perceptíveis de sincronismo e maior clareza narrativa sem elevar custo por ativo aprovado; medir revisão, retenção e CTA separadamente.",
+  "risks": "Cortes automáticos podem introduzir problemas de sincronia ou alterar intenção criativa. Evitar otimização excessiva do ritmo e exigências emocionais não sustentadas.",
+  "limits": "Cenas curtas dialogadas; amostras pequenas; tempo total 13,1 vs 11,4 min assistido/manual. Não extrapolar para qualquer formato, retenção ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-30-microedicao-ritmo-sincronia.md",
+  "sourceTitle": "Micro-Edits — evidência revisada para ritmo e sincronismo de vídeo",
+  "sourceSha256": "abb3f42480558060dea5d527a0b2632204a7384894eab3c4f605c9cf46ff056d"
+}

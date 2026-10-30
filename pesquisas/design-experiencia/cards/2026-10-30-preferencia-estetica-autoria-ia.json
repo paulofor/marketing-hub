@@ -1,0 +1,18 @@
+{
+  "cardKey": "preferencia-estetica-atribuicao-autoria-humana-ia",
+  "collection": "neuromarketing",
+  "title": "Preferência estética pode se associar à autoria humana presumida",
+  "finding": "Entre 9.152 respondentes que escolheram uma imagem favorita, a favorita foi 22,1 pontos percentuais mais associada a julgamento de autoria humana, controlando imagem e respondente; associação, não causalidade.",
+  "mechanism": "Uma experiência estética positiva pode ser interpretada como sinal de criação humana, ou crenças de autoria podem alterar avaliação. O estudo não identifica o sentido causal.",
+  "commercialApplication": "Íris e Têmis: testar procedência verdadeira e clara nos criativos, distinguindo preferência visual, confiança e entendimento sobre o uso de IA, sem fabricar autoria humana.",
+  "evidenceStrength": "Preprint observacional de 28/10/2026; 11.123 voluntários em teste online com 50 imagens e reanálise de poemas com 230 pessoas. Amostra autoselecionada; sem compra.",
+  "publishedOn": "2026-10-30",
+  "validUntil": "2026-12-14",
+  "experimentHypothesis": "Apresentar a procedência verdadeira do criativo de forma compreensível mudará calibração da confiança, sem perda relevante de compreensão; medir também escolhas e pagamentos reais.",
+  "risks": "Não usar associação para esconder o uso de IA ou sugerir criação humana inexistente. Risco de atribuir causalidade ou explorar crenças do consumidor.",
+  "limits": "Teste de arte, não publicidade ou conversão. Autoseleção, obras curadas e possível participação repetida. A direção entre gosto e crença não foi identificada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-30-preferencia-estetica-autoria-ia.md",
+  "sourceTitle": "Beauty Is Human — evidência revisada sobre gosto e autoria presumida",
+  "sourceSha256": "c7fe9c9cf4e7e99d9366a74ca42956399d888ad068232f29ba191c49251e26a1"
+}

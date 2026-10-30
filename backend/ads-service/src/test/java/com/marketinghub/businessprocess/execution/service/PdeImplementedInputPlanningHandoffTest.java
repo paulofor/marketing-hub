@@ -31,14 +31,17 @@ class PdeImplementedInputPlanningHandoffTest {
   /** Reabre Atena, revalida Plutus e libera Dédalo, preservando todas as tentativas anteriores. */
   @ParameterizedTest
   @CsvSource({
-    "91004,metodo-musa-7-dias,musa-pde-entry-v14-primeiro-ajuste-aplicavel",
-    "92010,pde-planejado-36,mira-private-candidate-v3",
-    "4,metodo-musa-7-dias,musa-pde-entry-v16-modelagem-internacional",
-    "98004,outro-produto,outra-candidata-v2"
+    "91004,metodo-musa-7-dias,musa-pde-entry-v14-primeiro-ajuste-aplicavel,false",
+    "92010,pde-planejado-36,mira-private-candidate-v3,false",
+    "4,metodo-musa-7-dias,musa-pde-entry-v16-modelagem-internacional,false",
+    "98004,outro-produto,outra-candidata-v2,false",
+    "7,agenda-cheia-para-manicures,capella-beleza-v3,false",
+    "99007,agenda-cheia-para-manicures,capella-beleza-v3,false",
+    "98008,outro-produto,outra-candidata-v2,true"
   })
-  void resumesAtOriginAndKeepsDependentReviewsInOrder(Long productId, String slug, String version)
-      throws Exception {
-    var json = new ObjectMapper();
+  void resumesAtOriginAndKeepsDependentReviewsInOrder(
+      Long productId, String slug, String version, boolean structured) throws Exception {
+    var json = new ObjectMapper().findAndRegisterModules();
     var processes = mock(BusinessProcessDefinitionRepository.class);
     var definitions = mock(BusinessProcessActivityDefinitionRepository.class);
     var tasks = mock(AgentTaskRepository.class);
@@ -62,7 +65,10 @@ class PdeImplementedInputPlanningHandoffTest {
             agentTasks,
             json,
             List.of(),
-            List.of(gate));
+            List.of(
+                gate,
+                new com.marketinghub.businessprocess.execution.service.agentactivity
+                    .UpstreamCorrectionReadinessProvider(cycles, tasks, json)));
     var product =
         Product.builder()
             .id(productId)
@@ -121,8 +127,18 @@ class PdeImplementedInputPlanningHandoffTest {
               reference,
               i == 2 ? "BLOCKED" : "COMPLETED",
               i == 0
-                  ? strategy(json, "Quatro escolhas antigas; comparar REFERENCE e REDUCED.")
-                  : "{\"decision\":\"APPROVE\"}"));
+                  ? strategy(
+                      json,
+                      structured
+                          ? "Quatro escolhas antigas."
+                          : "Quatro escolhas antigas; comparar REFERENCE e REDUCED.")
+                  : i == 2 && structured
+                      ? """
+                      {"decision":"ADJUST","upstreamCorrection":{"contractVersion":"PROCESS_UPSTREAM_CORRECTION_V1",
+                      "targetActivityId":"marketStrategy","reason":"Preservar entrada implementada",
+                      "acceptanceCriterion":"Descrever a seleção existente"}}
+                      """
+                      : "{\"decision\":\"APPROVE\"}"));
     }
     when(processes.findById(process.getId())).thenReturn(Optional.of(process));
     when(products.findById(productId)).thenReturn(Optional.of(product));
@@ -165,6 +181,15 @@ class PdeImplementedInputPlanningHandoffTest {
                 .map(a -> a.activityId() + ":" + a.operationalState())
                 .toList())
         .isEqualTo("marketStrategy");
+    String fixture = System.getProperty("upstream.fixture-output");
+    if (fixture != null && productId == 7L)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(fixture), json.writeValueAsString(before));
+    assertThatThrownBy(
+            () ->
+                service.requestProductActivityExecution(
+                    process.getId(), productId, "productArchitecture"))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     assertThat(
             service
                 .requestProductActivityExecution(process.getId(), productId, "marketStrategy")
@@ -216,6 +241,14 @@ class PdeImplementedInputPlanningHandoffTest {
     var ready = service.productProcessExecutions(process.getId(), productId);
     assertThat(ready.currentActivityId()).isEqualTo("productArchitecture");
     assertThat(ready.activities().get(2).executionRequestAvailable()).isTrue();
+    assertThat(
+            service
+                .requestProductActivityExecution(process.getId(), productId, "productArchitecture")
+                .tasks())
+        .hasSize(1);
+    verify(agentTasks)
+        .retryBlockedByHumanOrRefreshPending(
+            argThat(r -> "productArchitecture".equals(r.processActivityId())), eq(true));
     assertThat(history.getFirst().getResultJson()).contains("Quatro escolhas antigas");
     assertThat(history.get(2).getStatus()).isEqualTo("BLOCKED");
   }

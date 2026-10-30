@@ -10263,6 +10263,20 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - [Matriz, alternativas e limites](../homologacao/vega-planejamento-protocolo-especifico-v1.md).
   A revisão funcional e o limite financeiro continuam obrigatórios.
 
+### Registro relacionado: retorno de Capella — 30/10/2026
+
+Capella 884/885, ciclo 19, repetiu `LOOP-PDE-ESTRATEGIA-ENTRADA-IMPLEMENTADA`:
+ausência do descritor dos kits e Big Idea fixada sem o contexto do planejamento.
+O parecer pedia reconciliação anterior, mas a retomada liberava a mesma arquitetura.
+Corrigidos catálogo/Swagger e fotografia estratégica; o serviço real retorna Atena →
+Plutus → Dédalo. Retorno estruturado `PROCESS_UPSTREAM_CORRECTION_V1` permite validar
+a predecessora pelo BPM; até dois retornos por par/ciclo, saída funcional diferente
+obrigatória, rejeição de destino inválido e bloqueio de repetição sem entrada corrigida.
+O card bloqueado consulta a origem atual sem retomar tarefas por leitura.
+Histórico, custos, pausa e limites preservados. A regressão inclui outra identidade,
+o caminho histórico e callback recuperável. Não comprova efeito comercial.
+[Matriz e evidências](../homologacao/retorno-causal-atividades-v1.md).
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

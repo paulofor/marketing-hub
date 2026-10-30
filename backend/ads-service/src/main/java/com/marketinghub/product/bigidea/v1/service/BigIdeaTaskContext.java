@@ -17,9 +17,16 @@ public class BigIdeaTaskContext {
   private final AgentTaskTargetContextProvider targets;
   private final ObjectMapper json;
 
-  /** Fixa a versão antes de disponibilizar a tarefa, inclusive a ausência explícita. */
+  /** Fixa a versão no contexto do processo, inclusive antes da implementação da candidata. */
   public void pin(AgentTask task) {
-    var target = targets.resolve(task.getSourceReference()).orElse(null);
+    var target =
+        targets
+            .resolve(
+                task.getSourceReference(),
+                task.getProcessDefinition() == null
+                    ? null
+                    : task.getProcessDefinition().getProcessCode())
+            .orElse(null);
     var snapshot = json.createObjectNode();
     snapshot.put("contractVersion", "PRODUCT_BIG_IDEA_V1");
     snapshot.put("authority", "PRODUCT_STRATEGIC_DIRECTION");

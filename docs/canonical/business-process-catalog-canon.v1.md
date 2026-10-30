@@ -11,6 +11,29 @@
 
 ## Decisão
 
+### Retorno causal com limite de retrabalho — 30/10/2026
+
+Uma rejeição funcional pode declarar `upstreamCorrection` com contrato
+`PROCESS_UPSTREAM_CORRECTION_V1`, `targetActivityId`, `reason` e
+`acceptanceCriterion`. O agente propõe a origem; somente o backend decide o retorno,
+conferindo uma atividade de agente predecessora no mesmo BPM, produto e ciclo aberto.
+Texto livre, um identificador inventado, retorno à própria atividade, outro contexto
+ou uma aprovação humana não autorizam deslocar o processo.
+
+O retorno reabre a origem e revalida os pareceres dependentes na ordem do BPM, sem
+apagar tarefas, custos ou aceites históricos. A correção deve produzir saída funcional
+aprovada e diferente da saída rejeitada; apenas trocar tarefa, justificativa ou retomar
+o processo não constitui progresso. Cada par origem/revisor permite no máximo dois
+retornos no mesmo ciclo/definição; exceder o limite bloqueia com motivo visível para
+investigação, sem novas inferências automáticas. Erro técnico usa a recuperação existente.
+STOP, pausa, orçamento, contexto encerrado e revisões independentes prevalecem.
+
+No planejamento PDE, contradição comprovada entre entrada implementada e estratégia
+continua usando o validador determinístico existente, inclusive para respostas anteriores
+ao novo contrato. A tentativa bloqueada não pode ser repetida sem predecessor corrigido.
+Documentar uma entrada já implementada não muda a experiência nem exige novo ciclo.
+Matriz e evidências: `docs/homologacao/retorno-causal-atividades-v1.md`.
+
 ### Mudança isolada em novo ciclo e experimento — 02/10/2026
 
 A cadeia e suas atividades seguem `CHANGE_PER_CYCLE_V1`, descrito em

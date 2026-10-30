@@ -37,6 +37,66 @@ class LearningCycleImplementedInputContextTest {
   }
 
   /**
+   * Liga o descritor dos kits ao record, à seleção da tela e aos perfis reais, sem herdar aceite.
+   */
+  @Test
+  void kitCatalogPreservesExistingSpecialtySelection() throws Exception {
+    for (long id : List.of(7L, 99007L)) {
+      when(products.findById(id))
+          .thenReturn(
+              Optional.of(Product.builder().id(id).slug("agenda-cheia-para-manicures").build()));
+      var input = service.resolve(cycle(id, "capella-beleza-v3")).orElseThrow();
+      var all = new java.util.ArrayList<String>();
+      input.path("requiredFields").forEach(v -> all.add(v.asText()));
+      input.path("optionalFields").forEach(v -> all.add(v.asText()));
+      input.path("conditionalFields").forEach(v -> all.add(v.path("name").asText()));
+      assertThat(all)
+          .containsExactlyInAnyOrderElementsOf(
+              Arrays.stream(
+                      com.marketinghub.pde.kit.privateprototype.v1.service.contract
+                          .KitPrivateContract.Input.class
+                          .getRecordComponents())
+                  .map(java.lang.reflect.RecordComponent::getName)
+                  .toList());
+      assertThat(input.path("minimumCustomerInput").asText())
+          .contains("specialtyCode", "já existe");
+      var allowed = new java.util.ArrayList<String>();
+      input
+          .path("conditionalFields")
+          .get(0)
+          .path("allowedValues")
+          .forEach(v -> allowed.add(v.asText()));
+      try (var factory = Validation.buildDefaultValidatorFactory()) {
+        for (String family : List.of("beauty-v1", "beauty-v2")) {
+          for (var profile :
+              com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.profiles(
+                  family)) {
+            assertThat(allowed).contains(profile.code());
+            assertThat(
+                    factory
+                        .getValidator()
+                        .validateValue(
+                            com.marketinghub.pde.kit.privateprototype.v1.service.contract
+                                .KitPrivateContract.Input.class,
+                            "specialtyCode",
+                            profile.code()))
+                .isEmpty();
+          }
+        }
+      }
+      assertThat(input.path("agentApprovalClaimed").asBoolean()).isFalse();
+      assertThat(service.resolve(cycle(id, "capella-beleza-v999"))).isEmpty();
+    }
+    try (var html = getClass().getResourceAsStream("/private-kit-v1/prototype.html");
+        var script = getClass().getResourceAsStream("/private-kit-v1/prototype.js")) {
+      assertThat(new String(html.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8))
+          .contains("name=\"specialtyCode\"");
+      assertThat(new String(script.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8))
+          .contains("input.specialtyCode = String(form.get('specialtyCode')");
+    }
+  }
+
+  /**
    * Entrega estilo e preferências somente à nova versão, inclusive com outra identidade de produto.
    */
   @Test

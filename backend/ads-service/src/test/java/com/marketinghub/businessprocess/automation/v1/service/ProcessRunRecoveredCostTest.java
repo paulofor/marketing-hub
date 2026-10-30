@@ -39,8 +39,13 @@ class ProcessRunRecoveredCostTest {
    */
   @ParameterizedTest
   @CsvSource({
-    "PAUSED, 96001", "COMPLETED, 96001", "CLOSED, 96001",
-    "PAUSED, 96201", "COMPLETED, 96201", "CLOSED, 96201"
+    "PAUSED, 96001",
+    "COMPLETED, 96001",
+    "CLOSED, 96001",
+    "PAUSED, 96201",
+    "COMPLETED, 96201",
+    "CLOSED, 96201",
+    "BLOCKED, 96001"
   })
   void showsRecoveredCostWithoutMutatingControl(String state, long productId) {
     prepare(state, productId, "COMPLETE", "11.301148");
@@ -77,6 +82,40 @@ class ProcessRunRecoveredCostTest {
     assertThat(result.knownCostUsd()).isEqualByComparingTo("0.75");
     assertThat(result.costCoverage()).isEqualTo("PARTIAL");
     verify(context, never()).read(any(ProcessRun.class), anyBoolean());
+    verifyNoInteractions(activities, subprocesses, events);
+  }
+
+  /** Mostra a origem correta no card bloqueado sem disparar tarefa por leitura administrativa. */
+  @Test
+  void showsCorrectedOriginWithoutResumingOldBlock() {
+    prepare("BLOCKED", 96001L, "COMPLETE", "11.30");
+    run.setCurrentActivityId("productArchitecture");
+    run.setCurrentOwnerName("Dédalo");
+    var snapshot = context.read(run, false);
+    when(snapshot.objectiveAchieved()).thenReturn(false);
+    when(snapshot.currentActivityId()).thenReturn("marketStrategy");
+    when(snapshot.currentActivityName()).thenReturn("Corrigir estratégia");
+    when(snapshot.currentActivityStateReason())
+        .thenReturn("Atena precisa preservar a entrada existente.");
+    var activity =
+        mock(
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .productProcessExecutions
+                .ProductProcessActivityExecutionGroupResponse
+                .class);
+    when(activity.activityId()).thenReturn("marketStrategy");
+    when(activity.selectedVersionActivity()).thenReturn(true);
+    when(activity.activityOwnerName()).thenReturn("Atena");
+    when(snapshot.activities()).thenReturn(List.of(activity));
+    var response = service.status(96001L, 96011L, command);
+    assertThat(response.currentActivityId()).isEqualTo("marketStrategy");
+    assertThat(response.currentOwnerName()).isEqualTo("Atena");
+    assertThat(response.reason()).contains("Correção pendente na origem");
+    assertThat(run.getStatus()).isEqualTo("BLOCKED");
+    assertThat(run.getCurrentActivityId()).isEqualTo("productArchitecture");
     verifyNoInteractions(activities, subprocesses, events);
   }
 

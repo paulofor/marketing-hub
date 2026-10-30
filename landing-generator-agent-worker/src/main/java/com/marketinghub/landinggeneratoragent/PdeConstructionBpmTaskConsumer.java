@@ -681,7 +681,7 @@ public class PdeConstructionBpmTaskConsumer {
             false));
   }
 
-  /** Valida o contrato comum e a saída funcional específica da atividade de produto. */
+  /** Valida a saída funcional e o pedido de retorno, preservando callbacks históricos. */
   static void validate(JsonNode result, BpmContract contract) {
     String decision = result.path("decision").asText();
     boolean productArchitecture = "productArchitecture".equals(contract.activityId());
@@ -732,6 +732,7 @@ public class PdeConstructionBpmTaskConsumer {
           "Protótipo privado do PDE incompleto ou não instrumentado");
     }
     if (productArchitecture) {
+      PdeUpstreamCorrectionContract.validate(result);
       validateStaticResultFixtures(result.path("productArchitecture"));
     }
     if ("pde-construction-approval".equals(contract.processCode())

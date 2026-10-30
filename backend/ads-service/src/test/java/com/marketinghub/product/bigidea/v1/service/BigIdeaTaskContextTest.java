@@ -33,7 +33,7 @@ class BigIdeaTaskContextTest {
             null,
             null,
             null);
-    when(targets.resolve("experiment:903")).thenReturn(Optional.of(target));
+    when(targets.resolve("experiment:903", null)).thenReturn(Optional.of(target));
     var first =
         new BigIdeaView(
             1L,
@@ -58,5 +58,42 @@ class BigIdeaTaskContextTest {
     verify(service, times(1)).pin(703L, "experiment:903");
     assertThat(context.snapshot(new AgentTask()).path("status").asText())
         .isEqualTo("LEGACY_UNPINNED");
+  }
+
+  /** Resolve a Big Idea antes da candidata existir, sem reinterpretar fotografias históricas. */
+  @Test
+  void pinsProductUsingPlanningContext() {
+    var service = mock(BigIdeaService.class);
+    var targets = mock(AgentTaskTargetContextProvider.class);
+    var json = new ObjectMapper();
+    var context = new BigIdeaTaskContext(service, targets, json);
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("pde-commercial-plan-offer");
+    var task = new AgentTask();
+    task.setSourceReference("experiment:99112");
+    task.setProcessDefinition(process);
+    when(targets.resolve("experiment:99112", process.getProcessCode()))
+        .thenReturn(
+            Optional.of(
+                new AgentTaskTargetResponse(
+                    "experiment:99112",
+                    99112L,
+                    99007L,
+                    "outra-identidade",
+                    "Produto",
+                    "Teste",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null)));
+    context.pin(task);
+    assertThat(context.snapshot(task).path("status").asText()).isEqualTo("MISSING");
+    assertThat(context.snapshot(task).path("productId").asLong()).isEqualTo(99007L);
+    verify(service).pin(99007L, "experiment:99112");
+    verify(targets, never()).resolve(anyString());
+    task.setProductBigIdeaJson("{\"status\":\"PRODUCT_NOT_CREATED\"}");
+    assertThat(context.snapshot(task).path("status").asText()).isEqualTo("PRODUCT_NOT_CREATED");
   }
 }

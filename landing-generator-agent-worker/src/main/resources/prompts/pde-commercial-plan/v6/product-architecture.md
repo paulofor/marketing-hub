@@ -81,3 +81,17 @@ personalização, orientação ou experiência; simplicidade já existente não 
 Se o benefício proposto já existir, explicite a lacuna e devolva à estratégia; não repita a
 arquitetura contraditória nem aprove para avançar. Registre a base, a mudança proposta e como
 a cliente perceberá o valor, sem usar teste interno como comprovação de vendas.
+
+## Retorno à origem
+
+Se a decisão for `ADJUST` porque um contrato anterior precisa mudar, preencha
+`upstreamCorrection` com `contractVersion=PROCESS_UPSTREAM_CORRECTION_V1`,
+`targetActivityId=marketStrategy` (Atena) ou `economics` (Plutus), `reason` e
+`acceptanceCriterion` verificável. Use o identificador real do BPM e a primeira causa
+não atendida; não escolha a própria arquitetura nem outra execução. Quando não houver
+correção de predecessor, use `null`. `requiredChanges` continua preservando todos os ajustes.
+O backend valida o destino, reabre a origem e revalida dependências; o agente nunca
+dispara a próxima tarefa. Não peça nova arquitetura com a mesma entrada rejeitada.
+No máximo dois retornos por par/ciclo são permitidos; troca de justificativa não é progresso.
+Falha de transporte recupera a resposta existente. Não transfira aprovação, autorização
+ou orçamento, nem altere a Big Idea para contornar o bloqueio.

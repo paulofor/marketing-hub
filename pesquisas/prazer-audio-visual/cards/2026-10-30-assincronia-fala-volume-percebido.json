@@ -1,0 +1,18 @@
+{
+  "cardKey": "assincronia-fala-volume-percebido",
+  "collection": "prazer-audio-visual",
+  "title": "Coerência entre lábios e fala altera volume percebido",
+  "finding": "Em 25 adultos ouvindo uma voz em meio a quatro vozes concorrentes, maior atraso do áudio em relação ao vídeo reduziu o volume subjetivo percebido; em 500 ms, a diferença foi equivalente a aproximadamente 2–3 dB na escala calibrada de relação alvo/mascarador.",
+  "mechanism": "A coerência temporal da fala audiovisual pode facilitar o agrupamento perceptivo da voz-alvo; fatores linguísticos também modulam julgamentos de intensidade.",
+  "commercialApplication": "Verificar sincronia voz/lábios de avatares e vídeos com fala em ruído antes de aumentar volume; testar condições alinhadas e defasadas com potência acústica igual.",
+  "evidenceStrength": "Moderada para percepção subjetiva de voz em mascaramento nesse experimento; baixa para prazer, memória, publicidade e vendas.",
+  "publishedOn": "2026-10-30",
+  "validUntil": "2026-12-14",
+  "experimentHypothesis": "Em vídeos de avatar com fala e sons concorrentes, correção de atraso audiovisual aumentará a clareza ou intensidade percebida da voz, sem alterar o nível físico, e poderá reduzir esforço de compreensão.",
+  "risks": "Confundir equivalência perceptiva em dB com ganho físico; impor limite universal de milissegundos; aumentar volume desnecessariamente; extrapolar para música ou sincronização labial sem ruído.",
+  "limits": "n=25; estudo remoto com falantes e ruído específicos; somente vídeo adiantado ao áudio; não testou satisfação, memória, conversões, dopamina ou IA generativa.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-30-assincronia-fala-volume-percebido-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Gijbels et al. (2026), assincronia e volume percebido",
+  "sourceSha256": "fd5cbcc688a7e4704b0fc66c834c8de426e386c365955ea6a5c867f3d5d53927"
+}

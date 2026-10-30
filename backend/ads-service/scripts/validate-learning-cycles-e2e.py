@@ -489,4 +489,31 @@ assert sales['stage']=='DECISION' and parent_history()['currentActivityId']=='le
 assert parent_history()['salesFlow']['activities'][1]['objectiveAchieved']
 check('Venda sem entrega bloqueia avanço; entrega comprovada e reconciliação liberam decisão')
 
+# O demonstrativo usa o ledger real; ausência de estimativas nunca vira custo zero.
+reset()
+finance_cycle = http(f'{API}/products/91001', brief())
+finance_path = f'{API}/products/91001/{finance_cycle["id"]}'
+review = http(f'{finance_path}/financial-review?chainId=91002')
+assert review['knownPreparationUsd'] is None and review['authorization'] is None
+budget = dict(requestKey=str(uuid.uuid4()), expectedRevision=review['revision'],
+    chainDefinitionId=91002, experimentId=91001, productVersion=finance_cycle['productVersion'],
+    totalLimitUsd=50, reserveUsd=3.5, operatorName='Operador sintético',
+    justification='Limite exclusivo da homologação local', confirmed=True)
+approved = http(f'{finance_path}/preparation-budget', budget)
+assert approved['authorization']['totalLimitUsd'] == 50
+assert approved['authorization']['reserveUsd'] == 3.5
+assert approved['authorization']['current']
+assert http(f'{finance_path}/preparation-budget', budget)['authorization'] == approved['authorization']
+assert http(f'{finance_path}/financial-review?chainId=91002')['authorization'] == approved['authorization']
+assert sql(f"SELECT COUNT(*) FROM learning_sales_cycle_event_v1 WHERE cycle_id={finance_cycle['id']} AND action='AUTHORIZE_PREPARATION_BUDGET'") == '1'
+assert http(f'{API}/products/91001')[0]['stage'] == finance_cycle['stage']
+assert http('/fixture/experiments/91001/state') == dict(status='PLANNED', runCount=0, campaignCount=0)
+http(f'{finance_path}/preparation-budget', dict(budget, totalLimitUsd=60), 409)
+http(f'{finance_path}/preparation-budget', dict(budget, requestKey=str(uuid.uuid4())), 409)
+http(f'{finance_path}/financial-review?chainId=91001', expected=409)
+http(f'{API}/products/91002/{finance_cycle["id"]}/financial-review?chainId=91002', expected=404)
+other_finance = http(f'{API}/products/91002', brief(91006))
+assert http(f'{API}/products/91002/{other_finance["id"]}/financial-review?chainId=91002')['authorization'] is None
+check('Demonstração financeira e recibo MySQL: confirmação, replay, concorrência e isolamento sem iniciar gastos')
+
 print(json.dumps({'checks':len(checks),'passed':checks,'database':'MySQL 5.7','externalCalls':0},ensure_ascii=False),flush=True)

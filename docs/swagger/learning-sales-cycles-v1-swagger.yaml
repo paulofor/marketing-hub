@@ -357,6 +357,48 @@ paths:
         '400': {description: Contrato inválido}
         '404': {description: Ciclo não encontrado neste produto}
         '409': {description: Revisão obsoleta ou ciclo fora da etapa de medição}
+  /products/{productId}/{cycleId}/financial-review:
+    get:
+      summary: Demonstração financeira segregada do ciclo, sem iniciar consumo
+      parameters:
+        - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Custos estimados por experimento, cobertura, limites por moeda, saldo após reserva, recibos e revisão financeira LIVE do plano único associado; parecer ausente ou desatualizado não é aprovação.
+        '409': {description: Contexto divergente}
+        '404': {description: Ciclo não pertence ao produto}
+  /products/{productId}/{cycleId}/preparation-budget:
+    post:
+      summary: Registrar aprovação humana do teto cumulativo de preparação e revisão
+      description: Não inicia tarefas nem autoriza mídia ou audiovisual. Recibo no ledger, idempotência por requestKey e concorrência por expectedRevision. Não herda decisão em sucessores.
+      parameters:
+        - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, chainDefinitionId, experimentId, productVersion, totalLimitUsd, reserveUsd, operatorName, justification, confirmed]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, format: int64, minimum: 0}
+                chainDefinitionId: {type: integer, format: int64, minimum: 1}
+                experimentId: {type: integer, format: int64, minimum: 1}
+                productVersion: {type: string, maxLength: 160}
+                totalLimitUsd: {type: number, minimum: 0, maximum: 999999.99, multipleOf: 0.01}
+                reserveUsd: {type: number, minimum: 0, maximum: 999999.99, multipleOf: 0.01}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                justification: {type: string, minLength: 1, maxLength: 4000}
+                confirmed: {type: boolean, enum: [true]}
+      responses:
+        '200': {description: Demonstração financeira atualizada com recibo; reenvio idêntico não duplica}
+        '400': {description: Valores ou confirmação inválidos}
+        '409': {description: Ciclo encerrado, revisão obsoleta, contexto divergente ou chave reutilizada com outros valores}
+
 components:
   parameters:
     ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}

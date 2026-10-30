@@ -195,6 +195,10 @@ components:
               canResume: {type: boolean}
               automaticExecution: {type: boolean}
               childRunId: {type: integer, format: int64, nullable: true}
+              financialReviewUrl:
+                type: string
+                description: Caminho da demonstração financeira do produto, cadeia e ciclo, disponível inclusive em pausa ou bloqueio. Sem ciclo, aponta ao plano do produto. A leitura não autoriza gasto.
+                example: /financial/execution?productId=7&chainId=27&cycleId=19
               navigationUrl: {type: string, nullable: true}
               createdAt: {type: string, format: date-time, nullable: true}
               updatedAt: {type: string, format: date-time, nullable: true}

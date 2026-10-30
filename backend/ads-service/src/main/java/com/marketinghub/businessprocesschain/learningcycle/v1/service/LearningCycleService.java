@@ -11,6 +11,8 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.Le
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand.Action;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.PreparationBudgetRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.videoBudget.*;
@@ -54,6 +56,8 @@ public class LearningCycleService {
   @Autowired private LearningCycleWorkResolver workResolver;
 
   @Autowired private LearningCycleVideoBudget videoBudget;
+  @Autowired private LearningCycleFinancialReview financialReview;
+  @Autowired private LearningCyclePreparationBudget preparationBudget;
 
   @Autowired private LearningCycleCommercialAuthorization commercialAuthorization;
 
@@ -267,6 +271,37 @@ public class LearningCycleService {
             : cycles.findByProductIdAndChainCodeOrderByIdDesc(
                 productId, requiredChain(chainId).getChainCode());
     return selected.stream().map(this::response).toList();
+  }
+
+  /** Consulta custos e limites do ciclo exato sem iniciar parecer ou consumo. */
+  @Transactional(readOnly = true)
+  public CycleFinancialReview financialReview(Long productId, Long cycleId, Long chainId) {
+    var cycle = requiredCycle(productId, cycleId);
+    require(
+        Objects.equals(chainId, cycle.getChainDefinitionId()),
+        "A cadeia informada não pertence a este ciclo.");
+    requiredExperiment(productId, cycle.getExperimentId());
+    return financialReview.read(
+        cycle, products.findById(productId).orElseThrow(), Instant.now(clock));
+  }
+
+  /** Aprova o teto cumulativo e preserva os demais orçamentos, sob lock do produto e ciclo. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public CycleFinancialReview authorizePreparationBudget(
+      Long productId, Long cycleId, PreparationBudgetRequest request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    requiredExperiment(productId, cycle.getExperimentId());
+    var product = products.findById(productId).orElseThrow();
+    var now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    var before = financialReview.read(cycle, product, now);
+    preparationBudget.authorize(
+        cycle, request, before.knownPreparationUsd(), before.unreportedTasks(), now);
+    cycles.saveAndFlush(cycle);
+    return financialReview.read(cycle, product, now);
   }
 
   /** Consulta o financeiro da ocorrência exata, recusando contexto divergente na URL. */

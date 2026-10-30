@@ -27,6 +27,7 @@ export interface ProcessAutomation {
   canResume: boolean;
   automaticExecution: boolean;
   childRunId: number | null;
+  financialReviewUrl?: string;
   navigationUrl: string | null;
   lastReconciledAt: string | null;
   updatedAt: string | null;

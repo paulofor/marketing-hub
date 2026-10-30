@@ -1236,7 +1236,7 @@ public class ProcessRunService {
   /**
    * Expõe progresso e custos das provas consultadas, incluindo callbacks tardios, sem reescrever a
    * pausa histórica ou apresentar atividade encerrada como trabalho atual; o retrato acompanha o
-   * mesmo responsável.
+   * mesmo responsável e o acesso financeiro preserva produto, cadeia e ciclo.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
@@ -1341,7 +1341,15 @@ public class ProcessRunService {
         navigation.parents(run),
         navigation.children(run),
         userAction,
-        queueBlocker(run));
+        queueBlocker(run),
+        run.getLearningCycleId() == null
+            ? "/financial/plans?productId=" + run.getProductId()
+            : "/financial/execution?productId="
+                + run.getProductId()
+                + "&chainId="
+                + run.getChainDefinitionId()
+                + "&cycleId="
+                + run.getLearningCycleId());
   }
 
   /** Gera identidade compacta com todos os limites de segregação, inclusive ciclo ausente. */

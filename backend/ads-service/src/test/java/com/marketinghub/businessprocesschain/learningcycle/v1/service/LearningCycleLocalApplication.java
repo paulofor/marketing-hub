@@ -88,6 +88,8 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.agenttask.CreativeFinalVideoEvidence.class,
   LearningCycleVideoEvidence.class,
   LearningCycleVideoBudget.class,
+  LearningCyclePreparationBudget.class,
+  LearningCycleFinancialReview.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunService.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunContext.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunNavigation.class,
@@ -291,6 +293,19 @@ public class LearningCycleLocalApplication {
   @Bean
   com.marketinghub.repository.jpa.planning.CommercialPlanRepository plans() {
     return mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class);
+  }
+
+  /** Simula custos externos; recibos e limites do ciclo permanecem persistidos no MySQL real. */
+  @Bean
+  com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository preparationCosts() {
+    return mock(
+        com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository.class);
+  }
+
+  /** Isola pareceres financeiros externos sem executar Plutus ou usar planos produtivos. */
+  @Bean
+  com.marketinghub.financialplan.v1.service.FinancialPlanService financialPlans() {
+    return mock(com.marketinghub.financialplan.v1.service.FinancialPlanService.class);
   }
 
   /** Isola execuções de landing sem acionar geradores durante navegação. */

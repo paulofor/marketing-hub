@@ -42,6 +42,8 @@ jobs:
         run: cd frontend && npm test -- --run src/pages/product/ProductsInPlayPage.test.tsx src/components/MainNavigation.test.tsx
       - name: Testar responsável e retrato do quadro de execução
         run: cd frontend && npm test -- --run src/pages/product/ProductProcessAutomationPanel.test.tsx
+      - name: Testar demonstração financeira e aprovação recuperável
+        run: cd frontend && npm test -- --run src/pages/financial/ExecutionFinancePage.test.tsx src/pages/product/ProductProcessFinanceLink.test.tsx
       - name: Testar visualização da peça antes do aceite
         run: cd frontend && npm test -- --run src/pages/product/ProductProcessActivityExecutionPanel.test.tsx --maxWorkers=1 --minWorkers=1
       - name: Testar preparação e adoção de referências de mercado

@@ -1,3 +1,4 @@
+import ExecutionFinancePage from "./pages/financial/ExecutionFinancePage";
 import ChatgptAdsPage from "./pages/chatgptads/ChatgptAdsPage";
 import ProductModelingPage from "./pages/product/ProductModelingPage";
 import ProductBigIdeaPage from "./pages/product/ProductBigIdeaPage";
@@ -621,6 +622,10 @@ export default function App() {
               <Route
                 path="/videos/providers"
                 element={<VideoProviderManagementPage />}
+              />
+              <Route
+                path="/financial/execution"
+                element={<ExecutionFinancePage />}
               />
               <Route path="/financial/videos" element={<VideoFinancePage />} />
               <Route path="/financial/plans" element={<FinancialPlansPage />} />

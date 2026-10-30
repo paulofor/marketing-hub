@@ -275,3 +275,13 @@ Reuso de conteúdo idêntico limita-se à revisão vigente. Restaurar uma meta o
 de premissas de uma revisão histórica exige outra revisão, com nova ordem e autoria;
 responder com a antiga não registra a decisão atual. Repetir a mesma entrada vigente
 continua idempotente. O histórico, pareceres e custos anteriores não são reclassificados.
+
+## Demonstração financeira na execução — decisão de 30/10/2026
+
+O card de execução deve oferecer **Ver demonstração financeira**, inclusive em pausa ou bloqueio. A URL identifica produto, cadeia e ciclo. A demonstração apresenta custos conhecidos, lacunas, gráficos, limites separados por finalidade/moeda e o parecer real de Plutus do plano associado ao experimento. Ausência, ambiguidade e desatualização não podem ser apresentadas como aprovação.
+
+O usuário pode ajustar e aprovar o teto cumulativo de preparação e revisão em US$, incluindo custos anteriores e uma reserva explícita para valores ainda não informados. O recibo imutável usa o ledger de eventos do ciclo, revisão esperada e chave de idempotência. A aprovação não inicia tarefas, não amplia mídia nem audiovisual, não substitui homologação e não migra autorização para sucessores. Mídia e audiovisual continuam pelos contratos existentes.
+
+O subtotal de preparação agrega estimativas das tarefas vinculadas exatamente aos experimentos do produto, incluindo tentativas com custo informado. Não é fatura nem custo integral: referências sem vínculo e serviços externos não entram silenciosamente. Valores desconhecidos permanecem identificados; não inferir autorizações monetárias de notas livres. O saldo mostrado é teto menos estimativas conhecidas menos reserva, podendo ser negativo. Créditos promocionais não apagam o custo econômico.
+
+O `operatorGuidance.preparationBudget` entrega o recibo como objeto JSON nativo no pending/lease. Ele explicita ciclo, experimento, moeda, inclusão de custos anteriores e ausência de autorização de mídia/audiovisual. As notas históricas permanecem em `commercialNotes`; o campo estruturado governa apenas o teto de preparação da versão correspondente.

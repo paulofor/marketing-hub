@@ -1,0 +1,77 @@
+{
+  "productId": 700,
+  "productName": "Produto local de demonstração",
+  "chainId": 2700,
+  "cycleId": 1900,
+  "experimentId": 11200,
+  "productVersion": "teste-v3",
+  "revision": 1,
+  "observedAt": "2026-10-30T16:00:00Z",
+  "canAuthorize": true,
+  "authorizationBlocker": null,
+  "cycleUrl": "/business-process-chains/learning-cycles?productId=700&chainId=2700&cycleId=1900",
+  "mediaUrl": "/business-process-chains/learning-cycles?productId=700&chainId=2700&cycleId=1900#cycle-decision",
+  "videoUrl": "/financial/videos?productId=700&chainId=2700&cycleId=1900",
+  "planUrl": "/financial/plans?productId=700&commercialPlanId=5500&revisionId=3100",
+  "operatorNotesUrl": "/products/700/edit",
+  "guidance": "Estimativas locais de tarefas vinculadas aos experimentos deste produto. Não são fatura conciliada.",
+  "mediaBudgetBrl": 89.95,
+  "videoBudgetUsd": null,
+  "knownPreparationUsd": 38.89,
+  "unreportedTasks": 2,
+  "costCoverage": "PARTIAL_AGENT_TASK_ESTIMATES",
+  "availableUsd": null,
+  "costs": [
+    { "experimentId": 11000, "knownUsd": 30, "unreportedTasks": 1 },
+    { "experimentId": 11200, "knownUsd": 8.89, "unreportedTasks": 1 }
+  ],
+  "authorization": null,
+  "history": [],
+  "financialPlan": {
+    "id": 3100,
+    "scope": "PRODUCT",
+    "scopeId": 700,
+    "environment": "TEST",
+    "name": "Cenários locais",
+    "revision": 2,
+    "commercialPlanId": 5500,
+    "commercialPlanVersion": 1,
+    "stale": false,
+    "pendingActions": [],
+    "canRequestAnalysis": false,
+    "evaluation": {
+      "status": "PROJECTED",
+      "label": "Projeção local",
+      "blockers": [],
+      "scenarios": [
+        {
+          "code": "CONSERVATIVE",
+          "label": "Conservador",
+          "marginPercent": 15,
+          "maximumAffordableCacBrl": 10
+        },
+        {
+          "code": "BASE",
+          "label": "Base",
+          "marginPercent": 30,
+          "maximumAffordableCacBrl": 20
+        },
+        {
+          "code": "OPTIMISTIC",
+          "label": "Otimista",
+          "marginPercent": 45,
+          "maximumAffordableCacBrl": 30
+        }
+      ]
+    },
+    "analysis": {
+      "executionId": 99999,
+      "status": "COMPLETED",
+      "finishedAt": "2026-10-30T15:00:00Z",
+      "result": {
+        "decision": "ADJUST",
+        "decisionBasis": "Parecer simulado: conferir custos de aquisição antes de avançar."
+      }
+    }
+  }
+}

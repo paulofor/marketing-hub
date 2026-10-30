@@ -1,0 +1,46 @@
+.execution-finance {
+  max-width: 1100px;
+  overflow-wrap: anywhere;
+}
+.finance-metrics,
+.finance-scenarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+}
+.finance-scenarios > div {
+  background: #f4f7ff;
+  padding: 1rem;
+  border-radius: 12px;
+}
+.finance-meter {
+  height: 16px;
+  background: #e6eaf5;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+.finance-meter > span {
+  height: 100%;
+  display: block;
+  background: #405cce;
+  border-radius: 8px;
+}
+.finance-cost-row {
+  display: grid;
+  grid-template-columns: 60px minmax(30px, 1fr) 120px;
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 575px) {
+  .finance-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .finance-cost-row {
+    grid-template-columns: 48px minmax(20px, 1fr) 96px;
+    gap: 8px;
+  }
+  .execution-finance .fs-4 {
+    font-size: 1.15rem !important;
+  }
+}

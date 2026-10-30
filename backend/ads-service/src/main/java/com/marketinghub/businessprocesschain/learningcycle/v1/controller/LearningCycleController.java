@@ -4,6 +4,8 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCy
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.PreparationBudgetRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.videoBudget.*;
@@ -153,6 +155,26 @@ public class LearningCycleController {
       @PathVariable Long cycleId,
       @Valid @RequestBody ReconcileLearningCycleMeasurementRequest request) {
     return service.reconcileMeasurement(productId, cycleId, request);
+  }
+
+  /** Expõe demonstração do ciclo, custos e parecer de Plutus sem executar consumo. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Consultar demonstração financeira da execução")
+  @GetMapping("/products/{productId}/{cycleId}/financial-review")
+  public CycleFinancialReview financialReview(
+      @PathVariable Long productId, @PathVariable Long cycleId, @RequestParam Long chainId) {
+    return service.financialReview(productId, cycleId, chainId);
+  }
+
+  /** Registra confirmação explícita do teto de preparação com recibo e controle de concorrência. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Aprovar teto cumulativo de preparação e revisão")
+  @PostMapping("/products/{productId}/{cycleId}/preparation-budget")
+  public CycleFinancialReview preparationBudget(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody PreparationBudgetRequest request) {
+    return service.authorizePreparationBudget(productId, cycleId, request);
   }
 
   /** Apresenta o teto de produção e revisão das duas peças e seu histórico por ciclo. */

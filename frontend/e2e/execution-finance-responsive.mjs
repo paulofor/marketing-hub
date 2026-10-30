@@ -51,6 +51,14 @@ try {
       sent = [],
       errors = [];
     let data = structuredClone(fixture);
+    if (name !== "desktop") {
+      await context.addInitScript(() => {
+        Object.defineProperty(globalThis.crypto, "randomUUID", {
+          value: undefined,
+          configurable: true,
+        });
+      });
+    }
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());

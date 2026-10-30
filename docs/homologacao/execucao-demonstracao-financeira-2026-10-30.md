@@ -31,8 +31,10 @@ A suíte ampliada de ciclos, execução e compatibilidade de Mira completou 785 
 
 A nova atestação de compatibilidade de Mira preserva os manifestos históricos e não altera a experiência, a campanha ou o parecer comercial: somente `LearningCycleService` recebeu métodos adicionais de consulta e autorização administrativa. As transições preexistentes foram revalidadas pela suíte de ciclos.
 
-Conferência final local: 92 regras ArchUnit aprovadas na execução isolada; 37 testes de interface aprovados (incluindo os caminhos anteriores do card), typecheck e build de produção completos. Pacote de revisão: 768 arquivos e 191 manifestos íntegros. Os novos testes da tela e do link foram incluídos no CI existente. A mudança não depende de novo container nem de migração de schema.
+Conferência final local: 92 regras ArchUnit aprovadas na execução isolada; 38 testes de interface aprovados (incluindo os caminhos anteriores do card), typecheck e build de produção completos. Pacote de revisão: 768 arquivos e 191 manifestos íntegros. Os novos testes da tela e do link foram incluídos no CI existente. A mudança não depende de novo container nem de migração de schema.
 
 O CI detectou dependências obrigatórias ausentes na aplicação de teste MySQL, que declara seus próprios imports. A fixture foi atualizada com os componentes reais de demonstração e recibo, mantendo simulados somente custos e planos externos. A prevenção existente de wiring agora também confere injeções por campo e beans de configurações importadas; seus três testes passaram localmente.
 
 A rodada local de persistência MySQL 5.7 passou com API, continuidade, contexto, rollback, reaplicação e idempotência das migrações. O novo caso REST comprova recibo durável, replay sem duplicação, revisão obsoleta recusada e isolamento entre produtos, sem tarefa ou campanha criada. A topologia exclusiva de teste foi removida com seus volumes. As evidências locais estão em `artifacts/execution-finance/local-mysql-confirmed`.
+
+O formulário reutiliza `createCycleRequestKey`, compatível com o endereço administrativo HTTP. O replay e a confirmação foram revalidados sem `crypto.randomUUID`, inclusive nos dois perfis móveis, preservando a mesma chave após falha de rede.

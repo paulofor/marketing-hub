@@ -7,6 +7,7 @@ import {
   type PreparationBudgetDecision,
 } from "../../api/financial/useExecutionFinance";
 import FinancialPlanPlutusDetails from "./FinancialPlanPlutusDetails";
+import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import "./ExecutionFinancePage.css";
 
 const money = (n: number | null | undefined, currency = "USD") =>
@@ -397,7 +398,7 @@ function BudgetForm({
         };
         const payload = JSON.stringify(fields);
         if (attempt.current?.payload !== payload)
-          attempt.current = { payload, key: crypto.randomUUID() };
+          attempt.current = { payload, key: createCycleRequestKey() };
         try {
           await onSubmit({ ...fields, requestKey: attempt.current.key });
         } catch {

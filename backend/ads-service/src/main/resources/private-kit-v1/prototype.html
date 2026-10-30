@@ -6,12 +6,17 @@
 <h1 id="title">Conheça seu kit de divulgação</h1><p id="introduction">Use o botão de acesso no painel para abrir sua demonstração.</p>
 <p id="identity"></p><p id="status" role="status" aria-live="polite"></p><p id="error" role="alert" hidden></p><button id="reload" class="secondary" hidden>Reabrir meu kit</button>
 <section id="blocked" hidden aria-labelledby="blocked-heading"><h2 id="blocked-heading">Como continuar com segurança</h2><p id="next-step"></p><a id="review-cycle" target="_blank" rel="noopener noreferrer">Abrir a revisão deste ciclo</a></section>
-<section id="briefing" hidden><h2>Prepare o primeiro resultado</h2><p>Experimente com os dados de exemplo abaixo. Você poderá conferir uma arte e sua legenda, copiar os textos e baixar o kit.</p>
+<section id="briefing" hidden><h2>Uma divulgação com a cara do seu trabalho</h2><p>Escolha sua especialidade, confira o acabamento e prepare o kit com os dados de exemplo.</p>
 <form id="form">
 <label id="specialty-field" hidden>Sua especialidade *<select name="specialtyCode" id="specialty"></select></label>
+<div class="briefing-grid">
 <figure id="specialty-sample" hidden aria-label="Amostra de divulgação da especialidade">
-<div class="sample-art"><span>Studio Exemplo</span><h3 id="sample-headline"></h3><p>Um cuidado com o seu jeito</p><small>Exemplo ilustrativo</small></div>
+<p class="preview-eyebrow">Seu conteúdo começa a ganhar forma</p>
+<img id="sample-image" hidden width="1080" height="1080" alt="">
+<button type="button" id="enlarge-sample" class="secondary" hidden>Ampliar amostra</button>
+<p id="sample-status" role="status"></p>
 <figcaption id="sample-caption"></figcaption></figure>
+<div class="briefing-fields">
 <label>Nome profissional *<input name="professionalName" maxlength="90" required value="Studio Exemplo"></label>
 <label>E-mail de exemplo *<input name="email" type="email" maxlength="120" required value="teste+kit@sandbox.local"></label>
 <label>Cidade/região de exemplo *<input name="cityRegion" maxlength="90" required value="Cidade Exemplo"></label>
@@ -22,6 +27,7 @@
 <details><summary>Personalização opcional</summary><label>Cores preferidas<input name="preferredColors" maxlength="180" value="rosa e dourado"></label><label>Observações<textarea name="notes" maxlength="500"></textarea></label></details>
 <label class="check"><input type="checkbox" name="consentAccepted" required> Vou usar apenas dados de exemplo. Nenhuma mensagem será enviada.</label>
 <button id="prepare" type="submit">Preparar meu kit de exemplo</button>
+</div></div>
 </form></section>
 <section id="result" hidden><h2>Primeira aplicação</h2><p>Copie a legenda de hoje ou guarde o pacote completo. Confira abaixo as artes e os textos desta aplicação.</p>
 <div class="primary-actions"><button id="copy-caption">Copiar legenda</button><button id="download" class="secondary">Baixar o pacote completo</button></div><p id="download-status" role="status"></p>
@@ -33,4 +39,4 @@
 <button id="exit" class="secondary">Sair e retomar depois</button>
 </section><section id="resume" hidden><h2>Seu pacote ficou guardado</h2><p>Você pode retomar esta mesma entrada e seus arquivos sem gerar novamente.</p><button id="return">Retomar o pacote</button></section>
 <details class="video-demo" id="video-demo" hidden><summary>Ver a demonstração do kit</summary><p>O vídeo é opcional. Você pode preparar, copiar e baixar seu kit sem assistir.</p><video id="kit-video" aria-label="Demonstração do kit de divulgação" controls playsinline preload="none"></video><p id="video-error" role="status" hidden>O vídeo não abriu. Você pode continuar e usar seu kit normalmente.</p><details><summary>Ler a explicação do vídeo</summary><p id="video-captions"></p></details></details>
-<dialog id="art-dialog" aria-labelledby="art-dialog-title"><h2 id="art-dialog-title">Confira sua arte</h2><button type="button" id="close-art">Fechar ampliação</button><p>Amplie com o gesto de pinça ou o zoom do navegador para conferir os detalhes.</p><img id="enlarged-art" alt="Arte ampliada para conferência"></dialog></main></body></html>
+<dialog id="art-dialog" aria-labelledby="art-dialog-title"><div class="art-dialog-heading"><h2 id="art-dialog-title">Confira sua arte</h2><button type="button" id="close-art">Fechar ampliação</button></div><p>Use o zoom para conferir os detalhes.</p><img id="enlarged-art" alt="Arte ampliada para conferência"></dialog></main></body></html>

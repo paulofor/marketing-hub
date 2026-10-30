@@ -4719,6 +4719,19 @@ divergente` antes de alcançar os testes funcionais. Os manifestos v3 permanecem
   qualquer nota aplicável abaixo de 3 ou déficit crítico. Testes cobrem com e sem pessoas, seis
   schemas estritos, quatro fluxos BPM, observação, simulação, frontend, harness e MySQL 5.7.
 
+### Recorrência nos cenários de kit — 30/10/2026
+
+- A tarefa Capella 843 reprovou as artes genéricas; aprovações históricas 686/746 deixaram
+  ressalvas sobre acabamento. O cenário independente recebia somente a captura final.
+  `BRIEFING` existia no harness técnico, mas não chegava à revisão do cenário. O schema
+  sintético v5 não expressava notas estruturadas, apesar da instrução estética do núcleo.
+- A revisão v7 de kit passa a exigir entrada, post, story e resultado da mesma sessão,
+  pixels anexados e persistidos, uma análise por imagem e gate mínimo de acabamento forte.
+  Placeholder e déficit crítico impedem `APPROVED`; uma tela funcional não os compensa.
+- A prévia v2 reutiliza o compositor e referências licenciadas, com hash e proveniência;
+  perfis anteriores e provas históricas permanecem identificados e não são promovidos.
+- Matriz, hipótese de melhoria e limites: `docs/homologacao/capella-revisao-visual-premium-v1.md`.
+
 ## LOOP-PREFLIGHT-REEXECUCAO-GATES-SEM-FLUSH — tentativa bloqueada colide com seus próprios gates
 
 - **Data:** 2026-08-30.

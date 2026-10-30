@@ -1102,10 +1102,24 @@
         },
         {
           "artifactType": "PROMPT",
-          "name": "Revisão de kit sem dados internos na experiência",
+          "name": "Revisão histórica de kit sem dados internos na experiência",
           "version": "bpm-v6",
           "path": "customer-agent-worker/src/main/resources/prompts/bpm/v6/pde-kit-agent-validation-scenario-review.md",
-          "description": "Revisa a experiência do kit com conteúdo compreensível, incluindo detalhes recolhidos, separando auditoria e controles técnicos da interface. Usa o schema de cenário v5 sem alterar a revisão histórica de outros PDEs."
+          "description": "Versão histórica preservada para auditoria; novas revisões de kit usam a v7."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Revisão visual e uso da demonstração de kits",
+          "version": "bpm-v7",
+          "path": "customer-agent-worker/src/main/resources/prompts/bpm/v7/pde-kit-agent-validation-scenario-review.md",
+          "description": "Revisa entrada, post, story e resultado com pixels persistidos e gate de acabamento premium por captura."
+        },
+        {
+          "artifactType": "OUTPUT_SCHEMA",
+          "name": "Qualidade visual da demonstração de kits",
+          "version": "bpm-v7",
+          "path": "customer-agent-worker/src/main/resources/prompts/bpm/v7/pde-kit-agent-validation-scenario-review-schema.json",
+          "description": "Notas e evidências por screenshot; não permite aprovação com placeholder ou déficit crítico."
         }
       ]
     },

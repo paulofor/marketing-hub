@@ -125,7 +125,7 @@ class PrivateKitScenarioIntegrationTest {
                 byte[] pixels = Files.readAllBytes(Path.of(a.localPath()));
                 receipts.add(
                     new BpmVisualEvidenceBackendClient.UploadedVisualEvidence(
-                        evidenceId,
+                        evidenceId + receipts.size(),
                         a.captureSessionId(),
                         a.evidenceKey(),
                         a.evidenceType(),

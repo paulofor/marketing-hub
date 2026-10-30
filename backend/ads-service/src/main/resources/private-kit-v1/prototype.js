@@ -5,7 +5,7 @@
   const base = location.pathname.replace(/\/prototype$/, '');
   class KitUiError extends Error {}
   let secret = sessionStorage.getItem('private-kit-session-v1') || '';
-  let current, timer, displaying = '', imageUrls = [];
+  let current, timer, displaying = '', imageUrls = [], sampleRequest = 0;
   const error = message => { $('error').textContent = message; $('error').hidden = !message; $('reload').hidden = !message || current?.status !== 'READY'; };
   async function api(path, method = 'GET', body, binary = false) {
     const response = await fetch(base + path, { method, headers: { 'X-Kit-Session': secret, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', credentials: 'omit' });
@@ -15,6 +15,36 @@
     return binary ? response.blob() : response.status === 204 ? null : response.json();
   }
   async function event(code) { current = await api('/events', 'POST', { eventId: crypto.randomUUID(), code }); }
+  // Mostra pixels do mesmo compositor/perfil e descarta respostas de uma seleção anterior.
+  async function renderSample(selected) {
+    const request = ++sampleRequest;
+    $('specialty-sample').hidden = !selected;
+    $('sample-image').hidden = true;
+    $('enlarge-sample').hidden = true;
+    $('sample-image').removeAttribute('src');
+    if (!selected) return;
+    $('sample-caption').textContent = selected.serviceExample + '. Prepare o kit com seus dados para conferir a divulgação.';
+    if (!selected.code.endsWith('-v2')) {
+      $('sample-status').textContent = 'Esta versão usa ilustrações de demonstração. Prepare o kit para conferir os arquivos desta versão.';
+      return;
+    }
+    $('sample-status').textContent = 'Carregando a amostra de ' + selected.label.toLowerCase() + '…';
+    const image = new Image();
+    image.src = base + '/samples/' + encodeURIComponent(selected.code) + '.png';
+    try {
+      await image.decode();
+      if (request !== sampleRequest) return;
+      $('sample-image').src = image.src;
+      $('sample-image').alt = 'Exemplo de post para ' + selected.label.toLowerCase() + ', com fotografia de referência e composição do kit';
+      $('sample-image').hidden = false;
+      $('enlarge-sample').hidden = false;
+      $('sample-status').textContent = '';
+      $('sample-caption').textContent = selected.serviceExample + '. Exemplo do acabamento. Seu kit recebe os dados preenchidos neste formulário. A fotografia é uma referência ilustrativa, não um trabalho do profissional.';
+    } catch {
+      if (request !== sampleRequest) return;
+      $('sample-status').textContent = 'A amostra não carregou. Selecione a especialidade novamente para tentar outra vez.';
+    }
+  }
   // Consome apenas o recibo privado da sessão; leitura e reprodução não aprovam peças ou comércio.
   function renderVideo() {
     const binding = current.videoIntegration;
@@ -40,10 +70,15 @@
     $('video-error').hidden = true;
     video.onerror = () => { $('video-error').hidden = false; };
   }
-  // A ampliação é exclusiva da nova versão; não altera arquivos nem dispara composição.
+  // A ampliação permite inspecionar os pixels existentes sem alterar arquivos nem compor novamente.
   for (const id of ['post', 'story']) $('enlarge-' + id).onclick = () => {
     $('enlarged-art').src = $(id).src;
     $('enlarged-art').alt = $(id).alt + ' ampliado';
+    $('art-dialog').showModal();
+  };
+  $('enlarge-sample').onclick = () => {
+    $('enlarged-art').src = $('sample-image').src;
+    $('enlarged-art').alt = $('sample-image').alt;
     $('art-dialog').showModal();
   };
   $('close-art').onclick = () => $('art-dialog').close();
@@ -53,8 +88,7 @@
     for (const url of imageUrls) URL.revokeObjectURL(url);
     imageUrls = [];
     const first = current.firstApplication;
-    const references = current.profileCode === 'beauty-v2' || current.profileCode?.endsWith('-v2');
-    for (const id of ['post', 'story']) $('enlarge-' + id).hidden = !references;
+    for (const id of ['post', 'story']) $('enlarge-' + id).hidden = false;
     $('caption').value = first.caption;
     $('message').value = first.message;
     const fileLabels = { posts: 'Post', stories: 'Story', legendas: 'Legenda', mensagens: 'Mensagem' };
@@ -103,13 +137,12 @@
         const selected = options.find(option => option.code === $('specialty').value);
         if (selected) {
           document.querySelector('[name=services]').value = selected.serviceExample;
-          $('specialty-sample').hidden = false;
-          $('sample-headline').textContent = selected.sampleHeadline;
-          $('sample-caption').textContent = selected.sampleCaption;
+          void renderSample(selected);
         }
       };
       $('specialty').onchange();
     }
+    if (!multiple && options.length === 1 && current.status === 'INPUT') void renderSample(options[0]);
     $('result').hidden = true;
     $('resume').hidden = true;
     $('prepare').disabled = current.status !== 'INPUT';

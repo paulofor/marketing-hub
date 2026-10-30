@@ -1,5 +1,31 @@
 # Biblioteca de Personas e Agente Cliente v1
 
+## Acabamento visual da demonstração de kits — decisão de 30/10/2026
+
+A revisão independente deve receber pixels da entrada com a amostra selecionada, da primeira
+aplicação e das artes de post e story em resolução legível. Captura apenas do resultado final
+não comprova a qualidade da entrada. O harness captura esses momentos também em `SCENARIO`,
+vincula cada imagem à mesma tarefa, sessão, produto, versão e dispositivo e persiste antes do modelo.
+
+Psique distingue funcionamento de acabamento: copiar, baixar e ausência de overflow não provam
+uma apresentação premium. Para cada captura, o parecer estruturado deve avaliar acabamento,
+pertinência ao serviço, legibilidade e valor percebido, com evidência concreta dos pixels.
+Nas telas de entrada e nas peças, aprovação exige notas de pelo menos quatro (forte) em cinco,
+sem placeholder como peça final nem déficit crítico. A tela de bloqueio `SAFETY` é avaliada como
+proteção, sem exigir fotografia ou peça que não deveria existir. Ausência de pixels bloqueia;
+qualidade insuficiente retorna ajuste ao construtor, nunca aprovação com ressalva estética.
+
+A prévia deve usar o mesmo compositor e perfil versionado da entrega, com origem verificável.
+Referência licenciada é identificada como referência, nunca como trabalho do profissional.
+Perfis históricos não são convertidos silenciosamente em outra versão. Pareceres antigos
+permanecem auditáveis; não recebem aprovação nova por essa mudança de contrato.
+
+Evidência motivadora: Capella, tarefa 843, reprovou a versão `capella-beleza-v1`, mas recebeu
+somente `ADHERENT-DESKTOP_1440`. A entrada da versão seguinte continuava exibindo um cartão
+genérico separado das artes. A v7 do parecer de kit exige a análise estruturada e a cobertura
+dos momentos; os demais PDEs preservam seu contrato. Testes sintéticos comprovam o mecanismo,
+não preferência humana, conversão ou aumento de vendas.
+
 ## Interface sem diagnóstico interno — decisão de 25/10/2026
 
 Psique deve distinguir os dados da auditoria da experiência que a cliente utiliza, inclusive em
@@ -14,11 +40,12 @@ segregados no backend e apresenta mensagens próprias para a cliente. Causas bru
 auditáveis. A validação local abrange outra identidade e caminhos anteriormente válidos;
 aprovação técnica não comprova demanda, vendas ou margem.
 
-A instrução específica é `bpm/v6/pde-kit-agent-validation-scenario-review.md`, selecionada pelo
-runtime declarado, com o schema de saída v5 inalterado. Prompt e runner v5 preservam seus bytes
+A instrução desta decisão foi `bpm/v6/pde-kit-agent-validation-scenario-review.md`, selecionada pelo
+runtime declarado, com o schema de saída v5. A decisão de 30/10 evolui o kit para prompt/schema v7.
+Prompt e runner v5 preservam seus bytes
 para os demais PDEs e suas atestações históricas. O harness técnico recusa a contaminação e o
 consumidor de cenários exige a prova nova antes de invocar o modelo, sem reinterpretar recibos
-históricos. O catálogo atual `agent-harness-v3.json` torna a instrução v6 visível na gestão dos
+históricos. O catálogo atual `agent-harness-v3.json` torna a instrução vigente visível na gestão dos
 agentes; o catálogo v2 permanece preservado para as atestações que o referenciam.
 
 ## Objetivo

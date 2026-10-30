@@ -87,6 +87,18 @@ final class BpmScenarioModelFixture {
         result=json.loads((root/'result.json').read_text())
         result['visualAudit']['captureSessionId']=context['visualCapture']['captureSessionId']
         schema=json.loads(pathlib.Path(sys.argv[sys.argv.index('--output-schema')+1]).read_text())
+        images=context['visualEvidence']
+        result['visualAudit']['evidenceIds']=[image['id'] for image in images]
+        if 'visualQuality' in schema['properties']:
+            assessments=[]
+            for image in images:
+                key=image['evidenceKey']
+                role='SAFETY' if key.startswith('SAFETY-') else 'BRIEFING' if key.endswith('-BRIEFING') else 'POST' if key.endswith('-ART') else 'STORY' if key.endswith('-STORY') else 'RESULT'
+                row=dict(evidenceId=image['id'],surfaceRole=role,placeholderOnly=False,criticalDeficitPresent=False,criticalDeficit='Fixture simulada sem parecer comercial real.')
+                for field in ('professionalFinish','specialtyRelevance','legibility','perceivedValue'):
+                    row[field]=dict(score=4,evidence='Pixels da fixture local; interpretação simulada para o contrato.')
+                assessments.append(row)
+            result['visualQuality']=dict(contractVersion='PDE_KIT_PREMIUM_VISUAL_V1',assessments=assessments)
         assert set(result)==set(schema['properties'])
         for field in ('sideEffects','experienceAssessment','checks','visualAudit'):
             assert set(result[field])==set(schema['properties'][field]['required'])

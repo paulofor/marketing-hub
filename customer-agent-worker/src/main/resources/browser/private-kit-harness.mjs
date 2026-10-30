@@ -44,12 +44,16 @@ async function checkFirstActions(page) {
   })));
 }
 // Preserva momentos reais do percurso; recortes editoriais posteriores mantêm os bytes originais.
-async function captureMoment(page, deviceProfile, key) {
+async function captureMoment(page, deviceProfile, key, viewportOnly=false) {
   if(artifacts.some(a=>a.evidenceKey===key))throw new Error('Momento já capturado nesta sessão: '+key);
   const path=resolve(directory,key+'.png');
   const height=await page.evaluate(()=>document.documentElement.scrollHeight);
-  await page.screenshot({path,fullPage:true});
-  artifacts.push({captureSessionId:input.captureSessionId,evidenceKey:key,evidenceType:'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:null,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,pageHeightPx:height,scrollY:0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:path});
+  if(viewportOnly && !await page.locator('#enlarged-art').evaluate(image=>{
+    const box=image.getBoundingClientRect();return image.naturalWidth>0&&box.left>=0&&box.top>=0&&box.right<=innerWidth&&box.bottom<=innerHeight;
+  }))throw new Error('A arte ampliada não cabe integralmente na captura.');
+  // Repete o padrão de Psique: página em pixels CSS; arte ampliada na escala nativa do dispositivo.
+  await page.screenshot({path,fullPage:!viewportOnly,scale:viewportOnly?'device':'css',animations:'disabled'});
+  artifacts.push({captureSessionId:input.captureSessionId,evidenceKey:key,evidenceType:viewportOnly?'FOLD':'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:viewportOnly?1:null,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,pageHeightPx:height,scrollY:viewportOnly?await page.evaluate(()=>scrollY):0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:path});
   return key;
 }
 try {
@@ -77,7 +81,12 @@ try {
         await page.locator('[name=cityRegion]').fill('Cidade Exemplo');
       }
       if(scenarioCode==='RECOVERY') { let intercepted=false; await page.route('**/assets/post-01.png',route=>{ if(!intercepted){intercepted=true;return route.fulfill({status:503,contentType:'application/json',body:'{"detail":"Falha sintética de transporte"}'});}return route.continue(); }); }
-      if(input.mode==='TECHNICAL'&&scenarioCode==='ADHERENT')momentKeys.push(await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile+'-BRIEFING'));
+      if(input.profileCode?.endsWith('-v2')) {
+        await page.locator('#sample-image').waitFor({state:'visible'});
+        await page.locator('#sample-image').evaluate(image=>image.decode());
+      }
+      if((input.mode==='TECHNICAL'&&scenarioCode==='ADHERENT')||(input.mode==='SCENARIO'&&scenarioCode!=='SAFETY'))
+        momentKeys.push(await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile+'-BRIEFING'));
       await page.locator('#prepare').click();let recovered=false,resumed=false,safetyBlocked=false,safetyOutcome=null,downloadedSha256=null;
       if(scenarioCode==='SAFETY'){
         await page.locator('#status').filter({hasText:'bloqueada antes da composição'}).waitFor();
@@ -97,12 +106,16 @@ try {
           const proof=await api('/session',{session:created.sessionToken});
           const origin=proof.manifest?.visualReferences;
           if(origin?.contractVersion!=='KIT_LICENSED_REFERENCE_V1'||origin.profileCode!==proof.input.specialtyCode&&origin.profileCode!==proof.profileCode||origin.commercialApproval!==false||origin.assets?.length!==5)throw new Error('Origem visual não comprovada na demonstração.');
-          await page.locator('#enlarge-post').click();
-          await page.locator('#art-dialog').waitFor({state:'visible'});
-          await page.locator('#enlarged-art').evaluate(e=>e.decode());
-          momentKeys.push(await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile+'-ART'));
-          await page.locator('#close-art').click();
-          if(await page.locator('#art-dialog').isVisible())throw new Error('Ampliação não fechou.');
+        }
+        if(input.mode==='SCENARIO'||input.profileCode?.endsWith('-v2')) {
+          for(const kind of (input.mode==='SCENARIO'?['post','story']:['post'])) {
+            await page.locator('#enlarge-'+kind).click();
+            await page.locator('#art-dialog').waitFor({state:'visible'});
+            await page.locator('#enlarged-art').evaluate(e=>e.decode());
+            momentKeys.push(await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile+(kind==='post'?'-ART':'-STORY'),input.mode==='SCENARIO'));
+            await page.locator('#close-art').click();
+            if(await page.locator('#art-dialog').isVisible())throw new Error('Ampliação não fechou.');
+          }
         }
         if(!(await page.locator('#caption').inputValue()).includes('Cidade Exemplo'))throw new Error('A primeira aplicação perdeu a personalização.');
         // Clipboard é observado no navegador; o stub local só resolve a permissão de mobile Chromium.
@@ -144,4 +157,4 @@ try {
 }finally{await browser.close();}
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||Object.keys(profiles).every(d=>scenarios.some(s=>s.deviceProfile===d)),happyResultWithinTenMinutes:scenarios.every(s=>s.resultReadySeconds<=600),recoveryPreserved:scenarios.filter(s=>s.scenarioCode==='RECOVERY').every(s=>s.recovered),safetyBlocked:scenarios.filter(s=>s.scenarioCode==='SAFETY').every(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:true,paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
 if(input.videoIntegration)Object.assign(checks,{videoIdentity:verifiedVideos.length===2,videoPlayback:scenarios.every(s=>s.videoPlayback?.hero&&s.videoPlayback?.campaign),videoOptional:scenarios.every(s=>s.videoPlayback?.optional),videoFailureRecovery:scenarios.every(s=>s.videoPlayback?.failureRecovery)});
-await writeFile(outputFile,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',fixtureContract:'PDE_PRIVATE_KIT_FIXTURES_V1',packageContractVersion,...(input.mode==='TECHNICAL'?{captureMomentsContract:'PDE_KIT_CAPTURE_MOMENTS_V1'}:{}),...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,verifiedVideos}:{}),mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,cycleId:input.cycleId,productSlug:input.productSlug,profileCode:input.profileCode,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',providerCalls:0,startedAt:startedAt.toISOString(),finishedAt:new Date().toISOString(),durationSeconds:(Date.now()-startedAt)/1000,devices:Object.keys(profiles).filter(d=>plans.some(p=>p[1]===d)).map(deviceProfile=>({deviceProfile,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)})),scenarios,checks,artifacts,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)},null,2));
+await writeFile(outputFile,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',fixtureContract:'PDE_PRIVATE_KIT_FIXTURES_V1',packageContractVersion,...(input.mode==='TECHNICAL'?{captureMomentsContract:'PDE_KIT_CAPTURE_MOMENTS_V1'}:{}),...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,verifiedVideos}:{}),...(input.mode==='SCENARIO'?{visualReviewContract:'PDE_KIT_PREMIUM_VISUAL_V1'}:{}),mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,cycleId:input.cycleId,productSlug:input.productSlug,profileCode:input.profileCode,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',providerCalls:0,startedAt:startedAt.toISOString(),finishedAt:new Date().toISOString(),durationSeconds:(Date.now()-startedAt)/1000,devices:Object.keys(profiles).filter(d=>plans.some(p=>p[1]===d)).map(deviceProfile=>({deviceProfile,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)})),scenarios,checks,artifacts,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)},null,2));

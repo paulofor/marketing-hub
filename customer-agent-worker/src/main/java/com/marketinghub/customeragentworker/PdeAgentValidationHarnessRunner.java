@@ -494,10 +494,15 @@ public class PdeAgentValidationHarnessRunner {
     } else if (result.path("scenarios").size() != 1
         || result.path("artifacts").size()
             != (privateKit
-                    && result.path("profileCode").asText().endsWith("-v2")
+                    && "PDE_KIT_PREMIUM_VISUAL_V1"
+                        .equals(result.path("visualReviewContract").asText())
                     && !"SAFETY".equals(scenarioCode)
-                ? 2
-                : 1)
+                ? 4
+                : privateKit
+                        && result.path("profileCode").asText().endsWith("-v2")
+                        && !"SAFETY".equals(scenarioCode)
+                    ? 2
+                    : 1)
         || !scenarioCode.equals(result.path("scenarios").get(0).path("scenarioCode").asText())) {
       throw new HarnessException("A execução de Psique misturou cenários sintéticos.");
     } else if (approved
@@ -508,8 +513,15 @@ public class PdeAgentValidationHarnessRunner {
     List<BpmVisualEvidenceRunner.VisualArtifact> artifacts = new ArrayList<>();
     for (JsonNode artifact : result.path("artifacts")) {
       Path file = Path.of(artifact.path("localPath").asText()).toAbsolutePath().normalize();
-      if (!"FULL_PAGE".equals(artifact.path("evidenceType").asText())
-          || !artifact.path("foldNumber").isNull()
+      boolean fullPage =
+          "FULL_PAGE".equals(artifact.path("evidenceType").asText())
+              && artifact.path("foldNumber").isNull();
+      boolean artworkViewport =
+          privateKit
+              && "SCENARIO".equals(mode)
+              && KitPremiumVisualReview.VERSION.equals(result.path("visualReviewContract").asText())
+              && KitPremiumVisualReview.isArtworkViewport(artifact);
+      if ((!fullPage && !artworkViewport)
           || !captureSessionId.equals(artifact.path("captureSessionId").asText())
           || !file.startsWith(evidenceDirectory.toAbsolutePath().normalize())
           || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)

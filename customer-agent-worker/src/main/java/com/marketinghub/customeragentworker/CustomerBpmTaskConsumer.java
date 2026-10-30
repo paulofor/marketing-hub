@@ -234,6 +234,8 @@ public class CustomerBpmTaskConsumer {
     if (isAgentValidationTask(task)) {
       validateAgentScenario(result, task);
       validateAgentVisualAudit(result, execution.visualEvidence());
+      KitPremiumVisualReview.validateResult(
+          json.valueToTree(task.get("agentScenarioExecution")), result, execution.visualEvidence());
       return;
     }
     validate(result, processCode(task));
@@ -493,6 +495,8 @@ public class CustomerBpmTaskConsumer {
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
           visualEvidenceBackendClient.uploadArtifacts(
               taskId(task), execution.visualEvidence().capture().artifacts());
+      KitPremiumVisualReview.validateCapture(
+          json.valueToTree(task.get("taskTarget")), execution.result(), uploaded);
       JsonNode sanitized = sanitizeAgentScenario(execution.result(), uploaded);
       task.put("agentScenarioExecution", json.convertValue(sanitized, Object.class));
       return new PreparedVisualEvidence(execution.visualEvidence(), uploaded, sanitized);
@@ -1219,19 +1223,20 @@ public class CustomerBpmTaskConsumer {
     };
   }
 
-  /** Isola a revisão de kit na v6, preservando o prompt v5 das demais experiências homologadas. */
+  /** Isola a revisão de kit na v7, preservando o prompt v5 das demais experiências homologadas. */
   private String promptResourceFor(Map<String, Object> task) {
     if (!isAgentValidationTask(task)) return promptResourceFor(processCode(task));
     return KitCustomerSurfaceProof.applies(json.valueToTree(task.get("taskTarget")))
-        ? "prompts/bpm/v6/pde-kit-agent-validation-scenario-review.md"
+        ? "prompts/bpm/v7/pde-kit-agent-validation-scenario-review.md"
         : "prompts/bpm/v5/pde-agent-validation-scenario-review.md";
   }
 
   /** Seleciona o schema sintético sem alterar o contrato histórico de leitura privada. */
   private String schemaResourceFor(Map<String, Object> task) {
-    return isAgentValidationTask(task)
-        ? "prompts/bpm/v5/pde-agent-validation-scenario-review-schema.json"
-        : schemaResourceFor(processCode(task));
+    if (!isAgentValidationTask(task)) return schemaResourceFor(processCode(task));
+    return KitCustomerSurfaceProof.applies(json.valueToTree(task.get("taskTarget")))
+        ? "prompts/bpm/v7/pde-kit-agent-validation-scenario-review-schema.json"
+        : "prompts/bpm/v5/pde-agent-validation-scenario-review-schema.json";
   }
 
   /** Lê o processo congelado no contrato da tarefa reservada. */

@@ -61,7 +61,7 @@ for attempt in {1..60}; do
 done
 # O servidor abre a porta antes dos ApplicationRunners; aguardar a prova física do armazenamento.
 for attempt in {1..60}; do
-  if rg -q 'PRIVATE_KIT_STORAGE_OK' "$round_dir/backend.log"; then break; fi
+  if grep -Fq 'PRIVATE_KIT_STORAGE_OK' "$round_dir/backend.log"; then break; fi
   if ! kill -0 "$backend_pid" 2>/dev/null || (( attempt == 60 )); then cat "$round_dir/backend.log"; exit 1; fi
   sleep 1
 done
@@ -92,7 +92,7 @@ worker_cp="lead-portal-payments-service/target/test-classes:lead-portal-payments
 java -Xmx256m -javaagent:"$worker_mock_agent" -Djava.awt.headless=true -cp "$worker_cp" com.marketinghub.payments.service.kit.privateprototype.v1.PrivateKitLocalApplication "$round_dir/compositions" >"$round_dir/worker.log" 2>&1 &
 worker_pid=$!
 for attempt in {1..30}; do
-  if rg -q 'Started PrivateKitLocalApplication' "$round_dir/worker.log"; then break; fi
+  if grep -Fq 'Started PrivateKitLocalApplication' "$round_dir/worker.log"; then break; fi
   if ! kill -0 "$worker_pid" 2>/dev/null || (( attempt == 30 )); then cat "$round_dir/worker.log"; exit 1; fi
   sleep 1
 done

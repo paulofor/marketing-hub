@@ -97,3 +97,7 @@ novo encerramento por falta de memória foi registrado nessa rodada. Todas as
 instâncias e volumes locais foram removidos pelo encerramento do Compose.
 92 testes de arquitetura também passaram. O job físico dedicado em modo somente
 armazenamento foi validado separadamente antes de acrescentá-lo ao workflow.
+
+O primeiro job CI de armazenamento comprovou os bytes no MySQL, mas o encerramento
+falhou porque a imagem do runner não tinha `rg`. A detecção dos marcadores locais
+passou a usar `grep -Fq`, disponível no ambiente padrão; não houve retry sem mudança.

@@ -6,6 +6,60 @@ info:
 servers:
   - url: http://191.252.181.168
 paths:
+  /api/pde/kit/private/v1/stage-executions/pending:
+    get:
+      summary: Entrega somente reservas compatíveis com os perfis instalados no compositor
+      description: >-
+        O filtro de capacidade é aplicado no banco antes do limite da fila. Consumidores
+        legados sem declaração recebem lista vazia; autenticação continua obrigatória.
+        A declaração não autoriza inferência, compra, publicação ou mídia.
+      parameters:
+        - in: header
+          name: X-Payments-Auth
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Kit-Supported-Profiles
+          description: Códigos individuais instalados, separados por vírgula; ex. nails-v1,hair-v2.
+          schema: { type: string, maxLength: 512 }
+      responses:
+        '200': { description: Reservas compatíveis ou lista vazia para executor legado }
+        '401': { description: Credencial inválida }
+        '409': { description: Declaração de capacidade inválida }
+  /api/pde/kit/private/v1/stage-executions/{id}/claim:
+    post:
+      summary: Reserva atomicamente somente um perfil suportado pelo consumidor
+      description: >-
+        Repete a conferência de capacidade sob lock, inclusive para uma fila preservada
+        antes de atualizar o backend. Recusa não altera status, claim ou início da reserva.
+        O replay do mesmo claim compatível permanece idempotente. Callbacks preservados
+        continuam usando os contratos anteriores, sem nova composição.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Payments-Auth
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Kit-Supported-Profiles
+          required: true
+          schema: { type: string, maxLength: 512 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claimKey]
+              properties:
+                claimKey: { type: string, format: uuid }
+      responses:
+        '200': { description: Reserva compatível confirmada ou replay idempotente }
+        '401': { description: Credencial inválida }
+        '409': { description: Perfil não suportado, ciclo encerrado ou reserva indisponível }
   /api/pde/kit/private/v1/samples/{profile}.png:
     get:
       summary: Amostra ilustrativa versionada do mesmo compositor do kit, sem dados de sessão

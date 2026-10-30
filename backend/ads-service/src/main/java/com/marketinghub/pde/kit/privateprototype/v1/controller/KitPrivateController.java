@@ -1,5 +1,6 @@
 package com.marketinghub.pde.kit.privateprototype.v1.controller;
 
+import com.marketinghub.pde.kit.privateprototype.v1.service.KitCompositorCapabilities;
 import com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateService;
 import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract.*;
 import jakarta.validation.Valid;
@@ -199,22 +200,26 @@ public class KitPrivateController {
     return service.report(cycleId);
   }
 
-  /** Oferece ao compositor somente reservas válidas criadas pelo backend. */
+  /** Oferece somente reservas dos perfis instalados; consumidores antigos não recebem trabalho. */
   @GetMapping("/stage-executions/pending")
   public List<Pending> pending(
-      @RequestHeader(value = "X-Payments-Auth", required = false) String token) {
+      @RequestHeader(value = "X-Payments-Auth", required = false) String token,
+      @RequestHeader(value = KitCompositorCapabilities.HEADER, required = false) String profiles) {
     authorize(token, compositorToken);
-    return service.pending();
+    return service.pending(KitCompositorCapabilities.parse(profiles));
   }
 
-  /** Reserva uma tentativa de composição sem criar nova etapa no executor. */
+  /**
+   * Confere a capacidade no claim atômico, inclusive quando o consumidor guardou uma fila antiga.
+   */
   @PostMapping("/stage-executions/{id}/claim")
   public Pending claim(
       @RequestHeader(value = "X-Payments-Auth", required = false) String token,
+      @RequestHeader(value = KitCompositorCapabilities.HEADER, required = false) String profiles,
       @PathVariable String id,
       @Valid @RequestBody Claim input) {
     authorize(token, compositorToken);
-    return service.claim(id, input);
+    return service.claim(id, input, KitCompositorCapabilities.parse(profiles));
   }
 
   /** Aceita o callback apenas após validar quantidade, dimensões, hash e vínculo do arquivo. */

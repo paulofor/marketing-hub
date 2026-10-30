@@ -3,6 +3,7 @@ package com.marketinghub.payments.service.kit.privateprototype.v1;
 import com.fasterxml.jackson.databind.*;
 import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.service.AgendaCheiaKitProductionService;
+import com.marketinghub.payments.service.kit.CapellaKitCatalog;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.util.*;
@@ -29,7 +30,7 @@ public class PrivateKitCompositionWorker {
   private final boolean configured;
 
   /**
-   * Reutiliza autenticação, backend e volume existentes; não conecta o worker ao banco principal.
+   * Declara o catálogo instalado e reutiliza autenticação, backend e volume, sem acesso ao banco.
    */
   public PrivateKitCompositionWorker(
       AgendaCheiaKitProductionService composer,
@@ -52,6 +53,9 @@ public class PrivateKitCompositionWorker {
         RestClient.builder()
             .baseUrl(backend.replaceAll("/+$", ""))
             .defaultHeader("X-Payments-Auth", token)
+            .defaultHeader(
+                "X-Kit-Supported-Profiles",
+                String.join(",", new TreeSet<>(CapellaKitCatalog.supportedProfiles())))
             .requestFactory(factory)
             .build();
   }

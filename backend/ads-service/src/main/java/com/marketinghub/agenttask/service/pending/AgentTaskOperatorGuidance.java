@@ -18,6 +18,9 @@ public class AgentTaskOperatorGuidance {
   private final ProductRepository products;
   private final Clock clock;
 
+  @Autowired(required = false)
+  private AgentTaskPreparationBudgetGuidance preparationGuidance;
+
   /** Usa o horário UTC da consulta sem exigir relógio global na inicialização do backend. */
   @Autowired
   public AgentTaskOperatorGuidance(ProductRepository products) {
@@ -31,7 +34,8 @@ public class AgentTaskOperatorGuidance {
   }
 
   /**
-   * Reconsulta as notas atuais sem interpretar saldo, conceder gasto ou inferir produto pelo nome.
+   * Reconsulta notas e recibo do ciclo sem inferir saldo, herdar teto ou procurar produto pelo
+   * nome.
    */
   @Transactional(readOnly = true)
   public OperatorGuidance read(AgentTaskPendingResponse task) {
@@ -42,16 +46,22 @@ public class AgentTaskOperatorGuidance {
     return products
         .findById(target.productId())
         .filter(product -> Objects.equals(target.productId(), product.getId()))
-        .map(product -> product.getCommercialNotes())
-        .filter(notes -> !notes.isBlank())
         .map(
-            notes ->
-                new OperatorGuidance(
-                    "PRODUCT_OPERATOR_GUIDANCE_V1",
-                    target.productId(),
-                    "internal://products/" + target.productId() + "/commercial-notes",
-                    Instant.now(clock),
-                    notes))
+            product -> {
+              String notes = product.getCommercialNotes();
+              var budget =
+                  preparationGuidance == null
+                      ? null
+                      : preparationGuidance.read(product.getId(), task.sourceReference());
+              if ((notes == null || notes.isBlank()) && budget == null) return null;
+              return new OperatorGuidance(
+                  "PRODUCT_OPERATOR_GUIDANCE_V1",
+                  target.productId(),
+                  "internal://products/" + target.productId() + "/commercial-notes",
+                  Instant.now(clock),
+                  notes,
+                  budget);
+            })
         .orElse(null);
   }
 }

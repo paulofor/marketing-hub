@@ -202,6 +202,24 @@ export default function ProductProcessAutomationPanel({
               </span>
             </Link>
           )}
+          {data.financialReviewUrl && !status.isError && (
+            <div
+              className="alert alert-light border mt-3"
+              aria-label="Decisão financeira"
+            >
+              <strong>Orçamento e limites</strong>
+              <p className="mb-2">
+                Confira custos, saldo e o parecer de Plutus antes de ajustar sua
+                autorização.
+              </p>
+              <Link
+                className="btn btn-outline-primary"
+                to={data.financialReviewUrl}
+              >
+                Ver demonstração financeira
+              </Link>
+            </div>
+          )}
           {data.status === "CLOSED" ? (
             <>
               {data.reason && <p className="mt-2 mb-2">{data.reason}</p>}

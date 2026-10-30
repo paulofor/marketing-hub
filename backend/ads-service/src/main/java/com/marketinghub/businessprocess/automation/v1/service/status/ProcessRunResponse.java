@@ -40,4 +40,5 @@ public record ProcessRunResponse(
     List<ProcessRunRelationResponse> parentProcesses,
     List<ProcessRunRelationResponse> subprocesses,
     ProcessRunUserAction userAction,
-    ProcessRunQueueBlocker queueBlocker) {}
+    ProcessRunQueueBlocker queueBlocker,
+    String financialReviewUrl) {}

@@ -457,6 +457,14 @@ export type ProductProcessActivityRequirement = {
   recommendation: string;
 };
 
+export type ProductProcessReviewAsset = {
+  taskId: number;
+  artifactId: number;
+  title: string;
+  contentUrl: string;
+  sha256: string;
+};
+
 export type ProductProcessActivityExecutionControl = {
   executorType: "AGENT" | "BACKEND" | "HUMAN" | "HISTORICAL" | "UNCONFIGURED";
   interactionType:
@@ -486,6 +494,7 @@ export type ProductProcessActivityExecutionControl = {
   decisionMode?: "DETAILED" | "REVIEW_AND_ACCEPT";
   auditEvidenceReference?: string;
   navigationUrl?: string;
+  reviewAssets?: ProductProcessReviewAsset[];
 };
 
 export type ProductProcessActivityHumanDecision = {

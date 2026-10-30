@@ -1227,7 +1227,7 @@ public class BusinessProcessActivityExecutionService {
     return "A atividade está pronta para abrir todas as tarefas responsáveis.";
   }
 
-  /** Monta o comando contextual e preserva a consulta do subprocesso após o objetivo concluído. */
+  /** Monta o comando contextual, as peças revisadas e a consulta do subprocesso concluído. */
   private ProductProcessActivityExecutionControlResponse executionControl(
       BusinessProcessActivityDefinition definition,
       BusinessProcessDefinition process,
@@ -1304,7 +1304,9 @@ public class BusinessProcessActivityExecutionService {
           null,
           requirements,
           humanReadiness.decisionMode(),
-          humanReadiness.auditEvidenceReference());
+          humanReadiness.auditEvidenceReference(),
+          null,
+          humanReadiness.reviewAssets());
     }
     if (hasBackendExecutor) {
       if (backendReadiness == null) {

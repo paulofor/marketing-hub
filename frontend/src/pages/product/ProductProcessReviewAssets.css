@@ -1,0 +1,51 @@
+.product-process-review-assets {
+  margin-bottom: 1.25rem;
+  min-width: 0;
+}
+
+.product-process-review-assets h4 {
+  color: #25364b;
+  font-weight: 700;
+}
+
+.product-process-review-assets__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 420px));
+  gap: 1rem;
+}
+
+.product-process-review-assets__card {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid #dbe3ec;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.product-process-review-assets__card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+  background: #f1f5f9;
+}
+
+.product-process-review-assets__card img[hidden] {
+  display: none;
+}
+
+.product-process-review-assets__card figcaption {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.product-process-review-assets__card .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: normal;
+}

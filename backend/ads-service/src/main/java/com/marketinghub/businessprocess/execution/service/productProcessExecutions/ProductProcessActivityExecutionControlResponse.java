@@ -22,7 +22,48 @@ public record ProductProcessActivityExecutionControlResponse(
     List<ProductProcessActivityRequirementResponse> requirements,
     String decisionMode,
     String auditEvidenceReference,
-    String navigationUrl) {
+    String navigationUrl,
+    List<ProductProcessReviewAssetResponse> reviewAssets) {
+
+  /** Preserva controles anteriores sem arquivos de revisão visual. */
+  public ProductProcessActivityExecutionControlResponse(
+      String executorType,
+      String interactionType,
+      String actionLabel,
+      String description,
+      boolean actionAvailable,
+      String availabilityReason,
+      boolean confirmationRequired,
+      String confirmationTitle,
+      String confirmationMessage,
+      String confirmationToken,
+      String workspaceCode,
+      Long workspaceReferenceId,
+      Long targetProcessDefinitionId,
+      List<ProductProcessActivityRequirementResponse> requirements,
+      String decisionMode,
+      String auditEvidenceReference,
+      String navigationUrl) {
+    this(
+        executorType,
+        interactionType,
+        actionLabel,
+        description,
+        actionAvailable,
+        availabilityReason,
+        confirmationRequired,
+        confirmationTitle,
+        confirmationMessage,
+        confirmationToken,
+        workspaceCode,
+        workspaceReferenceId,
+        targetProcessDefinitionId,
+        requirements,
+        decisionMode,
+        auditEvidenceReference,
+        navigationUrl,
+        List.of());
+  }
 
   /** Preserva controles existentes sem destino especializado de navegação. */
   public ProductProcessActivityExecutionControlResponse(
@@ -100,5 +141,6 @@ public record ProductProcessActivityExecutionControlResponse(
   /** Garante uma coleção imutável mesmo quando o executor não possui requisitos detalhados. */
   public ProductProcessActivityExecutionControlResponse {
     requirements = requirements == null ? List.of() : List.copyOf(requirements);
+    reviewAssets = reviewAssets == null ? List.of() : List.copyOf(reviewAssets);
   }
 }

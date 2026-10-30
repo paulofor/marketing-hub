@@ -38,6 +38,7 @@ public class KitPrivateService {
           "DOWNLOAD_COMPLETED",
           "SESSION_EXITED",
           "SESSION_RETURNED");
+  private final KitPrivateArtifactStorage storage;
   private final KitPrivateSessionRepository sessions;
   private final KitPrivateArtifactRepository artifacts;
   private final LearningSalesCycleRepository cycles;
@@ -55,6 +56,7 @@ public class KitPrivateService {
 
   /** Configura persistência canônica e assinatura de acessos sem manter segredo bruto no banco. */
   public KitPrivateService(
+      KitPrivateArtifactStorage storage,
       KitPrivateSessionRepository sessions,
       KitPrivateArtifactRepository artifacts,
       LearningSalesCycleRepository cycles,
@@ -63,6 +65,7 @@ public class KitPrivateService {
       ObjectMapper json,
       @Value("${integrations.pde-platform.internal-token:${PDE_INTERNAL_API_TOKEN:}}")
           String pepper) {
+    this.storage = storage;
     this.sessions = sessions;
     this.artifacts = artifacts;
     this.cycles = cycles;
@@ -328,7 +331,8 @@ public class KitPrivateService {
   }
 
   /**
-   * Aplica o mesmo gate ao ZIP binário, sem ampliar limites do parser JSON para toda a aplicação.
+   * Valida e persiste o ZIP em partes; replay do mesmo claim preserva a falha em ciclo ainda
+   * aberto.
    */
   @Transactional
   public void completeBinary(String id, BinaryResult input, byte[] bytes) {
@@ -351,31 +355,52 @@ public class KitPrivateService {
             "Callback duplicado alterou a origem visual.");
       return;
     }
-    require("RUNNING".equals(a.getStatus()), "A tentativa não está em execução.");
+    boolean recovery = "FAILED".equals(a.getStatus());
+    require("RUNNING".equals(a.getStatus()) || recovery, "A tentativa não está em execução.");
+    require(
+        "OPEN".equals(cycles.findById(a.getCycleId()).orElseThrow().getStatus()),
+        "O ciclo foi encerrado; o histórico deve ser preservado.");
+    ObjectNode manifest;
     try {
-      var manifest = contract.validate(bytes);
+      manifest = contract.validate(bytes);
       var references =
           KitVisualReferenceContract.validate(a.getProfileCode(), input.visualReferences());
       if (references != null) manifest.set("visualReferences", references);
-      a.setZipBytes(bytes);
+    } catch (Exception ex) {
+      log.error("Kit privado: contrato inválido artifactId={} cycleId={}", id, a.getCycleId(), ex);
+      throw conflict("O arquivo não comprovou o contrato da composição.");
+    }
+    try {
+      storage.store(a, bytes);
       a.setZipSha256(input.zipSha256());
       a.setManifestJson(write(manifest));
       a.setStatus("READY");
-      a.setFinishedAt(clock.instant());
+      // O replay preserva motivo e encerramento da falha original e registra a recuperação
+      // separada.
+      if (recovery) a.setRecoveredAt(clock.instant());
+      else a.setFinishedAt(clock.instant());
       artifacts.saveAndFlush(a);
-      log.info(
-          "Kit privado: composição aceita artifactId={} productId={} cycleId={} experimentId={}"
-              + " sha256={} bytes={} providerCalls=0",
-          a.getId(),
-          a.getProductId(),
+    } catch (RuntimeException ex) {
+      log.error(
+          "Kit privado: persistência indisponível artifactId={} cycleId={}",
+          id,
           a.getCycleId(),
-          a.getExperimentId(),
-          a.getZipSha256(),
-          bytes.length);
-    } catch (Exception ex) {
-      log.error("Kit privado: resultado inválido artifactId={} cycleId={}", id, a.getCycleId(), ex);
-      throw conflict("O arquivo não comprovou o contrato da composição: " + ex.getMessage());
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.SERVICE_UNAVAILABLE,
+          "O armazenamento está indisponível; preserve o arquivo para reenvio.",
+          ex);
     }
+    log.info(
+        "Kit privado: composição aceita artifactId={} productId={} cycleId={} experimentId={}"
+            + " sha256={} bytes={} recovered={} providerCalls=0",
+        a.getId(),
+        a.getProductId(),
+        a.getCycleId(),
+        a.getExperimentId(),
+        a.getZipSha256(),
+        bytes.length,
+        recovery);
   }
 
   /** Preserva a tentativa falha e seu motivo sem reenfileirar produção ou apagar consumo. */
@@ -435,7 +460,7 @@ public class KitPrivateService {
     data.put("transfers", data.path("transfers").asInt() + 1);
     s.setPayloadJson(write(data));
     sessions.saveAndFlush(s);
-    return a.getZipBytes();
+    return storage.read(a);
   }
 
   /** Entrega somente a imagem do pacote autorizado e recusa caminhos ou nomes fora do contrato. */
@@ -445,7 +470,7 @@ public class KitPrivateService {
         name.matches("(post|story)-0[1-9]\\.png|(post|story)-10\\.png"), "Arquivo não permitido.");
     var a = readyArtifact(active(token, false));
     try {
-      var value = contract.image(a.getZipBytes(), name);
+      var value = contract.image(storage.read(a), name);
       require(value != null, "Arquivo ausente.");
       return value;
     } catch (Exception ex) {

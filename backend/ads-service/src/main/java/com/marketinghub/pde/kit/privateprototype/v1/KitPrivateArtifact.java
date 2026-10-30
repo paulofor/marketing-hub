@@ -57,6 +57,9 @@ public class KitPrivateArtifact {
   @Column(name = "finished_at")
   private Instant finishedAt;
 
+  @Column(name = "recovered_at")
+  private Instant recoveredAt;
+
   @Column(name = "zip_sha256", length = 64, columnDefinition = "CHAR(64)")
   private String zipSha256;
 

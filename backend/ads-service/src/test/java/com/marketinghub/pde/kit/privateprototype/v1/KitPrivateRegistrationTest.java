@@ -28,7 +28,16 @@ class KitPrivateRegistrationTest {
       when(capabilities.resolve(cycle)).thenReturn(new Capability(true, profile, "Teste", url));
       var service =
           new KitPrivateService(
-              null, artifacts, null, capabilities, null, new ObjectMapper(), "local-test");
+              new com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateArtifactStorage(
+                  org.mockito.Mockito.mock(
+                      com.marketinghub.repository.jpa.kit.KitPrivateArtifactChunkRepository.class)),
+              null,
+              artifacts,
+              null,
+              capabilities,
+              null,
+              new ObjectMapper(),
+              "local-test");
       var proof =
           new ObjectMapper()
               .createObjectNode()
@@ -84,7 +93,17 @@ class KitPrivateRegistrationTest {
     String url = "https://private.example/api/pde/kit/private/v1/prototype";
     when(capabilities.resolve(cycle)).thenReturn(new Capability(true, "beauty-v1", "QA", url));
     var service =
-        new KitPrivateService(null, artifacts, null, capabilities, null, new ObjectMapper(), "QA");
+        new KitPrivateService(
+            new com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateArtifactStorage(
+                org.mockito.Mockito.mock(
+                    com.marketinghub.repository.jpa.kit.KitPrivateArtifactChunkRepository.class)),
+            null,
+            artifacts,
+            null,
+            capabilities,
+            null,
+            new ObjectMapper(),
+            "QA");
     var proof =
         new ObjectMapper()
             .createObjectNode()

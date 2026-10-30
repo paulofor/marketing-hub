@@ -43,7 +43,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Import({
   KitPrivateService.class,
   KitArtifactContract.class,
+  KitPrivateArtifactStorage.class,
   KitPrivateController.class,
+  KitPrivateStorageLocalFixture.class,
   KitPrivateVideoLocalFixture.class
 })
 public class KitPrivateLocalApplication {
@@ -86,6 +88,7 @@ public class KitPrivateLocalApplication {
         PersistenceManagedTypes.of(
             KitPrivateSession.class.getName(),
             KitPrivateArtifact.class.getName(),
+            KitPrivateArtifactChunk.class.getName(),
             LearningSalesCycle.class.getName()));
     f.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
     f.setJpaPropertyMap(
@@ -115,6 +118,12 @@ public class KitPrivateLocalApplication {
   @Bean
   KitPrivateArtifactRepository artifacts(EntityManagerFactory factory) {
     return repository(factory, KitPrivateArtifactRepository.class);
+  }
+
+  /** Usa partes reais para conferir limites de pacote e integridade no MySQL. */
+  @Bean
+  KitPrivateArtifactChunkRepository chunks(EntityManagerFactory factory) {
+    return repository(factory, KitPrivateArtifactChunkRepository.class);
   }
 
   /** Simula somente a interface do cadastro de ciclos, preservando seus locks e dados reais. */

@@ -157,6 +157,9 @@ class KitPrivateSafetyTest {
         .thenAnswer(a -> sessions.findBySessionHash(a.getArgument(0)));
     var service =
         new KitPrivateService(
+            new com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateArtifactStorage(
+                org.mockito.Mockito.mock(
+                    com.marketinghub.repository.jpa.kit.KitPrivateArtifactChunkRepository.class)),
             sessions,
             artifacts,
             cycles,

@@ -6,7 +6,7 @@ services:
       MYSQL_DATABASE: kit_local
       MYSQL_USER: kit
       MYSQL_PASSWORD: kit-local-only
-    command: ['--max-allowed-packet=64M', '--innodb-buffer-pool-size=64M', '--innodb-log-file-size=32M', '--max-connections=20']
+    command: ['--max-allowed-packet=16M', '--innodb-buffer-pool-size=64M', '--innodb-log-file-size=32M', '--max-connections=20']
     # Fotografias usam volume descartável; tmpfs acumulava blobs e encerrava o MySQL por memória.
     volumes:
       - mysql-data:/var/lib/mysql

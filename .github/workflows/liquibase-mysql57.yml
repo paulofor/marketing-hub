@@ -3,6 +3,10 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "infra/testing/private-kit/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/pde/kit/privateprototype/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/kit/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/pde/kit/privateprototype/**"
       - "infra/testing/psique-audio-review/**"
       - "infra/testing/agent-runtime/**"
       - "infra/testing/mira-report/**"
@@ -671,3 +675,32 @@ jobs:
           name: product-big-idea-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/product-big-idea/persistence/
           retention-days: 7
+
+  validate-private-kit-storage:
+    name: Pacotes privados com limite MySQL de 16 MiB
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: |
+            backend/ads-service/pom.xml
+            lead-portal-payments-service/pom.xml
+      - name: Validar partes, rollback, isolamento e compatibilidade
+        env:
+          KIT_TEST_COMPOSE_PROJECT: private-kit-${{ github.run_id }}-${{ github.run_attempt }}
+          KIT_TEST_DB_HOST: 127.0.0.1
+          KIT_TEST_STORAGE_ONLY: "true"
+          KIT_TEST_EVIDENCE_DIR: ${{ github.workspace }}/backend/ads-service/target/private-kit-storage
+        run: bash infra/testing/private-kit/run-local.sh
+      - name: Preservar evidências sintéticas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-kit-storage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: backend/ads-service/target/private-kit-storage/
+          if-no-files-found: warn

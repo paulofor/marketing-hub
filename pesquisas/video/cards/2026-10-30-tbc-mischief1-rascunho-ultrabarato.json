@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-tbc-mischief1-rascunho-ultrabarato",
+  "collection": "video",
+  "title": "Avaliar microvideos de imagem para video a US$0,005/s com TBC mischief 1",
+  "finding": "TBC anunciou em 30/10/2026 o mischief 1, modelo proprietario otimizado sobre Wan 2.2 e disponivel em fal e OpenRouter a US$0.005/s (480p) ou US$0.01/s (720p).",
+  "mechanism": "A empresa relata camada de otimizacao derivada de experimentos com neuronios vivos, executada em hardware convencional, com ganho reportado de 5x na velocidade em relacao ao Wan 2.2 base.",
+  "commercialApplication": "Marketing Hub: usar somente como candidato a primeiro passe barato de animacao de imagens de produto ou moodboards; reter renderizadores mais completos para audio, videos longos e finalizacao.",
+  "evidenceStrength": "Alta para anuncio oficial de 30/10, cadastro do modelo e tarifas documentadas em fal; baixa para equivalencia de qualidade e ganho 5x, que sao alegacoes do fabricante nao auditadas independentemente.",
+  "publishedOn": "2026-10-30",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "Em variacoes de planos curtos originados de uma imagem, mischief 1 pode ter custo por variante aprovada inferior a geradores completos, mesmo que suas limitacoes requeiram re-render final em outro modelo.",
+  "risks": "Modelo nao tem pesos abertos confirmados; limite 16 fps e 3/5 segundos; sem audio nativo documentado; falhas de endpoint, direitos de uso comercial/ativos, fidelidade a marca e promessas de qualidade sem validacao independente.",
+  "limits": "API image-to-video exige imagem e texto, 480p/720p 16 fps; 3 ou 5 segundos; para 5 segundos US$0.025 em 480p ou US$0.05 em 720p; disponibilidade varia, usuario deve verificar taxa de sucesso por provedor.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-30-tbc-mischief1-baixo-custo.md",
+  "sourceTitle": "Fonte revisada - TBC mischief 1, precos e limitacoes da API",
+  "sourceSha256": "08303999927ddbb59abe96c0b265b683a2d510e1c9c461ca28e85dbf163f17d6"
+}

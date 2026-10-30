@@ -643,7 +643,13 @@ class PrivateCommunicationJourneyTest {
     when(materialization.resolve(REFERENCE))
         .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
     var proof = new PrivateCommunicationCreativeProof(tasks, instances, json);
-    var selection = new PrivateCreativeSelection(materialization, proof, json);
+    var visualEvidence = mock(AgentTaskVisualEvidenceRepository.class);
+    var file = new AgentTaskVisualEvidence();
+    file.setEvidenceType("CREATIVE_RENDER");
+    file.setContentType("image/png");
+    file.setSha256("d".repeat(64));
+    when(visualEvidence.findByIdAndTaskId(910126L, 910406L)).thenReturn(Optional.of(file));
+    var selection = new PrivateCreativeSelection(materialization, proof, json, visualEvidence);
     var assets = mock(CommercialPlanApprovedProcessAssetService.class);
     var handler = new CreativeSelectionHumanActivityHandler(assets, selection);
     var predecessors = mock(ProductProcessActivityPredecessorService.class);

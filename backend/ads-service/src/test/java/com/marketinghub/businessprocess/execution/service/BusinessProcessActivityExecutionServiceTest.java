@@ -988,7 +988,7 @@ class BusinessProcessActivityExecutionServiceTest {
     verify(backendExecutor).readiness(process, preflight, product, null);
   }
 
-  /** Projeta e despacha a aprovação humana pelo mesmo contrato canônico da atividade. */
+  /** Projeta os arquivos revisados e despacha a aprovação humana pelo contrato da atividade. */
   @Test
   void exposesAndExecutesHumanApprovalContract() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -1052,7 +1052,19 @@ class BusinessProcessActivityExecutionServiceTest {
             89L,
             List.of(),
             HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
-            "experiment:89; experiment-run:12; commercial-plan:4");
+            "experiment:89; experiment-run:12; commercial-plan:4",
+            List.of(
+                new com.marketinghub
+                    .businessprocess
+                    .execution
+                    .service
+                    .productProcessExecutions
+                    .ProductProcessReviewAssetResponse(
+                    98154L,
+                    98569L,
+                    "Criativo 1",
+                    "/api/agent-tasks/98154/visual-evidence/98569/content",
+                    "a".repeat(64))));
     when(processes.findById(56L)).thenReturn(Optional.of(process));
     when(products.findById(9L)).thenReturn(Optional.of(product));
     when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
@@ -1086,6 +1098,8 @@ class BusinessProcessActivityExecutionServiceTest {
               assertThat(activity.executionControl().decisionMode()).isEqualTo("REVIEW_AND_ACCEPT");
               assertThat(activity.executionControl().auditEvidenceReference())
                   .isEqualTo("experiment:89; experiment-run:12; commercial-plan:4");
+              assertThat(activity.executionControl().reviewAssets())
+                  .isEqualTo(readiness.reviewAssets());
             });
     assertThat(result.operationalState()).isEqualTo("COMPLETED");
     verify(humanExecutor).execute(process, authorization, product, "experiment:89", request);

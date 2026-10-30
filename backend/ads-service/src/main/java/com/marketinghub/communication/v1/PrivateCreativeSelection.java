@@ -7,7 +7,10 @@ import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityCompletion;
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityRequirement;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessReviewAssetResponse;
 import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskVisualEvidenceRepository;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,11 +30,9 @@ public class PrivateCreativeSelection {
   private final CommunicationMaterializationContextProvider contexts;
   private final PrivateCommunicationCreativeProof creativeProof;
   private final ObjectMapper json;
+  private final AgentTaskVisualEvidenceRepository visualEvidence;
 
-  /**
-   * Oferece a confirmação privada ou seu bloqueio; os demais contratos conservam o caminho
-   * comercial.
-   */
+  /** Oferece os arquivos revisados e a confirmação privada, bloqueando peças sem prova visual. */
   public Optional<HumanProductProcessActivityReadiness> readiness(
       BusinessProcessDefinition process, Product product, String reference) {
     return privateContext(reference)
@@ -41,8 +42,10 @@ public class PrivateCreativeSelection {
               String reason;
               String audit = null;
               String token = TOKEN + ":PRIVATE:blocked";
+              List<ProductProcessReviewAssetResponse> reviewAssets = List.of();
               try {
                 var proof = proof(process, product, reference, context);
+                reviewAssets = reviewAssets(proof);
                 ready = true;
                 reason =
                     "Íris, Psique e Têmis concluíram a mesma peça privada. Falta seu aceite de uso.";
@@ -77,14 +80,12 @@ public class PrivateCreativeSelection {
                               ? "Confira a peça final e confirme seu uso privado."
                               : "Resolva a pendência da versão ou dos pareceres antes de aprovar.")),
                   HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
-                  audit);
+                  audit,
+                  reviewAssets);
             });
   }
 
-  /**
-   * Revalida contratos e pixels na confirmação e fornece sua auditoria sem escrita em storage
-   * público.
-   */
+  /** Revalida contratos, arquivos e pixels na confirmação sem escrever em storage público. */
   public Optional<HumanProductProcessActivityCompletion> completeApproval(
       BusinessProcessDefinition process,
       Product product,
@@ -94,6 +95,7 @@ public class PrivateCreativeSelection {
         .map(
             context -> {
               var proof = proof(process, product, reference, context);
+              reviewAssets(proof);
               require(
                   confirmationToken(reference, context, proof).equals(confirmationToken),
                   "A peça ou seus pareceres mudaram. Confira a versão atual antes de confirmar seu uso.");
@@ -113,6 +115,36 @@ public class PrivateCreativeSelection {
               evidence.put("externalMediaSpendAuthorized", false);
               return HumanProductProcessActivityCompletion.completed(evidence);
             });
+  }
+
+  /** Confere a propriedade e o hash de cada arquivo e gera somente links internos canônicos. */
+  private List<ProductProcessReviewAssetResponse> reviewAssets(JsonNode proof) {
+    long taskId = proof.path("producerTaskId").asLong();
+    var assets = new ArrayList<ProductProcessReviewAssetResponse>();
+    for (var render : proof.path("renderedAssets")) {
+      long artifactId = render.path("artifactId").asLong();
+      var evidence =
+          visualEvidence
+              .findByIdAndTaskId(artifactId, taskId)
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "A imagem revisada não está disponível nesta tarefa. Recupere a prova antes de aprovar."));
+      require(
+          "CREATIVE_RENDER".equals(evidence.getEvidenceType())
+              && "image/png".equals(evidence.getContentType())
+              && render.path("sha256").asText().equals(evidence.getSha256()),
+          "A imagem disponível não corresponde aos pixels revisados. Confira a prova antes de aprovar.");
+      assets.add(
+          new ProductProcessReviewAssetResponse(
+              taskId,
+              artifactId,
+              "Criativo " + (assets.size() + 1),
+              "/api/agent-tasks/" + taskId + "/visual-evidence/" + artifactId + "/content",
+              evidence.getSha256()));
+    }
+    require(!assets.isEmpty(), "Nenhuma imagem revisada está disponível para esta decisão.");
+    return List.copyOf(assets);
   }
 
   /**

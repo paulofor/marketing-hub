@@ -896,6 +896,17 @@ components:
         satisfied: { type: boolean }
         detail: { type: string }
         recommendation: { type: string }
+    ProductProcessReviewAsset:
+      type: object
+      required: [taskId, artifactId, title, contentUrl, sha256]
+      properties:
+        taskId: { type: integer, format: int64 }
+        artifactId: { type: integer, format: int64 }
+        title: { type: string }
+        contentUrl:
+          type: string
+          description: Rota interna /api/agent-tasks/{taskId}/visual-evidence/{artifactId}/content do PNG revisado, sem expor storage ou aceitar URL arbitrária do modelo.
+        sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
     ProductProcessActivityExecutionControl:
       type: object
       required:
@@ -941,6 +952,11 @@ components:
           type: string
           nullable: true
           description: Referência persistida que o backend registrará sem exigir redigitação.
+        reviewAssets:
+          type: array
+          description: Arquivos exatos revisados para visualizar antes do aceite; vazia quando a decisão não envolve imagens. Propriedade, tipo e hash são conferidos pelo backend. Carregar ou abrir um arquivo não registra aprovação.
+          items:
+            $ref: "#/components/schemas/ProductProcessReviewAsset"
         navigationUrl:
           type: string
           nullable: true

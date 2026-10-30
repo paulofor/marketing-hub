@@ -18,6 +18,111 @@ describe("ProductProcessActivityExecutionPanel", () => {
     onExecute.mockReset();
   });
 
+  it.each([98154, 99154])(
+    "shows the reviewed creative before enabling approval for task %s",
+    (taskId) => {
+      const activity = reviewAndAcceptActivity();
+      activity.executionControl!.reviewAssets = [
+        {
+          taskId,
+          artifactId: 98569,
+          title: "Criativo 1",
+          contentUrl: `/api/agent-tasks/${taskId}/visual-evidence/98569/content`,
+          sha256: "a".repeat(64),
+        },
+      ];
+      renderPanel(activity);
+      const approve = screen.getByRole("button", {
+        name: "Li, entendi e autorizo",
+      });
+      expect(approve).toBeDisabled();
+      const image = screen.getByRole("img", { name: "Prévia de Criativo 1" });
+      const link = screen.getByRole("link", {
+        name: "Abrir criativo 1 em tamanho original",
+      });
+      expect(link.getAttribute("href")).toContain(
+        `/api/agent-tasks/${taskId}/visual-evidence/98569/content`,
+      );
+      expect(link).toHaveAttribute("target", "_blank");
+      fireEvent.click(link);
+      expect(onExecute).not.toHaveBeenCalled();
+      fireEvent.load(image);
+      expect(approve).toBeEnabled();
+      fireEvent.click(approve);
+      expect(onExecute).toHaveBeenCalledWith({
+        activityId: activity.activityId,
+        decision: {
+          decision: "APPROVE",
+          confirmationToken: activity.executionControl!.confirmationToken,
+        },
+      });
+    },
+  );
+
+  it("keeps approval disabled until every image loads and recovers a failed preview", () => {
+    const activity = reviewAndAcceptActivity();
+    activity.executionControl!.reviewAssets = [1, 2].map((id) => ({
+      taskId: 98154,
+      artifactId: id,
+      title: `Criativo ${id}`,
+      contentUrl: `/api/agent-tasks/98154/visual-evidence/${id}/content`,
+      sha256: `${id}`.repeat(64),
+    }));
+    renderPanel(activity);
+    const approve = screen.getByRole("button", {
+      name: "Li, entendi e autorizo",
+    });
+    fireEvent.load(screen.getByRole("img", { name: "Prévia de Criativo 1" }));
+    fireEvent.error(screen.getByRole("img", { name: "Prévia de Criativo 2" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar a imagem",
+    );
+    expect(approve).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Não autorizar" })).toBeEnabled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tentar carregar novamente" }),
+    );
+    expect(approve).toBeDisabled();
+    fireEvent.load(screen.getByRole("img", { name: "Prévia de Criativo 2" }));
+    expect(approve).toBeEnabled();
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
+  it("requires the new image after the reviewed selection changes", () => {
+    const activity = reviewAndAcceptActivity();
+    activity.executionControl!.reviewAssets = [
+      {
+        taskId: 98154,
+        artifactId: 98569,
+        title: "Criativo 1",
+        contentUrl: "/api/agent-tasks/98154/visual-evidence/98569/content",
+        sha256: "a".repeat(64),
+      },
+    ];
+    const element = () => (
+      <MemoryRouter>
+        <ProductProcessActivityExecutionPanel
+          activity={activity}
+          productId={9}
+          pending={false}
+          onExecute={onExecute}
+        />
+      </MemoryRouter>
+    );
+    const view = render(element());
+    fireEvent.load(screen.getByRole("img", { name: "Prévia de Criativo 1" }));
+    expect(
+      screen.getByRole("button", { name: "Li, entendi e autorizo" }),
+    ).toBeEnabled();
+    activity.executionControl!.confirmationToken = "CONFIRM:new-version";
+    activity.executionControl!.reviewAssets[0].sha256 = "b".repeat(64);
+    view.rerender(element());
+    expect(
+      screen.getByRole("button", { name: "Li, entendi e autorizo" }),
+    ).toBeDisabled();
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
   it("opens the destination supplied by the backend without requesting a new task", () => {
     const activity = blockedHomologation();
     activity.recoveryAction = null;

@@ -1,5 +1,21 @@
 # Íris — Diretora e Materializadora de Comunicação v1
 
+## Peça visível antes do aceite — decisão de 30/10/2026
+
+A seleção humana privada deve apresentar a imagem final e um link para abrir o
+original na própria atividade de aprovação. O backend fornece `reviewAssets` a
+partir da mesma tarefa e dos mesmos hashes aprovados por Psique e Têmis, conferindo
+a propriedade e os metadados persistidos. Referência textual de auditoria ou link
+para a biblioteca geral não substituem a peça. Nunca usar imagem de outra versão
+para preencher uma prévia ausente.
+
+A tela mostra a imagem inteira e permite ampliar em nova aba. Enquanto houver
+imagem carregando ou com falha, o aceite permanece indisponível; erro permite nova
+tentativa e mantém a rejeição disponível. Abrir a imagem não registra decisão,
+não cria tarefa e não autoriza publicação. O token de confirmação continua
+vinculado à versão, aos arquivos e aos pareceres atuais. A validação está em
+[criativo antes do aceite](../homologacao/criativo-antes-do-aceite-v1.md).
+
 ## Objetivo
 
 Íris é a agente responsável por transformar estratégia, limites econômicos e produto aprovados em

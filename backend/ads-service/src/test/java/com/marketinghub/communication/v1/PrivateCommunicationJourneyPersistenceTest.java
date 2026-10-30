@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
+import com.marketinghub.agenttask.AgentTaskVisualEvidence;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.agenttask.CommunicationMaterializationContextProvider;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
@@ -19,6 +20,7 @@ import com.marketinghub.planning.service.CommercialPlanApprovedProcessAssetServi
 import com.marketinghub.planning.service.CreativeSelectionHumanActivityHandler;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskVisualEvidenceRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import java.time.Instant;
@@ -287,9 +289,18 @@ class PrivateCommunicationJourneyPersistenceTest {
     var materialization = mock(CommunicationMaterializationContextProvider.class);
     when(materialization.resolve(reference))
         .thenReturn(Optional.of(json.convertValue(context, Map.class)));
+    var visualEvidence = mock(AgentTaskVisualEvidenceRepository.class);
+    var file = new AgentTaskVisualEvidence();
+    file.setEvidenceType("CREATIVE_RENDER");
+    file.setContentType("image/png");
+    file.setSha256("c".repeat(64));
+    when(visualEvidence.findByIdAndTaskId(920569L, 920654L)).thenReturn(Optional.of(file));
     var selection =
         new PrivateCreativeSelection(
-            materialization, new PrivateCommunicationCreativeProof(tasks, instances, json), json);
+            materialization,
+            new PrivateCommunicationCreativeProof(tasks, instances, json),
+            json,
+            visualEvidence);
     var assets = mock(CommercialPlanApprovedProcessAssetService.class);
     var handler = new CreativeSelectionHumanActivityHandler(assets, selection);
     var predecessors = mock(ProductProcessActivityPredecessorService.class);

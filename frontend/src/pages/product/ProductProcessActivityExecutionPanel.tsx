@@ -20,6 +20,9 @@ import ProductProcessTaskTracking, {
 } from "./ProductProcessTaskTracking";
 import ExperimentRunPanel from "../experiment/ExperimentRunPanel";
 import PrivateReadingAssistant from "./PrivateReadingAssistant";
+import ProductProcessReviewAssets, {
+  reviewAssetKey,
+} from "./ProductProcessReviewAssets";
 import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
 import type { ProductLearningCycleNavigation } from "../../api/product/useProductValueChainPositions";
 
@@ -323,6 +326,7 @@ function HumanDecisionForm({
   if (control.decisionMode === "REVIEW_AND_ACCEPT") {
     return (
       <ReviewAndAcceptDecision
+        key={control.confirmationToken}
         activity={activity}
         executing={executing}
         onExecute={onExecute}
@@ -839,13 +843,27 @@ function ReviewAndAcceptDecision({
   const control = activity.executionControl!;
   const [showRejection, setShowRejection] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [loadedAssets, setLoadedAssets] = useState<Record<string, boolean>>({});
+  const reviewAssets = control.reviewAssets ?? [];
+  const assetsLoaded = reviewAssets.every(
+    (asset) => loadedAssets[reviewAssetKey(asset)],
+  );
+  const previews = (
+    <ProductProcessReviewAssets
+      assets={reviewAssets}
+      onLoadChange={(key, loaded) => {
+        setLoadedAssets((current) => ({ ...current, [key]: loaded }));
+      }}
+    />
+  );
   const ready = control.actionAvailable && Boolean(control.confirmationToken);
   const rejectionReady = ready && rejectionReason.trim().length >= 10;
 
-  if (!control.actionAvailable) return null;
+  if (!control.actionAvailable) return previews;
 
   const approve = () => {
-    if (!ready || executing || !control.confirmationToken) return;
+    if (!ready || !assetsLoaded || executing || !control.confirmationToken)
+      return;
     onExecute({
       activityId: activity.activityId,
       decision: {
@@ -869,72 +887,80 @@ function ReviewAndAcceptDecision({
   };
 
   return (
-    <div className="product-process-review-accept">
-      <div className="product-process-review-accept__summary">
-        <CheckCircle2 size={24} aria-hidden="true" />
-        <div>
-          <strong>{control.confirmationTitle || "Tudo pronto"}</strong>
-          <p>{control.confirmationMessage}</p>
-          <small>
-            A evidência será registrada automaticamente. O efeito desta
-            confirmação é exatamente o descrito acima pelo backend.
-          </small>
+    <div>
+      {previews}
+      <div className="product-process-review-accept">
+        <div className="product-process-review-accept__summary">
+          <CheckCircle2 size={24} aria-hidden="true" />
+          <div>
+            <strong>{control.confirmationTitle || "Tudo pronto"}</strong>
+            <p>{control.confirmationMessage}</p>
+            <small>
+              A evidência será registrada automaticamente. O efeito desta
+              confirmação é exatamente o descrito acima pelo backend.
+            </small>
+          </div>
         </div>
-      </div>
-      <button
-        className="btn btn-success product-process-review-accept__approve"
-        type="button"
-        disabled={!ready || executing}
-        onClick={approve}
-      >
-        {executing ? (
-          <Loader2
-            className="spinner-border spinner-border-sm"
-            size={16}
-            aria-hidden="true"
-          />
-        ) : (
-          <UserCheck size={17} aria-hidden="true" />
-        )}
-        {executing
-          ? "Autorizando..."
-          : control.actionLabel || "Li, entendi e autorizo"}
-      </button>
-      <button
-        className="btn btn-link product-process-review-accept__reject-toggle"
-        type="button"
-        disabled={executing}
-        onClick={() => setShowRejection((visible) => !visible)}
-      >
-        Não autorizar
-      </button>
-      {showRejection ? (
-        <form
-          className="product-process-review-accept__rejection"
-          onSubmit={reject}
+        <button
+          className="btn btn-success product-process-review-accept__approve"
+          type="button"
+          disabled={!ready || !assetsLoaded || executing}
+          onClick={approve}
         >
-          <label>
-            Motivo da não autorização <span aria-hidden="true">*</span>
-            <textarea
-              className="form-control"
-              rows={3}
-              value={rejectionReason}
-              onChange={(event) => setRejectionReason(event.target.value)}
-              placeholder="Explique o que precisa ser corrigido antes de autorizar"
-              minLength={10}
-              maxLength={2000}
-              required
+          {executing ? (
+            <Loader2
+              className="spinner-border spinner-border-sm"
+              size={16}
+              aria-hidden="true"
             />
-          </label>
-          <button
-            className="btn btn-outline-danger"
-            type="submit"
-            disabled={!rejectionReady || executing}
+          ) : (
+            <UserCheck size={17} aria-hidden="true" />
+          )}
+          {executing
+            ? "Autorizando..."
+            : control.actionLabel || "Li, entendi e autorizo"}
+        </button>
+        {!assetsLoaded && (
+          <p role="status">
+            Aguarde as imagens carregarem para conferir as peças e aprovar.
+          </p>
+        )}
+        <button
+          className="btn btn-link product-process-review-accept__reject-toggle"
+          type="button"
+          disabled={executing}
+          onClick={() => setShowRejection((visible) => !visible)}
+        >
+          Não autorizar
+        </button>
+        {showRejection ? (
+          <form
+            className="product-process-review-accept__rejection"
+            onSubmit={reject}
           >
-            Registrar não autorização
-          </button>
-        </form>
-      ) : null}
+            <label>
+              Motivo da não autorização <span aria-hidden="true">*</span>
+              <textarea
+                className="form-control"
+                rows={3}
+                value={rejectionReason}
+                onChange={(event) => setRejectionReason(event.target.value)}
+                placeholder="Explique o que precisa ser corrigido antes de autorizar"
+                minLength={10}
+                maxLength={2000}
+                required
+              />
+            </label>
+            <button
+              className="btn btn-outline-danger"
+              type="submit"
+              disabled={!rejectionReady || executing}
+            >
+              Registrar não autorização
+            </button>
+          </form>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -7,10 +7,12 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
+import com.marketinghub.agenttask.AgentTaskVisualEvidence;
 import com.marketinghub.agenttask.CommunicationMaterializationContextProvider;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskVisualEvidenceRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import java.time.Instant;
 import java.util.*;
@@ -25,11 +27,16 @@ class PrivateCreativeSelectionTest {
   private final CommunicationMaterializationContextProvider contexts =
       mock(CommunicationMaterializationContextProvider.class);
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+  private final AgentTaskVisualEvidenceRepository visualEvidence =
+      mock(AgentTaskVisualEvidenceRepository.class);
   private final BusinessProcessActivityInstanceRepository instances =
       mock(BusinessProcessActivityInstanceRepository.class);
   private final PrivateCreativeSelection selection =
       new PrivateCreativeSelection(
-          contexts, new PrivateCommunicationCreativeProof(tasks, instances, json), json);
+          contexts,
+          new PrivateCommunicationCreativeProof(tasks, instances, json),
+          json,
+          visualEvidence);
   private final BusinessProcessDefinition process = new BusinessProcessDefinition();
   private final Product product = Product.builder().id(98111L).build();
   private final ObjectNode context = json.createObjectNode();
@@ -48,6 +55,7 @@ class PrivateCreativeSelectionTest {
         .thenAnswer(i -> Optional.of(json.convertValue(context, Map.class)));
     when(tasks.findFunctionalSnapshotsByProcessSince(eq(process.getId()), anyString(), isNull()))
         .thenAnswer(i -> history);
+    when(visualEvidence.findByIdAndTaskId(98569L, 98154L)).thenReturn(Optional.of(visualFile()));
   }
 
   /** Reproduz o bloqueio original sem plano e valida outra referência independente. */
@@ -69,6 +77,16 @@ class PrivateCreativeSelectionTest {
     assertThat(readiness.ready()).isTrue();
     assertThat(readiness.reviewAndAccept()).isTrue();
     assertThat(readiness.workspaceReferenceId()).isNull();
+    assertThat(readiness.reviewAssets())
+        .singleElement()
+        .satisfies(
+            asset -> {
+              assertThat(asset.taskId()).isEqualTo(98154L);
+              assertThat(asset.artifactId()).isEqualTo(98569L);
+              assertThat(asset.contentUrl())
+                  .isEqualTo("/api/agent-tasks/98154/visual-evidence/98569/content");
+              assertThat(asset.sha256()).isEqualTo("a".repeat(64));
+            });
     assertThat(readiness.auditEvidenceReference())
         .contains(reference, "agent-task:98154", "a".repeat(64));
     var completed =
@@ -199,7 +217,70 @@ class PrivateCreativeSelectionTest {
     assertThat(selection.readiness(process, product, reference)).isEmpty();
     assertThat(selection.completeApproval(process, product, reference, "commercial-token"))
         .isEmpty();
-    verifyNoInteractions(tasks, instances);
+    verifyNoInteractions(tasks, instances, visualEvidence);
+  }
+
+  /** Arquivo desaparecido, de outra tarefa ou alterado bloqueia exibição e aceite. */
+  @ParameterizedTest
+  @ValueSource(strings = {"missing", "hash", "type", "mime"})
+  void refusesUnverifiableVisualFile(String cause) {
+    var file = visualFile();
+    if ("hash".equals(cause)) file.setSha256("b".repeat(64));
+    if ("type".equals(cause)) file.setEvidenceType("FULL_PAGE");
+    if ("mime".equals(cause)) file.setContentType("text/html");
+    when(visualEvidence.findByIdAndTaskId(98569L, 98154L))
+        .thenReturn("missing".equals(cause) ? Optional.empty() : Optional.of(file));
+    var readiness = selection.readiness(process, product, reference).orElseThrow();
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reviewAssets()).isEmpty();
+    assertThatThrownBy(() -> selection.completeApproval(process, product, reference, "old-token"))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  /** Projeta todos os arquivos revisados e ignora URLs arbitrárias fornecidas pelo modelo. */
+  @Test
+  void exposesEveryReviewedImageThroughCanonicalContentRoute() throws Exception {
+    var produced = (ObjectNode) json.readTree(history.getFirst().resultJson());
+    var renders = produced.withObject("/functionalOutput").withArray("renderedAssets");
+    ((ObjectNode) renders.get(0)).put("contentUrl", "https://untrusted.example/wrong.png");
+    renders.add(renders.get(0).deepCopy());
+    ((ObjectNode) renders.get(1)).put("artifactId", 98570L);
+    history.set(0, task(98154L, "nonAudiovisual", "communication-director", "COMPLETED", produced));
+    for (int index = 1; index < history.size(); index++) {
+      var previous = history.get(index);
+      var review = (ObjectNode) json.readTree(previous.resultJson());
+      review
+          .withArray("renderedAssetAudit")
+          .addObject()
+          .put("artifactId", 98570L)
+          .put("sha256", "a".repeat(64));
+      history.set(
+          index,
+          task(
+              previous.id(),
+              previous.processActivityId(),
+              previous.agentKey(),
+              "COMPLETED",
+              review));
+    }
+    when(visualEvidence.findByIdAndTaskId(98570L, 98154L)).thenReturn(Optional.of(visualFile()));
+    var readiness = selection.readiness(process, product, reference).orElseThrow();
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.reviewAssets())
+        .extracting(asset -> asset.contentUrl())
+        .containsExactly(
+            "/api/agent-tasks/98154/visual-evidence/98569/content",
+            "/api/agent-tasks/98154/visual-evidence/98570/content");
+  }
+
+  /** Representa os metadados persistidos dos pixels revisados, sem chamar storage externo. */
+  private AgentTaskVisualEvidence visualFile() {
+    var file = new AgentTaskVisualEvidence();
+    file.setId(98569L);
+    file.setEvidenceType("CREATIVE_RENDER");
+    file.setContentType("image/png");
+    file.setSha256("a".repeat(64));
+    return file;
   }
 
   /** Monta o contexto canônico sem fatura, plano ou autorização comercial artificiais. */

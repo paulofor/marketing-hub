@@ -11,46 +11,9 @@
     "assumptions",
     "requiredChanges",
     "rationale",
-    "sources",
-    "upstreamCorrection"
+    "sources"
   ],
   "properties": {
-    "upstreamCorrection": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": false,
-      "required": [
-        "contractVersion",
-        "targetActivityId",
-        "reason",
-        "acceptanceCriterion"
-      ],
-      "properties": {
-        "contractVersion": {
-          "type": "string",
-          "enum": [
-            "PROCESS_UPSTREAM_CORRECTION_V1"
-          ]
-        },
-        "targetActivityId": {
-          "type": "string",
-          "enum": [
-            "marketStrategy",
-            "economics"
-          ]
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 10
-        },
-        "acceptanceCriterion": {
-          "type": "string",
-          "minLength": 10
-        }
-      }
-    },
     "activity": { "type": "string", "enum": ["productArchitecture"] },
     "decision": { "type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"] },
     "alternatives": {

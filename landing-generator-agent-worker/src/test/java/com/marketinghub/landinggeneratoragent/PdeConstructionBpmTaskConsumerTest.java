@@ -325,7 +325,7 @@ class PdeConstructionBpmTaskConsumerTest {
     assertThat(
             PdeConstructionBpmTaskConsumer.promptResourceFor(
                 "pde-commercial-plan-offer", "productArchitecture"))
-        .isEqualTo("prompts/pde-commercial-plan/v6/product-architecture.md");
+        .isEqualTo("prompts/pde-commercial-plan/v7/product-architecture.md");
     assertThat(
             PdeConstructionBpmTaskConsumer.promptResourceFor(
                 "pde-construction-approval", "journey"))
@@ -1063,11 +1063,11 @@ class PdeConstructionBpmTaskConsumerTest {
   @Test
   void keepsStaticResultFixturesOutsidePaidAudiovisualPipeline() throws Exception {
     String prompt =
-        new ClassPathResource("prompts/pde-commercial-plan/v6/product-architecture.md")
+        new ClassPathResource("prompts/pde-commercial-plan/v7/product-architecture.md")
             .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
     JsonNode schema =
         json.readTree(
-            new ClassPathResource("prompts/pde-commercial-plan/v6/product-architecture-schema.json")
+            new ClassPathResource("prompts/pde-commercial-plan/v7/product-architecture-schema.json")
                 .getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
 
     assertThat(prompt)

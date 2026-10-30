@@ -31,7 +31,7 @@ Para o caso histórico, o descritor correto permite ao validador existente reabr
 
 ## Resultados
 
-Validação local: 347 testes de backend aprovados, incluindo serviço real de atividades,
+Validação local: 347 testes de backend aprovados, mais 17 verificações do catálogo do harness, incluindo serviço real de atividades,
 persistência do motor em H2, projeção do card bloqueado, isolamento, recuperação e
 contexto da Big Idea. Dédalo: 112 testes da suíte aprovados; o teste opcional de replay foi executado
 separadamente com o resultado original da tarefa 885, sem repetir a inferência. Desktop, iPhone 15 Pro e Pixel 7
@@ -45,6 +45,12 @@ regressões estão em `UpstreamCorrectionReadinessProviderTest`,
 `ProcessRunRecoveredCostTest`, `LearningCycleImplementedInputContextTest`,
 `BigIdeaTaskContextTest` e `PdeUpstreamCorrectionContractTest`.
 
+O contrato de Dédalo é publicado como v7, preservando prompt/schema v6 vinculados
+a atestações históricas. O CI detectou a dependência ao verificar hashes de Mira;
+a compatibilidade foi reproduzida e corrigida localmente antes de atualizar o PR.
+As novas atestações de compatibilidade de Mira (v66) e Vega (v9) registram somente
+as provas compartilhadas revalidadas; não renovam pareceres nem autorizações. O
+pacote de revisão reuniu 770 arquivos e 193 manifestos íntegros.
 O schema novo usa objeto anulável compatível com o verificador estrito do executor;
 o replay de resultados antigos continua sem exigir campo inexistente na geração original.
 A adoção inicial do retorno estruturado é o planejamento de Dédalo; o mecanismo de

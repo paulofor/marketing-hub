@@ -2636,15 +2636,15 @@
         {
           "artifactType": "PROMPT",
           "name": "Arquitetura do protótipo privado PDE",
-          "version": "v6",
-          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture.md",
-          "description": "Materializa o harness mínimo, sensorial e personalizado para duas leituras privadas antes da publicação comercial."
+          "version": "v7",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v7/product-architecture.md",
+          "description": "Define o protótipo para testes por agentes e devolve ajustes à predecessora correta, com motivo, aceite e limite de retornos governados pelo backend."
         },
         {
           "artifactType": "OUTPUT_SCHEMA",
           "name": "Schema da arquitetura do protótipo privado PDE",
-          "version": "v6",
-          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture-schema.json",
+          "version": "v7",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v7/product-architecture-schema.json",
           "description": "Contrato estruturado da experiência privada, fronteiras e critérios de aceite."
         },
         {
@@ -2821,6 +2821,20 @@
           "version": "v1",
           "path": ".github/workflows/landing-generator-agent-worker-ci.yml",
           "description": "Testes, build e publicação versionados."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Arquitetura PDE: prompt histórico",
+          "version": "v6-historical",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture.md",
+          "description": "Preservado para auditoria e compatibilidade das provas anteriores ao retorno estruturado v7."
+        },
+        {
+          "artifactType": "OUTPUT_SCHEMA",
+          "name": "Arquitetura PDE: schema histórico",
+          "version": "v6-historical",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture-schema.json",
+          "description": "Preservado para auditoria e compatibilidade das provas anteriores ao retorno estruturado v7."
         }
       ]
     },

@@ -102,8 +102,8 @@ public class PdeConstructionBpmTaskConsumer {
           new BpmContract(
               "pde-commercial-plan-offer",
               "productArchitecture",
-              "prompts/pde-commercial-plan/v6/product-architecture.md",
-              "prompts/pde-commercial-plan/v6/product-architecture-schema.json",
+              "prompts/pde-commercial-plan/v7/product-architecture.md",
+              "prompts/pde-commercial-plan/v7/product-architecture-schema.json",
               "pde-commercial-plan-v6",
               "APPROVE"),
           new BpmContract(

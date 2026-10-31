@@ -1,0 +1,18 @@
+{
+  "cardKey": "empatia-funcional-autodivulgacao-privacidade-chatbots",
+  "collection": "neuromarketing",
+  "title": "Empatia funcional pode incentivar autodivulgação: preservar escolha e privacidade",
+  "finding": "Entrevistas qualitativas com 21 usuários de chatbots identificaram relatos de divulgação de informações sensíveis quando a IA parecia compreender o contexto e oferecer ajuda útil, mesmo sem ser percebida como humana. As pessoas desejavam níveis de empatia e proteção de dados ajustáveis.",
+  "mechanism": "Hipótese interpretativa: compreensão contextual e ajuda percebida podem favorecer confiança e diminuir cautela na autodivulgação sem exigir antropomorfismo. O estudo não isolou causalmente esse mecanismo.",
+  "commercialApplication": "Para agentes B2C, testar atendimento objetivo versus apoio contextual escolhido pelo usuário, com informação clara sobre dados, opção de recusar detalhes, minimização por padrão e limites de reutilização entre contextos. Não otimizar pela coleta de dados sensíveis.",
+  "evidenceStrength": "Exploratória qualitativa: 21 entrevistas com usuários dos EUA, relatos autorreferidos, preprint arXiv de 28/10/2026. Não há teste randomizado nem demonstração de resultado comercial.",
+  "publishedOn": "2026-10-31",
+  "validUntil": "2026-12-15",
+  "experimentHypothesis": "Uma interface com tom configurável, explicação de finalidade e coleta mínima manterá a taxa de conclusão da tarefa e aumentará compreensão e controle percebido, reduzindo pedidos desnecessários de dados. Medir por teste controlado e auditoria de eventos, nunca por volume de informações compartilhadas.",
+  "risks": "O tom empático pode estimular divulgação excessiva, aparentar confidencialidade inexistente ou provocar dependência. Evitar sondagem de dados sensíveis e reutilização não autorizada; respeitar consentimento e LGPD.",
+  "limits": "Entrevistas pequenas e seletivas não fornecem estimativa de efeito, causalidade, generalização brasileira ou impacto em conversão. Recomendações ainda não validadas no estudo; resultados reais devem ser medidos separadamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-31-empatia-funcional-divulgacao-privacidade.md",
+  "sourceTitle": "Cao et al. (2026) — Empatia percebida, autodivulgação e privacidade em chatbots (fonte revisada)",
+  "sourceSha256": "40004e17174b095f42a669742c160740ee06d4be7d76ae42f90832c5bc8a7da3"
+}

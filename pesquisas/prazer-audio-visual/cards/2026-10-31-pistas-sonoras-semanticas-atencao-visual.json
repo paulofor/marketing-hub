@@ -1,0 +1,18 @@
+{
+  "cardKey": "pistas-sonoras-semanticas-atencao-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Sons com significado relacionado podem orientar a busca visual",
+  "finding": "Três experimentos pré-registrados encontraram modulação gradual da velocidade de busca visual pela proximidade semântica entre som e imagem; o efeito também apareceu em tarefas nas quais o som era irrelevante.",
+  "mechanism": "Associações semânticas entre audição e visão podem priorizar representações de objetos e orientar a seleção da atenção, sem equivaler a prazer ou memória melhorada.",
+  "commercialApplication": "Testar pistas sonoras semanticamente relacionadas a objetos ou ações de interface contra sons não relacionados e silêncio, mantendo intensidade e duração iguais.",
+  "evidenceStrength": "Moderada para orientação atencional em tarefas laboratoriais com três experimentos; baixa para prazer, vídeo comercial e conversão.",
+  "publishedOn": "2026-10-31",
+  "validUntil": "2026-12-15",
+  "experimentHypothesis": "Pistas sonoras semanticamente relacionadas ao alvo reduzirão tempo de localização ou erros em tarefas visuais específicas, sem elevar desconforto e distração.",
+  "risks": "Sons podem competir com outra tarefa, aumentar sobrecarga ou afetar acessibilidade; não equiparar atração da atenção a prazer, compreensão ou venda.",
+  "limits": "Estímulos de busca visual controlada; resumo acessível não confirma tamanhos amostrais e magnitudes; ausência de validação em produtos digitais reais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-31-pistas-sonoras-semanticas-atencao-visual-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Wegner-Clemens et al. (2026), atenção audiovisual semântica",
+  "sourceSha256": "3670128e54775b976d5c80a67587d04f52072df8ecaec7503e158a6530a19bd4"
+}

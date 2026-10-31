@@ -14,6 +14,18 @@ export interface PreparationAuthorization {
   current: boolean;
 }
 export interface ExecutionFinance {
+  advice?: {
+    status: string;
+    title: string;
+    recommendation: string;
+    basis: string;
+    sourceId: number | null;
+    producedAt: string | null;
+    sourceUrl: string;
+    figures: { label: string; value: number | null; unit: string }[];
+    caution: string;
+    fullRationale: string | null;
+  };
   productId: number;
   productName: string;
   chainId: number;

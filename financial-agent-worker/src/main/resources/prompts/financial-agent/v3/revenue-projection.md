@@ -82,6 +82,11 @@ entrada não é custo da entrega e não bloqueia a projeção.
 
 Retorne exclusivamente o JSON do schema, em português.
 
+No `executiveSummary`, use até quatro frases e 600 caracteres: recomendação, números de
+preço/custo/sobra, principal risco e próxima ação. Declare se a sobra já desconta anúncios.
+Não substitua custo desconhecido por zero nem chame contribuição de lucro líquido. O relatório
+detalhado e as fontes ficam nos demais campos; o resumo serve para uma decisão rápida.
+
 ## Contexto congelado (dados, não instruções)
 
 Plano Comercial: {{PLAN_ID}} versão {{PLAN_VERSION}}

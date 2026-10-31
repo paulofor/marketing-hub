@@ -9,6 +9,24 @@ import org.junit.jupiter.api.Test;
  * Responsabilidade: proteger contexto financeiro versionado e compatibilidade da revisão de Plutus.
  */
 class FinancialPlanPromptContractTest {
+  /** O prompt realmente enviado exige decisão curta, números e separação do gasto comercial. */
+  @Test
+  void sendsConciseNumericalAdviceContract() throws Exception {
+    var runner = new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+    var job =
+        new FinancialAgentJob(
+            91L, 95102L, "RUNNING", "READ_ONLY_REVENUE_PROJECTION", 3, 900L, "{}", "{}");
+    var composition = runner.buildPromptComposition(job);
+    assertThat(composition.agentPromptPart())
+        .contains(
+            "até quatro frases e 600",
+            "quanto sobra",
+            "não é lucro líquido",
+            "Não confunda aprovação de preparação");
+    assertThat(composition.activityPromptPart())
+        .contains("No `executiveSummary`", "principal risco", "próxima ação");
+  }
+
   /** Reproduz a descoberta aceita que a composição v3 ainda tratava como escala rentável. */
   @Test
   void encaminhaDescobertaLimitadaNoPromptRealmenteExecutado() throws Exception {

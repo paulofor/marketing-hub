@@ -14,6 +14,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.financialplan.v1.service.FinancialPlanService;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.learningcycle.*;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
@@ -41,10 +42,12 @@ class LearningCycleFinancialReviewTest {
   final CyclePreparationCostRepository costs = mock(CyclePreparationCostRepository.class);
   final CommercialPlanRepository commercial = mock(CommercialPlanRepository.class);
   final FinancialPlanService plans = mock(FinancialPlanService.class);
+  final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
   final LearningCyclePreparationBudget budget = new LearningCyclePreparationBudget(events, json);
   final LearningCycleVideoBudget video = new LearningCycleVideoBudget(events, json);
   final LearningCycleFinancialReview review =
-      new LearningCycleFinancialReview(costs, budget, video, commercial, plans);
+      new LearningCycleFinancialReview(
+          costs, budget, video, commercial, plans, new LearningCycleFinancialAdvice(tasks, json));
   final List<LearningSalesCycleEvent> history = new ArrayList<>();
   final LearningSalesCycle cycle = new LearningSalesCycle();
   final Product product = Product.builder().id(7L).name("Produto de teste").build();
@@ -144,6 +147,7 @@ class LearningCycleFinancialReviewTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.authorization").isEmpty())
         .andExpect(jsonPath("$.availableUsd").isEmpty())
+        .andExpect(jsonPath("$.advice.status").value("UNAVAILABLE"))
         .andExpect(jsonPath("$.unreportedTasks").value(2));
     String input = json.write(decision());
     for (int i = 0; i < 2; i++)
@@ -160,6 +164,40 @@ class LearningCycleFinancialReviewTest {
     assertThat(json.read(history.getFirst().getEvidenceJson()).path("mediaAuthorized").asBoolean())
         .isFalse();
     verifyNoInteractions(plans);
+  }
+
+  /** Entrega conselho do planejamento pelo endpoint mesmo sem plano comercial vinculado. */
+  @Test
+  void exposesPlanningAdviceWithoutCreatingFinancialRevisionOrTasks() throws Exception {
+    when(tasks.findFinancialAdviceSnapshots(eq("experiment:112"), any()))
+        .thenReturn(
+            List.of(
+                new FinancialTaskSnapshot(
+                    90883L,
+                    126L,
+                    "COMPLETED",
+                    now,
+                    now,
+                    true,
+                    """
+            {"mode":"AGENT_VALIDATION_HYPOTHESIS","decision":"APPROVE",
+             "economics":{"offerPriceBrl":100,"variableCostPerSaleBrl":60,"contributionPerSaleBrl":40},
+             "rationale":"Hipótese interna de teste, antes dos anúncios."}
+            """)));
+    http.perform(
+            get(
+                "/api/business-process-chains/learning-cycles/v1/products/7/19/financial-review?chainId=27"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.financialPlan").isEmpty())
+        .andExpect(jsonPath("$.advice.status").value("PREPARATION_ONLY"))
+        .andExpect(jsonPath("$.advice.sourceId").value(90883))
+        .andExpect(jsonPath("$.advice.figures[2].value").value(40))
+        .andExpect(
+            jsonPath("$.advice.caution")
+                .value(org.hamcrest.Matchers.containsString("não é lucro líquido")));
+    verify(tasks, never()).save(any());
+    verifyNoInteractions(plans);
+    assertThat(history).isEmpty();
   }
 
   /** Recusa revisão vencida, confirmação ausente, valores negativos e contexto divergente. */

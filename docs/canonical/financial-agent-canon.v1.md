@@ -160,6 +160,14 @@ de contrato executável precisa ficar explícita, não pode ser declarada resolv
 
 ## Relatório
 
+Por decisão de 31/10/2026, o parecer voltado ao administrador deve ser curto, numérico e em
+linguagem simples: até quatro frases sobre recomendação, preço/custo/sobra, risco principal
+e próximo passo. Usar `executiveSummary` ou `rationale`, conforme o schema da atividade.
+Explicar aquisição como custo para conquistar uma compra e contribuição como sobra, sempre
+indicando se anúncios já foram descontados. Não inventar números, tratar custo ausente como
+zero, confundir teto com consumo ou apresentar preparo interno como liberação comercial.
+Detalhes, cenários, fontes e limites permanecem nos campos completos e sob demanda na tela.
+
 Cada execução persiste o snapshot recebido, totais reconciliados, cobertura das fontes, divergências, decisão, resposta bruta, modelo, custo da execução, falha e relatório diário com data e hora.
 
 Nas conclusões de Atena e Plutus, mesmo sem tarefa BPM vinculada, contadores completos de entrada,

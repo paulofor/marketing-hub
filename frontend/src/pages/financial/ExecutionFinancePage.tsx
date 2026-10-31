@@ -6,7 +6,7 @@ import {
   type ExecutionFinance,
   type PreparationBudgetDecision,
 } from "../../api/financial/useExecutionFinance";
-import FinancialPlanPlutusDetails from "./FinancialPlanPlutusDetails";
+import ExecutionFinancialAdvice from "./ExecutionFinancialAdvice";
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import "./ExecutionFinancePage.css";
 
@@ -127,97 +127,7 @@ export default function ExecutionFinancePage() {
             )}
             <CostChart data={data} />
           </section>
-          <section className="card p-3 mb-3" aria-label="Conselho de Plutus">
-            <h2 className="h4">Conselho de Plutus e retorno esperado</h2>
-            <p>
-              Contribuição é o que sobra após custos variáveis e aquisição.
-              Ajuda a cobrir custos fixos; não é lucro líquido.
-            </p>
-            {data.financialPlan ? (
-              <>
-                <p>
-                  Plano financeiro #{data.financialPlan.id}, revisão{" "}
-                  {data.financialPlan.revision}.{" "}
-                  {data.financialPlan.stale ? (
-                    <strong>
-                      Referências desatualizadas: reavalie antes de decidir.
-                    </strong>
-                  ) : (
-                    "Projeções da revisão vinculada ao experimento."
-                  )}
-                </p>
-                <div
-                  className="finance-scenarios"
-                  aria-label="Gráfico de contribuição projetada"
-                >
-                  {data.financialPlan.evaluation.scenarios.map((scenario) => (
-                    <div key={scenario.code}>
-                      <strong>{scenario.label}</strong>
-                      <Meter
-                        value={scenario.marginPercent}
-                        max={100}
-                        label="Margem projetada"
-                      />
-                      <span>
-                        {scenario.marginPercent == null
-                          ? "Margem não calculada"
-                          : `${scenario.marginPercent.toLocaleString("pt-BR")}% de contribuição`}
-                      </span>
-                      <p>
-                        Aquisição máxima por cliente:{" "}
-                        {money(scenario.maximumAffordableCacBrl, "BRL")}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                {data.financialPlan.analysis?.result ? (
-                  <>
-                    <p>
-                      Parecer #{data.financialPlan.analysis.executionId} ·{" "}
-                      {data.financialPlan.analysis.finishedAt
-                        ? new Date(
-                            data.financialPlan.analysis.finishedAt,
-                          ).toLocaleString("pt-BR")
-                        : "Em elaboração"}
-                    </p>
-                    <FinancialPlanPlutusDetails
-                      result={data.financialPlan.analysis.result}
-                      money={(n) => money(n, "BRL")}
-                      percent={(n) =>
-                        n == null
-                          ? "Não informado"
-                          : `${n.toLocaleString("pt-BR")}%`
-                      }
-                    />
-                  </>
-                ) : (
-                  <p>
-                    Ainda não há conselho de Plutus disponível para esta
-                    revisão. A consulta não inicia análise paga.
-                  </p>
-                )}
-                {!!data.financialPlan.pendingActions.length && (
-                  <ul>
-                    {data.financialPlan.pendingActions.map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <p>
-                Não foi localizada uma revisão financeira única vinculada a este
-                experimento. Abra o plano para conferir custos, cenários e
-                solicitar o parecer de Plutus.
-              </p>
-            )}
-            <Link
-              className="btn btn-outline-primary align-self-start"
-              to={data.planUrl}
-            >
-              Analisar cenários e conselho de Plutus
-            </Link>
-          </section>
+          <ExecutionFinancialAdvice data={data} />
           <section className="card p-3 mb-3" aria-label="Orçamentos separados">
             <h2 className="h4">Anúncios e audiovisual</h2>
             <p>

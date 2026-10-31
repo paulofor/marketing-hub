@@ -1,0 +1,18 @@
+{
+  "cardKey": "foco-atencional-musica-afeto-contextual",
+  "collection": "prazer-audio-visual",
+  "title": "A atenção direcionada à música pode mudar o afeto contextual",
+  "finding": "Em dois experimentos de corrida intensa com música assíncrona, dirigir o foco à música apresentou vantagem na valência afetiva e no prazer lembrado em comparação ao foco corporal, com padrão fNIRS específico.",
+  "mechanism": "Atenção alocada à música compete com sinais corporais e modifica a experiência afetiva; efeitos neurais medidos por oxigenação pré-frontal não são medições de dopamina.",
+  "commercialApplication": "Avaliar em experiências digitais voluntárias se orientar discretamente a atenção para uma trilha muda prazer e esforço sem prejudicar a tarefa principal.",
+  "evidenceStrength": "Moderada para exercícios intensos com manipulação de foco; baixa para espectadores, marketing, memória e conversões.",
+  "publishedOn": "2026-10-31",
+  "validUntil": "2026-12-15",
+  "experimentHypothesis": "Com a mesma trilha e conteúdo, orientar atenção à música alterará prazer subjetivo sem prejudicar compreensão, em comparação com instrução neutra.",
+  "risks": "Estimular atenção musical pode distrair da mensagem ou elevar esforço; não concluir que a música sempre melhora prazer ou que ativação neural prova o efeito.",
+  "limits": "Estudo de corrida com 70–80% da reserva de frequência cardíaca e música assíncrona, não de publicidade; generalização aos vídeos é não testada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-31-foco-atencional-musica-afeto-contextual-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Quan et al. (2026), atenção musical e prazer lembrado",
+  "sourceSha256": "8aecfa68f70890a3c096958ad87f675087eae83d56d3cb7a381a3814ae222cb6"
+}

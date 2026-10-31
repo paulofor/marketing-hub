@@ -360,6 +360,14 @@ paths:
   /products/{productId}/{cycleId}/financial-review:
     get:
       summary: Demonstração financeira segregada do ciclo, sem iniciar consumo
+      description: >-
+        Inclui budgets (code PREPARATION/VIDEO/MEDIA, title, currency USD/BRL, purpose,
+        scope, limit anulável, limitLabel, status, explanation, consumptionNote) e
+        mediaDecision (available, reason, windowStart, windowEnd anuláveis). available
+        permite abrir o formulário canônico na etapa AUTHORIZATION, não é aprovação
+        comercial; o endpoint budget-authorization revalida todos os gates. Os três
+        limites são independentes, não são somados e não representam gasto realizado.
+        Ausência de teto de vídeos não equivale a custo zero nem obriga nova produção.
       parameters:
         - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
         - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}

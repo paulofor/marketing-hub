@@ -235,7 +235,7 @@ it("mostra insumos ausentes sem bloquear o aceite disponível no backend", () =>
     screen.getByRole("link", { name: "Ver preparação do experimento" }),
   ).toHaveAttribute("href", "/experiments/92");
   expect(
-    screen.getByRole("button", { name: "Aprovar orçamento" }),
+    screen.getByRole("button", { name: "Aprovar limite de anúncios" }),
   ).toBeEnabled();
   expect(mutateAsync).not.toHaveBeenCalled();
 });

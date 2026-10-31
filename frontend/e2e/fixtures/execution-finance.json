@@ -109,5 +109,49 @@
     ],
     "caution": "Cenário simulado. Contribuição não é lucro líquido.",
     "fullRationale": "Detalhamento completo das premissas de teste."
+  },
+  "budgets": [
+    {
+      "code": "PREPARATION",
+      "title": "Preparar o produto",
+      "currency": "USD",
+      "purpose": "Trabalho dos agentes para pesquisar, construir e revisar o produto e sua comunicação.",
+      "scope": "Teto acumulado: inclui as tarefas anteriores do produto e as próximas desta preparação.",
+      "limit": null,
+      "limitLabel": "Limite total de preparação",
+      "status": "Sem limite registrado para esta versão",
+      "explanation": "Não libera geração paga de vídeos nem anúncios. A reserva ocupa parte deste limite; não é um valor extra.",
+      "consumptionNote": "Estimativas das tarefas; não é fatura."
+    },
+    {
+      "code": "VIDEO",
+      "title": "Produzir vídeos",
+      "currency": "USD",
+      "purpose": "Criar os vídeos: imagens e cenas, voz, montagem e revisões do anúncio e da demonstração.",
+      "scope": "Um teto para os dois vídeos e suas revisões. Não é por vídeo.",
+      "limit": null,
+      "limitLabel": "Limite total dos vídeos",
+      "status": "Sem autorização de vídeos nesta versão",
+      "explanation": "É separado da preparação e dos anúncios. Reutilizar uma peça pronta não exige gerar outro vídeo.",
+      "consumptionNote": "Consumo e saldo dos vídeos não estão consolidados nesta demonstração."
+    },
+    {
+      "code": "MEDIA",
+      "title": "Pagar anúncios",
+      "currency": "BRL",
+      "purpose": "Valor pago à plataforma, como o Instagram, para exibir os anúncios ao público.",
+      "scope": "Teto total do ciclo. O limite diário e o período são conferidos na aprovação.",
+      "limit": 89.95,
+      "limitLabel": "Limite registrado para anúncios",
+      "status": "Limite registrado; conferir liberação comercial",
+      "explanation": "Não paga a criação dos vídeos. Registrar um limite não ativa a campanha.",
+      "consumptionNote": "O valor é limite, não gasto realizado."
+    }
+  ],
+  "mediaDecision": {
+    "available": false,
+    "reason": "A aprovação de anúncios estará disponível aqui quando o ciclo chegar à etapa Autorizar orçamento.",
+    "windowStart": null,
+    "windowEnd": null
   }
 }

@@ -293,6 +293,37 @@ class ProcessRunCreativeRecoveryPersistenceTest {
                   completed)));
   }
 
+  /** A conciliação e o botão retomar preservam a pausa financeira até uma decisão válida. */
+  @Test
+  void pausedFinancialCorrectionSurvivesReconciliationAndResumeWithoutReceipt() throws Exception {
+    var run = start();
+    tick(run.id());
+    callback("nonAudiovisual", "COMPLETED", null);
+    tick(run.id());
+    callback(
+        "customer",
+        "BLOCKED",
+        "{\"decision\":\"ADJUST\",\"requiredChanges\":[\"Corrigir a entrada\"]}");
+    state("nonAudiovisual", "NOT_STARTED", false);
+    runs.findById(run.id()).orElseThrow().setStatus("BLOCKED");
+    when(context.correctionBudgetBlockReason(any(), any()))
+        .thenReturn("Correção pausada: confira a demonstração financeira.");
+    var blocked = tick(run.id());
+    assertThat(blocked.status()).isEqualTo("PAUSED");
+    assertThat(blocked.currentActivityId()).isEqualTo("nonAudiovisual");
+    assertThat(blocked.reason()).contains("demonstração financeira");
+    for (int i = 0; i < 3; i++) tick(run.id());
+    service.resume(94110L, 94164L, run.id());
+    assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
+    assertThat(requested).containsExactly("nonAudiovisual", "customer");
+    assertThat(service.history(94110L, 94164L, run.id(), null))
+        .anyMatch(event -> "CORRECTION_BUDGET_REQUIRED".equals(event.eventType()));
+    when(context.correctionBudgetBlockReason(any(), any())).thenReturn(null);
+    service.resume(94110L, 94164L, run.id());
+    assertThat(tick(run.id()).status()).isEqualTo("WAITING_ACTIVITY");
+    assertThat(requested).containsExactly("nonAudiovisual", "customer", "nonAudiovisual");
+  }
+
   /** Falha da nova produção não pode repetir consumo, inclusive após reinício do coordenador. */
   @Test
   void correctionFailureStopsWithoutRepeatingSameInput() throws Exception {
@@ -453,6 +484,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
             null,
             mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
     var factory = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
+    factory.registerSingleton("correctionBudget", mock(ProcessRunCorrectionBudget.class));
     factory.registerSingleton("communicationInputs", provider);
     var injector =
         new org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor();

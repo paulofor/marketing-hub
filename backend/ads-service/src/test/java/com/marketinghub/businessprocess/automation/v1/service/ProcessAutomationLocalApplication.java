@@ -52,6 +52,14 @@ import org.springframework.web.server.ResponseStatusException;
   ProcessAutomationLocalApplication.FixtureController.class
 })
 public class ProcessAutomationLocalApplication {
+  /**
+   * Isola recibos financeiros, exercitados pelo guard real e pela regressão de pausa persistida.
+   */
+  @Bean
+  ProcessRunCorrectionBudget correctionBudget() {
+    return mock(ProcessRunCorrectionBudget.class);
+  }
+
   /** Isola o cadastro de retratos, coberto pelo teste de persistência do contrato de execução. */
   @Bean
   ProcessRunOwnerPortrait ownerPortrait() {

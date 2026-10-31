@@ -106,6 +106,14 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleController.class
 })
 public class LearningCycleLocalApplication {
+  /** Isola consumo de novos retornos; recibos e guard financeiro possuem regressões próprias. */
+  @Bean
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunCorrectionBudget
+      correctionBudget() {
+    return mock(
+        com.marketinghub.businessprocess.automation.v1.service.ProcessRunCorrectionBudget.class);
+  }
+
   /** Isola o cadastro de retratos, coberto pelo teste de persistência do contrato de execução. */
   @Bean
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunOwnerPortrait ownerPortrait() {

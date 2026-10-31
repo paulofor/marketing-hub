@@ -164,10 +164,17 @@ class IrisCreativeExecutionInputVersionTest {
     return provider;
   }
 
-  /** Injeta o contrato existente como no container Spring, sem dependência concreta no núcleo. */
+  /**
+   * Injeta o contrato e isola o guard financeiro, preservando o comportamento do container Spring.
+   */
   private void inject(
       ProcessRunContext context, CommunicationMaterializationContextProvider provider) {
     var factory = new DefaultListableBeanFactory();
+    factory.registerSingleton(
+        "correctionBudget",
+        mock(
+            com.marketinghub.businessprocess.automation.v1.service.ProcessRunCorrectionBudget
+                .class));
     factory.registerSingleton("communicationInputs", provider);
     var injector = new AutowiredAnnotationBeanPostProcessor();
     injector.setBeanFactory(factory);

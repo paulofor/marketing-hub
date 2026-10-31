@@ -28,6 +28,18 @@ retornos no mesmo ciclo/definição; exceder o limite bloqueia com motivo visív
 investigação, sem novas inferências automáticas. Erro técnico usa a recuperação existente.
 STOP, pausa, orçamento, contexto encerrado e revisões independentes prevalecem.
 
+**Conferência financeira do retorno — 31/10/2026:** `BLOCKED` continua observado pelo
+reconciliador; não equivale a `PAUSED`. Antes de criar uma nova tarefa de agente para
+correção ou revalidação em ciclo de aprendizado, o backend deve consultar o recibo
+cumulativo da versão atual, o custo conhecido do produto e a reserva escolhida.
+Ausência de recibo ou custo conhecido, saldo esgotado ou inferior à estimativa
+histórica da atividade gera pausa persistida `CORRECTION_BUDGET_REQUIRED`, com
+acesso à demonstração financeira. Retomar sem corrigir a condição volta à pausa,
+sem nova tarefa. Notas antigas não se tornam autorização silenciosa. A regra não
+cancela trabalho iniciado nem impede replay de callback; estimativa não garante
+o preço futuro nem substitui conciliação. Antes de publicar mudança que destrava
+uma ocorrência, conferir também se ela está realmente pausada quando falta saldo.
+
 No planejamento PDE, contradição comprovada entre entrada implementada e estratégia
 continua usando o validador determinístico existente, inclusive para respostas anteriores
 ao novo contrato. A tentativa bloqueada não pode ser repetida sem predecessor corrigido.

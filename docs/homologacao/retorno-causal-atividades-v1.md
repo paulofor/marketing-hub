@@ -65,6 +65,51 @@ Não há redução comercial medida nem aumento de vendas comprovado.
 
 A consulta financeira de 30/10 registra US$ 64,289364 conhecidos estimados e três
 tarefas sem custo, com ausência de autorização estruturada própria no ciclo 19.
-A correção não retoma trabalho pago nem amplia o teto anterior de US$ 50.
+A primeira validação não exercitou o polling de um processo `BLOCKED` contra
+o financeiro real. Na publicação, a origem foi corretamente reaberta, mas o
+reconciliador iniciou Atena #886 sem conferir o teto anterior de US$ 50. A execução
+#95 foi pausada pela UI, sem cancelar a tarefa iniciada. Esse consumo não recebeu
+autorização retroativa; seu resultado e custo precisam permanecer auditados.
 A demonstração está em `/financial/execution?productId=7&chainId=27&cycleId=19`.
 Histórico financeiro e novas decisões pertencem ao fluxo administrativo existente.
+
+## Complemento de homologação — 31/10/2026
+
+Entre congelar todos os bloqueios, interpretar limites em notas livres e consultar
+o recibo financeiro existente antes do retorno, foi escolhida a terceira opção.
+Ela preserva continuação automática autorizada e pausa apenas o consumo sem cobertura.
+
+| Caso adicional | Aceite |
+|---|---|
+| Bloqueado observado pelo polling | Origem reconhecida, mas nenhum novo trabalho sem recibo. |
+| Retomar repetido sem limite | Pausa persistida, diário com causa e zero tarefas adicionais. |
+| Custo acumulado acima do teto | Pausa antes da criação de tarefa. |
+| Reserva e custo anterior da atividade | Saldo disponível deve cobrir a referência histórica; sem garantir custo futuro. |
+| Recibo de outro produto/ciclo ou custo totalmente desconhecido | Nenhuma autorização presumida. |
+| Recibo suficiente e retomada explícita | Uma tarefa, com deduplicação e histórico preservados. |
+| Tarefa já iniciada e callback | Receber o resultado; impedir a próxima atividade durante a pausa. |
+
+A proteção limita novas tarefas de correção/revalidação em ciclos de aprendizado;
+não é um mecanismo de faturamento do provedor nem uma migração de autorizações antigas.
+
+### Falso bloqueio e recuperação da resposta
+
+Atena 886 encerrou com decisão `APPROVE`, mas o validador recusou o texto
+“uma matriz de nove combinações, sem REFERENCE/REDUCED” como se exigisse a comparação.
+Foi escolhida uma exclusão explícita e restrita ao fim da cláusula, em vez de retirar
+esse controle ou interpretar livremente qualquer negação. As regressões preservam
+bloqueios para obrigação em outra frase/campo, contraste e “não homologar sem”.
+Backend e executor aplicam a mesma regra, mantendo a capacidade ligada à candidata.
+
+A resposta e o transporte originais de 886 foram revalidados localmente pelo
+validador completo do executor. O replay usa os endpoints oficiais de estado e
+callback, sem enviar consumo novamente, conservando resposta, evidência, prompt,
+modelo e custo. A execução permanece pausada durante essa recuperação. O custo
+registrado de 886 é US$ 3,087526 estimados; não é autorização nem cobrança conciliada.
+
+Resultado da rodada complementar: 367 testes relevantes de backend e 100 testes
+da suíte completa de Atena aprovados, incluindo replay local da resposta 886. Mais 152 testes do serviço de tarefas passaram. A
+regressão do callback também reproduz outra identidade e exige custo e tokens
+inalterados após reaplicação e repetição idempotente. A prova compartilhada de Mira recebe atestação v67 de compatibilidade;
+a atestação de Vega permanece compatível e preservada.
+nenhum parecer comercial é renovado.

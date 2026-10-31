@@ -23,6 +23,7 @@ public class LearningCycleFinancialReview {
   private final LearningCycleVideoBudget video;
   private final CommercialPlanRepository commercialPlans;
   private final FinancialPlanService plans;
+  private final LearningCycleFinancialAdvice advice;
 
   /** Mostra estimativas, lacunas e parecer real sem inferir teto a partir de texto histórico. */
   public CycleFinancialReview read(LearningSalesCycle cycle, Product product, Instant now) {
@@ -91,6 +92,7 @@ public class LearningCycleFinancialReview {
         slices,
         auth,
         history,
-        plan);
+        plan,
+        advice.read(cycle, plan, planUrl));
   }
 }

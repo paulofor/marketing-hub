@@ -278,6 +278,25 @@ continua idempotente. O histórico, pareceres e custos anteriores não são recl
 
 ## Demonstração financeira na execução — decisão de 30/10/2026
 
+### Parecer curto para decisão — 31/10/2026
+
+O card apresenta primeiro uma recomendação curta e números: preço, custo por venda, sobra
+antes ou depois da aquisição (base explícita), limite de aquisição e equilíbrio quando
+calculáveis. Detalhes, premissas e parecer integral ficam recolhidos. Contribuição não é
+lucro líquido; projeções e estimativas não são vendas nem faturas conciliadas.
+
+A consulta reutiliza o parecer real do plano financeiro vinculado. Na ausência dele, pode
+mostrar a última avaliação de Plutus no planejamento do mesmo experimento, identificada como
+hipótese de preparação. Não transfere autorizações ou aprovações comerciais. Nova estratégia,
+nova versão, tentativa pendente/reprovada ou ocorrência invalidada exige indicação de
+reavaliação; nunca ocultar essa condição para apresentar um parecer favorável antigo.
+
+O backend compõe os números e a situação a partir das fontes persistidas; o frontend apenas
+apresenta. Sem parecer, mostrar a ausência e os custos conhecidos, sem fabricar conselho de
+Plutus. A leitura não dispara IA, altera limites nem retoma processos. O resumo do agente
+deve usar até quatro frases, com recomendação, números, principal risco e próximo passo;
+detalhes e fontes permanecem nos demais campos do contrato.
+
 O card de execução deve oferecer **Ver demonstração financeira**, inclusive em pausa ou bloqueio. A URL identifica produto, cadeia e ciclo. A demonstração apresenta custos conhecidos, lacunas, gráficos, limites separados por finalidade/moeda e o parecer real de Plutus do plano associado ao experimento. Ausência, ambiguidade e desatualização não podem ser apresentadas como aprovação.
 
 O usuário pode ajustar e aprovar o teto cumulativo de preparação e revisão em US$, incluindo custos anteriores e uma reserva explícita para valores ainda não informados. O recibo imutável usa o ledger de eventos do ciclo, revisão esperada e chave de idempotência. A aprovação não inicia tarefas, não amplia mídia nem audiovisual, não substitui homologação e não migra autorização para sucessores. Mídia e audiovisual continuam pelos contratos existentes.

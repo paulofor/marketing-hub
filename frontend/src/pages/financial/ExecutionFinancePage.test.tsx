@@ -42,7 +42,7 @@ function mount() {
 it("mostra custos e parecer real, sem autorizar ou disparar análise ao abrir", async () => {
   mount();
   await screen.findByText(fixture.productName);
-  expect(screen.getByText(/Parecer simulado/)).toBeVisible();
+  expect(screen.getAllByText(/Parecer simulado/)[0]).toBeVisible();
   expect(
     screen.getByRole("link", { name: /Analisar cenários/ }),
   ).toHaveAttribute("href", fixture.planUrl);
@@ -122,6 +122,15 @@ it("mantém histórico de ciclo encerrado sem formulário de aprovação", async
       canAuthorize: false,
       authorizationBlocker: "Ciclo encerrado",
       financialPlan: null,
+      advice: {
+        ...fixture.advice,
+        status: "UNAVAILABLE",
+        sourceId: null,
+        figures: [],
+        fullRationale: null,
+        title: "Sem parecer disponível",
+        recommendation: "Ainda não há parecer de Plutus neste ciclo.",
+      },
     },
   });
   mount();
@@ -129,7 +138,7 @@ it("mantém histórico de ciclo encerrado sem formulário de aprovação", async
   expect(
     screen.queryByRole("button", { name: "Aprovar limite de preparação" }),
   ).not.toBeInTheDocument();
-  expect(screen.getByText(/Não foi localizada uma revisão/)).toBeVisible();
+  expect(screen.getByText(/Ainda não há parecer de Plutus/)).toBeVisible();
   expect(axios.post).not.toHaveBeenCalled();
 });
 it("oculta decisões de uma consulta indisponível", async () => {
@@ -139,4 +148,36 @@ it("oculta decisões de uma consulta indisponível", async () => {
   expect(
     screen.queryByRole("button", { name: "Aprovar limite de preparação" }),
   ).not.toBeInTheDocument();
+});
+
+it("mostra referência anterior de Plutus com números e mantém o relatório recolhido", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...fixture,
+      financialPlan: null,
+      advice: {
+        ...fixture.advice,
+        status: "STALE",
+        title: "Reavaliar antes de investir mais",
+        recommendation: "A estratégia mudou depois deste parecer.",
+        basis: "PLANNING",
+        sourceId: 883,
+        fullRationale: "Parecer integral anterior, sem renovação automática.",
+      },
+    },
+  });
+  mount();
+  await screen.findByText("Reavaliar antes de investir mais");
+  expect(
+    screen.getByText("A estratégia mudou depois deste parecer."),
+  ).toBeVisible();
+  expect(screen.getByText("R$ 67,00", { exact: false })).toBeVisible();
+  const detail = screen
+    .getByText("Ver parecer completo, cenários e fontes")
+    .closest("details");
+  expect(detail).not.toHaveAttribute("open");
+  expect(screen.getByText(/Parecer integral anterior/)).not.toBeVisible();
+  fireEvent.click(screen.getByText("Ver parecer completo, cenários e fontes"));
+  expect(detail).toHaveAttribute("open");
+  expect(axios.post).not.toHaveBeenCalled();
 });

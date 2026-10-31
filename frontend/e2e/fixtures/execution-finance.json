@@ -22,8 +22,16 @@
   "costCoverage": "PARTIAL_AGENT_TASK_ESTIMATES",
   "availableUsd": null,
   "costs": [
-    { "experimentId": 11000, "knownUsd": 30, "unreportedTasks": 1 },
-    { "experimentId": 11200, "knownUsd": 8.89, "unreportedTasks": 1 }
+    {
+      "experimentId": 11000,
+      "knownUsd": 30,
+      "unreportedTasks": 1
+    },
+    {
+      "experimentId": 11200,
+      "knownUsd": 8.89,
+      "unreportedTasks": 1
+    }
   ],
   "authorization": null,
   "history": [],
@@ -73,5 +81,33 @@
         "decisionBasis": "Parecer simulado: conferir custos de aquisição antes de avançar."
       }
     }
+  },
+  "advice": {
+    "status": "ADJUST",
+    "title": "Ajustar antes de avançar",
+    "recommendation": "Parecer simulado: conferir custos de aquisição antes de avançar.",
+    "basis": "FINANCIAL_PLAN",
+    "sourceId": 99999,
+    "producedAt": "2026-10-30T16:00:00Z",
+    "sourceUrl": "/financial/plans?productId=700&commercialPlanId=5500&revisionId=3100",
+    "figures": [
+      {
+        "label": "Preço por venda",
+        "value": 67,
+        "unit": "BRL"
+      },
+      {
+        "label": "Sobra por venda, após anúncios",
+        "value": 18,
+        "unit": "BRL"
+      },
+      {
+        "label": "Máximo para conquistar uma compra",
+        "value": 20,
+        "unit": "BRL"
+      }
+    ],
+    "caution": "Cenário simulado. Contribuição não é lucro líquido.",
+    "fullRationale": "Detalhamento completo das premissas de teste."
   }
 }

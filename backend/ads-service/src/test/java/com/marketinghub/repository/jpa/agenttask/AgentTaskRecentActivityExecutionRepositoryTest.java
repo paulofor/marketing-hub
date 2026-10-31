@@ -25,6 +25,54 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private AgentTaskRepository repository;
   @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
 
+  /** A leitura financeira é leve, exata e preserva a tentativa pendente mais recente. */
+  @Test
+  void readsLatestFinancialAdviceWithoutLoadingAuditOrOtherExperiments() {
+    var plutus = agent();
+    plutus.setAgentKey("financial-agent");
+    var process = process("pde-commercial-plan-offer", 1);
+    var previous = task(plutus, process, "economics", 883, "2026-10-30T19:00:00Z");
+    previous.setSourceReference("experiment:112");
+    previous.setResultJson("{\"decision\":\"APPROVE\"}");
+    var current = task(plutus, process, "economics", 884, "2026-10-30T20:00:00Z");
+    current.setSourceReference("experiment:112");
+    current.setStatus("IN_PROGRESS");
+    current.setExecutionPrompt("Auditoria excluída. ".repeat(100000));
+    task(plutus, process, "economics", 885, "2026-10-30T21:00:00Z")
+        .setSourceReference("experiment:111");
+    var strategy = task(plutus, process, "marketStrategy", 886, "2026-10-30T21:00:00Z");
+    strategy.setSourceReference("experiment:112");
+    entityManager.flush();
+    entityManager.clear();
+    var statistics =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+    try {
+      var result = repository.findFinancialAdviceSnapshots("experiment:112", PageRequest.of(0, 1));
+      assertThat(result).hasSize(1);
+      assertThat(result.getFirst().id()).isEqualTo(current.getId());
+      assertThat(result.getFirst().status()).isEqualTo("IN_PROGRESS");
+      assertThat(statistics.getEntityLoadCount()).isZero();
+      assertThat(
+              repository
+                  .existsBySourceReferenceAndProcessDefinitionIdAndProcessActivityIdAndCreatedAtAfter(
+                      "experiment:112", process.getId(), "marketStrategy", previous.getCreatedAt()))
+          .isTrue();
+      assertThat(
+              repository
+                  .existsBySourceReferenceAndProcessDefinitionIdAndProcessActivityIdAndCreatedAtAfter(
+                      "experiment:111", process.getId(), "marketStrategy", previous.getCreatedAt()))
+          .isFalse();
+    } finally {
+      statistics.setStatisticsEnabled(false);
+    }
+  }
+
   /** O retorno tardio consulta somente tentativas posteriores da atividade e origem exatas. */
   @Test
   void isolatesNewerAttemptsAcrossProductsActivitiesAndProcessVersions() {

@@ -131,7 +131,20 @@ try {
         exact: true,
       }),
     ).toBeVisible();
-    await expect(page.getByText(/Parecer simulado/)).toBeVisible();
+    const advice = page.getByRole("region", { name: "Conselho de Plutus" });
+    await expect(advice.getByText(/Parecer simulado/).first()).toBeVisible();
+    await expect(
+      advice.getByText("Preço por venda", { exact: true }),
+    ).toBeVisible();
+    const details = advice.locator("details");
+    assert.equal(await details.getAttribute("open"), null);
+    await advice.getByText("Ver parecer completo, cenários e fontes").click();
+    await expect(
+      advice.getByText(
+        `Plano financeiro #${fixture.financialPlan.id}, revisão ${fixture.financialPlan.revision}.`,
+      ),
+    ).toBeVisible();
+    await advice.getByText("Ver parecer completo, cenários e fontes").click();
     assert.equal(sent.length, 0);
     assert(
       await page.evaluate(
@@ -176,8 +189,52 @@ try {
       path: new URL(`${name}-approved.png`, output).pathname,
       fullPage: true,
     });
+    data.financialPlan = null;
+    data.advice = {
+      ...data.advice,
+      status: "STALE",
+      title: "Reavaliar antes de investir mais",
+      recommendation:
+        "A estratégia mudou. Estes números são referência para reavaliação.",
+      basis: "PLANNING",
+      figures: [
+        { label: "Preço por venda", value: 67, unit: "BRL" },
+        { label: "Custos por venda, sem anúncios", value: 41.74, unit: "BRL" },
+        {
+          label: "Sobra por venda, antes dos anúncios",
+          value: 25.26,
+          unit: "BRL",
+        },
+      ],
+      caution:
+        "Hipótese de planejamento, não aprovação comercial nem lucro líquido.",
+      fullRationale:
+        "Parecer de planejamento preservado para consulta. Dados de teste.",
+    };
+    await page.getByRole("button", { name: "Atualizar valores" }).click();
+    await expect(
+      advice.getByText("Reavaliar antes de investir mais"),
+    ).toBeVisible();
+    await expect(
+      advice.getByText("Custos por venda, sem anúncios", { exact: true }),
+    ).toBeVisible();
+    assert.equal(
+      sent.length,
+      2,
+      "Consultar o parecer não autoriza novos gastos",
+    );
+    assert.equal(await details.getAttribute("open"), null);
+    assert(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    );
+    await page.screenshot({
+      path: new URL(`${name}-planning-reference.png`, output).pathname,
+      fullPage: true,
+    });
     console.log(
-      `${name}: card, gráficos, parecer e aprovação recuperável passaram`,
+      `${name}: card, gráficos, parecer vigente, referência histórica sem plano e aprovação recuperável passaram`,
     );
     await context.close();
   }

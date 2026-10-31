@@ -32,7 +32,8 @@ public record CycleFinancialReview(
     List<CostSlice> costs,
     Authorization authorization,
     List<Authorization> history,
-    PlanView financialPlan) {
+    PlanView financialPlan,
+    FinancialAdvice advice) {
   /** Responsabilidade: expor custos agregados por experimento sem carregar auditorias. */
   public record CostSlice(Long experimentId, BigDecimal knownUsd, int unreportedTasks) {}
 

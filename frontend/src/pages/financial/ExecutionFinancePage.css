@@ -13,6 +13,22 @@
   padding: 1rem;
   border-radius: 12px;
 }
+.finance-advice {
+  border-left: 4px solid #405cce;
+}
+.finance-advice-title {
+  color: #263b83;
+  font-size: 1.1rem;
+}
+.finance-advice-budget {
+  background: #f4f7ff;
+  border-radius: 8px;
+  padding: 12px;
+}
+.finance-advice dt {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
 .finance-meter {
   height: 16px;
   background: #e6eaf5;

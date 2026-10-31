@@ -8,6 +8,7 @@ import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import com.marketinghub.agenttask.AgentTaskProcessExecutionEvidenceSnapshot;
 import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.FinancialTaskSnapshot;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -20,6 +21,27 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Lê a última avaliação de Plutus do experimento, incluindo tentativa ainda não concluída. */
+  @Query(
+      """
+      select new com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.FinancialTaskSnapshot(
+        task.id, process.id, task.status, task.createdAt, task.deliveredAt,
+        occurrence.objectiveAchieved, task.resultJson)
+      from AgentTask task join task.processDefinition process
+        left join task.activityInstance occurrence
+      where task.sourceReference = :reference
+        and process.processCode = 'pde-commercial-plan-offer'
+        and task.processActivityId = 'economics'
+        and task.assignedAgent.agentKey = 'financial-agent'
+      order by task.createdAt desc, task.id desc
+      """)
+  List<FinancialTaskSnapshot> findFinancialAdviceSnapshots(
+      @Param("reference") String reference, Pageable pageable);
+
+  /** Detecta estratégia posterior que exige reavaliar a economia sem carregar o histórico. */
+  boolean existsBySourceReferenceAndProcessDefinitionIdAndProcessActivityIdAndCreatedAtAfter(
+      String reference, Long processId, String activityId, java.time.Instant createdAt);
+
   /** Limita no SQL a tarefa mais recente, inclusive concluída, sem hidratar sua auditoria. */
   @Query(
       """

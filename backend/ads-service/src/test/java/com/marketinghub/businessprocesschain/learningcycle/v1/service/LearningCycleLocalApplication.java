@@ -90,6 +90,7 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleVideoBudget.class,
   LearningCyclePreparationBudget.class,
   LearningCycleFinancialReview.class,
+  LearningCycleFinancialAdvice.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunService.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunContext.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunNavigation.class,

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-sensenova-code2video-edicao-deterministica",
+  "collection": "video",
+  "title": "Testar SenseNova 6.8 Code2Video para animacoes editaveis por codigo",
+  "finding": "SenseNova/SenseTime liberou pesos de um modelo de 27B que escreve e revisa codigo para renderizar videos curtos, sob Apache-2.0 declarado no Hugging Face.",
+  "mechanism": "Os quadros sao calculados por codigo; texto, valores, objetos, timing e movimentos sao editaveis de modo deterministico e o agente inspeciona e corrige renders.",
+  "commercialApplication": "Marketing Hub: videos explicativos de oferta com precos corretos, tipografia, graficos, chamadas e variacoes programaticas de criativos sem regenerar tudo.",
+  "evidenceStrength": "Alta para pesos e documentacao oficial; limitada para desempenho e custos. Sem benchmark independente e sem API comercial gerenciada confirmada.",
+  "publishedOn": "2026-10-28",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Uma animacao base pode originar 10 variantes alterando apenas dados e texto com menor retrabalho que geradores de video convencionais.",
+  "risks": "Nao gera video fotorrealista; runs de agente podem demorar horas; deploy recomendado usa 4 GPUs; licencas de assets e dependencias exigem revisao; executar codigo gerado apenas em sandbox.",
+  "limits": "~27B parametros; contexto recomendado 512K; sem benchmark sistematico, preco de API ou custo por clip validado; pesos com Apache-2.0 declarado no model card.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-31-sensenova-code2video-pesos-codigo.md",
+  "sourceTitle": "Fonte revisada: SenseNova Code2Video, pesos, licenca, aplicacao e limitacoes",
+  "sourceSha256": "2d3836cd6fe2586c8be973761571280148e5da00beecddc96f196bfc3fe07b17"
+}

@@ -26,6 +26,24 @@ export interface ExecutionFinance {
     caution: string;
     fullRationale: string | null;
   };
+  budgets: {
+    code: "PREPARATION" | "VIDEO" | "MEDIA";
+    title: string;
+    currency: "USD" | "BRL";
+    purpose: string;
+    scope: string;
+    limit: number | null;
+    limitLabel: string;
+    status: string;
+    explanation: string;
+    consumptionNote: string;
+  }[];
+  mediaDecision: {
+    available: boolean;
+    reason: string;
+    windowStart: string | null;
+    windowEnd: string | null;
+  };
   productId: number;
   productName: string;
   chainId: number;
@@ -104,6 +122,12 @@ export function useExecutionFinance(
         queryKey: ["cycle-process-context", productId],
       });
       void client.invalidateQueries({ queryKey: ["process-automation"] });
+      void client.invalidateQueries({
+        queryKey: ["video-budget", productId, cycleId, chainId],
+      });
+      void client.invalidateQueries({
+        queryKey: ["learning-cycles", productId],
+      });
     },
   });
   return { query, approve };

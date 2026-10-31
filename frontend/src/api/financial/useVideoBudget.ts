@@ -95,6 +95,9 @@ export function useAuthorizeVideoBudget(
     onSuccess: async (data) => {
       client.setQueryData(["video-budget", productId, cycleId, chainId], data);
       await client.invalidateQueries({
+        queryKey: ["execution-finance", productId, chainId, cycleId],
+      });
+      await client.invalidateQueries({
         queryKey: ["learning-cycles", productId],
       });
       await client.invalidateQueries({

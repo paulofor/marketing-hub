@@ -181,3 +181,157 @@ it("mostra referência anterior de Plutus com números e mantém o relatório re
   expect(detail).toHaveAttribute("open");
   expect(axios.post).not.toHaveBeenCalled();
 });
+
+const videoBudget = {
+  productId: 700,
+  productName: fixture.productName,
+  internalName: "teste",
+  chainDefinitionId: 2700,
+  processDefinitionId: 1200,
+  cycleId: 1900,
+  experimentId: 11200,
+  productVersion: "teste-v3",
+  revision: 1,
+  stageLabel: "Definir os dois vídeos",
+  status: "AWAITING_LIMIT",
+  instruction: "Decisão financeira",
+  scope: "TWO_VIDEOS_PRODUCTION_AND_REVIEW",
+  currency: "USD",
+  canAuthorize: true,
+  blocker: null,
+  currentAuthorization: null,
+  history: [],
+  cycleUrl: fixture.cycleUrl,
+  financeUrl: fixture.videoUrl,
+};
+
+it("explica três finalidades e mostra bloqueio dos anúncios sem sair da demonstração", async () => {
+  mount();
+  await screen.findByText(fixture.productName);
+  expect(
+    screen.getByRole("heading", { name: "Preparar o produto" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Produzir vídeos" }),
+  ).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Pagar anúncios" })).toBeVisible();
+  expect(screen.getByText(/Produzir o vídeo é uma despesa/)).toBeVisible();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ver decisão dos anúncios aqui" }),
+  );
+  expect(await screen.findByText(fixture.mediaDecision.reason)).toBeVisible();
+  expect(screen.getByText(/ainda não definido neste ciclo/)).toBeVisible();
+  expect(axios.get).toHaveBeenCalledTimes(1);
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+it("aprova vídeos na mesma página pelo contrato próprio sem alterar preparação ou anúncios", async () => {
+  vi.mocked(axios.get).mockImplementation(async (url) => ({
+    data: String(url).endsWith("/video-budget") ? videoBudget : fixture,
+  }));
+  vi.mocked(axios.post).mockResolvedValue({ data: videoBudget });
+  mount();
+  await screen.findByText(fixture.productName);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ver decisão dos vídeos aqui" }),
+  );
+  await screen.findByRole("form", { name: "Autorizar teto dos vídeos" });
+  fireEvent.change(screen.getByLabelText(/Teto total autorizado \(USD\)/), {
+    target: { value: "12" },
+  });
+  fireEvent.change(screen.getByLabelText(/Responsável pela autorização/), {
+    target: { value: "Teste local" },
+  });
+  fireEvent.change(
+    screen.getByLabelText(/Objetivo e justificativa do investimento/),
+    { target: { value: "Somente produção de dois vídeos" } },
+  );
+  fireEvent.click(screen.getByLabelText(/Autorizo este teto total somente/));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Registrar teto autorizado" }),
+  );
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
+  expect(vi.mocked(axios.post).mock.calls[0][0]).toContain(
+    "/products/700/1900/video-budget",
+  );
+  expect(vi.mocked(axios.post).mock.calls[0][1]).toMatchObject({
+    budgetLimitUsd: "12",
+    chainDefinitionId: 2700,
+    experimentId: 11200,
+  });
+  expect(
+    screen.getByRole("heading", {
+      name: "Demonstração financeira",
+    }),
+  ).toBeVisible();
+});
+
+it("mostra na mesma tela o bloqueio de vídeos informado pelo backend", async () => {
+  vi.mocked(axios.get).mockImplementation(async (url) => ({
+    data: String(url).endsWith("/video-budget")
+      ? {
+          ...videoBudget,
+          canAuthorize: false,
+          blocker: "Conclua o planejamento antes de definir vídeos.",
+        }
+      : fixture,
+  }));
+  mount();
+  await screen.findByText(fixture.productName);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ver decisão dos vídeos aqui" }),
+  );
+  expect(
+    await screen.findByText("Conclua o planejamento antes de definir vídeos."),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("form", { name: "Autorizar teto dos vídeos" }),
+  ).not.toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+it("reutiliza a autorização de mídia na mesma tela com limites e replay próprios", async () => {
+  const view = {
+    ...fixture,
+    mediaDecision: { ...fixture.mediaDecision, available: true },
+  };
+  const cycle = {
+    id: 1900,
+    productId: 700,
+    chainDefinitionId: 2700,
+    experimentId: 11200,
+    revision: 1,
+    budgetLimitBrl: 89.95,
+    authorizationReview: { dailyBudgetBrl: 17.99 },
+    commands: [{ action: "COMPLETE", available: true }],
+    commercialPreparation: null,
+  };
+  vi.mocked(axios.get).mockImplementation(async (url) => ({
+    data: String(url).endsWith("/financial-review") ? view : [cycle],
+  }));
+  vi.mocked(axios.post).mockRejectedValue(new Error("Falha simulada"));
+  mount();
+  await screen.findByText(fixture.productName);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ver decisão dos anúncios aqui" }),
+  );
+  const submit = await screen.findByRole("button", {
+    name: "Aprovar limite de anúncios",
+  });
+  fireEvent.click(submit);
+  await screen.findByRole("alert");
+  fireEvent.click(submit);
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
+  const first = vi.mocked(axios.post).mock.calls[0];
+  expect(first[0]).toContain("/products/700/1900/budget-authorization");
+  expect(first[1]).toEqual(vi.mocked(axios.post).mock.calls[1][1]);
+  fireEvent.change(screen.getByLabelText(/Orçamento total \(R\$\)/), {
+    target: { value: "90" },
+  });
+  fireEvent.click(submit);
+  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(3));
+  expect(
+    (vi.mocked(axios.post).mock.calls[2][1] as { requestKey: string })
+      .requestKey,
+  ).not.toEqual((first[1] as { requestKey: string }).requestKey);
+});

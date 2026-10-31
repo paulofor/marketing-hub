@@ -302,6 +302,10 @@ export function useCycleMutation(productId?: number, cycleId?: number) {
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({
+          queryKey: ["execution-finance", productId],
+        }),
+        client.invalidateQueries({ queryKey: ["video-budget", productId] }),
         client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
         client.invalidateQueries({ queryKey: ["learning-cycle-entry"] }),
         client.invalidateQueries({
@@ -330,6 +334,10 @@ export function useMeasurementReconciliation(
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({
+          queryKey: ["execution-finance", productId],
+        }),
+        client.invalidateQueries({ queryKey: ["video-budget", productId] }),
         client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
         client.invalidateQueries({ queryKey: ["learning-cycle-entry"] }),
         client.invalidateQueries({
@@ -358,6 +366,10 @@ export function useWindowRevalidation(productId?: number, cycleId?: number) {
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({
+          queryKey: ["execution-finance", productId],
+        }),
+        client.invalidateQueries({ queryKey: ["video-budget", productId] }),
         client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
         client.invalidateQueries({
           queryKey: ["products", productId, "business-processes"],

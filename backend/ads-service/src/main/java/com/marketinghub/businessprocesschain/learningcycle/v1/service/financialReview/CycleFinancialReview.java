@@ -33,7 +33,26 @@ public record CycleFinancialReview(
     Authorization authorization,
     List<Authorization> history,
     PlanView financialPlan,
-    FinancialAdvice advice) {
+    FinancialAdvice advice,
+    List<BudgetSection> budgets,
+    MediaDecision mediaDecision) {
+  /** Responsabilidade: explicar a finalidade e a cobertura de cada limite sem misturar moedas. */
+  public record BudgetSection(
+      String code,
+      String title,
+      String currency,
+      String purpose,
+      String scope,
+      BigDecimal limit,
+      String limitLabel,
+      String status,
+      String explanation,
+      String consumptionNote) {}
+
+  /** Responsabilidade: orientar a edição de anúncios pelo contrato canônico da etapa vigente. */
+  public record MediaDecision(
+      boolean available, String reason, Instant windowStart, Instant windowEnd) {}
+
   /** Responsabilidade: expor custos agregados por experimento sem carregar auditorias. */
   public record CostSlice(Long experimentId, BigDecimal knownUsd, int unreportedTasks) {}
 

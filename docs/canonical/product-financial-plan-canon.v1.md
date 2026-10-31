@@ -278,6 +278,27 @@ continua idempotente. O histórico, pareceres e custos anteriores não são recl
 
 ## Demonstração financeira na execução — decisão de 30/10/2026
 
+### Finalidades claras na mesma tela — decisão de 31/10/2026
+
+A demonstração explica primeiro três limites independentes: **preparar o produto** (US$,
+cumulativo, agentes e revisões), **produzir vídeos** (US$, conjunto de anúncio, demonstração
+e revisões, incluindo custos anteriores da produção) e **pagar anúncios** (R$, exibição
+pela plataforma, total do ciclo e janela comercial). Produção não compra distribuição.
+Reserva faz parte do teto de preparação, não é um quarto orçamento nem cobrança.
+
+O backend informa finalidade, cobertura, limite e situação. Limite nulo não equivale a
+custo zero; mídia zero significa nenhuma verba registrada no ciclo; um limite registrado
+não comprova autorização final de campanha. Não somar moedas nem duplicar revisões que já
+integram o subtotal das tarefas. Consumo não consolidado deve permanecer explícito.
+
+O operador abre a decisão de vídeos ou anúncios dentro da própria demonstração, com os
+formulários e endpoints existentes. Se a etapa não permitir a decisão, o motivo aparece
+ali. A navegação não dispara consumo. Aprovação continua explícita, independente por
+finalidade, sujeita a versão, concorrência, idempotência e gates canônicos. O parecer curto
+real de Plutus permanece junto aos limites; histórico e detalhes ficam sob demanda.
+
+Matriz e evidências: `docs/homologacao/financial-budget-clarity-v1.md`.
+
 ### Parecer curto para decisão — 31/10/2026
 
 O card apresenta primeiro uma recomendação curta e números: preço, custo por venda, sobra

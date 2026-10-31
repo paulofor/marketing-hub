@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import {
@@ -15,33 +15,40 @@ export default function CycleBudgetAuthorizationForm({
   onUpdated: (cycle: LearningCycle) => void;
 }) {
   const mutation = useCycleMutation(cycle.productId, cycle.id);
-  const [requestKey] = useState(createCycleRequestKey);
+  const attempt = useRef<{ signature: string; key: string } | null>(null);
+  const saving = useRef(false);
   const [error, setError] = useState("");
   const command = cycle.commands.find((item) => item.action === "COMPLETE");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!command?.available || mutation.isPending) return;
+    if (!command?.available || mutation.isPending || saving.current) return;
     const data = new FormData(event.currentTarget);
     const dailyBudgetBrl = Number(data.get("dailyBudgetBrl"));
     const budgetLimitBrl = Number(data.get("budgetLimitBrl"));
-    if (
-      !(
-        dailyBudgetBrl > 0 &&
-        budgetLimitBrl > 0 &&
-        dailyBudgetBrl <= budgetLimitBrl
-      )
-    ) {
+    if (!(
+      dailyBudgetBrl > 0 &&
+      budgetLimitBrl > 0 &&
+      dailyBudgetBrl <= budgetLimitBrl
+    )) {
       setError(
         "Informe valores positivos. O diário não pode ultrapassar o total.",
       );
       return;
     }
+    const signature = JSON.stringify({
+      expectedRevision: cycle.revision,
+      dailyBudgetBrl,
+      budgetLimitBrl,
+    });
+    if (attempt.current?.signature !== signature)
+      attempt.current = { signature, key: createCycleRequestKey() };
     setError("");
+    saving.current = true;
     try {
       onUpdated(
         await mutation.mutateAsync({
           budgetAuthorization: true,
-          requestKey,
+          requestKey: attempt.current.key,
           expectedRevision: cycle.revision,
           dailyBudgetBrl,
           budgetLimitBrl,
@@ -49,6 +56,8 @@ export default function CycleBudgetAuthorizationForm({
       );
     } catch {
       /* O erro do backend permanece visível para correção. */
+    } finally {
+      saving.current = false;
     }
   }
   return (
@@ -58,7 +67,7 @@ export default function CycleBudgetAuthorizationForm({
       className="card card-body mb-3"
       onSubmit={submit}
     >
-      <h3 className="h5">Aprovar orçamento</h3>
+      <h3 className="h5">Aprovar limite de anúncios</h3>
       <p>
         Confira a sugestão ou ajuste os valores. Ao aprovar, você confirma estes
         limites de mídia para o experimento #{cycle.experimentId}. A ativação da
@@ -130,7 +139,7 @@ export default function CycleBudgetAuthorizationForm({
             aria-hidden="true"
           />
         )}
-        {mutation.isPending ? "Registrando…" : "Aprovar orçamento"}
+        {mutation.isPending ? "Registrando…" : "Aprovar limite de anúncios"}
       </button>
     </form>
   );

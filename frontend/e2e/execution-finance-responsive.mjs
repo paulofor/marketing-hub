@@ -94,6 +94,31 @@ try {
       );
       if (url.pathname.endsWith("/financial-review"))
         return route.fulfill({ json: data });
+      if (url.pathname.endsWith("/video-budget"))
+        return route.fulfill({
+          json: {
+            productId: 700,
+            productName: fixture.productName,
+            internalName: "teste",
+            chainDefinitionId: 2700,
+            processDefinitionId: 1200,
+            cycleId: 1900,
+            experimentId: 11200,
+            productVersion: fixture.productVersion,
+            revision: 1,
+            stageLabel: "Planejamento",
+            status: "AWAITING_LIMIT",
+            instruction: "Conferir etapa",
+            scope: "TWO_VIDEOS_PRODUCTION_AND_REVIEW",
+            currency: "USD",
+            canAuthorize: false,
+            blocker: "Conclua o planejamento antes de definir vídeos.",
+            currentAuthorization: null,
+            history: [],
+            cycleUrl: fixture.cycleUrl,
+            financeUrl: fixture.videoUrl,
+          },
+        });
       assert(url.pathname.endsWith("/preparation-budget"));
       const request = route.request().postDataJSON();
       sent.push(request);
@@ -145,6 +170,32 @@ try {
       ),
     ).toBeVisible();
     await advice.getByText("Ver parecer completo, cenários e fontes").click();
+    await expect(
+      page.getByRole("heading", { name: "Preparar o produto", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Produzir vídeos", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Pagar anúncios", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Ver decisão dos anúncios aqui" })
+      .click();
+    await expect(page.getByText(fixture.mediaDecision.reason)).toBeVisible();
+    await page
+      .getByRole("button", { name: "Ver decisão dos vídeos aqui" })
+      .click();
+    await expect(
+      page.getByText("Conclua o planejamento antes de definir vídeos."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Demonstração financeira",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Fechar ajuste" }).click();
     assert.equal(sent.length, 0);
     assert(
       await page.evaluate(

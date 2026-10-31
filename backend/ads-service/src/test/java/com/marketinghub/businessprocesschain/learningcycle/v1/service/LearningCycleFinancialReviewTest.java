@@ -374,4 +374,61 @@ class LearningCycleFinancialReviewTest {
     assertThat(response.cycleUrl()).contains("productId=4", "cycleId=18");
     assertThat(response.financialPlan()).isNull();
   }
+
+  /** Confere finalidades, moedas e ausência sem transformar limites em gasto realizado. */
+  @Test
+  void explainsIndependentBudgetsWithoutInventingVideoCost() {
+    cycle.setBudgetLimitBrl(BigDecimal.ZERO);
+    var result = review.read(cycle, product, now);
+    assertThat(result.budgets())
+        .extracting(CycleFinancialReview.BudgetSection::code)
+        .containsExactly("PREPARATION", "VIDEO", "MEDIA");
+    assertThat(result.budgets())
+        .extracting(CycleFinancialReview.BudgetSection::currency)
+        .containsExactly("USD", "USD", "BRL");
+    assertThat(result.budgets().get(0).limit()).isNull();
+    assertThat(result.budgets().get(1).limit()).isNull();
+    assertThat(result.budgets().get(1).scope()).contains("dois vídeos", "Não é por vídeo");
+    assertThat(result.budgets().get(1).consumptionNote()).contains("não estão consolidados");
+    assertThat(result.budgets().get(2).limit()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(result.budgets().get(2).status()).isEqualTo("Nenhuma verba registrada neste ciclo");
+    assertThat(result.mediaDecision().available()).isFalse();
+    assertThat(result.mediaDecision().reason()).contains("Autorizar orçamento");
+    verify(events, never()).saveAndFlush(any());
+  }
+
+  /** Preserva teto audiovisual próprio e o formulário canônico somente na etapa prevista. */
+  @Test
+  void keepsAuthorizedVideoScopeSeparateAndHonorsClosedCycle() {
+    cycle.setStage("VIDEO_BRIEF");
+    video.authorize(
+        cycle,
+        new com.marketinghub
+            .businessprocesschain
+            .learningcycle
+            .v1
+            .service
+            .videoBudget
+            .AuthorizeVideoBudgetRequest(
+            UUID.randomUUID(),
+            cycle.getRevision(),
+            27L,
+            112L,
+            "teste-v3",
+            new BigDecimal("12.00"),
+            "Teste local",
+            "Produção e revisão",
+            true),
+        true,
+        now);
+    var result = review.read(cycle, product, now);
+    assertThat(result.budgets().get(1).limit()).isEqualByComparingTo("12.00");
+    assertThat(result.budgets().get(0).limit()).isNull();
+    assertThat(result.budgets().get(2).limit()).isEqualByComparingTo("89.95");
+    cycle.setStage("AUTHORIZATION");
+    assertThat(review.read(cycle, product, now).mediaDecision().available()).isTrue();
+    cycle.setStatus("CLOSED");
+    assertThat(review.read(cycle, product, now).mediaDecision().available()).isFalse();
+    assertThat(review.read(cycle, product, now).mediaDecision().reason()).contains("encerrado");
+  }
 }

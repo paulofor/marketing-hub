@@ -7,6 +7,7 @@ import {
   type PreparationBudgetDecision,
 } from "../../api/financial/useExecutionFinance";
 import ExecutionFinancialAdvice from "./ExecutionFinancialAdvice";
+import ExecutionBudgetOverview from "./ExecutionBudgetOverview";
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import "./ExecutionFinancePage.css";
 
@@ -86,6 +87,12 @@ export default function ExecutionFinancePage() {
               Consulta: {new Date(data.observedAt).toLocaleString("pt-BR")}
             </small>
           </p>
+          <ExecutionBudgetOverview
+            key={`${data.productId}:${data.cycleId}`}
+            data={data}
+            disabled={query.isError || query.isFetching || approve.isPending}
+          />
+          <ExecutionFinancialAdvice data={data} />
           <section className="card p-3 mb-3" aria-label="Preparação e revisão">
             <h2 className="h4">Preparação e revisão · US$</h2>
             <div className="finance-metrics">
@@ -94,7 +101,7 @@ export default function ExecutionFinancePage() {
                 value={money(data.knownPreparationUsd)}
               />
               <Metric
-                title="Teto cumulativo registrado nesta tela"
+                title="Limite total de preparação"
                 value={money(data.authorization?.totalLimitUsd)}
               />
               <Metric
@@ -102,7 +109,7 @@ export default function ExecutionFinancePage() {
                 value={money(data.authorization?.reserveUsd)}
               />
               <Metric
-                title="Saldo estimado após reserva"
+                title="Disponível para preparar o produto"
                 value={money(data.availableUsd)}
               />
             </div>
@@ -116,50 +123,16 @@ export default function ExecutionFinancePage() {
             </p>
             {!data.authorization && (
               <div className="alert alert-info">
-                Não há teto estruturado nesta tela para esta versão.
-                Autorizações anteriores continuam no histórico do produto; não
-                foram convertidas automaticamente.{" "}
-                <Link to={data.operatorNotesUrl}>
-                  Consultar orientações anteriores
-                </Link>
-                .
+                Ainda não há limite de preparação registrado neste formulário
+                para esta versão. Decisões anteriores ficam preservadas no
+                histórico e não são aplicadas automaticamente a outro ciclo.
               </div>
             )}
             <CostChart data={data} />
           </section>
-          <ExecutionFinancialAdvice data={data} />
-          <section className="card p-3 mb-3" aria-label="Orçamentos separados">
-            <h2 className="h4">Anúncios e audiovisual</h2>
-            <p>
-              Estes orçamentos têm decisões próprias. A aprovação da preparação
-              não aumenta nenhum deles.
-            </p>
-            <div className="finance-metrics">
-              <div>
-                <Metric
-                  title="Mídia · limite do ciclo"
-                  value={money(data.mediaBudgetBrl, "BRL")}
-                />
-                <Link to={data.mediaUrl}>
-                  Analisar e ajustar anúncios no ciclo
-                </Link>
-                <p className="small">
-                  O limite planejado não substitui a autorização comercial.
-                </p>
-              </div>
-              <div>
-                <Metric
-                  title="Produção e revisão dos vídeos · teto autorizado"
-                  value={money(data.videoBudgetUsd)}
-                />
-                <Link to={data.videoUrl}>
-                  Analisar e aprovar orçamento audiovisual
-                </Link>
-              </div>
-            </div>
-          </section>
           <section
             className="card p-3 mb-3"
+            id="preparation-decision"
             aria-label="Ajustar e aprovar preparação"
           >
             <h2 className="h4">Ajustar e aprovar preparação</h2>
@@ -243,7 +216,7 @@ function Meter({
 function CostChart({ data }: { data: ExecutionFinance }) {
   const max = Math.max(1, ...data.costs.map((c) => c.knownUsd ?? 0));
   return (
-    <details open>
+    <details>
       <summary>Consumo estimado por experimento · US$</summary>
       <div className="mt-2">
         {data.costs.length ? (
@@ -317,10 +290,10 @@ function BudgetForm({
       }}
     >
       <p>
-        O teto é o máximo total em US$ para toda a preparação e revisão do
-        produto, incluindo os custos anteriores. A reserva cobre valores ainda
-        não informados e não aumenta esse teto. Créditos promocionais não tornam
-        o custo econômico zero.
+        Defina o máximo total em dólares para os agentes prepararem e revisarem
+        o produto. Esse valor inclui o que já foi consumido; não é uma verba
+        nova a somar ao limite anterior. Produzir vídeos e pagar anúncios têm
+        decisões separadas nos blocos acima.
       </p>
       <fieldset disabled={pending || disabled}>
         <div className="row g-3">
@@ -362,8 +335,9 @@ function BudgetForm({
               }}
             />
             <small>
-              Informe explicitamente 0 se decidir não reservar e justifique as
-              lacunas.
+              Parte do limite guardada para tarefas cujo custo ainda não chegou.
+              Não é cobrança nem dinheiro extra. Informe 0 se decidir não
+              reservar e explique na justificativa.
             </small>
           </div>
         </div>
@@ -398,8 +372,8 @@ function BudgetForm({
           />
           <span>
             Confirmo este teto cumulativo para o ciclo #{data.cycleId}, contando
-            custos anteriores, sem ampliar mídia nem autorizar novo audiovisual.
-            *
+            custos anteriores. Esta decisão não autoriza produzir vídeos nem
+            pagar anúncios. *
           </span>
         </label>
         {error && (

@@ -81,7 +81,7 @@ public class ProcessRunService {
   }
 
   /**
-   * Consulta provas também em controles pausados/encerrados, sem alterar estado ou autorizações.
+   * Consulta a origem e as provas em controles parados ou bloqueados, sem retomar nem autorizar.
    */
   public ProcessRunResponse status(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
@@ -89,7 +89,7 @@ public class ProcessRunService {
           var existing = runs.findByScopeKey(scope(productId, processId, command));
           if (existing.isPresent()) {
             var run = existing.get();
-            return Set.of("COMPLETED", "PAUSED", "CLOSED").contains(run.getStatus())
+            return Set.of("COMPLETED", "PAUSED", "CLOSED", "BLOCKED").contains(run.getStatus())
                 ? response(run, context.read(run, false))
                 : response(run);
           }
@@ -1236,7 +1236,8 @@ public class ProcessRunService {
   /**
    * Expõe progresso e custos das provas consultadas, incluindo callbacks tardios, sem reescrever a
    * pausa histórica ou apresentar atividade encerrada como trabalho atual; o retrato acompanha o
-   * mesmo responsável e o acesso financeiro preserva produto, cadeia e ciclo.
+   * mesmo responsável e o acesso financeiro preserva produto, cadeia e ciclo. Bloqueios antigos
+   * mostram a origem atualmente pendente sem reativar o processo por uma consulta.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
@@ -1263,6 +1264,12 @@ public class ProcessRunService {
             ? dispatchBlockReason(run)
             : null;
     var userAction = closed ? null : guidance.resolve(run);
+    boolean redirected =
+        readiness != null
+            && !closed
+            && !readiness.objectiveAchieved()
+            && readiness.currentActivityId() != null
+            && !Objects.equals(run.getCurrentActivityId(), readiness.currentActivityId());
     var currentActivity =
         readiness == null
             ? null
@@ -1299,7 +1306,14 @@ public class ProcessRunService {
                 ? resumeBlocker
                 : revalidation
                     ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
-                    : userAction != null ? userAction.reason() : run.getReason(),
+                    : userAction != null
+                        ? userAction.reason()
+                        : redirected
+                            ? "Correção pendente na origem: "
+                                + readiness.currentActivityName()
+                                + ". "
+                                + Objects.toString(readiness.currentActivityStateReason(), "")
+                            : run.getReason(),
         closed
             ? null
             : readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),

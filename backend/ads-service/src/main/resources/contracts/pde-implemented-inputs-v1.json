@@ -93,6 +93,52 @@
       "privateValidationUrlPath": "/experiences/musa-pde-entry-v17-continuidade-clara/agent-validation",
       "completionRequirement": "Orientação contextual válida e ação explícita de salvar e concluir. reflection é opcional também na conclusão dos sete dias; comentário, aplicação, preferência, download ou compra não liberam o avanço. Dias 2 a 7 continuam protegidos pelo direito de acesso. O workspace informa reflectionRequiredForCompletion=false.",
       "commercialReadinessClaimed": false
+    },
+    {
+      "productSlug": "agenda-cheia-para-manicures",
+      "prototypeVersions": [
+        "capella-beleza-v2",
+        "capella-beleza-v3"
+      ],
+      "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/kit/privateprototype/v1/service/contract/KitPrivateContract.java#Input",
+      "minimumCustomerInput": "Nome profissional, cidade/região, WhatsApp, serviços, estilo visual, objetivo semanal, e-mail e consentimento; nos kits de beleza, escolher também a especialidade (specialtyCode). Cores preferidas e observações são opcionais. A seleção de especialidade já existe na interface; não é um campo novo.",
+      "requiredFields": [
+        "email",
+        "professionalName",
+        "cityRegion",
+        "whatsapp",
+        "services",
+        "visualStyle",
+        "weeklyGoal",
+        "consentAccepted"
+      ],
+      "optionalFields": [
+        "preferredColors",
+        "notes"
+      ],
+      "conditionalFields": [
+        {
+          "name": "specialtyCode",
+          "requiredWhen": "profile=beauty-v1 ou beauty-v2",
+          "allowedValues": [
+            "nails-v1",
+            "barber-v1",
+            "hair-v1",
+            "makeup-v1",
+            "brows-v1",
+            "aesthetics-v1",
+            "nails-v2",
+            "barber-v2",
+            "hair-v2",
+            "makeup-v2",
+            "brows-v2",
+            "aesthetics-v2"
+          ]
+        }
+      ],
+      "privateValidationConstraints": "Somente e-mail sandbox.local e WhatsApp 00000000000, consentimento verdadeiro. Família e especialidade devem pertencer à mesma versão. Não são contatos de clientes.",
+      "executionMode": "PRIVATE_KIT_COMPOSITION",
+      "commercialReadinessClaimed": false
     }
   ]
 }

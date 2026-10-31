@@ -56,6 +56,10 @@ public class PdeImplementedInputPlanningReadinessProvider
       Product product,
       String reference) {
     var state = state(process, activity, product, reference);
+    if (state.isPresent() && unchangedFunctionalBlock(state.get(), activity.getActivityId()))
+      return new AgentProductProcessActivityReadiness(
+          false,
+          "A tentativa anterior pediu ajustes e nenhuma entrega predecessora foi corrigida. Resolva a origem indicada antes de repetir; retomar não autoriza gastar novamente com as mesmas entradas.");
     if (state.isEmpty() || "marketStrategy".equals(activity.getActivityId()))
       return new AgentProductProcessActivityReadiness(
           true, "Atena pode preservar a entrada da versão implementada no planejamento.");
@@ -69,6 +73,37 @@ public class PdeImplementedInputPlanningReadinessProvider
           false, "Plutus precisa avaliar a estratégia corrigida antes da arquitetura de Dédalo.");
     return new AgentProductProcessActivityReadiness(
         true, "Os predecessores preservam a entrada implementada e a ordem dos pareceres.");
+  }
+
+  /** Impede repetição funcional por botão ou retomada; falha técnica conserva sua recuperação. */
+  private boolean unchangedFunctionalBlock(PlanningState state, String activity) {
+    var current = latest(state.history(), activity);
+    if (current == null || !"BLOCKED".equals(current.status()) || current.resultJson() == null)
+      return false;
+    try {
+      var result = json.readTree(current.resultJson());
+      if (result == null || !Set.of("ADJUST", "REJECT").contains(result.path("decision").asText()))
+        return false;
+      if (!"marketStrategy".equals(activity) && !aligned(state)) return false;
+      List<String> predecessors =
+          switch (activity) {
+            case "productArchitecture" -> List.of("marketStrategy", "economics");
+            case "economics" -> List.of("marketStrategy");
+            default -> List.of();
+          };
+      return predecessors.stream()
+          .map(id -> latest(state.history(), id))
+          .noneMatch(
+              task ->
+                  task != null && "COMPLETED".equals(task.status()) && task.id() > current.id());
+    } catch (IOException ex) {
+      log.error(
+          "Falha ao conferir bloqueio funcional taskId={} cycleId={}",
+          current.id(),
+          state.cycle().getId(),
+          ex);
+      return true;
+    }
   }
 
   /** Revalida parecer dependente da entrada antiga, sem repetir bloqueio atual ou tarefa ativa. */

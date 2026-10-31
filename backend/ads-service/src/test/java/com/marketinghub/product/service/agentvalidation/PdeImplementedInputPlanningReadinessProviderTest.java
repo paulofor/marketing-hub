@@ -38,7 +38,9 @@ class PdeImplementedInputPlanningReadinessProviderTest {
   @ParameterizedTest
   @CsvSource({
     "91004,metodo-musa-7-dias,musa-pde-entry-v14-primeiro-ajuste-aplicavel",
-    "92010,pde-planejado-36,mira-private-candidate-v3"
+    "92010,pde-planejado-36,mira-private-candidate-v3",
+    "7,agenda-cheia-para-manicures,capella-beleza-v3",
+    "99007,agenda-cheia-para-manicures,capella-beleza-v3"
   })
   void revalidatesOriginBeforeEconomicsAndArchitecture(long productId, String slug, String version)
       throws Exception {
@@ -123,7 +125,7 @@ class PdeImplementedInputPlanningReadinessProviderTest {
                 process, activity("productArchitecture"), product, reference))
         .isFalse();
     assertThat(gate.readiness(process, activity("productArchitecture"), product, reference).ready())
-        .isTrue();
+        .isFalse();
   }
 
   /** Preserva prova válida, histórico encerrado, outra identidade e ausência de implementação. */

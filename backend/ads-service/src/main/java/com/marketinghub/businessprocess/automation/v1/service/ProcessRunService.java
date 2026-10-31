@@ -327,7 +327,8 @@ public class ProcessRunService {
    * Observa provas, recupera passagens compatíveis e trata retornos condicionais na referência
    * congelada; preserva esperas legítimas e encerra contextos sem autorização após receber o
    * trabalho das delegações. Lê pareceres pela projeção funcional, sem auditoria, e registra a
-   * impressão digital da entrada usada em cada disparo.
+   * impressão digital da entrada usada em cada disparo. Novas tarefas de correção conferem o teto
+   * do ciclo antes do disparo; saldo ausente pausa o fluxo.
    */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
@@ -564,6 +565,24 @@ public class ProcessRunService {
     var correctionInputs =
         ProcessRunCorrectionInputs.resolve(
             run, activity, ordered, graph, json, context.functionalTasks(run));
+    boolean repeatsAgentWork =
+        "AGENT".equals(control.executorType())
+            && (!correctionInputs.isEmpty()
+                || activity.tasks().stream()
+                    .anyMatch(
+                        task ->
+                            Objects.equals(run.getSourceReference(), task.sourceReference())
+                                && Objects.equals(
+                                    run.getProcessDefinitionId(), task.processDefinitionId())
+                                && Set.of("COMPLETED", "BLOCKED").contains(task.status())
+                                && !"DETERMINISTIC".equals(task.executionMode())));
+    if (repeatsAgentWork) {
+      String financialBlocker = context.correctionBudgetBlockReason(run, activity);
+      if (financialBlocker != null) {
+        transition(run, "PAUSED", financialBlocker, "CORRECTION_BUDGET_REQUIRED");
+        return response(run);
+      }
+    }
     String inputVersion = String.valueOf(context.inputVersion(run));
     String actionKey = actionKey(run, activity, ordered, correctionInputs, inputVersion);
     if (events.existsByRunIdAndActionKey(run.getId(), actionKey)) {

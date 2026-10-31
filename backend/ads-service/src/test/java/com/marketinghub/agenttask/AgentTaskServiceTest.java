@@ -3673,6 +3673,52 @@ class AgentTaskServiceTest {
     return task;
   }
 
+  /** Recupera resposta já validada pelo executor sem gerar tarefa, token ou cobrança adicional. */
+  @ParameterizedTest
+  @ValueSource(longs = {886L, 99886L})
+  void reappliesValidatedOriginalAtenaResultWithoutNewUsage(long id) {
+    var repository = mock(AgentTaskRepository.class);
+    var task =
+        processTask(
+            id,
+            agent(4L, "experiment-strategist", "Atena"),
+            process("PUBLISHED", "Atena"),
+            "marketStrategy",
+            "BLOCKED");
+    var audit = modelExecutionAudit();
+    task.setExecutionMode(audit.executionMode());
+    task.setExecutionModelCode(audit.modelCode());
+    task.setExecutionReasoningEffort(audit.reasoningEffort());
+    task.setExecutionPrompt(audit.promptSent());
+    task.setExecutionAgentPrompt(audit.agentPromptPart());
+    task.setExecutionActivityPrompt(audit.activityPromptPart());
+    task.setResultJson("{\"decision\":\"APPROVE\"}");
+    task.setEvidenceJson("{\"originalTaskId\":" + id + "}");
+    task.setExecutionError("Validador recusou exclusão explícita de comparação");
+    task.setEstimatedCostUsd(new BigDecimal("3.087526"));
+    task.setInputTokens(100L);
+    task.setOutputTokens(20L);
+    when(repository.findById(id)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(id)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var request = new CompleteAgentTaskRequest(task.getResultJson(), task.getEvidenceJson());
+
+    service.updateStatus(id, new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    service.completeClaimedProcessTask("experiment-strategist", id, request);
+    service.completeClaimedProcessTask("experiment-strategist", id, request);
+
+    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+    assertThat(task.getResultJson()).isEqualTo(request.resultJson());
+    assertThat(task.getEvidenceJson()).isEqualTo(request.evidenceJson());
+    assertThat(task.getExecutionPrompt()).isEqualTo(audit.promptSent());
+    assertThat(task.getInputTokens()).isEqualTo(100L);
+    assertThat(task.getOutputTokens()).isEqualTo(20L);
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("3.087526");
+    assertThat(task.getExecutionError()).isNull();
+    verify(repository, org.mockito.Mockito.times(2)).save(task);
+  }
+
   /** Confirma resposta perdida após commit sem repetir efeitos, tokens ou avanço no BPM. */
   @Test
   void acknowledgesTerminalReplayWithoutDuplicatingUsageOrHooks() {

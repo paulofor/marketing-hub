@@ -34,6 +34,9 @@ public class ProcessRunContext {
   private final com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments;
   private final AgentTaskRepository agentTasks;
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private ProcessRunCorrectionBudget correctionBudget;
+
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
       executionProfileContext;
@@ -141,6 +144,21 @@ public class ProcessRunContext {
   public List<AgentTaskFunctionalSnapshot> functionalTasks(ProcessRun run) {
     return agentTasks.findFunctionalSnapshotsByProcessSince(
         run.getProcessDefinitionId(), run.getSourceReference(), null);
+  }
+
+  /** Confere autorização e saldo antes de criar outra tarefa, sem impedir callbacks existentes. */
+  public String correctionBudgetBlockReason(
+      ProcessRun run,
+      com.marketinghub
+              .businessprocess
+              .execution
+              .service
+              .productProcessExecutions
+              .ProductProcessActivityExecutionGroupResponse
+          activity) {
+    if (correctionBudget == null)
+      throw new IllegalStateException("Validador financeiro de correção indisponível.");
+    return correctionBudget.blockReason(run, activity);
   }
 
   /**

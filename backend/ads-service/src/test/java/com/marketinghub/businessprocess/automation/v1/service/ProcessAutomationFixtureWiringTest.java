@@ -98,10 +98,24 @@ class ProcessAutomationFixtureWiringTest {
     }
   }
 
-  /** Inicializa o contexto real com os beans declarados pela fixture e JDBC sem acesso externo. */
+  /** Inicializa construtor e campos obrigatórios com beans da fixture, sem acesso externo. */
   @Test
   void fixtureProvidesEveryRequiredContextDependency() throws ReflectiveOperationException {
-    var required = Arrays.asList(ProcessRunContext.class.getConstructors()[0].getParameterTypes());
+    var required =
+        new java.util.ArrayList<>(
+            Arrays.asList(ProcessRunContext.class.getConstructors()[0].getParameterTypes()));
+    Arrays.stream(ProcessRunContext.class.getDeclaredFields())
+        .filter(
+            field ->
+                field.isAnnotationPresent(
+                    org.springframework.beans.factory.annotation.Autowired.class))
+        .filter(
+            field ->
+                field
+                    .getAnnotation(org.springframework.beans.factory.annotation.Autowired.class)
+                    .required())
+        .map(java.lang.reflect.Field::getType)
+        .forEach(required::add);
     var fixture = new ProcessAutomationLocalApplication();
     try (var context = new AnnotationConfigApplicationContext()) {
       context.registerBean(ObjectMapper.class, () -> new ObjectMapper());

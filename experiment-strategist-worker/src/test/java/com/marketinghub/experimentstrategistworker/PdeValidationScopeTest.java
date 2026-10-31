@@ -19,6 +19,13 @@ class PdeValidationScopeTest {
   @org.junit.jupiter.params.provider.CsvSource(
       delimiter = '|',
       value = {
+        "Aplicar o protocolo recebido: inputComparisonApplicable=false, uma matriz de nove combinações, sem REFERENCE/REDUCED.|false",
+        "Sem a comparação documental PDE_DOCUMENTED_INPUT_COMPARISON_V3.|false",
+        "Aplicar nove combinações, sem REFERENCE/REDUCED. Exigir REDUCED.|true",
+        "Exigir REFERENCE, sem REFERENCE/REDUCED.|true",
+        "Sem REFERENCE/REDUCED, mas exigir a comparação.|true",
+        "Não homologar sem REFERENCE/REDUCED.|true",
+        "Não apenas sem REFERENCE/REDUCED.|true",
         "18 combinações somente se implementada a comparação REFERENCE/REDUCED.|false",
         "Se houver comparação documental implementada, executar 18 combinações: três cenários, três dispositivos e duas condições REFERENCE/REDUCED.|false",
         "Comparar REFERENCE e REDUCED em 18 combinações.|true",
@@ -87,6 +94,24 @@ class PdeValidationScopeTest {
     assertThatCode(() -> PdeValidationScope.validate(result, task(98004L, false)))
         .doesNotThrowAnyException();
     assertThatCode(() -> PdeValidationScope.validate(result, null)).doesNotThrowAnyException();
+  }
+
+  /** Revalida resposta e transporte preservados sem executar modelo nem enviar callback. */
+  @Test
+  void validatesPreservedResponseWhenProvided() throws Exception {
+    String responseFile = System.getProperty("atena.replay.result");
+    String taskFile = System.getProperty("atena.replay.task");
+    if (responseFile == null && taskFile == null) return;
+    assertThat(responseFile).isNotBlank();
+    assertThat(taskFile).isNotBlank();
+    var result = json.readTree(Files.readString(Path.of(responseFile)));
+    var task = json.readTree(Files.readString(Path.of(taskFile)));
+    assertThat(result.path("decision").asText()).isEqualTo("APPROVE");
+    assertThatCode(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(
+                    result, task.path("sourceReference").asText(), true, task))
+        .doesNotThrowAnyException();
   }
 
   /** Constrói transporte sintético usando os contratos reais do módulo produtor. */

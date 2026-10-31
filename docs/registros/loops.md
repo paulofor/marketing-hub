@@ -10277,6 +10277,20 @@ Histórico, custos, pausa e limites preservados. A regressão inclui outra ident
 o caminho histórico e callback recuperável. Não comprova efeito comercial.
 [Matriz e evidências](../homologacao/retorno-causal-atividades-v1.md).
 
+**Conferência de 31/10/2026:** o reconciliador continuava observando `BLOCKED` e,
+ao encontrar Atena liberada, iniciou #886 sem consultar o teto de preparação.
+A leitura do card não criou a tarefa; o polling existente a criou. A execução #95
+foi pausada pela UI, preservando o trabalho iniciado. O guard financeiro agora
+consulta recibo, custos acumulados e reserva antes de outra tarefa de correção,
+pausando sem saldo ou sem decisão da versão. Regressões incluem conciliação de
+`BLOCKED`, botão retomar repetido, outra identidade, contexto financeiro real e
+retomada após recibo suficiente. Não há autorização retroativa para #886.
+A resposta original de 886 foi `APPROVE`; o validador tratou “sem REFERENCE/REDUCED”
+como obrigação. A correção reconhece somente exclusão explícita no fim da cláusula,
+preserva obrigações em outras frases/campos e permite revalidar o resultado
+preservado sem nova inferência. Testes de `PdeValidationScopeTest`,
+`LearningCycleValidationProtocolTest` e `AgentTaskServiceTest` previnem recorrência.
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

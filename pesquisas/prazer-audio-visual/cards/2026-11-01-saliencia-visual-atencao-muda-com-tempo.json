@@ -1,0 +1,18 @@
+{
+  "cardKey": "saliencia-visual-atencao-muda-com-tempo",
+  "collection": "prazer-audio-visual",
+  "title": "Saliência visual inicial e mudanças no foco da atenção",
+  "finding": "Em 45 adultos observando cenas estáticas por 15 segundos, a influência de regiões visualmente salientes e a semelhança entre trajetórias oculares foram maiores na fase inicial; depois a exploração se tornou mais individualizada.",
+  "mechanism": "A saliência visual pode orientar a atenção inicial, enquanto objetivos, contexto e interesse individual ganham importância ao longo da exploração; hipótese de processamento bottom-up e top-down, não mecanismo causal demonstrado.",
+  "commercialApplication": "Testar em vídeo a visibilidade e a ordem temporal de informações visuais essenciais com versões controladas, priorizando compreensão e acessibilidade em vez de estímulos intrusivos.",
+  "evidenceStrength": "Moderada para associações em cenas estáticas com rastreamento ocular; baixa para causalidade, vídeos, prazer e resultados comerciais.",
+  "publishedOn": "2026-11-01",
+  "validUntil": "2026-12-16",
+  "experimentHypothesis": "Uma apresentação visual clara desde o início aumentará a localização e a compreensão de elementos centrais, sem reduzir conforto; validar com espectadores e lembrança após 24 horas.",
+  "risks": "Criativos visualmente chamativos podem distrair, sobrecarregar ou manipular atenção. Não inferir intenção de compra de fixação ocular.",
+  "limits": "45 adultos, dez cenas estáticas de 15 segundos, avaliação de saliência dependente do modelo. Os 7,5 segundos são uma divisão analítica, não tempo ótimo universal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-01-saliencia-visual-atencao-muda-com-tempo-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Nagarajan et al. (2026), saliência visual e atenção no tempo",
+  "sourceSha256": "6f6eb1df179e2ce6f3c884a5f7c1af95d0ce6d0f5d4fc45441981a0fe38c9d87"
+}

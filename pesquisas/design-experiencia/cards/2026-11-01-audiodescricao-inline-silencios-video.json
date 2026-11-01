@@ -1,0 +1,18 @@
+{
+  "cardKey": "audiodescricao-inline-silencios-compreensao-video",
+  "collection": "video",
+  "title": "Audiodescrição inline: avaliar conteúdo, pausas e compreensão do vídeo",
+  "finding": "Em 433 vídeos (35,9 h; 8.126 segmentos), o MTG-AD avaliou audiodescrições cocriadas por profissionais cegos e videntes e saídas de nove modelos multimodais. Modelos descreveram eventos e reduziram sobreposição de fala, mas tiveram limitações em ritmo e continuidade; sete avaliadores cegos ou com baixa visão preferiram ligeiramente as versões profissionais e consideraram úteis as automáticas.",
+  "mechanism": "Descrever elementos visuais relevantes durante pausas naturais pode apoiar a compreensão auditiva, sem encobrir falas existentes. É uma hipótese de design plausível; o estudo não isola efeito causal de cada componente nem avalia persuasão ou conversão.",
+  "commercialApplication": "Em Apolo, experimentar uma faixa opcional de audiodescrição em vídeos demonstrativos: selecionar fatos visuais essenciais, renderizar voz, verificar sobreposições e ritmo, revisar com público cego ou com baixa visão e comparar compreensão e interrupções percebidas.",
+  "evidenceStrength": "Estudo de benchmark e avaliação humana de audiodescrição (NeurIPS 2026): 433 vídeos, 8.126 segmentos profissionais, nove modelos avaliados e n=7 pessoas cegas ou com baixa visão na avaliação de usuários. Evidência direta de desempenho em acessibilidade de vídeo; sem evidência de efeito comercial.",
+  "publishedOn": "2026-11-01",
+  "validUntil": "2026-12-16",
+  "experimentHypothesis": "Em vídeos com pausas adequadas, a faixa opcional revisada de audiodescrição aumentará a compreensão correta de acontecimentos visuais por participantes cegos ou com baixa visão sem aumentar significativamente colisões com o áudio original; medir compreensão, sobreposição e preferência.",
+  "risks": "O modelo pode omitir ou inventar informações visuais, sobrepor diálogos, gerar locução intrusiva ou tratar acessibilidade como mero recurso de persuasão. Exigir revisão humana especializada e preservar legendas e outros controles.",
+  "limits": "Vídeos do conjunto são em inglês e selecionados pela viabilidade de pausas; a amostra humana de pessoas cegas ou com baixa visão é pequena. Não há resultados de vendas, CTA, retenção ou campanha; não extrapolar para todos os formatos de vídeo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-01-audiodescricao-inline-silencios-video.md",
+  "sourceTitle": "Evidência revisada — MTG-AD, audiodescrição inline e compreensão de vídeo",
+  "sourceSha256": "157dc24d0339c8998f30edf86e11c8c6ea057cfc8fb07e84983f1beb209665fe"
+}

@@ -8,7 +8,7 @@
   "evidenceStrength": "Pesquisa transversal internacional com autorrelatos (aprox. 21 mil participantes; bases por pergunta variáveis) e reportagem com declarações de executivos de cerca de 50 empresas. Boa evidência descritiva de adoção e fricção, fraca para estimar conversão ou efeito causal de intervenções.",
   "publishedOn": "2026-11-01",
   "validUntil": "2026-12-16",
-  "experimentHypothesis": "Em tráfego elegível randomizado e na mesma oferta, a IA apenas na descoberta, seguida de checkout humano conhecido, terá maior proporção de pagamentos reconciliados e menos falhas que uma jornada de agente tentando concluir a compra, sem elevar reembolsos ou custo por venda.",
+  "experimentHypothesis": "Em tráfego elegível randomizado e na mesma oferta, orientação por IA na descoberta com checkout convencional terá mais pagamentos reconciliados por visitante que a jornada atual sem IA, sem aumentar reembolsos, reclamações ou custo por venda.",
   "risks": "Recomendações falsas ou enviesadas, captura de dados pessoais, fraude, erro de preço/estoque, cobrança sem consentimento e fricção de transferência entre interfaces.",
   "limits": "Não comparar numericamente as ativações globais do Muse a pedidos reportados por empresas individuais. Entrevistas não são transações auditadas; 14% é autorrelato entre usuários de IA, não taxa de conversão de visitantes. Nenhuma melhora em pagamentos foi medida no Marketing Hub.",
   "sourceKind": "MARKDOWN",

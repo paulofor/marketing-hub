@@ -1,0 +1,18 @@
+{
+  "cardKey": "agentes-compra-friccao-checkout",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Compra por IA: separar descoberta assistida de confirmação do pagamento",
+  "finding": "Pesquisa McKinsey publicada em 28/10/2026: 53% dos consumidores consultados relataram usar IA em alguma etapa de compras; 14% dos usuários de IA relataram concluir compra com uma ferramenta. WIRED (31/10) relata pedidos ainda pequenos para agentes em varejistas específicos, mesmo após mais de 10 milhões de ativações declaradas do Muse. Bases e métricas não são diretamente comparáveis.",
+  "mechanism": "Hipótese: IA reduz esforço de pesquisa e triagem antes que agentes sejam confiáveis para fechar pedidos; falhas de autenticação, descontos, estoque ou regras de checkout podem criar atrito entre intenção e pagamento. As fontes não demonstram efeito causal.",
+  "commercialApplication": "Comparar uma jornada com atendimento IA para restringir alternativas e confirmar o pagamento em checkout convencional com a jornada atual da mesma oferta B2C; preservar preço, público e critérios de atribuição, registrando abandono e pagamentos conciliados.",
+  "evidenceStrength": "Pesquisa transversal internacional com autorrelatos (aprox. 21 mil participantes; bases por pergunta variáveis) e reportagem com declarações de executivos de cerca de 50 empresas. Boa evidência descritiva de adoção e fricção, fraca para estimar conversão ou efeito causal de intervenções.",
+  "publishedOn": "2026-11-01",
+  "validUntil": "2026-12-16",
+  "experimentHypothesis": "Em tráfego elegível randomizado e na mesma oferta, orientação por IA na descoberta com checkout convencional terá mais pagamentos reconciliados por visitante que a jornada atual sem IA, sem aumentar reembolsos, reclamações ou custo por venda.",
+  "risks": "Recomendações falsas ou enviesadas, captura de dados pessoais, fraude, erro de preço/estoque, cobrança sem consentimento e fricção de transferência entre interfaces.",
+  "limits": "Não comparar numericamente as ativações globais do Muse a pedidos reportados por empresas individuais. Entrevistas não são transações auditadas; 14% é autorrelato entre usuários de IA, não taxa de conversão de visitantes. Nenhuma melhora em pagamentos foi medida no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-01-compra-ia-descoberta-e-checkout.md",
+  "sourceTitle": "Revisão de evidências — IA em compras: descoberta e checkout (McKinsey e WIRED, out/2026)",
+  "sourceSha256": "567cf6686d6a6eb6cb487a565df5a6c6e4247a21ffb7a1a6f5bb7ca8e394cd5b"
+}

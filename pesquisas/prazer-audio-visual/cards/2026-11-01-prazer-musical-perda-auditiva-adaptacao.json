@@ -1,0 +1,18 @@
+{
+  "cardKey": "prazer-musical-perda-auditiva-adaptacao",
+  "collection": "prazer-audio-visual",
+  "title": "Acessibilidade musical: distinguir percepção auditiva de prazer",
+  "finding": "Em análise transversal de 80 idosos sem implante coclear, perda auditiva associou-se a menor percepção musical e frequência de escuta, mas não ao escore geral de recompensa musical; treinamento musical apresentou associação positiva com recompensa.",
+  "mechanism": "Preferências, familiaridade e significado emocional podem sustentar o prazer da música mesmo com redução de detalhes perceptivos, sem implicar causalidade ou compensação automática.",
+  "commercialApplication": "Oferecer opções acessíveis de som e linguagem visual, comparar preferências voluntárias por mixagens e controles, medir conforto e compreensão; não usar dados diagnósticos para segmentação.",
+  "evidenceStrength": "Moderada para associações em grupo clínico transversal com entrevistas; baixa para intervenções de áudio, causalidade, generalização e vendas.",
+  "publishedOn": "2026-11-01",
+  "validUntil": "2026-12-16",
+  "experimentHypothesis": "Disponibilizar controles sonoros e alternativas acessíveis elevará conforto e compreensão autoavaliados por parte dos espectadores, sem prejudicar o prazer; requer teste consentido.",
+  "risks": "Não inferir perda auditiva pela idade; não coletar diagnóstico ou dados de saúde desnecessários; evitar promessas de terapia ou efeito comercial.",
+  "limits": "Predomínio de usuários de aparelhos auditivos; apenas três participantes com audição normal; instrumentos de autorrelato; sem randomização das alternativas sonoras.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-01-prazer-musical-perda-auditiva-adaptacao-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Gao et al. (2026), perda auditiva e recompensa musical",
+  "sourceSha256": "66ba7eeb73c1f4ec373761fa0ff60033a93966f7f3b9b2c6bd06031850db06d6"
+}

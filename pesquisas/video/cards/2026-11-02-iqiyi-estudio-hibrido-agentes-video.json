@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-iqiyi-estudio-hibrido-agentes-producao",
+  "collection": "video",
+  "title": "Testar fluxo hibrido: captacao real e variacoes audiovisuais por agentes",
+  "finding": "Em 02/11/2026, iQIYI anunciou estudio de producao audiovisual com IA em Xangai, em uso desde 28/10 para o filme Cop in Trouble. A captacao real e enviada ao NadouPro com quase 30 modelos e centenas de agentes/skills.",
+  "mechanism": "Separar a atuacao humana captada de elementos visuais editaveis em pos-producao: cenarios, iluminacao, figurino, objetos e direcao de arte; usar material filmado e continuidade digital como referencias.",
+  "commercialApplication": "Marketing Hub: testar producao de anuncios a partir de uma gravacao curta autorizada, gerar multiplas variacoes de cenario e oferta com revisao humana e comparar custo por criativo aprovado com refilmagem e geracao integral.",
+  "evidenceStrength": "Alta para existencia do anuncio, inicio de producao e stack declarada; baixa para ganho de produtividade no novo estudio, qualidade comparativa e acesso de terceiros.",
+  "publishedOn": "2026-11-02",
+  "validUntil": "2026-12-02",
+  "experimentHypothesis": "Captacao-base mais pos-producao por prompt com referencias reduziria retrabalho mantendo identidade e gestos mais consistentes do que geracoes independentes.",
+  "risks": "Requer consentimento de atores e direitos sobre midia, voz, trilha, IP e referencias. Declaracao de primeiro estudio na China nao foi auditada. NadouPro e oferta comercial proprietaria, nao um modelo aberto.",
+  "limits": "Estudio fisico em uso interno, sem acesso publico de locacao documentado. NadouPro oferece planos por creditos/contratos; preco por segundo e API externa nao confirmados. Quase 30 modelos e centenas de agentes sao numeros declarados pelo fabricante.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-02-iqiyi-ai-film-studio-nadoupro.md",
+  "sourceTitle": "Fonte revisada - iQIYI AI Film Studio, NadouPro, agentes e acesso",
+  "sourceSha256": "5fcfee6a506c5b89613fa4293daa57d6d9f225139e9ce642eee4b792d9fe428e"
+}

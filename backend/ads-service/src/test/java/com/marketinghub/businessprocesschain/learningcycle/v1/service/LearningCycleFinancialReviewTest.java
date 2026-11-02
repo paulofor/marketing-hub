@@ -104,6 +104,15 @@ class LearningCycleFinancialReviewTest {
     exp.setId(112L);
     exp.setProduct(product);
     when(experiments.findById(112L)).thenReturn(Optional.of(exp));
+    var processes =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setVersionNumber(2);
+    cycle.setProcessDefinitionId(126L);
+    when(processes.findById(126L)).thenReturn(Optional.of(process));
+    var ceilings = new LearningCycleCostCeilings(events, json);
     var service =
         new LearningCycleService(
             cycles,
@@ -111,7 +120,7 @@ class LearningCycleFinancialReviewTest {
             products,
             experiments,
             null,
-            null,
+            processes,
             null,
             json,
             null,
@@ -120,11 +129,14 @@ class LearningCycleFinancialReviewTest {
             null,
             null);
     ReflectionTestUtils.setField(service, "financialReview", review);
+    ReflectionTestUtils.setField(service, "videoBudget", video);
+    ReflectionTestUtils.setField(service, "costCeilings", ceilings);
     ReflectionTestUtils.setField(service, "preparationBudget", budget);
     ReflectionTestUtils.setField(
         service,
         "costWorksheet",
-        new LearningCycleCostWorksheet(events, json, new ObjectMapper().findAndRegisterModules()));
+        new LearningCycleCostWorksheet(
+            events, json, new ObjectMapper().findAndRegisterModules(), ceilings));
     http = MockMvcBuilders.standaloneSetup(new LearningCycleController(service)).build();
   }
 

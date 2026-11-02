@@ -42,6 +42,8 @@ export interface CostWorksheet {
       approvalStatus: string;
       variance: number | null;
       estimateSource: string;
+      canApprove: boolean;
+      approvalBlocker: string | null;
     }
   >;
   totals: Array<{
@@ -55,6 +57,15 @@ export interface CostWorksheet {
   }>;
   projectedResultBrl: number | null;
   gaps: string[];
+  ceilingHistory: Array<{
+    eventId: number;
+    code: string;
+    approved: number;
+    operatorName: string;
+    recordedAt: string;
+    justification: string;
+    current: boolean;
+  }>;
   history: Array<{
     eventId: number;
     revision: number;
@@ -65,6 +76,18 @@ export interface CostWorksheet {
     operatingBudgetsApproved: boolean;
     snapshot: CostWorksheetRequest;
   }>;
+}
+export interface ApproveCostCeilingRequest {
+  requestKey: string;
+  expectedRevision: number;
+  chainDefinitionId: number;
+  experimentId: number;
+  productVersion: string;
+  code: string;
+  approved: number;
+  operatorName: string;
+  justification: string;
+  confirmed: boolean;
 }
 export function useCostWorksheet(
   productId: number,
@@ -81,18 +104,32 @@ export function useCostWorksheet(
     refetchOnWindowFocus: false,
     retry: false,
   });
-  const save = useMutation({
-    mutationFn: async (body: CostWorksheetRequest) =>
-      (await axios.post<CostWorksheet>(url, body)).data,
-    onSuccess: (data) => {
+  const approve = useMutation({
+    mutationFn: async (body: ApproveCostCeilingRequest) =>
+      (
+        await axios.post<CostWorksheet>(
+          url.replace(/cost-worksheet$/, "cost-ceilings"),
+          body,
+        )
+      ).data,
+    onSuccess: async (data) => {
       client.setQueryData(key, data);
-      void client.invalidateQueries({
+      await client.invalidateQueries({
         queryKey: ["execution-finance", productId, chainId, cycleId],
       });
-      void client.invalidateQueries({
-        queryKey: ["learning-cycles", productId],
-      });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["learning-cycles", productId] }),
+        client.invalidateQueries({
+          queryKey: ["video-budget", productId, cycleId, chainId],
+        }),
+        client.invalidateQueries({
+          queryKey: ["cycle-process-context", productId],
+        }),
+        client.invalidateQueries({
+          queryKey: ["process-automation", productId],
+        }),
+      ]);
     },
   });
-  return { query, save };
+  return { query, approve };
 }

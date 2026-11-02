@@ -19,7 +19,9 @@
       "forecast": null,
       "variance": null,
       "source": null,
-      "estimateSource": "Estimativas de tarefas; não são fatura conciliada."
+      "estimateSource": "Estimativas de tarefas; não são fatura conciliada.",
+      "canApprove": true,
+      "approvalBlocker": null
     },
     {
       "code": "PRODUCTION",
@@ -35,7 +37,9 @@
       "forecast": null,
       "variance": null,
       "source": null,
-      "estimateSource": "Não consolidado automaticamente."
+      "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+      "canApprove": false,
+      "approvalBlocker": "A decisão estará disponível na etapa correspondente."
     },
     {
       "code": "MEDIA",
@@ -51,7 +55,9 @@
       "forecast": null,
       "variance": null,
       "source": null,
-      "estimateSource": "Não consolidado automaticamente."
+      "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+      "canApprove": false,
+      "approvalBlocker": "A decisão estará disponível na etapa correspondente."
     },
     {
       "code": "DELIVERY",
@@ -67,7 +73,9 @@
       "forecast": null,
       "variance": null,
       "source": null,
-      "estimateSource": "Não consolidado automaticamente."
+      "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+      "canApprove": true,
+      "approvalBlocker": null
     },
     {
       "code": "SALES_DEDUCTIONS",
@@ -83,7 +91,9 @@
       "forecast": null,
       "variance": null,
       "source": null,
-      "estimateSource": "Não consolidado automaticamente."
+      "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+      "canApprove": true,
+      "approvalBlocker": null
     },
     {
       "code": "FIXED_OPERATION",
@@ -99,7 +109,9 @@
       "forecast": null,
       "variance": null,
       "source": null,
-      "estimateSource": "Não consolidado automaticamente."
+      "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+      "canApprove": true,
+      "approvalBlocker": null
     }
   ],
   "totals": [
@@ -123,8 +135,7 @@
     }
   ],
   "projectedResultBrl": null,
-  "gaps": [
-    "Informe período e previsões."
-  ],
-  "history": []
+  "gaps": ["Informe período e previsões."],
+  "history": [],
+  "ceilingHistory": []
 }

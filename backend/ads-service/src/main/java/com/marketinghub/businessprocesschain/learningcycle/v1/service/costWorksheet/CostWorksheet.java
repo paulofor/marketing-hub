@@ -15,7 +15,8 @@ public record CostWorksheet(
     List<Total> totals,
     BigDecimal projectedResultBrl,
     List<String> gaps,
-    List<Receipt> history) {
+    List<Receipt> history,
+    List<CeilingReceipt> ceilingHistory) {
   /** Responsabilidade: expor cada grupo canônico e a origem da aprovação. */
   public record Row(
       String code,
@@ -31,7 +32,19 @@ public record CostWorksheet(
       BigDecimal forecast,
       BigDecimal variance,
       String source,
-      String estimateSource) {}
+      String estimateSource,
+      boolean canApprove,
+      String approvalBlocker) {}
+
+  /** Responsabilidade: apresentar valor, autoria e vigência de uma decisão individual de teto. */
+  public record CeilingReceipt(
+      Long eventId,
+      String code,
+      BigDecimal approved,
+      String operatorName,
+      Instant recordedAt,
+      String justification,
+      boolean current) {}
 
   /** Responsabilidade: manter subtotal conhecido e cobertura por moeda. */
   public record Total(

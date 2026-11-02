@@ -176,6 +176,16 @@ public class LearningCycleController {
     return service.saveCostWorksheet(productId, cycleId, request);
   }
 
+  /** Registra o teto da linha sem receber custos, orçamento proposto ou previsões do usuário. */
+  @io.swagger.v3.oas.annotations.Operation(summary = "Aprovar teto de um grupo financeiro")
+  @PostMapping("/products/{productId}/{cycleId}/cost-ceilings")
+  public CostWorksheet approveCostCeiling(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ApproveCostCeilingRequest request) {
+    return service.approveCostCeiling(productId, cycleId, request);
+  }
+
   /** Expõe demonstração do ciclo, custos e parecer de Plutus sem executar consumo. */
   @io.swagger.v3.oas.annotations.Operation(
       summary = "Consultar demonstração financeira da execução")

@@ -44,21 +44,29 @@ public class LearningCycleCostWorksheet {
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
   private final ObjectMapper mapper;
+  private final LearningCycleCostCeilings ceilings;
 
   /** Compõe seis grupos, subtotais separados e lacunas sem converter ausência em zero. */
-  public CostWorksheet read(LearningSalesCycle cycle, CycleFinancialReview review) {
+  public CostWorksheet read(
+      LearningSalesCycle cycle, CycleFinancialReview review, String productionBlocker) {
     var records = events.findByCycleIdAndActionOrderByRevisionDesc(cycle.getId(), ACTION);
     var current = records.stream().filter(e -> eligible(e, cycle)).findFirst().orElse(null);
     var saved = current == null ? null : decode(current);
+    var ceilingHistory = ceilings.history(cycle);
     List<CostWorksheet.Row> rows = new ArrayList<>();
     List<String> gaps = new ArrayList<>();
-    if (saved == null) gaps.add("Defina o período e salve as premissas da planilha desta versão.");
+    if (saved == null) gaps.add("O sistema ainda não possui previsão completa para esta versão.");
     for (int i = 0; i < CODES.length; i++) {
       String code = CODES[i];
       var input =
           saved == null
               ? null
               : saved.lines().stream().filter(l -> code.equals(l.code())).findFirst().orElse(null);
+      var ceiling =
+          ceilingHistory.stream()
+              .filter(r -> r.current() && code.equals(r.code()))
+              .findFirst()
+              .orElse(null);
       BigDecimal approved =
           switch (i) {
             case 0 ->
@@ -66,10 +74,20 @@ public class LearningCycleCostWorksheet {
             case 1 -> review.videoBudgetUsd();
             case 2 -> mediaApproved(cycle, review.observedAt());
             default ->
-                saved != null && saved.approveOperatingBudgets() && input != null
-                    ? input.planned()
-                    : null;
+                ceiling != null
+                    ? ceiling.approved()
+                    : saved != null && saved.approveOperatingBudgets() && input != null
+                        ? input.planned()
+                        : null;
           };
+      String approvalBlocker =
+          !review.canAuthorize()
+              ? review.authorizationBlocker()
+              : i == 1
+                  ? productionBlocker
+                  : i == 2 && !review.mediaDecision().available()
+                      ? review.mediaDecision().reason()
+                      : null;
       String approval =
           switch (i) {
             case 0 ->
@@ -90,7 +108,8 @@ public class LearningCycleCostWorksheet {
                     : "Aprovado para planejamento; sem autorização de execução";
           };
       var forecast = input == null ? null : input.forecast();
-      if (forecast == null) gaps.add(LABELS[i] + ": previsão total não informada.");
+      if (forecast == null)
+        gaps.add(LABELS[i] + ": previsão total ainda não disponível no sistema.");
       var reported = input == null ? null : input.reportedCost();
       BigDecimal estimated = i == 0 ? review.knownPreparationUsd() : null;
       BigDecimal observed = reported == null ? estimated : reported;
@@ -117,16 +136,18 @@ public class LearningCycleCostWorksheet {
                   ? "Estimativas de tarefas dos agentes; "
                       + review.unreportedTasks()
                       + " tarefas sem custo. Não é fatura conciliada."
-                  : "Custo não consolidado automaticamente. Informe o total e sua fonte; ausência não é zero."));
+                  : "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+              approvalBlocker == null,
+              approvalBlocker));
     }
     var totals = List.of(total("USD", rows), total("BRL", rows));
     BigDecimal result = null;
     if (saved == null || saved.expectedRevenueBrl() == null)
-      gaps.add("Receita bruta prevista não informada.");
+      gaps.add("Receita bruta prevista ainda não disponível no sistema.");
     BigDecimal dollars = totals.getFirst().forecast();
     boolean needsExchange = dollars != null && dollars.signum() > 0;
     if (needsExchange && (saved == null || saved.usdBrl() == null))
-      gaps.add("Informe câmbio, fonte e data para calcular o resultado em R$.");
+      gaps.add("O sistema ainda não possui câmbio com fonte para calcular o resultado em R$.");
     if (gaps.isEmpty())
       result =
           saved
@@ -160,7 +181,8 @@ public class LearningCycleCostWorksheet {
         totals,
         result,
         gaps,
-        history);
+        history,
+        ceilingHistory);
   }
 
   /** Confere recibo e janela de mídia sem promover o teto cadastrado a aprovação. */

@@ -1,15 +1,12 @@
-import { useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
   useExecutionFinance,
   type ExecutionFinance,
-  type PreparationBudgetDecision,
 } from "../../api/financial/useExecutionFinance";
 import ExecutionCostWorksheet from "./ExecutionCostWorksheet";
 import ExecutionFinancialAdvice from "./ExecutionFinancialAdvice";
 import ExecutionBudgetOverview from "./ExecutionBudgetOverview";
-import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import "./ExecutionFinancePage.css";
 
 const money = (n: number | null | undefined, currency = "USD") =>
@@ -28,8 +25,7 @@ export default function ExecutionFinancePage() {
   const productId = Number(params.get("productId")),
     chainId = Number(params.get("chainId")),
     cycleId = Number(params.get("cycleId"));
-  const { query, approve } = useExecutionFinance(productId, chainId, cycleId);
-  const [saved, setSaved] = useState(false);
+  const { query } = useExecutionFinance(productId, chainId, cycleId);
   const data = query.data;
   return (
     <main className="execution-finance container py-4">
@@ -71,7 +67,7 @@ export default function ExecutionFinancePage() {
             <Link to={data.cycleUrl}>Voltar ao ciclo</Link>
             <button
               className="btn btn-outline-secondary btn-sm"
-              disabled={query.isFetching || approve.isPending}
+              disabled={query.isFetching}
               onClick={() => void query.refetch()}
             >
               {query.isFetching && (
@@ -125,24 +121,21 @@ export default function ExecutionFinancePage() {
               )}
               {data.canAuthorize &&
                 data.preparationBalance.requiresBudgetReview && (
-                  <a
-                    className="btn btn-outline-primary"
-                    href="#preparation-decision"
-                  >
-                    Rever teto ou reserva
+                  <a className="btn btn-outline-primary" href="#ceiling-AGENTS">
+                    Rever teto aprovado
                   </a>
                 )}
             </section>
           )}
           <ExecutionCostWorksheet
-            key={`${data.productId}:${data.cycleId}`}
+            key={`worksheet:${data.productId}:${data.cycleId}`}
             data={data}
-            disabled={query.isError || query.isFetching || approve.isPending}
+            disabled={query.isError || query.isFetching}
           />
           <ExecutionBudgetOverview
-            key={`${data.productId}:${data.cycleId}`}
+            key={`overview:${data.productId}:${data.cycleId}`}
             data={data}
-            disabled={query.isError || query.isFetching || approve.isPending}
+            disabled={query.isError || query.isFetching}
           />
           <ExecutionFinancialAdvice data={data} />
           <section className="card p-3 mb-3" aria-label="Preparação e revisão">
@@ -182,36 +175,6 @@ export default function ExecutionFinancePage() {
               </div>
             )}
             <CostChart data={data} />
-          </section>
-          <section
-            className="card p-3 mb-3"
-            id="preparation-decision"
-            aria-label="Ajustar e aprovar preparação"
-          >
-            <h2 className="h4">Ajustar e aprovar preparação</h2>
-            {saved && (
-              <div role="status" className="alert alert-success">
-                Decisão registrada com recibo. O teto será entregue aos agentes
-                neste ciclo. Confira a situação do saldo acima: registrar a
-                decisão não garante cobertura para outra tarefa. Nenhuma tarefa
-                ou campanha foi iniciada por esta aprovação.
-              </div>
-            )}
-            {data.canAuthorize ? (
-              <BudgetForm
-                key={`${data.productId}:${data.cycleId}:${data.revision}`}
-                data={data}
-                pending={approve.isPending}
-                disabled={query.isError || query.isFetching}
-                error={approve.isError ? errorText(approve.error) : null}
-                onSubmit={async (decision) => {
-                  await approve.mutateAsync(decision);
-                  setSaved(true);
-                }}
-              />
-            ) : (
-              <p>{data.authorizationBlocker}</p>
-            )}
           </section>
           <details className="card p-3">
             <summary>Histórico das decisões ({data.history.length})</summary>
@@ -292,160 +255,5 @@ function CostChart({ data }: { data: ExecutionFinance }) {
         )}
       </div>
     </details>
-  );
-}
-function BudgetForm({
-  data,
-  pending,
-  disabled,
-  error,
-  onSubmit,
-}: {
-  data: ExecutionFinance;
-  pending: boolean;
-  disabled: boolean;
-  error: string | null;
-  onSubmit: (d: PreparationBudgetDecision) => Promise<void>;
-}) {
-  const [total, setTotal] = useState(
-    data.authorization?.totalLimitUsd.toString() ?? "",
-  );
-  const [reserve, setReserve] = useState(
-    data.authorization?.reserveUsd.toString() ?? "",
-  );
-  const [actor, setActor] = useState("");
-  const [reason, setReason] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-  const attempt = useRef<{ payload: string; key: string } | null>(null);
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (pending || disabled || !confirmed) return;
-        const fields = {
-          expectedRevision: data.revision,
-          chainDefinitionId: data.chainId,
-          experimentId: data.experimentId,
-          productVersion: data.productVersion,
-          totalLimitUsd: Number(total),
-          reserveUsd: Number(reserve),
-          operatorName: actor,
-          justification: reason,
-          confirmed,
-        };
-        const payload = JSON.stringify(fields);
-        if (attempt.current?.payload !== payload)
-          attempt.current = { payload, key: createCycleRequestKey() };
-        try {
-          await onSubmit({ ...fields, requestKey: attempt.current.key });
-        } catch {
-          /* Erro apresentado pelo estado da mutação; preserva recibo na retentativa. */
-        }
-      }}
-    >
-      <p>
-        Defina o máximo total em dólares para os agentes prepararem e revisarem
-        o produto. Esse valor inclui o que já foi consumido; não é uma verba
-        nova a somar ao limite anterior. Produzir vídeos e pagar anúncios têm
-        decisões separadas nos blocos acima.
-      </p>
-      <fieldset disabled={pending || disabled}>
-        <div className="row g-3">
-          <div className="col-md-6">
-            <label htmlFor="prep-limit" className="form-label">
-              Teto total acumulado (US$) *
-            </label>
-            <input
-              id="prep-limit"
-              className="form-control"
-              type="number"
-              required
-              min="0"
-              max="999999.99"
-              step="0.01"
-              value={total}
-              onChange={(e) => {
-                setTotal(e.target.value);
-                setConfirmed(false);
-              }}
-            />
-          </div>
-          <div className="col-md-6">
-            <label htmlFor="prep-reserve" className="form-label">
-              Reserva para custos pendentes (US$) *
-            </label>
-            <input
-              id="prep-reserve"
-              className="form-control"
-              type="number"
-              required
-              min="0"
-              max="999999.99"
-              step="0.01"
-              value={reserve}
-              onChange={(e) => {
-                setReserve(e.target.value);
-                setConfirmed(false);
-              }}
-            />
-            <small>
-              Parte do limite guardada para tarefas cujo custo ainda não chegou.
-              Não é cobrança nem dinheiro extra. Informe 0 se decidir não
-              reservar e explique na justificativa.
-            </small>
-          </div>
-        </div>
-        <label htmlFor="prep-actor" className="form-label mt-3">
-          Responsável pela decisão *
-        </label>
-        <input
-          id="prep-actor"
-          required
-          maxLength={160}
-          className="form-control"
-          value={actor}
-          onChange={(e) => setActor(e.target.value)}
-        />
-        <label htmlFor="prep-reason" className="form-label mt-3">
-          Justificativa e fontes consideradas *
-        </label>
-        <textarea
-          id="prep-reason"
-          required
-          maxLength={4000}
-          className="form-control"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-        <label className="d-flex gap-2 my-3">
-          <input
-            type="checkbox"
-            required
-            checked={confirmed}
-            onChange={(e) => setConfirmed(e.target.checked)}
-          />
-          <span>
-            Confirmo este teto cumulativo para o ciclo #{data.cycleId}, contando
-            custos anteriores. Esta decisão não autoriza produzir vídeos nem
-            pagar anúncios. *
-          </span>
-        </label>
-        {error && (
-          <p className="alert alert-danger" role="alert">
-            {error}
-          </p>
-        )}
-        <button
-          className="btn btn-primary"
-          type="submit"
-          disabled={pending || disabled || !confirmed}
-        >
-          {pending && (
-            <span className="spinner-border spinner-border-sm me-2" />
-          )}
-          {pending ? "Registrando…" : "Aprovar limite de preparação"}
-        </button>
-      </fieldset>
-    </form>
   );
 }

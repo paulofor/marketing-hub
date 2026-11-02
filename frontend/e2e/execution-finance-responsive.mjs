@@ -92,15 +92,16 @@ try {
           "/api/business-process-chains/learning-cycles/v1/products/700/1900/",
         ),
       );
-      if (url.pathname.endsWith("/cost-worksheet"))
-        return route.fulfill({
-          json: JSON.parse(
-            await readFile(
-              new URL("fixtures/cost-worksheet.json", import.meta.url),
-              "utf8",
-            ),
+      if (url.pathname.endsWith("/cost-worksheet")) {
+        const worksheet = JSON.parse(
+          await readFile(
+            new URL("fixtures/cost-worksheet.json", import.meta.url),
+            "utf8",
           ),
-        });
+        );
+        worksheet.rows[0].approved = data.authorization?.totalLimitUsd ?? null;
+        return route.fulfill({ json: worksheet });
+      }
       if (url.pathname.endsWith("/financial-review"))
         return route.fulfill({ json: data });
       if (url.pathname.endsWith("/video-budget"))
@@ -128,49 +129,7 @@ try {
             financeUrl: fixture.videoUrl,
           },
         });
-      assert(url.pathname.endsWith("/preparation-budget"));
-      const request = route.request().postDataJSON();
-      sent.push(request);
-      if (sent.length === 1)
-        return route.fulfill({
-          status: 503,
-          json: { detail: "Falha temporária simulada; decisão não duplicada." },
-        });
-      data = {
-        ...data,
-        revision: 2,
-        availableUsd: 7.61,
-        preparationBalance: {
-          status: "BALANCE_AVAILABLE",
-          title: "Aprovação registrada e saldo estimado disponível",
-          explanation:
-            "O saldo ainda precisa cobrir o custo da próxima tarefa. Retome pela atividade.",
-          shortfallUsd: 0,
-          requiresBudgetReview: false,
-        },
-        authorization: {
-          eventId: 8000,
-          reference: "internal://local/receipt/8000",
-          totalLimitUsd: 50,
-          reserveUsd: 3.5,
-          operatorName: request.operatorName,
-          justification: request.justification,
-          approvedAt: fixture.observedAt,
-          productVersion: fixture.productVersion,
-          current: true,
-        },
-      };
-      data.history = [data.authorization];
-      data.budgets = data.budgets.map((budget) =>
-        budget.code === "PREPARATION"
-          ? {
-              ...budget,
-              limit: 50,
-              status: "Limite registrado para esta versão",
-            }
-          : budget,
-      );
-      return route.fulfill({ json: data });
+      throw new Error(`Chamada inesperada: ${url.pathname}`);
     });
     await page.goto("http://127.0.0.1:15278/execution-finance-test.html");
     await page
@@ -205,23 +164,16 @@ try {
     await expect(
       page.getByRole("heading", { name: "Pagar anúncios", exact: true }),
     ).toBeVisible();
-    await page
-      .getByRole("button", { name: "Ver decisão dos anúncios aqui" })
-      .click();
-    await expect(page.getByText(fixture.mediaDecision.reason)).toBeVisible();
-    await page
-      .getByRole("button", { name: "Ver decisão dos vídeos aqui" })
-      .click();
     await expect(
-      page.getByText("Conclua o planejamento antes de definir vídeos."),
-    ).toBeVisible();
+      page.getByRole("link", { name: "Ver teto na planilha" }),
+    ).toHaveCount(3);
+    const sheet = page.getByRole("region", {
+      name: "Planilha de custos",
+      exact: true,
+    });
     await expect(
-      page.getByRole("heading", {
-        name: "Demonstração financeira",
-        exact: true,
-      }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Fechar ajuste" }).click();
+      sheet.getByRole("textbox", { name: /^Aprovado —/ }),
+    ).toHaveCount(6);
     assert.equal(sent.length, 0);
     assert(
       await page.evaluate(
@@ -232,40 +184,7 @@ try {
       path: new URL(`${name}-analysis.png`, output).pathname,
       fullPage: true,
     });
-    await page
-      .getByLabel("Teto total acumulado (US$) *", { exact: true })
-      .fill("50");
-    await page
-      .getByLabel("Reserva para custos pendentes (US$) *", { exact: true })
-      .fill("3.50");
-    await page
-      .getByLabel("Responsável pela decisão *", { exact: true })
-      .fill("Administrador de teste");
-    await page
-      .getByLabel("Justificativa e fontes consideradas *", { exact: true })
-      .fill("Cenários simulados. Sem gasto externo.");
-    await expect(
-      page.getByRole("button", { name: "Aprovar limite de preparação" }),
-    ).toBeDisabled();
-    await page.getByRole("checkbox", { name: /Confirmo este teto/ }).check();
-    await page
-      .getByRole("button", { name: "Aprovar limite de preparação" })
-      .click();
-    await expect(page.getByRole("alert")).toContainText(
-      "Falha temporária simulada",
-    );
-    await page
-      .getByRole("button", { name: "Aprovar limite de preparação" })
-      .click();
-    await expect(page.getByText(/Decisão registrada com recibo/)).toBeVisible();
-    assert.equal(sent.length, 2);
-    assert.deepEqual(sent[0], sent[1]);
-    assert.equal(sent[1].totalLimitUsd, 50);
     assert.equal(errors.length, 0, JSON.stringify(errors));
-    await page.screenshot({
-      path: new URL(`${name}-approved.png`, output).pathname,
-      fullPage: true,
-    });
     data.financialPlan = null;
     data.advice = {
       ...data.advice,
@@ -297,7 +216,7 @@ try {
     ).toBeVisible();
     assert.equal(
       sent.length,
-      2,
+      0,
       "Consultar o parecer não autoriza novos gastos",
     );
     assert.equal(await details.getAttribute("open"), null);
@@ -343,16 +262,16 @@ try {
     await expect(balance).toContainText(
       /80,00 de teto − US\$\s*67,38 de custos estimados − US\$\s*20,00 de reserva = -US\$\s*7,38/,
     );
-    await page.getByRole("link", { name: "Rever teto ou reserva" }).click();
+    await page.getByRole("link", { name: "Rever teto aprovado" }).click();
     await expect(
-      page.getByLabel("Teto total acumulado (US$) *", { exact: true }),
+      page.getByLabel("Aprovado — Agentes", { exact: true }),
     ).toHaveValue("80");
     await expect(
       page.getByRole("button", { name: "Atualizar valores" }),
     ).toBeEnabled();
     assert.equal(
       sent.length,
-      2,
+      0,
       "Conferir insuficiência não repete aprovação nem inicia tarefa",
     );
     assert(
@@ -365,7 +284,7 @@ try {
       fullPage: true,
     });
     console.log(
-      `${name}: card, gráficos, parecer, aprovação recuperável e recibo salvo sem cobertura passaram`,
+      `${name}: card, gráficos, parecer, tetos na planilha e recibo sem cobertura passaram`,
     );
     await context.close();
   }

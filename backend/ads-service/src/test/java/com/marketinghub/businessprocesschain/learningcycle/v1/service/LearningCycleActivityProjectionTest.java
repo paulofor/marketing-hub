@@ -120,7 +120,10 @@ class LearningCycleActivityProjectionTest {
     when(events.findFirstByCycleIdAndActionNotInOrderByRevisionDesc(
             1L,
             List.of(
-                "SAVE_COST_WORKSHEET", "AUTHORIZE_PREPARATION_BUDGET", "AUTHORIZE_VIDEO_BUDGET")))
+                "SAVE_COST_WORKSHEET",
+                "APPROVE_COST_CEILING",
+                "AUTHORIZE_PREPARATION_BUDGET",
+                "AUTHORIZE_VIDEO_BUDGET")))
         .thenReturn(Optional.of(event));
     var call = project(4L, null).getLast();
     assertThat(call.operationalState()).isEqualTo("BLOCKED");

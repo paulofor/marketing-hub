@@ -144,6 +144,48 @@ await writeFile(
   ),
 );
 
+const ceilingRequest = {
+  requestKey: crypto.randomUUID(),
+  expectedRevision: edited.revision,
+  chainDefinitionId: first.chainDefinitionId,
+  experimentId: first.experimentId,
+  productVersion: first.productVersion,
+  code: "DELIVERY",
+  approved: 125.5,
+  operatorName: "Homologação local",
+  justification: "Teto sintético com quatro pedidos concorrentes",
+  confirmed: true,
+};
+const ceilingUrl = url.replace(/cost-worksheet$/, "cost-ceilings");
+const ceilings = await Promise.all(
+  Array.from({ length: 4 }, () => http(ceilingUrl, ceilingRequest)),
+);
+assert(
+  ceilings.every(
+    (result) =>
+      result.ceilingHistory.length === 1 && result.rows[3].approved === 125.5,
+  ),
+);
+assert(
+  ceilings.every(
+    (result) =>
+      result.ceilingHistory[0].eventId ===
+      ceilings[0].ceilingHistory[0].eventId,
+  ),
+);
+await http(ceilingUrl, { ...ceilingRequest, approved: 126 }, 409);
+assert.equal(
+  (
+    await http(
+      `${api}/products/91002/${second.id}/cost-worksheet?chainId=91002`,
+    )
+  ).ceilingHistory.length,
+  0,
+);
+console.log(
+  "PASS tetos/API/MySQL: concorrência, recuperação e isolamento entre produtos",
+);
+
 if (process.argv.includes("--api-only")) {
   console.log(
     "PASS API/MySQL: concorrência, cálculos, revisão, contexto e limites preservados",
@@ -201,105 +243,90 @@ try {
       exact: true,
     });
     await expect(section.getByRole("rowheader")).toHaveCount(6);
-    await page
-      .getByLabel("Início do período *", { exact: true })
-      .fill("2026-11-01");
-    await page
-      .getByLabel("Fim do período *", { exact: true })
-      .fill("2026-11-30");
-    await page
-      .getByLabel("Receita bruta prevista no período (R$)")
-      .fill("2000");
-    for (const label of labels) {
-      await page
-        .getByRole("spinbutton", { name: `Orçado — ${label}`, exact: true })
-        .fill("100");
-      await page
-        .getByRole("spinbutton", {
-          name: `Custo informado — ${label}`,
-          exact: true,
-        })
-        .fill("50");
-      await page
-        .getByRole("spinbutton", {
-          name: `Previsão total — ${label}`,
-          exact: true,
-        })
-        .fill("80");
-      await page
-        .getByRole("textbox", { name: `Fonte — ${label}`, exact: true })
-        .fill("Fonte local sintética; total do período");
-    }
-    await page
-      .getByText("Conversão para calcular o resultado previsto em reais", {
+    const fields = section.getByRole("textbox", { name: /^Aprovado —/ });
+    await expect(fields).toHaveCount(6);
+    assert(
+      await fields.evaluateAll((items) =>
+        items.every((item) => item.closest("td").cellIndex === 1),
+      ),
+    );
+    await expect(section.getByRole("spinbutton")).toHaveCount(0);
+    await expect(
+      section.getByLabel("Aprovado — Produção de imagens, áudio e vídeo", {
         exact: true,
-      })
+      }),
+    ).toBeDisabled();
+    const agents = section.getByLabel("Aprovado — Agentes", { exact: true });
+    await agents.fill("100,50");
+    await section
+      .getByRole("button", { name: "Aprovar teto — Agentes", exact: true })
       .click();
-    await page.getByLabel("R$ por US$ 1", { exact: true }).fill("5");
-    await page
-      .getByLabel("Fonte do câmbio", { exact: false })
-      .fill("Câmbio fictício local");
-    await page
-      .getByLabel("Data da consulta", { exact: false })
-      .fill("2026-10-30");
-    await page.getByLabel("Responsável pela planilha *").fill("Teste " + name);
-    await page
-      .getByLabel("Justificativa e premissas gerais *")
-      .fill("Receita sintética e classificação sem duplicação.");
+    await section
+      .getByLabel("Responsável pela decisão *", { exact: true })
+      .fill("Teste " + name);
+    await section
+      .getByLabel("Justificativa da decisão *", { exact: true })
+      .fill("Teto sintético, sem gasto externo");
+    await section.getByRole("checkbox").check();
     let lost = false;
-    await page.route("**/cost-worksheet", async (route) => {
+    await page.route("**/cost-ceilings", async (route) => {
       if (route.request().method() === "POST" && !lost) {
         lost = true;
-        const response = await route.fetch();
-        assert.equal(response.status(), 200);
+        await route.fetch();
         return route.abort("failed");
       }
-      return route.continue();
+      await route.continue();
     });
-    await page
-      .getByRole("button", { name: "Salvar custos e previsões", exact: true })
+    await section
+      .getByRole("button", { name: "Confirmar e registrar teto", exact: true })
       .click();
     await expect(section.getByRole("alert")).toBeVisible();
-    await page
-      .getByRole("button", { name: "Salvar custos e previsões", exact: true })
+    const read = `${api}/products/${c.productId}/${c.id}/cost-worksheet?chainId=${c.chainDefinitionId}`;
+    let persisted = await http(read);
+    assert.equal(persisted.ceilingHistory.length, 1);
+    assert.equal(persisted.rows[0].approved, 100.5);
+    await section
+      .getByRole("button", { name: "Confirmar e registrar teto", exact: true })
       .click();
-    await expect(section.getByText(/Planilha salva · Registro/)).toBeVisible();
-    await expect(
-      section.getByText(/Resultado previsto após os seis grupos:/),
-    ).toContainText("880,00");
-    let persisted = await http(
-      `${api}/products/${c.productId}/${c.id}/cost-worksheet?chainId=${c.chainDefinitionId}`,
-    );
+    await expect(section.getByText(/Teto de Agentes registrado/)).toBeVisible();
+    persisted = await http(read);
     assert.equal(
-      persisted.history.length,
+      persisted.ceilingHistory.length,
       1,
       "Resposta perdida não duplica recibo",
     );
     await page.reload();
     await expect(
-      page.getByRole("spinbutton", { name: "Orçado — Agentes", exact: true }),
-    ).toHaveValue("100");
-    await page.getByLabel("Responsável pela planilha *").fill("Teste " + name);
-    await page
-      .getByRole("checkbox", { name: /Aprovo os valores orçados/ })
-      .check();
-    await page
+      section.getByLabel("Aprovado — Agentes", { exact: true }),
+    ).toHaveValue("100.5");
+    await section
+      .getByLabel("Aprovado — Entrega e suporte", { exact: true })
+      .fill("0");
+    await section
       .getByRole("button", {
-        name: "Salvar e aprovar os três orçamentos operacionais",
+        name: "Aprovar teto — Entrega e suporte",
         exact: true,
       })
       .click();
+    await section
+      .getByLabel("Responsável pela decisão *", { exact: true })
+      .fill("Teste " + name);
+    await section
+      .getByLabel("Justificativa da decisão *", { exact: true })
+      .fill("Sem custo neste cenário sintético");
+    await section.getByRole("checkbox").check();
+    await section
+      .getByRole("button", { name: "Confirmar e registrar teto", exact: true })
+      .click();
     await expect(
-      section.getByText(
-        "Aprovado para planejamento; sem autorização de execução",
-      ),
-    ).toHaveCount(3);
-    persisted = await http(
-      `${api}/products/${c.productId}/${c.id}/cost-worksheet?chainId=${c.chainDefinitionId}`,
-    );
-    assert.equal(persisted.history.length, 2);
-    assert.equal(persisted.rows[0].approved, null);
-    assert.equal(persisted.rows[3].approved, 100);
+      section.getByText(/Teto de Entrega e suporte registrado/),
+    ).toBeVisible();
+    persisted = await http(read);
+    assert.equal(persisted.ceilingHistory.length, 2);
+    assert.equal(persisted.rows[0].approved, 100.5);
+    assert.equal(persisted.rows[3].approved, 0);
+    assert.equal(persisted.rows[4].approved, null);
+    assert.equal(persisted.rows[3].forecast, null);
     assert.equal(errors.length, 0, errors.join("\n"));
     assert(
       await page.evaluate(
@@ -324,6 +351,7 @@ try {
           errors,
           replayEvents: 1,
           approvalEvents: 2,
+          monetaryInputsOnlyInApprovedColumn: true,
         },
         null,
         2,

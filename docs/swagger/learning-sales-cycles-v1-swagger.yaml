@@ -383,6 +383,46 @@ paths:
           description: Custos estimados por experimento, cobertura, limites por moeda, saldo após reserva, recibos, revisão financeira LIVE do plano único associado e advice (status, title, recommendation, basis, sourceId, producedAt, sourceUrl, figures com label/value/unit, caution e fullRationale). Advice reutiliza o planejamento de Plutus do experimento quando não há plano; STALE exige reavaliação após mudança de estratégia ou versão e PREPARATION_ONLY não autoriza comercialização; parecer ausente ou desatualizado não é aprovação.
         '409': {description: Contexto divergente}
         '404': {description: Ciclo não pertence ao produto}
+  /products/{productId}/{cycleId}/cost-ceilings:
+    post:
+      summary: Aprovar somente o teto de um dos seis grupos
+      description: >-
+        Recebe apenas o teto monetário; custos, previsões e câmbio não são entradas da tela.
+        AGENTS preserva a reserva vigente (sem reserva anterior, zero) e reutiliza o recibo de preparação.
+        PRODUCTION reutiliza o teto das duas peças e seus gates. MEDIA reutiliza a autorização
+        canônica, com diário sugerido pelo backend limitado ao total, sem ativar campanha.
+        Os demais grupos aprovam somente planejamento. Lock, contexto, revisão e replay protegem
+        decisões concorrentes. Nenhuma decisão inicia tarefa ou altera outro grupo.
+      parameters:
+        - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, chainDefinitionId, experimentId, productVersion, code, approved, operatorName, justification, confirmed]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, minimum: 0}
+                chainDefinitionId: {type: integer, format: int64, minimum: 1}
+                experimentId: {type: integer, format: int64, minimum: 1}
+                productVersion: {type: string, minLength: 1, maxLength: 160}
+                code: {type: string, enum: [AGENTS, PRODUCTION, MEDIA, DELIVERY, SALES_DEDUCTIONS, FIXED_OPERATION]}
+                approved: {type: number, minimum: 0, maximum: 999999.99, multipleOf: 0.01}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                justification: {type: string, minLength: 1, maxLength: 4000}
+                confirmed: {type: boolean, enum: [true]}
+      responses:
+        '200':
+          description: Teto registrado e planilha atualizada com recibo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CostWorksheet'}
+        '400': {description: Campo obrigatório, confirmação ou teto inválido}
+        '404': {description: Contexto de outro produto}
+        '409': {description: Gate, revisão, versão ou chave de idempotência incompatível}
   /products/{productId}/{cycleId}/cost-worksheet:
     get:
       summary: Consultar planilha de custos, orçamentos, aprovações e previsões
@@ -517,6 +557,8 @@ components:
                   estimatedCost: {type: number, nullable: true}
                   approved: {type: number, nullable: true}
                   approvalStatus: {type: string}
+                  canApprove: {type: boolean}
+                  approvalBlocker: {type: string, nullable: true}
                   variance: {type: number, nullable: true, description: 'Aprovado menos previsão, respeitando escopo do recibo'}
                   estimateSource: {type: string}
         totals:
@@ -544,6 +586,18 @@ components:
               current: {type: boolean}
               operatingBudgetsApproved: {type: boolean}
               snapshot: {$ref: '#/components/schemas/CostWorksheetRequest'}
+        ceilingHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              eventId: {type: integer, format: int64}
+              code: {type: string}
+              approved: {type: number}
+              operatorName: {type: string}
+              recordedAt: {type: string, format: date-time}
+              justification: {type: string}
+              current: {type: boolean}
     VideoBudgetAuthorization:
       type: object
       properties:

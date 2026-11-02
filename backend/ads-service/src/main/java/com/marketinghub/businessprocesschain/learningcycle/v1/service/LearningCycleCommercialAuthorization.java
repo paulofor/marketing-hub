@@ -31,7 +31,13 @@ public class LearningCycleCommercialAuthorization {
 
   /** Sugere distribuição do teto pelos dias restantes, sem registrar autorização. */
   public static java.math.BigDecimal suggestDaily(LearningSalesCycle cycle, Instant now) {
-    if (cycle.getBudgetLimitBrl() == null
+    return suggestDaily(cycle, now, cycle.getBudgetLimitBrl());
+  }
+
+  /** Calcula a distribuição do teto proposto sem alterar o ciclo antes da confirmação. */
+  public static java.math.BigDecimal suggestDaily(
+      LearningSalesCycle cycle, Instant now, java.math.BigDecimal total) {
+    if (total == null
         || cycle.getWindowStart() == null
         || cycle.getWindowEnd() == null
         || !now.isBefore(cycle.getWindowEnd())) return null;
@@ -41,9 +47,7 @@ public class LearningCycleCommercialAuthorization {
                 start.atZone(COMMERCIAL_ZONE).toLocalDate(),
                 cycle.getWindowEnd().minusNanos(1).atZone(COMMERCIAL_ZONE).toLocalDate())
             + 1;
-    return days > 0
-        ? cycle.getBudgetLimitBrl().divide(java.math.BigDecimal.valueOf(days), 2, RoundingMode.DOWN)
-        : null;
+    return days > 0 ? total.divide(java.math.BigDecimal.valueOf(days), 2, RoundingMode.DOWN) : null;
   }
 
   /**

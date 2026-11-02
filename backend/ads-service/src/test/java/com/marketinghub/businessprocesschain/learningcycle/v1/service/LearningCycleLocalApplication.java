@@ -82,6 +82,7 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.businessprocesscomposition.controller.BusinessProcessCompositionController.class,
   LearningCycleJson.class,
   LearningCycleCostWorksheet.class,
+  LearningCycleCostCeilings.class,
   LearningCycleOptionalAudiovisual.class,
   LearningCycleEvidence.class,
   LearningCycleCommercialAuthorization.class,

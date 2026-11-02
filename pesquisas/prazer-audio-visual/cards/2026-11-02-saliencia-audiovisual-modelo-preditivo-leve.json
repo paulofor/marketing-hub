@@ -1,0 +1,18 @@
+{
+  "cardKey": "saliencia-audiovisual-modelo-preditivo-leve",
+  "collection": "prazer-audio-visual",
+  "title": "Pistas de áudio na predição de saliência visual em vídeo",
+  "finding": "Em seis bases de eye-tracking audiovisual, uma arquitetura leve que integra áudio e vídeo obteve melhor predição de saliência do que os métodos leves comparados, com poucos parâmetros e velocidade competitiva.",
+  "mechanism": "A fusão por atenção cruzada pode aproveitar pistas auditivas semânticas e temporais para prever locais de fixação; é predição computacional, não alteração causal da atenção.",
+  "commercialApplication": "Avaliar um modelo audiovisual de predição de olhar contra um modelo apenas visual em criativos do Marketing Hub antes de orientar edição, com métricas humanas e custo de inferência.",
+  "evidenceStrength": "Moderada para benchmark de predição computacional em seis datasets; baixa para prazer humano, retenção, causalidade e resultado comercial.",
+  "experimentHypothesis": "Predições audiovisuais terão maior correspondência com rastreamento ocular de espectadores reais do que um modelo apenas visual, sem custo operacional excessivo; testar em amostra externa e, depois, compreensão.",
+  "risks": "Otimização excessiva de saliência pode induzir distração e manipulação; vieses de base e leakage podem invalidar desempenho. Não equiparar fixação a desejo.",
+  "limits": "Artigo avalia modelos, não intervenções em anúncios ou experiência subjetiva. Não demonstra causalidade sobre atenção e não mede dopamina, emoção ou conversões.",
+  "publishedOn": "2026-11-02",
+  "validUntil": "2026-12-17",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-02-saliencia-audiovisual-modelo-preditivo-leve-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Bao et al. (2026), predição computacional de saliência audiovisual",
+  "sourceSha256": "9a5e8c24ce24605dd6eee864e29b780cc4b46db3059d39bab8efa3b5735cd5ef"
+}

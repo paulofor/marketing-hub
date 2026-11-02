@@ -37,7 +37,7 @@ public class LearningCycleActivityProjection {
     return apply(process, productId, explicitCycleId, definitions, groups, null);
   }
 
-  /** Mantém a cadeia solicitada, inclusive quando o mesmo processo participa de várias versões. */
+  /** Mantém cadeia e bloqueios funcionais, ignorando gravações financeiras sem transição. */
   @Transactional(readOnly = true)
   public List<ProductProcessActivityExecutionGroupResponse> apply(
       BusinessProcessDefinition process,
@@ -90,7 +90,14 @@ public class LearningCycleActivityProjection {
     var latestEvent =
         cycle == null
             ? null
-            : events.findFirstByCycleIdOrderByRevisionDesc(cycle.getId()).orElse(null);
+            : events
+                .findFirstByCycleIdAndActionNotInOrderByRevisionDesc(
+                    cycle.getId(),
+                    List.of(
+                        "SAVE_COST_WORKSHEET",
+                        "AUTHORIZE_PREPARATION_BUDGET",
+                        "AUTHORIZE_VIDEO_BUDGET"))
+                .orElse(null);
     boolean measurementBlocked =
         latestEvent != null
             && "MEASUREMENT_BLOCKED".equals(latestEvent.getAction())

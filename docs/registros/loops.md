@@ -6548,6 +6548,12 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 
 ## LOOP-CICLO-MEDICAO-MANUAL-DUPLICA-FONTE — ciclo pede números que o backend já conhece
 
+- **Prevenção adicional em 02/11/2026:** salvar a planilha financeira ou um orçamento criava
+  um evento posterior a `MEASUREMENT_BLOCKED`. A projeção agora consulta a última mudança
+  funcional, excluindo esses registros administrativos. Teste JPA real reproduz bloqueio seguido
+  dos três eventos financeiros e mantém isolamento entre ciclos; a tela continua mostrando a
+  causa original. `docs/homologacao/financial-cost-worksheet-v1.md` preserva a evidência.
+
 - **Data:** 2026-09-09.
 - **Evidência:** o ciclo #1 do Vega, ligado ao #91, chegou a `MEASUREMENT` e ofereceu o comando
   manual `MEASURE`, embora o endpoint canônico usado por Hermes já devolva quatro sessões humanas,

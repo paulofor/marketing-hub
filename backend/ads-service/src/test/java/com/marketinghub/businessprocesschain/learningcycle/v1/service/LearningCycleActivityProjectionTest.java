@@ -117,7 +117,11 @@ class LearningCycleActivityProjectionTest {
     var event = new LearningSalesCycleEvent();
     event.setAction("MEASUREMENT_BLOCKED");
     event.setSummary("Snapshot de mídia indisponível; atualizar a fonte.");
-    when(events.findFirstByCycleIdOrderByRevisionDesc(1L)).thenReturn(Optional.of(event));
+    when(events.findFirstByCycleIdAndActionNotInOrderByRevisionDesc(
+            1L,
+            List.of(
+                "SAVE_COST_WORKSHEET", "AUTHORIZE_PREPARATION_BUDGET", "AUTHORIZE_VIDEO_BUDGET")))
+        .thenReturn(Optional.of(event));
     var call = project(4L, null).getLast();
     assertThat(call.operationalState()).isEqualTo("BLOCKED");
     assertThat(call.stateReason()).contains("Snapshot de mídia indisponível");

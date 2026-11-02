@@ -121,6 +121,10 @@ class LearningCycleFinancialReviewTest {
             null);
     ReflectionTestUtils.setField(service, "financialReview", review);
     ReflectionTestUtils.setField(service, "preparationBudget", budget);
+    ReflectionTestUtils.setField(
+        service,
+        "costWorksheet",
+        new LearningCycleCostWorksheet(events, json, new ObjectMapper().findAndRegisterModules()));
     http = MockMvcBuilders.standaloneSetup(new LearningCycleController(service)).build();
   }
 

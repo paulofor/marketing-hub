@@ -1,0 +1,130 @@
+{
+  "contractVersion": "COST_WORKSHEET_V1",
+  "eventId": null,
+  "revision": 1,
+  "editable": true,
+  "saved": null,
+  "rows": [
+    {
+      "code": "AGENTS",
+      "label": "Agentes",
+      "currency": "USD",
+      "basis": "Acumulado do produto",
+      "description": "Agentes",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": 38.89,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Estimativas de tarefas; não são fatura conciliada."
+    },
+    {
+      "code": "PRODUCTION",
+      "label": "Produção de imagens, áudio e vídeo",
+      "currency": "USD",
+      "basis": "Período do experimento",
+      "description": "Produção de imagens, áudio e vídeo",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": null,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Não consolidado automaticamente."
+    },
+    {
+      "code": "MEDIA",
+      "label": "Mídia",
+      "currency": "BRL",
+      "basis": "Período do experimento",
+      "description": "Mídia",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": null,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Não consolidado automaticamente."
+    },
+    {
+      "code": "DELIVERY",
+      "label": "Entrega e suporte",
+      "currency": "BRL",
+      "basis": "Período do experimento",
+      "description": "Entrega e suporte",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": null,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Não consolidado automaticamente."
+    },
+    {
+      "code": "SALES_DEDUCTIONS",
+      "label": "Despesas e deduções da venda",
+      "currency": "BRL",
+      "basis": "Período do experimento",
+      "description": "Despesas e deduções da venda",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": null,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Não consolidado automaticamente."
+    },
+    {
+      "code": "FIXED_OPERATION",
+      "label": "Operação fixa",
+      "currency": "BRL",
+      "basis": "Período do experimento",
+      "description": "Operação fixa",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": null,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Não consolidado automaticamente."
+    }
+  ],
+  "totals": [
+    {
+      "currency": "USD",
+      "planned": null,
+      "reportedCost": null,
+      "forecast": null,
+      "missingPlanned": 2,
+      "missingReported": 2,
+      "missingForecast": 2
+    },
+    {
+      "currency": "BRL",
+      "planned": null,
+      "reportedCost": null,
+      "forecast": null,
+      "missingPlanned": 4,
+      "missingReported": 4,
+      "missingForecast": 4
+    }
+  ],
+  "projectedResultBrl": null,
+  "gaps": [
+    "Informe período e previsões."
+  ],
+  "history": []
+}

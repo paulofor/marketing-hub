@@ -97,3 +97,59 @@
     font-size: 1.15rem !important;
   }
 }
+
+.finance-worksheet {
+  min-width: 0;
+}
+.finance-sheet-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+}
+.finance-sheet-table {
+  min-width: 1120px;
+  margin-bottom: 0;
+}
+.finance-sheet-table thead th {
+  background: #edf3fa;
+  color: #243d59;
+  white-space: nowrap;
+}
+.finance-sheet-table tbody th {
+  width: 28%;
+  min-width: 270px;
+  background: #f8fafc;
+}
+.finance-sheet-table td {
+  min-width: 135px;
+  max-width: 210px;
+}
+.finance-sheet-table small {
+  line-height: 1.4;
+}
+.finance-sheet-table caption {
+  padding: 12px;
+}
+.finance-sheet-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.finance-sheet-totals dd {
+  text-align: right;
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .finance-worksheet {
+    padding: 12px !important;
+  }
+  .finance-sheet-totals {
+    grid-template-columns: 1fr;
+  }
+  .finance-sheet-totals dd {
+    text-align: left;
+    margin-bottom: 8px;
+  }
+}

@@ -383,6 +383,50 @@ paths:
           description: Custos estimados por experimento, cobertura, limites por moeda, saldo após reserva, recibos, revisão financeira LIVE do plano único associado e advice (status, title, recommendation, basis, sourceId, producedAt, sourceUrl, figures com label/value/unit, caution e fullRationale). Advice reutiliza o planejamento de Plutus do experimento quando não há plano; STALE exige reavaliação após mudança de estratégia ou versão e PREPARATION_ONLY não autoriza comercialização; parecer ausente ou desatualizado não é aprovação.
         '409': {description: Contexto divergente}
         '404': {description: Ciclo não pertence ao produto}
+  /products/{productId}/{cycleId}/cost-worksheet:
+    get:
+      summary: Consultar planilha de custos, orçamentos, aprovações e previsões
+      description: >-
+        Seis grupos calculados no backend. Agentes são acumulados do produto; demais grupos
+        pertencem ao experimento e período. Estimativas automáticas não são somadas aos totais
+        informados. Sem escrita, inferência paga ou autorização de consumo.
+      parameters:
+        - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Planilha, lacunas, subtotais por moeda e recibos imutáveis
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CostWorksheet'}
+        '404': {description: Ciclo não pertence ao produto}
+        '409': {description: Cadeia divergente}
+    post:
+      summary: Salvar revisão da planilha e aprovação administrativa opcional
+      description: >-
+        Usa lock, expectedRevision e requestKey. Replay idêntico recupera resultado sem duplicar.
+        approveOperatingBudgets aprova somente orçamentos de DELIVERY, SALES_DEDUCTIONS e
+        FIXED_OPERATION para planejamento. Não substitui autorizações de agentes, vídeos ou mídia,
+        não avança etapa e não cria tarefa. Qualquer nova gravação sem confirmação deixa essa
+        aprovação pendente. Fontes são obrigatórias em linhas com valores, inclusive zero.
+      parameters:
+        - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CostWorksheetRequest'}
+      responses:
+        '200':
+          description: Revisão persistida e cálculos atualizados, sem liberar consumo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CostWorksheet'}
+        '400': {description: Contrato malformado}
+        '404': {description: Contexto de outro produto}
+        '409': {description: Fonte, valor ou período inválido, revisão obsoleta, contexto divergente ou ciclo encerrado}
   /products/{productId}/{cycleId}/preparation-budget:
     post:
       summary: Registrar aprovação humana do teto cumulativo de preparação e revisão
@@ -417,6 +461,89 @@ components:
   parameters:
     ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
   schemas:
+    CostWorksheetRequest:
+      type: object
+      required: [requestKey, expectedRevision, chainDefinitionId, experimentId, productVersion, periodStart, periodEnd, operatorName, justification, lines]
+      properties:
+        requestKey: {type: string, format: uuid}
+        expectedRevision: {type: integer, format: int64}
+        chainDefinitionId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        productVersion: {type: string}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date, description: 'Fim igual ou posterior ao início'}
+        expectedRevenueBrl: {type: number, nullable: true, minimum: 0, maximum: 999999999.99, multipleOf: 0.01, description: 'Receita bruta prevista; deduções somente no grupo próprio'}
+        usdBrl: {type: number, nullable: true, minimum: 0, exclusiveMinimum: true, maximum: 10000, description: 'R$ por US$ 1; até seis casas decimais'}
+        exchangeSource: {type: string, nullable: true, maxLength: 1000}
+        exchangeCheckedOn: {type: string, format: date, nullable: true}
+        operatorName: {type: string, minLength: 1, maxLength: 160}
+        justification: {type: string, minLength: 1, maxLength: 4000}
+        approveOperatingBudgets: {type: boolean, default: false}
+        lines:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items: {$ref: '#/components/schemas/CostWorksheetLine'}
+    CostWorksheetLine:
+      type: object
+      required: [code]
+      properties:
+        code: {type: string, enum: [AGENTS, PRODUCTION, MEDIA, DELIVERY, SALES_DEDUCTIONS, FIXED_OPERATION]}
+        planned: {type: number, nullable: true, minimum: 0, maximum: 999999999.99, multipleOf: 0.01}
+        reportedCost: {type: number, nullable: true, minimum: 0, maximum: 999999999.99, multipleOf: 0.01, description: 'Total informado pelo administrador; não é conciliação automática'}
+        forecast: {type: number, nullable: true, minimum: 0, maximum: 999999999.99, multipleOf: 0.01, description: 'Previsão total incluindo consumo anterior, não verba incremental'}
+        source: {type: string, nullable: true, maxLength: 2000}
+    CostWorksheet:
+      type: object
+      properties:
+        contractVersion: {type: string, enum: [COST_WORKSHEET_V1]}
+        eventId: {type: integer, format: int64, nullable: true}
+        revision: {type: integer, format: int64}
+        editable: {type: boolean}
+        saved: {allOf: [{$ref: '#/components/schemas/CostWorksheetRequest'}], nullable: true}
+        projectedResultBrl: {type: number, nullable: true, description: 'Receita bruta menos seis previsões; US$ convertido com fonte; nulo se incompleto'}
+        gaps: {type: array, items: {type: string}}
+        rows:
+          type: array
+          items:
+            allOf:
+              - {$ref: '#/components/schemas/CostWorksheetLine'}
+              - type: object
+                properties:
+                  label: {type: string}
+                  currency: {type: string, enum: [USD, BRL]}
+                  basis: {type: string}
+                  description: {type: string}
+                  estimatedCost: {type: number, nullable: true}
+                  approved: {type: number, nullable: true}
+                  approvalStatus: {type: string}
+                  variance: {type: number, nullable: true, description: 'Aprovado menos previsão, respeitando escopo do recibo'}
+                  estimateSource: {type: string}
+        totals:
+          type: array
+          items:
+            type: object
+            properties:
+              currency: {type: string, enum: [USD, BRL]}
+              planned: {type: number, nullable: true}
+              reportedCost: {type: number, nullable: true}
+              forecast: {type: number, nullable: true}
+              missingPlanned: {type: integer}
+              missingReported: {type: integer}
+              missingForecast: {type: integer}
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              eventId: {type: integer, format: int64}
+              revision: {type: integer, format: int64}
+              recordedAt: {type: string, format: date-time}
+              operatorName: {type: string}
+              productVersion: {type: string}
+              current: {type: boolean}
+              operatingBudgetsApproved: {type: boolean}
+              snapshot: {$ref: '#/components/schemas/CostWorksheetRequest'}
     VideoBudgetAuthorization:
       type: object
       properties:

@@ -1,0 +1,18 @@
+{
+  "cardKey": "multimodalidade-avaliacao-produtos-satisfacao",
+  "collection": "neuromarketing",
+  "title": "Interface multimodal na comparação de produtos: satisfação não é compra",
+  "finding": "Em experimento online com 312 participantes retidos numa loja simulada, assistente com texto, voz e avatar animado sincronizados foi associado a maior satisfação e a maiores percepções de imersão e utilidade diagnóstica que assistente textual. Maior contraste na fase de avaliação: d=1,58 (IC95% 1,33–1,83).",
+  "mechanism": "Pistas visuais, auditivas e textuais podem facilitar compreensão e transmitir presença social durante avaliação, mas a contribuição causal isolada da sincronização, da voz ou do avatar não foi demonstrada.",
+  "commercialApplication": "Íris e Têmis podem definir e verificar testes honestos de explicações multimodais na comparação de benefícios, preço e limites, contra texto equivalente; medir entendimento, satisfação, tempo e acessibilidade antes de avaliar resultados reais de funil.",
+  "evidenceStrength": "Artigo em Scientific Reports (19/10/2026), experimento entre grupos N=312 em e-commerce simulado; achados de satisfação autorrelatada, sem vendas reais nem isolamento dos componentes multimodais.",
+  "publishedOn": "2026-11-02",
+  "validUntil": "2026-12-17",
+  "experimentHypothesis": "Na comparação consentida de produtos digitais, uma explicação multimodal equivalente à textual elevará compreensão e satisfação sem elevar indevidamente abandono, latência ou carga sensorial; eventual benefício sobre CTA e pagamentos exige ensaio de campo separado.",
+  "risks": "Avatar, voz e animação podem aumentar custos, latência, distração, barreiras de acessibilidade ou influência emocional desproporcional. Transparência sobre natureza artificial e controle de volume, legendas e modo texto são necessários.",
+  "limits": "Comparou configurações inteiras, que diferiam em quantidade de modalidades, antropomorfismo e presença social; modelos de mediação não estabelecem causalidade; não houve transações, receita ou retenção comercial observadas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-02-multimodalidade-avaliacao-consumidor.md",
+  "sourceTitle": "Evidência revisada — multimodalidade e satisfação na avaliação de produtos simulados",
+  "sourceSha256": "532d812b58cab1012139d1669e48b388aefc7d34ce74b84feb4c434825b5bdef"
+}

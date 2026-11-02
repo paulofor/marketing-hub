@@ -44,6 +44,8 @@ export interface CostWorksheet {
       estimateSource: string;
       canApprove: boolean;
       approvalBlocker: string | null;
+      approvalScope: "PLANNING" | "EXECUTION_LIMIT";
+      executionBlocker: string | null;
     }
   >;
   totals: Array<{

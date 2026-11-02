@@ -1,4 +1,3 @@
-import VideoBudgetForm from "./VideoBudgetForm";
 import { Link, useSearchParams } from "react-router-dom";
 import { CircleDollarSign, Film, RefreshCw } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
@@ -262,12 +261,16 @@ export default function VideoFinancePage() {
               <Link to={budget.cycleUrl}>Continuar no ciclo com este teto</Link>
             </section>
           ) : null}
-          {budget.canAuthorize ? (
-            <VideoBudgetForm
-              key={`${budget.cycleId}-${budget.revision}`}
-              budget={budget}
-            />
-          ) : null}
+          <section className="card card-body">
+            <h2 className="h5">Decisões na planilha financeira</h2>
+            <p>
+              Consulte e ajuste todos os tetos no mesmo lugar, com os recibos e
+              as condições de execução.
+            </p>
+            <Link className="btn btn-primary" to={budget.financeUrl}>
+              Decidir teto na planilha
+            </Link>
+          </section>
           <section
             className="card card-body mt-4"
             aria-label="Histórico das autorizações"

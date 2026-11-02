@@ -255,7 +255,53 @@ try {
       section.getByLabel("Aprovado — Produção de imagens, áudio e vídeo", {
         exact: true,
       }),
-    ).toBeDisabled();
+    ).toBeEnabled();
+    for (const [code, label, index] of [
+      ["PRODUCTION", labels[1], 1],
+      ["MEDIA", labels[2], 2],
+    ]) {
+      await section
+        .getByLabel(`Aprovado — ${label}`, { exact: true })
+        .fill("150,25");
+      await section
+        .getByRole("button", { name: `Aprovar teto — ${label}`, exact: true })
+        .click();
+      await expect(
+        section.getByText(
+          /Esta decisão registra somente o teto de planejamento/,
+        ),
+      ).toBeVisible();
+      await section
+        .getByLabel("Responsável pela decisão *", { exact: true })
+        .fill("Teste " + name);
+      await section
+        .getByLabel("Justificativa da decisão *", { exact: true })
+        .fill("Decisão sintética antecipada");
+      await section.getByRole("checkbox").check();
+      await section
+        .getByRole("button", {
+          name: "Confirmar e registrar teto",
+          exact: true,
+        })
+        .click();
+      await expect(
+        section.getByText(`Teto de ${label} registrado.`, { exact: false }),
+      ).toBeVisible();
+      await page.reload();
+      await expect(
+        section.getByLabel(`Aprovado — ${label}`, { exact: true }),
+      ).toHaveValue("150.25");
+      const saved = await http(
+        `${api}/products/${c.productId}/${c.id}/cost-worksheet?chainId=${c.chainDefinitionId}`,
+      );
+      assert.equal(saved.rows[index].approvalScope, "PLANNING");
+      assert.equal(saved.rows[index].approved, 150.25);
+      const finance = await http(
+        `${api}/products/${c.productId}/${c.id}/financial-review?chainId=${c.chainDefinitionId}`,
+      );
+      assert.equal(finance.videoBudgetUsd, null);
+      assert.equal(finance.mediaBudgetBrl, 100);
+    }
     const agents = section.getByLabel("Aprovado — Agentes", { exact: true });
     await agents.fill("100,50");
     await section
@@ -283,7 +329,7 @@ try {
     await expect(section.getByRole("alert")).toBeVisible();
     const read = `${api}/products/${c.productId}/${c.id}/cost-worksheet?chainId=${c.chainDefinitionId}`;
     let persisted = await http(read);
-    assert.equal(persisted.ceilingHistory.length, 1);
+    assert.equal(persisted.ceilingHistory.length, 3);
     assert.equal(persisted.rows[0].approved, 100.5);
     await section
       .getByRole("button", { name: "Confirmar e registrar teto", exact: true })
@@ -292,7 +338,7 @@ try {
     persisted = await http(read);
     assert.equal(
       persisted.ceilingHistory.length,
-      1,
+      3,
       "Resposta perdida não duplica recibo",
     );
     await page.reload();
@@ -322,7 +368,7 @@ try {
       section.getByText(/Teto de Entrega e suporte registrado/),
     ).toBeVisible();
     persisted = await http(read);
-    assert.equal(persisted.ceilingHistory.length, 2);
+    assert.equal(persisted.ceilingHistory.length, 4);
     assert.equal(persisted.rows[0].approved, 100.5);
     assert.equal(persisted.rows[3].approved, 0);
     assert.equal(persisted.rows[4].approved, null);

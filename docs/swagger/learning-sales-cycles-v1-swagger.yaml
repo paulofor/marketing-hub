@@ -389,8 +389,11 @@ paths:
       description: >-
         Recebe apenas o teto monetário; custos, previsões e câmbio não são entradas da tela.
         AGENTS preserva a reserva vigente (sem reserva anterior, zero) e reutiliza o recibo de preparação.
-        PRODUCTION reutiliza o teto das duas peças e seus gates. MEDIA reutiliza a autorização
-        canônica, com diário sugerido pelo backend limitado ao total, sem ativar campanha.
+        PRODUCTION e MEDIA registram teto de planejamento antes da etapa operacional, sem alterar
+        autorizações ou verba do experimento. Na etapa compatível, confirmação explícita na mesma
+        planilha reutiliza o teto das duas peças ou a autorização canônica de mídia, com diário
+        sugerido pelo backend limitado ao total, sem ativar campanha. Limite operacional já vigente
+        não pode ser substituído por planejamento durante uma etapa protegida.
         Os demais grupos aprovam somente planejamento. Lock, contexto, revisão e replay protegem
         decisões concorrentes. Nenhuma decisão inicia tarefa ou altera outro grupo.
       parameters:
@@ -559,6 +562,8 @@ components:
                   approvalStatus: {type: string}
                   canApprove: {type: boolean}
                   approvalBlocker: {type: string, nullable: true}
+                  approvalScope: {type: string, enum: [PLANNING, EXECUTION_LIMIT], description: Efeito da confirmação nesta etapa; planejamento não concede autorização operacional.}
+                  executionBlocker: {type: string, nullable: true, description: Condição pendente para aplicar o teto à execução na mesma planilha.}
                   variance: {type: number, nullable: true, description: 'Aprovado menos previsão, respeitando escopo do recibo'}
                   estimateSource: {type: string}
         totals:
@@ -635,7 +640,7 @@ components:
           type: array
           items: {$ref: '#/components/schemas/VideoBudgetAuthorization'}
         cycleUrl: {type: string}
-        financeUrl: {type: string}
+        financeUrl: {type: string, description: Link contextual à planilha financeira central na linha PRODUCTION.}
     Entry:
       type: object
       nullable: true

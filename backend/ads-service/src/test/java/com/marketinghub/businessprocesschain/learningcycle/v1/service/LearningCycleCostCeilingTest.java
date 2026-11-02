@@ -128,19 +128,72 @@ class LearningCycleCostCeilingTest {
     assertThat(f.cycle.getStage()).isEqualTo("PLANNING");
   }
 
-  /** Mantém produção e anúncios bloqueados quando a etapa não permite a decisão. */
+  /** Registra decisão antecipada sem conceder autoridade operacional ou repetir recibo. */
   @ParameterizedTest
-  @EnumSource(
-      value = Group.class,
-      names = {"PRODUCTION", "MEDIA"})
-  void respectsExistingStageGates(Group group) throws Exception {
+  @CsvSource({
+    "PRODUCTION,1,7,19,112,27",
+    "MEDIA,2,7,19,112,27",
+    "PRODUCTION,1,99107,99119,99112,99127",
+    "MEDIA,2,99107,99119,99112,99127"
+  })
+  void recordsPlanningWithoutBypassingStageGates(
+      Group group, int index, long productId, long cycleId, long experimentId, long chainId)
+      throws Exception {
+    f.cycle.setProductId(productId);
+    f.cycle.setId(cycleId);
+    f.cycle.setExperimentId(experimentId);
+    f.cycle.setChainDefinitionId(chainId);
+    var product = Product.builder().id(productId).name("Contexto sintético").build();
+    var experiment = new Experiment();
+    experiment.setId(experimentId);
+    experiment.setProduct(product);
+    when(f.products.findById(productId)).thenReturn(Optional.of(product));
+    when(f.products.findLockedById(productId)).thenReturn(Optional.of(product));
+    when(f.cycles.findById(cycleId)).thenReturn(Optional.of(f.cycle));
+    when(f.cycles.findLocked(productId, cycleId)).thenReturn(Optional.of(f.cycle));
+    when(f.experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    root = "/api/business-process-chains/learning-cycles/v1/products/" + productId + "/" + cycleId;
+    var request = request(group);
+    var result = approve(request);
+    assertThat(result.at("/rows/" + index + "/approved").decimalValue())
+        .isEqualByComparingTo("100.50");
+    assertThat(result.at("/rows/" + index + "/approvalScope").asText()).isEqualTo("PLANNING");
+    assertThat(result.at("/rows/" + index + "/approvalStatus").asText())
+        .contains("ainda não autorizada");
+    approve(request);
+    assertThat(f.history).hasSize(1);
+    assertThat(f.cycle.getStage()).isEqualTo("PLANNING");
+    assertThat(f.cycle.getBudgetLimitBrl()).isEqualByComparingTo("89.95");
+    assertThat(f.video.current(f.cycle)).isNull();
+    verifyNoInteractions(f.plans);
+  }
+
+  /** Reutiliza o teto antecipado somente após confirmação na etapa compatível. */
+  @Test
+  void appliesSavedProductionCeilingOnlyWithNewConfirmation() throws Exception {
+    approve(request(Group.PRODUCTION));
+    f.cycle.setStage("VIDEO_BRIEF");
+    assertThat(f.video.current(f.cycle)).isNull();
+    var result = approve(request(Group.PRODUCTION));
+    assertThat(result.at("/rows/1/approvalScope").asText()).isEqualTo("EXECUTION_LIMIT");
+    assertThat(f.video.current(f.cycle).budgetLimitUsd()).isEqualByComparingTo("100.50");
+    assertThat(f.cycle.getStage()).isEqualTo("VIDEO_BRIEF");
+  }
+
+  /** Impede reduzir uma autorização operacional por um registro de planejamento posterior. */
+  @Test
+  void cannotOverrideOperationalBudgetWhileStageIsProtected() throws Exception {
+    f.cycle.setStage("VIDEO_BRIEF");
+    approve(request(Group.PRODUCTION));
+    f.cycle.setStage("VIDEO_PRODUCTION");
     f.http
         .perform(
             post(root + "/cost-ceilings")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(request(group).toString()))
+                .content(request(Group.PRODUCTION).put("approved", 1).toString()))
         .andExpect(status().isConflict());
-    assertThat(f.history).isEmpty();
+    assertThat(f.video.current(f.cycle).budgetLimitUsd()).isEqualByComparingTo("100.50");
+    assertThat(f.history).hasSize(2);
   }
 
   /** Reutiliza o recibo audiovisual oficial quando a etapa permite o teto das duas peças. */

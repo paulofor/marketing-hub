@@ -34,7 +34,9 @@ public record CostWorksheet(
       String source,
       String estimateSource,
       boolean canApprove,
-      String approvalBlocker) {}
+      String approvalBlocker,
+      String approvalScope,
+      String executionBlocker) {}
 
   /** Responsabilidade: apresentar valor, autoria e vigência de uma decisão individual de teto. */
   public record CeilingReceipt(

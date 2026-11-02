@@ -53,6 +53,7 @@ public class LearningCycleCostWorksheet {
     var current = records.stream().filter(e -> eligible(e, cycle)).findFirst().orElse(null);
     var saved = current == null ? null : decode(current);
     var ceilingHistory = ceilings.history(cycle);
+    var authorizedMedia = mediaApproved(cycle, review.observedAt());
     List<CostWorksheet.Row> rows = new ArrayList<>();
     List<String> gaps = new ArrayList<>();
     if (saved == null) gaps.add("O sistema ainda não possui previsão completa para esta versão.");
@@ -71,8 +72,14 @@ public class LearningCycleCostWorksheet {
           switch (i) {
             case 0 ->
                 review.authorization() == null ? null : review.authorization().totalLimitUsd();
-            case 1 -> review.videoBudgetUsd();
-            case 2 -> mediaApproved(cycle, review.observedAt());
+            case 1 ->
+                review.videoBudgetUsd() != null
+                    ? review.videoBudgetUsd()
+                    : ceiling == null ? null : ceiling.approved();
+            case 2 ->
+                authorizedMedia != null
+                    ? authorizedMedia
+                    : ceiling == null ? null : ceiling.approved();
             default ->
                 ceiling != null
                     ? ceiling.approved()
@@ -80,28 +87,34 @@ public class LearningCycleCostWorksheet {
                         ? input.planned()
                         : null;
           };
+      String executionBlocker =
+          i == 1
+              ? productionBlocker
+              : i == 2 && !review.mediaDecision().available()
+                  ? review.mediaDecision().reason()
+                  : null;
+      boolean operational =
+          i == 1 ? review.videoBudgetUsd() != null : i == 2 && authorizedMedia != null;
       String approvalBlocker =
           !review.canAuthorize()
               ? review.authorizationBlocker()
-              : i == 1
-                  ? productionBlocker
-                  : i == 2 && !review.mediaDecision().available()
-                      ? review.mediaDecision().reason()
-                      : null;
+              : operational && executionBlocker != null
+                  ? "O limite operacional vigente está protegido nesta etapa. A alteração será feita nesta planilha quando o processo permitir."
+                  : null;
+      String approvalScope =
+          (i == 1 || i == 2) && executionBlocker != null || i > 2 ? "PLANNING" : "EXECUTION_LIMIT";
       String approval =
           switch (i) {
             case 0 ->
                 approved == null
                     ? "Sem aprovação vigente"
                     : "Recibo de preparação #" + review.authorization().eventId();
-            case 1 ->
-                approved == null
-                    ? "Sem autorização de vídeos; limite não cobre imagens avulsas"
-                    : "Teto dos vídeos; imagens avulsas exigem autorização própria";
-            case 2 ->
-                approved == null || approved.signum() == 0
-                    ? "Sem aprovação de mídia comprovada; confira o teto informado na decisão abaixo"
-                    : "Aceite de mídia da versão atual; ativação depende dos gates comerciais";
+            case 1, 2 ->
+                operational
+                    ? "Limite operacional registrado; execução depende dos demais gates"
+                    : approved != null
+                        ? "Teto de planejamento salvo; aplicação operacional ainda não autorizada"
+                        : "Teto ainda não registrado; você pode decidir aqui";
             default ->
                 approved == null
                     ? "Orçamento ainda não aprovado"
@@ -138,7 +151,13 @@ public class LearningCycleCostWorksheet {
                       + " tarefas sem custo. Não é fatura conciliada."
                   : "Custo ainda não consolidado pelo sistema; ausência não é zero.",
               approvalBlocker == null,
-              approvalBlocker));
+              approvalBlocker,
+              approvalScope,
+              executionBlocker == null
+                  ? null
+                  : i == 1
+                      ? "Teto decidido aqui. A aplicação à produção dos dois vídeos aguarda a etapa e o escopo compatíveis; confirme nesta planilha quando disponível. Imagens avulsas não recebem autorização por este teto."
+                      : "Teto decidido aqui. A aplicação aos anúncios aguarda a etapa Autorizar orçamento; confirme nesta planilha quando disponível. Nenhuma campanha é ativada ao salvar."));
     }
     var totals = List.of(total("USD", rows), total("BRL", rows));
     BigDecimal result = null;

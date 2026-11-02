@@ -312,14 +312,14 @@ public class LearningCycleService {
         cycle, financialReview.read(cycle, products.findById(productId).orElseThrow(), now));
   }
 
-  /** Projeta disponibilidade de edição com os mesmos gates dos contratos de execução. */
+  /** Separa a decisão antecipada de teto dos gates para aplicação operacional. */
   private CostWorksheet worksheetView(LearningSalesCycle cycle, CycleFinancialReview review) {
     var product = products.findById(cycle.getProductId()).orElseThrow();
     return costWorksheet.read(
         cycle, review, videoBudget.response(cycle, product, videoWorkflow(cycle)).blocker());
   }
 
-  /** Aprova somente um teto, reutilizando limites operacionais, reserva e recuperação canônicos. */
+  /** Registra tetos antecipados e aplica limites operacionais somente quando os gates permitem. */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public CostWorksheet approveCostCeiling(
       Long productId, Long cycleId, ApproveCostCeilingRequest request) {
@@ -340,6 +340,13 @@ public class LearningCycleService {
     require(
         Boolean.TRUE.equals(request.confirmed()), "Confirme o teto e seu escopo antes de aprovar.");
     var review = financialReview.read(cycle, product, now);
+    var row =
+        worksheetView(cycle, review).rows().stream()
+            .filter(item -> item.code().equals(request.code().name()))
+            .findFirst()
+            .orElseThrow();
+    require(row.canApprove(), row.approvalBlocker());
+    boolean planningOnly = "PLANNING".equals(row.approvalScope());
     UUID operationalKey =
         UUID.nameUUIDFromBytes(
             (request.requestKey() + ":operational")
@@ -364,7 +371,8 @@ public class LearningCycleService {
               review.knownPreparationUsd(),
               review.unreportedTasks(),
               now);
-      case PRODUCTION ->
+      case PRODUCTION -> {
+        if (!planningOnly)
           videoBudget.authorize(
               cycle,
               new AuthorizeVideoBudgetRequest(
@@ -379,24 +387,27 @@ public class LearningCycleService {
                   request.confirmed()),
               videoWorkflow(cycle),
               now);
+      }
       case MEDIA -> {
-        require(review.mediaDecision().available(), review.mediaDecision().reason());
-        require(request.approved().signum() > 0, "O teto de mídia deve ser positivo.");
-        var daily =
-            LearningCycleCommercialAuthorization.suggestDaily(cycle, now, request.approved());
-        require(
-            daily != null && daily.signum() > 0,
-            "Não há proposta diária de mídia válida no sistema.");
-        authorizeBudget(
-            productId,
-            cycleId,
-            new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
-                .AuthorizeCycleBudgetRequest(
-                operationalKey,
-                cycle.getRevision(),
-                daily.min(request.approved()),
-                request.approved()),
-            request.operatorName());
+        if (!planningOnly) {
+          require(review.mediaDecision().available(), review.mediaDecision().reason());
+          require(request.approved().signum() > 0, "O teto de mídia deve ser positivo.");
+          var daily =
+              LearningCycleCommercialAuthorization.suggestDaily(cycle, now, request.approved());
+          require(
+              daily != null && daily.signum() > 0,
+              "Não há proposta diária de mídia válida no sistema.");
+          authorizeBudget(
+              productId,
+              cycleId,
+              new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                  .AuthorizeCycleBudgetRequest(
+                  operationalKey,
+                  cycle.getRevision(),
+                  daily.min(request.approved()),
+                  request.approved()),
+              request.operatorName());
+        }
       }
       default -> {
         /* Os demais grupos aprovam planejamento, sem autoridade de execução. */

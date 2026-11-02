@@ -131,6 +131,14 @@ try {
         ...data,
         revision: 2,
         availableUsd: 7.61,
+        preparationBalance: {
+          status: "BALANCE_AVAILABLE",
+          title: "Aprovação registrada e saldo estimado disponível",
+          explanation:
+            "O saldo ainda precisa cobrir o custo da próxima tarefa. Retome pela atividade.",
+          shortfallUsd: 0,
+          requiresBudgetReview: false,
+        },
         authorization: {
           eventId: 8000,
           reference: "internal://local/receipt/8000",
@@ -144,6 +152,15 @@ try {
         },
       };
       data.history = [data.authorization];
+      data.budgets = data.budgets.map((budget) =>
+        budget.code === "PREPARATION"
+          ? {
+              ...budget,
+              limit: 50,
+              status: "Limite registrado para esta versão",
+            }
+          : budget,
+      );
       return route.fulfill({ json: data });
     });
     await page.goto("http://127.0.0.1:15278/execution-finance-test.html");
@@ -284,8 +301,62 @@ try {
       path: new URL(`${name}-planning-reference.png`, output).pathname,
       fullPage: true,
     });
+    data = {
+      ...data,
+      revision: 3,
+      knownPreparationUsd: 67.37689,
+      availableUsd: -7.37689,
+      authorization: {
+        ...data.authorization,
+        eventId: 8001,
+        totalLimitUsd: 80,
+        reserveUsd: 20,
+      },
+      preparationBalance: {
+        status: "NO_BALANCE",
+        title: "Aprovação registrada, mas sem saldo para novas tarefas",
+        explanation:
+          "O recibo está salvo. Revise o teto total ou a reserva abaixo, ou mantenha a pausa.",
+        shortfallUsd: 7.37689,
+        requiresBudgetReview: true,
+      },
+    };
+    data.history = [data.authorization, ...data.history];
+    data.budgets = data.budgets.map((budget) =>
+      budget.code === "PREPARATION" ? { ...budget, limit: 80 } : budget,
+    );
+    await page.getByRole("button", { name: "Atualizar valores" }).click();
+    const balance = page.getByRole("region", {
+      name: "Situação da preparação",
+    });
+    await expect(balance).toContainText("Aprovação registrada, mas sem saldo");
+    await expect(balance).toContainText("Recibo #8001");
+    await expect(balance).toContainText(
+      /80,00 de teto − US\$\s*67,38 de custos estimados − US\$\s*20,00 de reserva = -US\$\s*7,38/,
+    );
+    await page.getByRole("link", { name: "Rever teto ou reserva" }).click();
+    await expect(
+      page.getByLabel("Teto total acumulado (US$) *", { exact: true }),
+    ).toHaveValue("80");
+    await expect(
+      page.getByRole("button", { name: "Atualizar valores" }),
+    ).toBeEnabled();
+    assert.equal(
+      sent.length,
+      2,
+      "Conferir insuficiência não repete aprovação nem inicia tarefa",
+    );
+    assert(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    );
+    await page.screenshot({
+      path: new URL(`${name}-saved-without-balance.png`, output).pathname,
+      fullPage: true,
+    });
     console.log(
-      `${name}: card, gráficos, parecer vigente, referência histórica sem plano e aprovação recuperável passaram`,
+      `${name}: card, gráficos, parecer, aprovação recuperável e recibo salvo sem cobertura passaram`,
     );
     await context.close();
   }

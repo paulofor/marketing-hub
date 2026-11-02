@@ -14,6 +14,18 @@ export interface PreparationAuthorization {
   current: boolean;
 }
 export interface ExecutionFinance {
+  preparationBalance?: {
+    status:
+      | "NOT_AUTHORIZED"
+      | "CLOSED"
+      | "COST_UNKNOWN"
+      | "NO_BALANCE"
+      | "BALANCE_AVAILABLE";
+    title: string;
+    explanation: string;
+    shortfallUsd: number | null;
+    requiresBudgetReview: boolean;
+  };
   advice?: {
     status: string;
     title: string;

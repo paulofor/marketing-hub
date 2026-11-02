@@ -278,6 +278,18 @@ continua idempotente. O histórico, pareceres e custos anteriores não são recl
 
 ## Demonstração financeira na execução — decisão de 30/10/2026
 
+### Aprovação salva e cobertura do saldo — 02/11/2026
+
+O contrato `preparationBalance` distingue aprovação ausente, custo desconhecido,
+saldo esgotado e saldo estimado disponível. Mostrar junto ao recibo o cálculo
+teto menos custos estimados menos reserva. Saldo negativo pode ocorrer mesmo
+com consumo conhecido abaixo do teto, porque a reserva ocupa parte dele.
+A confirmação de gravação não deve sugerir cobertura nem retomada automática.
+Limite sem saldo pode ser registrado para preservar uma pausa deliberada;
+o guard continua impedindo tarefas sem cobertura. Saldo positivo ainda exige
+revalidar o custo da próxima tarefa e não autoriza mídia ou vídeos.
+Matriz e aprendizado: `docs/homologacao/preparation-budget-balance-v1.md`.
+
 ### Finalidades claras na mesma tela — decisão de 31/10/2026
 
 A demonstração explica primeiro três limites independentes: **preparar o produto** (US$,

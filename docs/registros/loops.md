@@ -10291,6 +10291,15 @@ preserva obrigações em outras frases/campos e permite revalidar o resultado
 preservado sem nova inferência. Testes de `PdeValidationScopeTest`,
 `LearningCycleValidationProtocolTest` e `AgentTaskServiceTest` previnem recorrência.
 
+**Conferência de 02/11/2026:** o recibo 110 já autorizava US$ 80 com US$ 20 de
+reserva, mas os US$ 67,37689 estimados deixavam saldo de -US$ 7,37689. O guard
+pausava corretamente Plutus; a demonstração não destacava a insuficiência e
+atribuía saldo negativo apenas a consumo acima do teto. O contrato
+`preparationBalance` diferencia aprovação salva e cobertura, e a tela mostra
+recibo, cálculo e ajuste juntos. Não altera limites nem retoma a execução.
+A regressão cobre POST/GET, outra identidade, saldo zero, custos desconhecidos,
+replay e desktop/celulares. [Matriz e limites](../homologacao/preparation-budget-balance-v1.md).
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

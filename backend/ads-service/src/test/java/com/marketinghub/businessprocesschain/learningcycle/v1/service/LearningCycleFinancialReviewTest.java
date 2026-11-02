@@ -146,6 +146,7 @@ class LearningCycleFinancialReviewTest {
     http.perform(get(url + "/financial-review?chainId=27"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.authorization").isEmpty())
+        .andExpect(jsonPath("$.preparationBalance.status").value("NOT_AUTHORIZED"))
         .andExpect(jsonPath("$.availableUsd").isEmpty())
         .andExpect(jsonPath("$.advice.status").value("UNAVAILABLE"))
         .andExpect(jsonPath("$.unreportedTasks").value(2));
@@ -157,6 +158,8 @@ class LearningCycleFinancialReviewTest {
                   .content(input))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.availableUsd").value(7.61))
+          .andExpect(jsonPath("$.preparationBalance.status").value("BALANCE_AVAILABLE"))
+          .andExpect(jsonPath("$.preparationBalance.requiresBudgetReview").value(false))
           .andExpect(jsonPath("$.revision").value(2));
     assertThat(history).hasSize(1);
     assertThat(cycle.getStage()).isEqualTo("PLANNING");
@@ -164,6 +167,129 @@ class LearningCycleFinancialReviewTest {
     assertThat(json.read(history.getFirst().getEvidenceJson()).path("mediaAuthorized").asBoolean())
         .isFalse();
     verifyNoInteractions(plans);
+  }
+
+  /** Reproduz o aceite sem cobertura em Capella e outro contexto, preservando recibo e pausa. */
+  @ParameterizedTest
+  @CsvSource({"7,19,112", "99107,99119,99112"})
+  void distinguishesSavedApprovalFromAvailableBalance(
+      long productId, long cycleId, long experimentId) throws Exception {
+    cycle.setId(cycleId);
+    cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    var target = Product.builder().id(productId).name("Produto local").build();
+    when(cycles.findById(cycleId)).thenReturn(Optional.of(cycle));
+    when(cycles.findLocked(productId, cycleId)).thenReturn(Optional.of(cycle));
+    when(products.findById(productId)).thenReturn(Optional.of(target));
+    when(products.findLockedById(productId)).thenReturn(Optional.of(target));
+    var targetExperiment = new Experiment();
+    targetExperiment.setId(experimentId);
+    targetExperiment.setProduct(target);
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(targetExperiment));
+    when(costs.summarize(productId))
+        .thenReturn(
+            List.of(
+                new CycleFinancialReview.CostSlice(experimentId, new BigDecimal("67.37689"), 3)));
+    String url =
+        "/api/business-process-chains/learning-cycles/v1/products/" + productId + "/" + cycleId;
+    String input =
+        json.write(
+            new PreparationBudgetRequest(
+                UUID.randomUUID(),
+                1L,
+                27L,
+                experimentId,
+                "teste-v3",
+                new BigDecimal("80"),
+                new BigDecimal("20"),
+                "Operador local",
+                "Manter os limites escolhidos",
+                true));
+    http.perform(
+            post(url + "/preparation-budget")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(input))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.authorization.current").value(true))
+        .andExpect(jsonPath("$.authorization.totalLimitUsd").value(80))
+        .andExpect(jsonPath("$.authorization.reserveUsd").value(20))
+        .andExpect(jsonPath("$.preparationBalance.status").value("NO_BALANCE"))
+        .andExpect(jsonPath("$.preparationBalance.shortfallUsd").value(7.38))
+        .andExpect(jsonPath("$.availableUsd").value(-7.37689));
+    http.perform(get(url + "/financial-review?chainId=27"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.history.length()").value(1))
+        .andExpect(jsonPath("$.preparationBalance.requiresBudgetReview").value(true))
+        .andExpect(
+            jsonPath("$.preparationBalance.explanation")
+                .value(org.hamcrest.Matchers.containsString("recibo está salvo")));
+    assertThat(cycle.getStage()).isEqualTo("PLANNING");
+    assertThat(cycle.getBudgetLimitBrl()).isEqualByComparingTo("89.95");
+    verify(tasks, never()).save(any());
+    verifyNoInteractions(plans);
+  }
+
+  /** Saldo zero não financia outra tarefa; saldo positivo ainda exige conferir seu custo. */
+  @ParameterizedTest
+  @CsvSource({"58.89,NO_BALANCE,0", "58.90,BALANCE_AVAILABLE,0", "58.88,NO_BALANCE,0.01"})
+  void preservesBalanceBoundariesWithoutClaimingExecution(
+      String limit, String status, String shortfall) {
+    budget.authorize(
+        cycle,
+        new PreparationBudgetRequest(
+            UUID.randomUUID(),
+            1L,
+            27L,
+            112L,
+            "teste-v3",
+            new BigDecimal(limit),
+            new BigDecimal("20"),
+            "Operador local",
+            "Conferência",
+            true),
+        new BigDecimal("38.89"),
+        2,
+        now);
+    var result = review.read(cycle, product, now);
+    assertThat(result.preparationBalance().status()).isEqualTo(status);
+    assertThat(result.preparationBalance().shortfallUsd()).isEqualByComparingTo(shortfall);
+    assertThat(result.preparationBalance().explanation()).contains("próxima tarefa");
+    verify(tasks, never()).save(any());
+  }
+
+  /** Sem estimativas, um recibo válido não transforma o custo desconhecido em zero. */
+  @Test
+  void keepsSavedApprovalWhenAccumulatedCostIsUnknown() {
+    budget.authorize(cycle, decision(), null, 2, now);
+    when(costs.summarize(7L))
+        .thenReturn(List.of(new CycleFinancialReview.CostSlice(112L, null, 2)));
+    var result = review.read(cycle, product, now);
+    assertThat(result.authorization()).isNotNull();
+    assertThat(result.availableUsd()).isNull();
+    assertThat(result.preparationBalance().status()).isEqualTo("COST_UNKNOWN");
+    assertThat(result.preparationBalance().shortfallUsd()).isNull();
+    assertThat(result.preparationBalance().requiresBudgetReview()).isFalse();
+  }
+
+  /** Arredonda a falta para cima nos centavos sem apagar a precisão do consumo auditado. */
+  @Test
+  void roundsShortfallUpWithoutHidingFractionalCent() {
+    budget.authorize(cycle, decision(), BigDecimal.ONE, 0, now);
+    when(costs.summarize(7L))
+        .thenReturn(
+            List.of(new CycleFinancialReview.CostSlice(112L, new BigDecimal("46.50001"), 0)));
+    var result = review.read(cycle, product, now);
+    assertThat(result.availableUsd()).isEqualByComparingTo("-0.00001");
+    assertThat(result.preparationBalance().shortfallUsd()).isEqualByComparingTo("0.01");
+  }
+
+  /** Um ciclo encerrado conserva o histórico sem orientar outra aprovação ou retomada. */
+  @Test
+  void closedCycleDoesNotRequestAnotherApprovalOrResume() {
+    cycle.setStatus("ADJUSTED");
+    var result = review.read(cycle, product, now);
+    assertThat(result.preparationBalance().status()).isEqualTo("CLOSED");
+    assertThat(result.preparationBalance().requiresBudgetReview()).isFalse();
   }
 
   /** Entrega conselho do planejamento pelo endpoint mesmo sem plano comercial vinculado. */

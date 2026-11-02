@@ -70,6 +70,14 @@ it.each([true, false])(
         ...fixture,
         revision: 2,
         availableUsd: 7.61,
+        preparationBalance: {
+          status: "BALANCE_AVAILABLE",
+          title: "Aprovação registrada e saldo estimado disponível",
+          explanation:
+            "A execução deve ser retomada na atividade; o saldo precisa cobrir a próxima tarefa.",
+          shortfallUsd: 0,
+          requiresBudgetReview: false,
+        },
         authorization: { eventId: 8000, totalLimitUsd: 50, reserveUsd: 3.5 },
         history: [],
       },
@@ -115,6 +123,93 @@ it.each([true, false])(
     expect(screen.getByRole("checkbox")).not.toBeChecked();
   },
 );
+
+it("mantém o recibo salvo e destaca a falta de cobertura após aprovar e atualizar a leitura", async () => {
+  const approved = {
+    ...fixture,
+    revision: 2,
+    knownPreparationUsd: 67.37689,
+    availableUsd: -7.37689,
+    authorization: {
+      eventId: 8000,
+      totalLimitUsd: 80,
+      reserveUsd: 20,
+      operatorName: "Operador local",
+      approvedAt: fixture.observedAt,
+    },
+    preparationBalance: {
+      status: "NO_BALANCE",
+      title: "Aprovação registrada, mas sem saldo para novas tarefas",
+      explanation:
+        "O recibo está salvo. Revise o teto total ou a reserva, ou mantenha a pausa.",
+      shortfallUsd: 7.37689,
+      requiresBudgetReview: true,
+    },
+  };
+  vi.mocked(axios.post).mockResolvedValue({ data: approved });
+  mount();
+  await screen.findByText(fixture.productName);
+  for (const [label, value] of [
+    ["Teto total acumulado (US$) *", "80"],
+    ["Reserva para custos pendentes (US$) *", "20"],
+    ["Responsável pela decisão *", "Operador local"],
+    ["Justificativa e fontes consideradas *", "Decisão local"],
+  ])
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Aprovar limite de preparação" }),
+  );
+  await screen.findByText(/Decisão registrada com recibo/);
+  const summary = screen.getByRole("region", {
+    name: "Situação da preparação",
+  });
+  expect(summary).toHaveTextContent("Aprovação registrada, mas sem saldo");
+  expect(summary).toHaveTextContent("Recibo #8000");
+  expect(summary).toHaveTextContent(
+    /80,00 de teto − US\$\s*67,38 de custos estimados − US\$\s*20,00 de reserva = -US\$\s*7,38/,
+  );
+  expect(summary).toHaveTextContent(
+    "Isso ainda não inclui o valor de uma nova tarefa",
+  );
+  expect(
+    screen.getByRole("link", { name: "Rever teto ou reserva" }),
+  ).toHaveAttribute("href", "#preparation-decision");
+  vi.mocked(axios.get).mockResolvedValue({ data: approved });
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar valores" }));
+  await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
+  expect(summary).toHaveTextContent("O recibo está salvo");
+  expect(axios.post).toHaveBeenCalledTimes(1);
+  expect(
+    screen.queryByText(/Saldo negativo indica consumo conhecido acima/),
+  ).not.toBeInTheDocument();
+});
+
+it("apresenta a situação informada pelo backend sem deduzir liberação pelo saldo", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...fixture,
+      availableUsd: 10,
+      preparationBalance: {
+        status: "COST_UNKNOWN",
+        title: "Custo acumulado ainda desconhecido",
+        explanation:
+          "O recibo está salvo, mas a cobertura precisa ser conferida.",
+        shortfallUsd: null,
+        requiresBudgetReview: false,
+      },
+    },
+  });
+  mount();
+  await screen.findByText("Custo acumulado ainda desconhecido");
+  expect(
+    screen.queryByRole("link", { name: "Rever teto ou reserva" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/saldo estimado disponível/),
+  ).not.toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});
 it("mantém histórico de ciclo encerrado sem formulário de aprovação", async () => {
   vi.mocked(axios.get).mockResolvedValue({
     data: {

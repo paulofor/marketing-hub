@@ -1,0 +1,180 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 77 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Cadeias de criação e entrega de valor
+
+Visão simples dos processos que transformam uma oportunidade em valor entregue à cliente e receita para o Marketing Hub.
+
+Cadeias
+Criação e entrega de valor de Produtos Digitais Experienciais
+v27 · 6 processos
+Modelar produto por referências de mercado · Uma Big Idea orienta toda a cadeia. Atena define a ideia central no planejamento; produto, oferta, comunicação e revisões a utilizam como referência. Definir ou evoluir por produto. O histórico e as versões dos experimentos são preservados.
+PUBLISHED
+Criação e entrega de valor de Produtos Digitais Experienciais · v27
+
+Transformar evidência em protótipo homologado, corrigir rejeições, preparar comunicação, vender e entregar sem fabricar validação humana. Critérios comerciais explícitos v1. Descoberta aprofunda lacunas por candidata antes da estratégia. Produtos IA usam preparação Safira antes do preflight e da autorização humana. Pesquisa pública automatizada PUBLIC_SOURCES_V1 sem recrutamento obrigatório. PAID_INSTAGRAM_ONLY_V1: toda divulgacao comercial usa midia paga no Instagram; convites individuais e canais nao atribuidos permanecem apenas historicos. PRODUCT_IDENTITY_V1: nome interno e tipo sao escolhidos no Processo 2 antes da economia e da construcao. O Processo 2 usa MARKET_STRATEGY_V4 e PDE_AGENT_VALIDATION_V1 sem qualquer gate de piloto humano. SATISFACTION_CONTINUITY_V1: situação reconhecível → benefício desejado → experiência real → produto identificável → motivo legítimo para voltar; sem entrevistas ou opinião solicitada. CHANGE_PER_CYCLE_V1: cada mudança das condições testadas exige novo ciclo e novo experimento, uma variável principal, vínculo com o predecessor e métricas separadas; preservar histórico e autorizações próprias. Big Idea versionada do produto orienta todos os processos.
+
+Criar nova versão da cadeia
+Resultado da cadeia
+Venda entregue e aprendizado com contribuição verificável; cada mudança segue em novo ciclo e novo experimento vinculado ao predecessor, preservando versões, custos e resultados.
+Métrica principal
+Compras líquidas, entrega útil, contribuição e retorno voluntário atribuível
+Processos
+6 em sequência
+Processos da cadeia
+
+Cada processo termina com um resultado verificável antes de entregar valor ao próximo. No processo de venda, o aprendizado orienta o retorno ao responsável pelo ajuste e a próxima homologação.
+
+1
+Descoberta factual da oportunidade PDE
+Argos · v10
+PUBLISHED
+Abrir BPM
+
+Encontrar situações concretas em que o desejo vira ação, qualificar evidências por candidata e aprofundar lacunas com comportamento passado antes de entregar o dossiê a Atena. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.
+
+Contribuição de valor
+Argos reúne situações, linguagem pública, satisfação possível, fontes e contrapontos, sem escolher estratégia nem provar demanda. Preservar evidências do predecessor e explicitar a lacuna da nova hipótese.
+Entrada
+Novo ciclo de pesquisa ou sinal real de mercado.
+Resultado final
+Dossiê factual com ocasiões de compra, fontes qualificadas, relatos públicos rastreáveis, lacunas e limites auditáveis; somente então pronto para decisão estratégica.
+2
+Estratégia, economia e homologação multiagente do PDE
+Backend de Planejamento Comercial · v13
+PUBLISHED
+Abrir BPM
+
+Selecionar uma candidata factual para prototipação privada, limitar a economia e projetar o harness sem antecipar prontidão comercial. A aquisicao comercial usa exclusivamente midia paga no Instagram; convite individual, base propria e divulgacao organica nao sao canais executaveis. Atena define o nome interno e o tipo catalogado antes de Plutus e Dedalo. O contrato nasce sem recrutamento, convite, leitura privada ou opinião solicitada; agentes comprovam prontidão e somente o mercado comprova demanda. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor. Big Idea versionada orienta toda a entrega.
+
+Contribuição de valor
+Big Idea e estrategia versionadas orientam oferta, produto e comunicacao; limites e evidencias preservados.
+Entrada
+Candidatas DOSSIER_READY com evidências factuais de Argos.
+Resultado final
+Estratégia, identidade, economia e arquitetura prontas para construção e homologação multiagente, sem alegar validação humana, venda ou receita.
+3
+Protótipo, validação multiagente e aprovação do PDE
+Backend de Construção PDE · v11
+PUBLISHED
+Abrir BPM
+
+Homologar a versão real do PDE e transformar toda rejeição funcional em correção orientada, versionada e revalidada antes da preparação comercial. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.
+
+Contribuição de valor
+Dédalo constrói resultado fiel, aplicável e recuperável; Psique e Têmis avaliam a mesma versão sem alegar satisfação humana. Construir no sucessor; reutilizar artefatos compatíveis com origem e versão sem alterar a experiência histórica.
+Entrada
+Produto PLANNED em PLAY com contrato multiagente; rejeição funcional abre a rota condicional de correção sem apagar evidência anterior.
+Resultado final
+PDE liberado para comunicação em STOP ou encaminhado a Dédalo com causa-raiz, ação clara, nova versão e retorno obrigatório à homologação técnica.
+4
+Comunicação e jornada de venda do PDE
+Backend de Experiências PDE · v11
+PUBLISHED
+Abrir BPM
+
+Materializar comunicação pré-compra com um contrato próprio antes de integrar a jornada. Toda divulgacao comercial e preparada para midia paga no Instagram, sem convite individual. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.
+
+Contribuição de valor
+Íris e Apolo mostram situação, participação do produto e satisfação possível com identidade contínua; o backend integra prova e continuidade paga. Novo criativo, copy, CTA, amostra ou destino exige novo ciclo e novo experimento antes da mudança.
+Entrada
+Produto, estratégia, economia e provas reais aprovados.
+Resultado final
+Pacote de comunicação, criativos e destino aprovados e integrados sem publicação.
+5
+Homologação e ativação comercial do PDE
+Backend de Experimentos · v12
+PUBLISHED
+Abrir BPM
+
+Comprovar que a versão está pronta para vender, entregar o prometido e operar dentro dos limites financeiros antes de qualquer ativação. A homologacao aceita somente aquisicao paga no Instagram e mantem o gasto dependente de decisao humana. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.
+
+Contribuição de valor
+Preparação, revisões e preflight comprovam promessa, versão, compra/entrega, eventos e limites; autorização humana permanece separada. Conferir identidade e atribuição do sucessor, renovar gates afetados e exigir autorização própria de gasto.
+Entrada
+Produto e jornada aprovados, com tipo cadastrado, ficha aplicável e versões exatas.
+Resultado final
+Ativação autorizada para a versão comprovada ou bloqueio persistido com causa e retorno à atividade responsável.
+6
+Venda, entrega e aprendizado do PDE
+Operador de Crescimento · v12
+PUBLISHED
+Abrir BPM
+
+Vender, entregar valor e conduzir ciclos por experimento: resultados orientam ajustes, revalidação e decisões de investimento. A operacao comercial mede exclusivamente a aquisicao paga atribuida ao Instagram. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.
+
+Contribuição de valor
+Hermes, entrega e Plutus conciliam compras, uso, reembolso e contribuição; o ciclo preserva hipóteses, contrapontos e retorno à atividade da causa. Conciliar cada experimento; mudanças e escala seguem em novo ciclo e novo experimento com memória do predecessor.
+Entrada
+Ativação autorizada pelo Processo 5, com orçamento, canais, versão e critérios vigentes.
+Resultado final
+Decisão registrada no ciclo, com evidências, responsável e retorno ao processo da causa; vendas e entrega preservadas.
+Subprocesso do processo 6 · Venda, entrega e aprendizado do PDE
+Ciclos de aprendizado e vendas
+
+Cada ciclo é uma execução deste subprocesso, vinculada a um experimento. Os resultados orientam a próxima melhoria de produto, comunicação ou investimento.
+
+Cada mudança das condições testadas, inclusive novo criativo, exige novo ciclo e novo experimento ligados ao anterior. Registre uma mudança principal, preserve custos e resultados e execute o ajuste no sucessor. Retentativa do mesmo contrato não muda a hipótese. Consulte a política da versão selecionada; ciclos históricos preservam seus contratos.
+
+Abrir ciclo por produto e experimento
+Decisão comercial: para onde o fluxo retorna?
+Ver BPM com decisões e retornos · v7

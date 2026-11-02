@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"error":{"code":-32603,"message":"Failed to execute query: StatementCallback; bad SQL grammar [SELECT id,product_id,chain_definition_id,experiment_id,product_version,stage,status,revision,budget_limit_brl FROM learning_sales_cycle WHERE id=19 LIMIT 100]"}}

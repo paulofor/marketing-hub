@@ -1,0 +1,175 @@
+{
+  "productId": 7,
+  "productName": "Agenda Cheia Nail Design",
+  "chainId": 27,
+  "cycleId": 19,
+  "experimentId": 112,
+  "productVersion": "capella-beleza-v3",
+  "revision": 2,
+  "observedAt": "2026-11-02T17:06:00.619108650Z",
+  "canAuthorize": true,
+  "authorizationBlocker": null,
+  "cycleUrl": "/business-process-chains/learning-cycles?productId=7&chainId=27&cycleId=19",
+  "mediaUrl": "/business-process-chains/learning-cycles?productId=7&chainId=27&cycleId=19#cycle-decision",
+  "videoUrl": "/financial/execution?productId=7&chainId=27&cycleId=19#ceiling-PRODUCTION",
+  "planUrl": "/financial/plans?productId=7",
+  "operatorNotesUrl": "/products/7/edit",
+  "guidance": "Estimativas de tarefas vinculadas aos experimentos deste produto, incluindo tentativas com custo informado. Não são fatura conciliada. Custos externos e referências sem vínculo ao experimento não entram neste subtotal. Confira reservas e autorizações anteriores antes de decidir. Aprovar este teto não inicia tarefas nem autoriza mídia ou audiovisual.",
+  "mediaBudgetBrl": 0.0,
+  "videoBudgetUsd": null,
+  "knownPreparationUsd": 67.37689,
+  "unreportedTasks": 3,
+  "costCoverage": "PARTIAL_AGENT_TASK_ESTIMATES",
+  "availableUsd": -7.37689,
+  "costs": [
+    {
+      "experimentId": 88,
+      "knownUsd": 7.0396936,
+      "unreportedTasks": 3
+    },
+    {
+      "experimentId": 94,
+      "knownUsd": 2.399756,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 98,
+      "knownUsd": 2.9341724,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 104,
+      "knownUsd": 2.4732856,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 105,
+      "knownUsd": 10.1573784,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 107,
+      "knownUsd": 6.254654,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 108,
+      "knownUsd": 6.611288,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 110,
+      "knownUsd": 13.067888,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 112,
+      "knownUsd": 16.438774,
+      "unreportedTasks": 0
+    }
+  ],
+  "authorization": {
+    "eventId": 110,
+    "reference": "internal://learning-cycles/19/preparation-budget/c2535eea-792e-42af-9b3f-524ece8aa1b5",
+    "totalLimitUsd": 80,
+    "reserveUsd": 20,
+    "operatorName": "Paulo",
+    "justification": "Fazer o fluxo evoluir",
+    "approvedAt": "2026-10-31T16:13:47.308104Z",
+    "productVersion": "capella-beleza-v3",
+    "current": true
+  },
+  "history": [
+    {
+      "eventId": 110,
+      "reference": "internal://learning-cycles/19/preparation-budget/c2535eea-792e-42af-9b3f-524ece8aa1b5",
+      "totalLimitUsd": 80,
+      "reserveUsd": 20,
+      "operatorName": "Paulo",
+      "justification": "Fazer o fluxo evoluir",
+      "approvedAt": "2026-10-31T16:13:47.308104Z",
+      "productVersion": "capella-beleza-v3",
+      "current": true
+    }
+  ],
+  "financialPlan": null,
+  "advice": {
+    "status": "STALE",
+    "title": "Reavaliar antes de investir mais",
+    "recommendation": "Este parecer não está válido para a estratégia e a versão atuais. Atualize a avaliação antes de decidir novos gastos.",
+    "basis": "PLANNING",
+    "sourceId": 883,
+    "producedAt": "2026-10-30T20:03:24Z",
+    "sourceUrl": "/products/7/value-chain-history/processes/126/activities?chainId=27&learningCycleId=19&sourceReference=experiment%3A112#activity-economics",
+    "figures": [
+      {
+        "label": "Preço por venda",
+        "value": 67,
+        "unit": "BRL"
+      },
+      {
+        "label": "Custos por venda, sem anúncios",
+        "value": 41.74,
+        "unit": "BRL"
+      },
+      {
+        "label": "Sobra por venda, antes dos anúncios",
+        "value": 25.26,
+        "unit": "BRL"
+      }
+    ],
+    "caution": "Hipótese de planejamento: a sobra ainda não desconta anúncios nem custos fixos; não é lucro líquido. O teto técnico proposto não é autorização de gasto.",
+    "fullRationale": "APPROVE exclusivamente para o desenho interno limitado. Os três cenários são calculáveis, o recomendado preserva R$ 67 e projeta R$ 25,26 de contribuição após R$ 27 de entrega/atendimento e R$ 14,74 de deduções, sem duplicidade. A base determinística permite planejar testes finitos com limites documentados e teto técnico hipotético de R$ 300. Faltam vínculo operacional da v3 e custos comerciais medidos; o uso intenso também não atende à meta de continuidade. Essas lacunas impedem recomendar venda ou escala, mas não impedem preparar a homologação sem novo consumo pago. Nenhuma margem, demanda ou autorização financeira é comprovada por este parecer."
+  },
+  "budgets": [
+    {
+      "code": "PREPARATION",
+      "title": "Preparar o produto",
+      "currency": "USD",
+      "purpose": "Trabalho dos agentes para pesquisar, construir e revisar o produto e sua comunicação.",
+      "scope": "Teto acumulado: inclui as tarefas anteriores do produto e as próximas desta preparação.",
+      "limit": 80,
+      "limitLabel": "Limite total de preparação",
+      "status": "Limite registrado para esta versão",
+      "explanation": "Não libera geração paga de vídeos nem anúncios. A reserva ocupa parte deste limite; não é um valor extra.",
+      "consumptionNote": "O subtotal abaixo reúne estimativas de tarefas, inclusive revisões vinculadas. Não é uma fatura nem o custo completo de produção."
+    },
+    {
+      "code": "VIDEO",
+      "title": "Produzir vídeos",
+      "currency": "USD",
+      "purpose": "Criar os vídeos: imagens e cenas, voz, montagem e revisões do anúncio e da demonstração.",
+      "scope": "Um teto para os dois vídeos e suas revisões, incluindo consumo anterior desta produção. Não é por vídeo.",
+      "limit": null,
+      "limitLabel": "Limite total dos vídeos",
+      "status": "Sem autorização de vídeos nesta versão",
+      "explanation": "É separado da preparação e dos anúncios. Reutilizar uma peça pronta não exige gerar outro vídeo. Ausência de limite não indica gasto zero nem obriga nova produção.",
+      "consumptionNote": "Consumo e saldo dos vídeos não estão consolidados nesta demonstração. O limite não representa valor gasto."
+    },
+    {
+      "code": "MEDIA",
+      "title": "Pagar anúncios",
+      "currency": "BRL",
+      "purpose": "Valor pago à plataforma, como o Instagram, para exibir os anúncios ao público.",
+      "scope": "Teto total do ciclo. O limite diário e o período são conferidos na aprovação, antes da ativação.",
+      "limit": 0.0,
+      "limitLabel": "Limite registrado para anúncios",
+      "status": "Nenhuma verba registrada neste ciclo",
+      "explanation": "Não paga a criação dos vídeos. Um vídeo pronto não tem verba de divulgação incluída. Registrar um limite não ativa a campanha.",
+      "consumptionNote": "O valor acima é limite, não gasto realizado. O consumo dos anúncios não está consolidado nesta demonstração."
+    }
+  ],
+  "mediaDecision": {
+    "available": false,
+    "reason": "A aprovação de anúncios estará disponível aqui quando o ciclo chegar à etapa Autorizar orçamento. Conclua as etapas anteriores; nenhum anúncio foi autorizado por esta consulta.",
+    "windowStart": null,
+    "windowEnd": null
+  },
+  "preparationBalance": {
+    "status": "NO_BALANCE",
+    "title": "Aprovação registrada, mas sem saldo para novas tarefas",
+    "explanation": "O recibo está salvo. O limite precisa cobrir os custos estimados, a reserva e o custo da próxima tarefa. Revise o teto total ou a reserva abaixo, ou mantenha a pausa. A reserva fica dentro do teto; não é verba adicional nem cobrança.",
+    "shortfallUsd": 7.38,
+    "requiresBudgetReview": true
+  }
+}

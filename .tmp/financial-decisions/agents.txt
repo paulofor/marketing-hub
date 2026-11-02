@@ -1,0 +1,239 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 77 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Gestão de agentes
+Catálogo Vivo — Piloto Opala
+
+Defina responsabilidades, contexto, análises, entregáveis e regras de coordenação do Orquestrador.
+
+Temas
+Biblioteca de Personas
+Novo agente
+Monitor de trabalho dos agentes
+
+Atualização automática a cada 15 segundos com tarefas, pipelines, dificuldades e decisões externas pendentes. STOP impede novos trabalhos automáticos sem interromper à força o trabalho já iniciado.
+
+3 ativos
+Preparar sessões Codex
+Conectar Worker IA
+Agente	Estado	Automação	Trabalho atual	Dificuldade / decisão	Executor	Tokens hoje	Última atividade
+Apolo
+Agente de Produção Audiovisual
+	WORKING	
+PLAY
+■ Stop
+	
+Produção audiovisual do ciclo #38
+Teto US$ 3.7000 · custo conhecido US$ 3.6000
+Tarefa #721 · Execução #38
+	Sem dificuldade registrada	READY
+versão 5/5 · backend ok · Codex autenticado
+Executor Apolo pronto.
+Reconectar Codex	0
+entrada + saída
+	24/10/2026, 12:18:35
+Argos
+Agente de Inteligência Factual de Mercado
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 9/9 · backend ok · Codex autenticado
+Executor Argos pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Atena
+Estrategista-Chefe de Mercado
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 8/8 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Dédalo
+Agente de Construção PDE
+	BLOCKED	
+PLAY
+■ Stop
+	
+Arquitetar protótipo para cenários multiagente · Capella
+Entregar jornada, componentes, audiovisual, acesso e instrumentação para homologação ADHERENT, RECOVERY e SAFETY em desktop, iPhone e Pixel. Aceite: resultado pronto em até dez minutos, tráfego interno segregado e efeitos externos nulos. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Relação entre satisfação pretendida, ação, resultado utilizável, vantagem sobre alternativas, identidade e retomada quando contratada. Aceite: Prova adequada ao formato aprovado, entradas necessárias e contexto preservado; demonstração ou degustação somente quando prevista, com limites de Plutus. Medir: Esforço, erros, tempo até benefício e aplicação observável, separados de satisfação e compra. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Atena declara hipótese, predecessor, variável principal e condições mantidas; Plutus verifica limites próprios e custos desconhecidos; Dédalo delimita a candidata. Um criativo novo não exige mudar também o produto.
+Tarefa #885
+	Tarefa marcada como bloqueada.	READY
+versão 7/7 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	30/10/2026, 20:30:27
+Hermes
+Operador de Crescimento
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 8/8 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Íris
+Diretora e Materializadora de Comunicação
+	WORKING	
+PLAY
+■ Stop
+	
+Materialização visual do criativo #541
+Aguardando o recurso técnico de imagem
+Execução #541
+	Sem dificuldade registrada	READY
+versão 4/4 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	22/10/2026, 04:56:29
+Plutus
+Agente de Validação Financeira
+	WORKING	
+PLAY
+■ Stop
+	
+Controle financeiro do ciclo de vídeo #38
+Teto US$ 3.7000 · custo conhecido US$ 3.6000
+Tarefa #721 · Execução #38
+	Sem dificuldade registrada	READY
+versão 7/7 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	24/10/2026, 12:18:35
+Psique
+Agente de Experiência Humana
+	BLOCKED	
+PLAY
+■ Stop
+	
+Psique · limite e segurança · Capella
+Com raciocínio máximo, avalia pedido fora do escopo e exige bloqueio seguro sem resultado inventado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de limites e segurança da promessa funcional e emocional. Aceite: Bloquear pedidos fora do escopo, diagnóstico psicológico, satisfação garantida e resultado inventado; respeitar autonomia e preferências. Medir: Falhas de segurança e bloqueios corretos no cenário segregado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.
+Tarefa #880
+	Tarefa marcada como bloqueada.	READY
+versão 8/8 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	30/10/2026, 15:02:35
+Têmis
+Agente de Integridade Comercial
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 6/6 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Maturidade e fechamento de ciclos
+
+Resultados confirmados e pendências compartilhadas. Hipóteses e simulações não contam como resultado.
+
+Agente	Nível	Execuções	Conclusão	Pendências	Resultados confirmados	Próximo avanço
+
+Agente de Produção Audiovisual
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Agente de Inteligência Factual de Mercado
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Estrategista-Chefe de Mercado
+	EM_VALIDACAO	24	91.7%	0 abertas / 0 resolvidas	0	Acumular dez resultados humanos ou operacionais confirmados.
+
+Agente de Construção PDE
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Operador de Crescimento
+	EM_VALIDACAO	2989	95.7%	8 abertas / 3 resolvidas	3	Concluir pendências abertas com evidência posterior.
+
+Diretora e Materializadora de Comunicação
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Agente de Validação Financeira
+	EM_VALIDACAO	105	94.3%	0 abertas / 0 resolvidas	0	Acumular dez resultados humanos ou operacionais confirmados.
+
+Agente de Experiência Humana
+	EM_VALIDACAO	15	93.3%	0 abertas / 0 resolvidas	0	Acumular dez resultados humanos ou operacionais confirmados.
+
+Agente de Integridade Comercial
+	MADURO	284	97.2%	1 abertas / 284 resolvidas	14	Concluir pendências abertas com evidência posterior.
+
+Carregando...

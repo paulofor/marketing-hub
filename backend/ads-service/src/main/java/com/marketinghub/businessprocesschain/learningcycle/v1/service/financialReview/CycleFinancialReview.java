@@ -35,7 +35,16 @@ public record CycleFinancialReview(
     PlanView financialPlan,
     FinancialAdvice advice,
     List<BudgetSection> budgets,
-    MediaDecision mediaDecision) {
+    MediaDecision mediaDecision,
+    PreparationBalance preparationBalance) {
+  /** Responsabilidade: distinguir recibo salvo de saldo disponível para novas tarefas. */
+  public record PreparationBalance(
+      String status,
+      String title,
+      String explanation,
+      BigDecimal shortfallUsd,
+      boolean requiresBudgetReview) {}
+
   /** Responsabilidade: explicar a finalidade e a cobertura de cada limite sem misturar moedas. */
   public record BudgetSection(
       String code,

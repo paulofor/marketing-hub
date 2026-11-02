@@ -87,6 +87,52 @@ export default function ExecutionFinancePage() {
               Consulta: {new Date(data.observedAt).toLocaleString("pt-BR")}
             </small>
           </p>
+          {data.preparationBalance && (
+            <section
+              className={`alert ${data.preparationBalance.requiresBudgetReview ? "alert-warning" : "alert-info"}`}
+              aria-label="Situação da preparação"
+            >
+              <h2 className="h5">{data.preparationBalance.title}</h2>
+              {data.authorization && (
+                <p>
+                  Aprovado por {data.authorization.operatorName} em{" "}
+                  {new Date(data.authorization.approvedAt).toLocaleString(
+                    "pt-BR",
+                  )}
+                  {" · "}Recibo #{data.authorization.eventId} · Ciclo #
+                  {data.cycleId}
+                </p>
+              )}
+              <p>{data.preparationBalance.explanation}</p>
+              {data.authorization && (
+                <p>
+                  <strong>
+                    {money(data.authorization.totalLimitUsd)} de teto −{" "}
+                    {money(data.knownPreparationUsd)} de custos estimados −{" "}
+                    {money(data.authorization.reserveUsd)} de reserva ={" "}
+                    {money(data.availableUsd)} disponíveis.
+                  </strong>
+                </p>
+              )}
+              {data.preparationBalance.status === "NO_BALANCE" && (
+                <p>
+                  Falta cobrir {money(data.preparationBalance.shortfallUsd)}{" "}
+                  para equilibrar custos e reserva. Isso ainda não inclui o
+                  valor de uma nova tarefa. Custos pendentes podem alterar a
+                  conta.
+                </p>
+              )}
+              {data.canAuthorize &&
+                data.preparationBalance.requiresBudgetReview && (
+                  <a
+                    className="btn btn-outline-primary"
+                    href="#preparation-decision"
+                  >
+                    Rever teto ou reserva
+                  </a>
+                )}
+            </section>
+          )}
           <ExecutionBudgetOverview
             key={`${data.productId}:${data.cycleId}`}
             data={data}
@@ -118,8 +164,9 @@ export default function ExecutionFinancePage() {
               <strong>
                 {data.unreportedTasks} tarefas com custo ainda não informado.
               </strong>{" "}
-              Saldo negativo indica consumo conhecido acima do limite; reserva
-              não é cobrança.
+              O saldo desconta os custos estimados e a reserva do teto aprovado.
+              Pode ficar negativo mesmo quando o consumo conhecido é menor que o
+              teto; reserva não é cobrança.
             </p>
             {!data.authorization && (
               <div className="alert alert-info">
@@ -139,8 +186,9 @@ export default function ExecutionFinancePage() {
             {saved && (
               <div role="status" className="alert alert-success">
                 Decisão registrada com recibo. O teto será entregue aos agentes
-                neste ciclo. Nenhuma tarefa ou campanha foi iniciada por esta
-                aprovação.
+                neste ciclo. Confira a situação do saldo acima: registrar a
+                decisão não garante cobertura para outra tarefa. Nenhuma tarefa
+                ou campanha foi iniciada por esta aprovação.
               </div>
             )}
             {data.canAuthorize ? (

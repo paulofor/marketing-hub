@@ -9,6 +9,7 @@ import com.marketinghub.product.Product;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class LearningCycleFinancialReview {
   private final FinancialPlanService plans;
   private final LearningCycleFinancialAdvice advice;
 
-  /** Mostra estimativas, lacunas e parecer real sem inferir teto a partir de texto histórico. */
+  /** Mostra recibo, cobertura do saldo, estimativas e parecer real sem iniciar trabalho. */
   public CycleFinancialReview read(LearningSalesCycle cycle, Product product, Instant now) {
     var slices = costs.summarize(cycle.getProductId());
     BigDecimal known =
@@ -95,7 +96,53 @@ public class LearningCycleFinancialReview {
         plan,
         advice.read(cycle, plan, planUrl),
         budgetSections(cycle, auth, videoAuth == null ? null : videoAuth.budgetLimitUsd()),
-        mediaDecision(cycle));
+        mediaDecision(cycle),
+        preparationBalance(cycle, auth, known));
+  }
+
+  /**
+   * Explica a cobertura do limite sem confundir reserva, aprovação e liberação da próxima tarefa.
+   */
+  private CycleFinancialReview.PreparationBalance preparationBalance(
+      LearningSalesCycle cycle,
+      CycleFinancialReview.Authorization authorization,
+      BigDecimal known) {
+    if (!"OPEN".equals(cycle.getStatus()))
+      return new CycleFinancialReview.PreparationBalance(
+          "CLOSED",
+          "Ciclo encerrado: limites preservados para consulta",
+          "Os recibos e custos deste ciclo são históricos. Esta leitura não permite retomar tarefas nem transferir autorizações para outro ciclo.",
+          null,
+          false);
+    if (authorization == null)
+      return new CycleFinancialReview.PreparationBalance(
+          "NOT_AUTHORIZED",
+          "Falta registrar o limite de preparação",
+          "Não há aprovação vigente para este ciclo e versão. Confira os custos e registre sua decisão abaixo.",
+          null,
+          true);
+    if (known == null)
+      return new CycleFinancialReview.PreparationBalance(
+          "COST_UNKNOWN",
+          "Aprovação registrada; custo acumulado ainda desconhecido",
+          "O recibo está salvo, mas falta informar o custo acumulado para conferir o saldo. Não é necessário repetir a mesma aprovação.",
+          null,
+          false);
+    BigDecimal available =
+        authorization.totalLimitUsd().subtract(known).subtract(authorization.reserveUsd());
+    if (available.signum() <= 0)
+      return new CycleFinancialReview.PreparationBalance(
+          "NO_BALANCE",
+          "Aprovação registrada, mas sem saldo para novas tarefas",
+          "O recibo está salvo. O limite precisa cobrir os custos estimados, a reserva e o custo da próxima tarefa. Revise o teto total ou a reserva abaixo, ou mantenha a pausa. A reserva fica dentro do teto; não é verba adicional nem cobrança.",
+          available.negate().setScale(2, RoundingMode.CEILING),
+          true);
+    return new CycleFinancialReview.PreparationBalance(
+        "BALANCE_AVAILABLE",
+        "Aprovação registrada e saldo estimado disponível",
+        "O saldo ainda precisa cobrir o custo da próxima tarefa. A execução deve ser retomada na atividade e o sistema revalida os limites antes de iniciar trabalho. Salvar o limite não retoma o processo nem autoriza vídeos ou anúncios.",
+        BigDecimal.ZERO,
+        false);
   }
 
   /** Explica limites independentes e distingue ausência de registro de consumo igual a zero. */

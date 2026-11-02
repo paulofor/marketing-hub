@@ -368,6 +368,12 @@ paths:
         comercial; o endpoint budget-authorization revalida todos os gates. Os três
         limites são independentes, não são somados e não representam gasto realizado.
         Ausência de teto de vídeos não equivale a custo zero nem obriga nova produção.
+        preparationBalance expõe status (CLOSED, NOT_AUTHORIZED, COST_UNKNOWN, NO_BALANCE ou
+        BALANCE_AVAILABLE), title, explanation, shortfallUsd anulável e requiresBudgetReview.
+        O cálculo usa teto menos custo conhecido menos reserva. Recibo salvo não garante
+        cobertura; saldo positivo não dispensa revalidar o custo da próxima tarefa nem retoma
+        execução. shortfallUsd é a falta para cobrir custos e reserva, arredondada para cima
+        aos centavos, sem nova tarefa; availableUsd preserva a precisão da estimativa.
       parameters:
         - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
         - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
@@ -380,7 +386,7 @@ paths:
   /products/{productId}/{cycleId}/preparation-budget:
     post:
       summary: Registrar aprovação humana do teto cumulativo de preparação e revisão
-      description: Não inicia tarefas nem autoriza mídia ou audiovisual. Recibo no ledger, idempotência por requestKey e concorrência por expectedRevision. Não herda decisão em sucessores.
+      description: Não inicia tarefas nem autoriza mídia ou audiovisual. Recibo no ledger, idempotência por requestKey e concorrência por expectedRevision. Não herda decisão em sucessores. A resposta inclui preparationBalance; salvar limite insuficiente preserva a decisão e indica NO_BALANCE, sem liberar nova tarefa.
       parameters:
         - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
         - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}

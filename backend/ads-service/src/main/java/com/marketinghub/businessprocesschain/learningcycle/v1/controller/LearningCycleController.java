@@ -3,6 +3,7 @@ package com.marketinghub.businessprocesschain.learningcycle.v1.controller;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleService;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.costWorksheet.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.PreparationBudgetRequest;
@@ -155,6 +156,24 @@ public class LearningCycleController {
       @PathVariable Long cycleId,
       @Valid @RequestBody ReconcileLearningCycleMeasurementRequest request) {
     return service.reconcileMeasurement(productId, cycleId, request);
+  }
+
+  /** Expõe os seis grupos, histórico e previsões sem alterar limites ou executar tarefas. */
+  @io.swagger.v3.oas.annotations.Operation(summary = "Consultar planilha de custos do ciclo")
+  @GetMapping("/products/{productId}/{cycleId}/cost-worksheet")
+  public CostWorksheet costWorksheet(
+      @PathVariable Long productId, @PathVariable Long cycleId, @RequestParam Long chainId) {
+    return service.costWorksheet(productId, cycleId, chainId);
+  }
+
+  /** Registra custos e previsões com aprovação administrativa explícita dos custos operacionais. */
+  @io.swagger.v3.oas.annotations.Operation(summary = "Salvar planilha versionada sem liberar gasto")
+  @PostMapping("/products/{productId}/{cycleId}/cost-worksheet")
+  public CostWorksheet saveCostWorksheet(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody CostWorksheetRequest request) {
+    return service.saveCostWorksheet(productId, cycleId, request);
   }
 
   /** Expõe demonstração do ciclo, custos e parecer de Plutus sem executar consumo. */

@@ -1,5 +1,38 @@
 # Plano financeiro de produto — v1
 
+## Planilha de custos — decisão de 02/11/2026
+
+A classificação padrão tem seis grupos: **Agentes** (pesquisa, estratégia, construção e
+revisões); **Produção de imagens, áudio e vídeo** (peças, locução, montagem e tentativas);
+**Mídia** (distribuição paga); **Entrega e suporte** (personalização, IA por cliente e
+atendimento); **Despesas e deduções da venda** (pagamento, impostos, comissões e reembolsos);
+**Operação fixa** (servidores, domínio, ferramentas e assinaturas).
+
+A demonstração do ciclo funciona como planilha versionada: orçamento proposto, custo
+informado com fonte, estimativa automática separada, previsão total e aprovação. Agentes
+mantêm a base acumulada do produto; os outros grupos referem-se ao experimento e período
+declarados. Cada parcela entra uma única vez. Custo informado pelo administrador não é
+conciliação automática; não somar esse total novamente à estimativa automática da mesma linha.
+Investimento inicial não volta a ser cobrado por venda. Ausência permanece desconhecida.
+
+US$ e R$ têm subtotais separados. Previsão de resultado após os seis grupos exige previsão
+total em todas as linhas, receita bruta prevista, período e câmbio com fonte quando houver
+custo em US$. Deduções entram no grupo próprio, uma vez. Resultado é sensibilidade de
+planejamento, não venda nem lucro realizado. Reserva é parte do teto, nunca despesa.
+
+Salvar custos ou previsões não aprova orçamento. Os limites de agentes, vídeos e mídia
+continuam nos recibos e gates existentes, exibidos junto à planilha. A aprovação administrativa
+dos orçamentos de entrega, deduções e operação fixa vale somente para o planejamento da
+mesma revisão; não cria autoridade para executores, campanhas, cobranças ou compras.
+Qualquer edição da planilha exige renovar essa aprovação. Revisões antigas ficam consultáveis;
+mudança de versão invalida sua adoção automática. Concorrência, contexto e idempotência são
+conferidos pelo backend sob lock. Nenhuma leitura inicia agentes ou modifica limites.
+
+A classificação e os cálculos são contratos do backend. Testes devem provar seis grupos,
+valores desconhecidos e zero, separação de moedas, ausência de dupla contagem, aprovação
+distinta de previsão, recuperação e isolamento entre produtos. Matriz e aprendizado:
+`docs/homologacao/financial-cost-worksheet-v1.md`.
+
 ## Decisão de 15/09/2026
 
 O Marketing Hub passa a oferecer **plano financeiro por produto e versão**, com **modelos
@@ -292,7 +325,7 @@ Matriz e aprendizado: `docs/homologacao/preparation-budget-balance-v1.md`.
 
 ### Finalidades claras na mesma tela — decisão de 31/10/2026
 
-A demonstração explica primeiro três limites independentes: **preparar o produto** (US$,
+A planilha de seis grupos preserva três limites independentes de execução: **preparar o produto** (US$,
 cumulativo, agentes e revisões), **produzir vídeos** (US$, conjunto de anúncio, demonstração
 e revisões, incluindo custos anteriores da produção) e **pagar anúncios** (R$, exibição
 pela plataforma, total do ciclo e janela comercial). Produção não compra distribuição.

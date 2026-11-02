@@ -18,6 +18,10 @@ public interface LearningSalesCycleEventRepository
   /** Lê o último resultado sem perder bloqueios cuja próxima instância já foi aberta. */
   Optional<LearningSalesCycleEvent> findFirstByCycleIdOrderByRevisionDesc(Long cycleId);
 
+  /** Consulta a última mudança funcional, ignorando eventos administrativos sem transição. */
+  Optional<LearningSalesCycleEvent> findFirstByCycleIdAndActionNotInOrderByRevisionDesc(
+      Long cycleId, List<String> excludedActions);
+
   /** Localiza o recibo de um comando para impedir efeitos duplicados. */
   Optional<LearningSalesCycleEvent> findByCycleIdAndRequestKey(Long cycleId, String requestKey);
 }

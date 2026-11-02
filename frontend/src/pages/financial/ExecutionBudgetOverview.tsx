@@ -23,10 +23,11 @@ export default function ExecutionBudgetOverview({
   const [editing, setEditing] = useState<"VIDEO" | "MEDIA" | null>(null);
   return (
     <section
+      id="operating-approvals"
       className="finance-budget-overview mb-4"
       aria-label="Entenda os três orçamentos"
     >
-      <h2 className="h4">Três orçamentos, cada um com uma finalidade</h2>
+      <h2 className="h4">Aprovações de agentes, vídeos e anúncios</h2>
       <p>
         <strong>
           Produzir o vídeo é uma despesa. Pagar para exibi-lo como anúncio é

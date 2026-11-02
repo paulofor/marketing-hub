@@ -1,3 +1,18 @@
+## 02/11/2026 — Planilha financeira com seis grupos
+
+Capella confirmou a lacuna: US$ 67,37689 eram estimativas somente dos agentes, mas a tela
+apresentava três limites sem planejamento completo. A demonstração do ciclo passa a reunir
+agentes, produção, mídia, entrega/suporte, deduções da venda e operação fixa, com orçamento,
+custo informado, fonte, previsão, moeda, período e histórico. Recibos de execução são preservados;
+aprovação administrativa dos demais grupos não inicia gasto. O resultado projetado exige
+cobertura integral e câmbio com fonte, sem somar estimativa ao custo declarado.
+
+A planilha usa o ledger existente, versão, lock e idempotência. Falha de resposta após commit
+recupera o recibo. A projeção funcional ignora eventos financeiros para não ocultar bloqueios
+de medição. Regressões cobrem outra identidade e caminhos já válidos. Matriz, alternativas,
+resultados e limites em `docs/homologacao/financial-cost-worksheet-v1.md`. Nenhuma alteração
+nos limites reais de Capella; impacto comercial ainda não medido.
+
 ## 2026-10-21 — Vega #106: respeitar o formato estático aceito
 
 - Ciclo #13, cadeia #26, produto #4: comunicação privada e seleção humana concluídas,

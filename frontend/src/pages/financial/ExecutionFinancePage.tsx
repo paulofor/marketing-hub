@@ -6,6 +6,7 @@ import {
   type ExecutionFinance,
   type PreparationBudgetDecision,
 } from "../../api/financial/useExecutionFinance";
+import ExecutionCostWorksheet from "./ExecutionCostWorksheet";
 import ExecutionFinancialAdvice from "./ExecutionFinancialAdvice";
 import ExecutionBudgetOverview from "./ExecutionBudgetOverview";
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
@@ -133,6 +134,11 @@ export default function ExecutionFinancePage() {
                 )}
             </section>
           )}
+          <ExecutionCostWorksheet
+            key={`${data.productId}:${data.cycleId}`}
+            data={data}
+            disabled={query.isError || query.isFetching || approve.isPending}
+          />
           <ExecutionBudgetOverview
             key={`${data.productId}:${data.cycleId}`}
             data={data}

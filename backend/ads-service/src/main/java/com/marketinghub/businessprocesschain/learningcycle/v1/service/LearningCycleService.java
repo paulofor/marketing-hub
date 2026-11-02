@@ -10,6 +10,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand.Action;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.costWorksheet.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.PreparationBudgetRequest;
@@ -58,6 +59,7 @@ public class LearningCycleService {
   @Autowired private LearningCycleVideoBudget videoBudget;
   @Autowired private LearningCycleFinancialReview financialReview;
   @Autowired private LearningCyclePreparationBudget preparationBudget;
+  @Autowired private LearningCycleCostWorksheet costWorksheet;
 
   @Autowired private LearningCycleCommercialAuthorization commercialAuthorization;
 
@@ -283,6 +285,30 @@ public class LearningCycleService {
     requiredExperiment(productId, cycle.getExperimentId());
     return financialReview.read(
         cycle, products.findById(productId).orElseThrow(), Instant.now(clock));
+  }
+
+  /** Consulta a planilha do contexto exato com fontes e cálculos do backend. */
+  @Transactional(readOnly = true)
+  public CostWorksheet costWorksheet(Long productId, Long cycleId, Long chainId) {
+    var review = financialReview(productId, cycleId, chainId);
+    return costWorksheet.read(requiredCycle(productId, cycleId), review);
+  }
+
+  /** Salva a revisão sob lock sem substituir autorizações de agentes, vídeos ou mídia. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public CostWorksheet saveCostWorksheet(
+      Long productId, Long cycleId, CostWorksheetRequest request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    requiredExperiment(productId, cycle.getExperimentId());
+    var now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    costWorksheet.save(cycle, request, now);
+    cycles.saveAndFlush(cycle);
+    return costWorksheet.read(
+        cycle, financialReview.read(cycle, products.findById(productId).orElseThrow(), now));
   }
 
   /** Aprova o teto cumulativo e preserva os demais orçamentos, sob lock do produto e ciclo. */

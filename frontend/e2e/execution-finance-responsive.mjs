@@ -92,6 +92,15 @@ try {
           "/api/business-process-chains/learning-cycles/v1/products/700/1900/",
         ),
       );
+      if (url.pathname.endsWith("/cost-worksheet"))
+        return route.fulfill({
+          json: JSON.parse(
+            await readFile(
+              new URL("fixtures/cost-worksheet.json", import.meta.url),
+              "utf8",
+            ),
+          ),
+        });
       if (url.pathname.endsWith("/financial-review"))
         return route.fulfill({ json: data });
       if (url.pathname.endsWith("/video-budget"))
@@ -238,7 +247,7 @@ try {
     await expect(
       page.getByRole("button", { name: "Aprovar limite de preparação" }),
     ).toBeDisabled();
-    await page.getByRole("checkbox").check();
+    await page.getByRole("checkbox", { name: /Confirmo este teto/ }).check();
     await page
       .getByRole("button", { name: "Aprovar limite de preparação" })
       .click();

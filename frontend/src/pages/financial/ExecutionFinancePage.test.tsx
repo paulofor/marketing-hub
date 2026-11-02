@@ -13,6 +13,8 @@ import ExecutionFinancePage from "./ExecutionFinancePage";
 import fixtureJson from "../../../e2e/fixtures/execution-finance.json?raw";
 const fixture = JSON.parse(fixtureJson);
 vi.mock("axios");
+// A planilha tem suíte própria; esta suíte preserva o contrato anterior das aprovações.
+vi.mock("./ExecutionCostWorksheet", () => ({ default: () => null }));
 let client: QueryClient;
 beforeEach(() => {
   vi.resetAllMocks();

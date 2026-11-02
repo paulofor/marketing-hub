@@ -2,6 +2,26 @@
 
 ## Planilha de custos — decisão de 02/11/2026
 
+### Edição concentrada no teto aprovado — decisão complementar de 02/11/2026
+
+Na demonstração financeira da execução, **Aprovado / teto** é a única coluna monetária
+editável pelo usuário. Orçamento proposto, custos e previsões pertencem ao sistema/modelo,
+com fonte explícita; quando não houver base confiável, exibir a ausência ou retirar a
+coluna, sem solicitar seu preenchimento ao administrador e sem converter ausência em zero.
+A tela não solicita receita ou câmbio manuais para completar um resultado sem fontes.
+
+Editar um teto exige decisão explícita e gravação no contrato financeiro correspondente.
+Valores anteriores, reservas e restrições de execução permanecem preservados; um rascunho
+não é aprovação, e salvar um teto não inicia agentes, produção ou mídia. Na primeira aprovação de preparação, sem reserva anterior, o sistema não acrescenta reserva;
+a tela explicita essa condição antes da confirmação. O diário de mídia é calculado pelo
+backend a partir do total escolhido e da janela vigente. Tetos dos grupos
+operacionais são decisões de planejamento, sem conceder autoridade a executores.
+O recibo individual de teto permanece vigente até substituição explícita ou mudança
+de versão; atualizar estimativas não aumenta nem remove esse teto.
+Reutilizar os recibos, gates, revisão e idempotência existentes, preservando os seis grupos,
+as moedas, o contexto e o histórico. Essa regra substitui a edição manual de custos e
+previsões na planilha de execução descrita abaixo; revisões históricas permanecem consultáveis.
+
 A classificação padrão tem seis grupos: **Agentes** (pesquisa, estratégia, construção e
 revisões); **Produção de imagens, áudio e vídeo** (peças, locução, montagem e tentativas);
 **Mídia** (distribuição paga); **Entrega e suporte** (personalização, IA por cliente e

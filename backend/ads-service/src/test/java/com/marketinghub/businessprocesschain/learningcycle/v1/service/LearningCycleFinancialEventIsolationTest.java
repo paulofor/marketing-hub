@@ -36,6 +36,7 @@ class LearningCycleFinancialEventIsolationTest {
           List.of(
               "MEASUREMENT_BLOCKED",
               "SAVE_COST_WORKSHEET",
+              "APPROVE_COST_CEILING",
               "AUTHORIZE_PREPARATION_BUDGET",
               "AUTHORIZE_VIDEO_BUDGET");
       for (int i = 0; i < actions.size(); i++) {
@@ -61,13 +62,14 @@ class LearningCycleFinancialEventIsolationTest {
           .isEqualTo("AUTHORIZE_VIDEO_BUDGET");
       assertThat(
               repository
-                  .findFirstByCycleIdAndActionNotInOrderByRevisionDesc(700L, actions.subList(1, 4))
+                  .findFirstByCycleIdAndActionNotInOrderByRevisionDesc(
+                      700L, actions.subList(1, actions.size()))
                   .orElseThrow()
                   .getAction())
           .isEqualTo("MEASUREMENT_BLOCKED");
       assertThat(
               repository.findFirstByCycleIdAndActionNotInOrderByRevisionDesc(
-                  701L, actions.subList(1, 4)))
+                  701L, actions.subList(1, actions.size())))
           .isEmpty();
     } finally {
       manager.close();

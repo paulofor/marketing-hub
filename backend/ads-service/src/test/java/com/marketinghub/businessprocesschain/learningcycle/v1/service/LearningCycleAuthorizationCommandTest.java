@@ -336,9 +336,19 @@ class LearningCycleAuthorizationCommandTest {
 
   /** Persiste e repete o aceite com preparação ausente em ciclos distintos sem ativar mídia. */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.CsvSource({"4,2,92,20,100", "400,200,920,30.25,120"})
+  @org.junit.jupiter.params.provider.CsvSource({
+    "4,2,92,20,100,false",
+    "400,200,920,30.25,120,false",
+    "4,2,92,50,100,true",
+    "400,200,920,60,120,true"
+  })
   void persistsBudgetBeforePreparation(
-      long productId, long cycleId, long experimentId, String daily, String total) {
+      long productId,
+      long cycleId,
+      long experimentId,
+      String daily,
+      String total,
+      boolean viaWorksheet) {
     var history = events.findByCycleIdOrderByRevisionAsc(2L);
     cycle.setProductId(productId);
     cycle.setId(cycleId);
@@ -379,12 +389,94 @@ class LearningCycleAuthorizationCommandTest {
         new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
             .AuthorizeCycleBudgetRequest(
             java.util.UUID.randomUUID(), 13, new BigDecimal(daily), new BigDecimal(total));
+    var ceiling =
+        new com.marketinghub
+            .businessprocesschain
+            .learningcycle
+            .v1
+            .service
+            .costWorksheet
+            .ApproveCostCeilingRequest(
+            java.util.UUID.randomUUID(),
+            13L,
+            cycle.getChainDefinitionId(),
+            experimentId,
+            cycle.getProductVersion(),
+            com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .costWorksheet
+                .ApproveCostCeilingRequest
+                .Group
+                .MEDIA,
+            new BigDecimal(total),
+            "Operador sintético",
+            "Teto aprovado na planilha",
+            true);
+    if (viaWorksheet) {
+      when(products.findById(productId)).thenReturn(Optional.of(experiment.getProduct()));
+      var financial = mock(LearningCycleFinancialReview.class);
+      var view =
+          mock(
+              com.marketinghub
+                  .businessprocesschain
+                  .learningcycle
+                  .v1
+                  .service
+                  .financialReview
+                  .CycleFinancialReview
+                  .class);
+      when(view.mediaDecision())
+          .thenReturn(
+              new com.marketinghub
+                  .businessprocesschain
+                  .learningcycle
+                  .v1
+                  .service
+                  .financialReview
+                  .CycleFinancialReview
+                  .MediaDecision(true, "Disponível", cycle.getWindowStart(), cycle.getWindowEnd()));
+      when(financial.read(
+              org.mockito.ArgumentMatchers.any(),
+              org.mockito.ArgumentMatchers.any(),
+              org.mockito.ArgumentMatchers.any()))
+          .thenReturn(view);
+      when(videoBudget.response(
+              org.mockito.ArgumentMatchers.any(),
+              org.mockito.ArgumentMatchers.any(),
+              org.mockito.ArgumentMatchers.anyBoolean()))
+          .thenReturn(
+              mock(
+                  com.marketinghub
+                      .businessprocesschain
+                      .learningcycle
+                      .v1
+                      .service
+                      .videoBudget
+                      .VideoBudgetResponse
+                      .class));
+      ReflectionTestUtils.setField(service, "financialReview", financial);
+      ReflectionTestUtils.setField(service, "videoBudget", videoBudget);
+      ReflectionTestUtils.setField(
+          service, "costWorksheet", mock(LearningCycleCostWorksheet.class));
+      ReflectionTestUtils.setField(
+          service,
+          "costCeilings",
+          new LearningCycleCostCeilings(events, new LearningCycleJson(new ObjectMapper())));
+    }
     for (int attempt = 0; attempt < 2; attempt++) {
+      if (viaWorksheet) {
+        service.approveCostCeiling(productId, cycleId, ceiling);
+        assertThat(cycle.getStage()).isEqualTo("PUBLICATION");
+        continue;
+      }
       var result = service.authorizeBudget(productId, cycleId, request, "Operador sintético");
       assertThat(result.stage()).isEqualTo("PUBLICATION");
       assertThat(result.commercialPreparation().readyForReview()).isFalse();
     }
-    assertThat(saved).hasSize(1);
+    assertThat(saved).hasSize(viaWorksheet ? 2 : 1);
     assertThat(saved.getFirst().getFromStage()).isEqualTo("AUTHORIZATION");
     assertThat(saved.getFirst().getToStage()).isEqualTo("PUBLICATION");
     assertThat(saved.getFirst().getCycleId()).isEqualTo(cycleId);
@@ -392,8 +484,9 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(experiment.getMediaSpendLimit()).isEqualByComparingTo(total);
     assertThat(experiment.getStatus())
         .isEqualTo(com.marketinghub.experiment.ExperimentStatus.PLANNED);
-    assertThat(cycle.getRevision()).isEqualTo(14);
+    assertThat(cycle.getRevision()).isEqualTo(viaWorksheet ? 15 : 14);
     org.mockito.Mockito.verify(experiments).save(experiment);
+    if (viaWorksheet) return;
     var conflicting =
         new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
             .AuthorizeCycleBudgetRequest(
@@ -401,7 +494,7 @@ class LearningCycleAuthorizationCommandTest {
     org.assertj.core.api.Assertions.assertThatThrownBy(
             () -> service.authorizeBudget(productId, cycleId, conflicting, "Operador sintético"))
         .hasMessageContaining("conteúdo diferente");
-    assertThat(saved).hasSize(1);
+    assertThat(saved).hasSize(viaWorksheet ? 2 : 1);
   }
 
   /**

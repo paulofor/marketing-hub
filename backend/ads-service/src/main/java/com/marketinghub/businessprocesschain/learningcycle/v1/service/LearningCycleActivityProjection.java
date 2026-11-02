@@ -95,6 +95,7 @@ public class LearningCycleActivityProjection {
                     cycle.getId(),
                     List.of(
                         "SAVE_COST_WORKSHEET",
+                        "APPROVE_COST_CEILING",
                         "AUTHORIZE_PREPARATION_BUDGET",
                         "AUTHORIZE_VIDEO_BUDGET"))
                 .orElse(null);

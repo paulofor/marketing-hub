@@ -7793,3 +7793,21 @@ Critérios, fontes, regressões e limites em
 [homologação visual](../homologacao/capella-revisao-visual-premium-v1.md).
 A hipótese é melhorar a percepção de valor e evitar repetição de ajustes visuais; ainda não
 há medição de conversão ou vendas atribuível a esta mudança. Não foi iniciada campanha.
+
+
+## 02/11/2026 — Tetos financeiros editáveis na planilha
+
+- Evidência: Capella, produto 7/cadeia 27/ciclo 19/experimento 112, em PLANNING;
+  teto US$ 80, reserva US$ 20, estimativas US$ 67,37689. Consulta visual e MCP,
+  sem alterar orçamento real nem iniciar tarefas.
+- Causa: a planilha anterior pedia orçamento, custo e previsão ao usuário, mas
+  encaminhava a aprovação a formulários separados. Os testes aceitavam essa duplicação.
+- Mudança reutilizável: somente Aprovado/teto recebe valor monetário; recibos oficiais
+  de preparação, vídeos e mídia continuam governando seus escopos. Entrega, deduções
+  e operação têm aceites individuais para planejamento. Histórico e reserva preservados.
+- Harness: testes verificam localização dos seis campos, recibo efetivo, duas identidades,
+  perda de resposta, concorrência, bloqueios e separação de ausência e zero. Eventos
+  financeiros são excluídos da última transição funcional para preservar bloqueios.
+- Métrica de adoção: fluxo local aceito e ausência de duplicação; impacto sobre decisões
+  e vendas permanece hipótese. Não houve mudança de produto, experimento ou autorização.
+- Matriz, alternativas e limites: [tetos na coluna Aprovado](../homologacao/financial-approved-ceilings-v1.md).

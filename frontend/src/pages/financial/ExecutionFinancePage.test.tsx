@@ -49,144 +49,14 @@ it("mostra custos e parecer real, sem autorizar ou disparar análise ao abrir", 
     screen.getByRole("link", { name: /Analisar cenários/ }),
   ).toHaveAttribute("href", fixture.planUrl);
   expect(
-    screen.getByRole("button", { name: "Aprovar limite de preparação" }),
-  ).toBeDisabled();
+    screen.queryByRole("button", { name: "Aprovar limite de preparação" }),
+  ).not.toBeInTheDocument();
   expect(axios.post).not.toHaveBeenCalled();
   expect(axios.get).toHaveBeenCalledWith(
     expect.stringContaining("/products/700/1900/financial-review"),
     { params: { chainId: 2700 } },
   );
 });
-it.each([true, false])(
-  "preserva decisão e chave após falha e aprova com recibo; randomUUID disponível: %s",
-  async (nativeUuid) => {
-    if (!nativeUuid)
-      vi.stubGlobal("crypto", {
-        getRandomValues: globalThis.crypto.getRandomValues.bind(
-          globalThis.crypto,
-        ),
-      });
-    vi.mocked(axios.post).mockRejectedValueOnce(new Error("rede"));
-    vi.mocked(axios.post).mockResolvedValueOnce({
-      data: {
-        ...fixture,
-        revision: 2,
-        availableUsd: 7.61,
-        preparationBalance: {
-          status: "BALANCE_AVAILABLE",
-          title: "Aprovação registrada e saldo estimado disponível",
-          explanation:
-            "A execução deve ser retomada na atividade; o saldo precisa cobrir a próxima tarefa.",
-          shortfallUsd: 0,
-          requiresBudgetReview: false,
-        },
-        authorization: { eventId: 8000, totalLimitUsd: 50, reserveUsd: 3.5 },
-        history: [],
-      },
-    });
-    mount();
-    await screen.findByText(fixture.productName);
-    fireEvent.change(screen.getByLabelText("Teto total acumulado (US$) *"), {
-      target: { value: "50" },
-    });
-    fireEvent.change(
-      screen.getByLabelText("Reserva para custos pendentes (US$) *"),
-      { target: { value: "3.50" } },
-    );
-    fireEvent.change(screen.getByLabelText("Responsável pela decisão *"), {
-      target: { value: "Teste local" },
-    });
-    fireEvent.change(
-      screen.getByLabelText("Justificativa e fontes consideradas *"),
-      { target: { value: "Conferência local" } },
-    );
-    fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Aprovar limite de preparação" }),
-    );
-    await screen.findByRole("alert");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Aprovar limite de preparação" }),
-    );
-    await screen.findByText(/Decisão registrada com recibo/);
-    const calls = vi.mocked(axios.post).mock.calls;
-    expect(calls).toHaveLength(2);
-    expect(calls[0][1]).toEqual(calls[1][1]);
-    expect((calls[0][1] as { requestKey: string }).requestKey).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
-    expect(calls[1][1]).toMatchObject({
-      totalLimitUsd: 50,
-      reserveUsd: 3.5,
-      confirmed: true,
-      experimentId: 11200,
-      expectedRevision: 1,
-    });
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
-  },
-);
-
-it("mantém o recibo salvo e destaca a falta de cobertura após aprovar e atualizar a leitura", async () => {
-  const approved = {
-    ...fixture,
-    revision: 2,
-    knownPreparationUsd: 67.37689,
-    availableUsd: -7.37689,
-    authorization: {
-      eventId: 8000,
-      totalLimitUsd: 80,
-      reserveUsd: 20,
-      operatorName: "Operador local",
-      approvedAt: fixture.observedAt,
-    },
-    preparationBalance: {
-      status: "NO_BALANCE",
-      title: "Aprovação registrada, mas sem saldo para novas tarefas",
-      explanation:
-        "O recibo está salvo. Revise o teto total ou a reserva, ou mantenha a pausa.",
-      shortfallUsd: 7.37689,
-      requiresBudgetReview: true,
-    },
-  };
-  vi.mocked(axios.post).mockResolvedValue({ data: approved });
-  mount();
-  await screen.findByText(fixture.productName);
-  for (const [label, value] of [
-    ["Teto total acumulado (US$) *", "80"],
-    ["Reserva para custos pendentes (US$) *", "20"],
-    ["Responsável pela decisão *", "Operador local"],
-    ["Justificativa e fontes consideradas *", "Decisão local"],
-  ])
-    fireEvent.change(screen.getByLabelText(label), { target: { value } });
-  fireEvent.click(screen.getByRole("checkbox"));
-  fireEvent.click(
-    screen.getByRole("button", { name: "Aprovar limite de preparação" }),
-  );
-  await screen.findByText(/Decisão registrada com recibo/);
-  const summary = screen.getByRole("region", {
-    name: "Situação da preparação",
-  });
-  expect(summary).toHaveTextContent("Aprovação registrada, mas sem saldo");
-  expect(summary).toHaveTextContent("Recibo #8000");
-  expect(summary).toHaveTextContent(
-    /80,00 de teto − US\$\s*67,38 de custos estimados − US\$\s*20,00 de reserva = -US\$\s*7,38/,
-  );
-  expect(summary).toHaveTextContent(
-    "Isso ainda não inclui o valor de uma nova tarefa",
-  );
-  expect(
-    screen.getByRole("link", { name: "Rever teto ou reserva" }),
-  ).toHaveAttribute("href", "#preparation-decision");
-  vi.mocked(axios.get).mockResolvedValue({ data: approved });
-  fireEvent.click(screen.getByRole("button", { name: "Atualizar valores" }));
-  await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
-  expect(summary).toHaveTextContent("O recibo está salvo");
-  expect(axios.post).toHaveBeenCalledTimes(1);
-  expect(
-    screen.queryByText(/Saldo negativo indica consumo conhecido acima/),
-  ).not.toBeInTheDocument();
-});
-
 it("apresenta a situação informada pelo backend sem deduzir liberação pelo saldo", async () => {
   vi.mocked(axios.get).mockResolvedValue({
     data: {
@@ -231,7 +101,7 @@ it("mantém histórico de ciclo encerrado sem formulário de aprovação", async
     },
   });
   mount();
-  await screen.findByText("Ciclo encerrado");
+  await screen.findByText("Sem parecer disponível");
   expect(
     screen.queryByRole("button", { name: "Aprovar limite de preparação" }),
   ).not.toBeInTheDocument();
@@ -302,133 +172,15 @@ const videoBudget = {
   financeUrl: fixture.videoUrl,
 };
 
-it("explica três finalidades e mostra bloqueio dos anúncios sem sair da demonstração", async () => {
+it("concentra os atalhos dos três orçamentos na planilha sem formulários monetários duplicados", async () => {
   mount();
   await screen.findByText(fixture.productName);
-  expect(
-    screen.getByRole("heading", { name: "Preparar o produto" }),
-  ).toBeVisible();
-  expect(
-    screen.getByRole("heading", { name: "Produzir vídeos" }),
-  ).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Pagar anúncios" })).toBeVisible();
-  expect(screen.getByText(/Produzir o vídeo é uma despesa/)).toBeVisible();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Ver decisão dos anúncios aqui" }),
-  );
-  expect(await screen.findByText(fixture.mediaDecision.reason)).toBeVisible();
-  expect(screen.getByText(/ainda não definido neste ciclo/)).toBeVisible();
-  expect(axios.get).toHaveBeenCalledTimes(1);
+  const links = screen.getAllByRole("link", { name: "Ver teto na planilha" });
+  expect(links.map((link) => link.getAttribute("href"))).toEqual([
+    "#ceiling-AGENTS",
+    "#ceiling-PRODUCTION",
+    "#ceiling-MEDIA",
+  ]);
+  expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
   expect(axios.post).not.toHaveBeenCalled();
-});
-
-it("aprova vídeos na mesma página pelo contrato próprio sem alterar preparação ou anúncios", async () => {
-  vi.mocked(axios.get).mockImplementation(async (url) => ({
-    data: String(url).endsWith("/video-budget") ? videoBudget : fixture,
-  }));
-  vi.mocked(axios.post).mockResolvedValue({ data: videoBudget });
-  mount();
-  await screen.findByText(fixture.productName);
-  fireEvent.click(
-    screen.getByRole("button", { name: "Ver decisão dos vídeos aqui" }),
-  );
-  await screen.findByRole("form", { name: "Autorizar teto dos vídeos" });
-  fireEvent.change(screen.getByLabelText(/Teto total autorizado \(USD\)/), {
-    target: { value: "12" },
-  });
-  fireEvent.change(screen.getByLabelText(/Responsável pela autorização/), {
-    target: { value: "Teste local" },
-  });
-  fireEvent.change(
-    screen.getByLabelText(/Objetivo e justificativa do investimento/),
-    { target: { value: "Somente produção de dois vídeos" } },
-  );
-  fireEvent.click(screen.getByLabelText(/Autorizo este teto total somente/));
-  fireEvent.click(
-    screen.getByRole("button", { name: "Registrar teto autorizado" }),
-  );
-  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
-  expect(vi.mocked(axios.post).mock.calls[0][0]).toContain(
-    "/products/700/1900/video-budget",
-  );
-  expect(vi.mocked(axios.post).mock.calls[0][1]).toMatchObject({
-    budgetLimitUsd: "12",
-    chainDefinitionId: 2700,
-    experimentId: 11200,
-  });
-  expect(
-    screen.getByRole("heading", {
-      name: "Demonstração financeira",
-    }),
-  ).toBeVisible();
-});
-
-it("mostra na mesma tela o bloqueio de vídeos informado pelo backend", async () => {
-  vi.mocked(axios.get).mockImplementation(async (url) => ({
-    data: String(url).endsWith("/video-budget")
-      ? {
-          ...videoBudget,
-          canAuthorize: false,
-          blocker: "Conclua o planejamento antes de definir vídeos.",
-        }
-      : fixture,
-  }));
-  mount();
-  await screen.findByText(fixture.productName);
-  fireEvent.click(
-    screen.getByRole("button", { name: "Ver decisão dos vídeos aqui" }),
-  );
-  expect(
-    await screen.findByText("Conclua o planejamento antes de definir vídeos."),
-  ).toBeVisible();
-  expect(
-    screen.queryByRole("form", { name: "Autorizar teto dos vídeos" }),
-  ).not.toBeInTheDocument();
-  expect(axios.post).not.toHaveBeenCalled();
-});
-
-it("reutiliza a autorização de mídia na mesma tela com limites e replay próprios", async () => {
-  const view = {
-    ...fixture,
-    mediaDecision: { ...fixture.mediaDecision, available: true },
-  };
-  const cycle = {
-    id: 1900,
-    productId: 700,
-    chainDefinitionId: 2700,
-    experimentId: 11200,
-    revision: 1,
-    budgetLimitBrl: 89.95,
-    authorizationReview: { dailyBudgetBrl: 17.99 },
-    commands: [{ action: "COMPLETE", available: true }],
-    commercialPreparation: null,
-  };
-  vi.mocked(axios.get).mockImplementation(async (url) => ({
-    data: String(url).endsWith("/financial-review") ? view : [cycle],
-  }));
-  vi.mocked(axios.post).mockRejectedValue(new Error("Falha simulada"));
-  mount();
-  await screen.findByText(fixture.productName);
-  fireEvent.click(
-    screen.getByRole("button", { name: "Ver decisão dos anúncios aqui" }),
-  );
-  const submit = await screen.findByRole("button", {
-    name: "Aprovar limite de anúncios",
-  });
-  fireEvent.click(submit);
-  await screen.findByRole("alert");
-  fireEvent.click(submit);
-  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
-  const first = vi.mocked(axios.post).mock.calls[0];
-  expect(first[0]).toContain("/products/700/1900/budget-authorization");
-  expect(first[1]).toEqual(vi.mocked(axios.post).mock.calls[1][1]);
-  fireEvent.change(screen.getByLabelText(/Orçamento total \(R\$\)/), {
-    target: { value: "90" },
-  });
-  fireEvent.click(submit);
-  await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(3));
-  expect(
-    (vi.mocked(axios.post).mock.calls[2][1] as { requestKey: string })
-      .requestKey,
-  ).not.toEqual((first[1] as { requestKey: string }).requestKey);
 });

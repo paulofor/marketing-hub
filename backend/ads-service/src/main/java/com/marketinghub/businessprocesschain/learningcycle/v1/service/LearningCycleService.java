@@ -60,6 +60,7 @@ public class LearningCycleService {
   @Autowired private LearningCycleFinancialReview financialReview;
   @Autowired private LearningCyclePreparationBudget preparationBudget;
   @Autowired private LearningCycleCostWorksheet costWorksheet;
+  @Autowired private LearningCycleCostCeilings costCeilings;
 
   @Autowired private LearningCycleCommercialAuthorization commercialAuthorization;
 
@@ -291,7 +292,7 @@ public class LearningCycleService {
   @Transactional(readOnly = true)
   public CostWorksheet costWorksheet(Long productId, Long cycleId, Long chainId) {
     var review = financialReview(productId, cycleId, chainId);
-    return costWorksheet.read(requiredCycle(productId, cycleId), review);
+    return worksheetView(requiredCycle(productId, cycleId), review);
   }
 
   /** Salva a revisão sob lock sem substituir autorizações de agentes, vídeos ou mídia. */
@@ -307,8 +308,103 @@ public class LearningCycleService {
     var now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     costWorksheet.save(cycle, request, now);
     cycles.saveAndFlush(cycle);
-    return costWorksheet.read(
+    return worksheetView(
         cycle, financialReview.read(cycle, products.findById(productId).orElseThrow(), now));
+  }
+
+  /** Projeta disponibilidade de edição com os mesmos gates dos contratos de execução. */
+  private CostWorksheet worksheetView(LearningSalesCycle cycle, CycleFinancialReview review) {
+    var product = products.findById(cycle.getProductId()).orElseThrow();
+    return costWorksheet.read(
+        cycle, review, videoBudget.response(cycle, product, videoWorkflow(cycle)).blocker());
+  }
+
+  /** Aprova somente um teto, reutilizando limites operacionais, reserva e recuperação canônicos. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public CostWorksheet approveCostCeiling(
+      Long productId, Long cycleId, ApproveCostCeilingRequest request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    requiredExperiment(productId, cycle.getExperimentId());
+    var product = products.findById(productId).orElseThrow();
+    var now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    if (costCeilings.replay(cycle, request))
+      return worksheetView(cycle, financialReview.read(cycle, product, now));
+    require(
+        Objects.equals(request.expectedRevision(), cycle.getRevision()),
+        "O ciclo mudou. Atualize a planilha antes de aprovar.");
+    require("OPEN".equals(cycle.getStatus()), "Ciclo encerrado: decisões somente para consulta.");
+    require(
+        Boolean.TRUE.equals(request.confirmed()), "Confirme o teto e seu escopo antes de aprovar.");
+    var review = financialReview.read(cycle, product, now);
+    UUID operationalKey =
+        UUID.nameUUIDFromBytes(
+            (request.requestKey() + ":operational")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    switch (request.code()) {
+      case AGENTS ->
+          preparationBudget.authorize(
+              cycle,
+              new PreparationBudgetRequest(
+                  operationalKey,
+                  cycle.getRevision(),
+                  cycle.getChainDefinitionId(),
+                  cycle.getExperimentId(),
+                  cycle.getProductVersion(),
+                  request.approved(),
+                  review.authorization() == null
+                      ? java.math.BigDecimal.ZERO
+                      : review.authorization().reserveUsd(),
+                  request.operatorName(),
+                  request.justification(),
+                  request.confirmed()),
+              review.knownPreparationUsd(),
+              review.unreportedTasks(),
+              now);
+      case PRODUCTION ->
+          videoBudget.authorize(
+              cycle,
+              new AuthorizeVideoBudgetRequest(
+                  operationalKey,
+                  cycle.getRevision(),
+                  cycle.getChainDefinitionId(),
+                  cycle.getExperimentId(),
+                  cycle.getProductVersion(),
+                  request.approved(),
+                  request.operatorName(),
+                  request.justification(),
+                  request.confirmed()),
+              videoWorkflow(cycle),
+              now);
+      case MEDIA -> {
+        require(review.mediaDecision().available(), review.mediaDecision().reason());
+        require(request.approved().signum() > 0, "O teto de mídia deve ser positivo.");
+        var daily =
+            LearningCycleCommercialAuthorization.suggestDaily(cycle, now, request.approved());
+        require(
+            daily != null && daily.signum() > 0,
+            "Não há proposta diária de mídia válida no sistema.");
+        authorizeBudget(
+            productId,
+            cycleId,
+            new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                .AuthorizeCycleBudgetRequest(
+                operationalKey,
+                cycle.getRevision(),
+                daily.min(request.approved()),
+                request.approved()),
+            request.operatorName());
+      }
+      default -> {
+        /* Os demais grupos aprovam planejamento, sem autoridade de execução. */
+      }
+    }
+    costCeilings.record(cycle, request, now);
+    cycles.saveAndFlush(cycle);
+    return worksheetView(cycle, financialReview.read(cycle, product, now));
   }
 
   /** Aprova o teto cumulativo e preserva os demais orçamentos, sob lock do produto e ciclo. */

@@ -1,0 +1,18 @@
+{
+  "cardKey": "prazer-ritmico-empatia-aprendizagem-implicita",
+  "collection": "prazer-audio-visual",
+  "title": "Vínculos individuais entre sincronização rítmica e prazer musical",
+  "finding": "Em 51 participantes, a relação estatística entre sincronização rítmica e prazer musical variou conforme a medida: empatia afetiva e aprendizagem implícita apareceram como mediadores distintos.",
+  "mechanism": "Previsibilidade do ritmo, sensibilidade social e aprendizagem implícita podem contribuir para diferenças individuais de prazer; mediação estatística não estabelece mecanismos causais.",
+  "commercialApplication": "Testar variações de complexidade rítmica em trilhas de vídeos com avaliações humanas de prazer e clareza, sem uma regra universal de groove nem inferência de perfis psicológicos.",
+  "evidenceStrength": "Moderada-baixa para associações e mediações na amostra de 51 pessoas; baixa para causalidade, vídeos de produto, dopamina e resultados comerciais.",
+  "experimentHypothesis": "Diferentes padrões rítmicos gerarão respostas heterogêneas de prazer, possivelmente não explicadas por um único nível ideal de complexidade; comparar grupos e monitorar compreensão.",
+  "risks": "Evitar segmentação manipulativa baseada em suposta empatia ou capacidade cognitiva. Não inferir traços de pessoas a partir da preferência musical.",
+  "limits": "Estudo correlacional e amostra limitada; mediadores variam conforme métrica. Divulgação inicial em março/2025, edição impressa outubro/2026. Não houve experimento comercial.",
+  "publishedOn": "2026-11-02",
+  "validUntil": "2026-12-17",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-02-prazer-ritmico-empatia-aprendizagem-implicita-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Siman-Tov et al., empatia, aprendizagem implícita e prazer rítmico",
+  "sourceSha256": "dcbf323f3e8d3bc3567b100462ccb0ae21b6f61c52af33e0593726bbcfd99632"
+}

@@ -53,3 +53,13 @@ entre teto informado, recibo e autoridade operacional. Sem mudança de prompts o
   a referência pelo recibo oficial e a próxima ação no processo, sem chamadas pagas.
 - Contrato do link atualizado de forma compatível com a URL anterior. Os testes locais
   detectaram a validação de rota antiga e impediram sua publicação sem correção.
+
+## Compatibilidade de evidência compartilhada
+
+O CI recusou o hash antigo de LearningCycleService no manifesto Mira v69. A alteração
+está restrita à leitura e aprovação administrativa de tetos; não modifica a experiência,
+a implantação do produto ou os pareceres anteriores. A sucessora v70 preserva v69 e todos
+os hashes inalterados, vincula esta matriz e atualiza somente a fonte compartilhada
+revalidada. A suíte dos ciclos e a regressão específica de Mira sustentam compatibilidade
+técnica; isso não renova aprovação comercial nem inicia inferência. O verificador de
+atestação foi executado localmente antes da atualização do mesmo PR.

@@ -1,0 +1,18 @@
+{
+  "cardKey": "narracao-sincronizada-guia-visual-slides",
+  "collection": "video",
+  "title": "Guiar atenção visual em vídeos narrados com zoom e destaques sincronizados",
+  "finding": "Em estudo intraindivíduo com 24 participantes assistindo apresentações narradas em smartphone, zoom por região e destaques sincronizados elevaram a compreensão imediata média de 5,54 para 6,54 pontos em 9 (p=0,035), com menor carga de trabalho percebida (4,53 vs 5,74; p<0,001). A vantagem após 24 horas não atingiu significância (p=0,054).",
+  "mechanism": "A orientação visual temporal pode reduzir procura espacial e atenção dividida entre locução e elementos visuais. O estudo não isolou os efeitos individuais de zoom e destaque.",
+  "commercialApplication": "Apolo pode comparar versões de demonstrações em vídeo com e sem zoom e realce sincronizados ao áudio, mantendo oferta, duração e conteúdo iguais. Revisar se os destaques correspondem exatamente à narração.",
+  "evidenceStrength": "Experimento controlado intraindivíduo com 24 participantes em vídeos educativos e smartphone, com medidas de compreensão e esforço; evidência direta de UX neste contexto, ainda sem validação comercial.",
+  "publishedOn": "2026-11-02",
+  "validUntil": "2026-12-17",
+  "experimentHypothesis": "Em vídeos explicativos de produtos com gráficos ou telas densas, orientação visual sincronizada melhorará compreensão correta e reduzirá esforço percebido, sem aumentar desconforto; medir compreensão e satisfação antes de comparar CTA, checkout e pagamentos em teste próprio.",
+  "risks": "Destaque incorreto pode direcionar atenção para conteúdo errado; excesso de zoom, movimento ou animação pode causar desconforto e prejudicar acessibilidade. Verificar sincronismo e oferecer controles apropriados.",
+  "limits": "Amostra pequena e jovem, dois temas educativos, aproximadamente 5,5 minutos por vídeo, sem análise de anúncios ou vendas; resultado de 24 horas não significativo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-02-guideslide-orientacao-visual-narracao.md",
+  "sourceTitle": "Evidência revisada — GuideSlide, orientação visual e compreensão de narração",
+  "sourceSha256": "dbcb0c60e9b68e677d586e327cb9e9d61d117628d6ac53185909d2d7fc24aa3a"
+}

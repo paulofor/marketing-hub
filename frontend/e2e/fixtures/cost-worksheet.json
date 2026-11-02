@@ -21,7 +21,9 @@
       "source": null,
       "estimateSource": "Estimativas de tarefas; não são fatura conciliada.",
       "canApprove": true,
-      "approvalBlocker": null
+      "approvalBlocker": null,
+      "approvalScope": "EXECUTION_LIMIT",
+      "executionBlocker": null
     },
     {
       "code": "PRODUCTION",
@@ -38,8 +40,10 @@
       "variance": null,
       "source": null,
       "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
-      "canApprove": false,
-      "approvalBlocker": "A decisão estará disponível na etapa correspondente."
+      "canApprove": true,
+      "approvalBlocker": null,
+      "approvalScope": "PLANNING",
+      "executionBlocker": "A aplicação operacional será confirmada nesta planilha quando o processo permitir."
     },
     {
       "code": "MEDIA",
@@ -56,8 +60,10 @@
       "variance": null,
       "source": null,
       "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
-      "canApprove": false,
-      "approvalBlocker": "A decisão estará disponível na etapa correspondente."
+      "canApprove": true,
+      "approvalBlocker": null,
+      "approvalScope": "PLANNING",
+      "executionBlocker": "A aplicação operacional será confirmada nesta planilha quando o processo permitir."
     },
     {
       "code": "DELIVERY",
@@ -75,7 +81,9 @@
       "source": null,
       "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
       "canApprove": true,
-      "approvalBlocker": null
+      "approvalBlocker": null,
+      "approvalScope": "PLANNING",
+      "executionBlocker": null
     },
     {
       "code": "SALES_DEDUCTIONS",
@@ -93,7 +101,9 @@
       "source": null,
       "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
       "canApprove": true,
-      "approvalBlocker": null
+      "approvalBlocker": null,
+      "approvalScope": "PLANNING",
+      "executionBlocker": null
     },
     {
       "code": "FIXED_OPERATION",
@@ -111,7 +121,9 @@
       "source": null,
       "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
       "canApprove": true,
-      "approvalBlocker": null
+      "approvalBlocker": null,
+      "approvalScope": "PLANNING",
+      "executionBlocker": null
     }
   ],
   "totals": [

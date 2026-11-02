@@ -49,9 +49,10 @@ def prepare():
         audience='Público simulado', offer='Oferta sintética', acquisition='Canal de teste', budgetLimitBrl=100,
         windowStart=(now-dt.timedelta(days=1)).isoformat(), windowEnd=(now+dt.timedelta(days=1)).isoformat(),
         sampleTarget=10, minimumNetSales=5, operatorName='Homologação local'))
-    cycle = command(cycle, dict(learning='Sem amostra comercial', competingExplanation='Variação aleatória'))
-    cycle = command(cycle, dict(planReference='internal://fixture/plan', stopRule='Respeitar limite'))
-    cycle = command(cycle, dict(productVersion=cycle['productVersion'], changeEvidence='internal://fixture/version'))
+    # A matriz financeira começa após as etapas anteriores; não simula aceite dos especialistas.
+    # O helper SQL acessa exclusivamente o MySQL da fixture no projeto Compose autorizado.
+    sql(f"UPDATE learning_sales_cycle_v1 SET stage='VIDEO_BRIEF' WHERE id={int(cycle['id'])} AND product_id=91001")
+    cycle = next(item for item in http(f'{API}/products/91001?chainId=91002') if item['id'] == cycle['id'])
     assert cycle['stage'] == 'VIDEO_BRIEF'
     return cycle
 

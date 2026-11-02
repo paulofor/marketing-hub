@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -69,7 +70,7 @@ it("concentra os seis campos monetários em Aprovado e mantém custos e previsõ
   expect(screen.getByText(/Estimativas de tarefas/)).toBeVisible();
   expect(
     screen.getByLabelText("Aprovado — Produção de imagens, áudio e vídeo"),
-  ).toBeDisabled();
+  ).toBeEnabled();
   expect(axios.post).not.toHaveBeenCalled();
 });
 it.each([true, false])(
@@ -113,7 +114,7 @@ it("exige confirmação, impede duplicação e invalida o aceite se o valor muda
   fireEvent.change(screen.getByLabelText("Aprovado — Entrega e suporte"), {
     target: { value: "101" },
   });
-  expect(screen.getByRole("checkbox")).not.toBeChecked();
+  await waitFor(() => expect(screen.getByRole("checkbox")).not.toBeChecked());
   expect(
     screen.getByRole("button", { name: "Confirmar e registrar teto" }),
   ).toBeDisabled();
@@ -164,5 +165,58 @@ it("mantém ciclos encerrados em consulta sem decisões", async () => {
   await screen.findByText(/Ciclo encerrado:/);
   for (const field of screen.getAllByRole("textbox"))
     expect(field).toBeDisabled();
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+it.each(["Produção de imagens, áudio e vídeo", "Mídia"])(
+  "registra teto antecipado de %s na própria planilha sem apresentar liberação",
+  async (group) => {
+    vi.mocked(axios.post).mockImplementation(async (_, body) => {
+      const request = body as ApproveCostCeilingRequest;
+      const saved = structuredClone(fixture);
+      const row = saved.rows.find(
+        (item: { code: string }) => item.code === request.code,
+      );
+      row.approved = request.approved;
+      row.approvalStatus =
+        "Teto de planejamento salvo; aplicação operacional ainda não autorizada";
+      return { data: saved };
+    });
+    mount();
+    await fill(group);
+    expect(
+      screen.getByText(/Esta decisão registra somente o teto de planejamento/),
+    ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar e registrar teto" }),
+    );
+    await screen.findByText(
+      "Teto de planejamento salvo; aplicação operacional ainda não autorizada",
+    );
+    expect(screen.getByLabelText(`Aprovado — ${group}`)).toHaveValue("100.5");
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(axios.post).mock.calls[0][0]).toMatch(/cost-ceilings$/);
+  },
+);
+
+it("exige novo aceite quando a etapa muda o efeito de planejamento para limite operacional", async () => {
+  mount();
+  await fill("Produção de imagens, áudio e vídeo");
+  expect(screen.getByRole("checkbox")).toBeChecked();
+  const updated = structuredClone(fixture);
+  updated.revision += 1;
+  updated.rows[1].approvalScope = "EXECUTION_LIMIT";
+  updated.rows[1].executionBlocker = null;
+  act(() =>
+    client.setQueryData(
+      ["cost-worksheet", finance.productId, finance.chainId, finance.cycleId],
+      updated,
+    ),
+  );
+  await waitFor(() => expect(screen.getByRole("checkbox")).not.toBeChecked());
+  expect(
+    screen.getByRole("button", { name: "Confirmar e registrar teto" }),
+  ).toBeDisabled();
+  expect(screen.getByText(/O teto operacional cobre/)).toBeVisible();
   expect(axios.post).not.toHaveBeenCalled();
 });

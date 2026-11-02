@@ -1,11 +1,4 @@
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -51,7 +44,8 @@ beforeEach(() => {
     history: [],
     cycleUrl:
       "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
-    financeUrl: "/financial/videos?productId=4&chainId=14&cycleId=2",
+    financeUrl:
+      "/financial/execution?productId=4&chainId=14&cycleId=2#ceiling-PRODUCTION",
   };
   client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -117,175 +111,23 @@ function open(url = "/financial/videos?productId=4&chainId=14&cycleId=2") {
     </QueryClientProvider>,
   );
 }
-async function fill(amount = "20,50") {
-  const input = await screen.findByRole("textbox", {
-    name: /Teto total autorizado/,
-  });
-  fireEvent.change(input, { target: { value: amount } });
-  fireEvent.change(
-    screen.getByRole("textbox", { name: /Responsável pela autorização/ }),
-    { target: { value: "Operador local" } },
-  );
-  fireEvent.change(
-    screen.getByRole("textbox", { name: /Objetivo e justificativa/ }),
-    { target: { value: "Demonstrar o primeiro ajuste e testar vendas" } },
-  );
-  fireEvent.click(screen.getByRole("checkbox"));
-}
-
 describe("Financeiro dos vídeos", () => {
-  it("expõe o escopo e contexto, sem preencher teto ou confirmar pelo usuário", async () => {
-    open();
-    expect(
-      await screen.findByText("Aguardando teto autorizado"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("textbox", { name: /Teto total autorizado/ }),
-    ).toHaveValue("");
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
-    expect(screen.getByText(budget.instruction)).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Voltar ao ciclo #2" }),
-    ).toHaveAttribute("href", budget.cycleUrl);
-    expect(axios.get).toHaveBeenCalledWith(`${api}/4/2/video-budget`, {
-      params: { chainId: 14 },
-    });
-    expect(axios.post).not.toHaveBeenCalled();
-  });
-  it("registra o total das duas peças e mostra o recibo após a resposta oficial", async () => {
-    open();
-    await fill();
-    fireEvent.submit(screen.getByRole("form"));
-    expect(
-      await screen.findByText("Teto disponível para avaliação financeira."),
-    ).toBeInTheDocument();
-    expect(axios.post).toHaveBeenCalledTimes(1);
-    expect(axios.post).toHaveBeenCalledWith(
-      `${api}/4/2/video-budget`,
-      expect.objectContaining({
-        expectedRevision: 7,
-        chainDefinitionId: 14,
-        experimentId: 92,
-        productVersion: "musa-v12",
-        budgetLimitUsd: "20.50",
-        confirmed: true,
-      }),
-    );
-    expect(screen.getByText(/Teto registrado:.*20,50/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Continuar no ciclo com este teto" }),
-    ).toHaveAttribute("href", budget.cycleUrl);
-    expect(
-      screen.getByText(
-        /Referência: internal:\/\/learning-cycles\/2\/video-budget/,
-      ),
-    ).toBeInTheDocument();
-  });
-  it.each(["0", "-1", "10,123", "1000000", "NaN", "1e3", "20 reais"])(
-    "recusa teto inválido %s sem enviar requisição",
-    async (amount) => {
+  it.each([true, false])(
+    "centraliza decisões na planilha com disponibilidade operacional %s",
+    async (available) => {
+      budget.canAuthorize = available;
+      budget.financeUrl =
+        "/financial/execution?productId=4&chainId=14&cycleId=2#ceiling-PRODUCTION";
       open();
-      await fill(amount);
-      fireEvent.submit(screen.getByRole("form"));
-      expect(await screen.findByRole("alert")).toHaveTextContent(
-        "teto positivo",
-      );
+      const link = await screen.findByRole("link", {
+        name: "Decidir teto na planilha",
+      });
+      expect(link).toHaveAttribute("href", budget.financeUrl);
+      expect(screen.queryByRole("form")).not.toBeInTheDocument();
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
       expect(axios.post).not.toHaveBeenCalled();
     },
   );
-  it("mantém valor e chave para recuperar uma resposta perdida sem duplicar autorização", async () => {
-    vi.mocked(axios.post).mockRejectedValueOnce({
-      isAxiosError: true,
-      response: { data: { detail: "Resposta indisponível. Tente novamente." } },
-    });
-    open();
-    await fill();
-    fireEvent.submit(screen.getByRole("form"));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Resposta indisponível",
-    );
-    expect(
-      screen.getByRole("textbox", { name: /Teto total autorizado/ }),
-    ).toHaveValue("20,50");
-    const first = vi.mocked(axios.post).mock.calls[0][1];
-    fireEvent.submit(screen.getByRole("form"));
-    await screen.findByText("Teto disponível para avaliação financeira.");
-    expect(vi.mocked(axios.post).mock.calls[1][1]).toEqual(first);
-  });
-  it("bloqueia cliques concorrentes e campos enquanto o backend registra", async () => {
-    let finish!: () => void;
-    const pending = new Promise<void>((resolve) => {
-      finish = resolve;
-    });
-    vi.mocked(axios.post).mockImplementationOnce(async () => {
-      await pending;
-      return { data: budget };
-    });
-    open();
-    await fill();
-    const form = screen.getByRole("form");
-    fireEvent.submit(form);
-    fireEvent.submit(form);
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Registrar teto autorizado/ }),
-      ).toBeDisabled(),
-    );
-    expect(
-      screen.getByRole("status", { name: "Registrando autorização" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("textbox", { name: /Teto total autorizado/ }),
-    ).toBeDisabled();
-    expect(axios.post).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      finish();
-      await pending;
-    });
-  });
-  it("usa a disponibilidade do backend para deixar etapas posteriores somente em consulta", async () => {
-    budget.canAuthorize = false;
-    budget.blocker =
-      "O teto pode ser registrado na etapa Definir os dois vídeos.";
-    open();
-    expect(await screen.findByText(budget.blocker)).toBeInTheDocument();
-    expect(screen.queryByRole("form")).not.toBeInTheDocument();
-    expect(axios.post).not.toHaveBeenCalled();
-  });
-  it("substitui o total na revisão sem somar o teto anterior nem confirmar automaticamente", async () => {
-    budget.stageLabel = "Revisar e integrar os dois vídeos";
-    budget.status = "LIMIT_RECORDED";
-    budget.currentAuthorization = {
-      eventId: 10,
-      reference: "internal://learning-cycles/2/video-budget/original",
-      budgetLimitUsd: 10,
-      operatorName: "Operador local",
-      justification: "Autorização anterior do conjunto",
-      createdAt: "2026-09-12T22:00:00Z",
-      productVersion: budget.productVersion,
-      current: true,
-    };
-    budget.history = [budget.currentAuthorization];
-    open();
-    expect(await screen.findByRole("note")).toHaveTextContent(
-      "O novo teto substitui o anterior e inclui todo o consumo já realizado",
-    );
-    expect(
-      screen.getByRole("textbox", { name: /Teto total autorizado/ }),
-    ).toHaveValue("");
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
-    expect(axios.post).not.toHaveBeenCalled();
-    await fill("12,00");
-    fireEvent.submit(screen.getByRole("form"));
-    await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
-    expect(axios.post).toHaveBeenCalledWith(
-      `${api}/4/2/video-budget`,
-      expect.objectContaining({ budgetLimitUsd: "12.00", expectedRevision: 7 }),
-    );
-    expect(
-      await screen.findByText(/Teto registrado:.*12,00/),
-    ).toBeInTheDocument();
-  });
   it("exige seleção explícita no menu e não herda o último ciclo", async () => {
     open("/financial/videos");
     expect(
@@ -300,7 +142,7 @@ describe("Financeiro dos vídeos", () => {
   });
   it("limpa a seleção do ciclo quando o produto muda", async () => {
     open();
-    await screen.findByRole("form");
+    await screen.findByRole("link", { name: "Decidir teto na planilha" });
     fireEvent.change(screen.getByRole("combobox", { name: "Produto *" }), {
       target: { value: "5" },
     });

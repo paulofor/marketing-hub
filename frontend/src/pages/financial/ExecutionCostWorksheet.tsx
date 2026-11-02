@@ -51,7 +51,9 @@ export default function ExecutionCostWorksheet({
           <h2 className="h4">Planilha de custos e tetos aprovados</h2>
           <p>
             Informe somente o teto na coluna Aprovado. Custos e previsões vêm
-            das fontes do sistema.
+            das fontes do sistema. Todas as decisões de teto ficam nesta
+            planilha, inclusive as de produção e mídia antes da liberação de
+            execução.
           </p>
         </div>
         <button
@@ -123,6 +125,9 @@ function Worksheet({
   const submitting = useRef(false);
   const confirmation = useRef<HTMLFormElement>(null);
   const row = sheet.rows.find((item) => item.code === selected);
+  useEffect(() => {
+    setConfirmed(false);
+  }, [sheet.revision, row?.approvalScope]);
   const value = (code: string) =>
     drafts[code] ??
     sheet.rows.find((item) => item.code === code)?.approved?.toString() ??
@@ -299,6 +304,11 @@ function Worksheet({
                       Aprovar teto
                     </button>
                   )}
+                  {item.executionBlocker && !item.approvalBlocker && (
+                    <small className="d-block mt-2">
+                      {item.executionBlocker}
+                    </small>
+                  )}
                   {item.approvalBlocker && (
                     <small className="d-block mt-2">
                       {item.approvalBlocker}
@@ -350,13 +360,16 @@ function Worksheet({
             {money(Number(value(row.code).replace(",", ".")), row.currency)}
           </h3>
           <p>
-            {row.code === "AGENTS"
-              ? "Inclui o consumo acumulado dos agentes e preserva a reserva registrada. Sem reserva anterior, não acrescenta reserva. Não autoriza produzir peças nem pagar anúncios."
-              : row.code === "PRODUCTION"
-                ? "O teto operacional cobre o anúncio, a demonstração na entrada e suas revisões. Imagens avulsas, mídia e publicação comercial exigem escopo próprio."
-                : row.code === "MEDIA"
-                  ? "Teto total de anúncios do experimento na janela registrada. O limite diário é calculado pelo sistema e limitado a este total. A ativação depende da preparação e da autorização final."
-                  : "Teto de planejamento para este grupo, ciclo e versão. Não autoriza execução, compras ou cobrança."}
+            {row.approvalScope === "PLANNING" &&
+            ["PRODUCTION", "MEDIA"].includes(row.code)
+              ? "Esta decisão registra somente o teto de planejamento. Não libera produção, anúncios ou gasto. A aplicação operacional será confirmada nesta mesma planilha quando o processo permitir, usando o valor salvo."
+              : row.code === "AGENTS"
+                ? "Inclui o consumo acumulado dos agentes e preserva a reserva registrada. Sem reserva anterior, não acrescenta reserva. Não autoriza produzir peças nem pagar anúncios."
+                : row.code === "PRODUCTION"
+                  ? "O teto operacional cobre o anúncio, a demonstração na entrada e suas revisões. Imagens avulsas, mídia e publicação comercial exigem escopo próprio."
+                  : row.code === "MEDIA"
+                    ? "Teto total de anúncios do experimento na janela registrada. O limite diário é calculado pelo sistema e limitado a este total. A ativação depende da preparação e da autorização final."
+                    : "Teto de planejamento para este grupo, ciclo e versão. Não autoriza execução, compras ou cobrança."}
           </p>
           <fieldset disabled={pending || disabled}>
             <label className="form-label d-block">
@@ -426,7 +439,9 @@ function Worksheet({
       <p className="small mt-3">
         Custos sem fonte permanecem desconhecidos. Tetos e reservas não são
         despesas. As aprovações de cada grupo são independentes e respeitam a
-        etapa do processo.
+        etapa do processo. Tetos antecipados ficam salvos aqui; a aplicação
+        operacional exige confirmação nesta mesma planilha quando estiver
+        disponível.
       </p>
       <details className="mt-3">
         <summary>Previsão e fontes disponíveis</summary>

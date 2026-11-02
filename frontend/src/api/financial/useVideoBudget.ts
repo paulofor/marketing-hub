@@ -34,7 +34,12 @@ const budgetSchema = z.object({
   currentAuthorization: authorizationSchema.nullable(),
   history: z.array(authorizationSchema),
   cycleUrl: z.string().startsWith("/business-process-chains/learning-cycles?"),
-  financeUrl: z.string().startsWith("/financial/videos?"),
+  financeUrl: z
+    .string()
+    .regex(/^\/financial\/(?:videos|execution)\?/)
+    .transform((url) =>
+      url.replace("/financial/videos?", "/financial/execution?"),
+    ),
 });
 export type VideoBudget = z.infer<typeof budgetSchema>;
 export type AuthorizeVideoBudget = {

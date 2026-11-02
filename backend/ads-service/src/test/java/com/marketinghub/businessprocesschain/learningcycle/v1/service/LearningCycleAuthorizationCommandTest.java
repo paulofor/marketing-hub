@@ -334,7 +334,9 @@ class LearningCycleAuthorizationCommandTest {
     org.mockito.Mockito.verify(experiments, org.mockito.Mockito.times(1)).save(experiment);
   }
 
-  /** Persiste e repete o aceite com preparação ausente em ciclos distintos sem ativar mídia. */
+  /**
+   * Persiste e repete o aceite com projeção real da planilha em ciclos distintos sem ativar mídia.
+   */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({
     "4,2,92,20,100,false",
@@ -459,8 +461,14 @@ class LearningCycleAuthorizationCommandTest {
                       .class));
       ReflectionTestUtils.setField(service, "financialReview", financial);
       ReflectionTestUtils.setField(service, "videoBudget", videoBudget);
+      when(view.canAuthorize()).thenReturn(true);
+      when(view.observedAt()).thenReturn(Instant.now());
+      var json = new LearningCycleJson(new ObjectMapper());
       ReflectionTestUtils.setField(
-          service, "costWorksheet", mock(LearningCycleCostWorksheet.class));
+          service,
+          "costWorksheet",
+          new LearningCycleCostWorksheet(
+              events, json, new ObjectMapper(), new LearningCycleCostCeilings(events, json)));
       ReflectionTestUtils.setField(
           service,
           "costCeilings",

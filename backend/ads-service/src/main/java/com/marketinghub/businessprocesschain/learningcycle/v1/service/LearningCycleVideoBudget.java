@@ -167,14 +167,15 @@ public class LearningCycleVideoBudget {
         .orElse(null);
   }
 
-  /** Mantém o caminho de ida com produto, cadeia e ocorrência explícitos. */
+  /** Centraliza a decisão na planilha, preservando produto, cadeia e ocorrência explícitos. */
   public String financeUrl(LearningSalesCycle cycle) {
-    return "/financial/videos?productId="
+    return "/financial/execution?productId="
         + cycle.getProductId()
         + "&chainId="
         + cycle.getChainDefinitionId()
         + "&cycleId="
-        + cycle.getId();
+        + cycle.getId()
+        + "#ceiling-PRODUCTION";
   }
 
   /** Lê no SQL apenas recibos financeiros e identifica substituições e versões históricas. */

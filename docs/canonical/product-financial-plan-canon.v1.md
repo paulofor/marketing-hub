@@ -2,6 +2,25 @@
 
 ## Planilha de custos — decisão de 02/11/2026
 
+### Centralização das decisões — decisão de 02/11/2026
+
+**Centralizar decisões reduz esforço e facilita a gestão.** A demonstração financeira
+é o ponto único para consultar, ajustar e confirmar os tetos dos seis grupos do mesmo
+produto, cadeia, ciclo e versão. Cards, orientações de agentes e telas auxiliares devem
+levar à linha correspondente desta planilha, sem exigir procurar outro formulário.
+
+O usuário pode registrar previamente os tetos de produção e mídia enquanto o ciclo
+estiver aberto. Antes da etapa operacional, esse recibo aprova somente planejamento:
+não altera autorização de vídeo, verba do experimento, etapa ou campanha. A planilha
+mostra o teto salvo, a condição ainda pendente e explica que a aplicação operacional
+será confirmada nesta mesma tela quando as verificações do processo permitirem.
+Na etapa apropriada, o valor já registrado aparece preenchido; a confirmação explícita
+reutiliza os contratos existentes, sem aprovar conteúdo, ativar campanha ou iniciar gasto.
+Limite operacional já vigente não pode ser substituído indiretamente por um teto de
+planejamento enquanto sua alteração estiver bloqueada. O impedimento deve ser explicado
+na própria linha. Ciclos encerrados, revisões concorrentes e outras versões permanecem
+protegidos. Não herdar decisões entre ciclos nem liberar execução por mero avanço de etapa.
+
 ### Edição concentrada no teto aprovado — decisão complementar de 02/11/2026
 
 Na demonstração financeira da execução, **Aprovado / teto** é a única coluna monetária

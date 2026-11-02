@@ -97,12 +97,13 @@ class ProcessRunGuidanceTest {
     verifyNoInteractions(communication);
   }
 
-  /** Expõe uma ação financeira explícita sem alterar ciclo, progresso ou criar consumo. */
+  /** Direciona a decisão à planilha central sem alterar ciclo, progresso ou criar consumo. */
   @Test
   void missingBudgetDirectsToExactFinanceContext() {
     var action = guidance.resolve(run);
     assertThat(action.code()).isEqualTo("AUTHORIZE_VIDEO_BUDGET");
-    assertThat(action.actionUrl()).isEqualTo("/financial/videos?productId=4&chainId=14&cycleId=2");
+    assertThat(action.actionUrl())
+        .isEqualTo("/financial/execution?productId=4&chainId=14&cycleId=2#ceiling-PRODUCTION");
     assertThat(action.reason()).contains("USD", "anúncio", "demonstração", "Aguardar");
     assertThat(action.afterAction()).contains("avaliação financeira", "não autoriza mídia");
     assertThat(action.evidenceReference()).isNull();

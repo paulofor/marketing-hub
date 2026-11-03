@@ -1,0 +1,18 @@
+{
+  "cardKey": "live-commerce-assinaturas-ia-creditos",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Venda de assinaturas de IA em live-commerce: observar compras, não atribuir causa",
+  "finding": "A Reuters relatou em 03/11/2026 que, segundo a Alibaba, uma live no Taobao com Austin Li vendeu 100 mil assinaturas mensais do QwenWork em 30 minutos no dia 02/11. A empresa também declarou alta de 450% nas vendas de planos de tokens de 01 a 20/10 frente ao mês anterior; não publicou preços, receita nem compradores únicos.",
+  "mechanism": "Hipótese não causal: demonstração ao vivo, confiança prévia no apresentador e enquadramento de créditos de IA como produto com uso delimitado podem tornar uma assinatura digital abstrata mais compreensível e acionável no momento da compra.",
+  "commercialApplication": "Testar venda de uma assinatura curta ou pacote de créditos para uma tarefa específica de IA com demonstração ao vivo versus apresentação convencional da mesma oferta; acompanhar pagamentos conciliados, consumo, margem, reembolsos e renovações.",
+  "evidenceStrength": "Evidência comercial descritiva de vendas agregadas relatadas pela Alibaba e publicadas pela Reuters. Confiança razoável no relato da campanha, baixa para efeitos causais e transferibilidade a outros públicos.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-18",
+  "experimentHypothesis": "Na mesma oferta, preço e público randomizado, uma demonstração ao vivo com uso concreto do pacote produzirá mais pagamentos confirmados por visitante elegível que uma landing convencional, sem piorar margem, reembolso ou retenção em 30 dias.",
+  "risks": "Urgência promocional artificial, alegações enganosas de economia, confusão entre tokens e tarefas, direitos de imagem, gasto excessivo com inferência, obsolescência de pacotes pré-pagos e reembolsos.",
+  "limits": "100 mil assinaturas não significam 100 mil clientes recorrentes nem lucro. Não se conhece preço, desconto, base de audiência, tráfego orgânico ou conversão. O salto de 450% não tem valores absolutos e não prova a eficácia da live. Nenhum impacto no Marketing Hub foi medido.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-03-singles-day-live-assinaturas-ia.md",
+  "sourceTitle": "Fonte revisada — assinaturas de IA comercializadas em transmissão ao vivo na China (Reuters, 03/11/2026)",
+  "sourceSha256": "8cc26beebed9eb2a13207635631d0787f66ee7ef9306f3138eb66040a532d265"
+}

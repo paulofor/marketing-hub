@@ -1,0 +1,18 @@
+{
+  "cardKey": "solicitacao-avaliacoes-escala-notas-produto",
+  "collection": "neuromarketing",
+  "title": "Solicitar avaliações pode inflar notas sem ampliar a detecção de problemas",
+  "finding": "Em análise quase-experimental de 21,6 milhões de avaliações de 315 jogos Steam, após mudança de interface em 2019, o volume acima de um limiar de uso inferido cresceu 4,25 vezes relativamente ao abaixo; o salto de positividade aumentou 6,6 p.p. A movimentação de notas ficou menos responsiva, mas a perda de sensibilidade agregada não foi estatisticamente distinguível de zero.",
+  "mechanism": "Convites contextuais podem modificar quais usuários avaliam. A combinação de maior positividade, escala próxima do teto e limiares fixos torna quedas menos visíveis. O estudo usa inferência de exposição e não isola todos os fatores da atualização.",
+  "commercialApplication": "No Marketing Hub, distinguir avaliações espontâneas das solicitadas, registrar momento do convite e exibir avaliações recentes, distribuição e tendência ao lado da média. Não promover uma média elevada como prova de qualidade ou demanda; conferir reclamações e resultados reais.",
+  "evidenceStrength": "Preprint quase-experimental com 21,6 milhões de avaliações e 315 jogos, com testes de robustez; contexto único de plataforma, sem aleatorização do convite nem medição direta do convite por usuário. Evidência de comportamento de avaliações, não de vendas.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-18",
+  "experimentHypothesis": "Em um produto digital com usuários reais e consentidos, um painel que separe feedback provocado de espontâneo e calibre alertas por histórico reconhecerá deteriorações de satisfação mais cedo que um painel de média e rótulo fixo. Medir precisão dos alertas, falsos positivos e necessidade de intervenção, sem inferir receita a partir de estrelas.",
+  "risks": "Solicitar avaliações seletivamente pode distorcer reputação e pressionar usuários; interpretar aumento da nota como melhora real, ocultar críticas ou criar avaliações falsas seria enganoso. Proteger privacidade e evitar incentivos que contaminem respostas.",
+  "limits": "Dados temporais principais limitados a 315 jogos populares até janeiro de 2021. Limiar e avaliações geradas pelo convite inferidos; atualização do cliente incluiu outras alterações. Não foram estudados produtos brasileiros, pagamentos nem conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-03-solicitacao-avaliacoes-escala-notas.md",
+  "sourceTitle": "Chen, Zheng e Zhu — Ask More, Hear Less: solicitação de reviews e sensibilidade das notas (2026)",
+  "sourceSha256": "17b4c6bf95d4bc2f2ab77068dddf52704f41308f4e1961256b15369adf6ad0b3"
+}

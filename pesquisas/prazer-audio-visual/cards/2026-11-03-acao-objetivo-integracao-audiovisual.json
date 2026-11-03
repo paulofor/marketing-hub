@@ -1,0 +1,18 @@
+{
+  "cardKey": "acao-objetivo-integracao-audiovisual",
+  "collection": "prazer-audio-visual",
+  "title": "Relevância da ação na integração entre som e imagem",
+  "finding": "Experimentos de apontar para alvos mostraram modulação espacial da percepção audiovisual durante ações orientadas a objetivo; a ilusão de fusão variou, enquanto a de fissão permaneceu estável.",
+  "mechanism": "A posição relevante para a ação voluntária pode alterar como pistas auditivas e visuais são combinadas, com efeitos específicos para mecanismos perceptivos distintos.",
+  "commercialApplication": "Em interfaces interativas, testar feedback audiovisual discreto e espacialmente associado ao alvo da ação versus feedback fora do alvo e controle silencioso.",
+  "evidenceStrength": "Moderada para efeitos específicos de percepção em dois experimentos comportamentais; baixa para aplicações em UX real, prazer ou conversão.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-18",
+  "experimentHypothesis": "Feedback audiovisual curto no local da ação poderá melhorar detecção da conclusão da tarefa e reduzir erros sem elevar desconforto, comparado a feedback equivalente fora do alvo.",
+  "risks": "Não utilizar flashes ou estímulos potencialmente desconfortáveis; evitar generalizar ilusões visuais para experiência comercial e respeitar acessibilidade.",
+  "limits": "Experimentos com apontamento e ilusões de flashes, não interfaces de produto; não mediu prazer, dopamina, lembrança comercial ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-03-acao-objetivo-integracao-audiovisual-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Loria et al. (2026), ação orientada ao objetivo e percepção audiovisual",
+  "sourceSha256": "e5a48072bd4601037696b040039c3ebccc6877508172b8e523d823637e7f813f"
+}

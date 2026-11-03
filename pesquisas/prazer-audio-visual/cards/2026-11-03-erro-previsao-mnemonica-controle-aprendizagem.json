@@ -1,0 +1,18 @@
+{
+  "cardKey": "erro-previsao-mnemonica-controle-aprendizagem",
+  "collection": "prazer-audio-visual",
+  "title": "Violações informativas de expectativa e aprendizagem",
+  "finding": "Em dois experimentos com 101 adultos jovens, violações de expectativas associativas fortes aumentaram sinais de controle cognitivo, atenção e ativação; teta frontal maior se relacionou à melhor memorização de estímulos inesperados.",
+  "mechanism": "Uma discrepância em relação a memória bem aprendida pode exigir atualização do modelo interno e mobilizar controle cognitivo; os marcadores fisiológicos não demonstram causalidade completa nem medem prazer.",
+  "commercialApplication": "Testar uma surpresa informativa e verídica em demonstrações de produto, após construir expectativa clara, com resolução imediata e métricas de memória e compreensão.",
+  "evidenceStrength": "Moderada a alta no paradigma laboratorial de memória (dois experimentos e revisão eLife com evidência classificada como sólida); baixa para prazer audiovisual e resultado comercial.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-18",
+  "experimentHypothesis": "Uma discrepância informativa e não enganosa após expectativa estabelecida poderá melhorar recordação correta de um benefício em 48 horas sem reduzir compreensão, confiança ou conforto, comparada a versão previsível de mesmo conteúdo.",
+  "risks": "Surpresas artificiais podem distrair, gerar desconfiança, manipulação emocional ou promessas enganosas; não utilizar choques sensoriais nem confundir arousal com prazer.",
+  "limits": "Tarefa de pares verbo-imagem com adultos jovens; não avaliou vídeos, dopamina, CTA, checkout ou venda. Correlação teta-memória não é mediação causal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-03-erro-previsao-mnemonica-controle-aprendizagem-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Xue et al. (2026), erros de previsão mnemônica, atenção e aprendizagem",
+  "sourceSha256": "7ccbf4ad85edd9cf350cff898f50d946c2a5fa5eb4137bfee6aa146611ee2306"
+}

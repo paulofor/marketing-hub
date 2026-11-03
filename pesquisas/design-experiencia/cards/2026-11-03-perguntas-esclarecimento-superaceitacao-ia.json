@@ -1,0 +1,18 @@
+{
+  "cardKey": "perguntas-esclarecimento-reducao-revisao-ia",
+  "collection": "neuromarketing",
+  "title": "Perguntas de esclarecimento podem elevar aceitação de respostas incorretas",
+  "finding": "Em experimento controlado com 180 participantes e seis cenários cotidianos, perguntas para esclarecer preferências aumentaram satisfação e compreensão percebida, mas reduziram revisão de respostas (médias brutas 55,0 versus 80,7 segundos; razão ajustada 0,77; p=0,003) e aumentaram aceitação sem correção inclusive diante de violações de requisitos. A confiança geral declarada não aumentou de maneira equivalente.",
+  "mechanism": "A experiência de ter preferências ouvidas pode produzir sensação de que a recomendação já está alinhada, levando à menor inspeção de restrições não atendidas. O mecanismo específico não foi isolado; menor tempo pode refletir diferentes processos cognitivos.",
+  "commercialApplication": "Nos agentes de atendimento e comparação de produtos do Marketing Hub, fazer somente esclarecimentos necessários; verificar de forma determinística as restrições já declaradas, evidenciar condições não verificadas e permitir revisão antes de qualquer decisão relevante. Não confundir concordância com qualidade da oferta.",
+  "evidenceStrength": "Preprint com experimento controlado N=180 em cenários simulados que incluem compras, com erros de restrição pré-definidos. Demonstra efeitos na interação, não conversão comercial ou generalização a todas as alucinações.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-18",
+  "experimentHypothesis": "Comparar agente sem perguntas, agente com perguntas e agente com perguntas mais verificação independente de restrições. A terceira condição reduzirá a aceitação de recomendações com preço, prazo ou requisito incorreto, sem perda excessiva de satisfação ou conclusão de tarefas. Medir falsos aceites, tempo e custo.",
+  "risks": "Mais perguntas podem criar aparência enganosa de compreensão, adicionar atrito ou induzir divulgação de dados desnecessários. Evitar falsas confirmações e sugestões manipulativas; manter o controle do consumidor sobre a decisão.",
+  "limits": "Tarefas e respostas simuladas, duas perguntas fixas, sem transações reais ou consequências pessoais significativas. Erros testados eram violações de restrições, não todas as alucinações. Não prova mudança na confiança geral nem em vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-03-perguntas-esclarecimento-superaceitacao-ia.md",
+  "sourceTitle": "Zheng et al. — Is That Clear? perguntas de esclarecimento, aceitação e revisão crítica (2026)",
+  "sourceSha256": "b10a7a538268096ed50fdb9629c3c1af8b032adec8a5da0090c40533eb599478"
+}

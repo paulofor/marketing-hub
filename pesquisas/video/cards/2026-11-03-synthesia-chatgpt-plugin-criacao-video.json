@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-synthesia-chatgpt-plugin-workflow",
+  "collection": "video",
+  "title": "Criar videos explicativos por conversa com Synthesia no ChatGPT",
+  "finding": "Em 03/11/2026, Synthesia anunciou plugin no ChatGPT para transformar briefings e conteudos conectados em videos por Syren ou Studio e permitir revisoes conversacionais. O plugin usa MCP em beta publico; nao e novo modelo fundacional.",
+  "mechanism": "Conector usa texto, documentos e aplicativos autorizados como entrada, cria video com agente Syren (animacao, avatares, voz, trilha e b-roll) ou rascunho Studio editavel no editor externo.",
+  "commercialApplication": "Marketing Hub: comparar explicativos e demonstracoes de produto em portugues brasileiro com o pipeline atual, medindo custos completos, tempo de revisao e qualidade por video aprovado.",
+  "evidenceStrength": "Alta para lancamento e capacidades declaradas na documentacao oficial; limitada para acesso em conta individual, economia, consistencia e qualidade sem testes proprios.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-03",
+  "experimentHypothesis": "Transformar um briefing aprovado diretamente em um video editavel ou revisavel por chat reduz transferencias manuais entre roteiro, criacao, narracao e edicao.",
+  "risks": "MCP beta publico e precos variaveis; uso de creditos em renders e Syren; verificar consentimento, imagem, voz, marca, musica, direitos de imagem e termos comerciais.",
+  "limits": "Syren nao abre no editor Studio; criacao de Studio draft e gratuita, render nao; Basic usa marca d'agua e oferta Syren limitada; plugin nao abre pesos nem constitui nova API fundacional.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-03-synthesia-chatgpt-plugin-mcp-beta.md",
+  "sourceTitle": "Fonte revisada - Synthesia ChatGPT Plugin e MCP beta",
+  "sourceSha256": "4619e91ca87a83fa64763e05a250bfae3131f0e632c8563fb466b56ab3950f14"
+}

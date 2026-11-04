@@ -16,7 +16,10 @@ export default function ProductProcessFinancialPending({
   );
   const cycleId = financialSearch.get("cycleId");
   const chainId = financialSearch.get("chainId");
-  if (cycleId) returnSearch.set("learningCycleId", cycleId);
+  const explicitWithoutCycle =
+    returnSearch.get("sourceReference") && !returnSearch.get("learningCycleId");
+  if (cycleId && !explicitWithoutCycle)
+    returnSearch.set("learningCycleId", cycleId);
   if (chainId) returnSearch.set("chainId", chainId);
   return (
     <section

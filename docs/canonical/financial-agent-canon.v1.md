@@ -155,7 +155,9 @@ de retomada na consulta e é revalidado no comando, com os demais controles vige
 Ocultar **Retomar processo** enquanto houver impedimento, carregamento ou erro de
 revalidação; cache anterior não comprova elegibilidade. Digitação, visita e aprovação
 de outro contexto não liberam a ação. Ao voltar da demonstração, atualizar a situação
-sem perder contexto. Salvar aprovação não retoma automaticamente o processo.
+sem perder contexto. Execução legada identificada por experimento sem ciclo explícito
+deve conservar essa referência no retorno, sem migrar sua identidade. Salvar aprovação
+não retoma automaticamente o processo.
 
 ## Autoridade
 

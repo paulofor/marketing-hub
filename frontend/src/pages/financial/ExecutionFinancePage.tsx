@@ -40,7 +40,10 @@ export default function ExecutionFinancePage() {
     new RegExp(
       `^/products/${productId}/value-chain-history/processes/[1-9][0-9]*/activities$`,
     ).test(returnUrl.pathname) &&
-    returnUrl.searchParams.get("learningCycleId") === String(cycleId) &&
+    (returnUrl.searchParams.get("learningCycleId") === String(cycleId) ||
+      (!returnUrl.searchParams.get("learningCycleId") &&
+        returnUrl.searchParams.get("sourceReference") ===
+          `experiment:${data?.experimentId}`)) &&
     returnUrl.searchParams.get("chainId") === String(chainId) &&
     data?.productVersion === location.state?.productVersion
       ? candidate

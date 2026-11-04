@@ -10466,6 +10466,8 @@ O seletor de atividade reutiliza as regras de recuperação e precedência do de
 A tela oculta a retomada em consulta/erro ou impedimento, atualiza ao retornar e
 preserva pareceres, custos e histórico sem aprovação automática. Recibos também
 conferem o produto na identidade congelada. Nenhum prompt fabrica um parecer ausente.
+O retorno financeiro conserva referências legadas sem ciclo explícito; a conferência
+do experimento impede criar outra identidade de execução ou aceitar destino cruzado.
 
 Regressões persistem recibos locais, recusam contexto cruzado/versão anterior,
 gravação concorrente, limite insuficiente, STOP e contratos ausentes; confirmam

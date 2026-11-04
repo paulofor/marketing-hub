@@ -1,6 +1,6 @@
 {
   "scope": "TEST_ONLY",
-  "observedAt": "2026-11-04T17:52:40.919107+00:00",
+  "observedAt": "2026-11-04T18:07:24.961810+00:00",
   "productionMutations": 0,
   "deploymentPerformed": false,
   "initialProductionObservation": {
@@ -203,7 +203,7 @@
     "executionNote": "Funcional e arquitetura executados separadamente após limite de memória na execução combinada; ambas as execuções separadas concluíram com BUILD SUCCESS."
   },
   "frontend": {
-    "tests": 105,
+    "tests": 110,
     "typecheck": "PASS",
     "build": "PASS",
     "suites": [
@@ -215,8 +215,10 @@
       "ExecutionCostWorksheet",
       "FinancialPlansPage",
       "VideoFinancePage",
-      "VideoProviderFinancePage"
-    ]
+      "VideoProviderFinancePage",
+      "ProductProcessFinancialPending"
+    ],
+    "contextRegression": "PASS: preserva referência legada sem ciclo explícito; não aceita retorno por outro experimento."
   },
   "browser": {
     "profiles": [
@@ -241,23 +243,24 @@
     "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunContext.java": "34b96ea42f36ff98ebff8d4680c99f6e807b1681d5eab07f20a97601f8365a1b",
     "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunCorrectionBudget.java": "f388f8eba9ebc5534d9bea9ccd3aeb03794227c75ec819b65f0a8c3b61487aa4",
     "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunService.java": "f187a39a67564a94af455db293f00c02e9501d66542d4ba762b3fbf319549c78",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/status/ProcessRunFinancialPending.java": "f987946c89359eea959f6e8e8d6fbec82663fab23481e5dffca2198ad257b752",
     "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/status/ProcessRunResponse.java": "d3877127d8bd5b82cea5d06880415097a660f9b27a5c07e5e88392c23f1d3fcc",
     "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePreparationBudget.java": "a836b89b8943f96b609ce1bc3ee11718cc6a496b70ce0b1d48723f3dd88c2fb0",
     "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunCreativeRecoveryPersistenceTest.java": "cb411ad1845c34cda92d47c33f22d98b624702ea9e04a97b09fcbc348843084c",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunFinancialEligibilityTest.java": "1b8446d31a20676139375439eca15191f79fc7cd2335878c889acf0fe5025fff",
     "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunRecoveredCostTest.java": "034fcd8d63317e5fb616856bfdb3a31ce479903671807323b068966d0ec807e3",
     "frontend/src/api/businessProcess/useProcessAutomation.ts": "39479b0b0f475a4cde6146a63d828e9875ef368358144ab6e86adb80f9d2682e",
     "frontend/src/pages/businessProcess/BusinessProcessExecutionCard.tsx": "a9517fa6aed661bb8cf95df59cb5f920dc19ecac040f2138da933f4bae043f28",
     "frontend/src/pages/financial/ExecutionCostWorksheet.test.tsx": "a2f0b19067ada11b3afd32f11fde3eb477102f8a342f54ef36c3d95fb68a26b5",
     "frontend/src/pages/financial/ExecutionCostWorksheet.tsx": "bf9d3bcc51d832fd6830465167f448585d82290eefd8effd085135eee994c864",
-    "frontend/src/pages/financial/ExecutionFinancePage.test.tsx": "c1723206423c10f4ed89496fb7619304d6ee92c541347a25435d03351debcdd9",
-    "frontend/src/pages/financial/ExecutionFinancePage.tsx": "acb1375bfb49a4c7c51717dd10327f983d282afff958f2b38cb647eaf8a18a9e",
+    "frontend/src/pages/financial/ExecutionFinancePage.test.tsx": "9e6b8a37e6002b6c1b03f1e0b539d3eca46a079a416a928cb7154296fc37c22f",
+    "frontend/src/pages/financial/ExecutionFinancePage.tsx": "c9d136c5a22e83a3999c8a3dc96977677c97e12e31360de3fe2bbbad9db4ae0e",
     "frontend/src/pages/financial/ExecutionFinancialAdvice.tsx": "07d4003ecc8e77d6d1f27d0fc6b7427d6d8df8ccf4c99576b5083b42a6077bb8",
     "frontend/src/pages/product/ProductProcessActivityExecutionsPage.tsx": "79dd9064e14df76a4c1476dc268411218825f50feed0d33a5f7154de6f7f715b",
     "frontend/src/pages/product/ProductProcessAutomationPanel.test.tsx": "5f581f4017c337b40e7012f189c57fd90914207ff1da6866731e2808f182f1cd",
     "frontend/src/pages/product/ProductProcessAutomationPanel.tsx": "544213f56082f06c9c0c8e48891dbe9d1c0688d241adaa5c654902c5fcd0cac2",
-    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/status/ProcessRunFinancialPending.java": "f987946c89359eea959f6e8e8d6fbec82663fab23481e5dffca2198ad257b752",
-    "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunFinancialEligibilityTest.java": "1b8446d31a20676139375439eca15191f79fc7cd2335878c889acf0fe5025fff",
-    "frontend/src/pages/product/ProductProcessFinancialPending.tsx": "f24fa66176614e4024fbe1926de809d2370cc8412688e9e1a618cf85c1e40992",
+    "frontend/src/pages/product/ProductProcessFinancialPending.test.tsx": "03a02a58bf97abc5a1fdc960db647bde8b4347e63556d83686c957e3de556d5f",
+    "frontend/src/pages/product/ProductProcessFinancialPending.tsx": "64107c2bdfd9d6374ea3fe69557e9fabb10b55e4c1beaa78382f93f632c1475b",
     "infra/testing/process-automation/plutus-financial-browser.mjs": "f2b63fecff934abb7940cb70ca0b50a20bba651392b22dbd46e92ee98b883a85"
   },
   "commercialImpact": "Não medido; testes comprovam comportamento, não vendas."

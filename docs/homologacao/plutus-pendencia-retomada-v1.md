@@ -21,6 +21,7 @@ de retomada. O resumo financeiro genérico fica distante da atividade.
 | Recibo vigente sem cobertura | Informar limite insuficiente, preservar cálculo e histórico; sem retomada |
 | Custos totalmente desconhecidos | Mostrar lacuna e responsável, sem saldo inventado |
 | Aprovação persistida e retorno à atividade | Reconsultar servidor; exibir retomada somente elegível; não retomar automaticamente |
+| Execução legada com experimento explícito e sem ciclo na URL | Preservar essa referência no retorno, sem migrar a identidade da execução; recusar retorno de outro experimento |
 | Erro de gravação, consulta ou revalidação | Mensagem de negócio; ocultar elegibilidade incerta, mesmo com cache anterior |
 | Alteração concorrente entre consulta e comando | Revalidar no POST e recusar sem tarefa, custo ou transição adicional |
 | STOP, ciclo fechado, versão retirada, atividade indisponível | Continuar bloqueado apesar de aprovação financeira |
@@ -43,7 +44,7 @@ regra financeira. Adotada a terceira alternativa, preservando cálculos e recibo
 ## Resultado observado
 
 - 385 testes funcionais do backend e 92 verificações globais de arquitetura passaram.
-- 105 testes de frontend passaram; `typecheck` e build concluídos.
+- 110 testes de frontend passaram; `typecheck` e build concluídos.
 - Chromium desktop 1440×1000, iPhone 15 Pro e Pixel 7 passaram no percurso:
   atividade → demonstração → rascunho → falha de gravação → aprovação TEST →
   retorno → retomada disponível, sem chamada automática de retomada.
@@ -58,6 +59,12 @@ antigas que permitiam retomar sem recibo agora exigem `canResume=false` e HTTP 4
 sem nova tarefa. O seletor de próxima atividade também é compartilhado com o despacho.
 A métrica futura sugerida é reduzir retomadas recusadas e tempo parado por pendência
 financeira, sem alegar impacto comercial ainda não medido.
+
+A revisão posterior identificou que acrescentar ciclo à URL legada alteraria a chave
+da execução, embora o experimento fosse o mesmo. O retorno agora preserva a referência
+explícita sem ciclo e confere experimento, produto, cadeia e versão antes de oferecer o
+link. Cinco regressões novas cobrem essa navegação e o isolamento; a aparência preserva
+as capturas abaixo. Não houve migração ou retomada real.
 
 ### Evidências revisáveis
 

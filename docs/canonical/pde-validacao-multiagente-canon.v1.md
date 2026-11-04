@@ -300,6 +300,13 @@ equivalente ativa; não é retry infinito. O backend reconhece o timeout canôni
 homologação sem alterar seus recibos nem retirar a exigência de nova versão para uma
 rejeição funcional real. Uma correção indevidamente encaminhada não deve perpetuar esse desvio.
 
+Antes de commitar alterações em fontes compartilhadas presentes nas provas imutáveis, executar
+o empacotador local `node scripts/build-commercial-review-evidence.mjs . <diretório-local-ignorado>`.
+Uma divergência de hash exige regressão pertinente e uma nova atestação de compatibilidade,
+com referência à anterior e relatório real. Não reescrever manifestos antigos nem apenas trocar
+hashes para liberar o CI. Atestação de compatibilidade mantém `automaticDeployOnMerge=false`
+e não renova pareceres, versão do produto, orçamento ou autorização comercial.
+
 Na passagem de um ciclo de vendas, a referência canônica pode ser `experiment:<id>`.
 O consumidor deve validar produto, experimento, ciclo e versão fornecidos pelo backend;
 a forma da referência nunca pode desviar uma atividade sintética para o prompt de leitura

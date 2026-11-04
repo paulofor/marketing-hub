@@ -16,6 +16,7 @@ tarefas, custos, entradas e exigências de revisão independente.
 | Compatibilidade adicional de Vega: estilo, versões privadas e segurança de execução | 32 testes aprovados |
 | Empacotador de provas imutáveis | 17 testes aprovados |
 | Seleção de publicação, incluindo atestações sem deploy automático | 22 testes aprovados |
+| Catálogo operacional e comparação de entradas após compatibilidade cumulativa | 27 aprovados; 1 teste condicional não executado |
 
 Capella e outro produto/experimento foram exercitados com ids distintos. Rejeição funcional
 continua exigindo correção. Downloads recusados não provocam nova transferência; crash aborta
@@ -31,13 +32,26 @@ executor antigo; ela não pode ser convertida em reprovação funcional por infe
 
 O manifesto v70 fixa os hashes do runner, do provedor de retrabalho e dos respectivos testes.
 As quatro fontes mudaram nesta correção. A v71 conserva o manifesto v70 integralmente e registra
-o delta depois das regressões acima. A experiência, as fontes visuais, os contratos de entrada
+esses deltas e a adaptação da conferência do recibo operacional depois das regressões acima.
+A experiência, as fontes visuais, os contratos de entrada
 e saída e o harness específico de Mira não mudaram. Os testes preservam seus gates e vínculos.
 
 Vega fixa o runner compartilhado e seu teste na atestação de estilo v9. A v10 registra
 somente esses dois deltas, mantendo a v9 intacta. As 32 regressões adicionais preservam
 entradas, versões e segurança da entrega de Vega; o worker completo preserva seus contratos.
 Nenhuma fonte visual ou implementação específica desses produtos foi alterada.
+
+O catálogo operacional de Vega também fixa o runner. A prova v8 mantém os critérios,
+datas e recibos funcionais originais da v6 e conserva a compatibilidade intermediária v7
+no histórico. A nova atestação cumulativa cobre apenas o runner compartilhado e seu teste, com as
+regressões acima; não apresenta os controles MySQL históricos como testes recém-executados.
+O CI mostrou que conferir apenas os manifestos comerciais deixava essa fronteira descoberta;
+o checklist local inclui também `PdeOperationalControlEvidenceTest`.
+
+A regressão de crash mede a reação ao evento efetivamente emitido pelo navegador, não a
+demora para o CDP provocar a falha. Chromium 139.0.7258.5, igual ao do CI, emitiu o evento
+em 104 ms e o executor reagiu no mesmo milissegundo na reprodução local. O teste continua
+exigindo crash real, aborto da operação e remoção dos listeners, preservando o prazo global.
 
 A atestação é `EVIDENCE_COMPATIBILITY_ONLY`, com `automaticDeployOnMerge=false`. Não altera
 experimento de Mira ou Vega, não renova parecer de Psique/Têmis e não autoriza divulgação ou gasto.

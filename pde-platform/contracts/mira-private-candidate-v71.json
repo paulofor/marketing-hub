@@ -658,7 +658,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
-      "sha256": "c283d0890d6c780928174d74f2b7c3d3fa3e61e51f1092e651f783d9283f3a65",
+      "sha256": "e2af3f76b3d4722586276ebbd735fdba74f75bd0377fbf7f476293413fc88c0a",
       "reviewSummary": "Responsabilidade: impedir uso de prova adulterada, incompleta ou pertencente a outra candidata."
     },
     {
@@ -932,7 +932,7 @@
     },
     {
       "path": "docs/homologacao/capella-recuperacao-homologacao-v1.md",
-      "sha256": "6d5143d63d20b7bcb8bfc94b625ff74cca5665a7be5fff96fc811b297a9992d7",
+      "sha256": "5a8541978064397dbf107c922128102b81f49f052c0400a0606b88f5620c0541",
       "promptMode": "FULL"
     }
   ],
@@ -961,6 +961,11 @@
         "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProviderTest.java",
         "previousSha256": "31d3aa3e54be8de4564b92674ee296d27b84b99b651184225c550e7e0f0f0d96",
         "sha256": "7df2091d4071b02f02189c6716dfdf66237be300c99a3183f241b26f19c44732"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
+        "previousSha256": "c283d0890d6c780928174d74f2b7c3d3fa3e61e51f1092e651f783d9283f3a65",
+        "sha256": "e2af3f76b3d4722586276ebbd735fdba74f75bd0377fbf7f476293413fc88c0a"
       }
     ],
     "removedMutableEvidence": [],

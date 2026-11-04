@@ -302,6 +302,8 @@ rejeição funcional real. Uma correção indevidamente encaminhada não deve pe
 
 Antes de commitar alterações em fontes compartilhadas presentes nas provas imutáveis, executar
 o empacotador local `node scripts/build-commercial-review-evidence.mjs . <diretório-local-ignorado>`.
+Executar também `PdeOperationalControlEvidenceTest`, que confere as fontes do catálogo de
+controles operacionais; o empacotador comercial não substitui essa segunda fronteira.
 Uma divergência de hash exige regressão pertinente e uma nova atestação de compatibilidade,
 com referência à anterior e relatório real. Não reescrever manifestos antigos nem apenas trocar
 hashes para liberar o CI. Atestação de compatibilidade mantém `automaticDeployOnMerge=false`

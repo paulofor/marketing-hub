@@ -10199,6 +10199,11 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   correção aprovados; 242 testes Java do worker aprovados (13 condicionais não executados);
   69 testes de navegador aprovados, incluindo os cenários com HTTP 401/504 e crash real.
   A reprodução no runtime foi diagnóstica, sem enviar callback de aprovação de tarefa.
+- Prevenção complementar do CI: conferir também o catálogo operacional com
+  `PdeOperationalControlEvidenceTest`; a prova cumulativa v8 de Vega preserva a v6 funcional
+  e a v7 intermediária. O teste de crash mede a reação desde o evento real, evitando contar
+  a demora variável do CDP para provocar o encerramento; Chromium 139 reagiu em 0 ms depois
+  de emitir o evento na reprodução local.
 
 ## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
 

@@ -132,13 +132,17 @@ test('prazo único cobre preparação, copiar, baixar e retomar sem repetir comp
       await page.goto('data:text/html,<p>Falha sintética do renderer</p>');
       const cdp = await crashedContext.newCDPSession(page);
       const start = Date.now(); let aborted = false;
+      let crashObservedAt;
+      // Mede a reação ao evento real; provocar o crash pelo CDP pode ser lento no runner.
+      page.once('crash', () => { crashObservedAt = Date.now(); });
       await assert.rejects(runPrivateKitScenario(crashedContext, start, async signal => {
         signal.addEventListener('abort', () => { aborted = true; });
         void cdp.send('Page.crash').catch(() => {});
         await page.waitForEvent('download');
       }), /navegador encerrou a página/);
       assert.equal(aborted, true);
-      assert.ok(Date.now() - start < 5000, 'Crash precisa encerrar o cenário sem aguardar o prazo externo.');
+      assert.ok(Number.isFinite(crashObservedAt), 'O navegador precisa emitir um crash real.');
+      assert.ok(Date.now() - crashObservedAt < 5000, 'Crash observado precisa encerrar o cenário sem aguardar o prazo externo.');
       assert.equal(page.listenerCount('crash'), 0);
     } finally { await crashedContext.close(); }
   } finally {

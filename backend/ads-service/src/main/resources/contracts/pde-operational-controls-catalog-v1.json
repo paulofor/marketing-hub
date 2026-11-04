@@ -10,8 +10,8 @@
     {
       "productSlug": "metodo-musa-7-dias",
       "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
-      "resource": "contracts/operational-evidence/vega-operational-controls-v7.json",
-      "sha256": "a70cc2c760faeff2c4778e6d011a09f2447ae246e8b7cf16918e528a7398e4b3"
+      "resource": "contracts/operational-evidence/vega-operational-controls-v8.json",
+      "sha256": "58715ce37a7463acbcc33f8b5455beda26d64f5aa438d4f80b7f5ffd318dab87"
     },
     {
       "productSlug": "metodo-musa-7-dias",
@@ -74,6 +74,12 @@
       "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
       "resource": "contracts/operational-evidence/vega-operational-controls-v6.json",
       "sha256": "05cd57ab9932e22e62d638cbf014e832961d8edf7f0aab4740d7ce00d6c5c339"
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+      "resource": "contracts/operational-evidence/vega-operational-controls-v7.json",
+      "sha256": "a70cc2c760faeff2c4778e6d011a09f2447ae246e8b7cf16918e528a7398e4b3"
     }
   ]
 }

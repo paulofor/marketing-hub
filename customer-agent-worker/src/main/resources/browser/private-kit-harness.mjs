@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
 import { validateFirstKitActions } from './private-kit-first-actions-contract.mjs';
 import { downloadPrivateKit } from './private-kit-download.mjs';
+import { runPrivateKitScenario, waitForPrivateKitResult } from './private-kit-scenario.mjs';
 import { checkCustomerSurface } from './customer-surface-contract.mjs';
 import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 const require=createRequire(import.meta.url);
@@ -22,8 +23,8 @@ const plans=input.mode==='TECHNICAL'?['ADHERENT','RECOVERY','SAFETY'].flatMap(s=
 await mkdir(directory,{recursive:true});const startedAt=new Date(),scenarios=[],artifacts=[];
 const verifiedVideos=input.videoIntegration?await verifyVideoIdentity(input.videoIntegration):null;
 const browser=await chromium.launch(videoBrowserOptions());
-async function api(path,{method='GET',body,session}={}) {
-  const response=await fetch(base+path,{method,headers:session?{'X-Kit-Session':session,'Content-Type':'application/json'}:{'X-PDE-Internal-Token':token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+async function api(path,{method='GET',body,session,signal}={}) {
+  const response=await fetch(base+path,{method,signal,headers:session?{'X-Kit-Session':session,'Content-Type':'application/json'}:{'X-PDE-Internal-Token':token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
   if(!response.ok)throw new Error('Contrato privado recusou '+path+' · HTTP '+response.status);
   return response.status===204?null:response.json();
 }
@@ -65,6 +66,8 @@ try {
     const context=await browser.newContext({...profiles[deviceProfile],acceptDownloads:true});
     const page=await context.newPage();const begin=Date.now(),momentKeys=[];
     try {
+      await runPrivateKitScenario(context,begin,async signal=>{
+      const scenarioApi=(path,options={})=>api(path,{...options,signal});
       await page.addInitScript(secret=>sessionStorage.setItem('private-kit-session-v1',secret),created.sessionToken);
       await page.goto(input.sourceUrl);await page.locator('#briefing').waitFor({state:'visible'});
       await checkCustomerSurface(page);
@@ -93,19 +96,19 @@ try {
       if(scenarioCode==='SAFETY'){
         await page.locator('#status').filter({hasText:'bloqueada antes da composição'}).waitFor();
         await page.locator('#blocked').waitFor({state:'visible'});
-        const blocked=await api('/session',{session:created.sessionToken});
+        const blocked=await scenarioApi('/session',{session:created.sessionToken});
         const safetyContext={productId:input.productId,cycleId:input.cycleId,safetyCase,sourceUrl:input.sourceUrl};
         validateKitSafety(blocked,await observeSafety(page),safetyContext);
         await page.reload();await page.locator('#blocked').waitFor({state:'visible'});
-        const preserved=await api('/session',{session:created.sessionToken});
+        const preserved=await scenarioApi('/session',{session:created.sessionToken});
         safetyOutcome=validatePreservedKitSafety(blocked,preserved,await observeSafety(page),safetyContext);safetyBlocked=true;
       }else{
         if(scenarioCode==='RECOVERY') { await page.locator('#reload').waitFor({state:'visible',timeout:600000}); await page.locator('#reload').click(); }
-        await page.locator('#result').waitFor({state:'visible',timeout:600000});
+        await waitForPrivateKitResult(page);
         await page.locator('#post').evaluate(e=>e.decode());await page.locator('#story').evaluate(e=>e.decode());
         await checkFirstActions(page);
         if(input.profileCode?.endsWith('-v2')) {
-          const proof=await api('/session',{session:created.sessionToken});
+          const proof=await scenarioApi('/session',{session:created.sessionToken});
           const origin=proof.manifest?.visualReferences;
           if(origin?.contractVersion!=='KIT_LICENSED_REFERENCE_V1'||origin.profileCode!==proof.input.specialtyCode&&origin.profileCode!==proof.profileCode||origin.commercialApproval!==false||origin.assets?.length!==5)throw new Error('Origem visual não comprovada na demonstração.');
         }
@@ -134,16 +137,16 @@ try {
           await page.locator('details').filter({has:page.locator('#calendar')}).locator('summary').click();
         }
         // Os sinais sintéticos são exercitados pelo executor; não viram botões da cliente.
-        for(const code of ['PREFERRED_OVER_FREE','CHECKOUT_STARTED'])await api('/events',{method:'POST',session:created.sessionToken,body:{eventId:crypto.randomUUID(),code}});
-        const before=await api('/session',{session:created.sessionToken});
-        await page.locator('#exit').click();await page.locator('#resume').waitFor({state:'visible'});await page.locator('#return').click();await page.locator('#result').waitFor({state:'visible'});
-        await page.reload();await page.locator('#result').waitFor({state:'visible'});
+        for(const code of ['PREFERRED_OVER_FREE','CHECKOUT_STARTED'])await scenarioApi('/events',{method:'POST',session:created.sessionToken,body:{eventId:crypto.randomUUID(),code}});
+        const before=await scenarioApi('/session',{session:created.sessionToken});
+        await page.locator('#exit').click();await page.locator('#resume').waitFor({state:'visible'});await page.locator('#return').click();await waitForPrivateKitResult(page);
+        await page.reload();await waitForPrivateKitResult(page);
         await checkFirstActions(page);
-        const after=await api('/session',{session:created.sessionToken});
+        const after=await scenarioApi('/session',{session:created.sessionToken});
         resumed=before.manifest.zipSha256===after.manifest.zipSha256&&after.events.some(e=>e.code==='SESSION_RETURNED');recovered=scenarioCode==='RECOVERY'&&resumed;
         if(!resumed)throw new Error('Retomada perdeu o pacote ou criou uma nova composição.');
       }
-      const current=await api('/session',{session:created.sessionToken});
+      const current=await scenarioApi('/session',{session:created.sessionToken});
       const customerSurface=await checkCustomerSurface(page);
       if(scenarioCode!=='SAFETY'&&(current.manifest?.packageContractVersion!==packageContractVersion||JSON.stringify(current.manifest.files.map(f=>f.name).sort())!==JSON.stringify(packageNames)||current.manifest.zipSha256!==downloadedSha256))throw new Error('O pacote recebido não comprovou os 36 arquivos aprovados e seu hash.');
       const expected=scenarioCode==='SAFETY'?['EXPERIENCE_STARTED','SAFETY_LIMIT_BLOCKED']:['EXPERIENCE_STARTED','VALUE_MOMENT','READY_RESULT_USED','PREFERRED_OVER_FREE','CHECKOUT_STARTED','DOWNLOAD_COMPLETED'];
@@ -154,6 +157,13 @@ try {
       const key=await captureMoment(page,deviceProfile,scenarioCode+'-'+deviceProfile);
       scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[...momentKeys,key],events:current.events.map(e=>e.code),visualReferences:current.manifest?.visualReferences||null,packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,videoPlayback,customerSurface,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
       await writeFile(outputFile+'.partial',JSON.stringify({status:'IN_PROGRESS',scenarios,artifacts},null,2));
+      });
+    }catch(error){
+      // Preserva o contexto da falha sem tokens, headers, entradas privadas ou parecer inventado.
+      const visibleError=await page.locator('#error').textContent({timeout:1000}).catch(()=>null);
+      const visibleStatus=await page.locator('#status').textContent({timeout:1000}).catch(()=>null);
+      console.error(JSON.stringify({scenarioCode,deviceProfile,elapsedMs:Date.now()-begin,visibleError,visibleStatus}));
+      throw error;
     }finally{await context.close();}
   }
 }finally{await browser.close();}

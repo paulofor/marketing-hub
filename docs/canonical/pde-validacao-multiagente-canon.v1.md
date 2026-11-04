@@ -279,11 +279,16 @@ Os cenários são avaliações sintéticas e devem usar `trafficClass=AGENT_VALI
 interno equivalente a `mh_internal_test`. Podem explorar personas do público, mas nunca recebem
 nome, consentimento, depoimento ou identificador de participante humana.
 
-Na implementação privada de kits, o download deve respeitar o prazo restante dos dez minutos
-do cenário, sem herdar um timeout menor e implícito do navegador. O recebimento integral, o
-SHA-256 e os 36 arquivos continuam obrigatórios. Não renovar o prazo, recompor o pacote ou
-repetir o pedido para esconder falha de transporte. Essa espera técnica não amplia orçamento,
-quotas nem critérios de aprovação. Regressão: `private-kit-download.test.mjs` (04/11/2026).
+Na implementação privada de kits, navegação, preparação, renderização, download, retomada e
+callbacks devem compartilhar um único prazo absoluto de dez minutos por cenário, sem herdar
+um timeout menor e implícito do navegador. O prazo encerra o cenário e aborta callbacks pendentes;
+uma nova operação não o renova. O recebimento integral, o SHA-256 e os 36 arquivos continuam
+obrigatórios. Não recompor o pacote nem repetir pedidos para esconder falhas de transporte.
+Erro já exibido pela experiência deve reprovar imediatamente a espera pelo resultado, com
+cenário, dispositivo, tempo decorrido e mensagem visível registrados sem credenciais.
+O limite externo da execução permanece vigente. Essa espera técnica não amplia orçamento,
+quotas nem critérios de aprovação. Regressões: `private-kit-download.test.mjs` e
+`private-kit-scenario.test.mjs` (04/11/2026).
 
 Na passagem de um ciclo de vendas, a referência canônica pode ser `experiment:<id>`.
 O consumidor deve validar produto, experimento, ciclo e versão fornecidos pelo backend;

@@ -1,0 +1,18 @@
+{
+  "cardKey": "animacao-esbocos-checkpoints-reparaveis",
+  "collection": "video",
+  "title": "Animações de esboços com etapas de IA inspecionáveis e reparáveis",
+  "finding": "No OmniScribble, estudo intraindivíduo N=8 comparou autoria manual e assistida de animações de esboços. Medianas de tempo para concluir a especificação: 232,68s manual versus 71,68s assistido, com redução mediana por participante de 71,44%. Dos 32 checkpoints, 27 foram aceitos sem correção e cinco tiveram intervenção.",
+  "mechanism": "Separar decomposição de objetos e planejamento de trajetória em representações intermediárias editáveis pode reduzir operações repetitivas e permitir que autores concentrem correções em erros localizados, preservando controle percebido.",
+  "commercialApplication": "Experimentar no Apolo um fluxo para cenas animadas simples com objetos, trajetórias e checkpoints de aceitar, corrigir ou regenerar apenas a parte defeituosa. Avaliar também renderização, revisão, integridade e qualidade final; não substituir testes criativos por aceitação automática.",
+  "evidenceStrength": "Preprint e protótipo avaliado em pequeno estudo pareado (N=8), tarefas curtas e predefinidas, sem baseline end-to-end; ganhos observados apenas para autoria de especificação de animações de esboços.",
+  "publishedOn": "2026-11-04",
+  "validUntil": "2026-12-19",
+  "experimentHypothesis": "Para animações curtas de elementos de produtos, checkpoints reparáveis reduzirão retrabalho por cena aprovada versus edição manual e geração integral opaca, sem perda de controle criativo. Medir tempo completo, render, correções, revisões cegas e custo.",
+  "risks": "Segmentação errada de objetos, movimentos incoerentes, dependência de propostas de IA, destruição de trechos aprovados por regeneração e custos ocultos de renderização.",
+  "limits": "N=8, esboços simples, tarefa experimental; tempo medido até o comando de renderização exclui latência de geração. Não foi isolado o efeito específico dos checkpoints contra geração end-to-end; não demonstra aumento de conversão nem de retenção.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-04-animacao-esbocos-checkpoints-reparaveis.md",
+  "sourceTitle": "Trinh, To e Le (2026) — OmniScribble: autoria de animações com reparos locais",
+  "sourceSha256": "f6936a8d9e066651867c0e6adefb63f1a5aadca876948d58f9d59dd08258657a"
+}

@@ -1,0 +1,259 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 75 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Demonstração financeira
+
+Veja quanto já foi investido, compare o retorno esperado e decida os próximos limites.
+
+Método MUSA - Seu Estilo em 7 Dias
+Voltar ao ciclo
+Atualizar valores
+
+Ciclo #18 · Experimento #111 · Versão musa-pde-entry-v17-continuidade-clara
+Consulta: 04/11/2026, 19:03:50
+
+Falta registrar o limite de preparação
+
+Não há aprovação vigente para este ciclo e versão. Confira os custos e registre sua decisão abaixo.
+
+Rever teto aprovado
+Planilha de custos e tetos aprovados
+
+Informe somente o teto na coluna Aprovado. Custos e previsões vêm das fontes do sistema. Todas as decisões de teto ficam nesta planilha, inclusive as de produção e mídia antes da liberação de execução.
+
+Atualizar planilha
+
+Teto é o máximo aprovado, incluindo custos anteriores no escopo indicado. Campo vazio significa ausência de aprovação. Um valor digitado só passa a valer após a confirmação e a gravação.
+
+Ciclo #18 · US$ e R$ separados · no celular, deslize a tabela.
+Grupo / fonte	Aprovado / teto	Custo conhecido	Previsão total
+
+Agentes (US$)
+Pesquisa, estratégia, construção e revisões. Inclui tentativas anteriores do produto.
+Acumulado do produto até o fim do período
+	Teto (US$)
+Registrado: Não disponível
+Sem aprovação vigente
+Reserva preservada: US$ 0,00. A reserva faz parte do teto.
+Aprovar teto	US$ 91,46
+Estimativas de tarefas dos agentes; 10 tarefas sem custo. Não é fatura conciliada.
+	Não disponível
+O sistema ainda não possui previsão com fonte para este grupo.
+
+
+Produção de imagens, áudio e vídeo (US$)
+Geração de peças, locução, montagem e novas tentativas. Exclua revisões já contadas nos agentes.
+Experimento atual no período informado
+	Teto (US$)
+Registrado: Não disponível
+Teto ainda não registrado; você pode decidir aqui
+Aprovar teto
+Teto decidido aqui. A aplicação à produção dos dois vídeos aguarda a etapa e o escopo compatíveis; confirme nesta planilha quando disponível. Imagens avulsas não recebem autorização por este teto.
+	Não disponível
+Custo ainda não consolidado pelo sistema; ausência não é zero.
+	Não disponível
+O sistema ainda não possui previsão com fonte para este grupo.
+
+
+Mídia (R$)
+Pagamento às plataformas para divulgar anúncios.
+Experimento atual no período informado
+	Teto (R$)
+Registrado: Não disponível
+Teto ainda não registrado; você pode decidir aqui
+Aprovar teto
+Teto decidido aqui. A aplicação aos anúncios aguarda a etapa Autorizar orçamento; confirme nesta planilha quando disponível. Nenhuma campanha é ativada ao salvar.
+	Não disponível
+Custo ainda não consolidado pelo sistema; ausência não é zero.
+	Não disponível
+O sistema ainda não possui previsão com fonte para este grupo.
+
+
+Entrega e suporte (R$)
+Personalização, IA utilizada para atender cada cliente e atendimento; informe o total do período.
+Experimento atual no período informado
+	Teto (R$)
+Registrado: Não disponível
+Orçamento ainda não aprovado
+Aprovar teto	Não disponível
+Custo ainda não consolidado pelo sistema; ausência não é zero.
+	Não disponível
+O sistema ainda não possui previsão com fonte para este grupo.
+
+
+Despesas e deduções da venda (R$)
+Taxas de pagamento, impostos, comissões e reembolsos; cada dedução entra uma única vez.
+Experimento atual no período informado
+	Teto (R$)
+Registrado: Não disponível
+Orçamento ainda não aprovado
+Aprovar teto	Não disponível
+Custo ainda não consolidado pelo sistema; ausência não é zero.
+	Não disponível
+O sistema ainda não possui previsão com fonte para este grupo.
+
+
+Operação fixa (R$)
+Servidores, domínio, ferramentas e assinaturas atribuídos ao produto no período.
+Experimento atual no período informado
+	Teto (R$)
+Registrado: Não disponível
+Orçamento ainda não aprovado
+Aprovar teto	Não disponível
+Custo ainda não consolidado pelo sistema; ausência não é zero.
+	Não disponível
+O sistema ainda não possui previsão com fonte para este grupo.
+
+Custos sem fonte permanecem desconhecidos. Tetos e reservas não são despesas. As aprovações de cada grupo são independentes e respeitam a etapa do processo. Tetos antecipados ficam salvos aqui; a aplicação operacional exige confirmação nesta mesma planilha quando estiver disponível.
+
+Previsão e fontes disponíveis
+Histórico dos tetos (0)
+Histórico de custos e previsões (0)
+Aprovações de agentes, vídeos e anúncios
+
+Produzir o vídeo é uma despesa. Pagar para exibi-lo como anúncio é outra. A preparação do produto também tem seu próprio limite. Aprovar um deles não aumenta os outros.
+
+1
+Preparar o produto
+
+Trabalho dos agentes para pesquisar, construir e revisar o produto e sua comunicação.
+
+Limite total de preparação · US$
+Não registrado
+Sem limite registrado para esta versão
+
+Teto acumulado: inclui as tarefas anteriores do produto e as próximas desta preparação.
+
+Não libera geração paga de vídeos nem anúncios. A reserva ocupa parte deste limite; não é um valor extra.
+
+O que sabemos sobre o consumo
+Ver teto na planilha
+2
+Produzir vídeos
+
+Criar os vídeos: imagens e cenas, voz, montagem e revisões do anúncio e da demonstração.
+
+Limite total dos vídeos · US$
+Não registrado
+Sem autorização de vídeos nesta versão
+
+Um teto para os dois vídeos e suas revisões, incluindo consumo anterior desta produção. Não é por vídeo.
+
+É separado da preparação e dos anúncios. Reutilizar uma peça pronta não exige gerar outro vídeo. Ausência de limite não indica gasto zero nem obriga nova produção.
+
+O que sabemos sobre o consumo
+Ver teto na planilha
+3
+Pagar anúncios
+
+Valor pago à plataforma, como o Instagram, para exibir os anúncios ao público.
+
+Limite registrado para anúncios · R$
+R$ 0,00
+Nenhuma verba registrada neste ciclo
+
+Teto total do ciclo. O limite diário e o período são conferidos na aprovação, antes da ativação.
+
+Não paga a criação dos vídeos. Um vídeo pronto não tem verba de divulgação incluída. Registrar um limite não ativa a campanha.
+
+O que sabemos sobre o consumo
+Ver teto na planilha
+
+US$ são dólares; R$ são reais. Não somamos essas moedas sem câmbio. Limites são autorizações máximas, não cobranças. Uma revisão já contabilizada não deve ser somada novamente como outro gasto.
+
+Plutus: números para decidir
+
+Preparação interna aprovada por Plutus
+
+Plutus recomenda seguir somente com a preparação interna. A venda e os anúncios ainda precisam de avaliação comercial.
+
+Preço por venda
+R$ 67,00
+Custos por venda, sem anúncios
+R$ 35,68
+Sobra por venda, antes dos anúncios
+R$ 31,32
+
+Hipótese de planejamento: a sobra ainda não desconta anúncios nem custos fixos; não é lucro líquido. O teto técnico proposto não é autorização de gasto.
+
+Ver parecer de Plutus #847 · 28/10/2026, 03:12:09
+
+Preparação acumulada: US$ 91,46 estimados. Saldo ainda não calculado para esta versão. 10 tarefas ainda sem custo informado.
+Ver parecer completo, cenários e fontes
+Analisar cenários e conselho de Plutus
+Preparação e revisão · US$
+Consumo conhecido estimado
+US$ 91,46
+Limite total de preparação
+Não informado
+Reserva para custos pendentes
+Não informado
+Disponível para preparar o produto
+Não informado
+
+Estimativas de tarefas vinculadas aos experimentos deste produto, incluindo tentativas com custo informado. Não são fatura conciliada. Custos externos e referências sem vínculo ao experimento não entram neste subtotal. Confira reservas e autorizações anteriores antes de decidir. Aprovar este teto não inicia tarefas nem autoriza mídia ou audiovisual.
+
+10 tarefas com custo ainda não informado. O saldo desconta os custos estimados e a reserva do teto aprovado. Pode ficar negativo mesmo quando o consumo conhecido é menor que o teto; reserva não é cobrança.
+
+Ainda não há limite de preparação registrado neste formulário para esta versão. Decisões anteriores ficam preservadas no histórico e não são aplicadas automaticamente a outro ciclo.
+Consumo estimado por experimento · US$
+Histórico das decisões (0)

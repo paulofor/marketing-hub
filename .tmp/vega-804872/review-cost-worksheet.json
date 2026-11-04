@@ -1,0 +1,45 @@
+{
+  "observedAt": "2026-11-04T20:38:49.595556+00:00",
+  "rows": [
+    {
+      "code": "AGENTS",
+      "label": "Agentes",
+      "currency": "USD",
+      "basis": "Acumulado do produto até o fim do período",
+      "description": "Pesquisa, estratégia, construção e revisões. Inclui tentativas anteriores do produto.",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": 91.4600736,
+      "approved": null,
+      "approvalStatus": "Sem aprovação vigente",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Estimativas de tarefas dos agentes; 10 tarefas sem custo. Não é fatura conciliada.",
+      "canApprove": true,
+      "approvalBlocker": null,
+      "approvalScope": "EXECUTION_LIMIT",
+      "executionBlocker": null
+    },
+    {
+      "code": "PRODUCTION",
+      "label": "Produção de imagens, áudio e vídeo",
+      "currency": "USD",
+      "basis": "Experimento atual no período informado",
+      "description": "Geração de peças, locução, montagem e novas tentativas. Exclua revisões já contadas nos agentes.",
+      "planned": null,
+      "reportedCost": null,
+      "estimatedCost": null,
+      "approved": null,
+      "approvalStatus": "Teto ainda não registrado; você pode decidir aqui",
+      "forecast": null,
+      "variance": null,
+      "source": null,
+      "estimateSource": "Custo ainda não consolidado pelo sistema; ausência não é zero.",
+      "canApprove": true,
+      "approvalBlocker": null,
+      "approvalScope": "PLANNING",
+      "executionBlocker": "Teto decidido aqui. A aplicação à produção dos dois vídeos aguarda a etapa e o escopo compatíveis; confirme nesta planilha quando disponível. Imagens avulsas não recebem autorização por este teto."
+    }
+  ]
+}

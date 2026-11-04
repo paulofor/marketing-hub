@@ -1,0 +1,660 @@
+Marketing Hub
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 75 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Editor de Audio e Video
+
+Projeto carregado para continuar roteiro, cenas, audio, montagem e revisao comercial.
+
+Voltar para lista de projetos
+
+BLUEPRINT COMERCIAL
+
+Padronize o video antes de gerar cenas.
+
+O Estudio organiza a producao audiovisual como um ativo comercial: funil, promessa, roteiro, cenas, voz, trilha, provider, montagem, revisao e metrica antes de qualquer renderizacao.
+
+Projeto atual
+32s / Vertical para Reels/TikTok/Shorts
+Video comercial curto · Anúncio para diagnóstico
+PILOTO COM PESQUISA
+Vega #91 · piloto Instagram
+Criativo Reels/Stories reutilizando cartões rastreáveis no harness de Apolo, Íris, Psique e Têmis.
+CASO REAL
+MUSA v7 hero cinematografico
+Blueprint comercial do video hero da Semana dos 7 Sinais de Presenca.
+MODELO LONGO
+Manifesto MUSA 3 minutos
+Estrutura longa para historia, mecanismo, prova, oferta e CTA.
+Etapas de producao premium com IA
+
+A tela do estudio segue a ordem que evita desperdicio: primeiro clareza comercial, depois referencias visuais, geracao, montagem, aprovacao e aprendizado de venda.
+
+OFERTA E FUNIL
+1. Estrategia
+
+Definir objetivo comercial, publico, dor, promessa, mecanismo, canal, duracao e metrica primaria.
+
+Ir para esta etapa
+NARRATIVA
+2. Roteiro
+
+Transformar a oferta em gancho, historia, demonstracao, prova, objecoes e CTA falado ou visual.
+
+Ir para esta etapa
+PRE-PRODUCAO
+3. Biblia visual
+
+Aprovar personagem, ambiente, objetos, marca, direcao visual, imagens mestre e regras de continuidade.
+
+Ir para esta etapa
+PLANO DE CENAS
+4. Storyboard
+
+Quebrar o video em cenas curtas com enquadramento, movimento, acao, emocao e transicao.
+
+Ir para esta etapa
+VOZ E TRILHA
+5. Audio
+
+Definir narracao, ritmo, pausas, trilha, efeitos e legibilidade quando a usuaria estiver sem som.
+
+Ir para esta etapa
+PROVIDER
+6. Geracao IA
+
+Escolher Luma, Kling, HeyGen ou outro motor conforme o tipo de cena, custo, duracao e consistencia.
+
+Ir para esta etapa
+POS-PRODUCAO
+7. Montagem
+
+Cortar falhas, ajustar ritmo, unir cenas, inserir legenda, audio, capa, HLS e fallback MP4.
+
+Ir para esta etapa
+GATE COMERCIAL
+8. Revisao
+
+Checar promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.
+
+Ir para esta etapa
+METRICAS
+9. Aprendizado
+
+Medir play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.
+
+Ir para esta etapa
+1. Estrategia do projeto
+
+Continue o trabalho a partir dos dados persistidos neste projeto.
+
+ID do produto *
+ID do plano comercial
+ID do experimento
+Mantém atribuição, auditoria e métricas separadas por experimento.
+Perfil de vídeo para Apolo
+Selecione um perfil
+O ciclo autônomo só é aberto depois que o projeto estiver vinculado a um perfil do mesmo produto.
+Campanha
+Categoria do video
+Video comercial curto
+Video longo / VSL
+Institucional / conteudo
+Canal alvo
+Hero do PDE para diagnóstico
+PDE e redes sociais
+Reels, Stories e TikTok
+Oferta antes do checkout
+Criativo vertical de atenção rápida para tráfego frio.
+Duracao alvo
+Status operacional
+Rascunho
+Pronto para roteiro
+Pronto para render
+Em producao
+Pronto para revisao
+Aprovado
+Arquivado
+6 a 60 segundos
+Hero, anuncio, Reels, Stories, retargeting e clique para diagnostico.
+Titulo do projeto
+Objetivo comercial do vídeo
+Historia inicial
+Etapa do funil
+Anúncio para diagnóstico
+Descoberta da dor
+Diagnóstico para oferta
+Remarketing para compra
+Atrai público frio e conduz para o primeiro passo gratuito do funil.
+Metrica primaria
+Clique no diagnóstico
+Início do diagnóstico
+Visualização da oferta
+Compra
+Boa métrica quando o criativo está mais próximo da experiência gratuita.
+Modo de producao
+Vídeo narrativo com cenas
+Roteiro com voz e montagem
+Apresentadora explicando
+Cenas cinematográficas planejadas antes de renderizar em Luma, Kling ou similar.
+Formato
+Vertical para Reels/TikTok/Shorts
+Quadrado para feed
+Horizontal para página ou YouTube
+Formato principal para mobile, hero vertical e criativos sociais.
+Prova visual
+CTA
+2. Roteiro e storyboard
+O rascunho narrativo e a estrutura de cenas ficam visiveis ao lado para transformar a estrategia em blocos de producao.
+Roteiro do vídeo
+
+Revise o gancho e o texto completo antes de produzir as cenas.
+
+Gancho do vídeo
+Roteiro completo
+3. Biblia visual premium
+
+Defina referencias mestras antes de gerar cenas para preservar consistencia entre takes.
+
+Personagens e imagens mestre
+Personagens do video
+
+Aprove ou bloqueie visualmente a personagem antes de pedir renderizacao.
+
+APROVADO
+Mulher urbana natural
+Boa para a v7: elegante, acessivel, cotidiana e coerente com espelho, guarda-roupa e microacoes.
+Usar quando o video precisa vender presenca elegante sem parecer avatar ou luxo inacessivel.
+APROVADO
+Presenca MUSA diagnostico
+Boa para planos de capa, diagnostico e transicao para o Plano MUSA de 7 dias.
+Usar como apoio visual quando a cena precisa lembrar a experiencia do produto.
+REPROVADO
+Sofia com cabides
+Nao usar na v7: a pose fixa com cabides deixa o video artificial e enfraquece a cena do espelho.
+Asset removido da lista reutilizavel porque segurava dois cabides o tempo todo.
+Ambientes e imagens mestre
+Objetos, produto e marca
+Direcao visual e acabamento
+Plano para solicitar imagens via OpenAI
+Regras de continuidade
+Provider e renderizacao
+4. Storyboard
+
+Sequencia do blueprint atual para testar retencao, desejo e acao sem depender de improviso.
+
+0:00-0:08
+Dor do espelho
+
+Gerar identificacao imediata com a sensacao de faltar presenca.
+
+0:08-0:16
+Resultado possivel
+
+Mostrar elegancia acessivel, sem luxo e sem transformacao exagerada.
+
+0:16-0:26
+Mecanismo MUSA
+
+Tangibilizar ruido visual, peca-sinal, cor, acabamento e postura.
+
+0:26-0:34
+Diagnostico
+
+Levar ao clique no plano MUSA de 7 dias.
+
+Piloto de autoaperfeicoamento de Apolo
+
+Nenhum experimento concluido. O piloto aguarda 10 casos de replay e 5 de holdout sem provider pago.
+
+Skills versionadas
+
+Nenhuma skill candidata foi materializada.
+
+Prompts editaveis e persistidos por cena
+Cada prompt e salvo no projeto antes do render. Descreva uma unica conclusao visual; movimento, camera e o que nao deve acontecer. A imagem-base aprovada define o primeiro quadro e a continuidade visual.
+Cena 1 · DOR
+Cena 2 · RESULTADO
+Cena 3 · MECANISMO
+Cena 4 · MECANISMO
+Cena 5 · MECANISMO
+Cena 6 · MECANISMO
+Cena 7 · MECANISMO
+Cena 8 · CTA
+Adicionar cenaSalve o plano atualizado antes de solicitar a produção.
+Checklist de producao
+Briefing comercial preenchido
+Personagens com imagens mestre aprovadas
+Ambientes com placas visuais e mapa de continuidade
+Objetos/produto com referencias separadas
+Roteiro narrado compatível com a duracao escolhida
+Blocos de cena com funcao clara
+Voz definida com ritmo, pausas e emocao
+Trilha escolhida sem competir com a narracao
+Legenda planejada para consumo sem audio
+CTA final conectado ao funil de venda
+Estrategia e aprendizado do video
+
+Vincule as duas pecas pelo mesmo grupo: campanha identifica a dor; hero explica mecanismo e jornada sem quebrar a promessa.
+
+Grupo da estrategia
+Funcao da peca
+Video 1 - identificacao e qualificacao
+Video 2 - hero e conversao
+Hipotese comercial
+Framework de persuasao
+Evidencias cientificas e limites da promessa
+Plano de medicao
+Resultados reais observados
+Decisao
+Coletando amostra
+Continuar
+Ajustar
+Parar versao
+Aprendizado confirmado
+Proxima versao recomendada
+
+SELEÇÃO CONTEXTUAL DESTE PROJETO
+
+Biblioteca de Inteligência do Harness v1
+657 cartões no catálogo global
+
+Cada agente recebe no máximo quatro cartões curtos. As fontes orientam decisões, mas não contam como venda, prova do produto ou autorização de gasto e publicação.
+
+Ver o catálogo global usado por todos os projetos
+Seleção HARNESS_RESEARCH_INTELLIGENCE_V1 · 2491ed557eca
+Íris
+Orientar mensagem, ângulo e briefing de canal.
+4 cartões · orienta comunicação
+Apolo
+Orientar roteiro, ritmo, áudio, continuidade e escolha técnica.
+4 cartões · orienta produção
+Psique
+Revisar percepção, fluidez, prazer, esforço e desejo.
+4 cartões · somente revisão
+Têmis
+Verificar alegações, limites, coerência e integridade.
+4 cartões · somente revisão
+Cartões são evidência externa ou inspiração; não comprovam demanda, venda ou satisfação.
+O artefato real e os eventos humanos reconciliados prevalecem sobre qualquer artigo.
+Cartões com validade expirada não são entregues aos agentes.
+Seleção por coleção, recência e relevância lexical não autoriza gasto nem publicação.
+5. Audio e ritmo
+Voz, trilha e legenda precisam sustentar a promessa mesmo em mobile e com som desligado.
+Voz
+Trilha
+Legendas
+Estilo de legenda
+
+Escolha um preset visual antes da pos-producao para garantir leitura em celular.
+
+Legenda alta conversao mobile
+Texto grande, 2 linhas, contraste alto
+7 dias para ajustar sua presenca
+Melhor para Reels, TikTok, Shorts e hero mobile quando o video precisa vender sem audio.
+Legenda editorial MUSA
+Elegante, premium e legivel
+7 dias para ajustar sua presenca
+Boa para hero do PDE: sofisticada sem ficar pequena ou decorativa demais.
+Legenda Reels com destaque
+Palavras-chave maiores
+7 dias para ajustar sua presenca
+Boa para criativos de trafego frio, com destaque visual em dor, mecanismo e CTA.
+6. Provider de video
+
+Escolha o motor de geracao de acordo com o tipo de cena antes de pedir uma nova renderizacao.
+
+Apolo · produção completa no Estúdio
+
+Apolo pode planejar roteiro e storyboard, usar imagens mestre, gerar e corrigir cenas, escolher o provider adequado, montar, narrar, sonorizar, legendar, criar HLS e inspecionar o candidato. Plutus preserva o teto financeiro e o QA independente decide a aprovação final.
+
+A curadoria autônoma do Videomaker compara a resolução realmente entregue; anúncio de exportação 4K não vale como prova de geração nativa 4K.
+
+Moeda da autorização *
+Reais (BRL)
+Dólares (USD)
+Teto autorizado em BRL *
+Cotação BRL por USD *
+Fonte da cotação *
+Data da cotação *
+
+Teto operacional conservador: US$ —. A conversão arredonda para baixo e não amplia a autorização. Se o limite cobrir várias peças e revisões, divida esse total entre os projetos; não repita o total para cada vídeo.
+
+Perfil de produção *
+Rascunho Instagram · otimizar custo
+Final de campanha · otimizar qualidade
+Objetivo de aprendizado *
+Critério de sucesso *
+Executar somente preflight sem gerar vídeo
+CONSULTA SALDO E LIMITES SEM COBRANÇA. O MODEL ROUTER USA DRY RUN OFICIAL; RECEITAS PINADAS SEM DRY RUN USAM TARIFA OFICIAL DETERMINÍSTICA. NÃO RESERVA CRÉDITOS, NÃO ACIONA PLUTUS E NÃO CRIA JOB DE GERAÇÃO.
+Solicitar produção a Apolo sob controle de Plutus
+O TETO NÃO É META DE GASTO. O PREFLIGHT CONSULTA E SIMULA SEM COBRANÇA; PLUTUS AVALIA ANTES DE QUALQUER GERAÇÃO PAGA. O LEDGER REGISTRA APENAS CUSTOS NOVOS DESTE CICLO. APOLO TRABALHA EM TEST E NÃO PUBLICA.
+Luma Ray 3.2
+Hero premium do PDE, com cena mais longa e visual editorial.
+Cenas cinematograficas
+Clipe 10s · direto ate 30s
+Movimento editorial local
+Criativo vertical com imagens aprovadas, movimento de câmera e custo de provider zero; ideal como fallback auditável antes da pós-produção.
+Formato direto/avatar
+Clipe 24s · direto ate 60s
+Kling 3.0
+Teste alternativo para cenas cinematográficas curtas e variações criativas.
+Cenas cinematograficas
+Clipe 10s · direto ate 10s
+Runway Gen-4.5
+Cenas curtas e variações criativas com boa consistência visual; para hero de 30s usar montagem por cenas.
+Cenas cinematograficas
+Clipe 10s · direto ate 10s
+Runway Act-Two
+Performance facial e corporal original com personagem e gravação autorizadas; permanece em homologação.
+Cenas cinematograficas
+Clipe 10s · direto ate 30s
+Runway Product UGC Premium
+Anúncio vertical premium com apresentadora autorizada e tela real do PDE; usa tomada única, pós-produção determinística e gate de estabilidade.
+Formato direto/avatar
+Clipe 15s · direto ate 15s
+Seedance 2.0 via Runway
+Cenas comerciais de até 15s com áudio opcional; 4K exige autorização de custo e homologação antes de escalar.
+Cenas cinematograficas
+Clipe 10s · direto ate 15s
+Hailuo 3 via Runway
+Candidato econômico para movimento corporal, expressão facial e aderência ao prompt; exige QA antes de produção.
+Cenas cinematograficas
+Clipe 10s · direto ate 10s
+Runway Gen-4 Turbo
+Variações rápidas e econômicas a partir de uma imagem aprovada; exige imagem-base.
+Cenas cinematograficas
+Clipe 10s · direto ate 10s
+Veo 3.1 Fast via Runway
+Produção rápida de criativos com boa relação entre qualidade, áudio e custo.
+Cenas cinematograficas
+Clipe 8s · direto ate 8s
+Veo 3.1 via Runway
+Hero e cenas premium quando a qualidade final justificar o maior consumo de créditos.
+Cenas cinematograficas
+Clipe 8s · direto ate 8s
+Veo
+Teasers curtos ou cenas isoladas; não usar sozinho para vídeo de venda de 30s.
+Cenas cinematograficas
+Clipe 8s · direto ate 8s
+HeyGen
+Teste de avatar e narração sincronizada para ofertas educativas; requer HEYGEN_API_KEY no executor.
+Formato direto/avatar
+Clipe 30s · direto ate 600s
+Prova real do PDE na finalização
+
+Use uma captura homologada da mesma versão. Ela será inserida nos cortes de mecanismo, resultado e prova, com voz e legendas. A captura continua privada.
+
+Referência da captura homologada
+UMA CAPTURA DE TESTE DEMONSTRA O FUNCIONAMENTO; NÃO COMPROVA RESULTADO DE CLIENTE OU VENDA. A FINALIZAÇÃO CONTINUA SUJEITA ÀS REVISÕES INDEPENDENTES.
+Geracao plano a plano
+
+Gere e revise cada funcao narrativa separadamente. Uma cena reprovada pode ser refeita sem descartar as demais.
+
+Imagem-base aprovada para animacao
+Asset #1953 sera enviado como image_to_video.
+Cena 1 · DOR
+
+0–4s DOR/GANCHO: quarto claro; a mesma mulher adulta faz o lenço atravessar o primeiro plano e olha suas peças. Câmera próxima em deslocamento curto, tecido em movimento já no primeiro segundo. Curiosidade sem sofrimento artificial. Sem texto gerado.
+
+Gerar clipe
+Cena 2 · RESULTADO
+
+4–8s RESULTADO: mesma roupa e bolsa; ela prende o lenço na alça e ergue a bolsa, revelando a combinação inteira. Match cut no gesto. Resultado visual do styling é encenação identificada, não prova de resultado da cliente.
+
+Gerar com quadro-ponte
+Cena 3 · MECANISMO
+
+8–12s MECANISMO: gravação real autorizada da candidata no celular, ocasião almoço, peças e preferência. Corte editorial explícito e legível, sem inventar tela ou fingir velocidade da inferência. Exemplo ilustrativo.
+
+Gerar com quadro-ponte
+Cena 4 · MECANISMO
+
+12–16s MECANISMO/PROVA: orientação real estável e legível para usar lenço na alça da bolsa durante o almoço. Mostrar participação concreta do MUSA, preservar pixels e hash; não confundir imagem de roupa sintética com saída do produto.
+
+Gerar com quadro-ponte
+Cena 5 · MECANISMO
+
+16–20s MECANISMO/APLICAÇÃO: personagem adulta em plano médio e corpo inteiro caminha até a porta com roupa e bolsa coerentes; movimento fluido e breve. Sem depoimento, sorriso tratado como satisfação ou mudança de corpo.
+
+Gerar com quadro-ponte
+Cena 6 · MECANISMO
+
+20–24s MECANISMO/SALVAR: gravação temporal real do toque em Salvar e concluir este dia, sem comentário obrigatório. Mostrar confirmação efetiva e conservar dados de teste isolados.
+
+Gerar com quadro-ponte
+Cena 7 · MECANISMO
+
+24–28s MECANISMO/RETOMAR: gravação real reabre a mesma escolha guardada; destaque editorial discreto, mantendo texto estável. Não reconstruir interface nem simular persistência.
+
+Gerar com quadro-ponte
+Cena 8 · CTA
+
+28–32s CTA: personagem/bolsa em movimento termina em enquadramento calmo; overlay Método MUSA, Experimente o primeiro ajuste com suas roupas, Primeiro ajuste e Dia1 gratuitos. CTA legível e disclosure inseparável; não mostrar compra ou link não homologado.
+
+Gerar com quadro-ponte
+Storyboard: custo e aproveitamento
+
+Verdade consolidada do plano, provider, arquivo e montagem. Aproveitamento mede uso editorial real, não qualidade presumida.
+
+8 cenas planejadas
+0 créditos previstos
+0 créditos consumidos
+—% aproveitado
+IA: Aguardando plano
+Orçamento: Não aprovado
+Cena 1
+DOR
+
+0–4s DOR/GANCHO: quarto claro; a mesma mulher adulta faz o lenço atravessar o primeiro plano e olha suas peças. Câmera próxima em deslocamento curto, tecido em movimento já no primeiro segundo. Curiosidade sem sofrimento artificial. Sem texto gerado.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 2
+RESULTADO
+
+4–8s RESULTADO: mesma roupa e bolsa; ela prende o lenço na alça e ergue a bolsa, revelando a combinação inteira. Match cut no gesto. Resultado visual do styling é encenação identificada, não prova de resultado da cliente.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 3
+MECANISMO
+
+8–12s MECANISMO: gravação real autorizada da candidata no celular, ocasião almoço, peças e preferência. Corte editorial explícito e legível, sem inventar tela ou fingir velocidade da inferência. Exemplo ilustrativo.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 4
+MECANISMO
+
+12–16s MECANISMO/PROVA: orientação real estável e legível para usar lenço na alça da bolsa durante o almoço. Mostrar participação concreta do MUSA, preservar pixels e hash; não confundir imagem de roupa sintética com saída do produto.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 5
+MECANISMO
+
+16–20s MECANISMO/APLICAÇÃO: personagem adulta em plano médio e corpo inteiro caminha até a porta com roupa e bolsa coerentes; movimento fluido e breve. Sem depoimento, sorriso tratado como satisfação ou mudança de corpo.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 6
+MECANISMO
+
+20–24s MECANISMO/SALVAR: gravação temporal real do toque em Salvar e concluir este dia, sem comentário obrigatório. Mostrar confirmação efetiva e conservar dados de teste isolados.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 7
+MECANISMO
+
+24–28s MECANISMO/RETOMAR: gravação real reabre a mesma escolha guardada; destaque editorial discreto, mantendo texto estável. Não reconstruir interface nem simular persistência.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+Cena 8
+CTA
+
+28–32s CTA: personagem/bolsa em movimento termina em enquadramento calmo; overlay Método MUSA, Experimente o primeiro ajuste com suas roupas, Primeiro ajuste e Dia1 gratuitos. CTA legível e disclosure inseparável; não mostrar compra ou link não homologado.
+
+Duração
+Não solicitada
+Créditos previstos
+A calcular
+Créditos consumidos
+Pendente
+Aproveitamento
+Sem arquivo
+Ainda não enviada ao provider
+Nenhum arquivo produzido
+7. Montagem
+Cortes, ritmo, legenda, audio e arquivos publicaveis ficam consolidados antes da aprovacao comercial.
+Montagem e cortes
+Montar planos aprovados
+8. Revisao
+A entrega so avanca quando o video estiver claro, coerente, publicavel e aderente a promessa permitida do PDE.
+Gate de aprovacao
+9. Aprendizado e metricas
+
+O funil mede consumo, cliques, diagnostico, paywall, checkout e compra para decidir novos cortes e promessas.
+
+Experimentos recomendados
+Video educativo com promessa forte para publico frio.
+Video demonstrativo com prova visual para leads mornos.
+Video de oferta com urgencia leve para remarketing.
+Recursos atuais conectaveis
+Gerador de imagem para referencias e cenas-chave.
+Fluxos de videos de produto para assets curtos.
+Revisao comercial antes de campanha ou PDE.
+Salvar continuidade
+MP4 gerado para revisao
+
+Ultimo arquivo renderizado ligado a este projeto para assistir, revisar e decidir se entra no funil.
+
+Nenhum MP4 pronto foi encontrado para este projeto ainda.
+Projetos recentes do estudio
+
+Lista operacional para confirmar se o projeto exemplo foi gravado e seguir os proximos testes.
+
+#14
+Vega · Suas roupas, novas possibilidades · candidata cinematográfica
+
+Uma mulher adulta prepara-se para um almoço. O movimento do lenço abre a cena; as mesmas peças ganham outra composição, sem compras. O MUSA participa de modo visível: ela informa ocasião, peças e preferência; a demonstração real mostra a orientação para prender o lenço à bolsa. A escolha é salva e reencontrada. A personagem sai com as próprias roupas. Encenação sintética identificada, não depoimento nem resultado de cliente. O benefício é experimentar possibilidades e guardar uma orientação útil.
+
+RASCUNHO
+#12
+Capella · demonstração · correção após rejeição de 15/10
+
+A profissional de unhas reconhece o esforço de preparar cada postagem. Uma amostra do kit mostra arte e legenda correspondentes; a narrativa explica o alívio prático de receber o conjunto com sua identidade e termina convidando a conhecer o conteúdo. Correção dos vídeos rejeitados, mantendo oferta, público, preço, entrega e experimento. Sem alegar aumento de clientes ou resultado comercial comprovado.
+
+PRONTO PARA REVISAO
+#11
+Capella · anúncio · correção após rejeição de 15/10
+
+A profissional de unhas reconhece o esforço de preparar cada postagem. Uma amostra do kit mostra arte e legenda correspondentes; a narrativa explica o alívio prático de receber o conjunto com sua identidade e termina convidando a conhecer o conteúdo. Correção dos vídeos rejeitados, mantendo oferta, público, preço, entrega e experimento. Sem alegar aumento de clientes ou resultado comercial comprovado.
+
+PRONTO PARA REVISAO
+#13
+Mira v3 · anúncio · correção de clareza e movimento
+
+A cliente reconhece o desejo de organizar seus cuidados com a pele. Mostrar gestos cotidianos em movimento, uma prova real legível e uma próxima ação compreensível. Correção após rejeição humana dos vídeos #53/#54 em 11/10/2026. Mesmo produto 10, experimento 102, ciclo 9 e versão v3. Teto audiovisual CUMULATIVO US$ 10 da solicitação #3332, incluindo produção e revisões anteriores. Reservar US$ 2 para locução anterior ainda não conciliada; não é cobrança confirmada. Consumo financeiro anterior conhecido arredondado conservadoramente a US$ 0,12. Alocar no máximo US$ 3 para esta peça; até US$ 6 nas duas, deixando US$ 1,88 para revisões e diferenças. Nenhuma recarga ou ampliação autorizada. R$ 100 de mídia por cinco dias somente após homologação comercial, fora desta correção.
+
+PRONTO PARA REVISAO
+Escopo do estudio
+
+A primeira versao organiza o tipo de producao que sera evoluido no modulo antes de automatizar cadastros, jobs e revisoes.
+
+Roteiro longo
+
+Estrutura narrativa por atos, promessa, progressao emocional e CTA comercial.
+
+Varias cenas
+
+Planejamento de takes, continuidade visual, ritmo e funcao de cada cena.
+
+Narracao
+
+Direcao de voz, pausas, enfase e alinhamento com o nivel de sofisticacao da oferta.
+
+Trilha sonora
+
+Camada sonora planejada para aumentar retencao, desejo e percepcao premium.
+
+Pos-producao
+
+Montagem, cortes, legendas, revisao editorial e acabamento antes de publicar.
+
+PDE premium
+
+Videos para elevar valor percebido de produtos digitais com IA aplicada ao dia a dia.
+
+O que continua onde esta
+Criativos de experimentos continuam nas telas de experimentos e campanhas.
+Videos para PDEs continuam dentro dos produtos e jornadas especificas.
+Videos organicos curtos continuam nos fluxos atuais de producao rapida.
+Aprovacao e provedores seguem nas areas operacionais ja existentes.
+Proximas etapas de construcao
+Briefing audiovisual com objetivo comercial e publico.
+Roteiro estruturado por cenas e funcao de cada bloco.
+Mapa de referencias visuais, personagens, cenarios e continuidade.
+Plano de voz, trilha, legenda e ritmo de edicao.
+Fila de renderizacao, revisao, custos e artefatos auditaveis.
+Proximo incremento:
+apos criar o projeto exemplo, evoluir jobs auditaveis de roteiro, voz, cenas, montagem e revisao.

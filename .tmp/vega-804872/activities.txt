@@ -1,0 +1,594 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 75 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+A Big Idea orienta produto, oferta e comunicação. Cada tarefa preserva sua referência. Consultar ou evoluir Big Idea
+Voltar ao ciclo #18Ficha de execução deste produto
+Vega
+·
+Processo 4.2 — Produção e aprovação independente de criativos
+
+Produto Método MUSA - Seu Estilo em 7 Dias · processo v10 · PUBLISHED
+
+Histórico de atividades
+Abrir BPM
+Execução do processo
+Precisa da sua decisão
+Copiar contexto do processo
+Prompt para AIHUB
+Ver contexto completo
+Ver prompt para AIHUB
+
+4 concluídas · 1 restantes · 1 dispensadas pelo fluxo
+
+Atividade 6 — Registrar decisão humana de uso · Operador humano
+Orçamento e limites
+
+Confira custos, saldo e o parecer de Plutus antes de ajustar sua autorização.
+
+Ver demonstração financeira
+
+Íris, Psique e Têmis concluíram a mesma peça privada. Falta seu aceite de uso.
+
+Voltar ao processo pai: Comunicação e jornada de venda do PDE · v11 — Executar produção e aprovação de criativos
+Pausar
+Histórico da execução
+Execução #94 · O progresso e o histórico ficam salvos mesmo com esta tela fechada.
+7º ciclo de vendas · Experimento #111
+
+Ciclo #18 · Ajustar produto e comunicação · Versão alvo: musa-pde-entry-v17-continuidade-clara
+
+Hipótese desta passagem: Destacar salvar uma escolha e mostrar os registros reutilizáveis da jornada antes do convite torna o próximo passo e o valor da continuidade mais claros. Feedback permanece opcional. Preservar público, Big Idea de estilo pessoal, oferta e preço R$ 67; medir uso, compras e contribuição no futuro teste autorizado.
+
+Melhoria a testar: Destacar salvar uma escolha e mostrar os registros reutilizáveis da jornada antes do convite torna o próximo passo e o valor da continuidade mais claros. Feedback permanece opcional. Preservar público, Big Idea de estilo pessoal, oferta e preço R$ 67; medir uso, compras e contribuição no futuro teste autorizado.
+
+Aprendizado dos ciclos anteriores
+
+Ciclo #16 · Experimento #109
+
+Preservar implementações, revisões e custos do ciclo #13. O experimento #106 não entrou em mercado. A candidata v15 oferece base por preferências; concorrentes são fontes a investigar, não prova de vendas brasileiras. Concluir Argos e adotar o dossiê antes de executar Atena; nenhuma inferência autorizada por este registro.
+
+Limites da conclusão: A preparação v14 antecede a direção vigente de estilo pessoal e o pedido de modelagem internacional. A mudança de direção exige contexto novo; não é reprovação comercial do produto.
+
+Fonte registrada
+
+Ciclo #16 · Experimento #109
+
+Objetivos dos processos preparatórios comprovados. Passagem automática sem ampliar autorizações.
+
+Fonte registrada
+
+Ciclo #16 · Experimento #109
+
+Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.
+
+Fonte registrada
+
+Ciclo #16 · Experimento #109
+
+Preservar orientação contextual, sete dias, recuperação e isolamento já testados. Hierarquia de ações e explicação da continuidade precisam de nova revisão independente; nenhuma compra ou margem foi comprovada.
+
+Limites da conclusão: A versão funciona, mas ações opcionais competiam com salvar a escolha e o benefício da continuidade estava distante do convite. Parecer #845: ADJUST, sem prova de rejeição de mercado.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+A v13 foi aprovada em uso e recuperação, mas Psique #699 rejeitou o encerramento sem cartão. Isto é evidência privada sintética, sem rejeição comercial comprovada. Preservar v12/v13, captura #604, custos e provas; revalidar a v14 no sucessor.
+
+Limites da conclusão: O rodapé depende somente de FINISHED e anuncia ajuste disponível mesmo com card=null. O backend bloqueia corretamente a entrada. O harness anterior conferia ausência de cartão sem verificar a mensagem; o novo check reproduziu o bloqueio e aprovou a v14 local.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+Planejamento aceito: Atena #714 conciliou a entrada real; Plutus #715 aprovou a homologação interna; Dédalo #716 aprovou reutilizar a v14. Execução #66 concluída em 3/3. Registrar a passagem para materializar e homologar a mesma candidata; os pareceres independentes da v14 seguem pendentes. Não comprova prontidão comercial, venda ou lucro.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+Objetivos dos processos preparatórios comprovados. Passagem automática sem ampliar autorizações.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+O contrato vigente escolheu comunicação estática. Audiovisual não se aplica; homologação e gates comerciais permanecem obrigatórios.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+Homologação vigente da mesma versão preservada. Preparação e autorização comerciais continuam obrigatórias.
+
+Fonte registrada
+
+Ciclo #13 · Experimento #106
+
+Preservar implementações, revisões e custos do ciclo #13. O experimento #106 não entrou em mercado. A candidata v15 oferece base por preferências; concorrentes são fontes a investigar, não prova de vendas brasileiras. Concluir Argos e adotar o dossiê antes de executar Atena; nenhuma inferência autorizada por este registro.
+
+Limites da conclusão: A preparação v14 antecede a direção vigente de estilo pessoal e o pedido de modelagem internacional. A mudança de direção exige contexto novo; não é reprovação comercial do produto.
+
+Fonte registrada
+
+Ciclo #10 · Experimento #103
+
+Preservar a homologação técnica #645 como histórico. Alterar apenas a explicação do próximo benefício conforme #646 e plano de correção #647: praticar o ajuste em outras ocasiões usando roupas existentes e guardar referência pessoal reutilizável. Os Dias 2 a 7 e os três materiais são proposta, ainda não entregues nesta experiência privada. Novos pareceres independentes obrigatórios; custos estimados anteriores US$2,3667816 permanecem no experimento #100.
+
+Limites da conclusão: O bloco da v12 lista período e preço sem explicar o ganho adicional em relação ao ajuste gratuito. A revisão #646 confirmou que o primeiro resultado, a retomada e a segurança funcionam; não comprova demanda, vendas ou rejeição comercial.
+
+Fonte registrada
+
+Ciclo #10 · Experimento #103
+
+Objetivos dos processos preparatórios comprovados. Passagem automática sem ampliar autorizações.
+
+Fonte registrada
+
+Ciclo #10 · Experimento #103
+
+Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.
+
+Fonte registrada
+
+Ciclo #10 · Experimento #103
+
+A v13 foi aprovada em uso e recuperação, mas Psique #699 rejeitou o encerramento sem cartão. Isto é evidência privada sintética, sem rejeição comercial comprovada. Preservar v12/v13, captura #604, custos e provas; revalidar a v14 no sucessor.
+
+Limites da conclusão: O rodapé depende somente de FINISHED e anuncia ajuste disponível mesmo com card=null. O backend bloqueia corretamente a entrada. O harness anterior conferia ausência de cartão sem verificar a mensagem; o novo check reproduziu o bloqueio e aprovou a v14 local.
+
+Fonte registrada
+
+Ciclo #7 · Experimento #100
+
+O ciclo comprovou atividade de aquisição e visitas atribuídas, mas não demonstrou uso do primeiro ajuste, disposição de pagar ou valor entregue após uma compra. As 307 impressões e os 6 cliques são diagnósticos, não vendas. A contribuição conciliada foi negativa; ela não representa lucro líquido da empresa. A melhoria da aplicabilidade foi homologada por agentes e testes, o que permite planejar outro teste, mas não equivale a validação humana ou comercial. Entre as três alternativas, manter o foco exige menos adaptações e preserva o aprendizado comprometido; a insuficiência de amostra não prova que esse público seja vencedor nem que o mercado deva permanecer estreito.
+
+Limites da conclusão: Não há causa de abandono comprovada. O fato observado é que nenhuma das seis sessões registrou início; portanto, a utilidade do primeiro ajuste não foi avaliada pelo comportamento comercial desta amostra. Esforço excessivo antes do início é uma hipótese, concorrente com inadequação da comunicação, acesso, público, atribuição ou simples variação de uma amostra pequena. Os registros técnicos não demonstram qual explicação ocorreu. Um próximo teste deve preservar as condições comprometidas, verificar a identidade da versão e acompanhar início, primeiro resultado, retomada e compra, sem alterar simultaneamente público, linguagem e entrega.
+
+Fonte registrada
+
+Ciclo #7 · Experimento #100
+
+Objetivos dos processos preparatórios comprovados. Passagem automática sem ampliar autorizações.
+
+Fonte registrada
+
+Ciclo #7 · Experimento #100
+
+Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.
+
+Fonte registrada
+
+Ciclo #7 · Experimento #100
+
+Preservar a homologação técnica #645 como histórico. Alterar apenas a explicação do próximo benefício conforme #646 e plano de correção #647: praticar o ajuste em outras ocasiões usando roupas existentes e guardar referência pessoal reutilizável. Os Dias 2 a 7 e os três materiais são proposta, ainda não entregues nesta experiência privada. Novos pareceres independentes obrigatórios; custos estimados anteriores US$2,3667816 permanecem no experimento #100.
+
+Limites da conclusão: O bloco da v12 lista período e preço sem explicar o ganho adicional em relação ao ajuste gratuito. A revisão #646 confirmou que o primeiro resultado, a retomada e a segurança funcionam; não comprova demanda, vendas ou rejeição comercial.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+O #91 teve 4 sessões humanas, 86 eventos, 2 inícios, 1 primeiro resultado e nenhuma venda. R$ 27,30 de custo auditável e contribuição de -R$ 27,30. A amostra é insuficiente para concluir conversão ou causa de abandono. O sucessor deve produzir uma microação executável, manter oferta/público e ter métricas, homologação e autorização próprias.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Processo 2 concluído no segundo ciclo do Vega, experimento #92: Atena #359 aprovou MARKET_STRATEGY_V3; Plutus #361 aprovou PDE_PRIVATE_ECONOMICS_V1; Dédalo #362 aprovou a arquitetura do cartão de microação. O aprendizado do #91 foi preservado: 4 sessões humanas, 2 inícios, 1 primeiro resultado, nenhuma venda; não há causa de abandono comprovada. Concluir planejamento e seguir dentro da mesma cadeia para Processo 3, atividade 3.1 — Construir jornada privada de valor, Dédalo. A v8 ainda precisa ser construída e homologada; a v7 histórica permanece referência.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Implementado e testado o protótipo privado v9 do segundo ciclo do Vega. Encaminhar a Dédalo para revisão da correção e nova homologação técnica por Psique.
+
+Limites da conclusão: As tarefas #378–#380 receberam especificações sem URL executável aceita do ciclo #2. Foi implementado o contrato aprovado: primeiro ajuste aplicável com itens disponíveis, salvar/retomar e sinais persistidos, com isolamento dos testes. A amostra do #91 não prova a causa do abandono.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Correção implementada e validada para concluir 3.6 e 3.7 do Vega no ciclo #2: entrada privada com recuperação de convite e avaliação sintética vinculada à sessão, versão e aprendizado corretos.
+
+Limites da conclusão: Psique selecionava o parecer humano legado para experiment:92 e capturava a entrada sem sessão; Dédalo herdou um bloqueio incompatível com a política vigente. Corrigidos seleção, isolamento de dados e capturas vinculadas ao ciclo, com recuperação acionável de convite privado. Impacto: remover retrabalho e permitir avaliar o primeiro ajuste útil antes de investir em aquisição, sem alegar venda ou leitura humana.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Correção implementada e validada para concluir 3.6 e 3.7 do Vega no ciclo #2: entrada privada com recuperação de convite, sem consulta de sessão anônima e avaliação sintética vinculada à sessão, versão e aprendizado corretos.
+
+Limites da conclusão: Corrigida também a consulta anônima de sessão antes do convite; a v11 consolida a implementação com regressão explícita para ausência de HTTP 5xx. Psique selecionava o parecer humano legado para experiment:92 e capturava a entrada sem sessão; Dédalo herdou um bloqueio incompatível com a política vigente. Corrigidos seleção, isolamento de dados e capturas vinculadas ao ciclo, com recuperação acionável de convite privado. Impacto: remover retrabalho e permitir avaliar o primeiro ajuste útil antes de investir em aquisição, sem alegar venda ou leitura humana.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Correção técnica v12 do ciclo 2: Têmis passa a selecionar a política AGENT_VALIDATION para experiment:92 e restringir as provas à linhagem do Vega. O gate usa a mesma identidade e preserva a operação comercial. Psique aceita versões posteriores da família executável sem depender de lista fixa. A microação e a hipótese comercial permanecem iguais. Duas rodadas locais completas consecutivas aprovadas, com protótipo real, MySQL 5.7, executores, integrações simuladas e desktop/iPhone/Pixel. Nova revisão por Dédalo e homologação real obrigatórias antes do gate.
+
+Limites da conclusão: As tarefas #392 e #393 herdaram seleção de contrato humano e evidências globais de outro produto. A origem experiment:92 não era reconhecida por Têmis nem pelo gate; Psique também fixava versões v9/v10/v11. Corrigidos os contratos do ciclo e a validação da família executável, sem declarar que o protótipo tinha defeito de utilidade.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Conclusão do ajuste privado já comprovado: construção #70 e comunicação #63 concluídas no experimento 92. Gate multiagente #258 e integração #270 aprovam a versão v12 com checkout simulado e dados de teste segregados. Registro das provas existentes, sem nova homologação humana, autorização de vídeos pagos, campanha, cobrança ou publicação comercial. Os requisitos audiovisuais e comerciais continuam pendentes no próprio ciclo.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Teto total de USD 20 registrado para produção e revisão do anúncio e da demonstração na entrada.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Briefing operacional dos dois vídeos derivado do contrato de Íris #402 para a versão v12. A mensagem, público, oferta e hipótese permanecem iguais; as peças demonstrarão aplicação e retomada do primeiro ajuste. Teto total de USD 20 registrado por Paulo no evento 11, incluindo produção e revisão. Este registro não é parecer financeiro nem autoriza mídia, cobrança ou publicação comercial.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Produção técnica do anúncio concluída, preservando Vega, cadeia 14, ciclo 2, experimento 92 e versão musa-pde-entry-v12-primeiro-ajuste-aplicavel. Encaminhar às próximas etapas pelo backend. Aprovações humanas/comerciais permanecem pendentes.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Produção técnica do vídeo de demonstração concluída, preservando Vega, cadeia 14, ciclo 2, experimento 92 e versão musa-pde-entry-v12-primeiro-ajuste-aplicavel. Encaminhar às próximas etapas pelo backend. Aprovações humanas/comerciais permanecem pendentes.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Aprovações dos dois vídeos reutilizadas; conjunto integrado à experiência privada. Homologação técnica e revisões independentes serão executadas automaticamente.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Homologação do conjunto com os vídeos concluída pelos executores e gates oficiais. Aprovações humanas das peças preservadas; autorização comercial permanece separada.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Aceite pela tela: diário R$ 20; total R$ 100
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Janela revalidada sem alterar o teto financeiro e sem liberar campanha ou gasto.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Janela revalidada sem alterar o teto financeiro e sem liberar campanha ou gasto.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Publicação do experimento #92 conferida: run produtivo #2 com preflight concluído, v8 ativa e campanha Meta publicada dentro do teto autorizado.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Conciliação automática: 0 sessões, 0 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ 0.00 de contribuição.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Coleta mantida dentro da janela e do teto já autorizados: a primeira leitura ainda tem zero impressões, sessões e gasto, portanto não há amostra para concluir ou escalar.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Conciliação automática bloqueada: as fontes ainda não mudaram desde a última leitura.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Conciliação automática: 6 visitantes humanos distintos em 6 sessões, 0 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -25.42 de contribuição.
+
+Fonte registrada
+
+Ciclo #2 · Experimento #92
+
+Rascunho para aprovação humana: encerrar o ciclo #2 do produto MUSA, produto 4, experimento #92, como inconclusivo. Prevalece a conciliação do evento 27, observada em 05/10/2026, para a versão musa-pde-entry-v12-primeiro-ajuste-aplicavel e o período de 17/09/2026 03:00 UTC a 22/09/2026 03:00 UTC: 6 visitantes humanos distintos em 6 sessões, 0 inícios, 0 primeiros resultados, 0 checkouts, 0 vendas líquidas, 0 reembolsos, R$ 25,42 de gasto, R$ 0,00 de receita e contribuição de -R$ 25,42. A amostra ficou abaixo das 100 sessões previstas. Recomenda-se manter o foco enquanto se prepara um eventual novo teste da melhoria já aprovada. CONTINUE está bloqueado porque a janela terminou; esta proposta não autoriza nova coleta, gasto ou publicação.
+
+Fonte registrada
+
+Ciclo #1 · Experimento #91
+
+Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias.
+
+Fonte registrada
+
+Ciclo #1 · Experimento #91
+
+Conciliação automática: 4 sessões, 1 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -27.30 de contribuição.
+
+Fonte registrada
+
+Ciclo #1 · Experimento #91
+
+O fluxo conseguiu gerar 2 inícios e 1 primeiro resultado em 4 sessões, mostrando uso parcial, mas não validação humana ou comercial. Não houve checkout, compra, entrega, primeiro uso pós-venda nem resposta de satisfação. Cliques, sessões, inícios e primeiro resultado não equivalem a vendas. O experimento interrompido deve permanecer como referência histórica, sem alterações ou homologação retroativas.
+
+Limites da conclusão: Não há causa comprovada. A hipótese prioritária é que a utilidade do primeiro ajuste não tenha ficado suficientemente clara ou imediata para sustentar o avanço após o início; explicações concorrentes incluem inadequação do público, comunicação ou criativo, fricção de entrada e simples variação causada pela amostra de apenas 4 sessões. O sucessor deve isolar a utilidade inicial como uma variável e medir seu efeito.
+
+Fonte registrada
+Próxima atividade: 4.2 — Executar produção e aprovação de criativos
+
+Processo 4 — Comunicação e jornada de venda do PDE · Backend
+
+O executor backend confirma os contratos e as provas do regime selecionado.
+
+Abrir próxima atividade
+Ver ciclo #18 e decisões
+
+As tarefas e os custos abaixo pertencem a esta passagem. As execuções anteriores permanecem no histórico do produto.
+
+SITUAÇÃO DO PROCESSO
+O que já foi feito e o que falta concluir
+Em andamento
+PROGRESSO DAS ATIVIDADES
+4 de 6 atividades concluídas
+1 atividade ainda sem objetivo comprovado.
+ATIVIDADE ATUAL
+Registrar decisão humana de uso
+Todos os pré-requisitos da atividade estão prontos.
+Ir para a atividade atual
+Já concluído
+Resolver formatos técnicos previstos
+Objetivo da atividade atingido na instância BPM.
+Materializar peças não audiovisuais
+Objetivo da atividade atingido na instância BPM.
+Avaliar experiência humana do criativo
+Objetivo da atividade atingido na instância BPM.
+Revisar integridade comercial do criativo
+Objetivo da atividade atingido na instância BPM.
+Falta concluir
+Registrar decisão humana de uso
+Não iniciada
+Todos os pré-requisitos da atividade estão prontos.
+ATIVIDADES
+4/6
+3 com tarefas reais · 1 a concluir
+TAREFAS ÚNICAS
+3
+Execuções sem duplicar tarefas compostas
+CUSTO CONHECIDO
+US$ 1,4416568
+Cobertura completa
+ATIVIDADE 4.2.1
+Resolver formatos técnicos previstos
+Responsável: Backend
+Concluída
+0 tarefas
+
+Objetivo: Aplica os formatos aprovados sem redefinir estratégia, canal ou hipótese. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.
+
+Situação: Objetivo da atividade atingido na instância BPM.
+
+COMO EXECUTAR
+Backend
+
+O backend validará e registrará o resultado desta atividade.
+
+O objetivo da atividade já foi atingido neste ciclo.
+
+Esta atividade é executada automaticamente pelo controle do processo no cabeçalho.
+
+Nenhuma tarefa registrada para esta atividade.
+ATIVIDADE 4.2.2
+Materializar peças não audiovisuais
+Responsável: Íris
+Concluída
+1 tarefa
+
+Objetivo: Produz copy, composição, peças estáticas e e-mails sob o contrato aprovado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Peças com situação familiar, participação do produto, resultado verificável, identidade e satisfação possível coerentes com o contrato de Íris. Aceite: Preservar pixels/provas aprovados e identificar exemplos; não trocar a oferta nem usar emoção como fato. Medir: Legibilidade mobile, clareza e correspondência com destino/entrega; desempenho comercial pendente. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.
+
+Situação: Objetivo da atividade atingido na instância BPM.
+
+COMO EXECUTAR
+Agente
+
+Abre todas as tarefas responsáveis no mesmo ciclo auditável.
+
+O objetivo da atividade já foi atingido neste ciclo.
+
+Esta atividade é executada automaticamente pelo controle do processo no cabeçalho.
+
+Tarefa desta atividade
+
+Tarefa #874 · Concluída
+
+Íris
+
+Criada: 29/10/2026, 21:48:54 · Início: 29/10/2026, 21:49:36 · Fim: 29/10/2026, 21:57:09
+Materializar peças não audiovisuais · Vega
+Tarefa #874 · Íris · v10 · COMPLETED
+ATIVIDADE 4.2.3
+Materializar peças audiovisuais quando previstas
+Responsável: Apolo
+Não aplicável neste período
+0 tarefas
+
+Objetivo: Produz roteiro técnico, cenas, áudio, montagem e legendas sob o briefing de Íris. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Vídeo com identificação cotidiana, participação concreta do produto e persona transformada por uma ação funcional demonstrável. Aceite: Mesma personagem/contexto quando pertinente; distinguir encenação de prova, preservar produto/peças e mostrar identidade/CTA fiel. Sem depoimento, compra ou agenda fictícios. Medir: Continuidade, voz, legendas, prova da versão real e qualidade final em desktop/mobile. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.
+
+Situação: Estado operacional registrado na instância BPM.
+
+COMO EXECUTAR
+Agente
+
+Abre todas as tarefas responsáveis no mesmo ciclo auditável.
+
+A atividade já possui execução registrada neste ciclo.
+
+Esta atividade é executada automaticamente pelo controle do processo no cabeçalho.
+
+Nenhuma tarefa registrada para esta atividade.
+ATIVIDADE 4.2.4
+Avaliar experiência humana do criativo
+Responsável: Psique
+Concluída
+1 tarefa
+
+Objetivo: Inspeciona cada formato real e registra reação, clareza, desejo, confiança e esforço. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada da compreensão, esforço, desejo hipotético e capacidade de aplicar o resultado mostrado. Aceite: Agente identificado; personagem não conta como compradora nem satisfação comprovada. Resultado não utilizável volta à construção, mensagem sem suporte à comunicação. Medir: Falhas observadas, legibilidade e conclusão; nenhuma inferência de emoção individual. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.
+
+Situação: Objetivo da atividade atingido na instância BPM.
+
+COMO EXECUTAR
+Agente
+
+Abre todas as tarefas responsáveis no mesmo ciclo auditável.
+
+O objetivo da atividade já foi atingido neste ciclo.
+
+Esta atividade é executada automaticamente pelo controle do processo no cabeçalho.
+
+Tarefa desta atividade
+
+Tarefa #875 · Concluída
+
+Psique
+
+Criada: 29/10/2026, 21:57:29 · Início: 29/10/2026, 21:58:15 · Fim: 29/10/2026, 22:02:28
+Avaliar experiência humana do criativo · Vega
+Tarefa #875 · Psique · v10 · COMPLETED
+ATIVIDADE 4.2.5
+Revisar integridade comercial do criativo
+Responsável: Têmis
+Concluída
+1 tarefa
+
+Objetivo: Valida verdade, prova, fidelidade, direitos, compliance e segurança sem criar correção. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer independente ligando promessa, identidade, prova real e limites da oferta. Aceite: Revisar transformação/encenação e fronteira gratuita/paga, fontes/direitos e versão; não fabricar sucesso comercial. Medir: Divergências e evidências de correção, sem autorizar gasto/publicação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.
+
+Situação: Objetivo da atividade atingido na instância BPM.
+
+COMO EXECUTAR
+Agente
+
+Abre todas as tarefas responsáveis no mesmo ciclo auditável.
+
+O objetivo da atividade já foi atingido neste ciclo.
+
+Esta atividade é executada automaticamente pelo controle do processo no cabeçalho.
+
+Tarefa desta atividade
+
+Tarefa #876 · Concluída
+
+Têmis
+
+Criada: 29/10/2026, 22:02:48 · Início: 29/10/2026, 22:02:58 · Fim: 29/10/2026, 22:05:08
+Revisar integridade comercial do criativo · Vega
+Tarefa #876 · Têmis · v10 · COMPLETED
+ATIVIDADE 4.2.6
+Registrar decisão humana de uso
+Responsável: Operador humano
+Não iniciada
+0 tarefas
+
+Objetivo: Seleciona peças elegíveis sem publicar ou gastar. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.
+
+Situação: Todos os pré-requisitos da atividade estão prontos.
+
+COMO EXECUTAR
+Aprovação humana
+
+Registra a peça e os pareceres nesta preparação privada. Não publica, cobra, autoriza mídia ou gera vídeo pago.
+
+1/1 verificações prontas
+Ver evidências
+
+Íris, Psique e Têmis concluíram a mesma peça privada. Falta seu aceite de uso.
+
+Veja os criativos antes de decidir
+
+Estas são as peças revisadas por Psique e Têmis. Abra a imagem para conferir os detalhes.
+
+Criativo 1
+Abrir criativo em tamanho original
+Confirmar uso privado
+
+Aprovo o uso desta peça revisada na preparação privada, sem publicação comercial, cobrança ou mídia.
+
+A evidência será registrada automaticamente. O efeito desta confirmação é exatamente o descrito acima pelo backend.
+Aprovar uso privado da peça
+Não autorizar
+Nenhuma tarefa registrada para esta atividade.

@@ -1,0 +1,68 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Voltar à Cadeia de Valor
+Ciclos de aprendizado e vendas
+
+Este subprocesso é executado pela atividade “Conduzir o ciclo de aprendizado e vendas” do processo de venda. Cada ciclo corresponde a um experimento e conserva seu aprendizado, suas métricas e a próxima ação.
+
+Cadeia de Valor *
+Selecione
+Produto *
+Selecione
+Não foi possível carregar os ciclos e seus requisitos. Confira a disponibilidade do backend e atualize a leitura.

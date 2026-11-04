@@ -1,0 +1,132 @@
+{
+  "productId": 4,
+  "productName": "Método MUSA - Seu Estilo em 7 Dias",
+  "chainId": 27,
+  "cycleId": 21,
+  "experimentId": 114,
+  "productVersion": "musa-pde-entry-v18-video-cinematico",
+  "revision": 1,
+  "observedAt": "2026-11-04T19:29:13.584233079Z",
+  "canAuthorize": true,
+  "authorizationBlocker": null,
+  "cycleUrl": "/business-process-chains/learning-cycles?productId=4&chainId=27&cycleId=21",
+  "mediaUrl": "/business-process-chains/learning-cycles?productId=4&chainId=27&cycleId=21#cycle-decision",
+  "videoUrl": "/financial/execution?productId=4&chainId=27&cycleId=21#ceiling-PRODUCTION",
+  "planUrl": "/financial/plans?productId=4",
+  "operatorNotesUrl": "/products/4/edit",
+  "guidance": "Estimativas de tarefas vinculadas aos experimentos deste produto, incluindo tentativas com custo informado. Não são fatura conciliada. Custos externos e referências sem vínculo ao experimento não entram neste subtotal. Confira reservas e autorizações anteriores antes de decidir. Aprovar este teto não inicia tarefas nem autoriza mídia ou audiovisual.",
+  "mediaBudgetBrl": 0.0,
+  "videoBudgetUsd": null,
+  "knownPreparationUsd": 91.4600736,
+  "unreportedTasks": 10,
+  "costCoverage": "PARTIAL_AGENT_TASK_ESTIMATES",
+  "availableUsd": null,
+  "costs": [
+    {
+      "experimentId": 90,
+      "knownUsd": 2.5201184,
+      "unreportedTasks": 5
+    },
+    {
+      "experimentId": 91,
+      "knownUsd": 0.8248192,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 92,
+      "knownUsd": 47.1807776,
+      "unreportedTasks": 3
+    },
+    {
+      "experimentId": 100,
+      "knownUsd": 2.3667816,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 103,
+      "knownUsd": 2.2614976,
+      "unreportedTasks": 0
+    },
+    {
+      "experimentId": 106,
+      "knownUsd": 8.1562804,
+      "unreportedTasks": 1
+    },
+    {
+      "experimentId": 109,
+      "knownUsd": 12.14353,
+      "unreportedTasks": 1
+    },
+    {
+      "experimentId": 111,
+      "knownUsd": 16.0062688,
+      "unreportedTasks": 0
+    }
+  ],
+  "authorization": null,
+  "history": [],
+  "financialPlan": null,
+  "advice": {
+    "status": "UNAVAILABLE",
+    "title": "Sem parecer disponível",
+    "recommendation": "Ainda não há parecer de Plutus neste ciclo.",
+    "basis": "NONE",
+    "sourceId": null,
+    "producedAt": null,
+    "sourceUrl": "/financial/plans?productId=4",
+    "figures": [],
+    "caution": "A consulta não inicia análise paga nem altera limites.",
+    "fullRationale": null
+  },
+  "budgets": [
+    {
+      "code": "PREPARATION",
+      "title": "Preparar o produto",
+      "currency": "USD",
+      "purpose": "Trabalho dos agentes para pesquisar, construir e revisar o produto e sua comunicação.",
+      "scope": "Teto acumulado: inclui as tarefas anteriores do produto e as próximas desta preparação.",
+      "limit": null,
+      "limitLabel": "Limite total de preparação",
+      "status": "Sem limite registrado para esta versão",
+      "explanation": "Não libera geração paga de vídeos nem anúncios. A reserva ocupa parte deste limite; não é um valor extra.",
+      "consumptionNote": "O subtotal abaixo reúne estimativas de tarefas, inclusive revisões vinculadas. Não é uma fatura nem o custo completo de produção."
+    },
+    {
+      "code": "VIDEO",
+      "title": "Produzir vídeos",
+      "currency": "USD",
+      "purpose": "Criar os vídeos: imagens e cenas, voz, montagem e revisões do anúncio e da demonstração.",
+      "scope": "Um teto para os dois vídeos e suas revisões, incluindo consumo anterior desta produção. Não é por vídeo.",
+      "limit": null,
+      "limitLabel": "Limite total dos vídeos",
+      "status": "Sem autorização de vídeos nesta versão",
+      "explanation": "É separado da preparação e dos anúncios. Reutilizar uma peça pronta não exige gerar outro vídeo. Ausência de limite não indica gasto zero nem obriga nova produção.",
+      "consumptionNote": "Consumo e saldo dos vídeos não estão consolidados nesta demonstração. O limite não representa valor gasto."
+    },
+    {
+      "code": "MEDIA",
+      "title": "Pagar anúncios",
+      "currency": "BRL",
+      "purpose": "Valor pago à plataforma, como o Instagram, para exibir os anúncios ao público.",
+      "scope": "Teto total do ciclo. O limite diário e o período são conferidos na aprovação, antes da ativação.",
+      "limit": 0.0,
+      "limitLabel": "Limite registrado para anúncios",
+      "status": "Nenhuma verba registrada neste ciclo",
+      "explanation": "Não paga a criação dos vídeos. Um vídeo pronto não tem verba de divulgação incluída. Registrar um limite não ativa a campanha.",
+      "consumptionNote": "O valor acima é limite, não gasto realizado. O consumo dos anúncios não está consolidado nesta demonstração."
+    }
+  ],
+  "mediaDecision": {
+    "available": false,
+    "reason": "A aprovação de anúncios estará disponível aqui quando o ciclo chegar à etapa Autorizar orçamento. Conclua as etapas anteriores; nenhum anúncio foi autorizado por esta consulta.",
+    "windowStart": null,
+    "windowEnd": null
+  },
+  "preparationBalance": {
+    "status": "NOT_AUTHORIZED",
+    "title": "Falta registrar o limite de preparação",
+    "explanation": "Não há aprovação vigente para este ciclo e versão. Confira os custos e registre sua decisão abaixo.",
+    "shortfallUsd": null,
+    "requiresBudgetReview": true
+  }
+}

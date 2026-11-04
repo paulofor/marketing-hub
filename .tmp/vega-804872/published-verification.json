@@ -1,0 +1,61 @@
+{
+  "observedAt": "2026-11-04T20:38:11.318007+00:00",
+  "backendHealth": {
+    "status": "UP",
+    "components": {
+      "db": {
+        "status": "UP",
+        "details": {
+          "database": "MySQL",
+          "validationQuery": "isValid()"
+        }
+      },
+      "diskSpace": {
+        "status": "UP",
+        "details": {
+          "total": 60974354432,
+          "free": 30922629120,
+          "threshold": 10485760,
+          "path": "/app/.",
+          "exists": true
+        }
+      },
+      "ping": {
+        "status": "UP"
+      }
+    }
+  },
+  "frontendHealth": {
+    "status": "ok",
+    "service": "marketinghub-frontend",
+    "commit": "aeb3561d5c1757bd23235e9ef98a2ad7b54cc9b3",
+    "imageTag": "aeb3561d5c1757bd23235e9ef98a2ad7b54cc9b3",
+    "builtAt": "2026-11-04T20:10:25.237Z"
+  },
+  "historicalAudiovisual": {
+    "activityInstanceId": 817,
+    "operationalState": "NOT_APPLICABLE",
+    "stateReason": "Briefing de vídeo preservado. Esta preparação privada não possui pedido governado de produção; nenhum vídeo foi gerado ou aprovado.",
+    "objectiveAchieved": false,
+    "taskCount": 0
+  },
+  "project": {
+    "id": 14,
+    "productId": 4,
+    "experimentId": 114,
+    "campaignKey": "musa-pde-entry-v18-video-cinematico",
+    "salesVideoProfileId": 69,
+    "status": "DRAFT",
+    "targetDurationSeconds": 32
+  },
+  "productionCycles": [],
+  "jobs": [],
+  "financial": {
+    "cycleId": 21,
+    "revision": 1,
+    "authorization": null,
+    "videoBudgetUsd": null,
+    "knownPreparationUsd": 91.4600736,
+    "unreportedTasks": 10
+  }
+}

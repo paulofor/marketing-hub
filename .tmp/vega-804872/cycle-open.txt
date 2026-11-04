@@ -1,0 +1,148 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 75 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Voltar à atividade 4 do Processo 6Voltar à Cadeia de Valor
+Ciclos de aprendizado e vendas
+Criação e entrega de valor de Produtos Digitais Experienciais → 6. Venda, entrega e aprendizado do PDE → Atividade 4: Conduzir o ciclo de aprendizado e vendas → Subprocesso: Ciclos de aprendizado e vendas
+
+Este subprocesso é executado pela atividade “Conduzir o ciclo de aprendizado e vendas” do processo de venda. Cada ciclo corresponde a um experimento e conserva seu aprendizado, suas métricas e a próxima ação.
+
+Cadeia de Valor *
+Selecione
+Criação e entrega de valor de Produtos Digitais Experienciais · v27
+Produto *
+Selecione
+Antares
+Spica
+Regulus
+Vega
+Polaris
+Sirius
+Capella
+Altair
+Rigel
+Mira
+Alcyone
+Abrir ciclo
+Atualizar leitura
+Atividades da cadeia do produto
+Histórico de ciclos
+Ciclo #18 · experimento #111 · Em andamento
+Ciclo #16 · experimento #109 · Encerrado para ajuste
+Ciclo #13 · experimento #106 · Encerrado para ajuste
+Ciclo #10 · experimento #103 · Encerrado para ajuste
+Ciclo #7 · experimento #100 · Encerrado para ajuste
+Ciclo #2 · experimento #92 · Inconclusivo
+Ciclo #1 · experimento #91 · Encerrado para ajuste
+Ciclo #18 · experimento #111
+
+Ajustar produto e comunicação · Em andamento
+
+Versão: musa-pde-entry-v17-continuidade-clara · Teto de mídia: R$ 0,00 · A definir a A definir
+
+Este teto em reais é para anúncios. IA e produção de vídeos têm autorizações e limites próprios.
+
+O que está acontecendo
+
+A versão privada está registrada e aguarda a entrega de Backend.
+
+O que impede a venda: O executor backend confirma os contratos e as provas do regime selecionado.
+
+Quem resolve: Backend. Nenhuma execução está em andamento nesta passagem.
+
+Você precisa decidir algo? Não nesta passagem. Nenhuma decisão nova foi identificada nesta passagem.
+
+Para avançar: Saída utilizável aceita na atividade Executar produção e aprovação de criativos e retorno ao processo pai.
+
+Sem execução desde 29/10/2026, 22:05:08: 141 horas. Fonte: última entrega registrada deste ciclo.
+
+Ver atividade e pendência
+Chegada ao mercado e entregas utilizáveis
+Custos por venda e sua meta de contribuição
+Hipótese e critérios deste teste
+Abrir experimento
+Ver ciclo anterior
+Primeira janela comercial do sucessor
+
+O sucessor está em preparação. Defina a janela quando o planejamento estiver pronto. O teto de mídia permanece R$ 0,00; não publica campanha nem autoriza gasto externo.
+
+Início *
+Fim *
+Motivo *
+Definir primeira janela
+Aprendizado recebido do experimento #109
+Alterar ou encerrar este ciclo
+Próxima ação
+
+Continue na atividade 4.2 — Executar produção e aprovação de criativos. O executor backend confirma os contratos e as provas do regime selecionado.
+
+Responsável: Backend
+
+Decisão *
+Encerrar ciclo
+Registrar mudança e preparar novo ciclo e experimento
+Responsável pela decisão *
+Síntese e justificativa *
+Referência da evidência *
+Encerrar ciclo
+Histórico de decisões e evidências (3)
+BPM · decisões e retornos do ciclo

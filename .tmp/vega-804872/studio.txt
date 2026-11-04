@@ -1,0 +1,137 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 75 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Lista de projetos
+
+Projetos ja criados no Estudio de Audio e Video para organizar roteiro, cenas, audio, montagem e revisao comercial.
+
+Projetos do estudio
+
+Use esta lista para encontrar os projetos persistidos e decidir o proximo passo de producao.
+
+Novo projeto
+PROJETO	STATUS	CANAL	FORMATO	CRIADO EM
+
+#12
+Capella · demonstração · correção após rejeição de 15/10
+Demonstração de entrada da página: mostrar o funcionamento e a utilidade do kit completo antes da compra, com reprodução opcional e CTA acessível sem assistir. Versão capella-private-v3; produção técnica concluída, uso comercial sujeito a seleção e homologação.
+	Pronto para revisao	Hero do PDE para diagnostico	Vertical para Reels/TikTok/Shorts	09/10/2026, 20:05
+
+#11
+Capella · anúncio · correção após rejeição de 15/10
+Anúncio demonstrativo para Instagram: divulgar serviços de unhas com menos esforço de preparação, mostrar uma amostra fiel do kit e levar à conferência da oferta. Versão capella-private-v3; produção técnica concluída, uso comercial sujeito a seleção e homologação.
+	Pronto para revisao	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	09/10/2026, 20:05
+
+#13
+Mira v3 · anúncio · correção de clareza e movimento
+Correção de Mira após rejeição humana. Mesmo ciclo 9, experimento 102 e versão v3. Teto audiovisual CUMULATIVO US$ 10 da solicitação #3332: US$ 2 reservados para voz anterior não conciliada (não é cobrança confirmada), US$ 0,12 de pareceres anteriores, até US$ 2,50 para o anúncio e US$ 3,70 para a demonstração, US$ 1,68 para revisões e diferenças. Sem recarga. Mídia condicionada à homologação, sem ativação nesta correção.
+	Pronto para revisao	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	10/10/2026, 02:49
+
+#10
+Mira v3 · demonstração · correção de clareza e movimento
+Correção de Mira após rejeição humana. Mesmo ciclo 9, experimento 102 e versão v3. Teto audiovisual CUMULATIVO US$ 10 da solicitação #3332: US$ 2 reservados para voz anterior não conciliada (não é cobrança confirmada), US$ 0,12 de pareceres anteriores, até US$ 2,50 para o anúncio e US$ 3,70 para a demonstração, US$ 1,68 para revisões e diferenças. Sem recarga. Mídia condicionada à homologação, sem ativação nesta correção.
+	Pronto para revisao	Hero do PDE para diagnostico	Vertical para Reels/TikTok/Shorts	09/10/2026, 18:54
+
+#8
+Vega #95 — Roupa escolhida, primeiro ajuste e pronta para sair
+Hipótese do #95: identificação cotidiana + mecanismo real + persona transformada aumentam o uso qualificado do primeiro ajuste e a compra da continuidade com contribuição positiva. Cadastros, cliques e resultado exibido são diagnósticos; pagamento conciliado e entrega são provas comerciais. Somente roteiro nesta entrega; nenhum render, mídia ou publicação autorizado.
+	Pronto para revisao	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	02/10/2026, 00:41
+
+#9
+Capella — seis exemplos personalizados e amostra gratuita
+Demonstrar conteúdo personalizado pronto para divulgar, reduzir esforço de criação e explicar a compra do kit de R$ 67. Convidar a pedir uma amostra demonstrativa gratuita. Candidata sem campanha ativada.
+	Rascunho	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	02/10/2026, 04:19
+
+#7
+Mira V4 — autocuidado, beleza e alegria
+Criar uma nova variante de atração com mulher adulta bonita fazendo seus cuidados, gancho concreto e oferta fiel de duas organizações por R$ 49. Manter Meta pausada; nenhum novo gasto de mídia autorizado.
+	Pronto para revisao	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	01/10/2026, 05:56
+
+#6
+Mira V3 — Sua rotina clara em três passos
+Testar a demonstração em vídeo com a tela real da Mira contra o cartão estático, aumentando EXPERIENCE_STARTED e READY_RESULT_USED sem alterar público, promessa, preço, CTA ou destino.
+	Pronto para revisao	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	26/09/2026, 11:20
+
+#5
+Vega #92 v12 — Aplicar, avaliar e retomar — demonstração
+Demonstrar como escolher ocasião e combinação, aplicar e avaliar uma microação e salvar/retomar. LANDING_HERO privado da v12, ciclo 2, experimento 92, cadeia 14, processo 75 v6. Fontes Íris #402, prova #118/#126, briefing evento12 e teto evento11. Não condicionar uso a assistir o vídeo. Nenhuma publicação, compra ou cobrança autorizada.
+	Pronto para revisao	Hero do PDE para diagnostico	Vertical para Reels/TikTok/Shorts	13/09/2026, 01:04
+
+#4
+Vega #92 v12 — Primeiro ajuste pronto — anúncio
+Qualificar interesse para o primeiro ajuste aplicável com itens já disponíveis. Vídeo AD da versão privada v12, ciclo de aprendizado 2, cadeia 14, processo pai 75 v6. Fonte: Íris #402; briefing do ciclo evento 12; teto evento 11. Não publicar campanha ou cobrar.
+	Pronto para revisao	Reels, Stories e TikTok	Vertical para Reels/TikTok/Shorts	13/09/2026, 01:03
+
+#3
+Vega #91 - O espelho antes de sair
+Transformar o reconhecimento íntimo diante do espelho em clique qualificado para o diagnóstico MUSA, com um criativo vertical orientado por pesquisa e medido até a venda.
+	Pronto para revisao	Valor antigo nao padronizado	Vertical para Reels/TikTok/Shorts	03/09/2026, 01:37
+
+#2
+MUSA v7 - Como seus 7 dias transformam pequenos sinais
+Testar uma narrativa audiovisual para aumentar desejo, confianca e acao no Metodo MUSA.
+	Pronto para roteiro	PDE e redes sociais	Vertical para Reels/TikTok/Shorts	04/08/2026, 17:07
+
+#1
+MUSA v7 - O espelho antes de sair
+Testar uma narrativa audiovisual para aumentar desejo, confianca e acao no Metodo MUSA.
+	Pronto para revisao	Hero do PDE para diagnostico	Vertical para Reels/TikTok/Shorts	01/08/2026, 03:45

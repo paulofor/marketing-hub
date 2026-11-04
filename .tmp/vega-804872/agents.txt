@@ -1,0 +1,409 @@
+Gestão de Produto
+Gestão de Agentes
+Produtos em play
+Todos os produtos
+Tipos de produto
+ChatGPT Ads
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Plano financeiro
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Modelar por referências
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 75 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Gestão de agentes
+Catálogo Vivo — Piloto Opala
+
+Defina responsabilidades, contexto, análises, entregáveis e regras de coordenação do Orquestrador.
+
+Temas
+Biblioteca de Personas
+Novo agente
+Monitor de trabalho dos agentes
+
+Atualização automática a cada 15 segundos com tarefas, pipelines, dificuldades e decisões externas pendentes. STOP impede novos trabalhos automáticos sem interromper à força o trabalho já iniciado.
+
+3 ativos
+Preparar sessões Codex
+Conectar Worker IA
+Agente	Estado	Automação	Trabalho atual	Dificuldade / decisão	Executor	Tokens hoje	Última atividade
+Apolo
+Agente de Produção Audiovisual
+	WORKING	
+PLAY
+■ Stop
+	
+Produção audiovisual do ciclo #38
+Teto US$ 3.7000 · custo conhecido US$ 3.6000
+Tarefa #721 · Execução #38
+	Sem dificuldade registrada	READY
+versão 5/5 · backend ok · Codex autenticado
+Executor Apolo pronto.
+Reconectar Codex	0
+entrada + saída
+	24/10/2026, 12:18:35
+Argos
+Agente de Inteligência Factual de Mercado
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 9/9 · backend ok · Codex autenticado
+Executor Argos pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Atena
+Estrategista-Chefe de Mercado
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 8/8 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Dédalo
+Agente de Construção PDE
+	BLOCKED	
+PLAY
+■ Stop
+	
+Corrigir o protótipo a partir do parecer · Capella
+Transforma a rejeição funcional vigente em instruções executáveis, corrige a causa-raiz, cria nova versão e devolve o fluxo à homologação técnica. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Correção na camada da causa comprovada da promessa, personalização, utilidade, acesso ou recuperação. Aceite: Preservar entradas e resultados válidos; nova versão retorna à homologação técnica, sem contornar gate ou repetir consumo por impedimento idêntico. Medir: Recorrência do defeito e conclusão funcional comparadas à versão anterior; nenhuma venda presumida. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado. Diagnóstico vigente: A tarefa #894 (a homologação técnica) não conseguiu homologar o protótipo. Causa registrada: com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: Timeout ao homologar o PDE nos dispositivos suportados. Próxima ação: Corrija no protótipo a causa registrada e execute novamente a homologação multiagente. Depois da correção, publique uma nova versão e execute novamente a homologação técnica. A ausência de rejeição funcional atual não dispensa os demais pré-requisitos da correção.
+Tarefa #895
+	Tarefa marcada como bloqueada.	READY
+versão 7/7 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	04/11/2026, 03:06:59
+Hermes
+Operador de Crescimento
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 8/8 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Íris
+Diretora e Materializadora de Comunicação
+	WORKING	
+PLAY
+■ Stop
+	
+Materialização visual do criativo #541
+Aguardando o recurso técnico de imagem
+Execução #541
+	Sem dificuldade registrada	READY
+versão 4/4 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	22/10/2026, 04:56:29
+Plutus
+Agente de Validação Financeira
+	WORKING	
+PLAY
+■ Stop
+	
+Controle financeiro do ciclo de vídeo #38
+Teto US$ 3.7000 · custo conhecido US$ 3.6000
+Tarefa #721 · Execução #38
+	Sem dificuldade registrada	READY
+versão 7/7 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	24/10/2026, 12:18:35
+Psique
+Agente de Experiência Humana
+	BLOCKED	
+PLAY
+■ Stop
+	
+Psique · cenário aderente · Capella
+Entregar: avaliação independente de compreensão, desejo, esforço, utilidade e próximo passo na versão real. Aceite: localizar primeira ação sem ajuda, concluir entradas, compreender como aplicar o resultado e explicar o valor adicional da continuidade paga. Registrar evidência observada e lacunas; resultado exibido não comprova aplicação ou satisfação. Medir: conclusão e tempo por cenário. Identificar a leitura como simulação de agente, sem contá-la como cliente ou venda. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de clareza, esforço, aplicação do resultado e plausibilidade da satisfação pretendida na experiência real. Aceite: Identificar a simulação; verificar próximo passo e benefício adicional sem afirmar satisfação, preferência humana ou cliente inexistente. Medir: Conclusão, esforço e tempo por cenário; resultado exibido não comprova aplicação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.
+Tarefa #897
+	Tarefa marcada como bloqueada.	READY
+versão 8/8 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	04/11/2026, 06:05:31
+Têmis
+Agente de Integridade Comercial
+	IDLE	
+PLAY
+■ Stop
+	
+Sem trabalho ativo
+	Sem dificuldade registrada	READY
+versão 6/6 · backend ok · Codex autenticado
+Executor pronto.
+Reconectar Codex	0
+entrada + saída
+	—
+Maturidade e fechamento de ciclos
+
+Resultados confirmados e pendências compartilhadas. Hipóteses e simulações não contam como resultado.
+
+Agente	Nível	Execuções	Conclusão	Pendências	Resultados confirmados	Próximo avanço
+
+Apolo
+Agente de Produção Audiovisual
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Argos
+Agente de Inteligência Factual de Mercado
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Atena
+Estrategista-Chefe de Mercado
+	EM_VALIDACAO	24	91.7%	0 abertas / 0 resolvidas	0	Acumular dez resultados humanos ou operacionais confirmados.
+
+Dédalo
+Agente de Construção PDE
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Hermes
+Operador de Crescimento
+	EM_VALIDACAO	3069	96%	8 abertas / 3 resolvidas	3	Concluir pendências abertas com evidência posterior.
+
+Íris
+Diretora e Materializadora de Comunicação
+	NAO_INTEGRADO	0	0%	0 abertas / 0 resolvidas	0	Integrar execuções e resultados ao ciclo compartilhado.
+
+Plutus
+Agente de Validação Financeira
+	EM_VALIDACAO	107	94.4%	0 abertas / 0 resolvidas	0	Acumular dez resultados humanos ou operacionais confirmados.
+
+Psique
+Agente de Experiência Humana
+	EM_VALIDACAO	15	93.3%	0 abertas / 0 resolvidas	0	Acumular dez resultados humanos ou operacionais confirmados.
+
+Têmis
+Agente de Integridade Comercial
+	MADURO	284	97.2%	1 abertas / 284 resolvidas	14	Concluir pendências abertas com evidência posterior.
+Agente	Tema	Modo	Status / versão	Entradas	Saídas	Funções internas	
+
+Apolo
+Agente de Produção Audiovisual
+Materializa roteiro técnico, cenas, áudio, montagem, legendas e entrega audiovisual.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Build & Deploy containers
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	EVENT_DRIVEN	ACTIVE
+v5
+	5	2	3	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Argos
+Agente de Inteligência Factual de Mercado
+Reúne fatos de demanda, concorrentes, linguagem pública, ofertas e fontes sem escolher estratégia.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Product Discovery Worker CI
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	SCHEDULED	TEST
+v9
+	2	0	0	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Atena
+Estrategista-Chefe de Mercado
+Define mercado, desejo, diferenciação, posicionamento, portfólio, tese de oferta e hipótese prioritária.
+Última alteração do contrato: 19/10/2026
+15 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Experiment Strategist Worker CI/CD
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	ON_DEMAND	TEST
+v9
+	5	2	1	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Dédalo
+Agente de Construção PDE
+Materializa a experiência usada depois da compra: jornada, entregáveis, personalização, acesso e prova real do PDE.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Landing Generator Agent Worker CI
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	EVENT_DRIVEN	TEST
+v6
+	5	2	3	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Hermes
+Operador de Crescimento
+Opera distribuição, instrumentação, atribuição, funil, gargalo e otimização sem reescrever estratégia.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Growth Operator Worker CI/CD
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	EVENT_DRIVEN	ACTIVE
+v8
+	5	2	1	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+◇
+Íris
+Diretora e Materializadora de Comunicação
+Transforma estratégia, economia e PDE aprovados em comunicação pré-compra clara, sedutora, sensorial e fiel ao produto real.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Communication Agent Worker CI/CD
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	EVENT_DRIVEN	TEST
+v3
+	7	3	5	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Plutus
+Agente de Validação Financeira
+Valida preço como hipótese, margem, CAC, orçamento, custos, receita e risco financeiro.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Financial Agent Worker CI/CD
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	DAILY	ACTIVE
+v6
+	4	2	1	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Psique
+Agente de Experiência Humana
+Avalia compreensão, reação afetiva, sensorial e estética, prazer, desejo, esforço, confiança e objeções.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Customer Agent Worker CI/CD
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	ON_DEMAND	TEST
+v8
+	5	2	1	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar
+
+
+Têmis
+Agente de Integridade Comercial
+Revisa verdade, prova, fidelidade, direitos, compliance e segurança sem criar o ativo avaliado.
+Última alteração do contrato: 01/10/2026
+34 dias sem alteração do contrato
+Último workflow do executor: 04/11/2026 (sucesso)
+Workflow: Meta Ad Approver Worker CI/CD
+0 dias desde o workflow
+Ver evidência no GitHub
+	Operacoes Autonomas	DECISION_GATE	TEST
+v6
+	5	2	1	
+Detalhe do agente
+Abrir mesa
+Nova solicitação
+Editar

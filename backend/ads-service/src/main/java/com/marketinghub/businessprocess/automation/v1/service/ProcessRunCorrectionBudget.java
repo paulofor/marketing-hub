@@ -10,7 +10,7 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: conferir o teto existente antes de uma nova tarefa de correção no ciclo. */
+/** Responsabilidade: conferir o teto existente antes de qualquer nova tarefa de agente no ciclo. */
 @Component
 @RequiredArgsConstructor
 public class ProcessRunCorrectionBudget {
@@ -35,19 +35,24 @@ public class ProcessRunCorrectionBudget {
         || !Objects.equals(run.getChainDefinitionId(), cycle.getChainDefinitionId())
         || !Objects.equals(run.getSourceReference(), "experiment:" + cycle.getExperimentId())
         || !"OPEN".equals(cycle.getStatus()))
-      return "A correção exige um ciclo aberto e a autorização financeira do mesmo contexto.";
+      return "A preparação exige um ciclo aberto e a autorização financeira do mesmo contexto.";
     var authorization = budgets.current(cycle);
     if (authorization == null)
-      return "Correção pausada: falta o teto de preparação aprovado para este ciclo e versão. "
+      return "Preparação pausada: falta o teto de preparação aprovado para este ciclo e versão. "
           + "Use Ver demonstração financeira para conferir custos e registrar a decisão; autorizações históricas não são transferidas automaticamente.";
+    var slices = costs.summarize(run.getProductId());
     BigDecimal known =
-        costs.summarize(run.getProductId()).stream()
+        slices.stream()
             .map(slice -> slice.knownUsd())
             .filter(Objects::nonNull)
             .reduce(BigDecimal::add)
-            .orElse(null);
+            .orElseGet(
+                () ->
+                    slices.stream().anyMatch(slice -> slice.unreportedTasks() > 0)
+                        ? null
+                        : BigDecimal.ZERO);
     if (known == null)
-      return "Correção pausada: o custo acumulado ainda não foi informado. Confira as lacunas na demonstração financeira antes de iniciar outra tarefa.";
+      return "Preparação pausada: o custo acumulado ainda não foi informado. Confira as lacunas na demonstração financeira antes de iniciar outra tarefa.";
     BigDecimal available =
         authorization.totalLimitUsd().subtract(known).subtract(authorization.reserveUsd());
     BigDecimal previous =
@@ -61,7 +66,7 @@ public class ProcessRunCorrectionBudget {
             .max(BigDecimal::compareTo)
             .orElse(BigDecimal.ZERO);
     if (available.signum() <= 0 || available.compareTo(previous) < 0)
-      return "Correção pausada: o saldo estimado, após custos anteriores e reserva, não cobre outra tarefa desta atividade. "
+      return "Preparação pausada: o saldo estimado, após custos anteriores e reserva, não cobre outra tarefa desta atividade. "
           + "Confira e ajuste o teto em Ver demonstração financeira. A estimativa histórica não é garantia do custo futuro.";
     return null;
   }

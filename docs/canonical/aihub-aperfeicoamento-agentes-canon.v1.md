@@ -629,3 +629,19 @@ ou variável continua exigindo sucessor pelo cânone de ciclos. Nova recusa ou a
 de prova não permite repetir automaticamente a mesma chamada. Os testes cobrem
 comando real, outra identidade, isolamento, rejeições e caminhos anteriores; não
 comprovam impacto comercial. [Evidência e critérios](../homologacao/vega-revalidacao-seguranca-v1.md).
+
+### Proibição explícita e primeiro consumo — 04/11/2026
+
+A validação de escopo de Atena distingue proibição de obrigação por cláusula.
+“Não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes
+adicionais” não solicita capacidade comparativa. Não dispensar obrigações em outra
+frase/campo, contraste ou dupla negação. Backend e executor devem manter regressões
+para a mesma linguagem e o mesmo protocolo. A correção do validador permite revalidar
+a saída preservada pelos contratos existentes, sem nova inferência ou consumo reportado.
+
+O teto próprio do ciclo deve ser conferido antes da primeira tarefa de agente e de
+cada tarefa seguinte no processo automático, não apenas no retrabalho. Callback já
+produzido, reúso de prova e operação determinística conservam seus contratos. A pausa
+financeira não apaga a resposta nem autoriza herdar limites. Sem histórico de chamadas,
+o consumo deste escopo é inexistente; estimativa ausente de chamada realizada permanece
+desconhecida. [Regressão e limites](../homologacao/capella898-validacao-e-teto-v1.md).

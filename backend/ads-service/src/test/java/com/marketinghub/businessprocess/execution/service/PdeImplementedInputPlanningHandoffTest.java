@@ -37,6 +37,8 @@ class PdeImplementedInputPlanningHandoffTest {
     "98004,outro-produto,outra-candidata-v2,false",
     "7,agenda-cheia-para-manicures,capella-beleza-v3,false",
     "99007,agenda-cheia-para-manicures,capella-beleza-v3,false",
+    "7,agenda-cheia-para-manicures,capella-beleza-v4,false",
+    "99007,agenda-cheia-para-manicures,capella-beleza-v4,false",
     "98008,outro-produto,outra-candidata-v2,true"
   })
   void resumesAtOriginAndKeepsDependentReviewsInOrder(
@@ -278,12 +280,15 @@ class PdeImplementedInputPlanningHandoffTest {
     return value;
   }
 
-  /** Monta somente o contrato mínimo de estratégia necessário à validação determinística. */
+  /** Reproduz a proibição de comparação da tarefa 898 junto à entrada do produto consultado. */
   private String strategy(ObjectMapper json, String minimum) {
     var value = json.createObjectNode().put("decision", "APPROVE");
     value
         .putObject("marketStrategicContract")
         .putObject("agentValidationPlan")
+        .put(
+            "prototypeObjective",
+            "inputComparisonApplicable=false: não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais.")
         .putObject("customerValueDelivery")
         .put("minimumCustomerInput", minimum);
     return value.toString();

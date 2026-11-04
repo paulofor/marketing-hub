@@ -279,6 +279,12 @@ Os cenários são avaliações sintéticas e devem usar `trafficClass=AGENT_VALI
 interno equivalente a `mh_internal_test`. Podem explorar personas do público, mas nunca recebem
 nome, consentimento, depoimento ou identificador de participante humana.
 
+Na implementação privada de kits, o download deve respeitar o prazo restante dos dez minutos
+do cenário, sem herdar um timeout menor e implícito do navegador. O recebimento integral, o
+SHA-256 e os 36 arquivos continuam obrigatórios. Não renovar o prazo, recompor o pacote ou
+repetir o pedido para esconder falha de transporte. Essa espera técnica não amplia orçamento,
+quotas nem critérios de aprovação. Regressão: `private-kit-download.test.mjs` (04/11/2026).
+
 Na passagem de um ciclo de vendas, a referência canônica pode ser `experiment:<id>`.
 O consumidor deve validar produto, experimento, ciclo e versão fornecidos pelo backend;
 a forma da referência nunca pode desviar uma atividade sintética para o prompt de leitura

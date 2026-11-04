@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
 import { validateFirstKitActions } from './private-kit-first-actions-contract.mjs';
+import { downloadPrivateKit } from './private-kit-download.mjs';
 import { checkCustomerSurface } from './customer-surface-contract.mjs';
 import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 const require=createRequire(import.meta.url);
@@ -123,7 +124,7 @@ try {
         await page.evaluate(()=>{window.__copiedText='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedText=text;}}});});
         await page.locator('#copy-caption').click();await page.locator('#download-status').filter({hasText:'Texto copiado'}).waitFor();
         if(!(await page.evaluate(()=>window.__copiedText)))throw new Error('A ação não copiou o texto.');
-        const download=page.waitForEvent('download');await page.locator('#download').click();const artifact=await download;if(await artifact.failure())throw new Error('Download falhou.');
+        const artifact=await downloadPrivateKit(page,begin);
         await page.locator('#download-status').filter({hasText:'Kit recebido'}).waitFor();
         downloadedSha256=createHash('sha256').update(await readFile(await artifact.path())).digest('hex');
         if(input.mode==='TECHNICAL'&&scenarioCode==='ADHERENT') {

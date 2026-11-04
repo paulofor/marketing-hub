@@ -10100,6 +10100,41 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limite:** não automatiza aprovação independente, publicação comercial ou gasto. Registro:
   [Vega — vínculo da entrega](../homologacao/vega-ciclo10-registro-homologacao-2026-10-09.md).
 
+- **Recorrência operacional em 04/11/2026:** Capella, ciclo 19/experimento 112,
+  concluiu estratégia/economia/arquitetura e os contratos de construção, mas não
+  tinha pacote nem `REGISTER_PROTOTYPE` da candidata `capella-beleza-v3`.
+  A capacidade `beauty-v2` já estava declarada e disponível. O teto de agentes
+  estava aprovado e não era a causa dessa espera. Reutilizar a implementação,
+  comprovar as seis especialidades e registrar a prova no ciclo antes de retomar
+  Psique; não repetir planejamento, migrar histórico ou declarar aprovação independente.
+  A regressão existente de vínculo/identidade foi reexecutada localmente.
+
+## LOOP-KIT-DOWNLOAD-PRAZO-IMPLICITO — 04/11/2026
+
+- **Evidência:** na conferência privada de Capella, o harness interrompeu o
+  download de `nails-v2` em Pixel 7 após 30 segundos. Desktop e iPhone passaram;
+  outra sessão Pixel recebeu HTTP 200, 15.105.546 bytes e o mesmo SHA-256 em
+  21,95 segundos. Não houve pacote corrompido nem nova composição nessa conferência.
+- **Causa confirmada:** a espera pelo evento de download herdava os 30 segundos
+  do Playwright, embora o cenário tenha prazo de dez minutos. A interface só
+  emite o evento após receber o blob completo. Variação de transporte pode,
+  portanto, reprovar antecipadamente um arquivo íntegro. Não foi comprovada
+  uma causa de rede para a variação nem falha do compositor.
+- **Correção compartilhada:** aguardar o download somente pelo prazo restante
+  do cenário. Preservar SHA-256, integridade, limite total, erros e ausência de
+  retries ou recomposição. O prazo não é renovado a cada transferência.
+- **Prevenção:** navegador local com transferência atrasada além da espera
+  implícita, Pixel/iPhone e desktop; conferir bytes e um único request. Ausência
+  de download e prazo esgotado continuam falhando. Testes sintéticos não
+  representam parecer independente, autorização de mídia ou resultado comercial.
+- **Validação local:** o comportamento anterior falhou no caso de transferência
+  atrasada; a correção passou nos nove testes de navegador pertinentes. O worker
+  passou em 241 testes Java (13 condicionais não executados), e 62 testes backend
+  de capacidade, registro e passagem foram aprovados. A rodada adicional com
+  MySQL/compositor não iniciou: a engine Docker respondeu ao ping, mas consultas
+  de versão, informação e comandos expiraram. Nenhuma alteração de persistência
+  está nesta correção; o teste de download usa navegador real e HTTP local.
+
 ## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
 
 - **Caso:** Psique 699, Vega v13 / ciclo 10 / experimento 103, rejeitou o rodapé que dizia existir

@@ -34,16 +34,16 @@ public final class CapellaKitCatalog {
 
   /** Declara somente perfis realmente carregados, incluindo suas variantes fotográficas. */
   public static Set<String> supportedProfiles() {
-    return Stream.concat(
-            PROFILES.keySet().stream(),
-            PROFILES.keySet().stream().map(code -> code.replace("-v1", "-v2")))
+    return Stream.of(1, 2, 3)
+        .flatMap(
+            version -> PROFILES.keySet().stream().map(code -> code.replace("-v1", "-v" + version)))
         .collect(Collectors.toUnmodifiableSet());
   }
 
   /** Resolve somente perfis explicitamente versionados, sem fallback de outra profissão. */
   public static CapellaKitProfile byCode(String code) {
     if (isReference(code)) {
-      var source = PROFILES.get(code.replace("-v2", "-v1"));
+      var source = PROFILES.get(code.replaceAll("-v[23]$", "-v1"));
       return new CapellaKitProfile(
           code,
           source.profession(),
@@ -58,9 +58,11 @@ public final class CapellaKitCatalog {
     return profile;
   }
 
-  /** Identifica exclusivamente os seis perfis de referência licenciada, sem alterar a v1. */
+  /** Identifica as composições licenciadas v2/v3, sem alterar a ilustração histórica. */
   public static boolean isReference(String code) {
-    return code != null && code.endsWith("-v2") && PROFILES.containsKey(code.replace("-v2", "-v1"));
+    return code != null
+        && code.matches("[a-z]+-v[23]")
+        && PROFILES.containsKey(code.replaceAll("-v[23]$", "-v1"));
   }
 
   /** Preserva a identidade comprada; barbearia continua candidata sem autorização comercial. */

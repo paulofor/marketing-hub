@@ -14,7 +14,7 @@ class KitVisualReferenceContractTest {
   /** Outra especialidade deve manter identidade própria, sem alterar o caminho histórico. */
   @Test
   void acceptsSeparateProfilesAndPreservesLegacy() {
-    for (String profile : new String[] {"nails-v2", "hair-v2"}) {
+    for (String profile : new String[] {"nails-v2", "hair-v2", "nails-v3", "hair-v3"}) {
       assertThat(KitVisualReferenceContract.validate(profile, proof(profile))).isNotNull();
       assertThat(KitSpecialties.profiles("beauty-v2")).hasSize(6);
     }
@@ -41,6 +41,28 @@ class KitVisualReferenceContractTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  /** Impede promover uma composição antiga ou uma fonte estrangeira à candidata editorial. */
+  @Test
+  void rejectsMissingEditorialIdentityAndCrossVersionSource() {
+    var value = proof("nails-v3");
+    value.remove("compositionVersion");
+    assertThatThrownBy(() -> KitVisualReferenceContract.validate("nails-v3", value))
+        .hasMessageContaining("editorial");
+    value.put("compositionVersion", "REFERENCE_EDITORIAL_V3");
+    ((ObjectNode) value.path("assets").get(0)).put("sourceProfileCode", "hair-v2");
+    assertThatThrownBy(() -> KitVisualReferenceContract.validate("nails-v3", value))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(KitSpecialties.profiles("beauty-v3"))
+        .hasSize(6)
+        .allMatch(p -> p.code().endsWith("-v3"));
+    assertThat(KitCompositorCapabilities.parse("nails-v3,hair-v2"))
+        .containsExactlyInAnyOrder("nails-v3", "hair-v2");
+    assertThat(
+            KitSpecialties.declaredProfile(
+                json.createObjectNode().put("kitProfileCode", "beauty-v3")))
+        .contains("beauty-v3");
+  }
+
   /** Cria recibo sintético sem utilizar nem aprovar uma fotografia comercial. */
   private ObjectNode proof(String profile) {
     var value =
@@ -49,11 +71,13 @@ class KitVisualReferenceContractTest {
             .put("profileCode", profile)
             .put("commercialApproval", false)
             .put("librarySha256", "a".repeat(64));
+    if (profile.endsWith("-v3")) value.put("compositionVersion", "REFERENCE_EDITORIAL_V3");
     var assets = value.putArray("assets");
     for (int i = 0; i < 5; i++)
       assets
           .addObject()
           .put("profileCode", profile)
+          .put("sourceProfileCode", profile.replace("-v3", "-v2"))
           .put("sha256", String.valueOf(i).repeat(64))
           .put("sourceUrl", "https://www.pexels.com/photo/123/")
           .put("licenseUrl", "https://www.pexels.com/license/")
@@ -62,7 +86,7 @@ class KitVisualReferenceContractTest {
     return value;
   }
 
-  /** O contrato HTTP aceita ambas as versões instaladas e recusa uma versão desconhecida. */
+  /** O contrato HTTP aceita as três versões instaladas e recusa uma versão desconhecida. */
   @Test
   void acceptsInstalledSpecialtyAtHttpBoundary() {
     try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
@@ -72,7 +96,8 @@ class KitVisualReferenceContractTest {
               .class;
       assertThat(validator.validateValue(type, "specialtyCode", "nails-v2")).isEmpty();
       assertThat(validator.validateValue(type, "specialtyCode", "hair-v1")).isEmpty();
-      assertThat(validator.validateValue(type, "specialtyCode", "nails-v3")).isNotEmpty();
+      assertThat(validator.validateValue(type, "specialtyCode", "nails-v3")).isEmpty();
+      assertThat(validator.validateValue(type, "specialtyCode", "nails-v4")).isNotEmpty();
     }
   }
 }

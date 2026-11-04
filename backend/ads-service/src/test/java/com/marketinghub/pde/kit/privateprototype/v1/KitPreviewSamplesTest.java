@@ -17,7 +17,8 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: provar identidade, integridade e ausência de efeitos das amostras públicas. */
 class KitPreviewSamplesTest {
   /**
-   * Confere os seis PNG e sua origem sem consultar sessões, compor pacotes ou cobrar provedores.
+   * Confere os PNG das duas composições e sua origem sem consultar sessões, compor pacotes ou
+   * cobrar provedores.
    */
   @Test
   void servesOnlyVerifiedVersionedSamplesWithoutSessionEffects() throws Exception {
@@ -27,7 +28,14 @@ class KitPreviewSamplesTest {
         new ObjectMapper()
             .readTree(
                 new ClassPathResource("private-kit-v1/samples/manifest.json").getInputStream());
+    var editorial =
+        new ObjectMapper()
+            .readTree(
+                new ClassPathResource("private-kit-v1/samples/manifest-v3.json").getInputStream());
     assertThat(manifest.path("samples").size()).isEqualTo(6);
+    assertThat(editorial.path("samples").size()).isEqualTo(6);
+    ((com.fasterxml.jackson.databind.node.ArrayNode) manifest.path("samples"))
+        .addAll((com.fasterxml.jackson.databind.node.ArrayNode) editorial.path("samples"));
     for (var sample : manifest.path("samples")) {
       var response = controller.sample(sample.path("profileCode").asText());
       byte[] bytes = response.getBody();

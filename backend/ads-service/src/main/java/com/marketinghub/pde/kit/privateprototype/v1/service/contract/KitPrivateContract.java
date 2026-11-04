@@ -55,7 +55,7 @@ public final class KitPrivateContract {
       boolean consentAccepted,
       @com.fasterxml.jackson.annotation.JsonInclude(
               com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-          @Pattern(regexp = "(?:nails|barber|hair|makeup|brows|aesthetics)-v[12]")
+          @Pattern(regexp = "(?:nails|barber|hair|makeup|brows|aesthetics)-v[123]")
           String specialtyCode) {
     /** Preserva o briefing dos perfis históricos sem seleção adicional. */
     public Input(

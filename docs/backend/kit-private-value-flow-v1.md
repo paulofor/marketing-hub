@@ -58,3 +58,19 @@ de fonte é desconhecida. Sessões e eventos de QA nunca são prova comercial.
 
 Validação e limites: [matriz e evidências locais](../homologacao/fluidez-produtos-capella-v1.md).
 Regressão da passagem completa: [conclusão do Processo 3](../homologacao/capella-conclusao-processo3-v1.md).
+
+
+## Composição editorial versionada — 04/11/2026
+
+`beauty-v3` declara os seis perfis `*-v3` no catálogo existente. O compositor anuncia
+somente capacidades instaladas; sessões e filas anteriores continuam nos seus perfis.
+A nova composição usa `EditorialKitArtwork`, preservando `ReferenceKitArtwork` da v2.
+O recibo `KIT_LICENSED_REFERENCE_V1` da v3 exige `compositionVersion=REFERENCE_EDITORIAL_V3`
+e `sourceProfileCode=*-v2` em cada fonte, mantendo licença, hash e bytes do acervo.
+As prévias públicas são arquivos próprios e possuem `samples/manifest-v3.json`;
+o contrato de entrada de `capella-beleza-v4` não altera descritores históricos.
+
+A fixture local existente aceita `KIT_TEST_DATABASE=h2` para exercício funcional sem
+Docker; mantém MySQL/Liquibase como padrão. H2 não comprova schema nem limites MySQL.
+Com `KIT_TEST_REFERENCE=true` e `KIT_TEST_REFERENCE_VERSION=3`, a mesma aplicação testa
+a família nova. Não utilizar esses modos em produção nem declarar aprovação comercial.

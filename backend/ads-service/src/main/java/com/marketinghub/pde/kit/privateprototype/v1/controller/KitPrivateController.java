@@ -83,14 +83,16 @@ public class KitPrivateController {
     return resource("prototype.css", "text/css;charset=UTF-8");
   }
 
-  /** Entrega somente amostras públicas do compositor v2, sem dados ou composição de uma sessão. */
+  /**
+   * Entrega somente amostras públicas dos compositores licenciados, sem dados ou composição de uma
+   * sessão.
+   */
   @GetMapping(value = "/samples/{profile}.png", produces = "image/png")
   @io.swagger.v3.oas.annotations.Operation(
       summary = "Consultar amostra ilustrativa da especialidade sem gerar um pacote")
   public ResponseEntity<byte[]> sample(@PathVariable String profile) {
-    if (com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.profiles("beauty-v2")
-        .stream()
-        .noneMatch(specialty -> specialty.code().equals(profile))) {
+    if (!com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.isReference(profile)
+        || com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.isFamily(profile)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Amostra indisponível neste perfil.");
     }
     return resource("samples/" + profile + ".png", "image/png");

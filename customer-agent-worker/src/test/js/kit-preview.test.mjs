@@ -10,10 +10,11 @@ let library; try { library = require('playwright'); } catch { library = require(
 const { chromium, devices } = library;
 const root = fileURLToPath(new URL('../../../../backend/ads-service/src/main/resources/private-kit-v1/', import.meta.url));
 const names = {nails:'Unhas', barber:'Barbearia', hair:'Cabelo', makeup:'Maquiagem', brows:'Sobrancelhas e cílios', aesthetics:'Estética não clínica'};
-const specialties = Object.entries(names).map(([code,label]) => ({code:code+'-v2',label,serviceExample:label}));
+
 const presentation = {title:'Conheça seu kit de divulgação',introduction:'Escolha uma especialidade para conferir o acabamento.',statusMessage:''};
 
-test('prévia real: desktop/mobile, troca de especialidade, falha honesta e versão histórica', async () => {
+for (const version of [2, 3]) test(`prévia real v${version}: desktop/mobile, troca, falha honesta e versão histórica`, async () => {
+  const specialties = Object.entries(names).map(([code,label]) => ({code:code+`-v${version}`,label,serviceExample:label}));
   let legacy = false;
   const server = createServer(async (req,res) => {
     if(req.url === '/session') {
@@ -21,7 +22,7 @@ test('prévia real: desktop/mobile, troca de especialidade, falha honesta e vers
       res.end(JSON.stringify({id:'fixture',status:'INPUT',productName:'Capella · demonstração',presentation,specialties:legacy?[{code:'barber-v1',label:'Barbearia',serviceExample:'Corte e barba'}]:specialties,events:[]}));return;
     }
     const path = req.url === '/prototype' ? 'prototype.html' : req.url.slice(1);
-    if(!/^(prototype\.(html|js|css)|samples\/[a-z]+-v2\.png)$/.test(path)) {res.writeHead(404);res.end();return;}
+    if(!/^(prototype\.(html|js|css)|samples\/[a-z]+-v[23]\.png)$/.test(path)) {res.writeHead(404);res.end();return;}
     try {res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.png')?'image/png':'text/html');res.end(await readFile(root+path));}
     catch {res.writeHead(404);res.end();}
   });
@@ -35,7 +36,7 @@ test('prévia real: desktop/mobile, troca de especialidade, falha honesta e vers
       await page.addInitScript(()=>sessionStorage.setItem('private-kit-session-v1','a'.repeat(64)));
       await page.goto(base+'/prototype');
       await page.locator('#sample-image').waitFor({state:'visible'});
-      await page.locator('#specialty').selectOption('barber-v2');
+      await page.locator('#specialty').selectOption(`barber-v${version}`);
       await page.waitForFunction(()=>document.querySelector('#sample-image').getAttribute('alt').includes('barbearia'));
       assert.equal(await page.locator('#sample-image').evaluate(e=>e.naturalWidth),1080);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -53,15 +54,15 @@ test('prévia real: desktop/mobile, troca de especialidade, falha honesta e vers
       });
       assert.ok(box.left>=0&&box.top>=0&&box.right<=box.width&&box.bottom<=box.height,JSON.stringify(box));
       await page.getByRole('button',{name:'Fechar ampliação',exact:true}).click();
-      if(process.env.KIT_VISUAL_SCREENSHOTS) {await mkdir(process.env.KIT_VISUAL_SCREENSHOTS,{recursive:true});await page.screenshot({path:process.env.KIT_VISUAL_SCREENSHOTS+'/preview-'+name+'.png',fullPage:true});}
-      await page.route('**/samples/hair-v2.png',async route=>{await new Promise(resolve=>setTimeout(resolve,250));await route.continue();});
-      await page.locator('#specialty').selectOption('hair-v2');
-      await page.locator('#specialty').selectOption('makeup-v2');
+      if(process.env.KIT_VISUAL_SCREENSHOTS) {await mkdir(process.env.KIT_VISUAL_SCREENSHOTS,{recursive:true});await page.screenshot({path:process.env.KIT_VISUAL_SCREENSHOTS+'/preview-v'+version+'-'+name+'.png',fullPage:true});}
+      await page.route(`**/samples/hair-v${version}.png`,async route=>{await new Promise(resolve=>setTimeout(resolve,250));await route.continue();});
+      await page.locator('#specialty').selectOption(`hair-v${version}`);
+      await page.locator('#specialty').selectOption(`makeup-v${version}`);
       await page.waitForFunction(()=>document.querySelector('#sample-image').getAttribute('alt').includes('maquiagem'));
       await page.waitForTimeout(300);
-      assert.match(await page.locator('#sample-image').getAttribute('src'),/makeup-v2.png$/);
-      await page.route('**/samples/brows-v2.png',route=>route.fulfill({status:404,body:''}));
-      await page.locator('#specialty').selectOption('brows-v2');
+      assert.match(await page.locator('#sample-image').getAttribute('src'),new RegExp(`makeup-v${version}\\.png$`));
+      await page.route(`**/samples/brows-v${version}.png`,route=>route.fulfill({status:404,body:''}));
+      await page.locator('#specialty').selectOption(`brows-v${version}`);
       await page.getByText('A amostra não carregou.',{exact:false}).waitFor();
       assert.equal(await page.locator('#sample-image').isHidden(),true);
       legacy=true;await page.reload();

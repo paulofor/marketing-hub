@@ -1,0 +1,169 @@
+{
+  "contractVersion": "KIT_EDITORIAL_LOCAL_VALIDATION_V1",
+  "database": "H2 em modo MySQL; não comprova MySQL 5.7/Liquibase",
+  "syntheticOnly": true,
+  "modelCalls": 0,
+  "commercialApproval": false,
+  "reports": [
+    {
+      "report": "report",
+      "reportSha256": "988df354bc579f7059aca7b82cb45aabada1f452a862158dfe8c2e5cd5169ee3",
+      "productId": 8037,
+      "profileCode": "beauty-v3",
+      "prototypeVersion": "beauty-candidate-v1",
+      "startedAt": "2026-11-04T06:31:55.654Z",
+      "finishedAt": "2026-11-04T06:32:35.625Z",
+      "scenarioCount": 9,
+      "captureCount": 21,
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "resultReadySeconds": 15.735,
+          "packageFileCount": 36,
+          "zipSha256": "b8cdb939fdc99a8a1007f73ecb5b7f7af895f82d08909a3ef27d81fa0a418581",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "resultReadySeconds": 2.237,
+          "packageFileCount": 36,
+          "zipSha256": "b8cdb939fdc99a8a1007f73ecb5b7f7af895f82d08909a3ef27d81fa0a418581",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "resultReadySeconds": 1.825,
+          "packageFileCount": 36,
+          "zipSha256": "b8cdb939fdc99a8a1007f73ecb5b7f7af895f82d08909a3ef27d81fa0a418581",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "resultReadySeconds": 9.182,
+          "packageFileCount": 36,
+          "zipSha256": "dc7ed370dbf8bc6cc6a646ab5ef42c7ed02f732f532c7b882587f6893dfd809c",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "resultReadySeconds": 1.664,
+          "packageFileCount": 36,
+          "zipSha256": "dc7ed370dbf8bc6cc6a646ab5ef42c7ed02f732f532c7b882587f6893dfd809c",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "resultReadySeconds": 1.668,
+          "packageFileCount": 36,
+          "zipSha256": "dc7ed370dbf8bc6cc6a646ab5ef42c7ed02f732f532c7b882587f6893dfd809c",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "resultReadySeconds": 0.486,
+          "packageFileCount": 0,
+          "zipSha256": null,
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "resultReadySeconds": 0.463,
+          "packageFileCount": 0,
+          "zipSha256": null,
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "resultReadySeconds": 0.524,
+          "packageFileCount": 0,
+          "zipSha256": null,
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        }
+      ]
+    },
+    {
+      "report": "other-product-report",
+      "reportSha256": "1ffea7c1d6cfd6e56b6badb6c31771443a16465e7851b0ac34512383817cc5b8",
+      "productId": 8048,
+      "profileCode": "beauty-v3",
+      "prototypeVersion": "beauty-candidate-v1",
+      "startedAt": "2026-11-04T06:33:14.394Z",
+      "finishedAt": "2026-11-04T06:33:29.537Z",
+      "scenarioCount": 1,
+      "captureCount": 4,
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "resultReadySeconds": 14.768,
+          "packageFileCount": 36,
+          "zipSha256": "5ae10069e9f3d326a5049ff9ea98f1f1f311972959cd5cefdb48642782b083b5",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        }
+      ]
+    },
+    {
+      "report": "legacy-report",
+      "reportSha256": "9db44e5531170873e62fd62437520af71a90416f5f0c01b1a4a3c78ac9a3e9fa",
+      "productId": 8018,
+      "profileCode": "barber-v1",
+      "prototypeVersion": "barber-candidate-v1",
+      "startedAt": "2026-11-04T06:33:29.784Z",
+      "finishedAt": "2026-11-04T06:33:43.951Z",
+      "scenarioCount": 1,
+      "captureCount": 4,
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "resultReadySeconds": 13.646,
+          "packageFileCount": 36,
+          "zipSha256": "64e2edd6df6a5d236f75425860e965dd999adb49597ca6dafae09ef8868e0138",
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "mhInternalTest": true
+        }
+      ]
+    }
+  ]
+}

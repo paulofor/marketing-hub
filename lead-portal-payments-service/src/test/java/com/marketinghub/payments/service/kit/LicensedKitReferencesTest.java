@@ -46,7 +46,20 @@ class LicensedKitReferencesTest {
    */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
-      strings = {"nails-v2", "barber-v2", "hair-v2", "makeup-v2", "brows-v2", "aesthetics-v2"})
+      strings = {
+        "nails-v2",
+        "barber-v2",
+        "hair-v2",
+        "makeup-v2",
+        "brows-v2",
+        "aesthetics-v2",
+        "nails-v3",
+        "barber-v3",
+        "hair-v3",
+        "makeup-v3",
+        "brows-v3",
+        "aesthetics-v3"
+      })
   void composesAndRecoversReadablePackageWithoutPaidProvider(String profile) throws Exception {
     var repo = mock(AgendaCheiaDeliveryRepository.class);
     var email = mock(DigitalProductPostPurchaseEmailService.class);
@@ -58,7 +71,7 @@ class LicensedKitReferencesTest {
     input.setProfessionalName("Studio Aurora");
     input.setBuyerEmail("teste+referencias@sandbox.local");
     input.setCityRegion("Cidade Exemplo");
-    input.setWhatsapp("11999999999");
+    input.setWhatsapp(profile.endsWith("-v3") ? "00000000000" : "11999999999");
     input.setServices(CapellaKitCatalog.byCode(profile).serviceExamples().split(":")[0]);
     input.setVisualStyle("Contemporâneo");
     input.setPreferredColors("Vinho e creme");

@@ -97,6 +97,38 @@ class LearningCycleImplementedInputContextTest {
   }
 
   /**
+   * Expõe a composição editorial somente na candidata nova, preservando os descritores anteriores.
+   */
+  @Test
+  void editorialCandidateKeepsHistoricalInputVersionsSeparate() {
+    for (long id : List.of(7L, 99007L)) {
+      when(products.findById(id))
+          .thenReturn(
+              Optional.of(Product.builder().id(id).slug("agenda-cheia-para-manicures").build()));
+      var current = service.resolve(cycle(id, "capella-beleza-v4")).orElseThrow();
+      var old = service.resolve(cycle(id, "capella-beleza-v3")).orElseThrow();
+      var codes = new java.util.ArrayList<String>();
+      current
+          .path("conditionalFields")
+          .get(0)
+          .path("allowedValues")
+          .forEach(v -> codes.add(v.asText()));
+      assertThat(codes)
+          .containsExactlyInAnyOrderElementsOf(
+              com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.profiles(
+                      "beauty-v3")
+                  .stream()
+                  .map(
+                      com.marketinghub.pde.kit.privateprototype.v1.service.KitSpecialties.Specialty
+                          ::code)
+                  .toList());
+      assertThat(old.path("conditionalFields").toString()).doesNotContain("-v3");
+      assertThat(current.path("agentApprovalClaimed").asBoolean()).isFalse();
+      assertThat(current.path("commercialEvidenceClaimed").asBoolean()).isFalse();
+    }
+  }
+
+  /**
    * Entrega estilo e preferências somente à nova versão, inclusive com outra identidade de produto.
    */
   @Test

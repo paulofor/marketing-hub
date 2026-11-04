@@ -17,7 +17,8 @@ class PrivateKitHarnessContractTest {
   private final ObjectMapper json = new ObjectMapper();
 
   /**
-   * Comprova as matrizes v1/v2 e recusa formato anterior, quantidade incorreta e captura ausente.
+   * Comprova as matrizes v1/v2/v3 e recusa formato anterior, quantidade incorreta e captura
+   * ausente.
    */
   @Test
   void validatesLocalNineCaseReport() throws Exception {
@@ -44,7 +45,8 @@ class PrivateKitHarnessContractTest {
             "TECHNICAL",
             null,
             expected);
-    assertThat(artifacts).hasSize(report.path("profileCode").asText().endsWith("-v2") ? 21 : 15);
+    assertThat(artifacts)
+        .hasSize(report.path("profileCode").asText().matches("[a-z]+-v[23]") ? 21 : 15);
     for (String failure :
         List.of(
             "previous-format",

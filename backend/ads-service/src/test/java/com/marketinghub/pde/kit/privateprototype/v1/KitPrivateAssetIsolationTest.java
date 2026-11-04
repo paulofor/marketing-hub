@@ -18,7 +18,9 @@ class KitPrivateAssetIsolationTest {
   @CsvSource({
     "nails-v1,nails-v1,ADHERENT",
     "barber-v1,barber-v1,ADHERENT",
-    "beauty-v1,hair-v1,ADHERENT:hair-v1"
+    "beauty-v1,hair-v1,ADHERENT:hair-v1",
+    "beauty-v3,nails-v3,ADHERENT:nails-v3",
+    "beauty-v3,hair-v3,ADHERENT:hair-v3"
   })
   void servesOwnArtifactAndRefusesAnotherSpecialtyOrExperiment(
       String family, String selected, String owner) throws Exception {

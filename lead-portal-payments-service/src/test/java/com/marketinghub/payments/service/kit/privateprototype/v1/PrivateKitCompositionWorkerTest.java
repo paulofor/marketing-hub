@@ -23,7 +23,7 @@ class PrivateKitCompositionWorkerTest {
    * vez.
    */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {"nails-v1", "nails-v2"})
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"nails-v1", "nails-v2", "nails-v3"})
   void replaysSavedZipAfterCallbackFailureAndRestart(String profile) throws Exception {
     var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     var attempts = new AtomicInteger();
@@ -39,8 +39,12 @@ class PrivateKitCompositionWorkerTest {
         exchange -> {
           String path = exchange.getRequestURI().getPath();
           assertThat(exchange.getRequestHeaders().getFirst("X-Kit-Supported-Profiles"))
-              .isEqualTo(String.join(",", new java.util.TreeSet<>(
-                  com.marketinghub.payments.service.kit.CapellaKitCatalog.supportedProfiles())));
+              .isEqualTo(
+                  String.join(
+                      ",",
+                      new java.util.TreeSet<>(
+                          com.marketinghub.payments.service.kit.CapellaKitCatalog
+                              .supportedProfiles())));
           String response =
               path.endsWith("pending")
                   ? (attempts.get() == 0 ? "[{\"id\":\"" + id + "\"}]" : "[]")
@@ -51,7 +55,7 @@ class PrivateKitCompositionWorkerTest {
                       : "";
           if (path.endsWith("result")) {
             byte[] body = exchange.getRequestBody().readAllBytes();
-            if (profile.endsWith("-v2")) {
+            if (profile.matches("[a-z]+-v[23]")) {
               assertThat(exchange.getRequestHeaders().getFirst("Content-Type"))
                   .startsWith("multipart/form-data");
               assertThat(new String(body, StandardCharsets.ISO_8859_1))
@@ -90,13 +94,20 @@ class PrivateKitCompositionWorkerTest {
     }
   }
 
-  /** Confere que todo perfil anunciado resolve um contrato instalado, incluindo a fotografia v2. */
+  /**
+   * Confere que todo perfil anunciado resolve um contrato instalado, incluindo as composições
+   * fotográficas v2/v3.
+   */
   @org.junit.jupiter.api.Test
   void advertisedProfilesAreInstalledAndVersioned() {
     var profiles = com.marketinghub.payments.service.kit.CapellaKitCatalog.supportedProfiles();
-    assertThat(profiles).hasSize(12).contains("hair-v2", "barber-v2", "nails-v1");
-    profiles.forEach(profile -> assertThat(
-        com.marketinghub.payments.service.kit.CapellaKitCatalog.byCode(profile).code())
-        .isEqualTo(profile));
+    assertThat(profiles)
+        .hasSize(18)
+        .contains("hair-v2", "barber-v2", "nails-v1", "nails-v3", "hair-v3");
+    profiles.forEach(
+        profile ->
+            assertThat(
+                    com.marketinghub.payments.service.kit.CapellaKitCatalog.byCode(profile).code())
+                .isEqualTo(profile));
   }
 }

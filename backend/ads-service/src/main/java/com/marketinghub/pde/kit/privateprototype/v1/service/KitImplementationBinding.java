@@ -43,7 +43,10 @@ public class KitImplementationBinding {
         architecture.id(),
         hash(architecture),
         resolved(cycle, architecture).orElse(null),
-        List.of(KitSpecialties.BEAUTY, KitSpecialties.BEAUTY_REFERENCE));
+        List.of(
+            KitSpecialties.BEAUTY,
+            KitSpecialties.BEAUTY_REFERENCE,
+            KitSpecialties.BEAUTY_EDITORIAL));
   }
 
   /** Registra seleção explícita e idempotente; mudança do desenho invalida o vínculo antigo. */

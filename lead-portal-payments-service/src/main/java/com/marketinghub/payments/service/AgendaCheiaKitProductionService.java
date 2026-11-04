@@ -11,6 +11,7 @@ import com.marketinghub.payments.repository.AgendaCheiaDeliveryRepository;
 import com.marketinghub.payments.service.kit.CapellaKitCatalog;
 import com.marketinghub.payments.service.kit.CapellaKitProfile;
 import com.marketinghub.payments.service.kit.CapellaKitText;
+import com.marketinghub.payments.service.kit.EditorialKitArtwork;
 import com.marketinghub.payments.service.kit.LicensedKitReferences;
 import com.marketinghub.payments.service.kit.PrivateKitIllustrations;
 import com.marketinghub.payments.service.kit.ReferenceKitArtwork;
@@ -234,6 +235,7 @@ public class AgendaCheiaKitProductionService {
                 index,
                 photos.get(index),
                 reference,
+                profile.code().endsWith("-v3"),
                 focusY));
         images.add(
             render(
@@ -245,6 +247,7 @@ public class AgendaCheiaKitProductionService {
                 index + 10,
                 photos.get(index),
                 reference,
+                profile.code().endsWith("-v3"),
                 focusY));
       }
       Files.writeString(
@@ -283,10 +286,7 @@ public class AgendaCheiaKitProductionService {
     }
   }
 
-  /**
-   * Renderiza a versão escolhida; referências v2 usam áreas legíveis sem alterar a composição
-   * histórica.
-   */
+  /** Renderiza a composição explicitamente selecionada, preservando integralmente v1 e v2. */
   private Path render(
       Path output,
       int width,
@@ -296,8 +296,22 @@ public class AgendaCheiaKitProductionService {
       int variant,
       BufferedImage photo,
       boolean reference,
+      boolean editorial,
       double focusY)
       throws IOException {
+    if (reference && editorial)
+      return EditorialKitArtwork.render(
+          output,
+          height,
+          photo,
+          text.publicText(briefing.getProfessionalName()),
+          text.publicText(briefing.getWhatsapp())
+              + " · "
+              + text.publicText(briefing.getCityRegion()),
+          text.serviceName(briefing),
+          headline,
+          variant,
+          focusY);
     if (reference)
       return ReferenceKitArtwork.render(
           output,

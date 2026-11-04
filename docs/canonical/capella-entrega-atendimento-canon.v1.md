@@ -278,3 +278,18 @@ Callbacks já produzidos conservam autenticação, bytes, hash, custo e replay e
 Falhas anteriores não são apagadas nem convertidas em sucesso. A aceitação privada continua
 exigindo pacote íntegro de cada especialidade na versão exata, testes determinísticos e
 registro da prova antes dos pareceres independentes. Não autoriza mídia nem audiovisual pago.
+
+
+### Composição editorial privada — 04/11/2026
+
+A família `beauty-v3` e seus seis perfis `*-v3` preservam as fotografias licenciadas
+anteriores com um compositor próprio. Post e story têm áreas e tamanhos de leitura
+específicos; nome, contato, mensagem e aviso não são cortados silenciosamente. A origem
+identifica a versão da composição e o perfil da fonte. A prévia inicial corresponde
+à composição selecionada. As famílias anteriores continuam disponíveis sem alteração.
+A candidata `capella-beleza-v4` tem descritor de entrada próprio, sem exigir novos campos.
+
+O teste determinístico confirma integridade e comportamento. O acabamento continua
+sujeito ao parecer independente de Psique, incluindo legibilidade em celular. Essa
+nova experiência segue em ciclo sucessor, sem herdar aprovações ou orçamento.
+[Matriz e resultados locais](../homologacao/capella-composicao-editorial-v3.md).

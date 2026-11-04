@@ -11,7 +11,10 @@ import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Responsabilidade: fornecer referências licenciadas e íntegras somente à demonstração v2. */
+/**
+ * Responsabilidade: fornecer referências licenciadas e íntegras às composições privadas
+ * versionadas.
+ */
 public final class LicensedKitReferences implements AgendaCheiaPhotoGenerator {
   private static final Logger log = LoggerFactory.getLogger(LicensedKitReferences.class);
   private static final String ROOT = "/kits/reference-v2/";
@@ -32,7 +35,8 @@ public final class LicensedKitReferences implements AgendaCheiaPhotoGenerator {
       validateManifest(json);
       var sources = new java.util.ArrayList<JsonNode>();
       for (var asset : json.path("assets"))
-        if (profile.code().equals(asset.path("profileCode").asText())) sources.add(asset);
+        if (sourceProfile(profile.code()).equals(asset.path("profileCode").asText()))
+          sources.add(asset);
       if (sources.stream().map(a -> a.path("sha256").asText()).distinct().count() != 5
           || sources.size() != 5)
         throw new IllegalStateException("Biblioteca de referência incompleta.");
@@ -102,15 +106,30 @@ public final class LicensedKitReferences implements AgendaCheiaPhotoGenerator {
         log.error("Hash da origem visual indisponível profile={}", profileCode, ex);
         throw new java.io.IOException("Hash da biblioteca indisponível.", ex);
       }
+      if (profileCode.endsWith("-v3")) result.put("compositionVersion", "REFERENCE_EDITORIAL_V3");
       var assets = result.putArray("assets");
-      for (var asset : manifest.path("assets"))
-        if (profileCode.equals(asset.path("profileCode").asText())) assets.add(asset);
+      for (var asset : manifest.path("assets")) {
+        if (sourceProfile(profileCode).equals(asset.path("profileCode").asText())) {
+          var linked = (com.fasterxml.jackson.databind.node.ObjectNode) asset.deepCopy();
+          if (profileCode.endsWith("-v3"))
+            linked.put("sourceProfileCode", sourceProfile(profileCode));
+          linked.put("profileCode", profileCode);
+          assets.add(linked);
+        }
+      }
       if (assets.size() != 5) throw new java.io.IOException("Origem visual incompleta.");
       result.put(
           "compositionMapping",
           "post/story 01-05 usam fontes 1-5; 06-10 reutilizam fontes 1-5 com outra mensagem");
       return result;
     }
+  }
+
+  /**
+   * Reutiliza a biblioteca licenciada sem alterar a identidade ou os bytes das fontes históricas.
+   */
+  private static String sourceProfile(String profile) {
+    return profile.replaceAll("-v3$", "-v2");
   }
 
   /** Limita a memória da composição mantendo o menor lado em 1080 pixels e a proporção original. */

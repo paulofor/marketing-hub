@@ -11565,6 +11565,18 @@ Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.
   a alteração da experiência exige sucessor e suas autorizações próprias.
 - **Registro:** `docs/homologacao/capella-referencias-visuais-v2.md`.
 
+### Hierarquia visual após aprovação técnica — 04/11/2026
+
+- A técnica 896 passou; Psique 897 preservou a reprovação estética com capturas reais.
+  O compositor v2 aplicava negrito a todos os níveis e quase todo crescimento do story
+  à fotografia. Trocar a foto não trataria a causa compartilhada.
+- A família editorial `beauty-v3` usa áreas e tamanhos de texto por formato, preserva
+  fotos/licença e recusa texto que não caiba sem cortes silenciosos. V1/v2 permanecem.
+- Regressões cobrem seis especialidades, versão anterior, outra identidade, origem,
+  callback e navegação. A revisão independente não foi relaxada. A composição nova
+  exige sucessor e não recebe automaticamente autorizações históricas.
+- [Matriz, provas e limites](../homologacao/capella-composicao-editorial-v3.md).
+
 
 ### Recorrência de especificação sem runtime contextual — Vega, 27/10/2026
 

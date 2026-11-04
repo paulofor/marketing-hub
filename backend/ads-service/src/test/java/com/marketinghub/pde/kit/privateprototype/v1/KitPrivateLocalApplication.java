@@ -32,9 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-/**
- * Responsabilidade: homologar a implementação real com MySQL 5.7 e contratos de agentes simulados.
- */
+/** Responsabilidade: homologar o fluxo real com banco local e contratos de agentes simulados. */
 @TestConfiguration
 @Profile("private-kit-local")
 @EnableAutoConfiguration(
@@ -56,15 +54,21 @@ public class KitPrivateLocalApplication {
     String host = System.getenv().getOrDefault("KIT_TEST_DB_HOST", "127.0.0.1");
     if (!Set.of("127.0.0.1", "sandbox-docker").contains(host))
       throw new IllegalArgumentException("Banco externo proibido.");
+    boolean memory = "h2".equals(System.getenv("KIT_TEST_DATABASE"));
     new SpringApplication(KitPrivateLocalApplication.class)
         .run(
             "--spring.config.location=optional:classpath:private-kit-local/no-production.properties",
             "--spring.profiles.active=private-kit-local",
             "--server.port=57282",
             "--server.address=127.0.0.1",
-            "--spring.datasource.url=jdbc:mysql://"
-                + host
-                + ":57283/kit_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+            "--spring.datasource.url="
+                + (memory
+                    ? "jdbc:h2:mem:kit_local;MODE=MySQL;DB_CLOSE_DELAY=-1"
+                    : "jdbc:mysql://"
+                        + host
+                        + ":57283/kit_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"),
+            "--spring.liquibase.enabled=" + !memory,
+            "--kit.local.mysql-proof=" + !memory,
             "--spring.datasource.username=kit",
             "--spring.datasource.password=kit-local-only",
             "--spring.liquibase.change-log=classpath:private-kit-local/changelog.yaml",
@@ -78,10 +82,14 @@ public class KitPrivateLocalApplication {
             "--logging.level.com.marketinghub.pde.kit=INFO");
   }
 
-  /** Confere no MySQL as entidades e o changelog produtivo, sem criação automática de schema. */
+  /** Mantém MySQL validado por Liquibase; H2 explícito serve somente ao fluxo funcional local. */
   @Bean
-  @DependsOn("liquibase")
-  LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource source) {
+  LocalContainerEntityManagerFactoryBean entityManagerFactory(
+      DataSource source,
+      org.springframework.beans.factory.ObjectProvider<liquibase.integration.spring.SpringLiquibase>
+          migrations) {
+    migrations.getIfAvailable();
+    boolean memory = "h2".equals(System.getenv("KIT_TEST_DATABASE"));
     var f = new LocalContainerEntityManagerFactoryBean();
     f.setDataSource(source);
     f.setManagedTypes(
@@ -94,12 +102,44 @@ public class KitPrivateLocalApplication {
     f.setJpaPropertyMap(
         Map.of(
             "hibernate.hbm2ddl.auto",
-            "validate",
+            memory ? "create-drop" : "validate",
             "hibernate.dialect",
-            "org.hibernate.community.dialect.MySQL57Dialect",
+            memory
+                ? "org.hibernate.dialect.H2Dialect"
+                : "org.hibernate.community.dialect.MySQL57Dialect",
             "hibernate.jdbc.time_zone",
             "UTC"));
     return f;
+  }
+
+  /** Semeia apenas identidades sintéticas no H2; não afirma validação de MySQL ou de Liquibase. */
+  @Bean
+  @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+      name = "kit.local.mysql-proof",
+      havingValue = "false")
+  ApplicationRunner seedMemoryDatabase(DataSource source, EntityManagerFactory factory) {
+    return args -> {
+      var jdbc = new org.springframework.jdbc.core.JdbcTemplate(source);
+      for (long id : List.of(7007L, 7018L, 7029L, 7037L, 7048L)) {
+        String version =
+            id == 7018 ? "barber-candidate-v1" : id >= 7037 ? "beauty-candidate-v1" : "v1";
+        jdbc.update(
+            """
+            INSERT INTO learning_sales_cycle_v1
+            (id,product_id,chain_definition_id,chain_code,process_definition_id,experiment_id,
+            request_key,creation_json,brief_json,inherited_learning_json,stage,status,product_version,
+            budget_limit_brl,open_slot,revision,baseline,created_at,updated_at,version_changed_at)
+            VALUES (?, ?, 8026, 'private-kit-local', 8125, ?, ?, '{}', '{}', '{}', 'ADJUSTMENT',
+            'OPEN', ?, 0, 1, 0, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+            id,
+            id + 1000,
+            id + 2000,
+            UUID.randomUUID().toString(),
+            version);
+      }
+      System.out.println("PRIVATE_KIT_FUNCTIONAL_H2_READY mysqlProof=false syntheticOnly=true");
+    };
   }
 
   /** Garante que claims, limites e entradas concorrentes utilizem transações reais. */
@@ -163,7 +203,8 @@ public class KitPrivateLocalApplication {
 
   /**
    * Usa o resolvedor real sobre contratos sintéticos: formato novo e referência histórica de perfis
-   * distintos, incluindo referências v2 quando solicitadas, sem substituir a decisão de capacidade.
+   * distintos, incluindo referências v2/v3 quando solicitadas, sem substituir a decisão de
+   * capacidade.
    */
   @Bean
   KitPrototypeCapabilities capabilities() {
@@ -198,7 +239,11 @@ public class KitPrivateLocalApplication {
             a -> {
               String architecture = architectures.get(a.<String>getArgument(1));
               if (architecture != null && "true".equals(System.getenv("KIT_TEST_REFERENCE")))
-                architecture = architecture.replace("beauty-v1", "beauty-v2");
+                architecture =
+                    architecture.replace(
+                        "beauty-v1",
+                        "beauty-v"
+                            + System.getenv().getOrDefault("KIT_TEST_REFERENCE_VERSION", "2"));
               return architecture == null
                   ? List.of()
                   : List.of(

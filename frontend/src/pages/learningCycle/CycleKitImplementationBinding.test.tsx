@@ -101,14 +101,14 @@ describe("Vínculo do compositor", () => {
         architectureTaskId: 829,
         architectureSha256: "a".repeat(64),
         boundProfileCode: null,
-        installedProfiles: ["beauty-v1", "beauty-v2"],
+        installedProfiles: ["beauty-v1", "beauty-v2", "beauty-v3"],
       },
     });
     vi.mocked(axios.post).mockResolvedValue({ data: {} });
     show(707);
     const select = await screen.findByLabelText(/Material da demonstração/);
     expect(select).toHaveValue("beauty-v1");
-    fireEvent.change(select, { target: { value: "beauty-v2" } });
+    fireEvent.change(select, { target: { value: "beauty-v3" } });
     fireEvent.click(
       screen.getByRole("button", {
         name: "Preparar implementação por especialidade",
@@ -117,7 +117,7 @@ describe("Vínculo do compositor", () => {
     await waitFor(() =>
       expect(axios.post).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ productId: 707, profileCode: "beauty-v2" }),
+        expect.objectContaining({ productId: 707, profileCode: "beauty-v3" }),
         expect.any(Object),
       ),
     );

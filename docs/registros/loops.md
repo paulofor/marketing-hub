@@ -10135,6 +10135,36 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   de versão, informação e comandos expiraram. Nenhuma alteração de persistência
   está nesta correção; o teste de download usa navegador real e HTTP local.
 
+### Recorrência na retomada — tarefa 893, 04/11/2026
+
+- A prova da candidata foi registrada no ciclo 19 (evento 123), e o backend iniciou
+  Psique sem intervenção manual entre atividades. A tarefa técnica 893 passou pelos
+  três dispositivos de ADHERENT e foi interrompida na recarga de RECOVERY desktop:
+  `#result` ainda oculto após os 30 segundos implícitos de `waitFor`.
+- O banco preservou o mesmo artefato `ef163f1a-2b96-4a19-8a5a-f01ae9574b0f` e os
+  eventos de download, saída e retorno. A rodada operacional anterior passou nos nove
+  cenários. Não há evidência de corrupção, recomposição ou motivo específico de rede
+  para a variação; o erro confirmado é o prazo menor fora do download.
+- A primeira correção foi insuficiente: tratou somente a transferência. A correção
+  complementar aplica prazo absoluto a todo o cenário, inclusive navegação e callbacks,
+  com abort no vencimento e sem renovar prazo, repetir pedidos ou ampliar o limite
+  externo do executor. Erro visível na experiência reprova imediatamente o resultado;
+  a falha registra cenário, dispositivo, tempo e estado visível, sem tokens.
+- `private-kit-scenario.test.mjs` reproduz a espera anterior e usa a página real com
+  backend HTTP local: preparação, imagens, copiar, baixar, sair, retornar e recarregar
+  com atraso; Capella e outra identidade, desktop/Pixel/iPhone, caminho rápido antes
+  válido, pacote preservado e composição/download únicos. HTTP 503 continua falhando;
+  prazo total esgotado aborta o callback pendente e não inicia outro.
+- Limite comercial: homologação determinística, sem chamada de IA, aprovação de peças,
+  liberação de mídia ou evidência de demanda. Preservar o bloqueio 893 na auditoria.
+- Validação complementar: 69 testes de navegador aprovados na sandbox, em série devido
+  ao limite local de 512 processos; 241 testes Java aprovados e 13 condicionais não
+  executados. O cenário RECOVERY desktop, executado pela sandbox sobre a candidata
+  existente, terminou em 33,393 segundos com o mesmo pacote. Adotar somente com
+  integridade, retomada e bloqueios preservados; reverter se o prazo for renovado,
+  pedidos forem repetidos ou erros reais passarem como sucesso. Impacto comercial
+  ainda não medido; a métrica operacional é recorrência de bloqueios por espera implícita.
+
 ## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
 
 - **Caso:** Psique 699, Vega v13 / ciclo 10 / experimento 103, rejeitou o rodapé que dizia existir

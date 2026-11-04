@@ -1,0 +1,18 @@
+{
+  "cardKey": "intencao-definida-validacao-oferta-ia",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Comprador com escolha definida: verificar oferta antes do checkout",
+  "finding": "Pesquisa brasileira da Stefanini Marketing (28/10/2026; painel de 1.000 respondentes): 66% chegam à IA com produto, marca e modelo já definidos; 49% relatam comparar preços, 47% verificar promoções e 42% checar a confiabilidade da loja. São autorrelatos no contexto da Black Friday, não vendas rastreadas.",
+  "mechanism": "Hipótese: para compradores já decididos, informações verificáveis sobre preço, condições e confiança podem resolver incertezas mais relevantes que uma nova recomendação. A pesquisa não isola mecanismo causal.",
+  "commercialApplication": "Testar na mesma oferta digital uma experiência com confirmação de preço, conteúdo entregue, condições, reembolso e fontes verificáveis, contra a página comercial atual; usar as mesmas regras de tráfego e atribuição.",
+  "evidenceStrength": "Evidência descritiva brasileira: pesquisa de marca com painel de 1.000 respondentes e complementos qualitativos. Questionário integral, seleção amostral e denominadores por pergunta não disponíveis no comunicado; fraca para inferir impacto causal ou conversão.",
+  "publishedOn": "2026-11-04",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "No tráfego B2C randomizado de compradores com intenção já definida, apresentação verificável das condições da oferta elevará pagamentos conciliados por visitante sem aumentar reembolsos, reclamações ou custo de aquisição.",
+  "risks": "Inventar histórico de preços ou prova social, interpretar autodeclaração como venda, apresentar avaliações não verificadas, tratamento inadequado de dados pessoais e induzir falsa urgência promocional.",
+  "limits": "Black Friday não representa todas as compras digitais, e intenção de usar IA (86%) não é adoção observada. Os 66%, 49%, 47% e 42% são reportados pela Stefanini, não métricas próprias. Nenhum resultado de conversão foi medido no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-04-stefanini-ia-validacao-oferta.md",
+  "sourceTitle": "IA para verificar uma compra já definida — Stefanini Marketing (28/10/2026)",
+  "sourceSha256": "7dd72acf377bfa5e13401fa0fbeaacb4260850a4382fa8b6e4279c3c93634a21"
+}

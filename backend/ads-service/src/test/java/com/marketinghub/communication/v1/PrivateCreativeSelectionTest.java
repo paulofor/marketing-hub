@@ -75,6 +75,7 @@ class PrivateCreativeSelectionTest {
     }
     var readiness = selection.readiness(process, product, reference).orElseThrow();
     assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.reason()).contains("não aprova nem conclui um vídeo");
     assertThat(readiness.reviewAndAccept()).isTrue();
     assertThat(readiness.workspaceReferenceId()).isNull();
     assertThat(readiness.reviewAssets())
@@ -95,6 +96,8 @@ class PrivateCreativeSelectionTest {
             .orElseThrow();
     assertThat(completed.objectiveAchieved()).isTrue();
     assertThat(completed.structuredEvidence())
+        .containsEntry("approvedFormats", List.of("STATIC_IMAGE"))
+        .containsEntry("audiovisualApproved", false)
         .containsEntry("scope", "PRIVATE_PREPARATION")
         .containsEntry("sourceReference", reference)
         .containsEntry("prototypeVersion", version)

@@ -48,7 +48,7 @@ public class PrivateCreativeSelection {
                 reviewAssets = reviewAssets(proof);
                 ready = true;
                 reason =
-                    "Íris, Psique e Têmis concluíram a mesma peça privada. Falta seu aceite de uso.";
+                    "Íris, Psique e Têmis revisaram a mesma imagem. Falta seu aceite de uso da imagem; esta decisão não aprova nem conclui um vídeo.";
                 audit = auditReference(reference, proof);
                 token = confirmationToken(reference, context, proof);
               } catch (RuntimeException ex) {
@@ -63,10 +63,10 @@ public class PrivateCreativeSelection {
               return new HumanProductProcessActivityReadiness(
                   ready,
                   reason,
-                  "Aprovar uso privado da peça",
+                  "Aprovar uso privado da imagem",
                   "Registra a peça e os pareceres nesta preparação privada. Não publica, cobra, autoriza mídia ou gera vídeo pago.",
-                  "Confirmar uso privado",
-                  "Aprovo o uso desta peça revisada na preparação privada, sem publicação comercial, cobrança ou mídia.",
+                  "Confirmar somente a imagem",
+                  "Aprovo somente esta imagem revisada na preparação privada. Esta decisão não aprova vídeo, publicação comercial, cobrança ou mídia.",
                   token,
                   null,
                   null,
@@ -109,6 +109,8 @@ public class PrivateCreativeSelection {
               evidence.put(
                   "selectionSha256",
                   confirmationToken.substring(confirmationToken.lastIndexOf(':') + 1));
+              evidence.put("approvedFormats", List.of("STATIC_IMAGE"));
+              evidence.put("audiovisualApproved", false);
               evidence.put("published", false);
               evidence.put("publicationAuthorized", false);
               evidence.put("paymentEnabled", false);

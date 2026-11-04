@@ -48,7 +48,7 @@ public class LearningCycleValueFlowProjection {
     var capability = capabilities.resolve(cycle);
     var compositions = artifacts.summaries(cycle.getId());
     boolean registered = prototype.resolve(cycle).isPresent();
-    var pausedRun =
+    var currentRun =
         !"OPEN".equals(cycle.getStatus()) || work == null
             ? Optional.<ProcessRun>empty()
             : runs.findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
@@ -57,7 +57,8 @@ public class LearningCycleValueFlowProjection {
                     cycle.getChainDefinitionId(),
                     cycle.getId(),
                     "experiment:" + cycle.getExperimentId())
-                .filter(r -> "PAUSED".equals(r.getStatus()));
+                .filter(Objects::nonNull);
+    var pausedRun = currentRun.filter(r -> "PAUSED".equals(r.getStatus()));
     boolean paused = pausedRun.isPresent();
     var snapshots =
         tasks.findFunctionalSnapshots(
@@ -116,7 +117,10 @@ public class LearningCycleValueFlowProjection {
         !paused && "OPEN".equals(cycle.getStatus()) && "VIDEO_APPROVAL".equals(cycle.getStage())
             ? videoReview(cycle)
             : !paused ? cycleDecisionReview(cycle) : null;
-    if (review != null && "DECISION".equals(cycle.getStage())) active = false;
+    var processReview =
+        review == null && !paused ? pendingProcessDecision(cycle, currentRun.orElse(null)) : null;
+    if (processReview != null) review = processReview;
+    if (review != null && Boolean.TRUE.equals(review.decisionNeeded())) active = false;
     String situation =
         paused
             ? "A continuidade automática deste ciclo está pausada. As entregas aceitas foram preservadas."
@@ -294,9 +298,11 @@ public class LearningCycleValueFlowProjection {
         videoBrief
             ? "Apolo · produção após briefing e avaliação de Plutus"
             : review != null
-                ? "DECISION".equals(cycle.getStage())
-                    ? "Backend · preparação após a decisão"
-                    : "Backend · integração; Psique e Têmis · homologação após o aceite"
+                ? processReview != null
+                    ? "Backend · continuidade do processo após a decisão registrada"
+                    : "DECISION".equals(cycle.getStage())
+                        ? "Backend · preparação após a decisão"
+                        : "Backend · integração; Psique e Têmis · homologação após o aceite"
                 : (paused || implementationPending) && work != null ? work.responsible() : null,
         active,
         decision,
@@ -345,6 +351,35 @@ public class LearningCycleValueFlowProjection {
         target,
         measure == null ? null : json.read(measure.getEvidenceJson()),
         measure == null ? null : "Evento #" + measure.getId() + " · " + measure.getCreatedAt());
+  }
+
+  /** Segue somente filhos do mesmo ciclo para expor a decisão humana persistida no subprocesso. */
+  private PendingReviewGuidance pendingProcessDecision(LearningSalesCycle cycle, ProcessRun run) {
+    var visited = new HashSet<Long>();
+    while (run != null && visited.add(run.getId())) {
+      if (!Objects.equals(run.getProductId(), cycle.getProductId())
+          || !Objects.equals(run.getLearningCycleId(), cycle.getId())
+          || !Objects.equals(run.getChainDefinitionId(), cycle.getChainDefinitionId())
+          || !Objects.equals(run.getSourceReference(), "experiment:" + cycle.getExperimentId()))
+        return null;
+      if ("WAITING_HUMAN".equals(run.getStatus())) {
+        return new PendingReviewGuidance(
+            "A atividade " + run.getCurrentActivityName() + " aguarda sua decisão.",
+            run.getReason(),
+            run.getCurrentOwnerName(),
+            Boolean.TRUE,
+            "Abra a atividade e confira o material, as condições e os pareceres antes de decidir. "
+                + run.getReason(),
+            "Decisão registrada no escopo exato da atividade; o backend confere o retorno ao processo pai. Aceite estático não aprova vídeo nem autoriza gasto.");
+      }
+      if (!"WAITING_SUBPROCESS".equals(run.getStatus()) || run.getChildRunId() == null) return null;
+      var parentId = run.getId();
+      run =
+          runs.findById(run.getChildRunId())
+              .filter(child -> Objects.equals(child.getParentRunId(), parentId))
+              .orElse(null);
+    }
+    return null;
   }
 
   /**

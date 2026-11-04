@@ -885,3 +885,13 @@ a causa e não produz parecer parcial. O replay de uma resposta de modelo já ex
 continua separado desse mecanismo. Aceites independentes e seleção humana permanecem.
 
 Regressão e limites: `docs/homologacao/alcyone-temis-download-recovery-2026-10-20.md`.
+
+### Clareza do pedido audiovisual — 04/11/2026
+
+A interface deve mostrar o motivo persistido quando a produção audiovisual for
+adiada na preparação privada. Briefing preservado sem pedido governado não é
+vídeo entregue. O aceite da prova PNG deve explicitar que aprova somente a imagem,
+registrando `approvedFormats=[STATIC_IMAGE]` e `audiovisualApproved=false`.
+Esse recibo não substitui produção, revisão temporal ou aceite do vídeo solicitado.
+Uma espera humana no subprocesso deve aparecer no resumo do mesmo ciclo, respeitando
+produto, cadeia, experimento e vínculo pai/filho; leituras nunca executam trabalho.

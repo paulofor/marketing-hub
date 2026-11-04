@@ -21,6 +21,13 @@ planejamento enquanto sua alteração estiver bloqueada. O impedimento deve ser 
 na própria linha. Ciclos encerrados, revisões concorrentes e outras versões permanecem
 protegidos. Não herdar decisões entre ciclos nem liberar execução por mero avanço de etapa.
 
+Na preparação para revisão comercial, um teto positivo de mídia salvo na planilha do mesmo
+ciclo, cadeia, experimento e versão atende ao requisito de planejamento. Não exigir que a verba
+operacional já tenha sido materializada: sua autorização depende das próprias revisões.
+A consulta reutiliza o recibo vigente, sem alterar verba, janela, etapa ou status do experimento.
+Teto ausente, zerado, substituído ou pertencente a outro contexto continua bloqueando. Os demais
+insumos, o preflight e a confirmação operacional posterior continuam obrigatórios.
+
 ### Edição concentrada no teto aprovado — decisão complementar de 02/11/2026
 
 Na demonstração financeira da execução, **Aprovado / teto** é a única coluna monetária

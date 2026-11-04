@@ -14,12 +14,13 @@ const { chromium, devices } = library;
 // Exercita a espera no navegador e a transferência dos bytes, sem banco ou serviço externo.
 test('download respeita prazo do cenário, preserva bytes e não repete transferência', async () => {
   let requests = 0;
+  let status = 200;
   const payload = Buffer.from('kit sintético íntegro, sem evidência comercial');
   const server = createServer((req, res) => {
     if (req.url === '/download') {
       requests++;
       setTimeout(() => {
-        res.writeHead(200, { 'Content-Type': 'application/zip' });
+        res.writeHead(status, { 'Content-Type': 'application/zip' });
         res.end(payload);
       }, 250);
       return;
@@ -28,6 +29,7 @@ test('download respeita prazo do cenário, preserva bytes e não repete transfer
     res.end(`<button id="download">Baixar pacote</button><script>
       document.querySelector('#download').onclick = async () => {
         const response = await fetch('/download');
+        if (!response.ok) return;
         const blob = await response.blob();
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -56,12 +58,25 @@ test('download respeita prazo do cenário, preserva bytes e não repete transfer
       assert.deepEqual(await readFile(await download.path()), payload, name);
       assert.equal(requests, before + 1, name);
 
+      // Indisponibilidade e acesso recusado encerram a espera; não geram evento nem repetem GET.
+      for (const code of [504, 401]) {
+        status = code;
+        const listeners = page.listenerCount('download');
+        const count = requests, started = Date.now();
+        await assert.rejects(downloadPrivateKit(page, started), new RegExp('HTTP ' + code));
+        assert.ok(Date.now() - started < 2000, 'Um erro conhecido não deve esperar dez minutos.');
+        assert.equal(requests, count + 1);
+        assert.equal(page.listenerCount('download'), listeners);
+      }
+      status = 200;
+      const afterFailures = requests;
+
       // Uma ação sem download deve falhar no prazo restante, sem esperar outros dez minutos.
       await page.evaluate(() => { document.querySelector('#download').onclick = () => {}; });
       const start = Date.now();
       await assert.rejects(downloadPrivateKit(page, start - 600000 + 150), /Timeout/);
       assert.ok(Date.now() - start < 5000, 'O prazo do cenário não pode ser renovado.');
-      assert.equal(requests, before + 1);
+      assert.equal(requests, afterFailures);
       await assert.rejects(downloadPrivateKit(page, Date.now() - 600001), /prazo de dez minutos/);
       await context.close();
     }

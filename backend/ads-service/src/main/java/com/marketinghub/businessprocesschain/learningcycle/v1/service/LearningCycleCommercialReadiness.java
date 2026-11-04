@@ -36,6 +36,9 @@ public class LearningCycleCommercialReadiness {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting opalaRouting;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private LearningCycleCostCeilings costCeilings;
+
   /** Resolve o gate sob demanda para preservar a composição dos validadores de tarefas. */
   public LearningCycleCommercialReadiness(
       ExperimentRepository experiments,
@@ -47,7 +50,8 @@ public class LearningCycleCommercialReadiness {
   }
 
   /**
-   * Consulta insumos da ocorrência exata; prontidão para revisão não autoriza publicação ou gasto.
+   * Consulta insumos e teto de planejamento da ocorrência exata; revisão não autoriza publicação ou
+   * gasto nem exige antecipar a autorização operacional.
    */
   @Transactional(readOnly = true)
   public LearningCycleCommercialPreparation inspect(LearningSalesCycle cycle) {
@@ -76,7 +80,7 @@ public class LearningCycleCommercialReadiness {
                   : "Não existe uma candidata única e validada do próprio produto, ciclo e experimento.",
               "Valide a URL da candidata exata antes da revisão; a publicação continua posterior à homologação."));
     }
-    if (cycle.getBudgetLimitBrl() == null || cycle.getBudgetLimitBrl().signum() <= 0)
+    if (!hasMediaPlanningLimit(cycle))
       requirements.add(
           new Requirement(
               "CYCLE_MEDIA_LIMIT",
@@ -137,6 +141,21 @@ public class LearningCycleCommercialReadiness {
         "Abrir preparação Opala com os agentes",
         experiment.getProduct().getProductTypeDefinition() != null
             && "PDE".equals(experiment.getProduct().getProductTypeDefinition().getCode()));
+  }
+
+  /** Prioriza o teto vigente da planilha para revisar, sem materializar verba ou janela. */
+  private boolean hasMediaPlanningLimit(LearningSalesCycle cycle) {
+    if (costCeilings != null) {
+      var current =
+          costCeilings.history(cycle).stream()
+              .filter(receipt -> receipt.current() && "MEDIA".equals(receipt.code()))
+              .findFirst();
+      if (current.isPresent()) {
+        var approved = current.orElseThrow().approved();
+        return approved != null && approved.signum() > 0;
+      }
+    }
+    return cycle.getBudgetLimitBrl() != null && cycle.getBudgetLimitBrl().signum() > 0;
   }
 
   /** Seleciona por identidade completa sem inferir a versão pela atualização mais recente. */

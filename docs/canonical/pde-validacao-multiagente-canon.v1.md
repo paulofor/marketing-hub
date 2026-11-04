@@ -208,6 +208,17 @@ correção está disponível. Uma tarefa histórica bloqueada ou cancelada não 
 nessa atividade quando o backend já classificou a origem como `EXECUTOR_FAILURE`; nesse caso, a
 execução repete `technicalHomologation` na mesma versão aceita.
 
+Quando essa falha já tiver aberto uma correção bloqueada, o gate pode registrar
+`PDE_EXECUTOR_CORRECTION_RESOLUTION_V1` depois da homologação posterior aprovada.
+O recibo exige vínculo explícito com a falha conhecida do executor, a mesma versão,
+ausência de publicação de versão nova e de efeitos externos, identidade e ordem
+temporal consistentes. Ele conserva ids e hashes da falha, da correção e da nova
+prova técnica. Não conclui nem reescreve a tarefa antiga. Psique e Têmis continuam
+sendo exigidos pelo gate; Íris reconcilia o recibo com o histórico atual antes de
+aceitar a passagem. Uma rejeição funcional, correção em andamento, versão diferente
+ou prova alterada continua bloqueante. Registro e regressão ponta a ponta:
+`docs/homologacao/capella-passagem-recuperacao-executor-v1.md`.
+
 Por decisão de 2026-09-10, refinada em 2026-09-11 após a tarefa 385 do Vega, a atividade bloqueada
 apresenta **uma única ação principal**: um link para a atividade de correção quando esse for o
 caminho vigente, ou o comando da própria atividade quando seus requisitos estiverem satisfeitos.
@@ -289,6 +300,25 @@ cenário, dispositivo, tempo decorrido e mensagem visível registrados sem crede
 O limite externo da execução permanece vigente. Essa espera técnica não amplia orçamento,
 quotas nem critérios de aprovação. Regressões: `private-kit-download.test.mjs` e
 `private-kit-scenario.test.mjs` (04/11/2026).
+
+Timeout do processo determinístico e encerramento do navegador são falhas do executor;
+isoladamente, não comprovam defeito funcional nem exigem uma versão nova do produto.
+O callback deve usar `EXECUTOR_FAILURE`, preservar o diagnóstico disponível e encerrar
+os processos filhos. Resposta HTTP recusada no download deve encerrar a espera pelo evento,
+sem repetir a transferência. Registrar status, caminho sem query, cenário e dispositivo,
+nunca credenciais. A retomada exige verificar a recuperação da causa e ausência de tarefa
+equivalente ativa; não é retry infinito. O backend reconhece o timeout canônico legado da
+homologação sem alterar seus recibos nem retirar a exigência de nova versão para uma
+rejeição funcional real. Uma correção indevidamente encaminhada não deve perpetuar esse desvio.
+
+Antes de commitar alterações em fontes compartilhadas presentes nas provas imutáveis, executar
+o empacotador local `node scripts/build-commercial-review-evidence.mjs . <diretório-local-ignorado>`.
+Executar também `PdeOperationalControlEvidenceTest`, que confere as fontes do catálogo de
+controles operacionais; o empacotador comercial não substitui essa segunda fronteira.
+Uma divergência de hash exige regressão pertinente e uma nova atestação de compatibilidade,
+com referência à anterior e relatório real. Não reescrever manifestos antigos nem apenas trocar
+hashes para liberar o CI. Atestação de compatibilidade mantém `automaticDeployOnMerge=false`
+e não renova pareceres, versão do produto, orçamento ou autorização comercial.
 
 Na passagem de um ciclo de vendas, a referência canônica pode ser `experiment:<id>`.
 O consumidor deve validar produto, experimento, ciclo e versão fornecidos pelo backend;

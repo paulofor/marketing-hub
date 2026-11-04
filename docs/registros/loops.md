@@ -9973,6 +9973,22 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   Nenhuma chamada de modelo, análise paga ou evidência comercial é criada pela decisão.
 - **Registro:** `docs/homologacao/alcyone-comunicacao-prontidao-v1.md`.
 
+## LOOP-TETO-PLANEJAMENTO-IGNORADO-NA-REVISAO — 04/11/2026
+
+- Evidência: Capella/ciclo 19/experimento 112 possui recibo vigente 116 de R$ 100 para
+  mídia, mas a prontidão comercial retornava `CYCLE_MEDIA_LIMIT` porque consultava
+  apenas a verba operacional, ainda zerada. A decisão de planejamento não autoriza anúncios.
+- Causa compartilhada: o consumidor anterior à autorização não lia os recibos da planilha;
+  as fixtures antigas sempre preenchiam um teto positivo diretamente no ciclo.
+- Correção: reutilizar o recibo vigente para revisar, priorizando a decisão mais recente;
+  zero continua bloqueando. Preservar a compatibilidade do limite legado quando não há recibo.
+  Não alterar verba, janela, status ou autorização durante leitura.
+- Prevenção: controller e ledger reais com dependências locais; Capella e outra identidade,
+  teto ausente, zero, contexto divergente, recibo superado, caminho anterior e criativo ausente.
+  Três falhas reproduzidas antes; 35 testes de prontidão aprovados após a correção.
+- Limites e matriz: [teto para revisão](../homologacao/capella-planejamento-midia-revisao-v1.md).
+  Testes locais não comprovam vendas nem autorizam mídia.
+
 ## LOOP-PDE-PROVA-ESTATICA-SEM-GERACAO-INTEGRADA — 08/10/2026
 
 - **Evidência:** Alcyone privado v3 e tarefas 583–587 validam fixtures com zero chamadas.
@@ -10164,6 +10180,53 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   integridade, retomada e bloqueios preservados; reverter se o prazo for renovado,
   pedidos forem repetidos ou erros reais passarem como sucesso. Impacto comercial
   ainda não medido; a métrica operacional é recorrência de bloqueios por espera implícita.
+
+### Timeout do executor encaminhado como reconstrução — tarefas 894/895, 04/11/2026
+
+- A tarefa 894 terminou no limite externo, sem um resultado funcional. O runner lançou
+  a categoria padrão `TECHNICAL_FAILURE`; isso abriu automaticamente a correção 895 em
+  Dédalo, que recusou exigir outra versão apenas por timeout. A classificação, e não uma
+  rejeição do produto, perpetuou o bloqueio. O custo estimado de 895 foi US$ 0,4373248;
+  esse histórico permanece intacto.
+- A investigação descartou indisponibilidade contínua do ZIP: mesma transferência íntegra
+  recebeu HTTP 200 pela sandbox, pelo servidor e pelo navegador publicado. Uma reprodução
+  registrou no proxy HTTP 504 para `assets/story-01.png` após 60,057 s às 03:23:32 UTC.
+  A rodada seguinte, no mesmo runtime e sem alterar o pacote, passou nas nove combinações
+  em 193,841 s; a sandbox com o mesmo Chrome passou em 206,335 s. Isso comprova recuperação
+  da indisponibilidade observada, não a origem exata do timeout 894, cujo diagnóstico era perdido.
+- Hipótese não confirmada: falta de espaço. Um teste local com 64 MiB provocou crash, mas a
+  reprodução no container de produção manteve mais de 160 MiB livres. Não ampliar memória
+  ou armazenamento nem atribuir a esse recurso a falha histórica sem evidência adicional.
+- Correção compartilhada: timeout do processo é `EXECUTOR_FAILURE`, com últimas observações
+  preservadas e encerramento dos filhos. O backend reconhece também o erro canônico antigo,
+  inclusive quando já houve correção indevida bloqueada, sem editar tarefas antigas. HTTP
+  recusado e falha de transporte encerram a espera pelo download; crash aborta o cenário.
+  O harness registra caminho, status e dispositivo sem headers, query ou tokens.
+- Regressão: Capella e outro produto/experimento com ids distintos; rejeição funcional real
+  continua exigindo correção; download bem-sucedido, 401/504 sem nova transferência, prazo
+  absoluto e crash de navegador real. Nenhuma aprovação comercial, nova versão artificial,
+  repetição de inferência, composição ou liberação de mídia faz parte desta correção.
+- Critério de adoção: uma falha do executor permite repetir somente a homologação após
+  correção/recuperação comprovada, preservando todos os gates posteriores. Reverter se
+  reprovação funcional passar a ser ignorada ou houver repetição automática sem limite.
+  Impacto sobre vendas ainda não medido; acompanhar desvios indevidos a Dédalo e tempo
+  parado na homologação.
+- Validação da correção: 158 testes backend de prontidão, gates, projeção, predecessores e
+  correção aprovados; 242 testes Java do worker aprovados (13 condicionais não executados);
+  69 testes de navegador aprovados, incluindo os cenários com HTTP 401/504 e crash real.
+  A reprodução no runtime foi diagnóstica, sem enviar callback de aprovação de tarefa.
+- Prevenção complementar do CI: conferir também o catálogo operacional com
+  `PdeOperationalControlEvidenceTest`; a prova cumulativa v8 de Vega preserva a v6 funcional
+  e a v7 intermediária. O teste de crash mede a reação desde o evento real, evitando contar
+  a demora variável do CDP para provocar o encerramento; Chromium 139 reagiu em 0 ms depois
+  de emitir o evento na reprodução local.
+- Passagem posterior: a regressão local reproduziu a correção 895 bloqueando o gate
+  mesmo após uma nova homologação. Gate e Íris agora reconciliam um recibo da
+  recuperação usando a mesma política da prontidão. Identidade, versão, origem,
+  hashes e ordem temporal são conferidos; as tarefas antigas ficam intactas e as
+  revisões independentes continuam obrigatórias. Sem esse recibo, a pendência não
+  desaparece por simples aprovação técnica. Testes e limites em
+  `docs/homologacao/capella-passagem-recuperacao-executor-v1.md`.
 
 ## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
 

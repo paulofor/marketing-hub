@@ -336,7 +336,8 @@ public class PdeAgentValidationGateActivityExecutor
         java.util.Collections.unmodifiableMap(psique),
         temis,
         List.copyOf(evidenceTasks),
-        correctionOrder.evidenceResolution());
+        correctionOrder.evidenceResolution(),
+        correctionOrder.executorResolution());
   }
 
   /** Impede o gate direto de usar SAFETY anterior à correção de controles privados. */
@@ -667,7 +668,7 @@ public class PdeAgentValidationGateActivityExecutor
     return valid;
   }
 
-  /** Exige nova técnica após mudança funcional e registra a resolução independente de provas. */
+  /** Exige revalidação e vincula separadamente recuperações do executor e correções funcionais. */
   private CorrectionOrder validateCorrectionOrder(
       List<AgentTask> processTasks,
       AgentTask technical,
@@ -687,17 +688,27 @@ public class PdeAgentValidationGateActivityExecutor
                             task.getResultJson(),
                             task.getDeliveredAt()))
                 .toList());
-    if (latest.isEmpty()) return new CorrectionOrder(true, null);
+    if (latest.isEmpty()) return new CorrectionOrder(true, null, null);
     var correction = latest.orElseThrow();
     var correctionTask =
         processTasks.stream()
             .filter(task -> correction.id().equals(task.getId()))
             .findFirst()
             .orElse(null);
+    var executorResolution =
+        correctionPolicy.executorCorrectionResolution(
+            processTasks.stream().map(this::correctionSnapshot).toList(),
+            correctionSnapshot(correctionTask),
+            correctionSnapshot(technical),
+            contract.productId(),
+            contract.sourceReference(),
+            contract.prototypeVersion());
+    if (executorResolution.isPresent())
+      return new CorrectionOrder(true, null, executorResolution.orElseThrow());
     var evidenceResolution =
         resolvedEvidenceCorrection(processTasks, correctionTask, temis, product, contract);
     if (evidenceResolution.isPresent())
-      return new CorrectionOrder(true, evidenceResolution.orElseThrow());
+      return new CorrectionOrder(true, evidenceResolution.orElseThrow(), null);
     boolean valid =
         "COMPLETED".equals(correction.status())
             && correctionPolicy.validForVersion(correction, contract.prototypeVersion())
@@ -706,7 +717,22 @@ public class PdeAgentValidationGateActivityExecutor
             && !deliveredAt(technical).isBefore(correction.deliveredAt());
     if (!valid)
       issues.add("A última correção precisa ser concluída e seguida de nova homologação técnica.");
-    return new CorrectionOrder(valid, null);
+    return new CorrectionOrder(valid, null, null);
+  }
+
+  /** Projeta a auditoria já carregada para a política comum ao gate e ao consumidor seguinte. */
+  private PdeValidationTaskSnapshot correctionSnapshot(AgentTask task) {
+    if (task == null) return null;
+    return new PdeValidationTaskSnapshot(
+        task.getId(),
+        task.getProcessDefinition() == null ? null : task.getProcessDefinition().getId(),
+        task.getProcessActivityId(),
+        task.getStatus(),
+        task.getBlockerCategory(),
+        task.getBlockerAction(),
+        task.getResultJson(),
+        task.getExecutionError(),
+        task.getUpdatedAt());
   }
 
   /** Vincula a prova nova e Têmis posterior ao histórico, sem afirmar nova entrega funcional. */
@@ -798,6 +824,9 @@ public class PdeAgentValidationGateActivityExecutor
           && previous
               .path("evidenceCorrectionResolution")
               .equals(current.path("evidenceCorrectionResolution"))
+          && previous
+              .path("executorCorrectionResolution")
+              .equals(current.path("executorCorrectionResolution"))
           && previous.path("taskEvidence").size() == evaluation.evidenceTasks().size()
           && evaluation.evidenceTasks().stream()
               .allMatch(
@@ -964,6 +993,8 @@ public class PdeAgentValidationGateActivityExecutor
     evaluation.evidenceTasks().forEach(task -> taskEvidence.add(taskEvidence(task)));
     if (evaluation.evidenceResolution() != null)
       evidence.set("evidenceCorrectionResolution", evaluation.evidenceResolution());
+    if (evaluation.executorResolution() != null)
+      evidence.set("executorCorrectionResolution", evaluation.executorResolution());
     BigDecimal knownCost = knownCost(evaluation.evidenceTasks());
     if (knownCost != null) evidence.put("knownCostUsd", knownCost);
     evidence.put("costCoverage", costCoverage(evaluation.evidenceTasks()));
@@ -1103,8 +1134,9 @@ public class PdeAgentValidationGateActivityExecutor
     }
   }
 
-  /** Transporta a ordem validada e o recibo opcional da resolução exclusiva de provas. */
-  private record CorrectionOrder(boolean valid, JsonNode evidenceResolution) {}
+  /** Transporta a ordem validada e os recibos distintos de provas e recuperação do executor. */
+  private record CorrectionOrder(
+      boolean valid, JsonNode evidenceResolution, JsonNode executorResolution) {}
 
   /** Mantém o diagnóstico, as tarefas e a resolução exata usadas na decisão. */
   private record GateEvaluation(
@@ -1120,5 +1152,6 @@ public class PdeAgentValidationGateActivityExecutor
       Map<String, AgentTask> psique,
       AgentTask temis,
       List<AgentTask> evidenceTasks,
-      JsonNode evidenceResolution) {}
+      JsonNode evidenceResolution,
+      JsonNode executorResolution) {}
 }

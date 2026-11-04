@@ -334,7 +334,7 @@ class PdeOperationalControlEvidenceTest {
         .thenReturn(new ByteArrayResource(bytes));
   }
 
-  /** Confere a compatibilidade v7 do runner de kits, preservando os controles e recibos de Vega. */
+  /** Confere a compatibilidade v8 e o delta dos testes sem reescrever os recibos de Vega. */
   @Test
   void vegaTerminalSupplementPreservesExactPublishedImplementation() throws Exception {
     var real =
@@ -381,8 +381,15 @@ class PdeOperationalControlEvidenceTest {
     assertThat(receipt.path("executedCases").size()).isEqualTo(27);
     assertThat(receipt.path("additionalValidation").size()).isEqualTo(17);
     assertThat(receipt.path("providerCalls").asInt()).isZero();
-    assertThat(fileHash(receipt.path("testSource").asText()))
+    String testSource = receipt.path("testSource").asText();
+    com.fasterxml.jackson.databind.JsonNode testCompatibility = null;
+    for (var changed : compatibility.path("changedSources")) {
+      if (testSource.equals(changed.path("path").asText())) testCompatibility = changed;
+    }
+    assertThat(testCompatibility).isNotNull();
+    assertThat(testCompatibility.path("previousSha256").asText())
         .isEqualTo(receipt.path("testSourceSha256").asText());
+    assertThat(fileHash(testSource)).isEqualTo(testCompatibility.path("sha256").asText());
     receipt
         .path("executedCases")
         .forEach(item -> assertThat(item.path("status").asText()).isEqualTo("PASS"));

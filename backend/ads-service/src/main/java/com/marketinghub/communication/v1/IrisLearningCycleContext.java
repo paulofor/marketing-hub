@@ -6,6 +6,7 @@ import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleConstructionContext;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules;
+import com.marketinghub.product.service.agentvalidation.PdeAgentValidationCorrectionPolicy;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -123,7 +124,7 @@ public class IrisLearningCycleContext {
 
   /**
    * Conserva estratégia, economia e gate na preparação privada e revalida os mesmos contratos na
-   * leitura de provas das etapas comerciais, sem permitir nova materialização por essa leitura.
+   * leitura comercial, incluindo recibos de recuperação, sem permitir nova materialização.
    */
   private Map<String, Object> context(
       String reference, LearningSalesCycle cycle, boolean proofReadOnly) throws Exception {
@@ -221,6 +222,8 @@ public class IrisLearningCycleContext {
     require(
         correction == null
             || ("COMPLETED".equals(correction.status()) && correction.id() < technicalId)
+            || executorCorrectionResolved(
+                history, correction, latest.get("technicalHomologation"), target, reference, proof)
             || evidenceCorrectionResolved(
                 correction, latest.get("commercialIntegrityReview"), history, pde, proof),
         "Nova correção exige novo gate.");
@@ -347,6 +350,28 @@ public class IrisLearningCycleContext {
         "publicationBoundary",
         "Preparar comunicação privada com provas sintéticas; sem alegar preferência, venda ou satisfação humana e sem autorizar publicação, cobrança ou mídia.");
     return java.util.Collections.unmodifiableMap(result);
+  }
+
+  /** Confere o recibo persistido com a política e os hashes atuais da recuperação. */
+  private boolean executorCorrectionResolved(
+      List<PdeValidationTaskSnapshot> history,
+      PdeValidationTaskSnapshot correction,
+      PdeValidationTaskSnapshot technical,
+      AgentTaskTargetResponse target,
+      String reference,
+      JsonNode proof)
+      throws Exception {
+    var expected =
+        new PdeAgentValidationCorrectionPolicy(json)
+            .executorCorrectionResolution(
+                history,
+                correction,
+                technical,
+                target.productId(),
+                reference,
+                target.experienceVersion());
+    return expected.isPresent()
+        && expected.orElseThrow().equals(proof.path("executorCorrectionResolution"));
   }
 
   /**

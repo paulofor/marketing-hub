@@ -400,6 +400,101 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 
+  /** Reproduz o timeout e a correção sem entrega funcional até o consumo do gate por Íris. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"7,112,894", "907,2112,9894"})
+  void resolvesExecutorOnlyCorrectionAfterFreshReviews(
+      long productId, long experimentId, long failedId) throws Exception {
+    String reference = "experiment:" + experimentId;
+    String version = "capella-beleza-v3";
+    product.setId(productId);
+    product.setValidationDefinitionJson(
+        validationContract().replace(SOURCE, reference).replace("mira-private-v2", version));
+    var contracts = mock(PdeAgentValidationCycleContract.class);
+    when(contracts.resolve(product, process, reference))
+        .thenReturn(json.readTree(product.getValidationDefinitionJson()));
+    ReflectionTestUtils.setField(executor, "cycleContracts", contracts);
+    var failed =
+        task(
+            failedId,
+            "technicalHomologation",
+            "customer-agent",
+            "DETERMINISTIC",
+            "pde-agent-validation-harness-v1",
+            null,
+            NOW.minusSeconds(800));
+    failed.setStatus("BLOCKED");
+    failed.setBlockerCategory("TECHNICAL_FAILURE");
+    failed.setExecutionError("Timeout ao homologar o PDE nos dispositivos suportados.");
+    failed.setUpdatedAt(NOW.minusSeconds(800));
+    var correction =
+        task(
+            failedId + 1,
+            "prototypeCorrection",
+            "landing-generator",
+            "MODEL",
+            "test-model",
+            """
+        {"decision":"BLOCKED","correctionPlan":{
+          "sourceTaskId":%d,"rejectedActivityId":"technicalHomologation",
+          "previousPrototypeVersion":"%s","nextActivityId":"technicalHomologation",
+          "verification":{"technicalRevalidationRequired":true,
+            "newVersionPublished":false,"noExternalSideEffects":true}}}
+        """
+                .formatted(failedId, version),
+            NOW.minusSeconds(700));
+    correction.setStatus("BLOCKED");
+    correction.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    correction.setUpdatedAt(NOW.minusSeconds(700));
+    for (int i = 0; i < completedTasks.size(); i++) {
+      var current = completedTasks.get(i);
+      current.setId(failedId + 2 + i);
+      current.setSourceReference(reference);
+      current.setUpdatedAt(current.getDeliveredAt());
+      var result =
+          (com.fasterxml.jackson.databind.node.ObjectNode)
+              json.readTree(
+                  current
+                      .getResultJson()
+                      .replace(SOURCE, reference)
+                      .replace("mira-private-v2", version));
+      result.put("productId", productId);
+      current.setResultJson(result.toString());
+    }
+    completedTasks.add(failed);
+    completedTasks.add(correction);
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(70L, reference))
+        .thenReturn(completedTasks);
+
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isTrue();
+    assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
+    var saved = ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).saveAndFlush(saved.capture());
+    var proof = json.readTree(saved.getValue().getObjectiveEvidenceJson());
+    assertThat(proof.path("executorCorrectionResolution").path("failedTaskId").asLong())
+        .isEqualTo(failedId);
+    assertThat(proof.path("executorCorrectionResolution").path("correctionTaskId").asLong())
+        .isEqualTo(failedId + 1);
+    assertThat(failed.getStatus()).isEqualTo("BLOCKED");
+    assertThat(correction.getStatus()).isEqualTo("BLOCKED");
+    assertCommunicationReadyAfterRealGate(
+        productId,
+        reference,
+        json.createObjectNode().put("prototypeVersion", version),
+        saved.getValue());
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            710L, reference))
+        .thenReturn(Optional.of(saved.getValue()));
+    assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
+    verify(instances).saveAndFlush(any());
+    // Uma rejeição funcional ou revisão ausente continua impedindo a passagem.
+    failed.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+    failed.setBlockerCategory("TECHNICAL_FAILURE");
+    completedTasks.get(4).setStatus("BLOCKED");
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+  }
+
   /** Reproduz os pareceres persistidos da matriz V3 até Íris para dois produtos distintos. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 110L})
@@ -547,7 +642,7 @@ class PdeAgentValidationGateActivityExecutorTest {
   private void assertCommunicationReadyAfterRealGate(
       long productId, String reference, JsonNode report, BusinessProcessActivityInstance savedGate)
       throws Exception {
-    long experimentId = productId + 92;
+    long experimentId = Long.parseLong(reference.substring("experiment:".length()));
     var cycle = new LearningSalesCycle();
     cycle.setId(productId + 1000);
     cycle.setProductId(productId);
@@ -622,7 +717,8 @@ class PdeAgentValidationGateActivityExecutorTest {
                             task.getBlockerCategory(),
                             task.getBlockerAction(),
                             task.getResultJson(),
-                            task.getExecutionError()))
+                            task.getExecutionError(),
+                            task.getUpdatedAt()))
                 .toList());
     var input =
         new IrisLearningCycleContext(

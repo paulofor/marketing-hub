@@ -6,6 +6,7 @@ import java.util.List;
 public final class KitSpecialties {
   public static final String BEAUTY = "beauty-v1";
   public static final String BEAUTY_REFERENCE = "beauty-v2";
+  public static final String BEAUTY_EDITORIAL = "beauty-v3";
   private static final List<Specialty> BEAUTY_PROFILES =
       List.of(
           new Specialty("nails-v1", "Unhas", "Manicure e nail design"),
@@ -22,22 +23,35 @@ public final class KitSpecialties {
   /** Expõe somente opções do contrato executável, sem ampliar perfis históricos. */
   public static List<Specialty> profiles(String code) {
     if (BEAUTY.equals(code)) return BEAUTY_PROFILES;
-    if (BEAUTY_REFERENCE.equals(code)) return referenceProfiles();
-    return java.util.stream.Stream.concat(BEAUTY_PROFILES.stream(), referenceProfiles().stream())
-        .filter(p -> p.code().equals(code))
-        .toList();
+    if (BEAUTY_REFERENCE.equals(code)) return referenceProfiles(2);
+    if (BEAUTY_EDITORIAL.equals(code)) return referenceProfiles(3);
+    return allProfiles().filter(p -> p.code().equals(code)).toList();
   }
 
   /** Reconhece as famílias instaladas sem trocar a versão de um contexto histórico. */
   public static boolean isFamily(String code) {
-    return BEAUTY.equals(code) || BEAUTY_REFERENCE.equals(code);
+    return BEAUTY.equals(code) || BEAUTY_REFERENCE.equals(code) || BEAUTY_EDITORIAL.equals(code);
   }
 
   /** Mantém as seis especialidades com identidade própria para as referências licenciadas. */
-  private static List<Specialty> referenceProfiles() {
+  private static List<Specialty> referenceProfiles(int version) {
     return BEAUTY_PROFILES.stream()
-        .map(p -> new Specialty(p.code().replace("-v1", "-v2"), p.label(), p.serviceExample()))
+        .map(
+            p ->
+                new Specialty(
+                    p.code().replace("-v1", "-v" + version), p.label(), p.serviceExample()))
         .toList();
+  }
+
+  /** Reúne somente os perfis instalados, mantendo cada versão explicitamente selecionável. */
+  private static java.util.stream.Stream<Specialty> allProfiles() {
+    return java.util.stream.Stream.of(BEAUTY_PROFILES, referenceProfiles(2), referenceProfiles(3))
+        .flatMap(List::stream);
+  }
+
+  /** Reconhece fotografia licenciada sem confundir uma família com uma especialidade concreta. */
+  public static boolean isReference(String code) {
+    return supported(code) && (code.endsWith("-v2") || code.endsWith("-v3"));
   }
 
   /** Resolve códigos explícitos e aliases documentados sem deduzir profissão de nomes ou IDs. */
@@ -48,10 +62,8 @@ public final class KitSpecialties {
     String format = definition.path("format").asText("");
     var matches =
         java.util.stream.Stream.concat(
-                java.util.stream.Stream.concat(
-                        BEAUTY_PROFILES.stream(), referenceProfiles().stream())
-                    .map(Specialty::code),
-                java.util.stream.Stream.of(BEAUTY, BEAUTY_REFERENCE))
+                allProfiles().map(Specialty::code),
+                java.util.stream.Stream.of(BEAUTY, BEAUTY_REFERENCE, BEAUTY_EDITORIAL))
             .filter(
                 code ->
                     code.equals(explicit)

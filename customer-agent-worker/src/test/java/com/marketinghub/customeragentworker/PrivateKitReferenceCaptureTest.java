@@ -5,22 +5,22 @@ import static org.assertj.core.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.List;
-import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-/** Responsabilidade: exigir arte ampliada vinculada aos cenários da biblioteca privada v2. */
+/** Responsabilidade: exigir arte ampliada vinculada aos cenários da biblioteca privada v2/v3. */
 class PrivateKitReferenceCaptureTest {
   /**
    * Recusa captura ausente na primeira aplicação ou na recuperação, sem aceitar prova de outro
    * dispositivo.
    */
-  @Test
-  void requiresLinkedReferenceArtworkAcrossDevices() {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"beauty-v2", "beauty-v3", "hair-v3"})
+  void requiresLinkedReferenceArtworkAcrossDevices(String profile) {
     var json = new ObjectMapper();
     var report =
         json.createObjectNode()
             .put("captureMomentsContract", "PDE_KIT_CAPTURE_MOMENTS_V1")
-            .put("profileCode", "beauty-v2");
+            .put("profileCode", profile);
     var artifacts = report.putArray("artifacts");
     var scenarios = report.putArray("scenarios");
     for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {

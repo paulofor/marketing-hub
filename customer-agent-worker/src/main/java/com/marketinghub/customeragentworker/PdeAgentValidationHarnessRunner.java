@@ -132,7 +132,14 @@ public class PdeAgentValidationHarnessRunner {
                     "hair-v2",
                     "makeup-v2",
                     "brows-v2",
-                    "aesthetics-v2")
+                    "aesthetics-v2",
+                    "beauty-v3",
+                    "nails-v3",
+                    "barber-v3",
+                    "hair-v3",
+                    "makeup-v3",
+                    "brows-v3",
+                    "aesthetics-v3")
                 .contains(acceptance.path("profileCode").asText())
             && prototypeVersion.equals(acceptance.path("prototypeVersion").asText())
             && List.of("/mh-api/pde/kit/private/v1/prototype", "/api/pde/kit/private/v1/prototype")
@@ -282,7 +289,9 @@ public class PdeAgentValidationHarnessRunner {
         sourceUrl);
   }
 
-  /** Encerra o navegador no limite e preserva o diagnóstico como falha do executor, não do produto. */
+  /**
+   * Encerra o navegador no limite e preserva o diagnóstico como falha do executor, não do produto.
+   */
   static void awaitExecution(Process process, Path logFile) throws Exception {
     if (process.waitFor(10, TimeUnit.MINUTES)) return;
     process.descendants().forEach(ProcessHandle::destroyForcibly);
@@ -509,7 +518,7 @@ public class PdeAgentValidationHarnessRunner {
                     && !"SAFETY".equals(scenarioCode)
                 ? 4
                 : privateKit
-                        && result.path("profileCode").asText().endsWith("-v2")
+                        && result.path("profileCode").asText().matches("[a-z]+-v[23]")
                         && !"SAFETY".equals(scenarioCode)
                     ? 2
                     : 1)
@@ -618,7 +627,7 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige entrada e conteúdo vinculados ao cenário nos três dispositivos, preservando relatórios
-   * antigos e exigindo a ampliação nas referências visuais v2.
+   * antigos e exigindo a ampliação nas referências visuais v2/v3.
    */
   private int validateKitCaptureMoments(JsonNode result) {
     if (!result.has("captureMomentsContract")) return 0;
@@ -640,7 +649,7 @@ public class PdeAgentValidationHarnessRunner {
                   "ADHERENT-" + device + "-BRIEFING",
                   "ADHERENT-" + device + "-CONTENT",
                   "ADHERENT-" + device + completionSuffix));
-      if (result.path("profileCode").asText().endsWith("-v2"))
+      if (result.path("profileCode").asText().matches("[a-z]+-v[23]"))
         expectedKeys.add("ADHERENT-" + device + "-ART");
       JsonNode scenario = null;
       for (JsonNode value : result.path("scenarios"))
@@ -656,7 +665,7 @@ public class PdeAgentValidationHarnessRunner {
             && !device.equals(artifact.path("deviceProfile").asText()))
           throw new HarnessException("Captura de momento pertence a outro dispositivo.");
     }
-    if (result.path("profileCode").asText().endsWith("-v2")) {
+    if (result.path("profileCode").asText().matches("[a-z]+-v[23]")) {
       for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
         String key = "RECOVERY-" + device + "-ART";
         boolean linked = false;

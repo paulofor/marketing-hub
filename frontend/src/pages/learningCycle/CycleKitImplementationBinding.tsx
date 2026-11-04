@@ -95,7 +95,12 @@ export default function CycleKitImplementationBinding({
           </option>
           {plan.data.installedProfiles.includes("beauty-v2") && (
             <option value="beauty-v2">
-              Referências fotográficas licenciadas — nova versão
+              Referências fotográficas licenciadas — versão 2
+            </option>
+          )}
+          {plan.data.installedProfiles.includes("beauty-v3") && (
+            <option value="beauty-v3">
+              Composição editorial com referências licenciadas — versão 3
             </option>
           )}
         </select>

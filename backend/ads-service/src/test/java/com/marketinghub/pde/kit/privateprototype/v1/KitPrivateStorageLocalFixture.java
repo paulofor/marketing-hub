@@ -18,6 +18,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Responsabilidade: comprovar persistência de 21 MiB e rollback no MySQL 5.7 com pacote de 16 MiB.
  */
 @TestConfiguration
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "kit.local.mysql-proof",
+    havingValue = "true",
+    matchIfMissing = true)
 public class KitPrivateStorageLocalFixture {
   /**
    * Reproduz o limite antigo e valida bytes, isolamento, rollback e leitura após nova transação.

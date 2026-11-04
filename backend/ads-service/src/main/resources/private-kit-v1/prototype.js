@@ -24,7 +24,7 @@
     $('sample-image').removeAttribute('src');
     if (!selected) return;
     $('sample-caption').textContent = selected.serviceExample + '. Prepare o kit com seus dados para conferir a divulgação.';
-    if (!selected.code.endsWith('-v2')) {
+    if (!/-v[23]$/.test(selected.code)) {
       $('sample-status').textContent = 'Esta versão usa ilustrações de demonstração. Prepare o kit para conferir os arquivos desta versão.';
       return;
     }

@@ -8,9 +8,12 @@ public final class KitVisualReferenceContract {
   /** Impede instanciação de um contrato sem estado. */
   private KitVisualReferenceContract() {}
 
-  /** Exige cinco fontes íntegras do perfil v2 e preserva callbacks históricos sem essa origem. */
+  /**
+   * Exige cinco fontes íntegras da versão selecionada e preserva callbacks históricos sem essa
+   * origem.
+   */
   public static JsonNode validate(String profile, JsonNode value) {
-    boolean reference = KitSpecialties.supported(profile) && profile.endsWith("-v2");
+    boolean reference = KitSpecialties.isReference(profile) && !KitSpecialties.isFamily(profile);
     if (!reference) {
       if (value != null && !value.isNull() && !value.isMissingNode())
         throw new IllegalArgumentException("Referências não pertencem ao perfil histórico.");
@@ -27,9 +30,14 @@ public final class KitVisualReferenceContract {
         || !value.path("assets").isArray()
         || value.path("assets").size() != 5)
       throw new IllegalArgumentException("Origem visual privada incompleta ou incompatível.");
+    boolean editorial = profile.endsWith("-v3");
+    if (editorial && !"REFERENCE_EDITORIAL_V3".equals(value.path("compositionVersion").asText()))
+      throw new IllegalArgumentException("Versão editorial não comprovada.");
     var hashes = new HashSet<String>();
     for (var asset : value.path("assets")) {
-      if (!profile.equals(asset.path("profileCode").asText())
+      if ((editorial
+              && !profile.replace("-v3", "-v2").equals(asset.path("sourceProfileCode").asText()))
+          || !profile.equals(asset.path("profileCode").asText())
           || !asset.path("sha256").asText().matches("[a-f0-9]{64}")
           || !hashes.add(asset.path("sha256").asText())
           || !asset.path("sourceUrl").asText().matches("https://www[.]pexels[.]com/photo/[0-9]+/")

@@ -69,7 +69,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [nails-v2, barber-v2, hair-v2, makeup-v2, brows-v2, aesthetics-v2]
+            enum: [nails-v2, barber-v2, hair-v2, makeup-v2, brows-v2, aesthetics-v2, nails-v3, barber-v3, hair-v3, makeup-v3, brows-v3, aesthetics-v3]
       responses:
         '200':
           description: PNG 1080x1080 com fotografia de referência identificada, sem autorização comercial
@@ -185,8 +185,8 @@ paths:
                 consentAccepted: { type: boolean, enum: [true] }
                 specialtyCode:
                   type: string
-                  description: Obrigatório para beauty-v1/beauty-v2; no perfil de especialidade, quando informado deve coincidir com a sessão. Seleção já existente na interface, sem novo campo obrigatório para perfis individuais legados.
-                  enum: [nails-v1, barber-v1, hair-v1, makeup-v1, brows-v1, aesthetics-v1, nails-v2, barber-v2, hair-v2, makeup-v2, brows-v2, aesthetics-v2]
+                  description: Obrigatório para beauty-v1/beauty-v2/beauty-v3; no perfil de especialidade, quando informado deve coincidir com a sessão. Seleção já existente na interface, sem novo campo obrigatório para perfis individuais legados.
+                  enum: [nails-v1, barber-v1, hair-v1, makeup-v1, brows-v1, aesthetics-v1, nails-v2, barber-v2, hair-v2, makeup-v2, brows-v2, aesthetics-v2, nails-v3, barber-v3, hair-v3, makeup-v3, brows-v3, aesthetics-v3]
       responses:
         '200':
           description: Estado real; BLOCKED_SAFE não possui manifesto ou composição

@@ -95,7 +95,7 @@ public class KitPrototypeCapabilities {
       return new Capability(
           true,
           profile.orElseThrow(),
-          profile.orElseThrow().endsWith("-v2")
+          KitSpecialties.isReference(profile.orElseThrow())
               ? "Demonstração com referências fotográficas licenciadas e rastreáveis; não comprova"
                   + " trabalho do profissional nem aprovação comercial. Sem chamadas pagas."
               : "O compositor registrado pode materializar este contrato com fixtures de QA, sem"

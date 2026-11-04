@@ -139,6 +139,45 @@
       "privateValidationConstraints": "Somente e-mail sandbox.local e WhatsApp 00000000000, consentimento verdadeiro. Família e especialidade devem pertencer à mesma versão. Não são contatos de clientes.",
       "executionMode": "PRIVATE_KIT_COMPOSITION",
       "commercialReadinessClaimed": false
+    },
+    {
+      "productSlug": "agenda-cheia-para-manicures",
+      "prototypeVersions": [
+        "capella-beleza-v4"
+      ],
+      "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/pde/kit/privateprototype/v1/service/contract/KitPrivateContract.java#Input",
+      "minimumCustomerInput": "Nome profissional, cidade/região, WhatsApp, serviços, estilo visual, objetivo semanal, e-mail e consentimento; nos kits de beleza, escolher também a especialidade (specialtyCode). Cores preferidas e observações são opcionais. A seleção de especialidade já existe na interface; não é um campo novo.",
+      "requiredFields": [
+        "email",
+        "professionalName",
+        "cityRegion",
+        "whatsapp",
+        "services",
+        "visualStyle",
+        "weeklyGoal",
+        "consentAccepted"
+      ],
+      "optionalFields": [
+        "preferredColors",
+        "notes"
+      ],
+      "conditionalFields": [
+        {
+          "name": "specialtyCode",
+          "requiredWhen": "profile=beauty-v3",
+          "allowedValues": [
+            "nails-v3",
+            "barber-v3",
+            "hair-v3",
+            "makeup-v3",
+            "brows-v3",
+            "aesthetics-v3"
+          ]
+        }
+      ],
+      "privateValidationConstraints": "Somente e-mail sandbox.local e WhatsApp 00000000000, consentimento verdadeiro. Família e especialidade devem pertencer à mesma versão. Não são contatos de clientes.",
+      "executionMode": "PRIVATE_KIT_COMPOSITION",
+      "commercialReadinessClaimed": false
     }
   ]
 }

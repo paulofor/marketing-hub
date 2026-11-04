@@ -1,0 +1,61 @@
+{
+  "contractVersion": "KIT_PREVIEW_SAMPLES_V3",
+  "sourceTest": "LicensedKitReferencesTest.composesAndRecoversReadablePackageWithoutPaidProvider",
+  "reproduce": "mvn -f lead-portal-payments-service/pom.xml -Dtest=LicensedKitReferencesTest -Dcapella.validation.output=/tmp/kit-samples test",
+  "renderer": "EditorialKitArtwork",
+  "sampleName": "Studio Aurora",
+  "notCustomerWork": true,
+  "commercialApproval": false,
+  "samples": [
+    {
+      "profileCode": "nails-v3",
+      "file": "nails-v3.png",
+      "sha256": "441e83d57f9d204edc2e587d9838e51c7f284eac1bee0ed73c8f41f530d55445",
+      "sourceSha256": "70f4b52ed1b5219f475c4f8757dcdeb35f7d35dbb60bc0db60d73b83e327f904",
+      "sourceUrl": "https://www.pexels.com/photo/3997379/",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "profileCode": "barber-v3",
+      "file": "barber-v3.png",
+      "sha256": "828dc6087491d3eb8d78673fea1d0ff87686cf78948891ef74e1925af1f4ce97",
+      "sourceSha256": "79518865d680c43faf19bd9649a9a8ea69e210f684989fc99a242542bc7ccde8",
+      "sourceUrl": "https://www.pexels.com/photo/5853391/",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "profileCode": "hair-v3",
+      "file": "hair-v3.png",
+      "sha256": "046bf411430a6ad7c8449c8be2f85b08d4224b67abbbf1a7d53f4d8bd27baa7d",
+      "sourceSha256": "291b355981a0600460943a2a63896ccb3b402fddd73d46c59980c8584778de8f",
+      "sourceUrl": "https://www.pexels.com/photo/3356170/",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "profileCode": "makeup-v3",
+      "file": "makeup-v3.png",
+      "sha256": "d4e83d6308418c7443fe1b6f74bf3f48dc546ec6d7ea9322c8f7aad329b6ace4",
+      "sourceSha256": "2364a10f5ea07d64892e0f8d1bf07c093f0970a7ae56157c53f1e4682e414943",
+      "sourceUrl": "https://www.pexels.com/photo/8558242/",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "profileCode": "brows-v3",
+      "file": "brows-v3.png",
+      "sha256": "ed5c20e8a22e063e6b0666774ff5f1a3f4f26a449acec4754b475e565577a7df",
+      "sourceSha256": "45ae2ab729c37f6340e7668da64d9d6f89ea54512077713a3c6f5c688b8fdffe",
+      "sourceUrl": "https://www.pexels.com/photo/33580445/",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "profileCode": "aesthetics-v3",
+      "file": "aesthetics-v3.png",
+      "sha256": "9a34ef582ec58bd7db4ec0117df30105f5045679cfd87ec8445e839768c6b070",
+      "sourceSha256": "0d15a76b5f3d1e79228948b99d817c35fe5ab606eabb1967f2a24c42d4b884db",
+      "sourceUrl": "https://www.pexels.com/photo/13899864/",
+      "licenseUrl": "https://www.pexels.com/license/"
+    }
+  ],
+  "compositionVersion": "REFERENCE_EDITORIAL_V3",
+  "sampleWhatsapp": "00000000000"
+}

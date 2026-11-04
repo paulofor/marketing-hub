@@ -80,7 +80,7 @@ try {
         startName:'Preparar meu kit de exemplo',videoLabel:'Demonstração do kit de divulgação',
         failureMessage:'O vídeo não abriu. Você pode continuar e usar seu kit normalmente.',
       }):null;
-      if(['beauty-v1','beauty-v2'].includes(input.profileCode) && input.specialtyCode) await page.locator('#specialty').selectOption(input.specialtyCode);
+      if(['beauty-v1','beauty-v2','beauty-v3'].includes(input.profileCode) && input.specialtyCode) await page.locator('#specialty').selectOption(input.specialtyCode);
       if(input.profileCode==='barber-v1')await page.locator('[name=services]').fill('Corte e barba');
       // A fixture permanece igual entre dispositivos para comprovar reutilização sem nova composição.
       await page.locator('[name=professionalName]').fill(scenarioCode==='RECOVERY'?'Studio Retomada':'Studio Exemplo');
@@ -91,7 +91,7 @@ try {
         await page.locator('[name=cityRegion]').fill('Cidade Exemplo');
       }
       if(scenarioCode==='RECOVERY') { let intercepted=false; await page.route('**/assets/post-01.png',route=>{ if(!intercepted){intercepted=true;return route.fulfill({status:503,contentType:'application/json',body:'{"detail":"Falha sintética de transporte"}'});}return route.continue(); }); }
-      if(input.profileCode?.endsWith('-v2')) {
+      if(/-v[23]$/.test(input.profileCode)) {
         await page.locator('#sample-image').waitFor({state:'visible'});
         await page.locator('#sample-image').evaluate(image=>image.decode());
       }
@@ -112,12 +112,12 @@ try {
         await waitForPrivateKitResult(page);
         await page.locator('#post').evaluate(e=>e.decode());await page.locator('#story').evaluate(e=>e.decode());
         await checkFirstActions(page);
-        if(input.profileCode?.endsWith('-v2')) {
+        if(/-v[23]$/.test(input.profileCode)) {
           const proof=await scenarioApi('/session',{session:created.sessionToken});
           const origin=proof.manifest?.visualReferences;
           if(origin?.contractVersion!=='KIT_LICENSED_REFERENCE_V1'||origin.profileCode!==proof.input.specialtyCode&&origin.profileCode!==proof.profileCode||origin.commercialApproval!==false||origin.assets?.length!==5)throw new Error('Origem visual não comprovada na demonstração.');
         }
-        if(input.mode==='SCENARIO'||input.profileCode?.endsWith('-v2')) {
+        if(input.mode==='SCENARIO'||/-v[23]$/.test(input.profileCode)) {
           for(const kind of (input.mode==='SCENARIO'?['post','story']:['post'])) {
             await page.locator('#enlarge-'+kind).click();
             await page.locator('#art-dialog').waitFor({state:'visible'});

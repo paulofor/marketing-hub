@@ -81,7 +81,8 @@ public class PdeAgentValidationHarnessRunner {
   }
 
   /**
-   * Valida identidade, linhagem e família executável; a jornada contextual usa seu próprio harness.
+   * Valida identidade e executa o harness próprio da jornada; timeout preserva diagnóstico do
+   * executor sem atribuir uma reprovação funcional ao produto.
    */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
@@ -261,10 +262,7 @@ public class PdeAgentValidationHarnessRunner {
             .redirectOutput(workDirectory.resolve("agent-validation-browser.log").toFile());
     builder.environment().put("PDE_INTERNAL_API_TOKEN", internalToken);
     Process process = builder.start();
-    if (!process.waitFor(10, TimeUnit.MINUTES)) {
-      process.destroyForcibly();
-      throw new HarnessException("Timeout ao homologar o PDE nos dispositivos suportados.");
-    }
+    awaitExecution(process, workDirectory.resolve("agent-validation-browser.log"));
     if (process.exitValue() != 0 || !Files.isRegularFile(outputPath)) {
       throw HarnessException.executor(
           "Falha no harness multiagente: "
@@ -282,6 +280,18 @@ public class PdeAgentValidationHarnessRunner {
         new BpmVisualEvidenceRunner.VisualEvidenceBundle(capture, workDirectory),
         serializedInput,
         sourceUrl);
+  }
+
+  /** Encerra o navegador no limite e preserva o diagnóstico como falha do executor, não do produto. */
+  static void awaitExecution(Process process, Path logFile) throws Exception {
+    if (process.waitFor(10, TimeUnit.MINUTES)) return;
+    process.descendants().forEach(ProcessHandle::destroyForcibly);
+    process.destroyForcibly();
+    String details = Files.isRegularFile(logFile) ? Files.readString(logFile) : "";
+    if (details.length() > 16000) details = details.substring(details.length() - 16000);
+    throw HarnessException.executor(
+        "Timeout ao homologar o PDE nos dispositivos suportados."
+            + (details.isBlank() ? "" : " Últimas observações do navegador: " + details));
   }
 
   /**

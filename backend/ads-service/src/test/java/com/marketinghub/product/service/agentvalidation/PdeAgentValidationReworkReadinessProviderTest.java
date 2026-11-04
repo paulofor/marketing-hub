@@ -102,7 +102,8 @@ class PdeAgentValidationReworkReadinessProviderTest {
   @ParameterizedTest
   @CsvSource({
     "EXECUTOR_FAILURE,Falha no catálogo instalado do executor.",
-    "TECHNICAL_FAILURE,O harness instalado não possui cenários próprios para este produto. Implemente-os antes da homologação; não reutilize outro PDE."
+    "TECHNICAL_FAILURE,O harness instalado não possui cenários próprios para este produto. Implemente-os antes da homologação; não reutilize outro PDE.",
+    "TECHNICAL_FAILURE,com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: Timeout ao homologar o PDE nos dispositivos suportados."
   })
   void retriesTechnicalHomologationWithoutOpeningProductCorrection(
       String category, String executionError) {
@@ -123,6 +124,36 @@ class PdeAgentValidationReworkReadinessProviderTest {
     assertThat(correction.reason()).contains("Nenhuma rejeição funcional");
     assertThat(retry.ready()).isTrue();
     assertThat(provider.requiresFreshExecution(process, technical, product, SOURCE)).isTrue();
+  }
+
+  /** Recupera Capella e outro contexto mesmo após o corretor recusar o retrabalho indevido. */
+  @ParameterizedTest
+  @CsvSource({"7,112,894", "903,2112,9894"})
+  void retriesLegacyTimeoutAfterUnnecessaryCorrection(long productId, long experimentId, long taskId) {
+    String source = "experiment:" + experimentId;
+    product.setId(productId);
+    when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
+        .thenAnswer(call -> history.stream().map(this::snapshot).toList());
+    var failure = task(taskId, process, "technicalHomologation", "BLOCKED");
+    failure.setSourceReference(source);
+    failure.setBlockerCategory("TECHNICAL_FAILURE");
+    failure.setExecutionError("Timeout ao homologar o PDE nos dispositivos suportados.");
+    history.add(failure);
+    var unnecessary = task(taskId + 1, process, "prototypeCorrection", "BLOCKED");
+    unnecessary.setSourceReference(source);
+    unnecessary.setBlockerCategory("MISSING_INPUT");
+    unnecessary.setExecutionError("O timeout não constitui reprovação funcional do produto.");
+    history.add(unnecessary);
+    var technical = activity("technicalHomologation");
+    when(predecessors.readiness(process, technical, source))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Acesso concluído."));
+
+    assertThat(provider.readiness(process, technical, product, source).ready()).isTrue();
+    assertThat(provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+        .isFalse();
+    assertThat(provider.requiresFreshExecution(process, technical, product, source)).isTrue();
+    assertThat(failure.getBlockerCategory()).isEqualTo("TECHNICAL_FAILURE");
+    assertThat(unnecessary.getStatus()).isEqualTo("BLOCKED");
   }
 
   /** Não transforma falhas técnicas de cenários ou do próprio corretor em rejeições funcionais. */

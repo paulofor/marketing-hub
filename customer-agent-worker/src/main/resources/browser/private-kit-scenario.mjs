@@ -11,6 +11,14 @@ export async function runPrivateKitScenario(context, startedAt, operation) {
   context.setDefaultTimeout(remaining);
   context.setDefaultNavigationTimeout(remaining);
   const controller = new AbortController();
+  let rejectCrash;
+  const crashed = new Promise((_, reject) => { rejectCrash = reject; });
+  const onCrash = () => {
+    const error = new Error('O navegador encerrou a página durante a homologação.');
+    controller.abort(error); rejectCrash(error);
+  };
+  const pages = context.pages();
+  for (const page of pages) page.on('crash', onCrash);
   let timer;
   const deadline = new Promise((_, reject) => {
     timer = setTimeout(() => {
@@ -20,9 +28,10 @@ export async function runPrivateKitScenario(context, startedAt, operation) {
     }, remaining);
   });
   try {
-    return await Promise.race([operation(controller.signal), deadline]);
+    return await Promise.race([operation(controller.signal), deadline, crashed]);
   } finally {
     clearTimeout(timer);
+    for (const page of pages) page.off('crash', onCrash);
   }
 }
 

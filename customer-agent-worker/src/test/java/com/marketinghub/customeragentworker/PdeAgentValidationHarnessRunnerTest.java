@@ -16,6 +16,30 @@ class PdeAgentValidationHarnessRunnerTest {
   @TempDir Path temporaryDirectory;
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Timeout preserva a causa observada e não encaminha o produto a uma reconstrução. */
+  @Test
+  void timeoutStopsBrowserAndPreservesExecutorFailureEvidence() throws Exception {
+    Process process = org.mockito.Mockito.mock(Process.class);
+    ProcessHandle browser = org.mockito.Mockito.mock(ProcessHandle.class);
+    org.mockito.Mockito.when(process.waitFor(10, java.util.concurrent.TimeUnit.MINUTES))
+        .thenReturn(false);
+    org.mockito.Mockito.when(process.descendants()).thenReturn(java.util.stream.Stream.of(browser));
+    Path log = temporaryDirectory.resolve("browser.log");
+    Files.writeString(log, "{\"httpStatus\":504,\"path\":\"/assets/story-01.png\"}");
+
+    assertThatThrownBy(() -> PdeAgentValidationHarnessRunner.awaitExecution(process, log))
+        .isInstanceOfSatisfying(
+            PdeAgentValidationHarnessRunner.HarnessException.class,
+            error -> {
+              assertThat(error.isExecutorFailure()).isTrue();
+              assertThat(error.getMessage()).contains("504", "story-01.png");
+              assertThat(PdeAgentValidationHarnessConsumer.failureGuidance(error).get("category"))
+                  .isEqualTo("EXECUTOR_FAILURE");
+            });
+    org.mockito.Mockito.verify(browser).destroyForcibly();
+    org.mockito.Mockito.verify(process).destroyForcibly();
+  }
+
   /**
    * V16 e sucessora exigem nove combinações próprias e recusam recibos genéricos ou incompletos.
    */

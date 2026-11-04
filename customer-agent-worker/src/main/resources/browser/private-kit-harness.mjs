@@ -65,6 +65,11 @@ try {
     const created=await api('/internal/sessions',{method:'POST',body:{requestKey:crypto.randomUUID(),productId:input.productId,cycleId:input.cycleId,prototypeVersion:input.prototypeVersion,scenarioCode,deviceProfile,...(safetyCase?{safetyCase}:{})}});
     const context=await browser.newContext({...profiles[deviceProfile],acceptDownloads:true});
     const page=await context.newPage();const begin=Date.now(),momentKeys=[];
+    // Guarda falhas HTTP sem headers, credenciais, query string ou dados enviados pela cliente.
+    page.on('response',response=>{
+      if(response.status()>=400)console.error(JSON.stringify({scenarioCode,deviceProfile,elapsedMs:Date.now()-begin,httpStatus:response.status(),path:new URL(response.url()).pathname}));
+    });
+    page.on('requestfailed',request=>console.error(JSON.stringify({scenarioCode,deviceProfile,elapsedMs:Date.now()-begin,path:new URL(request.url()).pathname,networkError:request.failure()?.errorText})));
     try {
       await runPrivateKitScenario(context,begin,async signal=>{
       const scenarioApi=(path,options={})=>api(path,{...options,signal});

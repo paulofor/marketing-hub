@@ -290,6 +290,16 @@ O limite externo da execução permanece vigente. Essa espera técnica não ampl
 quotas nem critérios de aprovação. Regressões: `private-kit-download.test.mjs` e
 `private-kit-scenario.test.mjs` (04/11/2026).
 
+Timeout do processo determinístico e encerramento do navegador são falhas do executor;
+isoladamente, não comprovam defeito funcional nem exigem uma versão nova do produto.
+O callback deve usar `EXECUTOR_FAILURE`, preservar o diagnóstico disponível e encerrar
+os processos filhos. Resposta HTTP recusada no download deve encerrar a espera pelo evento,
+sem repetir a transferência. Registrar status, caminho sem query, cenário e dispositivo,
+nunca credenciais. A retomada exige verificar a recuperação da causa e ausência de tarefa
+equivalente ativa; não é retry infinito. O backend reconhece o timeout canônico legado da
+homologação sem alterar seus recibos nem retirar a exigência de nova versão para uma
+rejeição funcional real. Uma correção indevidamente encaminhada não deve perpetuar esse desvio.
+
 Na passagem de um ciclo de vendas, a referência canônica pode ser `experiment:<id>`.
 O consumidor deve validar produto, experimento, ciclo e versão fornecidos pelo backend;
 a forma da referência nunca pode desviar uma atividade sintética para o prompt de leitura

@@ -15,19 +15,19 @@ const money = (value: number | null, currency = "BRL") =>
         value,
       );
 const failure = (error: unknown) =>
-  axios.isAxiosError(error)
-    ? error.response?.data?.detail ||
-      error.response?.data?.message ||
-      "Não foi possível gravar. Seus dados foram preservados."
+  axios.isAxiosError(error) && error.response?.status === 409
+    ? "O contexto financeiro mudou. Atualize a planilha antes de aprovar. Seu rascunho foi preservado."
     : "Não foi possível concluir. Seus dados foram preservados.";
 
 /** Apresenta fontes do sistema e concentra a edição monetária nos tetos aprovados. */
 export default function ExecutionCostWorksheet({
   data,
   disabled,
+  focusPreparation = false,
 }: {
   data: ExecutionFinance;
   disabled: boolean;
+  focusPreparation?: boolean;
 }) {
   const { query, approve } = useCostWorksheet(
     data.productId,
@@ -35,6 +35,21 @@ export default function ExecutionCostWorksheet({
     data.cycleId,
   );
   const lastRevision = useRef(data.revision);
+  const focusedPreparation = useRef(false);
+  useEffect(() => {
+    if (!focusPreparation) {
+      focusedPreparation.current = false;
+      return;
+    }
+    if (!query.data || query.isFetching || focusedPreparation.current) return;
+    document
+      .getElementById("ceiling-AGENTS")
+      ?.scrollIntoView?.({ block: "center" });
+    document
+      .getElementById("approved-AGENTS")
+      ?.focus?.({ preventScroll: true });
+    focusedPreparation.current = true;
+  }, [focusPreparation, query.data, query.isFetching]);
   useEffect(() => {
     if (lastRevision.current !== data.revision) {
       lastRevision.current = data.revision;

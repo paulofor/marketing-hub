@@ -109,6 +109,19 @@ class ProcessRunRecoveredCostTest {
     when(activity.activityId()).thenReturn("marketStrategy");
     when(activity.selectedVersionActivity()).thenReturn(true);
     when(activity.activityOwnerName()).thenReturn("Atena");
+    var control =
+        mock(
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .productProcessExecutions
+                .ProductProcessActivityExecutionControlResponse
+                .class);
+    when(control.executorType()).thenReturn("AGENT");
+    when(control.actionAvailable()).thenReturn(true);
+    when(activity.executionRequestAvailable()).thenReturn(true);
+    when(activity.executionControl()).thenReturn(control);
     when(snapshot.activities()).thenReturn(List.of(activity));
     var response = service.status(96001L, 96011L, command);
     assertThat(response.currentActivityId()).isEqualTo("marketStrategy");
@@ -147,11 +160,19 @@ class ProcessRunRecoveredCostTest {
     when(navigation.children(any())).thenReturn(List.of());
     var manager = mock(PlatformTransactionManager.class);
     when(manager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+    var products = mock(ProductRepository.class);
+    when(products.findById(productId))
+        .thenReturn(
+            Optional.of(
+                com.marketinghub.product.Product.builder()
+                    .id(productId)
+                    .automaticExecutionEnabled(true)
+                    .build()));
     service =
         new ProcessRunService(
             runs,
             events,
-            mock(ProductRepository.class),
+            products,
             context,
             navigation,
             subprocesses,

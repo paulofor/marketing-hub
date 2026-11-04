@@ -1,5 +1,6 @@
 import { Bot } from "lucide-react";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useProductProcessTaskAudit } from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type { BusinessProcessActivityExecution } from "../../api/businessProcess/types";
 import BusinessProcessExecutionAudit from "./BusinessProcessExecutionAudit";
@@ -20,6 +21,7 @@ type BusinessProcessExecutionCardProps = {
     url: string;
   };
   contextNotice?: string;
+  operationalNotice?: ReactNode;
 };
 
 /** Exibe a auditoria completa de uma tarefa real em um cartão reutilizável. */
@@ -30,6 +32,7 @@ export default function BusinessProcessExecutionCard({
   promptAudit,
   auditRequest,
   contextNotice,
+  operationalNotice,
 }: BusinessProcessExecutionCardProps) {
   const [expanded, setExpanded] = useState(defaultOpen);
   const audit = useProductProcessTaskAudit(auditRequest?.url, expanded);
@@ -66,6 +69,7 @@ export default function BusinessProcessExecutionCard({
         </span>
       </summary>
       <div className="card-body">
+        {operationalNotice}
         {auditRequest && expanded && audit.isFetching ? (
           <p className="mb-0" role="status">
             Carregando as provas e a auditoria desta tarefa...

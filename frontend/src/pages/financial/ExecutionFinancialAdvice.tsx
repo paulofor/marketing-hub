@@ -21,6 +21,24 @@ export default function ExecutionFinancialAdvice({
       aria-label="Conselho de Plutus"
     >
       <h2 className="h4">Plutus: números para decidir</h2>
+      {data.preparationBalance?.requiresBudgetReview && (
+        <div
+          className="alert alert-warning"
+          aria-label="Pendência de preparação junto do parecer"
+        >
+          <strong>{data.preparationBalance.title}</strong>
+          <p className="mt-2 mb-2">{data.preparationBalance.explanation}</p>
+          <p className="small">
+            Responsável: você · decisão do limite de preparação deste ciclo.
+          </p>
+          <a className="btn btn-primary text-wrap" href="#ceiling-AGENTS">
+            Ajustar limite de preparação
+          </a>
+          <p className="small mt-2 mb-0">
+            Aprovar o limite não retoma o processo automaticamente.
+          </p>
+        </div>
+      )}
       {advice ? (
         <>
           <p className="finance-advice-title">

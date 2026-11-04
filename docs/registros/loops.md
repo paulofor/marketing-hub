@@ -10452,6 +10452,29 @@ retomada repetida, orçamento e callbacks idempotentes. Não há autorização r
 para os US$ 2,155494 estimados de 898 nem transferência do teto do ciclo 19.
 [Matriz, evidências e limites](../homologacao/capella898-validacao-e-teto-v1.md).
 
+### Pendência de Plutus e comando de retomada — 04/11/2026
+
+Capella, produto 7/cadeia 27/ciclo 20/experimento 113, execução 97:
+o banco e a tela confirmaram pausa sem recibo vigente, mas `canResume=true`.
+O guard financeiro protegia apenas o disparo; o comando era projetado pelo
+status e pela versão, e o cartão de Plutus não recebia a orientação financeira.
+Não havia parecer atual de Plutus. O ciclo 19 concluído não autorizava o 20.
+
+O mesmo guard agora produz `financialPending` em `automation/v1`, com causa,
+responsável e destino do ciclo na seção AGENTS, e é revalidado no POST de retomada.
+O seletor de atividade reutiliza as regras de recuperação e precedência do despacho.
+A tela oculta a retomada em consulta/erro ou impedimento, atualiza ao retornar e
+preserva pareceres, custos e histórico sem aprovação automática. Recibos também
+conferem o produto na identidade congelada. Nenhum prompt fabrica um parecer ausente.
+
+Regressões persistem recibos locais, recusam contexto cruzado/versão anterior,
+gravação concorrente, limite insuficiente, STOP e contratos ausentes; confirmam
+outra identidade e caminhos antes válidos. O navegador exercita rascunho, falha,
+aprovação e retorno em desktop/iPhone/Pixel, inclusive ao lado do parecer histórico.
+A hipótese operacional é reduzir cliques de retomada recusados e tempo parado;
+não há medição comercial posterior nem alegação de aumento de vendas.
+[Matriz, comandos e evidências](../homologacao/plutus-pendencia-retomada-v1.md).
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

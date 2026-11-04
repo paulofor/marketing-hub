@@ -101,6 +101,102 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("mostra a pendência financeira e oculta retomada mesmo com cache permissivo", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "PAUSED",
+        canResume: true,
+        canPause: false,
+        financialPending: {
+          code: "APPROVAL_REQUIRED",
+          activityId: "economics",
+          productVersion: "produto-v4",
+          title: "Falta aprovar o limite de preparação deste ciclo",
+          reason:
+            "Ajuste na demonstração financeira para continuar. Falta de aprovação não comprova falta de saldo.",
+          responsible: "Você · responsável pelo limite de preparação",
+          actionLabel: "Ajustar limite de preparação",
+          actionUrl:
+            "/financial/execution?productId=92001&chainId=92014&cycleId=92001#ceiling-AGENTS",
+          afterAction: "A aprovação não retoma o processo automaticamente.",
+        },
+      },
+    });
+    setup();
+    expect(
+      await screen.findByRole("link", { name: "Ajustar limite de preparação" }),
+    ).toHaveAttribute(
+      "href",
+      "/financial/execution?productId=92001&chainId=92014&cycleId=92001#ceiling-AGENTS",
+    );
+    expect(screen.getByText(/não comprova falta de saldo/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Retomar processo" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("oculta retomada durante revalidação e erro, mesmo preservando o último dado elegível", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "PAUSED", canResume: true },
+    });
+    const client = setup();
+    expect(
+      await screen.findByRole("button", { name: "Retomar processo" }),
+    ).toBeInTheDocument();
+    let rejectRead!: (error: Error) => void;
+    vi.mocked(axios.get).mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectRead = reject;
+        }),
+    );
+    void client.invalidateQueries({ queryKey: ["process-automation"] });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Retomar processo" }),
+      ).not.toBeInTheDocument(),
+    );
+    vi.mocked(axios.get).mockRejectedValue(new Error("falha simulada"));
+    rejectRead(new Error("falha simulada"));
+    await screen.findByText(
+      /Não foi possível atualizar a execução/,
+      {},
+      { timeout: 4000 },
+    );
+    expect(
+      screen.queryByRole("button", { name: "Retomar processo" }),
+    ).not.toBeInTheDocument();
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "PAUSED", canResume: true },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Atualizar" }));
+    expect(
+      await screen.findByRole("button", { name: "Retomar processo" }),
+    ).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("reconsulta ao voltar do financeiro e só exibe a retomada confirmada pelo servidor", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "PAUSED", canResume: false },
+    });
+    setup();
+    await screen.findByText("Pausado");
+    expect(
+      screen.queryByRole("button", { name: "Retomar processo" }),
+    ).not.toBeInTheDocument();
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "PAUSED", canResume: true },
+    });
+    fireEvent(window, new Event("pageshow"));
+    expect(
+      await screen.findByRole("button", { name: "Retomar processo" }),
+    ).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("exibe o retrato oficial e o atualiza junto com o responsável", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

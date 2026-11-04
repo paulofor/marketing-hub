@@ -192,7 +192,14 @@ components:
               costCoverage: {type: string, nullable: true}
               canStart: {type: boolean}
               canPause: {type: boolean}
-              canResume: {type: boolean}
+              canResume:
+                type: boolean
+                description: Elegibilidade atual apurada no servidor, incluindo aprovação de preparação do ciclo/versão, cobertura, STOP, contexto e disponibilidade da atividade. A mesma verificação é repetida no POST de retomada. Aprovar orçamento não retoma automaticamente; a UI oculta esta ação durante consulta/erro.
+              financialPending:
+                allOf:
+                  - $ref: '#/components/schemas/FinancialPending'
+                nullable: true
+                description: Pendência comprovada da próxima atividade de agente, compartilhada com o guard de disparo. Não é parecer nem substitui histórico. Disponível inclusive quando a aprovação está ausente, sem afirmar saldo insuficiente.
               automaticExecution: {type: boolean}
               childRunId: {type: integer, format: int64, nullable: true}
               financialReviewUrl:
@@ -214,6 +221,19 @@ components:
                 description: Subprocessos publicados, identificados pela atividade chamadora; o backend preserva produto, cadeia, ciclo e versão nos links.
                 items: {$ref: '#/components/schemas/ProcessRelation'}
   schemas:
+    FinancialPending:
+      type: object
+      required: [code, activityId, title, reason, responsible, actionLabel, afterAction]
+      properties:
+        code: {type: string, enum: [APPROVAL_REQUIRED, APPROVAL_OUTDATED, LIMIT_INSUFFICIENT, COST_UNKNOWN, CONTEXT_UNAVAILABLE]}
+        activityId: {type: string}
+        productVersion: {type: string, nullable: true}
+        title: {type: string}
+        reason: {type: string}
+        responsible: {type: string}
+        actionLabel: {type: string}
+        actionUrl: {type: string, nullable: true, description: Demonstração do produto/cadeia/ciclo correto com foco em ceiling-AGENTS. Contexto incompatível não fornece ação de aprovação.}
+        afterAction: {type: string}
     QueueBlocker:
       type: object
       required: [runId, processDefinitionId, processName, processVersion, chainId, sourceReference, status, reason, navigationUrl]

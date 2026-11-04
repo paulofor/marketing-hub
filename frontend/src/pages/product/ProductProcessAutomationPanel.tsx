@@ -8,6 +8,7 @@ import ProductProcessContextCopy from "./ProductProcessContextCopy";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import type { ProcessContext } from "./productProcessContext";
 import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
+import ProductProcessFinancialPending from "./ProductProcessFinancialPending";
 import type { ProductLearningCycleNavigation } from "../../api/product/useProductValueChainPositions";
 import {
   useProcessAutomation,
@@ -90,9 +91,10 @@ export default function ProductProcessAutomationPanel({
     });
   }, [data, client, productId, processId]);
   const error = command.error;
-  const errorText = axios.isAxiosError(error)
-    ? error.response?.data?.detail || error.response?.data?.message
-    : undefined;
+  const errorText =
+    axios.isAxiosError(error) && error.response?.status === 409
+      ? "As condições do processo mudaram ou ainda há pendências. Atualize a execução para conferir antes de tentar novamente."
+      : undefined;
 
   return (
     <section
@@ -202,23 +204,31 @@ export default function ProductProcessAutomationPanel({
               </span>
             </Link>
           )}
-          {data.financialReviewUrl && !status.isError && (
-            <div
-              className="alert alert-light border mt-3"
-              aria-label="Decisão financeira"
-            >
-              <strong>Orçamento e limites</strong>
-              <p className="mb-2">
-                Confira custos, saldo e o parecer de Plutus antes de ajustar sua
-                autorização.
-              </p>
-              <Link
-                className="btn btn-outline-primary"
-                to={data.financialReviewUrl}
+          {data.financialPending ? (
+            <ProductProcessFinancialPending
+              pending={data.financialPending}
+              unavailable={status.isError || status.isFetching}
+            />
+          ) : (
+            data.financialReviewUrl &&
+            !status.isError && (
+              <div
+                className="alert alert-light border mt-3"
+                aria-label="Decisão financeira"
               >
-                Ver demonstração financeira
-              </Link>
-            </div>
+                <strong>Orçamento e limites</strong>
+                <p className="mb-2">
+                  Confira custos, saldo e o parecer de Plutus antes de ajustar
+                  sua autorização.
+                </p>
+                <Link
+                  className="btn btn-outline-primary"
+                  to={data.financialReviewUrl}
+                >
+                  Ver demonstração financeira
+                </Link>
+              </div>
+            )
           )}
           {data.status === "CLOSED" ? (
             <>
@@ -381,24 +391,27 @@ export default function ProductProcessAutomationPanel({
                 {command.isPending ? "Iniciando..." : "Executar processo"}
               </button>
             )}
-            {data.canResume && (
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={command.isPending || status.isError}
-                onClick={() => command.mutate("resume")}
-              >
-                {command.isPending ? (
-                  <Loader2
-                    size={18}
-                    className="product-process-situation__running-icon"
-                  />
-                ) : (
-                  <PlayCircle size={18} />
-                )}{" "}
-                {command.isPending ? "Retomando..." : "Retomar processo"}
-              </button>
-            )}
+            {data.canResume &&
+              !status.isError &&
+              !status.isFetching &&
+              !data.financialPending && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={command.isPending || status.isError}
+                  onClick={() => command.mutate("resume")}
+                >
+                  {command.isPending ? (
+                    <Loader2
+                      size={18}
+                      className="product-process-situation__running-icon"
+                    />
+                  ) : (
+                    <PlayCircle size={18} />
+                  )}{" "}
+                  {command.isPending ? "Retomando..." : "Retomar processo"}
+                </button>
+              )}
             {data.canPause && (
               <button
                 type="button"

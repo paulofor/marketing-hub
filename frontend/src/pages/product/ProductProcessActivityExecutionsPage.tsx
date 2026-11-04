@@ -41,6 +41,8 @@ import ProductLearningCycleContext from "./ProductLearningCycleContext";
 import ProductActivityContextCopyButton from "./ProductActivityContextCopyButton";
 import ProductProcessAutomationPanel from "./ProductProcessAutomationPanel";
 import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
+import ProductProcessFinancialPending from "./ProductProcessFinancialPending";
+import { useProcessAutomation } from "../../api/businessProcess/useProcessAutomation";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -139,6 +141,13 @@ export default function ProductProcessActivityExecutionsPage() {
     requestExecution.reset();
   }, [productId, processDefinitionId, effectiveCycleId, requestedReference]);
   const data = cycleContextUnavailable ? undefined : history.data;
+  const automation = useProcessAutomation(
+    productId,
+    processDefinitionId,
+    effectiveChainId,
+    effectiveCycleId,
+    data?.currentExecutionReference ?? requestedReference,
+  );
   const historical = data?.operationalState === "CLOSED";
   const continuationCandidate =
     valueChainPosition.data?.learningCycleNavigation;
@@ -652,6 +661,16 @@ export default function ProductProcessActivityExecutionsPage() {
                   </div>
                 </header>
 
+                {automation.status.data?.financialPending?.activityId ===
+                  activity.activityId && (
+                  <ProductProcessFinancialPending
+                    pending={automation.status.data.financialPending}
+                    unavailable={
+                      automation.status.isError || automation.status.isFetching
+                    }
+                  />
+                )}
+
                 {activity.activityObjective ? (
                   <p className="product-process-activity-executions__objective">
                     <strong>Objetivo:</strong> {activity.activityObjective}
@@ -760,12 +779,27 @@ export default function ProductProcessActivityExecutionsPage() {
                       <BusinessProcessExecutionCard
                         key={`${activity.activityId}-${execution.taskId}`}
                         execution={execution}
+                        operationalNotice={
+                          automation.status.data?.financialPending
+                            ?.activityId === activity.activityId ? (
+                            <ProductProcessFinancialPending
+                              pending={automation.status.data.financialPending}
+                              unavailable={
+                                automation.status.isError ||
+                                automation.status.isFetching
+                              }
+                            />
+                          ) : undefined
+                        }
                         contentHeadingLevel="h3"
                         contextNotice={
                           execution.processDefinitionId !==
                           data.selectedProcessDefinitionId
                             ? `Histórico da v${execution.processVersionNumber}; não determina o estado atual da v${data.selectedProcessVersionNumber}.`
-                            : undefined
+                            : execution.sourceReference !==
+                                data.currentExecutionReference
+                              ? "Histórico de outra execução; não aprova nem libera este ciclo."
+                              : undefined
                         }
                         auditRequest={
                           execution.sourceReference

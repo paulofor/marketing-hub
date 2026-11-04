@@ -52,6 +52,27 @@ async function fill(group = "Agentes") {
   });
   fireEvent.click(screen.getByRole("checkbox"));
 }
+it("preserva o rascunho em erro de gravação sem expor mensagens internas", async () => {
+  vi.mocked(axios.isAxiosError).mockReturnValue(true);
+  vi.mocked(axios.post).mockRejectedValue({
+    response: {
+      status: 500,
+      data: { detail: "SQL stack trace Exception: segredo técnico" },
+    },
+  });
+  mount();
+  await fill();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Confirmar e registrar teto" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Seus dados foram preservados",
+  );
+  expect(
+    screen.queryByText(/SQL|stack trace|segredo técnico/),
+  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Aprovado — Agentes")).toHaveValue("100,50");
+});
 it("concentra os seis campos monetários em Aprovado e mantém custos e previsões somente para consulta", async () => {
   mount();
   await screen.findByLabelText("Aprovado — Agentes");

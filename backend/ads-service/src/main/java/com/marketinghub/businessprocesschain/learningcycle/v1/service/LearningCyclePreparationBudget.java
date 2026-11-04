@@ -59,12 +59,13 @@ public class LearningCyclePreparationBudget {
         .orElse(null);
   }
 
-  /** Confere a identidade congelada e invalida recibos anteriores à mudança de versão. */
+  /** Confere produto e identidade congelada e invalida recibos anteriores à mudança de versão. */
   private boolean eligible(LearningSalesCycleEvent event, LearningSalesCycle cycle) {
     var data = json.read(event.getEvidenceJson());
     return (cycle.getVersionChangedAt() == null
             || !event.getCreatedAt().isBefore(cycle.getVersionChangedAt()))
         && Objects.equals(cycle.getProductVersion(), data.path("productVersion").asText())
+        && cycle.getProductId() == data.path("productId").asLong()
         && cycle.getExperimentId() == data.path("experimentId").asLong()
         && cycle.getChainDefinitionId() == data.path("chainDefinitionId").asLong()
         && "PREPARATION_CUMULATIVE".equals(data.path("scope").asText())

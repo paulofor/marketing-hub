@@ -25,7 +25,7 @@ afterEach(() => {
   client?.clear();
   vi.unstubAllGlobals();
 });
-function mount() {
+function mount(state?: { returnTo: string; productVersion: string }) {
   client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -33,7 +33,11 @@ function mount() {
     <QueryClientProvider client={client}>
       <MemoryRouter
         initialEntries={[
-          "/financial/execution?productId=700&chainId=2700&cycleId=1900",
+          {
+            pathname: "/financial/execution",
+            search: "?productId=700&chainId=2700&cycleId=1900",
+            state,
+          },
         ]}
       >
         <ExecutionFinancePage />
@@ -41,6 +45,40 @@ function mount() {
     </QueryClientProvider>,
   );
 }
+it("oferece retorno à atividade exata sem retomar ou aprovar por navegação", async () => {
+  const returnTo =
+    "/products/700/value-chain-history/processes/126/activities?learningCycleId=1900&chainId=2700#activity-economics";
+  mount({ returnTo, productVersion: fixture.productVersion });
+  expect(
+    await screen.findByRole("link", {
+      name: "Voltar à atividade e conferir retomada",
+    }),
+  ).toHaveAttribute("href", returnTo);
+  expect(axios.post).not.toHaveBeenCalled();
+});
+it.each([
+  [
+    "/products/701/value-chain-history/processes/126/activities?learningCycleId=1900&chainId=2700",
+    fixture.productVersion,
+  ],
+  [
+    "/products/700/value-chain-history/processes/126/activities?learningCycleId=1901&chainId=2700",
+    fixture.productVersion,
+  ],
+  [
+    "/products/700/value-chain-history/processes/126/activities?learningCycleId=1900&chainId=2700",
+    "outra-versao",
+  ],
+  ["https://outro.example/", fixture.productVersion],
+])("não retorna a outro contexto: %s", async (returnTo, productVersion) => {
+  mount({ returnTo, productVersion });
+  await screen.findByText(fixture.productName);
+  expect(
+    screen.queryByRole("link", {
+      name: "Voltar à atividade e conferir retomada",
+    }),
+  ).not.toBeInTheDocument();
+});
 it("mostra custos e parecer real, sem autorizar ou disparar análise ao abrir", async () => {
   mount();
   await screen.findByText(fixture.productName);

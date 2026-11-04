@@ -208,6 +208,17 @@ correção está disponível. Uma tarefa histórica bloqueada ou cancelada não 
 nessa atividade quando o backend já classificou a origem como `EXECUTOR_FAILURE`; nesse caso, a
 execução repete `technicalHomologation` na mesma versão aceita.
 
+Quando essa falha já tiver aberto uma correção bloqueada, o gate pode registrar
+`PDE_EXECUTOR_CORRECTION_RESOLUTION_V1` depois da homologação posterior aprovada.
+O recibo exige vínculo explícito com a falha conhecida do executor, a mesma versão,
+ausência de publicação de versão nova e de efeitos externos, identidade e ordem
+temporal consistentes. Ele conserva ids e hashes da falha, da correção e da nova
+prova técnica. Não conclui nem reescreve a tarefa antiga. Psique e Têmis continuam
+sendo exigidos pelo gate; Íris reconcilia o recibo com o histórico atual antes de
+aceitar a passagem. Uma rejeição funcional, correção em andamento, versão diferente
+ou prova alterada continua bloqueante. Registro e regressão ponta a ponta:
+`docs/homologacao/capella-passagem-recuperacao-executor-v1.md`.
+
 Por decisão de 2026-09-10, refinada em 2026-09-11 após a tarefa 385 do Vega, a atividade bloqueada
 apresenta **uma única ação principal**: um link para a atividade de correção quando esse for o
 caminho vigente, ou o comando da própria atividade quando seus requisitos estiverem satisfeitos.

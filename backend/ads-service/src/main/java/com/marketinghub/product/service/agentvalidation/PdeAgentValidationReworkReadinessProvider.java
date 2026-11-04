@@ -27,11 +27,6 @@ public class PdeAgentValidationReworkReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
   static final String CORRECTION_ACTIVITY = "prototypeCorrection";
   private static final String TECHNICAL_HOMOLOGATION_ACTIVITY = "technicalHomologation";
-  private static final String EXECUTOR_FAILURE = "EXECUTOR_FAILURE";
-  private static final Set<String> LEGACY_EXECUTOR_ERRORS =
-      Set.of(
-          "O harness instalado não possui cenários próprios para este produto.",
-          "Timeout ao homologar o PDE nos dispositivos suportados.");
   private static final Set<String> REVIEW_ACTIVITIES =
       Set.of(
           "technicalHomologation",
@@ -433,16 +428,11 @@ public class PdeAgentValidationReworkReadinessProvider
   }
 
   /**
-   * Separa indisponibilidade do executor de defeito observado e reconhece catálogo/timeout
-   * legados sem reescrever o histórico nem exigir uma versão nova do produto.
+   * Separa indisponibilidade do executor de defeito observado e reconhece catálogo/timeout legados
+   * sem reescrever o histórico nem exigir uma versão nova do produto.
    */
   private boolean retryableExecutorFailure(PdeValidationTaskSnapshot task) {
-    if (task == null || !"BLOCKED".equals(task.status())) return false;
-    if (EXECUTOR_FAILURE.equals(task.blockerCategory())) return true;
-    return "TECHNICAL_FAILURE".equals(task.blockerCategory())
-        && TECHNICAL_HOMOLOGATION_ACTIVITY.equals(task.processActivityId())
-        && task.executionError() != null
-        && LEGACY_EXECUTOR_ERRORS.stream().anyMatch(task.executionError()::contains);
+    return PdeAgentValidationCorrectionPolicy.retryableExecutorFailure(task);
   }
 
   /** Projeta as tentativas de correção para a política única de vigência e contrato. */

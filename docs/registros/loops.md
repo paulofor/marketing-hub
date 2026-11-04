@@ -10220,6 +10220,13 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   e a v7 intermediária. O teste de crash mede a reação desde o evento real, evitando contar
   a demora variável do CDP para provocar o encerramento; Chromium 139 reagiu em 0 ms depois
   de emitir o evento na reprodução local.
+- Passagem posterior: a regressão local reproduziu a correção 895 bloqueando o gate
+  mesmo após uma nova homologação. Gate e Íris agora reconciliam um recibo da
+  recuperação usando a mesma política da prontidão. Identidade, versão, origem,
+  hashes e ordem temporal são conferidos; as tarefas antigas ficam intactas e as
+  revisões independentes continuam obrigatórias. Sem esse recibo, a pendência não
+  desaparece por simples aprovação técnica. Testes e limites em
+  `docs/homologacao/capella-passagem-recuperacao-executor-v1.md`.
 
 ## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
 

@@ -683,6 +683,124 @@ class IrisLearningCycleContextTest {
     assertThat(provider.resolve(SOURCE).orElseThrow().get("inputReadiness")).isEqualTo("BLOCKED");
   }
 
+  /** Revalida o recibo da recuperação no consumidor sem confiar apenas no status do gate. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "valid",
+        "missing",
+        "correctionHash",
+        "technicalId",
+        "failureHash",
+        "source",
+        "version",
+        "laterCorrection",
+        "functionalFailure"
+      })
+  void verifiesExecutorRecoveryAgainstCurrentHistory(String change) throws Exception {
+    history.removeIf(task -> "prototypeCorrection".equals(task.processActivityId()));
+    var now = java.time.Instant.parse("2026-11-04T08:00:00Z");
+    var failed =
+        new PdeValidationTaskSnapshot(
+            390L,
+            70L,
+            "technicalHomologation",
+            "BLOCKED",
+            "EXECUTOR_FAILURE",
+            null,
+            null,
+            "Timeout do executor",
+            now.minusSeconds(100));
+    var draft = json.createObjectNode().put("decision", "BLOCKED");
+    draft
+        .putObject("correctionPlan")
+        .put("sourceTaskId", 390)
+        .put("rejectedActivityId", "technicalHomologation")
+        .put("previousPrototypeVersion", VERSION)
+        .put("nextActivityId", "technicalHomologation")
+        .putObject("verification")
+        .put("technicalRevalidationRequired", true)
+        .put("newVersionPublished", false)
+        .put("noExternalSideEffects", true);
+    var correction =
+        new PdeValidationTaskSnapshot(
+            391L,
+            70L,
+            "prototypeCorrection",
+            "BLOCKED",
+            "FUNCTIONAL_ADJUSTMENT",
+            null,
+            draft.toString(),
+            null,
+            now.minusSeconds(80));
+    var approved = (ObjectNode) json.readTree(history.get(0).resultJson());
+    approved
+        .put("productId", cycle.getProductId())
+        .put("sourceReference", SOURCE)
+        .put("prototypeVersion", VERSION);
+    var technical =
+        new PdeValidationTaskSnapshot(
+            395L,
+            70L,
+            "technicalHomologation",
+            "COMPLETED",
+            null,
+            null,
+            approved.toString(),
+            null,
+            now);
+    history.set(0, technical);
+    history.add(failed);
+    history.add(correction);
+    ((ObjectNode) proof.path("taskEvidence").get(0))
+        .put("resultSha256", fixtureHash(technical.resultJson()));
+    var receipt =
+        new com.marketinghub.product.service.agentvalidation.PdeAgentValidationCorrectionPolicy(
+                json)
+            .executorCorrectionResolution(
+                history, correction, technical, cycle.getProductId(), SOURCE, VERSION)
+            .orElseThrow();
+    proof.set("executorCorrectionResolution", receipt);
+    switch (change) {
+      case "valid" -> {}
+      case "missing" -> proof.remove("executorCorrectionResolution");
+      case "correctionHash" -> receipt.put("correctionResultSha256", "a".repeat(64));
+      case "technicalId" -> receipt.put("technicalTaskId", 394);
+      case "failureHash" -> receipt.put("failedExecutionErrorSha256", "b".repeat(64));
+      case "source" -> receipt.put("sourceReference", "experiment:999");
+      case "version" -> receipt.put("prototypeVersion", "other-v1");
+      case "laterCorrection" ->
+          history.add(
+              new PdeValidationTaskSnapshot(
+                  402L,
+                  70L,
+                  "prototypeCorrection",
+                  "IN_PROGRESS",
+                  null,
+                  null,
+                  "{}",
+                  null,
+                  now.plusSeconds(1)));
+      case "functionalFailure" -> {
+        history.remove(failed);
+        history.add(
+            new PdeValidationTaskSnapshot(
+                failed.id(),
+                70L,
+                "technicalHomologation",
+                "BLOCKED",
+                "FUNCTIONAL_ADJUSTMENT",
+                null,
+                null,
+                failed.executionError(),
+                failed.updatedAt()));
+      }
+      default -> throw new AssertionError(change);
+    }
+    assertThat(provider.resolve(SOURCE).orElseThrow().get("inputReadiness"))
+        .isEqualTo(change.equals("valid") ? "READY" : "BLOCKED");
+  }
+
   /** Preserva provas anteriores somente quando o recibo do gate concilia o novo aceite de Têmis. */
   @Test
   void acceptsEvidenceOnlyResolutionFromGate() throws Exception {

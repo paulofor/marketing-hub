@@ -80,6 +80,11 @@
       "path": "docs/homologacao/capella-recuperacao-homologacao-v1.md",
       "sha256": "5a8541978064397dbf107c922128102b81f49f052c0400a0606b88f5620c0541",
       "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md",
+      "sha256": "9af69d1514f6d2051f8eb1f8fb4e4ff25a138a6977a5a21e04ae28aa444dd45d",
+      "promptMode": "FULL"
     }
   ],
   "implementationEvidence": [
@@ -115,7 +120,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
-      "sha256": "de1161423eb58045b56b63c1d6e962eb2e3c60f94f32502b75e73264150d31c1",
+      "sha256": "7418313593c245d1426345b2dfc6685b2558b3f3edba0948352bccc2a7439d45",
       "promptMode": "FULL"
     },
     {
@@ -267,6 +272,11 @@
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeScopedSafetyRevalidation.java",
       "sha256": "d640bc1359dcecdfd46866738a3779abe703eb489ddf41ba790a5e368476d799",
       "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationCorrectionPolicy.java",
+      "sha256": "87b678bd9eee3b71eb73412408b67d877fa5c12a2ab401007c7ce2626a486827",
+      "promptMode": "FULL"
     }
   ],
   "processVersion": 1,
@@ -283,9 +293,14 @@
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/vega-style-v15-preparation-v9.json",
     "previousManifestSha256": "b265315c0fece2de8321467111bf29fe4280efd77ee70db6cbee35cd1a0c4d83",
-    "validatedAt": "2026-11-04T03:55:11.989697+00:00",
-    "scope": "Compatibilidade do tratamento de timeout do harness compartilhado, com diagnóstico preservado; mantém experiência, contratos, revisões independentes e autorizações de Vega.",
+    "validatedAt": "2026-11-04T04:51:24.726105+00:00",
+    "scope": "Compatibilidade do tratamento de timeout do harness compartilhado, com diagnóstico preservado; mantém experiência, contratos, revisões independentes e autorizações de Vega. A política compartilhada vincula a recuperação do executor ao gate e ao consumo por Íris, sem dispensar revisão independente nem apagar correção histórica.",
     "changedEvidence": [
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
+        "previousSha256": "de1161423eb58045b56b63c1d6e962eb2e3c60f94f32502b75e73264150d31c1",
+        "sha256": "7418313593c245d1426345b2dfc6685b2558b3f3edba0948352bccc2a7439d45"
+      },
       {
         "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
         "previousSha256": "68855cb3f1df47cfd67e09f6e77d7fde2b3c098cb2c0bb1c454a71863518ce4b",
@@ -298,13 +313,13 @@
       }
     ],
     "removedMutableEvidence": [],
-    "validationReport": "docs/homologacao/capella-recuperacao-homologacao-v1.md"
+    "validationReport": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md"
   },
   "sharedHarnessCompatibility": {
-    "scope": "Compatibilidade do tratamento de timeout do harness compartilhado, com diagnóstico preservado; mantém experiência, contratos, revisões independentes e autorizações de Vega.",
+    "scope": "Compatibilidade do tratamento de timeout do harness compartilhado, com diagnóstico preservado; mantém experiência, contratos, revisões independentes e autorizações de Vega. A política compartilhada vincula a recuperação do executor ao gate e ao consumo por Íris, sem dispensar revisão independente nem apagar correção histórica.",
     "modelCalls": 0,
     "commercialApprovalRenewed": false,
-    "validation": "docs/homologacao/capella-recuperacao-homologacao-v1.md"
+    "validation": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md"
   },
   "executableEvidence": [
     {
@@ -312,6 +327,11 @@
       "sha256": "b1fa6d3cf32a9467588c8a4d0a7909947716aef26ac8e9645240f11fffc160bf",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Comprova 11 controles HTTP/transacionais da implementação contextual em duas identidades no MySQL 5.7; inclui concorrência, limites, acesso inválido, ciclo encerrado e compatibilidade v16."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationCorrectionPolicyTest.java",
+      "sha256": "42b7f8ad8b01a51cce6bfd4b6885360883ec6f63965c37c42ff4494ad56fd6bf",
+      "promptMode": "FULL"
     }
   ],
   "changeScope": "Compatibilidade do tratamento de timeout do harness compartilhado, com diagnóstico preservado; mantém experiência, contratos, revisões independentes e autorizações de Vega."

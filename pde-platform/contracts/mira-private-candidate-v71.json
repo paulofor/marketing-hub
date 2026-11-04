@@ -73,7 +73,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
-      "sha256": "de1161423eb58045b56b63c1d6e962eb2e3c60f94f32502b75e73264150d31c1",
+      "sha256": "7418313593c245d1426345b2dfc6685b2558b3f3edba0948352bccc2a7439d45",
       "promptMode": "FULL"
     },
     {
@@ -240,7 +240,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProvider.java",
-      "sha256": "3038e61cb54ac39e50df383d034f852e345e22bc063b8484c3f2bb505c08977e",
+      "sha256": "461e8ed41863a2429b39a6bf14de55ff804f3a73b1a08513a557b02051d289c8",
       "reviewSummary": "Responsabilidade: orientar o retrabalho de rejeições funcionais e falhas de homologação do PDE."
     },
     {
@@ -252,7 +252,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisLearningCycleContext.java",
-      "sha256": "b0f7a5fd9d33ab6f121f4af2c9b8b8e2847ccb801229b4dee9f081b40eee8a9d",
+      "sha256": "2659d837aed3cba29128bca080f392307a45249701526315f1df2e77059d612e",
       "reviewSummary": "Responsabilidade: entregar a Íris os contratos e as provas aprovadas do próprio ciclo privado."
     },
     {
@@ -535,6 +535,11 @@
       "path": "docs/homologacao/financial-approved-ceilings-v1.md",
       "sha256": "8682c96a6a602cbafca2a08b4056e3f0c50b0377b22a013f39d51b9c62da95a8",
       "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationCorrectionPolicy.java",
+      "sha256": "87b678bd9eee3b71eb73412408b67d877fa5c12a2ab401007c7ce2626a486827",
+      "promptMode": "FULL"
     }
   ],
   "executableEvidence": [
@@ -565,7 +570,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java",
-      "sha256": "79cef0a90b47cf04683456b94631381aea696612cb562154d1acf8921272cd08",
+      "sha256": "548019b8cf69d46f6cfd37ba376378e720ac01293cc19ae55b6d7e23c6b0ae0a",
       "promptMode": "FULL"
     },
     {
@@ -676,7 +681,7 @@
     {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/communication/v1/IrisLearningCycleContextTest.java",
-      "sha256": "76972960cc68ddf51f55f12caa5cbb656423e6c5d1ba9f1e871e1eedbee29cfc",
+      "sha256": "2b2a995c5111fb2d464fa8dc7960924b2c32184b6c20628b8a41e9f6570f966d",
       "reviewSummary": "Responsabilidade: comprovar a passagem privada a Íris sem reaproveitar plano ou prova inválida."
     },
     {
@@ -865,6 +870,11 @@
       "sha256": "27031add221633a7db5c0e94040dad289f7ded29b9edceb35abe7a9c6c5e1429",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Comprova continuidade persistida com consulta compacta, evento único e preservação da pausa, sem nova tarefa indevida."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationCorrectionPolicyTest.java",
+      "sha256": "42b7f8ad8b01a51cce6bfd4b6885360883ec6f63965c37c42ff4494ad56fd6bf",
+      "promptMode": "FULL"
     }
   ],
   "validationReport": "docs/homologacao/capella-recuperacao-homologacao-v1.md",
@@ -934,14 +944,24 @@
       "path": "docs/homologacao/capella-recuperacao-homologacao-v1.md",
       "sha256": "5a8541978064397dbf107c922128102b81f49f052c0400a0606b88f5620c0541",
       "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md",
+      "sha256": "9af69d1514f6d2051f8eb1f8fb4e4ff25a138a6977a5a21e04ae28aa444dd45d",
+      "promptMode": "FULL"
     }
   ],
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/mira-private-candidate-v70.json",
     "previousManifestSha256": "547762e88865c2ab77113ccf72dce75ca56ea87f4b73b6a681bf4adfd33c3ef2",
-    "validatedAt": "2026-11-04T03:50:09.203815+00:00",
-    "scope": "Compatibilidade do tratamento de timeout do harness e da retomada técnica na mesma versão; preserva rejeições funcionais, experiência e autorizações de Mira.",
+    "validatedAt": "2026-11-04T04:51:24.700265+00:00",
+    "scope": "Compatibilidade do tratamento de timeout do harness e da retomada técnica na mesma versão; preserva rejeições funcionais, experiência e autorizações de Mira. A política compartilhada vincula a recuperação do executor ao gate e ao consumo por Íris, sem dispensar revisão independente nem apagar correção histórica.",
     "changedEvidence": [
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
+        "previousSha256": "de1161423eb58045b56b63c1d6e962eb2e3c60f94f32502b75e73264150d31c1",
+        "sha256": "7418313593c245d1426345b2dfc6685b2558b3f3edba0948352bccc2a7439d45"
+      },
       {
         "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
         "previousSha256": "68855cb3f1df47cfd67e09f6e77d7fde2b3c098cb2c0bb1c454a71863518ce4b",
@@ -950,7 +970,17 @@
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProvider.java",
         "previousSha256": "aff06adad0ccd1de75086f24e0f99e407af583366a97004fd8dc3cc94822b730",
-        "sha256": "3038e61cb54ac39e50df383d034f852e345e22bc063b8484c3f2bb505c08977e"
+        "sha256": "461e8ed41863a2429b39a6bf14de55ff804f3a73b1a08513a557b02051d289c8"
+      },
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisLearningCycleContext.java",
+        "previousSha256": "b0f7a5fd9d33ab6f121f4af2c9b8b8e2847ccb801229b4dee9f081b40eee8a9d",
+        "sha256": "2659d837aed3cba29128bca080f392307a45249701526315f1df2e77059d612e"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java",
+        "previousSha256": "79cef0a90b47cf04683456b94631381aea696612cb562154d1acf8921272cd08",
+        "sha256": "548019b8cf69d46f6cfd37ba376378e720ac01293cc19ae55b6d7e23c6b0ae0a"
       },
       {
         "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
@@ -958,23 +988,28 @@
         "sha256": "88e0c29ffb1c8351b634418a7a5c8e770441279bbd9344563bd445dd54a9de21"
       },
       {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
+        "previousSha256": "c283d0890d6c780928174d74f2b7c3d3fa3e61e51f1092e651f783d9283f3a65",
+        "sha256": "e2af3f76b3d4722586276ebbd735fdba74f75bd0377fbf7f476293413fc88c0a"
+      },
+      {
         "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProviderTest.java",
         "previousSha256": "31d3aa3e54be8de4564b92674ee296d27b84b99b651184225c550e7e0f0f0d96",
         "sha256": "7df2091d4071b02f02189c6716dfdf66237be300c99a3183f241b26f19c44732"
       },
       {
-        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
-        "previousSha256": "c283d0890d6c780928174d74f2b7c3d3fa3e61e51f1092e651f783d9283f3a65",
-        "sha256": "e2af3f76b3d4722586276ebbd735fdba74f75bd0377fbf7f476293413fc88c0a"
+        "path": "backend/ads-service/src/test/java/com/marketinghub/communication/v1/IrisLearningCycleContextTest.java",
+        "previousSha256": "76972960cc68ddf51f55f12caa5cbb656423e6c5d1ba9f1e871e1eedbee29cfc",
+        "sha256": "2b2a995c5111fb2d464fa8dc7960924b2c32184b6c20628b8a41e9f6570f966d"
       }
     ],
     "removedMutableEvidence": [],
-    "validationReport": "docs/homologacao/capella-recuperacao-homologacao-v1.md"
+    "validationReport": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md"
   },
   "sharedHarnessCompatibility": {
-    "scope": "Compatibilidade do tratamento de timeout do harness e da retomada técnica na mesma versão; preserva rejeições funcionais, experiência e autorizações de Mira.",
+    "scope": "Compatibilidade do tratamento de timeout do harness e da retomada técnica na mesma versão; preserva rejeições funcionais, experiência e autorizações de Mira. A política compartilhada vincula a recuperação do executor ao gate e ao consumo por Íris, sem dispensar revisão independente nem apagar correção histórica.",
     "modelCalls": 0,
     "commercialApprovalRenewed": false,
-    "validation": "docs/homologacao/capella-recuperacao-homologacao-v1.md"
+    "validation": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md"
   }
 }

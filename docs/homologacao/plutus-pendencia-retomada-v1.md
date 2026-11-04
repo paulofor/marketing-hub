@@ -50,6 +50,11 @@ regra financeira. Adotada a terceira alternativa, preservando cálculos e recibo
   retorno → retomada disponível, sem chamada automática de retomada.
 - Parecer de outra referência permanece íntegro e identificado como histórico;
   a mesma pendência e link aparecem junto da análise. Nenhum parecer foi fabricado.
+- O harness existente também passou com MySQL 5.7 local: 21 cenários de API,
+  22 de ciclo de vida, recuperação após reinício e cinco matrizes de navegador
+  em desktop/iPhone/Pixel. Inclui concorrência, versão retirada, reserva de fila,
+  reserva projetada e primeiro planejamento. Nove verificações do runner e do
+  contrato de entrega passaram.
 - A execução combinada atingiu o limite de memória na arquitetura, após 385 testes
   funcionais sem falhas. A separação em dois processos concluiu ambas as suítes
   com sucesso; não houve mudança de regra para contornar teste.
@@ -65,6 +70,19 @@ da execução, embora o experimento fosse o mesmo. O retorno agora preserva a re
 explícita sem ciclo e confere experimento, produto, cadeia e versão antes de oferecer o
 link. Cinco regressões novas cobrem essa navegação e o isolamento; a aparência preserva
 as capturas abaixo. Não houve migração ou retomada real.
+
+O CI identificou uma expectativa antiga no harness geral: erro de consulta deveria
+deixar a retomada visível e desabilitada. O contrato solicitado exige ausência do
+botão. A asserção foi alinhada e a matriz completa desse harness foi executada
+localmente com MySQL 5.7, incluindo retomada elegível após nova consulta. A falha
+separada na resolução de um descritor Maven ocorreu antes dos testes; o mesmo
+Spotless passou localmente e o descritor oficial respondeu HTTP 200 com XML válido.
+Não houve relaxamento de regra financeira nem alteração de infraestrutura por isso.
+
+O daemon de testes estava sem espaço. Foi usado somente no projeto Compose exclusivo
+um armazenamento temporário em memória para o MySQL; não foram removidos recursos
+de outras sessões. Backend e frontend locais usaram o mesmo código do PR, sem imagem
+produtiva, host network ou escrita no banco publicado.
 
 ### Evidências revisáveis
 

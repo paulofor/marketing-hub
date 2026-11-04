@@ -1,6 +1,6 @@
 {
   "scope": "TEST_ONLY",
-  "observedAt": "2026-11-04T18:07:24.961810+00:00",
+  "observedAt": "2026-11-04T18:40:32.070764+00:00",
   "productionMutations": 0,
   "deploymentPerformed": false,
   "initialProductionObservation": {
@@ -261,7 +261,28 @@
     "frontend/src/pages/product/ProductProcessAutomationPanel.tsx": "544213f56082f06c9c0c8e48891dbe9d1c0688d241adaa5c654902c5fcd0cac2",
     "frontend/src/pages/product/ProductProcessFinancialPending.test.tsx": "03a02a58bf97abc5a1fdc960db647bde8b4347e63556d83686c957e3de556d5f",
     "frontend/src/pages/product/ProductProcessFinancialPending.tsx": "64107c2bdfd9d6374ea3fe69557e9fabb10b55e4c1beaa78382f93f632c1475b",
-    "infra/testing/process-automation/plutus-financial-browser.mjs": "f2b63fecff934abb7940cb70ca0b50a20bba651392b22dbd46e92ee98b883a85"
+    "infra/testing/process-automation/plutus-financial-browser.mjs": "f2b63fecff934abb7940cb70ca0b50a20bba651392b22dbd46e92ee98b883a85",
+    "infra/testing/process-automation/browser-matrix.mjs": "9143e360493f44bfda70538b05d40e685626327720405b5bdb737263ae20fe80"
   },
-  "commercialImpact": "Não medido; testes comprovam comportamento, não vendas."
+  "commercialImpact": "Não medido; testes comprovam comportamento, não vendas.",
+  "mysql57Local": {
+    "apiScenarios": 21,
+    "lifecycleScenarios": 22,
+    "restartRecovery": "PASS",
+    "browserMatrices": [
+      "browser-matrix",
+      "retired-version-browser",
+      "queue-reservation-browser",
+      "projected-reservation-browser",
+      "initial-planning-browser"
+    ],
+    "browserProfiles": [
+      "desktop",
+      "iPhone 15 Pro",
+      "Pixel 7"
+    ],
+    "runnerAndDeliveryContractTests": 9,
+    "result": "PASS",
+    "storage": "tmpfs no projeto Compose exclusivo; sem remoção de recursos de outras sessões"
+  }
 }

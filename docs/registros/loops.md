@@ -10473,6 +10473,10 @@ Regressões persistem recibos locais, recusam contexto cruzado/versão anterior,
 gravação concorrente, limite insuficiente, STOP e contratos ausentes; confirmam
 outra identidade e caminhos antes válidos. O navegador exercita rascunho, falha,
 aprovação e retorno em desktop/iPhone/Pixel, inclusive ao lado do parecer histórico.
+A matriz geral também foi alinhada: consulta com erro exige botão ausente, não
+visível e desabilitado. O harness real com MySQL 5.7 passou em API, ciclo de vida,
+reinício e cinco matrizes de navegador nos três perfis; a retomada válida após
+reconsulta continua coberta. Isso evita que o teste preventivo restaure a UX incorreta.
 A hipótese operacional é reduzir cliques de retomada recusados e tempo parado;
 não há medição comercial posterior nem alegação de aumento de vendas.
 [Matriz, comandos e evidências](../homologacao/plutus-pendencia-retomada-v1.md).

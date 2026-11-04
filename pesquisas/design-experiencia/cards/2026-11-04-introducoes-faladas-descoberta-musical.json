@@ -1,0 +1,18 @@
+{
+  "cardKey": "introducoes-faladas-descoberta-musical-serendipidade",
+  "collection": "prazer-audio-visual",
+  "title": "Introduções faladas podem ampliar interesse e serendipidade em experiências musicais",
+  "finding": "Em experimento online com 452 participantes, introduções faladas informativas ou imersivas antes de músicas elevaram chances de serendipidade autorrelatada em relação a nenhuma introdução. Para descoberta fora do repertório, OR=1,73 (imersiva) e 2,61 (informativa); para redescoberta dentro do repertório, OR=3,23 e 8,36, respectivamente. Resultados não medem vendas nem prazer neural.",
+  "mechanism": "Contexto narrativo pode facilitar envolvimento com música pouco familiar, enquanto informação contextual nova pode renovar o interesse em música familiar. Transporte narrativo e elaboração cognitiva apareceram associados aos desfechos em modelos de mediação, sem manipulação isolada desses mediadores.",
+  "commercialApplication": "Para experiências musicais ou audiovisuais do Marketing Hub, testar introduções curtas e opcionais, narrativas ou informativas, antes de exemplos de trilhas e conteúdos musicais. Manter informações verificáveis, licenças regulares e controle de pular a fala. Não generalizar para criativos sem componente musical.",
+  "evidenceStrength": "Preprint com estudo experimental randomizado intraindivíduo, N=452, 18 músicas e regressão bayesiana multinível; desfechos compostos autorrelatados. Associação dos mecanismos em modelagem de mediação, não comprovação fisiológica.",
+  "publishedOn": "2026-11-04",
+  "validUntil": "2026-12-19",
+  "experimentHypothesis": "Quando o usuário escolhe explorar música, uma introdução informativa ou narrativa opcional aumentará interesse e descoberta significativa versus nenhuma introdução sem piorar abandono ou irritação. Medir escuta voluntária, skip, avaliação de interesse e retorno; medir CTA e compra somente em teste separado.",
+  "risks": "Fatos inventados sobre artistas, narrativa enganosa, voz artificial incômoda, atraso para chegar ao conteúdo, manipulação emocional e uso sem licença de obras musicais.",
+  "limits": "Escuta experimental obrigatória, repertório selecionado de 18 músicas, escalas autorrelatadas, contexto distinto do consumo cotidiano. OR não é variação de receita ou de probabilidade absoluta. Não se estudou publicidade, conversão nem retenção longitudinal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-04-introducoes-faladas-descoberta-musical.md",
+  "sourceTitle": "Binst (2026) — Setting the Stage: introduções faladas e descoberta musical",
+  "sourceSha256": "d689f01138592dd4bb18d92afe4a77252f13cd54c8395668456d4299dd11a582"
+}

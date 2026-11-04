@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-visual-estado-audio-interfaces",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-11-04",
+  "validUntil": "2026-12-19",
+  "sourceKind": "MARKDOWN",
+  "title": "Feedback visual em interfaces com resposta de áudio diferida",
+  "finding": "Em 18 performers eletrônicos, o olhar foi usado para acompanhar controles, estados e sons ainda não audíveis; observação qualitativa não demonstra intervenção causal.",
+  "mechanism": "Informação visual pode apoiar monitoramento de estados e mapeamento entre ações e sons quando a resposta auditiva é retardada.",
+  "commercialApplication": "Testar indicadores visuais acessíveis e discretos para geração ou reprodução de áudio por IA com espera.",
+  "evidenceStrength": "Baixa a moderada descritiva em performers especialistas; baixa para causalidade em UX e vendas.",
+  "experimentHypothesis": "Feedback explícito de progresso e conclusão de áudio reduzirá cliques repetidos, erros e incerteza versus interface sem estado explícito.",
+  "risks": "Indicadores falsos, excesso de animação ou dependência somente visual podem distrair ou prejudicar acessibilidade.",
+  "limits": "18 especialistas, configurações diversas, observações e entrevistas; nenhum ensaio randomizado de UX, prazer, memória ou conversão.",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-04-feedback-visual-estado-audio-interfaces-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Grund e Hofmann: olhar e feedback visual em música eletrônica",
+  "sourceSha256": "62026b8b3e36eb283312ffabb85f6cbf569ecd870121f5df20e8ed3d484a9367"
+}

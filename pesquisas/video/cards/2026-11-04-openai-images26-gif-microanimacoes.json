@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-openai-chatgpt-native-gif-microanimation",
+  "collection": "video",
+  "title": "Gerar e editar GIFs animados por conversa para microcriativos",
+  "finding": "Em 04/11/2026, The Verge noticiou liberacao gradual de GIFs animados nativos no ChatGPT Images 2.6, a partir de prompt ou foto, com edicao por quadro e velocidade. Nao e um novo gerador de video cinematografico.",
+  "mechanism": "Geracao de loops animados curtos a partir de texto ou imagem, com revisao de quadros e ritmo na interface conversacional. A documentacao publica da API ainda nao confirmou saida GIF em GPT-Image-2.6.",
+  "commercialApplication": "Marketing Hub: prototipar animacoes leves de produto/CTA e comparar com video MP4/WebM em landing pages e placements que suportam GIF.",
+  "evidenceStrength": "Media: reportagem especifica de The Verge datada de 04/11; documentacao primaria da API ainda nao atualizada; acesso real por conta e custos nao testados.",
+  "publishedOn": "2026-11-04",
+  "validUntil": "2026-12-04",
+  "experimentHypothesis": "Edicao conversacional por quadro reduz retrabalho para microanimacoes publicitarias, preservando informacoes e marca em loops curtos.",
+  "risks": "Distribuicao gradual, ausencia de especificacao publica da API para GIF, direitos de imagem/marca, peso de arquivo, comportamento de loop, movimento acessivel e restricoes de cada plataforma de anuncios.",
+  "limits": "Sem preco ou limites de duracao/FPS/quadros/resolucao verificados; nenhum peso aberto; nao substitui Kling, Veo ou Seedance para clips com som.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-04-openai-gifs-images26-disponibilidade.md",
+  "sourceTitle": "Fonte revisada - OpenAI Images 2.6 GIFs e limites de disponibilidade",
+  "sourceSha256": "b26a57357471389c422d32ec977750762f08f27a1b0ec77b3bda2aab2f19d1a1"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "fluencia-auditiva-preferencia-visual",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-11-04",
+  "validUntil": "2026-12-19",
+  "sourceKind": "MARKDOWN",
+  "title": "Fluência auditiva e preferência por objetos visuais",
+  "finding": "Em seis experimentos, maior fluência ao detectar um tom com ruído favoreceu a avaliação de objetos visuais em diversas replicações; o efeito de interação com movimento não foi confirmado.",
+  "mechanism": "Facilidade auditiva pode gerar avaliação afetiva atribuída ao objeto visual; a mediação não foi comprovada e não houve medida de dopamina.",
+  "commercialApplication": "Testar áudio facilmente identificável em demonstrações visuais, com mesmo roteiro e imagem e sem aumentar ruído desconfortável.",
+  "evidenceStrength": "Moderada em paradigma de preferência audiovisual experimental, baixa para anúncios, música comercial e vendas.",
+  "experimentHypothesis": "Versões de áudio mais inteligível melhorarão preferência relatada e conforto sem prejudicar compreensão ou recordação, comparadas a versões com maior esforço perceptivo.",
+  "risks": "Não produzir ruído nocivo nem afirmar que gostar de um objeto prova intenção de compra; controlar volume e acessibilidade.",
+  "limits": "Tons artificiais em ruído, não música; objetos simples; efeito estático isolado não significativo; ausência de medição de prazer dopaminérgico, CTA e vendas.",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-04-fluencia-auditiva-preferencia-visual-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Knight, Flavell e Mattys: fluência auditiva e preferência visual",
+  "sourceSha256": "4515c189ba2aac928c5c04e44e5b21842efd01ffa3ae464fb615a1b20c928923"
+}

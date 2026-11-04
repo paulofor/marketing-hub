@@ -37,12 +37,12 @@ try {
         executorType: "HUMAN",
         interactionType: "APPROVAL",
         actionAvailable: true,
-        actionLabel: "Aprovar uso privado da peça",
+        actionLabel: "Aprovar uso privado da imagem",
         description: "Seleção privada de teste.",
         availabilityReason: "Peças revisadas por Psique e Têmis.",
         confirmationRequired: true,
-        confirmationTitle: "Confirmar uso privado",
-        confirmationMessage: "Revise as imagens e confirme seu uso privado.",
+        confirmationTitle: "Confirmar somente a imagem",
+        confirmationMessage: "Aprovo somente esta imagem revisada. Esta decisão não aprova vídeo.",
         confirmationToken: `CONFIRM:QA:${productId}`,
         decisionMode: "REVIEW_AND_ACCEPT",
         requirements: [],
@@ -136,7 +136,7 @@ try {
         );
       }
       const approve = page.getByRole("button", {
-        name: "Aprovar uso privado da peça",
+        name: "Aprovar uso privado da imagem",
       });
       await expect(approve).toBeEnabled();
       const popupPromise = context.waitForEvent("page");
@@ -172,6 +172,7 @@ try {
         .getByRole("button", { name: "Tentar carregar novamente" })
         .click();
       await expect(approve).toBeEnabled();
+      await expect(page.getByText(control.confirmationMessage, { exact: true })).toBeVisible();
       assert.equal(mutations.length, 0);
       await approve.click();
       await expect.poll(() => mutations.length).toBe(1);

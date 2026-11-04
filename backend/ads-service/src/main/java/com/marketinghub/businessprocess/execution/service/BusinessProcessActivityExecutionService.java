@@ -2090,7 +2090,7 @@ public class BusinessProcessActivityExecutionService {
     return "CANCELLED";
   }
 
-  /** Explica o estado consolidado pela instância sem substituir a causa persistida de bloqueio. */
+  /** Expõe a causa persistida de bloqueio ou dispensa, sem confundir adiamento com conclusão. */
   private String activityInstanceStateReason(BusinessProcessActivityInstance instance) {
     return switch (instance.getStatus()) {
       case "COMPLETED" -> "Objetivo da atividade atingido na instância BPM.";
@@ -2101,6 +2101,10 @@ public class BusinessProcessActivityExecutionService {
       case "IN_PROGRESS" -> "Atividade em execução pelo responsável.";
       case "PENDING" -> "Atividade aguardando execução ou liberação pelo backend.";
       case "CANCELLED" -> "Atividade encerrada sem atingir o objetivo.";
+      case "NOT_APPLICABLE" ->
+          firstPresent(
+              instance.getBlockedReason(),
+              "Atividade dispensada neste escopo; objetivo não comprovado.");
       default -> "Estado operacional registrado na instância BPM.";
     };
   }

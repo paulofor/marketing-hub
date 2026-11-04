@@ -403,6 +403,84 @@ class LearningCycleValueFlowProjectionTest {
     return event;
   }
 
+  /** Reproduz Vega e outra identidade sem esconder a decisão do filho nem escrever ou gastar. */
+  @ParameterizedTest
+  @CsvSource({"4,18,111", "75,55,95"})
+  void exposesNestedHumanDecision(long productId, long cycleId, long experimentId) {
+    var cycle = videoFixture(productId, cycleId, experimentId, "private-test-v1");
+    cycle.setStage("ADJUSTMENT");
+    var parent = scopedRun(cycle, 93L, "WAITING_SUBPROCESS");
+    parent.setChildRunId(94L);
+    var child = scopedRun(cycle, 94L, "WAITING_HUMAN");
+    child.setParentRunId(93L);
+    child.setCurrentActivityName("Registrar decisão humana de uso");
+    child.setCurrentOwnerName("Operador humano");
+    child.setReason("Apenas imagem revisada; vídeo ainda não produzido.");
+    when(runs
+            .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                productId,
+                117L,
+                cycle.getChainDefinitionId(),
+                cycleId,
+                "experiment:" + experimentId))
+        .thenReturn(Optional.of(parent));
+    when(runs.findById(94L)).thenReturn(Optional.of(child));
+    var flow = projection.resolve(cycle, reviewWork());
+    assertThat(flow.decisionNeeded()).isTrue();
+    assertThat(flow.activeExecution()).isFalse();
+    assertThat(flow.saleBlocker()).contains("vídeo ainda não produzido");
+    assertThat(flow.resolvingResponsible()).isEqualTo("Operador humano");
+    assertThat(flow.awaitingResponsible())
+        .isEqualTo("Backend · continuidade do processo após a decisão registrada");
+    assertThat(flow.acceptance()).contains("Aceite estático não aprova vídeo");
+    verify(runs, never()).save(any());
+    verify(events, never()).save(any());
+  }
+
+  /** Filhos alheios, referências cruzadas ou relação inválida não contaminam o resumo do ciclo. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"product", "cycle", "chain", "reference", "parent", "loop"})
+  void rejectsUnrelatedOrCyclicChildDecision(String mismatch) {
+    var cycle = videoFixture(4, 18, 111, "private-test-v1");
+    cycle.setStage("ADJUSTMENT");
+    var parent = scopedRun(cycle, 93L, "WAITING_SUBPROCESS");
+    parent.setChildRunId(94L);
+    var child = scopedRun(cycle, 94L, "WAITING_HUMAN");
+    child.setParentRunId(93L);
+    switch (mismatch) {
+      case "product" -> child.setProductId(999L);
+      case "cycle" -> child.setLearningCycleId(999L);
+      case "chain" -> child.setChainDefinitionId(999L);
+      case "reference" -> child.setSourceReference("experiment:999");
+      case "parent" -> child.setParentRunId(999L);
+      case "loop" -> {
+        child.setStatus("WAITING_SUBPROCESS");
+        child.setChildRunId(93L);
+        parent.setParentRunId(94L);
+      }
+    }
+    when(runs
+            .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                4L, 117L, cycle.getChainDefinitionId(), 18L, "experiment:111"))
+        .thenReturn(Optional.of(parent));
+    when(runs.findById(94L)).thenReturn(Optional.of(child));
+    when(runs.findById(93L)).thenReturn(Optional.of(parent));
+    assertThat(projection.resolve(cycle, reviewWork()).decisionNeeded()).isFalse();
+  }
+
+  /** Monta execução persistida com identidade completa e sem efeitos externos. */
+  private ProcessRun scopedRun(LearningSalesCycle cycle, long id, String status) {
+    var run = new ProcessRun();
+    run.setId(id);
+    run.setStatus(status);
+    run.setProductId(cycle.getProductId());
+    run.setLearningCycleId(cycle.getId());
+    run.setChainDefinitionId(cycle.getChainDefinitionId());
+    run.setSourceReference("experiment:" + cycle.getExperimentId());
+    return run;
+  }
+
   /** Capella homologada continua pausada; a tela não pode negar a necessidade de retomada. */
   @Test
   void acceptedImplementationKeepsPausedProcessVisible() {

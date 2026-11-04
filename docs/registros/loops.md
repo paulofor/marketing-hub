@@ -11676,3 +11676,16 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
   `infra/testing/private-kit/run-local.sh`.
 - Escopo/limite: kits privados de até 32 MiB, sem alterar autorização de mercado ou
   aprovação independente; [matriz](../homologacao/capella-persistencia-pacotes-v1.md).
+
+## LOOP-VEGA-VIDEO-PLANEJADO-DISPENSA-OPACA — 04/11/2026
+
+- Evidência: Íris #873 contém briefing; rota #816/dispensa #817 registram BRIEF_ONLY,
+  sem pedido audiovisual. A tela ocultava o motivo registrado e o ciclo não expunha
+  WAITING_HUMAN do subprocesso #94, mostrando ausência de decisão.
+- Correção: preservar o motivo na projeção; seguir somente filhos do mesmo contexto;
+  explicitar no aceite estático a exclusão de audiovisual.
+- Prevenção: testes de motivo/fallback, duas identidades, filho alheio, vínculo pai
+  inválido, ciclo de referências, pausas existentes e recibo STATIC_IMAGE.
+- Limite: proteção e clareza não geram vídeo nem aprovam custo. Pedido cinematográfico
+  segue no sucessor #21/#114, sem herdar limites. Evidências e matriz em
+  `docs/homologacao/vega-video-estudio-2026-11-04.md`.

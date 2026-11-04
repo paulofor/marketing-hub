@@ -9973,6 +9973,22 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   Nenhuma chamada de modelo, análise paga ou evidência comercial é criada pela decisão.
 - **Registro:** `docs/homologacao/alcyone-comunicacao-prontidao-v1.md`.
 
+## LOOP-TETO-PLANEJAMENTO-IGNORADO-NA-REVISAO — 04/11/2026
+
+- Evidência: Capella/ciclo 19/experimento 112 possui recibo vigente 116 de R$ 100 para
+  mídia, mas a prontidão comercial retornava `CYCLE_MEDIA_LIMIT` porque consultava
+  apenas a verba operacional, ainda zerada. A decisão de planejamento não autoriza anúncios.
+- Causa compartilhada: o consumidor anterior à autorização não lia os recibos da planilha;
+  as fixtures antigas sempre preenchiam um teto positivo diretamente no ciclo.
+- Correção: reutilizar o recibo vigente para revisar, priorizando a decisão mais recente;
+  zero continua bloqueando. Preservar a compatibilidade do limite legado quando não há recibo.
+  Não alterar verba, janela, status ou autorização durante leitura.
+- Prevenção: controller e ledger reais com dependências locais; Capella e outra identidade,
+  teto ausente, zero, contexto divergente, recibo superado, caminho anterior e criativo ausente.
+  Três falhas reproduzidas antes; 35 testes de prontidão aprovados após a correção.
+- Limites e matriz: [teto para revisão](../homologacao/capella-planejamento-midia-revisao-v1.md).
+  Testes locais não comprovam vendas nem autorizam mídia.
+
 ## LOOP-PDE-PROVA-ESTATICA-SEM-GERACAO-INTEGRADA — 08/10/2026
 
 - **Evidência:** Alcyone privado v3 e tarefas 583–587 validam fixtures com zero chamadas.

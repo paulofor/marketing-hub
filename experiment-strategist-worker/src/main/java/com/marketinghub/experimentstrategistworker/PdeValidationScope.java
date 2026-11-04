@@ -19,6 +19,13 @@ final class PdeValidationScope {
           "(?iu)(?:^|,)\\s*sem\\s+(?:(?:a\\s+)?comparação(?:\\s+documental)?\\s+)?"
               + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\s*$");
 
+  private static final Pattern EXPLICIT_PROHIBITION =
+      Pattern.compile(
+          "(?iu)(?:^|[:,])\\s*não\\s+(?:impor|exigir|executar|realizar)\\s+"
+              + "(?:(?:a\\s+)?comparação(?:\\s+documental)?(?:\\s+de\\s+entradas)?\\s*,?\\s*)?"
+              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])"
+              + "(?:\\s+(?:ou|nem)\\s+matrizes\\s+adicionais)?\\s*$");
+
   private static final Pattern IMPLEMENTED_CONDITION =
       Pattern.compile(
           "(?iu)(?!(?:.*\\b(?:mas|independentemente|sempre|obrigatoriamente)\\b|.*mesmo sem))(?:se houver comparação documental implementada, executar .*"
@@ -90,7 +97,7 @@ final class PdeValidationScope {
           "Atena exigiu comparação fora do protocolo da candidata; alinhe a hipótese à base disponível.");
   }
 
-  /** Examina campos e frases isoladamente; uma exclusão explícita não libera outra obrigação. */
+  /** Reconhece exclusões e proibições delimitadas sem dispensar obrigações em outras cláusulas. */
   private static boolean requiresComparison(JsonNode value) {
     if (value.isContainerNode()) {
       var fields = value.fields();
@@ -104,6 +111,7 @@ final class PdeValidationScope {
     if (!value.isTextual()) return false;
     for (String sentence : value.asText().split("[.!?;\\r\\n]+")) {
       String clause = EXPLICIT_EXCLUSION.matcher(sentence.strip()).replaceFirst("").strip();
+      clause = EXPLICIT_PROHIBITION.matcher(clause).replaceFirst("").strip();
       if (COMPARISON.matcher(clause).find() && !IMPLEMENTED_CONDITION.matcher(clause).matches())
         return true;
     }

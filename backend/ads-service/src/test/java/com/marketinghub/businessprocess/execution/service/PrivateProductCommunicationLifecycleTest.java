@@ -15,9 +15,11 @@ import com.marketinghub.businessprocess.automation.v1.service.*;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
 import com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController;
 import com.marketinghub.businessprocesschain.*;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCyclePreparationBudget;
 import com.marketinghub.communication.v1.*;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.product.Product;
+import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.*;
 import com.marketinghub.repository.jpa.businessprocess.*;
@@ -171,6 +173,13 @@ class PrivateProductCommunicationLifecycleTest {
             org.mockito.Mockito.mock(
                 com.marketinghub.repository.jpa.experiment.ExperimentRepository.class),
             tasks);
+    ReflectionTestUtils.setField(
+        runContext,
+        "correctionBudget",
+        new ProcessRunCorrectionBudget(
+            mock(LearningSalesCycleRepository.class),
+            mock(LearningCyclePreparationBudget.class),
+            mock(CyclePreparationCostRepository.class)));
     var runService =
         new ProcessRunService(
             runs,

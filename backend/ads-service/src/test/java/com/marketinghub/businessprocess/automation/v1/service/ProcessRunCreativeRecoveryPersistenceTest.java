@@ -293,6 +293,33 @@ class ProcessRunCreativeRecoveryPersistenceTest {
                   completed)));
   }
 
+  /** Bloqueia já a primeira tarefa sem recibo e conserva uma única passagem após autorização. */
+  @Test
+  void firstAgentTaskRequiresBudgetBeforeDispatchAndAfterRepeatedResume() throws Exception {
+    when(context.correctionBudgetBlockReason(any(), any()))
+        .thenReturn("Preparação pausada: falta o teto da candidata.");
+    var run = start();
+    assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
+    assertThat(requested).isEmpty();
+    for (int i = 0; i < 2; i++) {
+      service.resume(94110L, 94164L, run.id());
+      assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
+    }
+    assertThat(requested).isEmpty();
+    assertThat(service.history(94110L, 94164L, run.id(), null))
+        .anyMatch(event -> "CORRECTION_BUDGET_REQUIRED".equals(event.eventType()));
+    when(context.correctionBudgetBlockReason(any(), any())).thenReturn(null);
+    service.resume(94110L, 94164L, run.id());
+    assertThat(tick(run.id()).status()).isEqualTo("WAITING_ACTIVITY");
+    tick(run.id());
+    assertThat(requested).containsExactly("nonAudiovisual");
+    when(context.correctionBudgetBlockReason(any(), any()))
+        .thenReturn("Preparação pausada: saldo insuficiente para a próxima atividade.");
+    callback("nonAudiovisual", "COMPLETED", null);
+    assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
+    assertThat(requested).containsExactly("nonAudiovisual");
+  }
+
   /** A conciliação e o botão retomar preservam a pausa financeira até uma decisão válida. */
   @Test
   void pausedFinancialCorrectionSurvivesReconciliationAndResumeWithoutReceipt() throws Exception {

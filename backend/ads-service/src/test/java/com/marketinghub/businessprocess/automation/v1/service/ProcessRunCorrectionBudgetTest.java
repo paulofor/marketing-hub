@@ -56,6 +56,22 @@ class ProcessRunCorrectionBudgetTest {
     verify(costs).summarize(99107L);
   }
 
+  /** Primeira preparação sem chamadas anteriores usa recibo próprio e consumo inexistente. */
+  @Test
+  void acceptsFirstPreparationWithReceiptAndNoPreviousConsumption() {
+    prepare(99107L, null);
+    authorize("10.00", "2.00");
+    when(costs.summarize(99107L)).thenReturn(List.of());
+    var first =
+        new ObjectMapper()
+            .convertValue(
+                Map.of("tasks", List.of()), ProductProcessActivityExecutionGroupResponse.class);
+    assertThat(guard.blockReason(run, first)).isNull();
+    when(costs.summarize(99107L))
+        .thenReturn(List.of(new CycleFinancialReview.CostSlice(112L, null, 0)));
+    assertThat(guard.blockReason(run, first)).isNull();
+  }
+
   /** A ausência total de estimativas não é tratada como consumo zero. */
   @Test
   void keepsUnknownCostsVisible() {

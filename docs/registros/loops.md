@@ -10434,6 +10434,24 @@ recibo, cálculo e ajuste juntos. Não altera limites nem retoma a execução.
 A regressão cobre POST/GET, outra identidade, saldo zero, custos desconhecidos,
 replay e desktop/celulares. [Matriz e limites](../homologacao/preparation-budget-balance-v1.md).
 
+### Recorrência de Capella 898 — 04/11/2026
+
+Atena 898, ciclo 20/experimento 113, produziu APPROVE e proibiu explicitamente
+“comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais”.
+O validador reconhecia apenas exclusões iniciadas por “sem”, produzindo falso
+bloqueio. Worker e backend passam a reconhecer proibições delimitadas com
+“não impor/exigir/executar/realizar”; obrigação em outra cláusula, contraste e dupla
+negação continuam recusados. A resposta auditada é recuperável sem inferência.
+
+A execução 97 também iniciou a primeira tarefa sem recibo próprio: a proteção
+financeira só era chamada no retrabalho. O mesmo guard agora precede todo novo
+disparo de agente pelo BPM, sem impedir callbacks, reúso e operações determinísticas.
+Ausência de histórico de consumo é distinta de custo histórico desconhecido.
+Testes cobrem a resposta preservada, outras identidades, caminhos válidos, pausa,
+retomada repetida, orçamento e callbacks idempotentes. Não há autorização retroativa
+para os US$ 2,155494 estimados de 898 nem transferência do teto do ciclo 19.
+[Matriz, evidências e limites](../homologacao/capella898-validacao-e-teto-v1.md).
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

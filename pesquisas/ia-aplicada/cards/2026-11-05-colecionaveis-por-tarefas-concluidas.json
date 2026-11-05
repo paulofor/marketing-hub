@@ -1,0 +1,18 @@
+{
+  "cardKey": "colecionaveis-por-tarefas-concluidas",
+  "collection": "neuromarketing",
+  "title": "Colecionáveis opcionais associados à conclusão de tarefas úteis",
+  "finding": "Na carta aos acionistas de 03/11/2026, o Duolingo relata que o evento Junior's Toy Hunt, que libera peças de avatar após lições concluídas, esteve entre os experimentos de maior ganho em conclusão de lições. Não foram publicados tamanhos de efeito ou vendas incrementais.",
+  "mechanism": "Hipótese comportamental: progressão colecionável visível pode aumentar saliência do avanço e motivar a conclusão de tarefas. Não há evidência de mecanismo neurológico medido nem atribuição do crescimento agregado de usuários ao evento.",
+  "commercialApplication": "Testar, no onboarding ou demonstração de produto do Marketing Hub, marcos visuais opcionais vinculados a tarefas com valor real, preservando transparência de oferta e pagamento. Não apresentar colecionáveis como benefício comercial comprovado.",
+  "evidenceStrength": "Relato de experimento interno da empresa, sem protocolo, amostra, controle ou tamanho de efeito publicados; evidência específica limitada à conclusão de lições. Resultados financeiros do Q3 não demonstram causalidade.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Randomizar usuários entre sequência de demonstração equivalente com e sem colecionáveis; medir conclusão, retorno, CTA, pagamento reconciliado, satisfação e abandono. Hipótese: aumento de conclusão sem piorar satisfação nem margem.",
+  "risks": "Gamificação manipulativa, atenção deslocada do valor real, falsas recompensas e maior custo operacional; evitar urgência artificial, prêmios sem valor e esconder condições.",
+  "limits": "Empresa interessada; resultado não replicado externamente; magnitude e significância desconhecidas. Nenhuma prova de aumento de receita, conversão ou resultado próprio no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-05-duolingo-colecionaveis-conclusao-licoes.md",
+  "sourceTitle": "Duolingo — evento de colecionáveis e conclusão de lições, carta Q3 2026",
+  "sourceSha256": "ef3f27fa03a99387b695aef3e6c6e5572e60d6949aef46d0faf75a9b15e96009"
+}

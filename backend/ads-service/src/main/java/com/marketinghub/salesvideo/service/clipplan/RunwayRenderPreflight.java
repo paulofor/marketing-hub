@@ -40,7 +40,10 @@ public class RunwayRenderPreflight {
     this.projects = projects;
   }
 
-  /** Exige identidade e contexto financeiro auditáveis inclusive quando execução é chamada TEST. */
+  /**
+   * Exige identidade, decisão persistida de Plutus e reserva inclusive quando o render se chama
+   * TEST.
+   */
   public void validate(Long productId, Long profileId, RequestVideoRenderRequest request) {
     String name = request.getProviderName();
     if (name == null || !name.toUpperCase(java.util.Locale.ROOT).startsWith("RUNWAY")) return;
@@ -70,6 +73,9 @@ public class RunwayRenderPreflight {
       if (cycle.getSalesVideoJobId() != null)
         throw new IllegalArgumentException(
             "O ciclo já possui um job; conciliar resultado e reutilizar arquivo/callback antes de repetir");
+      if (!"APPROVED".equals(cycle.getFinancialDecision()))
+        throw new IllegalArgumentException(
+            "Este ciclo não possui parecer financeiro aprovado de Plutus. Consulte a revisão e sua pendência antes de gerar.");
       financial.assertFullCostCoverageBeforeRender(cycle);
       var reservation = financial.requireActiveReservation(cycleId);
       if (reservation.getFullProductionReservedUsd() == null

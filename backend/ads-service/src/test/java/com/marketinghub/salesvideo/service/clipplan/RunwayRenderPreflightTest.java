@@ -36,7 +36,8 @@ class RunwayRenderPreflightTest {
   }
 
   /**
-   * Aceita contexto governado, mas bloqueia produto, perfil diferente e duplicação no mesmo ciclo.
+   * Aceita decisão persistida, mas bloqueia aprovação declarada pelo cliente, outra identidade e
+   * duplicação.
    */
   @Test
   void isolatesIdentitiesAndPreventsDuplicate() {
@@ -48,6 +49,7 @@ class RunwayRenderPreflightTest {
     cycle.setId(23L);
     cycle.setVideoProjectId(34L);
     cycle.setProductId(70L);
+    cycle.setFinancialDecision("APPROVED");
     var project = new VideoProject();
     project.setId(34L);
     project.setSalesVideoProfileId(12L);
@@ -66,6 +68,10 @@ class RunwayRenderPreflightTest {
     request.setMetadataJson(
         "{\"videoProductionCycleId\":23,\"videoProjectId\":34,\"productId\":70,\"providerCreditReservationId\":91,\"financialApprovedBy\":\"Plutus\"}");
     assertThatCode(() -> gate.validate(70L, 12L, request)).doesNotThrowAnyException();
+    cycle.setFinancialDecision(null);
+    assertThatThrownBy(() -> gate.validate(70L, 12L, request))
+        .hasMessageContaining("parecer financeiro aprovado");
+    cycle.setFinancialDecision("APPROVED");
     assertThatThrownBy(() -> gate.validate(71L, 12L, request))
         .hasMessageContaining("outro produto");
     assertThatThrownBy(() -> gate.validate(70L, 13L, request)).hasMessageContaining("Perfil");

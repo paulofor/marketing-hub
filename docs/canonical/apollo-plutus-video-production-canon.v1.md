@@ -817,3 +817,5 @@ No encerramento do job, `PROVIDER_RESULT_UNCERTAIN` ou cobertura de custo descon
 Lacuna determinística de previsão integral fica em `PROVIDER_PREFLIGHT_BLOCKED`, sem consumir parecer de Plutus. Corrigidos os custos, reaplicar o callback preservado enquanto o snapshot estiver válido permite reavaliar a causa sem repetir consulta ou geração. Não estende validade nem reabre parecer encerrado ou ciclo isolado.
 
 O comando genérico de reprocessamento não pode clonar renders Runway com o contrato financeiro anterior: RENDER/RETRY deve voltar à preparação governada, após conciliação e preflight/reserva vigentes. Elegibilidade da UI e comando aplicam a mesma regra. O executor recusa clones legados antes do planejador. Pós-produção, reuso de artefatos e replay de callback permanecem separados de nova geração paga.
+
+A entrada de render confere o parecer de Plutus no ciclo persistido (`financialDecision=APPROVED`); indicação de aprovação no payload do cliente não é autorização e não substitui essa consulta.

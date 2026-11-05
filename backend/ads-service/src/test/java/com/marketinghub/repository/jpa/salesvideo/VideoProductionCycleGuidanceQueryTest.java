@@ -122,4 +122,66 @@ class VideoProductionCycleGuidanceQueryTest {
     jdbc.update(update);
     assertThat(results()).isEmpty();
   }
+
+  /** Executa a seleção real de produção, sem considerar preflights como pedidos governados. */
+  private List<Map<String, Object>> productionRequests(Long productId, Long experimentId)
+      throws Exception {
+    String sql =
+        VideoProductionCycleRepository.class
+            .getMethod("findLatestProductionRequest", Long.class, Long.class)
+            .getAnnotation(Query.class)
+            .value();
+    var params = new HashMap<String, Object>();
+    params.put("productId", productId);
+    params.put("experimentId", experimentId);
+    return named.queryForList(sql, params);
+  }
+
+  /** Uma consulta de rota sem custo não ativa audiovisual para nenhuma identidade. */
+  @ParameterizedTest
+  @ValueSource(longs = {4L, 77L})
+  void isolatedPreflightDoesNotRequestProduction(long productId) throws Exception {
+    jdbc.update("UPDATE video_production_cycle SET product_id=?", productId);
+    for (String status :
+        List.of(
+            "PENDING_PROVIDER_PREFLIGHT_ONLY",
+            "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+            "PROVIDER_PREFLIGHT_ONLY_BLOCKED")) {
+      jdbc.update("UPDATE video_production_cycle SET status=?", status);
+      assertThat(productionRequests(productId, 92L)).isEmpty();
+    }
+  }
+
+  /** Consulta posterior não apaga pedido real, mas cancelamento posterior continua prevalecendo. */
+  @Test
+  void ignoresLaterReadOnlyPreflightButPreservesStop() throws Exception {
+    jdbc.update(
+        "INSERT INTO video_production_cycle VALUES (11,4,4,92,?,'PENDING_FINANCIAL_REVIEW')",
+        Timestamp.from(changedAt));
+    assertThat(productionRequests(4L, 92L))
+        .singleElement()
+        .satisfies(row -> assertThat(row.get("id")).isEqualTo(11L));
+    jdbc.update(
+        "INSERT INTO video_production_cycle VALUES (14,4,4,92,?,'STOPPED')",
+        Timestamp.from(changedAt.plusSeconds(2)));
+    assertThat(productionRequests(4L, 92L))
+        .singleElement()
+        .satisfies(row -> assertThat(row.get("status")).isEqualTo("STOPPED"));
+  }
+
+  /**
+   * Produto sem experimento não recebe pedido de outro contexto, e o caminho anterior permanece
+   * válido.
+   */
+  @Test
+  void segregatesProductAndNullableExperiment() throws Exception {
+    jdbc.update(
+        "INSERT INTO video_production_cycle VALUES (11,4,4,NULL,?,'PENDING_FINANCIAL_REVIEW')",
+        Timestamp.from(changedAt));
+    assertThat(productionRequests(4L, null))
+        .singleElement()
+        .satisfies(row -> assertThat(row.get("id")).isEqualTo(11L));
+    assertThat(productionRequests(4L, 92L)).isEmpty();
+    assertThat(productionRequests(77L, null)).isEmpty();
+  }
 }

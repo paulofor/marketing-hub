@@ -227,4 +227,46 @@ public class LearningCycleController {
       @Valid @RequestBody AuthorizeVideoBudgetRequest request) {
     return service.authorizeVideoBudget(productId, cycleId, request);
   }
+
+  /** Consulta recibos integrais de vídeos únicos sem consultar ou autorizar o histórico. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Consultar autorizações incrementais de um vídeo")
+  @GetMapping("/products/{productId}/{cycleId}/single-video-budget")
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .service
+          .singleVideoBudget
+          .SingleVideoBudgetResponse
+      singleVideoBudget(
+          @PathVariable Long productId, @PathVariable Long cycleId, @RequestParam Long chainId) {
+    return service.singleVideoBudget(productId, cycleId, chainId);
+  }
+
+  /** Registra a origem da decisão sem representar aprovação de Plutus, mídia ou publicação. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Registrar teto integral para um único vídeo novo")
+  @PostMapping("/products/{productId}/{cycleId}/single-video-budget")
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .service
+          .singleVideoBudget
+          .SingleVideoBudgetResponse
+      authorizeSingleVideoBudget(
+          @PathVariable Long productId,
+          @PathVariable Long cycleId,
+          @Valid @RequestBody
+              com.marketinghub
+                      .businessprocesschain
+                      .learningcycle
+                      .v1
+                      .service
+                      .singleVideoBudget
+                      .SingleVideoBudgetRequest
+                  request) {
+    return service.authorizeSingleVideoBudget(productId, cycleId, request);
+  }
 }

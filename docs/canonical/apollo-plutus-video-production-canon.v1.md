@@ -794,3 +794,21 @@ Uma candidata privada READY/PENDING ainda sem parecer pode receber correção de
 ## Correção explícita de locução em candidata ainda não revisada — 24/10/2026
 
 Antes do parecer e do aceite humano, uma candidata privada pode corrigir texto e locução pelo comando oficial, sem criar rejeição humana fictícia. Exige texto efetivamente alterado, confirmação explícita de nova locução, limite vigente, decisão financeira aceita e custo conhecido abaixo do teto. Com o mesmo texto, a remontagem continua reutilizando a voz auditada. Permanecem os bloqueios de revisão ativa, contexto divergente, peça aprovada e experimento em execução comercial. Os novos arquivos exigem parecer próprio e seleção humana; corrigir rascunho não equivale a aprovar mídia.
+
+## Autorização incremental integral de um vídeo — 05/11/2026
+
+Uma autorização explicitamente restrita a um único vídeo novo não pode ser
+convertida em teto cumulativo que incorpore o histórico, nem em autorização de
+duas peças. O valor é compartilhado por agentes/revisões, imagens, clipes, voz,
+trilha, montagem, taxas e tentativas. Não há renovação por cena, provedor ou retry.
+O registro preserva o operador que o lançou e a fonte da decisão do cliente,
+sem atribuir ao operador identidade do cliente ou parecer de especialista.
+
+O comando `single-video-budget` registra recibo no ledger do próprio ciclo,
+com `SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1`, projeto e perfil existentes. Não abre
+produção, não altera o orçamento histórico e não dispensa os contratos de
+prontidão, custo integral e revisões independentes. Um preflight apenas de
+clipes não comprova cobertura das outras parcelas. Ausência de custo permanece
+uma lacuna; nunca é convertida em zero. O recibo precisa ser consultado e
+respeitado na preparação e execução, sem extrapolar o teto com outro recibo para
+a mesma produção. Ver a [matriz e limites](../homologacao/vega-single-video-budget-2026-11-05.md).

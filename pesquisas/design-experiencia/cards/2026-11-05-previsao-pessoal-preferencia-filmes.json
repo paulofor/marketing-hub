@@ -1,0 +1,18 @@
+{
+  "cardKey": "previsao-pessoal-preferencia-vs-recomendador",
+  "collection": "neuromarketing",
+  "title": "Expectativa pontual do usuário pode complementar algoritmos de recomendação",
+  "finding": "No MovieLens, 551 pares elegíveis de previsão pessoal e nota posterior, de 277 usuários, mostraram correlação 0,69, versus 0,34 do recomendador da plataforma e 0,54–0,59 de modelos alternativos. Incorporar a previsão atual reduziu MSE fora da amostra em 26%. Cerca de 98,8% dos pedidos de previsão ficaram sem resposta.",
+  "mechanism": "A previsão específica pode trazer informações sobre gosto e contexto momentâneo indisponíveis no histórico de avaliações; essa interpretação compete com explicações como seleção de usuários, exposição anterior e influência da pergunta.",
+  "commercialApplication": "No Marketing Hub, testar perguntas opcionais e pontuais sobre expectativa de utilidade/agrado de um conteúdo ou produto digital para complementar recomendações, respeitando quem não quer responder; nunca converter expectativas em provas de intenção de compra.",
+  "evidenceStrength": "Working paper/preprint com dados observacionais de 2023–2024; 26.020 expectativas registradas, mas apenas 551 pares de previsão e nota posterior elegíveis (2,1%) numa única plataforma de cinéfilos.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Uma previsão pontual opcional melhorará a adequação de recomendações em relação ao algoritmo comportamental isolado nos usuários que responderem, sem aumentar abandono ou esforço geral. Medir taxa de resposta, precisão e satisfação; compras separadamente.",
+  "risks": "Fricção e abandono por perguntas repetidas, seleção de usuários mais engajados, uso indevido de dados de preferência, efeito de ancoragem sobre avaliações posteriores e extrapolação para propensão de compra.",
+  "limits": "Dados MovieLens de filmes; apenas 551 previsões seguidas por avaliação, de 277 membros. Não há randomização de perguntas nem teste de compras, funil comercial, generalização a outros produtos ou vantagem universal sobre recomendadores.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-05-previsao-pessoal-preferencia-filmes.md",
+  "sourceTitle": "Chen, Zheng e Zhu (2026) — Expectativas pessoais versus previsão algorítmica de notas de filmes",
+  "sourceSha256": "ed440787642eafef9d7bc7788aeee18954037feebdf42258eed1d8c53d28be18"
+}

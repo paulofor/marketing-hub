@@ -132,3 +132,15 @@ dependente permanecem sem execução enquanto não houver revisão válida e con
 de consumo efetivamente comprovado. Não prometer retomada automática sem mecanismo
 ativo e elegível. Adotar as correções técnicas somente após os checks e essa
 revisão; não declarar prontidão premium, venda ou ganho comercial a partir dos testes.
+
+## Ajuste após o primeiro CI
+
+O frontend PDE falhou por vencimento da fixture documental compartilhada às 21:13 UTC,
+depois de uma execução anterior bem-sucedida às 18:48. As fontes oficiais foram
+reconsultadas; uma fixture nova e a atestação sucessora v78 preservam o histórico e
+o gate de frescor, acrescentando diagnóstico de URL/prazo e cinco regressões de
+integridade/datas. A matriz local real de 18 percursos, histórico e cenários passou
+com MySQL 5.7 e zero provedores externos. O construtor passou com 798 arquivos/207
+manifestos, e o resolvedor segue sem publicação PDE. Ver o
+[registro específico](mira-fixture-documental-retomada-2026-11-05.md).
+Esse ajuste de CI não comprova o teto integral nem libera gerar o vídeo de Vega.

@@ -11743,3 +11743,19 @@ usam timeout e contabilização posterior. A contenção impede a tarefa paga de
 renders diretos com esse recibo, expondo `SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED`.
 Não declarar esse controle integral implementado nem essa pendência resolvida.
 Matriz e fontes em `docs/homologacao/vega-retomada-video-2026-11-05.md`.
+
+## LOOP-HARNESS-FIXTURE-DOCUMENTAL-EXPIRADA — 05/11/2026
+
+- **Evidência:** PDE/Mira passou às 18:48 UTC, mas recusou a mesma fixture às 21:49.
+  Sua observação de 06/10 venceu às 21:13:35, após os 30 dias contratuais; os hashes
+  dos trechos não mudaram. Falha não era de vídeo, SQL ou saldo.
+- **Causa e correção:** fonte estática vencida no harness compartilhado, sem erro
+  que identificasse URL e prazo. Fontes oficiais reconsultadas e correspondentes;
+  nova fixture datada e atestação v78, preservando as anteriores. Validador comum
+  informa fonte/prazo e recusa datas inválidas ou futuras e trecho adulterado.
+- **Prevenção:** cinco testes determinísticos de limites e integridade; CLI de
+  diagnóstico sem abrir navegador. Uma repetição nunca renova a fonte. O gate de
+  30 dias permanece e exige consulta real quando vencer, sem aprovação retroativa.
+- **Validação:** matriz real de 18 percursos, histórico e cenários com MySQL 5.7,
+  sem provider externo; construtor real de evidências e regressões aprovados.
+- **Registro:** `docs/homologacao/mira-fixture-documental-retomada-2026-11-05.md`.

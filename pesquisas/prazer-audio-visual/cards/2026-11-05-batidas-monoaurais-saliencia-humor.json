@@ -1,0 +1,18 @@
+{
+  "cardKey": "batidas-monoaurais-saliencia-experiencia-musical",
+  "collection": "prazer-audio-visual",
+  "title": "Saliência de batidas monoaurais em música e conforto",
+  "finding": "Dois estudos randomizados online encontraram efeitos autorrelatados de batidas monoaurais de baixa ou moderada saliência sobre ansiedade-estado em pessoas com ansiedade-traço moderada, enquanto saliência alta prejudicou o resultado versus música só.",
+  "mechanism": "A integração perceptiva do efeito no mix pode influenciar respostas subjetivas; entrainment neural e dopamina não foram medidos nem estabelecidos como mecanismos causais.",
+  "commercialApplication": "Explorar apenas como hipótese não clínica o balanço entre efeitos rítmicos discretos, conforto e distração em experiências musicais opcionais, com alternativas sem efeito.",
+  "evidenceStrength": "Moderada para autorrelatos na população selecionada (N=207 e N=259 analisados), baixa para explicação neural e generalização comercial.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Efeitos auditivos discretos serão avaliados como mais confortáveis que efeitos excessivamente salientes em escuta opcional, sem inferir benefício terapêutico.",
+  "risks": "Não recomendar como tratamento de ansiedade, não segmentar por saúde e não prometer alterações cerebrais, prazer ou compras.",
+  "limits": "Autorrelato online, exclusões por equipamento/volume, quatro músicas em replicação; equipe vinculada à Universal Music Group financiadora; não houve EEG nem venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-05-batidas-monoaurais-saliencia-humor-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Venkatesan et al.: saliência de batidas monoaurais",
+  "sourceSha256": "242b78d71e41e03446ca8dd189a2e26306ed702511d1657059918961e94582c7"
+}

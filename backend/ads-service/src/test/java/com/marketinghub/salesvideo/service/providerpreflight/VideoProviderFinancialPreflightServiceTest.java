@@ -50,13 +50,15 @@ class VideoProviderFinancialPreflightServiceTest {
   @Mock private VideoCreditReservationRepository reservationRepository;
   @Mock private SalesVideoProviderModelRepository providerModelRepository;
   @Mock private StudioProviderTaskConsumptionQueryService taskConsumptionQueryService;
+  @Mock private com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository projectRepository;
+  @Mock private com.marketinghub.financialagent.service.StudioCostLedgerService ledger;
   private VideoProviderFinancialPreflightService service;
   private VideoProviderAccount account;
   private VideoProviderPreflight preflight;
 
   /** Prepara uma conta e um preflight persistidos sem consultar a Runway real. */
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
     service =
         new VideoProviderFinancialPreflightService(
             accountRepository,
@@ -66,6 +68,37 @@ class VideoProviderFinancialPreflightServiceTest {
             taskConsumptionQueryService,
             new ObjectMapper().findAndRegisterModules(),
             Clock.fixed(NOW, ZoneOffset.UTC));
+    service.setProjectRepository(projectRepository);
+    service.setCostLedger(ledger);
+    lenient().when(ledger.cycleCoverage(any())).thenReturn(Map.of("unknownCostAttempts", 0L));
+    lenient().when(ledger.cycleKnownLedgerCostUsd(any())).thenReturn(BigDecimal.ZERO);
+    var project = new com.marketinghub.salesvideo.VideoProject();
+    project.setTargetDurationSeconds(10);
+    var values =
+        new java.util.LinkedHashMap<
+            String, com.marketinghub.videocontract.v1.ProductionCostPlan.Item>();
+    com.marketinghub.videocontract.v1.ProductionCostPlan.REQUIRED.forEach(
+        key ->
+            values.put(
+                key,
+                new com.marketinghub.videocontract.v1.ProductionCostPlan.Item(
+                    BigDecimal.ZERO, "Fixture local sem cobrança adicional")));
+    project.setProductionCostPlanJson(
+        new ObjectMapper()
+            .writeValueAsString(
+                new com.marketinghub.videocontract.v1.ProductionCostPlan(
+                    11L,
+                    null,
+                    null,
+                    com.marketinghub.videocontract.v1.VideoCapabilities.catalog().revision(),
+                    null,
+                    10,
+                    "2026-11-12T00:00:00Z",
+                    values,
+                    List.of())));
+    lenient()
+        .when(projectRepository.findById(org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(Optional.of(project));
     account = account();
     preflight = preflight();
     lenient()
@@ -122,6 +155,13 @@ class VideoProviderFinancialPreflightServiceTest {
     when(reservationRepository.save(any(VideoCreditReservation.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
+    var localProject = new com.marketinghub.salesvideo.VideoProject();
+    localProject.setTargetDurationSeconds(10);
+    var fixtureProject = projectRepository.findById(null).orElseThrow();
+    localProject.setProductionCostPlanJson(
+        fixtureProject.getProductionCostPlanJson().replace("\"cycleId\":11", "\"cycleId\":12"));
+    when(projectRepository.findById(org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(Optional.of(localProject));
     VideoCreditReservation reservation = service.reserve(localCycle);
 
     assertThat(opened.getStatus()).isEqualTo("READY");
@@ -578,6 +618,47 @@ class VideoProviderFinancialPreflightServiceTest {
         .containsEntry("costPerApprovedMaterialUsd", null);
   }
 
+  /** Reutiliza dry run após corrigir custos sem renovar validade ou criar reserva no callback. */
+  @Test
+  void shouldKeepDryRunWhenFullCostIsMissingAndReplayWithoutNewReservation() {
+    var completeProject = projectRepository.findById(null).orElseThrow();
+    when(projectRepository.findById(org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(Optional.empty());
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    when(preflightRepository.save(any(VideoProviderPreflight.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    var callback = readyResult("25.0000", "80.0000");
+    var result = service.complete(cycle(), callback);
+    assertThat(result.getStatus()).isEqualTo("READY_WITH_BLOCKER");
+    assertThat(result.getFailureCode()).isEqualTo("PROVIDER_FULL_COST_PLAN_REQUIRED");
+    assertThat(result.getExecutionRequestsJson()).isEqualTo(callback.executionRequestsJson());
+    assertThat(service.complete(cycle(), callback)).isSameAs(result);
+    var originalExpiry = result.getExpiresAt();
+    when(projectRepository.findById(org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(Optional.of(completeProject));
+    assertThat(service.complete(cycle(), callback).getStatus()).isEqualTo("READY");
+    assertThat(result.getFailureCode()).isNull();
+    assertThat(result.getExpiresAt()).isEqualTo(originalExpiry);
+    verify(reservationRepository, never()).save(any());
+  }
+
+  /**
+   * A cobertura real do ledger prevalece mesmo quando a previsão declara nenhuma tentativa incerta.
+   */
+  @Test
+  void shouldRejectUnknownIncurredCostEvenWithAnApparentlyCompleteForecast() {
+    when(ledger.cycleCoverage(11L)).thenReturn(Map.of("unknownCostAttempts", 1L));
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    when(preflightRepository.save(any(VideoProviderPreflight.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    var result = service.complete(cycle(), readyResult("25.0000", "80.0000"));
+    assertThat(result.getStatus()).isEqualTo("READY_WITH_BLOCKER");
+    assertThat(result.getFailureDetail()).contains("tentativas deste ciclo sem valor");
+    verify(reservationRepository, never()).save(any());
+  }
+
   /** Cria o ciclo mínimo usado pelos gates financeiros. */
   private VideoProductionCycle cycle() {
     VideoProductionCycle cycle = new VideoProductionCycle();
@@ -785,6 +866,23 @@ class VideoProviderFinancialPreflightServiceTest {
         action,
         new BigDecimal(rechargeCredits),
         rechargeUrl);
+  }
+
+  /** Evita expiração de submissão incerta sem registrar zero como custo realizado. */
+  @Test
+  void retainsUncertainReservationWithoutInventingCost() {
+    var reservation = new VideoCreditReservation();
+    reservation.setStatus("RESERVED");
+    reservation.setReservedCredits(new BigDecimal("120"));
+    reservation.setExpiresAt(NOW.minusSeconds(60));
+    when(reservationRepository.findByVideoProductionCycleIdForUpdate(11L))
+        .thenReturn(Optional.of(reservation));
+    service.preserveUncertainReservation(11L);
+    assertThat(reservation.getStatus()).isEqualTo("CONSUMING");
+    assertThat(reservation.getActualCostUsd()).isNull();
+    assertThat(reservation.getActualCredits()).isNull();
+    assertThat(reservation.getReservedCredits()).isEqualByComparingTo("120");
+    verify(accountRepository, never()).save(any());
   }
 
   /** Calcula o hash esperado pelo contrato de repetição exata do payload. */

@@ -65,6 +65,7 @@ while IFS= read -r file; do
     .dockerignore) backend=true; frontend=true ;;
     backend/settings.xml) backend=true ;;
     backend/ads-service/*) backend=true ;;
+    shared/video-capabilities/*) backend=true; frontend=true; video=true ;;
     process-execution-worker/*) backend=true ;;
     config/agents/codex-agent-health-compliance.json) backend=true ;;
     pesquisas/*) backend=true ;;
@@ -102,7 +103,7 @@ else
     case "${file}" in
       .github/workflows/deploy-containers.yml) video=true; video_deploy_descriptor=true ;;
       .dockerignore) video=true ;;
-      video-management-service/*) video=true ;;
+      video-management-service/*|shared/video-capabilities/*) video=true ;;
       deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;
       deploy/bin/reconcile-video-planner-secret.sh) video_deploy_descriptor=true ;;
       deploy/docker-compose.video.yml) video_deploy_descriptor=true ;;

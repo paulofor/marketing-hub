@@ -27,6 +27,7 @@ import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightData;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -152,11 +153,17 @@ public class VideoProductionCycleService {
     VideoProviderPreflight preflight =
         providerPreflightService.open(
             cycle.getId(), request.productionProfile(), project.getProviderPlan());
-    if ("READY".equals(preflight.getStatus())) {
+    if ("READY".equals(preflight.getStatus())
+        && !"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
+      providerPreflightService.applyFullCostReadiness(cycle, preflight);
+    }
+    if (List.of("READY", "READY_WITH_BLOCKER").contains(preflight.getStatus())) {
       if ("PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
         cycle.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+      } else if ("PROVIDER_FULL_COST_PLAN_REQUIRED".equals(preflight.getFailureCode())) {
+        cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
       } else {
-        providerPreflightService.reserve(cycle);
+        if ("READY".equals(preflight.getStatus())) providerPreflightService.reserve(cycle);
         cycle.setAgentTaskId(createFinancialGate(cycle, project).id());
         cycle.setStatus("PENDING_FINANCIAL_REVIEW");
       }
@@ -230,7 +237,9 @@ public class VideoProductionCycleService {
         .toList();
   }
 
-  /** Recebe o preflight e respeita o modo isolado antes de qualquer reserva ou tarefa paga. */
+  /**
+   * Recebe o preflight e bloqueia lacunas determinísticas sem consumir parecer ou geração pagos.
+   */
   @Transactional
   public VideoProductionCycleContracts.Response completeProviderPreflight(
       Long cycleId, VideoProviderPreflightContracts.ResultRequest request) {
@@ -253,6 +262,10 @@ public class VideoProductionCycleService {
     }
     if (preflightOnly) {
       cycle.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+      return response(repository.save(cycle));
+    }
+    if ("PROVIDER_FULL_COST_PLAN_REQUIRED".equals(preflight.getFailureCode())) {
+      cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
       return response(repository.save(cycle));
     }
     if ("READY".equals(preflight.getStatus())) {
@@ -525,6 +538,12 @@ public class VideoProductionCycleService {
       metadata.put("publicationAllowed", false);
       metadata.put("targetDurationSeconds", duration);
       metadata.put("providerClipDurationSeconds", providerClipDuration);
+      metadata.put("capabilityRevision", VideoCapabilities.catalog().revision());
+      metadata.put("productionCostPlanJson", project.getProductionCostPlanJson());
+      metadata.put("fullProductionReservedUsd", reservation.getFullProductionReservedUsd());
+      if (!productUgc && !editorialMotion)
+        VideoCapabilities.selected(project.getProviderPlan())
+            .ifPresent(model -> metadata.put("clipPlan", model.plan(duration)));
       metadata.put(
           "sceneCount",
           productUgc || editorialMotion

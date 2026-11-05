@@ -153,6 +153,9 @@ public class VideoProject {
   @Column(name = "target_duration_seconds")
   private Integer targetDurationSeconds;
 
+  @Column(name = "production_cost_plan_json", columnDefinition = "LONGTEXT")
+  private String productionCostPlanJson;
+
   @Column(name = "provider_plan", columnDefinition = "LONGTEXT")
   private String providerPlan;
 

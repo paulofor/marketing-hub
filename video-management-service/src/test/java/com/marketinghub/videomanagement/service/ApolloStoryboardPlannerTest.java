@@ -81,6 +81,7 @@ class ApolloStoryboardPlannerTest {
     void shouldPersistHttpFailureWithoutCallingItStoryboardRejection() throws Exception {
         var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
         metadata.put("videoProductionCycleId", 91001);
+        metadata.put("providerReservedCredits", 240);
         SalesVideoJob job = mock(SalesVideoJob.class);
         when(job.id()).thenReturn(91001L);
         when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
@@ -159,6 +160,7 @@ class ApolloStoryboardPlannerTest {
         }
         var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("8.00");
         metadata.put("videoProductionCycleId", 91001);
+        metadata.put("providerReservedCredits", 240);
         metadata.put("targetDurationSeconds", 15);
         metadata.put("providerClipDurationSeconds", 10);
         SalesVideoJob job = mock(SalesVideoJob.class);

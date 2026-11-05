@@ -1,3 +1,4 @@
+import capabilityCatalog from "../../../../shared/video-capabilities/src/main/resources/video-capabilities/catalog.json";
 import { SalesVideoProviderFamily } from "./types";
 
 export type SalesVideoProviderOption = {
@@ -12,10 +13,13 @@ export type SalesVideoProviderOption = {
   supportsSceneAssembly: boolean;
   supportsOpenAiReferenceImage: boolean;
   creditsUrl?: string;
+  lifecycleStatus?: string;
 };
 
 export type SalesVideoRenderMetadataOptions = {
   visualProviderDirectives?: string;
+  template?: "MUSA";
+  targetDurationSeconds?: number;
   openAiReferenceImageEnabled?: boolean;
   openAiReferenceImagePrompt?: string;
   referenceImageCount?: number;
@@ -30,11 +34,11 @@ export const DEFAULT_VISUAL_PROVIDER_DIRECTIVES = [
   "Use direct camera shots. A full-length mirror may appear only when the scene brief asks for it; never show the camera, crew or an impossible duplicate reflection.",
   "Very sharp image, crisp focus on face and eyes, clear skin texture.",
   "Stable exposure, constant soft natural daylight, no haze, no blur, no dreamy filter, no flickering.",
-  "Brazilian urban woman in her 30s, elegant but accessible, premium but human.",
+  "Preserve the approved product context, casting, continuity and visual direction.",
   "No embedded text, no logos, no distorted hands, no luxury ostentation.",
 ].join(" ");
 
-export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
+const LEGACY_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
   {
     key: "luma-ray-3-2",
     label: "Luma Ray 3.2",
@@ -75,34 +79,6 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     supportsOpenAiReferenceImage: false,
   },
   {
-    key: "runway-gen-4-5",
-    label: "Runway Gen-4.5",
-    providerName: "RUNWAY",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Cenas curtas e variações criativas com boa consistência visual; para hero de 30s usar montagem por cenas.",
-    clipDurationSeconds: 10,
-    maxDirectDurationSeconds: 10,
-    supportsHeroVideo: false,
-    supportsSceneAssembly: true,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
-    key: "runway-act-two",
-    label: "Runway Act-Two",
-    providerName: "RUNWAY_ACT_TWO",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Performance facial e corporal original com personagem e gravação autorizadas; permanece em homologação.",
-    clipDurationSeconds: 10,
-    maxDirectDurationSeconds: 30,
-    supportsHeroVideo: true,
-    supportsSceneAssembly: true,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
     key: "runway-product-ugc-2026-06",
     label: "Runway Product UGC Premium",
     providerName: "RUNWAY_PRODUCT_UGC",
@@ -113,76 +89,6 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     maxDirectDurationSeconds: 15,
     supportsHeroVideo: true,
     supportsSceneAssembly: false,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
-    key: "runway-seedance-2",
-    label: "Seedance 2.0 via Runway",
-    providerName: "RUNWAY_SEEDANCE_2",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Cenas comerciais de até 15s com áudio opcional; 4K exige autorização de custo e homologação antes de escalar.",
-    clipDurationSeconds: 10,
-    maxDirectDurationSeconds: 15,
-    supportsHeroVideo: true,
-    supportsSceneAssembly: true,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
-    key: "runway-hailuo-3",
-    label: "Hailuo 3 via Runway",
-    providerName: "RUNWAY_HAILUO_3",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Candidato econômico para movimento corporal, expressão facial e aderência ao prompt; exige QA antes de produção.",
-    clipDurationSeconds: 10,
-    maxDirectDurationSeconds: 10,
-    supportsHeroVideo: true,
-    supportsSceneAssembly: true,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
-    key: "runway-gen-4-turbo",
-    label: "Runway Gen-4 Turbo",
-    providerName: "RUNWAY_GEN_4_TURBO",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Variações rápidas e econômicas a partir de uma imagem aprovada; exige imagem-base.",
-    clipDurationSeconds: 10,
-    maxDirectDurationSeconds: 10,
-    supportsHeroVideo: false,
-    supportsSceneAssembly: true,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
-    key: "runway-veo-3-1-fast",
-    label: "Veo 3.1 Fast via Runway",
-    providerName: "RUNWAY_VEO_3_1_FAST",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Produção rápida de criativos com boa relação entre qualidade, áudio e custo.",
-    clipDurationSeconds: 8,
-    maxDirectDurationSeconds: 8,
-    supportsHeroVideo: true,
-    supportsSceneAssembly: true,
-    supportsOpenAiReferenceImage: false,
-    creditsUrl: "https://dev.runwayml.com/",
-  },
-  {
-    key: "runway-veo-3-1",
-    label: "Veo 3.1 via Runway",
-    providerName: "RUNWAY_VEO_3_1",
-    providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse:
-      "Hero e cenas premium quando a qualidade final justificar o maior consumo de créditos.",
-    clipDurationSeconds: 8,
-    maxDirectDurationSeconds: 8,
-    supportsHeroVideo: true,
-    supportsSceneAssembly: true,
     supportsOpenAiReferenceImage: false,
     creditsUrl: "https://dev.runwayml.com/",
   },
@@ -214,6 +120,42 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
   },
 ];
 
+// Capacidades Runway vêm do mesmo recurso empacotado no backend e no executor.
+// Gates ativos continuam exclusivamente no catálogo persistido e no preflight real.
+export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
+  ...LEGACY_PROVIDER_OPTIONS.filter(
+    (option) =>
+      !capabilityCatalog.models.some(
+        (model) => model.providerName === option.providerName,
+      ),
+  ),
+  ...capabilityCatalog.models.map((model) => {
+    const legacy = LEGACY_PROVIDER_OPTIONS.find(
+      (option) => option.providerName === model.providerName,
+    );
+    return {
+      key: model.code,
+      label: model.displayName,
+      providerName: model.providerName,
+      providerFamily: "EXTERNAL_VIDEO_MODULE" as const,
+      recommendedUse:
+        legacy?.recommendedUse ??
+        "Candidato do catálogo público; homologação e preflight obrigatórios antes de produzir.",
+      clipDurationSeconds: model.maxSeconds,
+      maxDirectDurationSeconds: model.maxSeconds,
+      supportsHeroVideo:
+        legacy?.supportsHeroVideo ??
+        (model.nativeAudio || model.modalities.includes("PERFORMANCE")),
+      supportsSceneAssembly:
+        legacy?.supportsSceneAssembly ??
+        !model.modalities.includes("PERFORMANCE"),
+      supportsOpenAiReferenceImage:
+        legacy?.supportsOpenAiReferenceImage ?? false,
+      creditsUrl: "https://dev.runwayml.com/",
+    };
+  }),
+];
+
 export const DEFAULT_SALES_VIDEO_PROVIDER = SALES_VIDEO_PROVIDER_OPTIONS[0];
 
 export function findSalesVideoProviderOption(providerName: string) {
@@ -230,6 +172,57 @@ export function buildSalesVideoRenderMetadata(
     typeof options === "string"
       ? { visualProviderDirectives: options }
       : options;
+  if (renderOptions?.template !== "MUSA") {
+    return JSON.stringify({
+      visual_provider_directives:
+        renderOptions?.visualProviderDirectives?.trim() ||
+        DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
+      provider_strategy: {
+        provider_name: provider.providerName,
+        expected_clip_duration_seconds: provider.clipDurationSeconds,
+        supports_scene_assembly: provider.supportsSceneAssembly,
+        stream_required: true,
+        stream_target: "HLS_ADAPTIVE",
+      },
+      generation_strategy: renderOptions?.sourceImageUrl
+        ? "APPROVED_IMAGE_TO_VIDEO"
+        : renderOptions?.openAiReferenceImageEnabled &&
+            provider.supportsOpenAiReferenceImage
+          ? "OPENAI_IMAGE_TO_LUMA_VIDEO"
+          : "TEXT_TO_VIDEO",
+      image_to_video: {
+        enabled: Boolean(
+          renderOptions?.sourceImageUrl ||
+          (renderOptions?.openAiReferenceImageEnabled &&
+            provider.supportsOpenAiReferenceImage),
+        ),
+        source_image_provider: renderOptions?.sourceImageUrl
+          ? "APPROVED_ASSET"
+          : renderOptions?.openAiReferenceImageEnabled
+            ? "OPENAI"
+            : undefined,
+        animation_provider: provider.providerName,
+        reference_image_count: renderOptions?.referenceImageCount ?? 1,
+        image_prompt: renderOptions?.openAiReferenceImagePrompt,
+        source_image_asset_id: renderOptions?.sourceImageAssetId,
+        source_image_url: renderOptions?.sourceImageUrl,
+      },
+      targetDurationSeconds: renderOptions?.targetDurationSeconds,
+      heygen_avatar:
+        provider.providerName === "HEYGEN"
+          ? {
+              heygen_avatar_id: renderOptions?.heygenAvatarId?.trim() || null,
+              heygen_avatar_group_id:
+                renderOptions?.heygenAvatarGroupId?.trim() || null,
+              heygen_voice_id: renderOptions?.heygenVoiceId?.trim() || null,
+            }
+          : undefined,
+      heygen_avatar_id: renderOptions?.heygenAvatarId?.trim() || undefined,
+      heygen_avatar_group_id:
+        renderOptions?.heygenAvatarGroupId?.trim() || undefined,
+      heygen_voice_id: renderOptions?.heygenVoiceId?.trim() || undefined,
+    });
+  }
   const normalizedVisualProviderDirectives =
     renderOptions?.visualProviderDirectives?.trim() ||
     DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
@@ -386,7 +379,7 @@ export function buildOrganicVideoRenderMetadata(
   video: OrganicVideoRenderMetadataOptions,
 ) {
   return JSON.stringify({
-    commercial_goal: "ORGANIC_VIDEO_MUSA_SIGNAL_TEST",
+    commercial_goal: "ORGANIC_VIDEO_SIGNAL_TEST",
     generation_strategy: "ORGANIC_TEXT_TO_VIDEO",
     visual_provider_directives: [
       DEFAULT_VISUAL_PROVIDER_DIRECTIVES,

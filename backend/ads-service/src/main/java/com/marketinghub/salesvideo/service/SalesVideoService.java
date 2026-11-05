@@ -139,6 +139,36 @@ public class SalesVideoService {
     return productProofService.read(projectId, taskId, evidenceId);
   }
 
+  /** Entrega a simulação governada de tomadas antes de qualquer confirmação financeira. */
+  public com.marketinghub.salesvideo.service.clipplan.StudioClipPlanResponse previewClipPlan(
+      com.marketinghub.salesvideo.service.clipplan.StudioClipPlanRequest request) {
+    try {
+      return providerCatalogService.preview(request);
+    } catch (IllegalArgumentException ex) {
+      org.slf4j.LoggerFactory.getLogger(getClass())
+          .warn(
+              "Plano de tomadas inválido; provider={} finalSeconds={}",
+              request.providerName(),
+              request.finalSeconds(),
+              ex);
+      throw com.marketinghub.salesvideo.exception.VideoModuleException.badRequest(
+          com.marketinghub.salesvideo.exception.VideoModuleErrorCode.BAD_REQUEST, ex.getMessage());
+    }
+  }
+
+  /** Registra custos restantes com fonte no projeto, sem alterar teto ou iniciar produção. */
+  public com.marketinghub.videocontract.v1.ProductionCostPlan registerProductionCosts(
+      Long projectId, com.marketinghub.videocontract.v1.ProductionCostPlan request) {
+    try {
+      return videoProjectService.registerProductionCosts(projectId, request);
+    } catch (IllegalArgumentException ex) {
+      org.slf4j.LoggerFactory.getLogger(getClass())
+          .warn("Previsão integral recusada; projectId={}", projectId, ex);
+      throw com.marketinghub.salesvideo.exception.VideoModuleException.badRequest(
+          com.marketinghub.salesvideo.exception.VideoModuleErrorCode.BAD_REQUEST, ex.getMessage());
+    }
+  }
+
   /** Lista o catálogo administrável de provedores e modelos de vídeo. */
   public List<SalesVideoProviderModelDto> listProviderModels() {
     return providerCatalogService.list();

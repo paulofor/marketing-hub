@@ -329,9 +329,10 @@ class RunwayVideoProviderTest {
                 .hasFieldOrPropertyWithValue("code", "PROVIDER_ROUTING_DRIFT");
 
         assertThat(server.getRequestCount()).isEqualTo(1);
-        assertThat(financialEvents).singleElement().asString()
+        assertThat(financialEvents).anySatisfy(event -> assertThat(event)
                 .contains("\"providerTaskId\":\"router-drift-task\"")
-                .contains("\"estimatedCredits\":80");
+                .contains("\"estimatedCredits\":80"));
+        assertThat(financialEvents).anySatisfy(event -> assertThat(event).contains("PROVIDER_SUBMISSION_STARTED"));
     }
 
     /** Deve classificar saldo insuficiente com código financeiro estável e não recuperável. */
@@ -404,23 +405,13 @@ class RunwayVideoProviderTest {
         assertThat(requestBody).doesNotContain("promptImage");
     }
 
-    /** Deve rotear Seedance 2 pelo mesmo adapter e pela mesma chave da Runway. */
+    /** Bloqueia o adapter não homologado do Seedance 2 sem converter para outra versão. */
     @Test
-    void shouldRenderSeedance2WithRunwayCredentials() throws Exception {
-        server.enqueue(json("""
-                {"id":"seedance-task"}
-                """));
-        server.enqueue(json("""
-                {"id":"seedance-task","status":"SUCCEEDED","output":["%s/download/seedance.mp4"]}
-                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
-        server.enqueue(mp4Response());
+    void shouldBlockSeedance2WithoutImplementedAdapterBeforePaidCall() {
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
-
-        provider.render(job("RUNWAY_SEEDANCE_2"), profile(), (percent, status, message) -> { });
-
-        RecordedRequest request = server.takeRequest();
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
-        assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2\"");
+        assertThatThrownBy(() -> provider.render(job("RUNWAY_SEEDANCE_2"), profile(), (percent, status, message) -> {}))
+                .isInstanceOf(VideoProviderException.class).hasMessageContaining("não implementada");
+        assertThat(server.getRequestCount()).isZero();
     }
 
     /** Deve preservar o identificador do Seedance 2.5 usando a mesma credencial da Runway. */
@@ -468,7 +459,7 @@ class RunwayVideoProviderTest {
     @Test
     void shouldRouteCuratedRunwayModelsWithCompatibleDurations() throws Exception {
         for (String providerName : java.util.List.of(
-                "RUNWAY_GEN_4_TURBO", "RUNWAY_HAILUO_3", "RUNWAY_GROK_IMAGINE_1_5",
+                "RUNWAY_GEN_4_TURBO",
                 "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
             server.enqueue(json("{\"id\":\"curated-task\"}"));
             server.enqueue(json("""
@@ -477,7 +468,9 @@ class RunwayVideoProviderTest {
             server.enqueue(mp4Response());
             RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
-            provider.render(job(providerName), profile(), (percent, status, message) -> { });
+            SalesVideoJob current = job(providerName);
+            if (providerName.contains("VEO")) current = withMetadata(current, new ObjectMapper().createObjectNode().put("providerClipDurationSeconds", 8).toString());
+            provider.render(current, profile(), (percent, status, message) -> { });
 
             RecordedRequest request = server.takeRequest();
             String body = request.getBody().readUtf8();
@@ -558,7 +551,7 @@ class RunwayVideoProviderTest {
 
         assertThatThrownBy(() -> provider.render(job, profile(), (percent, status, message) -> { }))
                 .isInstanceOf(VideoProviderException.class)
-                .hasMessageContaining("imagem-base aprovada");
+                .hasMessageContaining("não implementada");
     }
 
     /** Deve bloquear Gen-4 Turbo sem imagem-base antes de consumir créditos. */
@@ -620,15 +613,12 @@ class RunwayVideoProviderTest {
         Files.deleteIfExists(keyFile);
     }
 
-    /** Deve separar funções comerciais e contabilizar o custo de todas as cenas planejadas. */
+    /** Deve separar funções comerciais e manter a duração exata do modelo escolhido. */
     @Test
-    void shouldPlanDistinctCommercialScenesAndFullMontageCost() throws Exception {
+    void shouldPlanDistinctCommercialScenesAndExactDuration() throws Exception {
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
         var sceneDirective = RunwayVideoProvider.class.getDeclaredMethod("sceneDirective", int.class, int.class);
         sceneDirective.setAccessible(true);
-        var estimateCost = RunwayVideoProvider.class.getDeclaredMethod(
-                "estimateCostUsd", String.class, int.class, int.class);
-        estimateCost.setAccessible(true);
         var resolveDuration = RunwayVideoProvider.class.getDeclaredMethod(
                 "resolveDuration", SalesVideoJob.class, VideoManagementProperties.Runway.class,
                 com.fasterxml.jackson.databind.JsonNode.class);
@@ -638,16 +628,83 @@ class RunwayVideoProviderTest {
         assertThat(sceneDirective.invoke(provider, 2, 4)).asString().contains("RESULTADO");
         assertThat(sceneDirective.invoke(provider, 3, 4)).asString().contains("MECANISMO");
         assertThat(sceneDirective.invoke(provider, 4, 4)).asString().contains("CTA");
-        assertThat((BigDecimal) estimateCost.invoke(provider, "gen4.5", 10, 3))
-                .isEqualByComparingTo("3.60");
-        assertThat((BigDecimal) estimateCost.invoke(provider, "seedance2_5", 10, 1))
-                .isEqualByComparingTo("3.00");
         assertThat(resolveDuration.invoke(
                 provider,
                 job("RUNWAY_SEEDANCE_2_5"),
                 properties().getProviders().getRunway(),
                 new ObjectMapper().readTree("{\"providerClipDurationSeconds\":15}")))
                 .isEqualTo(15);
+    }
+
+    /** Copia o job alterando somente os metadados de contrato do teste. */
+    private SalesVideoJob withMetadata(SalesVideoJob job, String metadata) {
+        return new SalesVideoJob(job.id(), job.profileId(), job.scriptId(), job.tenantId(), job.providerFamily(),
+            job.providerName(), job.providerJobId(), job.jobType(), job.status(), job.retryAttempt(), job.retryReason(),
+            job.retryOfJobId(), job.retryNotes(), job.progressPercent(), job.failureCode(), job.failureDetail(), job.requestedBy(),
+            job.requestedAt(), job.startedAt(), job.finishedAt(), job.expiresAt(), job.assetId(), job.posterAssetId(), job.vttAssetId(), metadata, job.createdAt(), job.updatedAt());
+    }
+
+    /** Reproduz Gen-4.5/15s e bloqueia antes de qualquer request faturável. */
+    @Test
+    void shouldRejectGen45FifteenSecondsBeforeAnyPaidRequest() {
+        var provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        var invalid = withMetadata(job(), "{\"providerClipDurationSeconds\":15}");
+        assertThatThrownBy(() -> provider.render(invalid, profile(), (percent, status, message) -> {}))
+                .isInstanceOf(VideoProviderException.class).hasMessageContaining("2–10s");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Não aceita que o Router troque o modelo explicitamente solicitado para fazer a geração passar. */
+    @Test
+    void shouldBlockDifferentRouterModelBeforePaidRequest() throws Exception {
+        var routed = routerJob(false);
+        var selected = org.mockito.Mockito.mock(SalesVideoJob.class);
+        org.mockito.Mockito.when(selected.id()).thenReturn(78009L);
+        org.mockito.Mockito.when(selected.providerName()).thenReturn("RUNWAY");
+        org.mockito.Mockito.when(selected.metadataJson()).thenReturn(routed.metadataJson());
+        var provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        assertThatThrownBy(() -> provider.render(selected, profile(), (percent, status, message) -> {}))
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_ROUTER_MODEL_MISMATCH");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Resultado pendente preserva o ID e exige conciliação, sem outro POST nem recuperação paga. */
+    @Test
+    void shouldRequireReconciliationAfterPendingTaskTimeout() {
+        server.enqueue(json("{\"id\":\"uncertain-task\"}"));
+        server.enqueue(json("{\"id\":\"uncertain-task\",\"status\":\"PENDING\"}"));
+        var config = properties();config.getProviders().getRunway().setMaxPollAttempts(1);
+        var provider = new RunwayVideoProvider(config, new ObjectMapper(), WebClient.builder());
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> {}))
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_RESULT_UNCERTAIN").hasMessageContaining("uncertain-task");
+        assertThat(server.getRequestCount()).isEqualTo(2);
+        var recovery = org.mockito.Mockito.mock(SalesVideoJob.class);
+        org.mockito.Mockito.when(recovery.status()).thenReturn(SalesVideoStatus.VIDEO_PROCESSING);
+        assertThatThrownBy(() -> provider.validateInput(recovery, profile()))
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_RECONCILIATION_REQUIRED");
+        assertThat(server.getRequestCount()).isEqualTo(2);
+    }
+
+    /** Um 429 no polling após o aceite não é permissão para gerar novamente o mesmo vídeo. */
+    @Test
+    void shouldKeepAcceptedTaskUncertainWhenPollingIsRateLimited() {
+        server.enqueue(json("{\"id\":\"accepted-before-429\"}"));
+        server.enqueue(new MockResponse().setResponseCode(429).setBody("temporarily limited"));
+        var provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> {}))
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_RESULT_UNCERTAIN")
+                .hasMessageContaining("accepted-before-429");
+        assertThat(server.getRequestCount()).isEqualTo(2);
+    }
+
+    /** Resposta 5xx no envio não comprova falha sem cobrança e exige conciliação antes de repetir. */
+    @Test
+    void shouldMarkServerFailureDuringSubmissionAsUncertainWithoutRetry() {
+        server.enqueue(new MockResponse().setResponseCode(503).setBody("upstream response unavailable"));
+        var provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> {}))
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_RESULT_UNCERTAIN");
+        assertThat(server.getRequestCount()).isEqualTo(1);
     }
 
     /** Cria uma resposta JSON para a API Runway simulada. */
@@ -747,6 +804,7 @@ class RunwayVideoProviderTest {
         input.put("aspectRatio", "9:16");
         input.put("resolution", "720p");
         input.put("audio", false);
+        input.put("referenceImages", List.of(Map.of("uri", "https://example.invalid/approved-reference.png", "role", "first")));
         String requests = new ObjectMapper().writeValueAsString(List.of(Map.of(
                 "configId", "marketing-hub-campaign-final-v1",
                 "input", input)));

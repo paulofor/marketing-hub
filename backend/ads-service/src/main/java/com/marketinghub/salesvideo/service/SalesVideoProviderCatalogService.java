@@ -5,6 +5,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderModel;
 import com.marketinghub.salesvideo.dto.SalesVideoProviderModelDto;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderPricingRequest;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -33,6 +34,13 @@ public class SalesVideoProviderCatalogService {
     return repository.findAllByOrderByDisplayNameAsc().stream().map(this::toDto).toList();
   }
 
+  /** Simula tomadas com o cadastro persistido, sem reservar nem iniciar geração. */
+  public com.marketinghub.salesvideo.service.clipplan.StudioClipPlanResponse preview(
+      com.marketinghub.salesvideo.service.clipplan.StudioClipPlanRequest request) {
+    return com.marketinghub.salesvideo.service.clipplan.StudioClipPlanner.preview(
+        repository.findByProviderName(request.providerName()).orElse(null), request, Instant.now());
+  }
+
   /** Lista para Plutus somente preços ausentes ou vencidos sem exigir contexto de tenant. */
   public List<SalesVideoProviderModelDto> pendingPricingResearch() {
     return list().stream()
@@ -50,7 +58,13 @@ public class SalesVideoProviderCatalogService {
     if (!STATUSES.contains(status)) {
       throw new IllegalArgumentException("Status de homologação inválido");
     }
-    boolean implementedAdapter = IMPLEMENTED_ADAPTERS.contains(model.getAdapterKey());
+    boolean implementedAdapter =
+        IMPLEMENTED_ADAPTERS.contains(model.getAdapterKey())
+            && (!"RUNWAY".equals(model.getAdapterKey())
+                || "product_ugc".equals(model.getExternalModelId())
+                || VideoCapabilities.model(model.getExternalModelId())
+                    .map(c -> !c.adapterModes().isEmpty())
+                    .orElse(false));
     if (status.equals("ACTIVE")
         && (!implementedAdapter
             || !request.adapterVerified()
@@ -118,8 +132,12 @@ public class SalesVideoProviderCatalogService {
         model.getExternalModelId(),
         model.getRecommendedUse(),
         model.getLifecycleStatus(),
-        model.getClipDurationSeconds(),
-        model.getMaxDirectDurationSeconds(),
+        VideoCapabilities.model(model.getExternalModelId())
+            .map(c -> c.maxSeconds())
+            .orElse(model.getClipDurationSeconds()),
+        VideoCapabilities.model(model.getExternalModelId())
+            .map(c -> c.maxSeconds())
+            .orElse(model.getMaxDirectDurationSeconds()),
         model.isSupportsHeroVideo(),
         model.isSupportsSceneAssembly(),
         model.isRequiresSourceImage(),
@@ -141,7 +159,11 @@ public class SalesVideoProviderCatalogService {
         model.getPricingResearchNotes(),
         normalizedCostPerSecond(model),
         model.getPricingObservedAt() == null
-            || model.getPricingObservedAt().isBefore(Instant.now().minus(30, ChronoUnit.DAYS)));
+            || model.getPricingObservedAt().isBefore(Instant.now().minus(30, ChronoUnit.DAYS)),
+        VideoCapabilities.catalog().revision(),
+        "RUNWAY".equals(model.getAdapterKey())
+            ? VideoCapabilities.model(model.getExternalModelId()).orElse(null)
+            : null);
   }
 
   /** Normaliza ofertas cobradas por segundo ou por vídeo para permitir comparação homogênea. */

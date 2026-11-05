@@ -3,6 +3,8 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "shared/video-capabilities/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/salesvideo/service/clipplan/**"
       - "infra/testing/private-kit/**"
       - "backend/ads-service/src/main/java/com/marketinghub/pde/kit/privateprototype/**"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/kit/**"
@@ -704,3 +706,39 @@ jobs:
           name: private-kit-storage-${{ github.run_id }}-${{ github.run_attempt }}
           path: backend/ads-service/target/private-kit-storage/
           if-no-files-found: warn
+
+  validate-video-capabilities:
+    name: Capacidades de vídeo e histórico Pippit com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: studio_test_only
+          MYSQL_DATABASE: studio_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pstudio_test_only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Aplicar migração, repetir Liquibase e preservar gates e histórico
+        run: >-
+          mvn -B -f backend/ads-service/pom.xml -Dtest=VideoCapabilitiesMysql57Test
+          -Dstudio.mysql=true
+          '-Dstudio.mysql.url=jdbc:mysql://127.0.0.1:3306/studio_test?useSSL=false&allowPublicKeyRetrieval=true'
+          test
+      - name: Preservar resultado sintético
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-capabilities-mysql57
+          path: backend/ads-service/target/surefire-reports/*VideoCapabilitiesMysql57Test*

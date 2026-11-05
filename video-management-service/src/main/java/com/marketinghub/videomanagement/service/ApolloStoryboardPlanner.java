@@ -16,6 +16,7 @@ import com.marketinghub.videomanagement.client.ApolloPlanningAiClient;
 import com.marketinghub.videomanagement.service.provider.ProgressCallback;
 import com.marketinghub.videomanagement.service.provider.VideoProviderException;
 import java.io.IOException;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -431,7 +432,21 @@ public class ApolloStoryboardPlanner {
         if (!roles.containsAll(REQUIRED_ROLES)) return GateDecision.blocked("funções comerciais incompletas");
         int clipCount = metadata.path("sceneCount").asInt(0);
         int clipDuration = metadata.path("providerClipDurationSeconds").asInt(0);
-        int credits = clipCount * clipDuration * creditsPerSecond(providerName);
+        int credits;
+        if (metadata.path("providerReservedCredits").isNumber()) {
+            credits = metadata.path("providerReservedCredits").decimalValue().setScale(0, RoundingMode.CEILING).intValueExact();
+        } else {
+            var model = VideoCapabilities.provider(providerName).orElse(null);
+            if (model == null) return GateDecision.blocked("modelo sem contrato de custo compartilhado");
+            try {
+                credits = model.plan(targetDuration).clipSeconds().stream().map(seconds ->
+                    model.credits(seconds, metadata.path("resolution").asText("720p"), metadata.path("audio").asBoolean(false), 0, 0, java.time.Instant.now()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).intValueExact();
+            } catch (IllegalArgumentException ex) {
+                log.error("Custo inválido no gate do storyboard; provider={}", providerName, ex);
+                return GateDecision.blocked(ex.getMessage());
+            }
+        }
         BigDecimal cost = BigDecimal.valueOf(credits).movePointLeft(2).setScale(2, RoundingMode.HALF_UP);
         BigDecimal limit = metadata.path("budgetLimitUsd").decimalValue();
         if (clipCount < 1 || clipDuration < 1 || limit.signum() <= 0 || cost.compareTo(limit) > 0) {
@@ -519,14 +534,6 @@ public class ApolloStoryboardPlanner {
             }
         }
         throw blocked("Planejador não retornou storyboard estruturado.");
-    }
-
-    /** Calcula a tarifa conservadora por segundo para o provider selecionado. */
-    private int creditsPerSecond(String providerName) {
-        String provider = providerName == null ? "" : providerName.toUpperCase(Locale.ROOT);
-        if (provider.contains("SEEDANCE_2_5")) return 30;
-        if (provider.contains("GEN_4_TURBO")) return 5;
-        return 12;
     }
 
     /** Preserva a pontuação para distinguir ordens de texto e proibições coordenadas. */

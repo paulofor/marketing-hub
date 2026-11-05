@@ -128,6 +128,9 @@
     <finalName>app</finalName>
     <resources>
       <resource>
+        <directory>${project.basedir}/../../shared/video-capabilities/src/main/resources</directory>
+      </resource>
+      <resource>
         <targetPath>agent-runtime</targetPath>
         <filtering>false</filtering>
         <directory>${project.basedir}/../..</directory>
@@ -184,6 +187,25 @@
       </resource>
     </resources>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>video-capabilities</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../../shared/video-capabilities/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

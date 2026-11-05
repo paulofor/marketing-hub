@@ -23,8 +23,8 @@ bash infra/testing/runway-clip-plan/run-round.sh round2
 
 Ao terminar, encerre o servidor local. As evidências ficam em
 `artifacts/runway-access-recovery/<rodada>/`: logs, contagens, contrato exportado pelo
-backend, requests do executor e screenshots desktop/iPhone/Pixel. Duas rodadas são
-necessárias quando houve correção; falha exige corrigir e reiniciar a contagem.
+backend, requests do executor e screenshots desktop/iPhone/Pixel. Execute uma rodada relevante. Se houver defeito, corrija a causa e repita somente as
+validações necessárias; não existe quantidade mínima de rodadas.
 
 `runway-request-schemas.json` preserva apenas as restrições estruturais dos requests
 de criação de Router e geração de vídeo consultados na [API oficial](https://docs.dev.runwayml.com/api/)

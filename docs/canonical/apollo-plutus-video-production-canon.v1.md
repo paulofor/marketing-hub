@@ -794,3 +794,24 @@ Uma candidata privada READY/PENDING ainda sem parecer pode receber correção de
 ## Correção explícita de locução em candidata ainda não revisada — 24/10/2026
 
 Antes do parecer e do aceite humano, uma candidata privada pode corrigir texto e locução pelo comando oficial, sem criar rejeição humana fictícia. Exige texto efetivamente alterado, confirmação explícita de nova locução, limite vigente, decisão financeira aceita e custo conhecido abaixo do teto. Com o mesmo texto, a remontagem continua reutilizando a voz auditada. Permanecem os bloqueios de revisão ativa, contexto divergente, peça aprovada e experimento em execução comercial. Os novos arquivos exigem parecer próprio e seleção humana; corrigir rascunho não equivale a aprovar mídia.
+
+## Previsão integral antes de gerar — 05/11/2026
+
+Aplicar a revisão do [Estúdio](audio-video-studio-canon.v1.md#catálogo-governado-tomadas-e-previsão-integral--decisão-de-05112026).
+Plutus não aprova produção pelo subtotal de clipes. A reserva integral usa fontes e a cobertura
+real do ledger do mesmo ciclo, sem consumir orçamento de outro produto. `PROVIDER_FULL_COST_PLAN_REQUIRED`
+indica previsão/conciliação pendente, não aprovação ausente nem prova de saldo insuficiente.
+Apolo deve completar os custos restantes pelo contrato oficial antes de gerar; Plutus conserva
+sua revisão independente. Registro de previsão não autoriza publicação, compra ou recarga.
+
+O fechamento contábil histórico de 12/08 permanece auditável e não é reescrito. Ele não autoriza
+novas análises a apresentar valores desconhecidos como USD 0, nem transferir dívida histórica para
+o teto incremental de uma produção nova. Novos custos sem valor permanecem lacunas explícitas.
+
+O trabalho transversal não usa os US$15 de Vega, não duplica #3925/PR #5792 e não produz outro
+vídeo. Merge/deploy desta solicitação dependem da confirmação específica exigida no pedido;
+nenhuma homologação sintética ativa modelo ou comprova resultado comercial.
+
+No encerramento do job, `PROVIDER_RESULT_UNCERTAIN` ou cobertura de custo desconhecida mantém a reserva em `CONSUMING`; timeout não libera saldo para outra tentativa. O ciclo persiste `PROVIDER_RECONCILIATION_REQUIRED`, com responsável Apolo e reutilização do ID/callback anterior. Somente resultado e custo conhecidos permitem liquidação.
+
+Lacuna determinística de previsão integral fica em `PROVIDER_PREFLIGHT_BLOCKED`, sem consumir parecer de Plutus. Corrigidos os custos, reaplicar o callback preservado enquanto o snapshot estiver válido permite reavaliar a causa sem repetir consulta ou geração. Não estende validade nem reabre parecer encerrado ou ciclo isolado.

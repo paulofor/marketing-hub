@@ -43,6 +43,15 @@ public class SalesVideoProfileService {
   private final SalesVideoJobService jobService;
   private final SalesVideoRolloutService rolloutService;
 
+  private com.marketinghub.salesvideo.service.clipplan.RunwayRenderPreflight runwayPreflight;
+
+  /** Conecta o gate compartilhado que impede render manual sem reserva integral. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setRunwayPreflight(
+      com.marketinghub.salesvideo.service.clipplan.RunwayRenderPreflight service) {
+    this.runwayPreflight = service;
+  }
+
   /** Inicializa o serviço com repositórios e componentes de job/rollout do módulo de vídeo. */
   public SalesVideoProfileService(
       SalesVideoProfileRepository profileRepository,
@@ -204,6 +213,22 @@ public class SalesVideoProfileService {
         request.getProviderName(),
         Optional.ofNullable(request.getTargetDurationSeconds())
             .orElse(profile.getTargetDurationSeconds()));
+    if (request.getProviderName() != null && request.getProviderName().startsWith("RUNWAY")) {
+      if (runwayPreflight == null)
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "Preflight integral indisponível; nenhuma geração iniciada");
+      try {
+        runwayPreflight.validate(profile.getProduct().getId(), profileId, request);
+      } catch (IllegalArgumentException ex) {
+        log.warn(
+            "Preflight bloqueou render; profileId={} provider={}",
+            profileId,
+            request.getProviderName(),
+            ex);
+        throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST, ex.getMessage());
+      }
+    }
     SalesVideoExecutionMode executionMode =
         rolloutService.normalizeExecutionMode(request.getExecutionMode());
     if (executionMode == null) {

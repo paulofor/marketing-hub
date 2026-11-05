@@ -63,6 +63,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -129,6 +130,26 @@ public class SalesVideoController {
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {
     return salesVideoService.getStudioCatalog();
+  }
+
+  /** Simula duração e custo de cada tomada sem geração paga nem autorização comercial. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Prever tomadas, montagem e custos antes de gerar")
+  @PostMapping("/api/sales-videos/studio/clip-plan")
+  public com.marketinghub.salesvideo.service.clipplan.StudioClipPlanResponse previewClipPlan(
+      @Valid @RequestBody
+          com.marketinghub.salesvideo.service.clipplan.StudioClipPlanRequest request) {
+    return salesVideoService.previewClipPlan(request);
+  }
+
+  /** Registra a previsão integral restante para o ciclo, sem alterar sua autorização. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Registrar previsão integral auditável sem produzir")
+  @PutMapping("/api/sales-videos/projects/{projectId}/production-cost-plan")
+  public com.marketinghub.videocontract.v1.ProductionCostPlan registerProductionCosts(
+      @PathVariable Long projectId,
+      @RequestBody com.marketinghub.videocontract.v1.ProductionCostPlan request) {
+    return salesVideoService.registerProductionCosts(projectId, request);
   }
 
   /** Lista modelos de vídeo e o estado dos gates de homologação. */

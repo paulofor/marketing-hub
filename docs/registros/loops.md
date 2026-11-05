@@ -11689,3 +11689,28 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - Limite: proteção e clareza não geram vídeo nem aprovam custo. Pedido cinematográfico
   segue no sucessor #21/#114, sem herdar limites. Evidências e matriz em
   `docs/homologacao/vega-video-estudio-2026-11-04.md`.
+
+## LOOP-VIDEO-CAPACIDADE-DUPLICADA — duração, catálogo e custo divergem antes de gerar
+
+- **Evidência de 05/11/2026:** banco com 15 cadastros; Seedance 2.5 apenas Pippit DRAFT; falta de
+  Kling 4/Aleph 2. Relato auditado da chamada 9ca43054-e345-450c-b68c-7bfc88966a3f: 15s com Gen-4.5
+  como único elegível. O log corrente consultado via MCP não contém essa linha; não inferir bloqueio
+  da conta. Código confirma limites independentes e clamp; Seedance 2.5 era tratado pelo prefixo 2.0.
+- **Causa:** catálogo público/persistido, UI, planner e adapter mantinham regras distintas; o
+  planejamento confundia duração final, tomadas e beats; estimativas diretas usavam tarifa genérica.
+  Conteúdo MUSA e duração de 30s podiam contaminar contexto genérico. Custo integral faltante também
+  poderia fazer a transação do callback perder o dry run e repetir o consumo preparatório.
+- **Mudança reutilizável:** contrato compartilhado v1, resolução exata de modelos, partição com
+  mínimos/conjuntos discretos, prévia anterior à geração, reserva integral com fontes e cobertura
+  do ledger, gates antes de job/POST e bloqueio persistido sem apagar a simulação. Timeout da Runway
+  passa a resultado incerto; recuperação automática não repete geração de job já em processamento.
+- **Regressão:** Gen-4.5/15s bloqueado sem POST; 32s preservados com áudio/legenda em FFmpeg; Veo
+  15s finais/16s cobrados; Seedance 2.5 independente de 2.0; Router divergente, tarifa vencida,
+  custo desconhecido, callback duplicado e identidades distintas. Desktop, iPhone e Pixel com
+  controller real e nenhuma geração. Banco MySQL 5.7/Liquibase preserva Pippit e gates no replay.
+- **Limites:** testes não homologam qualidade de modelos novos, não consultam saldo privado novo e
+  não comprovam vendas. Novos adapters continuam DRAFT/HOMOLOGATION. Registro de tomada parcial
+  preserva ID/URL/hash e impede repetição paga; não implementa replay/download automático permanente.
+- **Matriz:** `docs/homologacao/studio-capabilities-2026-11-05.md`.
+
+No mesmo fechamento, o monitor financeiro liquidava qualquer estado terminal do job. A regressão agora cobre submissão incerta em dois ciclos, custo desconhecido, reserva protegida sem valor realizado inventado e liquidação do caminho válido.

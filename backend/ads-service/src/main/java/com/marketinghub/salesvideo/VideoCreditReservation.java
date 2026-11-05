@@ -36,6 +36,9 @@ public class VideoCreditReservation {
   @Column(name = "reserved_credits", nullable = false, precision = 14, scale = 4)
   private BigDecimal reservedCredits;
 
+  @Column(name = "full_production_reserved_usd", precision = 12, scale = 6)
+  private BigDecimal fullProductionReservedUsd;
+
   @Column(name = "reserved_cost_usd", nullable = false, precision = 12, scale = 6)
   private BigDecimal reservedCostUsd;
 

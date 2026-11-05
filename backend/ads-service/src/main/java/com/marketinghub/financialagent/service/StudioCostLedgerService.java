@@ -306,7 +306,10 @@ public class StudioCostLedgerService {
             });
   }
 
-  /** Atualiza a tentativa sem apagar cobrança ou estimativa auditada, inclusive recusa da primeira voz, por callback incompleto. */
+  /**
+   * Atualiza a tentativa sem apagar cobrança ou estimativa auditada, inclusive recusa da primeira
+   * voz, por callback incompleto.
+   */
   @Transactional
   public void recordVideo(
       Long jobId,
@@ -416,6 +419,15 @@ public class StudioCostLedgerService {
         "taskCount", taskConsumptionRepository.countByVideoProductionCycleId(cycleId),
         "credits", credits == null ? 0L : credits,
         "costUsd", cost == null ? BigDecimal.ZERO : cost);
+  }
+
+  /**
+   * Expõe a cobertura somente do ciclo solicitado, sem transferir lacunas históricas de outros
+   * produtos.
+   */
+  @Transactional(readOnly = true)
+  public Map<String, Object> cycleCoverage(Long cycleId) {
+    return coverageOf(repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(cycleId));
   }
 
   /** Soma o custo conhecido do ledger associado ao ciclo para conciliar tasks antigas e novas. */

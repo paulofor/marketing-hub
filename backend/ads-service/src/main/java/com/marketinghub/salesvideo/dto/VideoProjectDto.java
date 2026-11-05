@@ -61,4 +61,5 @@ public record VideoProjectDto(
     String updatedBy,
     Instant createdAt,
     Instant updatedAt,
-    ResearchIntelligenceSelectionDto researchIntelligence) {}
+    ResearchIntelligenceSelectionDto researchIntelligence,
+    String productionCostPlanJson) {}

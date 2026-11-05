@@ -81,7 +81,7 @@ class SalesVideoProviderCatalogServiceTest {
                 "Teste controlado", "HOMOLOGATION", true, true, false, false, "Sem adapter"));
 
     assertThat(result.lifecycleStatus()).isEqualTo("HOMOLOGATION");
-    assertThat(result.adapterVerified()).isTrue();
+    assertThat(result.adapterVerified()).isFalse();
     assertThat(result.qualityGateVerified()).isFalse();
   }
 

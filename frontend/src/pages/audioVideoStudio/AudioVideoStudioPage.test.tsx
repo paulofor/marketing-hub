@@ -23,6 +23,22 @@ import { SALES_VIDEO_PROVIDER_OPTIONS } from "../../api/salesVideo/videoProvider
 
 vi.mock("axios");
 
+const providerModelFixtures = SALES_VIDEO_PROVIDER_OPTIONS.map((option) => ({
+  id: option.key,
+  code: option.key,
+  displayName: option.label,
+  providerName: option.providerName,
+  providerFamily: option.providerFamily,
+  recommendedUse: option.recommendedUse,
+  clipDurationSeconds: option.clipDurationSeconds,
+  maxDirectDurationSeconds: option.maxDirectDurationSeconds,
+  supportsHeroVideo: option.supportsHeroVideo,
+  supportsSceneAssembly: option.supportsSceneAssembly,
+  requiresSourceImage: option.supportsOpenAiReferenceImage,
+  lifecycleStatus:
+    option.providerName === "RUNWAY_ACT_TWO" ? "HOMOLOGATION" : "ACTIVE",
+}));
+
 const studioCatalog = {
   characters: [
     {
@@ -275,6 +291,11 @@ describe("AudioVideoStudioPage", () => {
     });
     setupProject();
     await screen.findByDisplayValue(project.title);
+    expect(
+      vi
+        .mocked(axios.get)
+        .mock.calls.some(([url]) => url === "/api/media/1953"),
+    ).toBe(false);
     expect(screen.getAllByLabelText(/Cena \d+ ·/)).toHaveLength(4);
     fireEvent.click(screen.getByRole("button", { name: "Adicionar cena" }));
     fireEvent.change(screen.getByLabelText(/Cena 5 ·/), {
@@ -430,6 +451,8 @@ describe("AudioVideoStudioPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -453,6 +476,8 @@ describe("AudioVideoStudioPage", () => {
     "preserva MP4 e respeita a disponibilidade do backend: %s",
     async ({ hls, state }) => {
       (axios.get as any).mockImplementation((url: string) => {
+        if (url === "/api/sales-videos/provider-models")
+          return Promise.resolve({ data: providerModelFixtures });
         if (url === "/api/sales-videos/studio/catalog")
           return Promise.resolve({ data: studioCatalog });
         if (url === "/api/sales-videos/projects/1")
@@ -544,6 +569,8 @@ describe("AudioVideoStudioPage", () => {
 
   it("aplica a receita sem inventar produto, oferta ou CTA", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -607,7 +634,7 @@ describe("AudioVideoStudioPage", () => {
       (screen.getByLabelText(/historia inicial/i) as HTMLTextAreaElement).value,
     ).toContain("artista fictícia");
     expect((screen.getByLabelText(/^cta$/i) as HTMLInputElement).value).toBe(
-      "Fazer o diagnostico MUSA",
+      "",
     );
     expect(
       screen.getByText(/selecione o produto, ajuste a oferta/i),
@@ -640,11 +667,13 @@ describe("AudioVideoStudioPage", () => {
     expect(
       screen.getByLabelText(/evidencia dos direitos da performance/i),
     ).toBeRequired();
-    expect(screen.getAllByText(/permanece em homologa/i)).not.toHaveLength(0);
+    expect(screen.getAllByText(/cadastro \/ homologa/i)).not.toHaveLength(0);
   });
 
   it("mostra baseline, candidata, custo, memoria e decisao do piloto de Apolo", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -822,6 +851,8 @@ describe("AudioVideoStudioPage", () => {
   it("permite aplicar o preset premium do Vega ao projeto existente", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -875,6 +906,8 @@ describe("AudioVideoStudioPage", () => {
 
   it("mostra as rotas, fontes e limites da pesquisa no detalhe do projeto", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -995,6 +1028,8 @@ describe("AudioVideoStudioPage", () => {
   it("permite gerar e montar o projeto por quatro cenas independentes", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -1126,6 +1161,8 @@ describe("AudioVideoStudioPage", () => {
 
   it("mostra duração, créditos, arquivo e aproveitamento por cena", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -1212,6 +1249,8 @@ describe("AudioVideoStudioPage", () => {
   it("vincula um perfil do produto antes de solicitar o ciclo de Apolo", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -1274,6 +1313,8 @@ describe("AudioVideoStudioPage", () => {
 
   it("expõe o escopo completo de Apolo e a primeira missão dos dois vídeos MUSA", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
@@ -1440,6 +1481,8 @@ describe("AudioVideoStudioPage", () => {
   it("mostra o preflight e envia o perfil reutilizável escolhido para o novo ciclo", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-models")
+        return Promise.resolve({ data: providerModelFixtures });
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }

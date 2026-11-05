@@ -64,6 +64,8 @@ import type {
   VideoProjectStatus,
 } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
+import { ClipPlanPreview } from "./ClipPlanPreview";
+import { useSalesVideoProviderModels } from "../../api/salesVideo/useSalesVideoProviderModels";
 import { videoCycleBudget } from "./videoCycleBudget";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
@@ -771,7 +773,7 @@ export function selectSingleJobForScene(
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
-const defaultBriefing: StudioBriefing = {
+const musaManifestoBriefing: StudioBriefing = {
   productId: "",
   commercialPlanId: "",
   experimentId: "",
@@ -843,6 +845,20 @@ const defaultBriefing: StudioBriefing = {
     "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
   status: "READY_FOR_SCRIPT",
 };
+
+const defaultBriefing: StudioBriefing = {
+  ...Object.fromEntries(
+    Object.keys(musaManifestoBriefing).map((key) => [key, ""]),
+  ),
+  videoCategory: "COMMERCIAL_SHORT",
+  contextType: "PDE",
+  productionMode: "STORY_FIRST_AUDIO_VIDEO",
+  targetChannel: "PDE_AND_SOCIAL",
+  format: "VERTICAL_9_16",
+  characterPerformanceType: "image",
+  learningDecision: "COLLECTING",
+  status: "DRAFT",
+} as StudioBriefing;
 
 const musaV7Briefing: StudioBriefing = {
   productId: "4",
@@ -1003,7 +1019,7 @@ const studioPresets: StudioPreset[] = [
     badge: "Modelo longo",
     description:
       "Estrutura longa para historia, mecanismo, prova, oferta e CTA.",
-    briefing: defaultBriefing,
+    briefing: musaManifestoBriefing,
   },
 ];
 
@@ -1100,12 +1116,15 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function findProviderFromPlan(providerPlan?: string | null) {
+export function findProviderFromPlan(
+  providerPlan?: string | null,
+  options = SALES_VIDEO_PROVIDER_OPTIONS,
+) {
   if (!providerPlan) {
     return DEFAULT_SALES_VIDEO_PROVIDER;
   }
   const normalizedPlan = providerPlan.toUpperCase();
-  const explicitlySelected = SALES_VIDEO_PROVIDER_OPTIONS.find((option) =>
+  const explicitlySelected = options.find((option) =>
     normalizedPlan.includes(
       `PROVIDER ESCOLHIDO NO ESTUDIO: ${option.label.toUpperCase()} (${option.providerName})`,
     ),
@@ -1113,7 +1132,7 @@ export function findProviderFromPlan(providerPlan?: string | null) {
   if (explicitlySelected) {
     return explicitlySelected;
   }
-  const primaryProvider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+  const primaryProvider = options.find(
     (option) =>
       normalizedPlan.includes(`${option.label.toUpperCase()} COMO PRINCIPAL`) ||
       normalizedPlan.includes(`${option.providerName} COMO PRINCIPAL`),
@@ -1190,8 +1209,30 @@ export default function AudioVideoStudioPage() {
   const [salesVideoProfileId, setSalesVideoProfileId] = useState("");
   const [saveFeedback, setSaveFeedback] = useState("");
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
-  const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
+  const [sourceImageAssetId, setSourceImageAssetId] = useState("");
+  const providerModels = useSalesVideoProviderModels();
+  const liveProviders: SalesVideoProviderOption[] = (
+    providerModels.data ?? []
+  ).map((model) => ({
+    key: model.code,
+    label: model.displayName,
+    providerName: model.providerName,
+    providerFamily: model.providerFamily,
+    recommendedUse: model.recommendedUse,
+    clipDurationSeconds:
+      model.capabilities?.maxSeconds ?? model.clipDurationSeconds,
+    maxDirectDurationSeconds:
+      model.capabilities?.maxSeconds ?? model.maxDirectDurationSeconds,
+    supportsHeroVideo: model.supportsHeroVideo,
+    supportsSceneAssembly: model.supportsSceneAssembly,
+    supportsOpenAiReferenceImage: model.requiresSourceImage,
+    creditsUrl: model.creditsUrl ?? undefined,
+    lifecycleStatus: model.lifecycleStatus,
+  }));
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+  useEffect(() => {
+    setSourceImageAssetId("");
+  }, [editableProjectId, briefing.productId]);
   const productProfilesQuery = useSalesVideoProfiles(briefing.productId);
   const [persistedScenePlan, setPersistedScenePlan] = useState(
     defaultBriefing.scenePlan,
@@ -1252,8 +1293,8 @@ export default function AudioVideoStudioPage() {
   const characterOptions = studioCatalogQuery.data?.characters ?? [];
   const captionPresets = studioCatalogQuery.data?.captionPresets ?? [];
   const selectedProvider = useMemo(
-    () => findProviderFromPlan(briefing.providerPlan),
-    [briefing.providerPlan],
+    () => findProviderFromPlan(briefing.providerPlan, liveProviders),
+    [briefing.providerPlan, providerModels.data],
   );
   const providerConfigurationIssue =
     selectedProvider.providerName === "RUNWAY_PRODUCT_UGC" && selectedProject
@@ -1541,6 +1582,12 @@ export default function AudioVideoStudioPage() {
       );
       return;
     }
+    if (selectedProvider.lifecycleStatus !== "ACTIVE") {
+      setSaveFeedback(
+        "Modelo ainda não homologado. Conclua os gates no catálogo antes de produzir.",
+      );
+      return;
+    }
     const usesActTwo = selectedProvider.providerName === "RUNWAY_ACT_TWO";
     const actTwoIssue = usesActTwo
       ? actTwoConfigurationIssue(selectedProject)
@@ -1583,8 +1630,13 @@ export default function AudioVideoStudioPage() {
       setSaveFeedback(
         `Cena ${sceneIndex + 1} enviada para geracao no job #${job.id}.`,
       );
-    } catch {
-      setSaveFeedback(`Nao foi possivel gerar a cena ${sceneIndex + 1}.`);
+    } catch (error) {
+      setSaveFeedback(
+        videoProductionError(
+          error,
+          `Não foi possível gerar a cena ${sceneIndex + 1}. Confira o preflight e a reserva integral no ciclo de produção deste projeto.`,
+        ),
+      );
     }
   };
 
@@ -1826,7 +1878,7 @@ export default function AudioVideoStudioPage() {
             <p>
               {isEditingProject
                 ? "Continue o trabalho a partir dos dados persistidos neste projeto."
-                : "Use o preset MUSA v7 como primeiro caso real ou ajuste o blueprint para outro video comercial."}
+                : "Preencha o contexto do produto ou selecione explicitamente um template para iniciar."}
             </p>
           </div>
           <div className="audio-video-studio-page__briefing-grid">
@@ -3216,7 +3268,7 @@ export default function AudioVideoStudioPage() {
                 ) : null}
               </article>
               <div className="audio-video-studio-page__provider-grid">
-                {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
+                {liveProviders.map((option) => {
                   const isSelected =
                     selectedProvider.providerName === option.providerName;
                   return (
@@ -3234,6 +3286,11 @@ export default function AudioVideoStudioPage() {
                       <strong>{option.label}</strong>
                       <small>{option.recommendedUse}</small>
                       <span>
+                        {option.lifecycleStatus === "ACTIVE"
+                          ? "Ativo; preflight obrigatório antes de gerar"
+                          : "Cadastro / homologação — geração bloqueada"}
+                      </span>
+                      <span>
                         {option.supportsSceneAssembly
                           ? "Cenas cinematograficas"
                           : "Formato direto/avatar"}
@@ -3248,6 +3305,17 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
+              <ClipPlanPreview
+                providerName={selectedProvider.providerName}
+                finalSeconds={Number(briefing.targetDurationSeconds)}
+                productionCostPlanJson={selectedProject?.productionCostPlanJson}
+                providerPlan={briefing.providerPlan}
+              />
+              {providerModels.isError ? (
+                <p role="alert">
+                  Catálogo indisponível. Nenhuma geração liberada.
+                </p>
+              ) : null}
               {selectedProvider.providerName !== "RUNWAY_PRODUCT_UGC" &&
               selectedProvider.providerName !== "RUNWAY_ACT_TWO" ? (
                 <article className="audio-video-studio-page__project-card">
@@ -3881,7 +3949,7 @@ export default function AudioVideoStudioPage() {
             ))
           ) : (
             <article className="audio-video-studio-page__project-card">
-              Nenhum projeto criado ainda. Use o exemplo MUSA para iniciar os
+              Nenhum projeto criado ainda. Preencha o contexto para iniciar os
               testes.
             </article>
           )}

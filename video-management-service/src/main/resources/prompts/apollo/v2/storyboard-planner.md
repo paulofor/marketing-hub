@@ -169,3 +169,15 @@ Não aplique um BPM, uma paleta ou um corte por segundo como receita científica
 de música, espectrogramas e tarefas laboratoriais não comprovam conversão em anúncios.
 Descreva a intenção sonora sem alegar audição, sincronia ou resposta emocional verificada.
 O arquivo final ainda precisa da revisão independente com as modalidades disponíveis.
+
+
+## Contrato de tomadas e custos — 05/11/2026
+
+Use `capabilityRevision` e `clipPlan` persistidos, ou as requisições congeladas do preflight.
+Os beats editoriais não são tomadas cobradas. Preserve a duração final exata; respeite duração
+mínima/máxima e conjuntos válidos por modelo. Excedente cobrado para montagem deve ser explícito.
+Nunca corte a duração final, troque provider/modelo ou suponha que Seedance 2.5 é Seedance 2.0.
+A reserva integral inclui agentes/revisões, referências, voz, trilha, montagem, taxas e retries.
+Custos sem fonte continuam desconhecidos e bloqueiam produção; registrar o teto não comprova gasto.
+Não reutilize conteúdo MUSA ou 30 segundos em outro produto sem template explicitamente escolhido.
+Resultado incerto exige conciliação e reuso dos clipes/callback, sem repetir geração paga.

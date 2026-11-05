@@ -836,7 +836,7 @@ class ExperimentVideoAssetServiceTest {
     ResponseStatusException ex =
         assertThrows(ResponseStatusException.class, () -> service.create(39L, request));
 
-    assertThat(ex.getReason()).contains("Runway aceita no máximo 10 segundos");
+    assertThat(ex.getReason()).contains("Gen-4.5", "15s", "2–10s");
   }
 
   /** Garante que ativos planejados viram jobs de render sem criar ativos duplicados. */

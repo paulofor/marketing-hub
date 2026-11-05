@@ -471,6 +471,7 @@ export interface ResearchIntelligenceCatalog {
 }
 
 export interface VideoProject {
+  productionCostPlanJson?: string | null;
   id: number;
   tenantId?: string | null;
   productId?: number | null;

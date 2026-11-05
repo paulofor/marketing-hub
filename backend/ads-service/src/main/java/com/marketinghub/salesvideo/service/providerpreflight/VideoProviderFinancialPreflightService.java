@@ -61,6 +61,30 @@ public class VideoProviderFinancialPreflightService {
   private final ObjectMapper objectMapper;
   private final Clock clock;
 
+  private com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository projectRepository;
+
+  /**
+   * Conecta projetos persistidos para impedir reserva com previsão integral ausente ou de outro
+   * ciclo.
+   */
+  @Autowired
+  public void setProjectRepository(
+      com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository repository) {
+    this.projectRepository = repository;
+  }
+
+  private com.marketinghub.financialagent.service.StudioCostLedgerService costLedger;
+
+  /**
+   * Conecta a cobertura financeira real para não aceitar uma lista declarada de custos como
+   * conciliação.
+   */
+  @Autowired
+  public void setCostLedger(
+      com.marketinghub.financialagent.service.StudioCostLedgerService ledger) {
+    this.costLedger = ledger;
+  }
+
   /** Configura as fontes canônicas da conta, do preflight e da reserva financeira. */
   @Autowired
   public VideoProviderFinancialPreflightService(
@@ -240,18 +264,33 @@ public class VideoProviderFinancialPreflightService {
         cycle.getSuccessCriterion());
   }
 
-  /** Persiste o retorno do executor e valida saldo disponível descontando reservas concorrentes. */
+  /** Persiste o retorno e permite replay do bloqueio de custos sem renovar o snapshot ou gerar. */
   @Transactional
   public VideoProviderPreflight complete(
       VideoProductionCycle cycle, VideoProviderFinancialPreflightData.Result request) {
     VideoProviderAccount account = lockedAccount(request.accountKey());
     VideoProviderPreflight preflight = preflightForUpdate(cycle.getId());
-    if (!"PENDING".equals(preflight.getStatus())) {
-      if (sameCompletedResult(preflight, request)) return preflight;
-      throw conflict("O preflight do ciclo já foi concluído com outro resultado.");
-    }
     if (!account.getId().equals(preflight.getProviderAccountId())) {
       throw conflict("A conta informada não pertence ao preflight.");
+    }
+    if (!"PENDING".equals(preflight.getStatus())) {
+      if (sameCompletedResult(preflight, request)) {
+        if ("PROVIDER_FULL_COST_PLAN_REQUIRED".equals(preflight.getFailureCode())
+            && preflight.getExpiresAt() != null
+            && preflight.getExpiresAt().isAfter(Instant.now(clock))) {
+          preflight.setStatus("READY");
+          preflight.setFailureCode(null);
+          preflight.setFailureDetail(null);
+          applyFullCostReadiness(
+              cycle,
+              preflight,
+              maximumAuthorizedCredits(preflight.getSelectedRoutesJson())
+                  .multiply(account.getCreditUnitUsd()));
+          return preflightRepository.save(preflight);
+        }
+        return preflight;
+      }
+      throw conflict("O preflight do ciclo já foi concluído com outro resultado.");
     }
     if (!account.getSourceUrl().equals(request.sourceUrl().trim())) {
       throw badRequest("A fonte do snapshot diverge da API oficial configurada para a conta.");
@@ -311,7 +350,50 @@ public class VideoProviderFinancialPreflightService {
       account.setUpdatedAt(receivedAt);
       accountRepository.save(account);
     }
+    if ("READY".equals(preflight.getStatus())
+        && !"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(cycle.getStatus()))
+      applyFullCostReadiness(
+          cycle,
+          preflight,
+          maximumAuthorizedCredits(preflight.getSelectedRoutesJson())
+              .multiply(account.getCreditUnitUsd()));
     return preflightRepository.save(preflight);
+  }
+
+  /**
+   * Registra lacunas de custo como bloqueio funcional, preservando o dry run sem rollback ou
+   * repetição.
+   */
+  public VideoProviderPreflight applyFullCostReadiness(
+      VideoProductionCycle cycle, VideoProviderPreflight preflight) {
+    VideoProviderAccount account =
+        accountRepository
+            .findById(preflight.getProviderAccountId())
+            .orElseThrow(() -> conflict("Conta do preflight não encontrada."));
+    return applyFullCostReadiness(
+        cycle,
+        preflight,
+        maximumAuthorizedCredits(preflight.getSelectedRoutesJson())
+            .multiply(account.getCreditUnitUsd()));
+  }
+
+  /** Preserva a simulação quando faltar previsão integral, usando a conta já consultada. */
+  private VideoProviderPreflight applyFullCostReadiness(
+      VideoProductionCycle cycle, VideoProviderPreflight preflight, BigDecimal clipsMaximumUsd) {
+    try {
+      requireFullProductionCoverage(cycle, clipsMaximumUsd, Instant.now(clock));
+    } catch (ResponseStatusException ex) {
+      log.warn(
+          "Produção bloqueada por previsão integral; cycleId={} preflightId={}",
+          cycle.getId(),
+          preflight.getId(),
+          ex);
+      preflight.setStatus("READY_WITH_BLOCKER");
+      preflight.setFailureCode("PROVIDER_FULL_COST_PLAN_REQUIRED");
+      preflight.setFailureDetail(ex.getReason());
+      preflightRepository.save(preflight);
+    }
+    return preflight;
   }
 
   /** Reserva atomicamente o teto das rotas antes do parecer de Plutus e de qualquer consumo. */
@@ -355,6 +437,8 @@ public class VideoProviderFinancialPreflightService {
     reservation.setStatus("RESERVED");
     reservation.setReservedCredits(maximumCredits);
     reservation.setReservedCostUsd(maximumCost);
+    reservation.setFullProductionReservedUsd(
+        requireFullProductionCoverage(cycle, maximumCost, now));
     reservation.setExpiresAt(now.plus(RESERVATION_TTL));
     reservation.setReservedAt(now);
     reservation.setCreatedAt(now);
@@ -363,6 +447,55 @@ public class VideoProviderFinancialPreflightService {
     account.setUpdatedAt(now);
     accountRepository.save(account);
     return reservationRepository.save(reservation);
+  }
+
+  /** Confere todas as parcelas restantes no mesmo ciclo antes de comprometer créditos externos. */
+  private BigDecimal requireFullProductionCoverage(
+      VideoProductionCycle cycle, BigDecimal clipsMaximumUsd, Instant now) {
+    if (projectRepository == null)
+      throw conflict("Repositório de previsão integral indisponível; nenhuma reserva criada.");
+    VideoProject project =
+        projectRepository
+            .findById(cycle.getVideoProjectId())
+            .orElseThrow(() -> conflict("Projeto da previsão integral não encontrado."));
+    if (project.getProductionCostPlanJson() == null)
+      throw conflict(
+          "Previsão integral ausente: Apolo e Plutus devem informar agentes, referências, voz, trilha, montagem, taxas e tentativas antes de reservar. Não há nova aprovação de teto pendente.");
+    try {
+      var plan =
+          objectMapper.readValue(
+              project.getProductionCostPlanJson(),
+              com.marketinghub.videocontract.v1.ProductionCostPlan.class);
+      if (!java.util.Objects.equals(plan.cycleId(), cycle.getId())
+          || !java.util.Objects.equals(plan.productId(), cycle.getProductId())
+          || !java.util.Objects.equals(plan.experimentId(), cycle.getExperimentId())
+          || !java.util.Objects.equals(plan.providerPlan(), project.getProviderPlan())
+          || plan.finalSeconds() != project.getTargetDurationSeconds())
+        throw conflict(
+            "Previsão integral pertence a outro ciclo, produto, experimento ou versão de plano.");
+      if (costLedger == null)
+        throw conflict(
+            "Ledger do ciclo indisponível; não converter ausência de dados em custo zero.");
+      var coverage = costLedger.cycleCoverage(cycle.getId());
+      if (!(coverage.get("unknownCostAttempts") instanceof Number unknown)
+          || unknown.longValue() > 0)
+        throw conflict(
+            "Há custos de tentativas deste ciclo sem valor; conciliar o ledger antes de reservar ou repetir.");
+      BigDecimal knownIncurred =
+          nonNull(cycle.getKnownCostUsd()).max(costLedger.cycleKnownLedgerCostUsd(cycle.getId()));
+      BigDecimal total = clipsMaximumUsd.add(plan.maximumRemainingUsd(now));
+      if (total.add(knownIncurred).compareTo(cycle.getBudgetLimitUsd()) > 0)
+        throw conflict(
+            "Custos já conhecidos e previsão integral excedem o teto; ajustar plano antes de produzir.");
+      return total;
+    } catch (JsonProcessingException | IllegalArgumentException ex) {
+      log.error(
+          "Previsão integral inválida; cycleId={} projectId={}",
+          cycle.getId(),
+          project.getId(),
+          ex);
+      throw conflict("Previsão integral inválida: " + ex.getMessage());
+    }
   }
 
   /** Valida deterministicamente o parecer de Plutus contra o preflight oficial persistido. */
@@ -441,6 +574,17 @@ public class VideoProviderFinancialPreflightService {
     return reservation;
   }
 
+  /** Reconfere custo restante e custos incorridos no instante anterior à criação do job pago. */
+  public void assertFullCostCoverageBeforeRender(VideoProductionCycle cycle) {
+    VideoCreditReservation reservation = requireActiveReservation(cycle.getId());
+    BigDecimal required =
+        requireFullProductionCoverage(cycle, reservation.getReservedCostUsd(), Instant.now(clock));
+    if (reservation.getFullProductionReservedUsd() == null
+        || required.compareTo(reservation.getFullProductionReservedUsd()) > 0)
+      throw conflict(
+          "A previsão integral aumentou após a reserva; revisar o plano sem gerar novamente.");
+  }
+
   /** Informa se um ciclo legado ainda possui reserva válida sem lançar erro na reconciliação. */
   @Transactional(readOnly = true)
   public boolean hasActiveReservation(Long cycleId) {
@@ -512,6 +656,21 @@ public class VideoProviderFinancialPreflightService {
               reservation.setStatus("CONSUMING");
               reservation.setActualCredits(nonNull(credits));
               reservation.setActualCostUsd(nonNull(costUsd));
+              reservation.setUpdatedAt(Instant.now(clock));
+              reservationRepository.save(reservation);
+            });
+  }
+
+  /** Mantém créditos protegidos sem inventar custo realizado quando a submissão é incerta. */
+  @Transactional
+  public void preserveUncertainReservation(Long cycleId) {
+    if (cycleId == null) return;
+    reservationRepository
+        .findByVideoProductionCycleIdForUpdate(cycleId)
+        .filter(value -> Set.of("RESERVED", "CONSUMING").contains(value.getStatus()))
+        .ifPresent(
+            reservation -> {
+              reservation.setStatus("CONSUMING");
               reservation.setUpdatedAt(Instant.now(clock));
               reservationRepository.save(reservation);
             });
@@ -1030,7 +1189,15 @@ public class VideoProviderFinancialPreflightService {
     return compatibleStatus
         && java.util.Objects.equals(
             trim(preflight.getPayloadSha256()), trim(request.payloadSha256()))
-        && java.util.Objects.equals(trim(preflight.getFailureCode()), trim(request.failureCode()));
+        && java.util.Objects.equals(
+            trim(preflight.getExecutionRequestsJson()), trim(request.executionRequestsJson()))
+        && java.util.Objects.equals(
+            trim(preflight.getSelectedRoutesJson()), trim(request.selectedRoutesJson()))
+        && java.util.Objects.equals(
+            trim(preflight.getRoutingResponseJson()), trim(request.routingResponseJson()))
+        && java.util.Objects.equals(
+            trim(preflight.getOrganizationSnapshotJson()),
+            trim(request.organizationSnapshotJson()));
   }
 
   /** Resume eficiência histórica somente com cobertura financeira e editorial explicitadas. */

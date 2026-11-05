@@ -151,6 +151,27 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** Lacuna de custo determinística não consome parecer nem dispara geração. */
+  @Test
+  void shouldBlockMissingFullCostBeforePaidFinancialReview() {
+    var cycle = cycle();
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
+    var preflight = new VideoProviderPreflight();
+    preflight.setStatus("READY_WITH_BLOCKER");
+    preflight.setFailureCode("PROVIDER_FULL_COST_PLAN_REQUIRED");
+    when(projectRepository.findById(cycle.getVideoProjectId())).thenReturn(Optional.of(project()));
+    when(repository.findById(cycle.getId())).thenReturn(Optional.of(cycle));
+    when(providerPreflightService.complete(any(), any())).thenReturn(preflight);
+    var result =
+        service.completeProviderPreflight(
+            cycle.getId(),
+            org.mockito.Mockito.mock(VideoProviderPreflightContracts.ResultRequest.class));
+    assertThat(result.status()).isEqualTo("PROVIDER_PREFLIGHT_BLOCKED");
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(providerPreflightService, never()).reserve(any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Mantém a consulta sem consumo disponível mesmo quando o roteiro ainda não existe. */
   @Test
   void shouldAllowReadOnlyPreflightWithoutApprovedScript() {
@@ -489,7 +510,7 @@ class VideoProductionCycleServiceTest {
 
   /** Comprova que Apolo repete o payload validado pelo router após a reserva de créditos. */
   @Test
-  void shouldQueueApprovedCycleWithSeedanceInsteadOfLegacyLuma() {
+  void shouldPreserveRouterContractWithoutSelectingSeedanceFromLegacyLuma() {
     VideoProductionCycle cycle = cycle();
     VideoProject project = project();
     project.setTargetDurationSeconds(60);
@@ -524,8 +545,8 @@ class VideoProductionCycleServiceTest {
     assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(10);
     assertThat(render.getValue().getMetadataJson())
         .contains(
-            "\"providerClipDurationSeconds\":15",
-            "\"sceneCount\":4",
+            "\"providerClipDurationSeconds\":10",
+            "\"sceneCount\":6",
             "\"cutCount\":15",
             "\"providerCreditReservationId\":77",
             "\"providerReservedCredits\":500",

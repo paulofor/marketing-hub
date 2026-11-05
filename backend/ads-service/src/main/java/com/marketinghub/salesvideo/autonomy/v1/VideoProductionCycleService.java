@@ -65,6 +65,11 @@ public class VideoProductionCycleService {
   private final ObjectMapper objectMapper;
   private VideoProjectResearchIntelligenceMapper researchIntelligenceMapper;
 
+  @Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleSingleVideoBudget
+      singleVideoBudget;
+
   /** Configura persistência, caixas de entrada e o executor canônico de vídeo. */
   public VideoProductionCycleService(
       VideoProductionCycleRepository repository,
@@ -982,7 +987,7 @@ public class VideoProductionCycleService {
             : taskService.pendingGateModelResult(PLUTUS_KEY, cycle.getAgentTaskId()));
   }
 
-  /** Congela para Plutus a mesma inteligência financeira oficial do planejamento. */
+  /** Entrega a Plutus inteligência financeira e recibo integral do projeto, sem inferir saldo. */
   private String financialSnapshot(VideoProductionCycle cycle) {
     try {
       java.util.LinkedHashMap<String, Object> snapshot =
@@ -998,6 +1003,19 @@ public class VideoProductionCycleService {
       snapshot.put("exchangeRateSource", cycle.getExchangeRateSource());
       snapshot.put("exchangeRateDate", cycle.getExchangeRateDate());
       snapshot.put("operationalBudgetLimitUsd", cycle.getBudgetLimitUsd());
+      if (singleVideoBudget != null) {
+        var authorization = singleVideoBudget.forProject(project(cycle.getVideoProjectId()));
+        if (authorization != null) {
+          snapshot.put("singleVideoIncrementalAuthorization", authorization);
+          snapshot.put(
+              "singleVideoAuthorizationScope",
+              com.marketinghub.businessprocesschain.learningcycle.v1.service
+                  .LearningCycleSingleVideoBudget.SCOPE);
+          snapshot.put(
+              "singleVideoAuthorizationGuidance",
+              "Teto integral de uma produção nova, incluindo todos os agentes, revisões, mídia produzida, taxas e tentativas. Não aprova histórico nem renova saldo por ciclo do Estúdio. Este recibo não comprova saldo: concilie custos e reservas de toda a produção antes de aprovar qualquer gasto.");
+        }
+      }
       snapshot.put("incrementalLedger", studioCostLedgerService.cycleLedger(cycle.getId()));
       snapshot.putAll(providerPreflightService.financialContext(cycle.getId()));
       return objectMapper.writeValueAsString(snapshot);

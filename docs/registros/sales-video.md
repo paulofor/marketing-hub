@@ -524,3 +524,17 @@ reincidência de quadros fora do instante ou miniaturizados apesar da resoluçã
   avaliação real não distinguir controles bons/ruins, preservar provas e bloquear aceite
   até corrigir o avaliador; nunca voltar silenciosamente a aprovar áudio não ouvido.
 - Matriz e limites: [homologação da escuta v1](../homologacao/psique-escuta-audiovisual-v1.md).
+
+
+## 05/11/2026 — autorização incremental integral, sem incorporar histórico
+
+Vega #4/#21/#114, projeto #14/perfil #69: o teto novo de USD 15 não cabe nos
+contratos de preparação cumulativa ou de duas peças. A correção local registra
+um recibo próprio no ledger de decisões existente, centraliza a tela financeira
+e entrega a referência real ao snapshot de Plutus. Não abre tarefa ou produção.
+Replay não duplica teto; mudanças de produto, ciclo, versão, perfil e tenant
+impedem herança. Testes cobrem outra identidade e os contratos antes válidos.
+O projeto também preserva instruções editoriais em notas, separadas dos oito
+blocos de narração. Nenhum vídeo ou parecer audiovisual entregue nesta etapa;
+publicação do código depende da confirmação específica da solicitação.
+Matriz, evidências e limites: [autorização de um vídeo](../homologacao/vega-single-video-budget-2026-11-05.md).

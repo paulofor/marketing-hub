@@ -57,6 +57,7 @@ public class LearningCycleService {
   @Autowired private LearningCycleWorkResolver workResolver;
 
   @Autowired private LearningCycleVideoBudget videoBudget;
+  @Autowired private LearningCycleSingleVideoBudget singleVideoBudget;
   @Autowired private LearningCycleFinancialReview financialReview;
   @Autowired private LearningCyclePreparationBudget preparationBudget;
   @Autowired private LearningCycleCostWorksheet costWorksheet;
@@ -435,6 +436,56 @@ public class LearningCycleService {
         cycle, request, before.knownPreparationUsd(), before.unreportedTasks(), now);
     cycles.saveAndFlush(cycle);
     return financialReview.read(cycle, product, now);
+  }
+
+  /** Consulta o teto integral de uma produção sem incorporar custos ou autorizações antigas. */
+  @Transactional(readOnly = true)
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .service
+          .singleVideoBudget
+          .SingleVideoBudgetResponse
+      singleVideoBudget(Long productId, Long cycleId, Long chainId) {
+    var cycle = requiredCycle(productId, cycleId);
+    require(
+        Objects.equals(chainId, cycle.getChainDefinitionId()),
+        "A cadeia não pertence a este ciclo.");
+    requiredExperiment(productId, cycle.getExperimentId());
+    return singleVideoBudget.read(cycle);
+  }
+
+  /** Registra autorização incremental sem iniciar tarefas, reservas ou produção audiovisual. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .service
+          .singleVideoBudget
+          .SingleVideoBudgetResponse
+      authorizeSingleVideoBudget(
+          Long productId,
+          Long cycleId,
+          com.marketinghub
+                  .businessprocesschain
+                  .learningcycle
+                  .v1
+                  .service
+                  .singleVideoBudget
+                  .SingleVideoBudgetRequest
+              request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    requiredExperiment(productId, cycle.getExperimentId());
+    singleVideoBudget.authorize(
+        cycle, request, Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+    cycles.saveAndFlush(cycle);
+    return singleVideoBudget.read(cycle);
   }
 
   /** Consulta o financeiro da ocorrência exata, recusando contexto divergente na URL. */

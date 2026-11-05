@@ -127,6 +127,50 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** O snapshot de Plutus preserva o recibo integral sem convertê-lo em saldo ou parecer. */
+  @Test
+  void exposesSingleVideoReceiptWithoutAuthorizingPaidWork() throws Exception {
+    var budget =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleSingleVideoBudget.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "singleVideoBudget", budget);
+    var project = project();
+    when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+    when(budget.forProject(project))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .singleVideoBudget
+                .SingleVideoBudgetResponse
+                .Authorization(
+                77L,
+                "internal://learning-cycles/21/single-video-budget/test",
+                project.getId(),
+                project.getSalesVideoProfileId(),
+                new BigDecimal("15"),
+                "Operador sintético",
+                "Autorização nova sem histórico",
+                Instant.parse("2026-11-05T12:00:00Z"),
+                true));
+    var result = service.createProviderPreflight(readinessRequest(project.getId()));
+    var snapshot = new ObjectMapper().readTree(result.financialSnapshot());
+    assertThat(snapshot.path("singleVideoAuthorizationScope").asText())
+        .isEqualTo("SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1");
+    assertThat(snapshot.at("/singleVideoIncrementalAuthorization/totalLimitUsd").decimalValue())
+        .isEqualByComparingTo("15");
+    assertThat(snapshot.path("singleVideoAuthorizationGuidance").asText())
+        .contains("não comprova saldo", "todos os agentes", "tentativas");
+    assertThat(result.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT_ONLY");
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(providerPreflightService, never()).reserve(any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Recusa Capella e outro produto antes de persistência, preflight e qualquer parecer pago. */
   @ParameterizedTest
   @ValueSource(longs = {67L, 9202L})

@@ -512,33 +512,27 @@ const buildSteps = [
 
 const longFormScriptBlocks = [
   {
-    time: "0:00-0:15",
     title: "Gancho",
     objective: "Quebrar rolagem com dor clara e promessa especifica.",
   },
   {
-    time: "0:15-0:45",
     title: "Dor e custo oculto",
     objective: "Mostrar o prejuizo pratico de continuar sem resolver.",
   },
   {
-    time: "0:45-1:20",
     title: "Mecanismo",
     objective:
       "Apresentar a nova forma de obter o resultado com menos esforco.",
   },
   {
-    time: "1:20-2:05",
     title: "Demonstracao",
     objective: "Exibir processo, exemplo, tela, antes/depois ou prova visual.",
   },
   {
-    time: "2:05-2:35",
     title: "Oferta",
     objective: "Conectar promessa, entregaveis, bonus e reducao de risco.",
   },
   {
-    time: "2:35-3:00",
     title: "CTA",
     objective: "Dar uma acao simples e direta para o proximo passo do funil.",
   },
@@ -546,27 +540,21 @@ const longFormScriptBlocks = [
 
 const heroScriptBlocks = [
   {
-    time: "0:00-0:08",
-    title: "Dor do espelho",
-    objective:
-      "Gerar identificacao imediata com a sensacao de faltar presenca.",
+    title: "Dor reconhecível",
+    objective: "Demonstrar a necessidade real descrita no briefing do produto.",
   },
   {
-    time: "0:08-0:16",
-    title: "Resultado possivel",
+    title: "Resultado possível",
     objective:
-      "Mostrar elegancia acessivel, sem luxo e sem transformacao exagerada.",
+      "Mostrar uma melhoria plausível e útil, fiel ao que o produto entrega.",
   },
   {
-    time: "0:16-0:26",
-    title: "Mecanismo MUSA",
-    objective:
-      "Tangibilizar ruido visual, peca-sinal, cor, acabamento e postura.",
+    title: "Mecanismo",
+    objective: "Exibir a ação e a demonstração real do mecanismo aprovado.",
   },
   {
-    time: "0:26-0:34",
-    title: "Diagnostico",
-    objective: "Levar ao clique no plano MUSA de 7 dias.",
+    title: "Próximo passo",
+    objective: "Conectar a chamada para ação ao funil do mesmo produto.",
   },
 ];
 
@@ -606,6 +594,17 @@ const musaV7ScenePrompts = [
 ];
 const MAX_CINEMATIC_SCENES = 48;
 
+export function buildStudioTimeline(targetSeconds: number) {
+  if (!Number.isFinite(targetSeconds) || targetSeconds < 1) return [];
+  const blocks = targetSeconds <= 60 ? heroScriptBlocks : longFormScriptBlocks;
+  const format = (seconds: number) =>
+    `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  return blocks.map((block, index) => ({
+    ...block,
+    time: `${format(Math.floor((index * targetSeconds) / blocks.length))}-${format(Math.floor(((index + 1) * targetSeconds) / blocks.length))}`,
+  }));
+}
+
 export function resolveStudioSceneRole(sceneIndex: number, sceneCount: number) {
   if (sceneIndex === 0) return "DOR";
   if (sceneIndex === sceneCount - 1) return "CTA";
@@ -622,7 +621,7 @@ export function buildStudioSceneMetadata(
   sceneCount = 4,
 ) {
   return JSON.stringify({
-    commercial_goal: "PDE_MUSA_HERO_VIDEO_SCENE",
+    commercial_goal: "PDE_COMMERCIAL_VIDEO_SCENE",
     generation_strategy: "SCENE_BY_SCENE_MONTAGE",
     studio_project_id: project.id,
     campaign_key: project.campaignKey,
@@ -1278,10 +1277,7 @@ export default function AudioVideoStudioPage() {
     [briefing],
   );
 
-  const selectedTimeline =
-    targetDurationSeconds && targetDurationSeconds <= 60
-      ? heroScriptBlocks
-      : longFormScriptBlocks;
+  const selectedTimeline = buildStudioTimeline(targetDurationSeconds ?? 0);
   const selectedScenePrompts = briefing.scenePlan
     .split("\n")
     .slice(0, MAX_CINEMATIC_SCENES)

@@ -5,6 +5,10 @@ on:
       - "video-management-service/**"
       - "shared/video-capabilities/**"
       - ".github/workflows/video-management-ci.yml"
+      - "scripts/test-shared-video-build-contexts.py"
+      - "backend/ads-service/Dockerfile*"
+      - "backend/ads-service/docker-compose*.yml"
+      - "infra/testing/facebook-resumption/Dockerfile.stop-reason-test"
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +34,8 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends ffmpeg
           fi
+      - name: Validar contexto de build das fixtures compartilhadas
+        run: python3 scripts/test-shared-video-build-contexts.py
       - name: Executar regressões com doubles e mídia sintética
         run: mvn -B -f video-management-service/pom.xml test
       - name: Preservar resultados dos testes

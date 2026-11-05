@@ -1,9 +1,10 @@
 FROM maven:3.9.8-eclipse-temurin-21
 
-WORKDIR /workspace
+WORKDIR /workspace/backend/ads-service
 
-COPY pom.xml ./
-COPY src ./src
+COPY backend/ads-service/pom.xml ./
+COPY backend/ads-service/src ./src
+COPY shared/video-capabilities /workspace/shared/video-capabilities
 
 RUN mvn -q -DskipTests test-compile
 

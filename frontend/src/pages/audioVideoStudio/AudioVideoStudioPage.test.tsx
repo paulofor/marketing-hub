@@ -13,6 +13,7 @@ import axios from "axios";
 import AudioVideoStudioPage, {
   actTwoConfigurationIssue,
   buildStudioSceneMetadata,
+  buildStudioTimeline,
   productUgcConfigurationIssue,
   readStudioSceneOrder,
   findProviderFromPlan,
@@ -72,6 +73,27 @@ const studioCatalog = {
 };
 
 describe("selecao de clipes por cena", () => {
+  it("mantém roteiro e cena neutros com a duração do próprio produto", () => {
+    expect(buildStudioTimeline(32).slice(-1)[0]?.time).toBe("0:24-0:32");
+    expect(buildStudioTimeline(15).slice(-1)[0]?.time).toMatch(/0:15$/);
+    expect(buildStudioTimeline(0)).toEqual([]);
+    expect(JSON.stringify(buildStudioTimeline(32))).not.toContain("MUSA");
+    const provider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+      (option) => option.providerName === "RUNWAY",
+    )!;
+    const metadata = buildStudioSceneMetadata(
+      {
+        id: 510,
+        campaignKey: "outro-contexto",
+        ctaText: "Ver demonstração",
+      } as any,
+      provider,
+      "Exibir o mecanismo",
+      0,
+    );
+    expect(metadata).not.toContain("MUSA");
+    expect(JSON.parse(metadata).studio_project_id).toBe(510);
+  });
   it("mantem somente uma variacao aprovada por funcao narrativa", () => {
     expect(selectSingleJobForScene([101, 201], 102, [101, 102])).toEqual([
       201, 102,

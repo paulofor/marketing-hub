@@ -6,5 +6,6 @@ COPY backend/ads-service/pom.xml ./pom.xml
 RUN mvn -q -DskipTests dependency:go-offline
 
 COPY backend/ads-service ./
+COPY shared/video-capabilities /workspace/shared/video-capabilities
 
 CMD ["mvn", "-q", "-Dtest=FacebookCampaignStopReasonMysqlTest", "test"]

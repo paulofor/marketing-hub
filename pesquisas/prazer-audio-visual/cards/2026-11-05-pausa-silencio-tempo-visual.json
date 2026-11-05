@@ -1,0 +1,18 @@
+{
+  "cardKey": "pausa-sonora-compressao-tempo-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Transição para silêncio altera a duração visual percebida",
+  "finding": "Em quatro experimentos psicofísicos, uma interrupção do som antes de um estímulo fez sua duração visual parecer mais curta, sem perda detectável da precisão de discriminação temporal.",
+  "mechanism": "A mudança categórica de som para silêncio pode reajustar a referência temporal usada para interpretar o estímulo visual subsequente; mecanismo cognitivo proposto, não prova de recompensa.",
+  "commercialApplication": "Comparar cenas audiovisuais idênticas precedidas por silêncio breve versus fundo sonoro contínuo e medir duração percebida, clareza, conforto e memória.",
+  "evidenceStrength": "Moderada para julgamento psicofísico de duração em quatro experimentos; baixa para prazer, vídeo comercial e vendas.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Uma transição sonora para silêncio antes da mesma cena deslocará a duração subjetiva, sem alterar a precisão, mas não necessariamente melhorará compreensão ou preferência.",
+  "risks": "Não utilizar a distorção perceptiva para induzir pessoas ao erro nem criar cortes abruptos desconfortáveis.",
+  "limits": "Nenhum experimento pré-registrado; amostragem e magnitudes completas não confirmadas no resumo; ausência de dados sobre conversão ou prazer.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-05-pausa-silencio-tempo-visual-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Furusawa e Kawabata: silêncio e duração visual",
+  "sourceSha256": "4a58aa91118b0fc7211d9cc3c8a8b9ae32f5116bfa33db8b7254c7eb811a70dc"
+}

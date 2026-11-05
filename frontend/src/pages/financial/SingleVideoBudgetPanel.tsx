@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { useSingleVideoBudget } from "../../api/financial/useSingleVideoBudget";
+import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import { useVideoProjects } from "../../api/salesVideo/useVideoProjects";
 
 /** Centraliza a decisão do vídeo único na demonstração financeira, mantendo produção separada. */
@@ -25,7 +26,7 @@ export default function SingleVideoBudgetPanel({
   const [operator, setOperator] = useState("");
   const [source, setSource] = useState("");
   const [confirmed, setConfirmed] = useState(false);
-  const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
+  const [requestKey, setRequestKey] = useState(() => createCycleRequestKey());
   const data = query.data;
   const candidates = (projects.data ?? []).filter(
     (p) =>
@@ -41,7 +42,7 @@ export default function SingleVideoBudgetPanel({
   const error = authorize.error ?? query.error ?? projects.error;
   const edit = () => {
     setConfirmed(false);
-    setRequestKey(crypto.randomUUID());
+    setRequestKey(createCycleRequestKey());
     authorize.reset();
   };
   return (

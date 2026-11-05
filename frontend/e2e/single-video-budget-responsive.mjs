@@ -52,6 +52,15 @@ try {
   ]) {
     for (const id of [4, 7]) {
       const context = await browser.newContext(device);
+      if (id === 4) {
+        // Reproduz a ausência de randomUUID no administrador servido por HTTP.
+        await context.addInitScript(() => {
+          Object.defineProperty(globalThis.crypto, "randomUUID", {
+            value: undefined,
+            configurable: true,
+          });
+        });
+      }
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));

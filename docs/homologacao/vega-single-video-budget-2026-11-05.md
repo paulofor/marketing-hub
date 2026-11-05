@@ -119,3 +119,13 @@ mexer em produção. A aplicação local iniciou com a dependência corrigida, e
 roteiro existente de decisão e passagem entre processos passou para dois
 produtos sintéticos, incluindo rollback, replay, concorrência e pausa. O banco
 era MySQL 5.7 real; os executores externos permaneceram simulados e sem gasto.
+
+A inspeção do navegador no endereço HTTP operacional comprovou
+`crypto.randomUUID` ausente, embora `getRandomValues` estivesse disponível.
+O novo formulário inicialmente dependia da função exclusiva de contexto seguro.
+O cenário local reproduziu a falha antes da correção; o painel agora reutiliza
+`createCycleRequestKey`, já adotado pelos ciclos, sem criar outro gerador.
+A regressão de navegador cobre ausência da função e caminho seguro anterior,
+para duas identidades em desktop/iPhone/Pixel; os seis casos e os cinco testes
+do painel passaram. Esse achado reforça que localhost não representa sozinho
+as capacidades do endereço HTTP de operação.

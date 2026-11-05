@@ -372,6 +372,11 @@ public class SalesVideoService {
     return jobService.retry(jobId, request);
   }
 
+  /** Reutiliza tasks e arquivos da tentativa Runway original, sem criar job pago novo. */
+  public SalesVideoJobDto recoverRunway(Long jobId) {
+    return jobService.recoverRunway(jobId);
+  }
+
   /** Solicita pós-produção de um vídeo bruto já renderizado. */
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {

@@ -11718,3 +11718,28 @@ No mesmo fechamento, o monitor financeiro liquidava qualquer estado terminal do 
 A prevenção inclui a política central de reprocessamento: clonar metadata de render Runway não representa novo preflight. RENDER/RETRY genérico é bloqueado no backend e clones legados são recusados no executor antes do planejador; acabamento e caminhos antes válidos têm regressão própria. MCP não encontrou uso persistido desse atalho para render Runway, sem imputação de gasto histórico.
 
 O gate de render exige o parecer aprovado no ciclo persistido; o marcador de aprovação recebido do cliente não é autoridade. A regressão compara o mesmo contexto com e sem decisão registrada, antes de qualquer geração.
+
+### Continuação do LOOP-VIDEO-CAPACIDADE-DUPLICADA — 05/11/2026
+
+A revisão do botão real confirmou que `buildStudioSceneMetadata` não enviava os campos
+financeiros exigidos pelo gate. Acrescentar IDs no cliente manteria a divergência de
+autoridade. O comando agora resolve ciclo e job no servidor, reutiliza o job e recusa
+contextos cruzados. A preparação integral ganhou formulário e reavaliação do mesmo ciclo,
+sem resetar teto nem chamar parecer pago antes da prontidão.
+
+A inspeção também confirmou que os clipes só sobreviviam em memória até a montagem.
+O executor passa a armazená-los imediatamente, com recibos de task/asset/URL/hash, e a
+restaurar o plano auditado. A regressão força falha de FFmpeg e reinicia o adapter: recupera
+os mesmos clipes, mantendo a contagem de POSTs e de consultas do provider. Envio sem ID
+confirmado continua bloqueado. Testes sintéticos não comprovam qualidade premium externa.
+O replay também podia reenviar o aceite e substituir um custo liquidado por estimativa.
+O ledger compartilhado preserva o primeiro registro da task e recusa contexto/valor
+divergente; clipes preservados não repetem os eventos financeiros. A regressão cobre
+dois jobs, custo conciliado, timestamp original e recusa de reutilização em outro job.
+
+Permanece uma lacuna distinta: o recibo e a reserva integral não impõem teto compartilhado
+às chamadas Codex dos agentes. O wrapper operacional apenas serializa OAuth; os runners
+usam timeout e contabilização posterior. A contenção impede a tarefa paga de Plutus e
+renders diretos com esse recibo, expondo `SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED`.
+Não declarar esse controle integral implementado nem essa pendência resolvida.
+Matriz e fontes em `docs/homologacao/vega-retomada-video-2026-11-05.md`.

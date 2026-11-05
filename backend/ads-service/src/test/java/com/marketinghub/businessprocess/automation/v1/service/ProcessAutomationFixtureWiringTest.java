@@ -27,7 +27,9 @@ class ProcessAutomationFixtureWiringTest {
             com.marketinghub.businessprocesschain.learningcycle.v1.service
                 .LearningCycleFinancialReview.class,
             com.marketinghub.businessprocesschain.learningcycle.v1.service
-                .LearningCyclePreparationBudget.class)) {
+                .LearningCyclePreparationBudget.class,
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleSingleVideoBudget.class)) {
       var required = new HashSet<Class<?>>();
       Arrays.stream(component.getConstructors())
           .flatMap(constructor -> Arrays.stream(constructor.getParameterTypes()))

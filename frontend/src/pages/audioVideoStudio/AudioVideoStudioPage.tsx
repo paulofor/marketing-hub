@@ -45,6 +45,8 @@ import {
   useCreateVideoProductionCycle,
   useCreateVideoProviderPreflight,
   useVideoProductionCycles,
+  useRenderVideoProject,
+  useRecoverVideoProductionCycle,
   videoProductionError,
 } from "../../api/salesVideo/useVideoProductionCycles";
 import {
@@ -65,6 +67,7 @@ import type {
 } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import { ClipPlanPreview } from "./ClipPlanPreview";
+import { ProductionCostPreparation } from "./ProductionCostPreparation";
 import { useSalesVideoProviderModels } from "../../api/salesVideo/useSalesVideoProviderModels";
 import { videoCycleBudget } from "./videoCycleBudget";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
@@ -1184,6 +1187,8 @@ export default function AudioVideoStudioPage() {
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const productionCycles = useVideoProductionCycles(editableProjectId);
+  const canonicalRender = useRenderVideoProject(editableProjectId);
+  const recoverCycle = useRecoverVideoProductionCycle(editableProjectId);
   const apolloLearning = useApolloLearningExperiments();
   const apolloSkills = useApolloSkillCandidates();
   const storyboardQuery = useVideoStoryboard(editableProjectId);
@@ -1555,6 +1560,28 @@ export default function AudioVideoStudioPage() {
       setSaveFeedback(
         "Vincule um perfil de video ao projeto antes de gerar cenas.",
       );
+      return;
+    }
+    if (selectedProvider.providerName.startsWith("RUNWAY")) {
+      if (briefing.scenePlan.trim() !== persistedScenePlan.trim()) {
+        setSaveFeedback(
+          "Salve o storyboard antes de continuar a produção no ciclo.",
+        );
+        return;
+      }
+      try {
+        const cycle = await canonicalRender.mutateAsync();
+        setSaveFeedback(
+          `Ciclo #${cycle.id}: ${cycle.status}${cycle.salesVideoJobId ? ` · job #${cycle.salesVideoJobId}` : ""}. O backend coordena as tomadas e a montagem do storyboard completo.`,
+        );
+      } catch (error) {
+        setSaveFeedback(
+          videoProductionError(
+            error,
+            "Confira o preflight integral e o parecer de Plutus no mesmo projeto.",
+          ),
+        );
+      }
       return;
     }
     const previousSceneJobId =
@@ -3243,20 +3270,48 @@ export default function AudioVideoStudioPage() {
                             : " · Aguardando a primeira task do provider."}
                         </p>
                         {productionCycles.data[0].lastFailedJobId ? (
-                          <p role="alert">
-                            Apolo falhou no job #
-                            {productionCycles.data[0].lastFailedJobId}
-                            {productionCycles.data[0].lastApolloFailureCode
-                              ? ` (${productionCycles.data[0].lastApolloFailureCode})`
-                              : ""}
-                            :{" "}
-                            {productionCycles.data[0].lastApolloFailureDetail ||
-                              "O job terminou sem detalhar a causa."}{" "}
-                            {productionCycles.data[0].salesVideoJobId !==
-                            productionCycles.data[0].lastFailedJobId
-                              ? `Uma nova tentativa foi reconciliada no job #${productionCycles.data[0].salesVideoJobId}.`
-                              : "O ciclo requer uma nova tentativa pelo fluxo oficial."}
-                          </p>
+                          <>
+                            <p role="alert">
+                              Apolo falhou no job #
+                              {productionCycles.data[0].lastFailedJobId}
+                              {productionCycles.data[0].lastApolloFailureCode
+                                ? ` (${productionCycles.data[0].lastApolloFailureCode})`
+                                : ""}
+                              :{" "}
+                              {productionCycles.data[0]
+                                .lastApolloFailureDetail ||
+                                "O job terminou sem detalhar a causa."}{" "}
+                              {productionCycles.data[0].salesVideoJobId !==
+                              productionCycles.data[0].lastFailedJobId
+                                ? `Uma nova tentativa foi reconciliada no job #${productionCycles.data[0].salesVideoJobId}.`
+                                : "O ciclo requer uma nova tentativa pelo fluxo oficial."}
+                            </p>
+                            <button
+                              type="button"
+                              disabled={recoverCycle.isPending}
+                              onClick={async () => {
+                                try {
+                                  const cycle = await recoverCycle.mutateAsync(
+                                    productionCycles.data[0].id,
+                                  );
+                                  setSaveFeedback(
+                                    `Recuperação no mesmo ciclo #${cycle.id}, job #${cycle.salesVideoJobId}. Nenhuma nova geração foi solicitada.`,
+                                  );
+                                } catch (error) {
+                                  setSaveFeedback(
+                                    videoProductionError(
+                                      error,
+                                      "Não foi possível recuperar; concilie os IDs anteriores antes de repetir.",
+                                    ),
+                                  );
+                                }
+                              }}
+                            >
+                              {recoverCycle.isPending
+                                ? "Conferindo checkpoints…"
+                                : "Consultar tasks e recuperar montagem sem gerar"}
+                            </button>
+                          </>
                         ) : null}
                       </div>
                     ) : null}
@@ -3307,6 +3362,12 @@ export default function AudioVideoStudioPage() {
                 productionCostPlanJson={selectedProject?.productionCostPlanJson}
                 providerPlan={briefing.providerPlan}
               />
+              {selectedProject ? (
+                <ProductionCostPreparation
+                  project={selectedProject}
+                  cycle={productionCycles.data?.[0]}
+                />
+              ) : null}
               {providerModels.isError ? (
                 <p role="alert">
                   Catálogo indisponível. Nenhuma geração liberada.
@@ -3479,19 +3540,32 @@ export default function AudioVideoStudioPage() {
                             )}
                           </span>
                           <p>{prompt}</p>
-                          <button
-                            className="audio-video-studio-page__secondary-action"
-                            type="button"
-                            disabled={requestSceneRender.isPending}
-                            onClick={() => handleRequestSceneRender(index)}
-                          >
-                            <Wand2 size={16} aria-hidden="true" />
-                            {jobs.length
-                              ? "Gerar nova variacao"
-                              : index === 0
-                                ? "Gerar clipe"
-                                : "Gerar com quadro-ponte"}
-                          </button>
+                          {!selectedProvider.providerName.startsWith(
+                            "RUNWAY",
+                          ) || index === 0 ? (
+                            <button
+                              className="audio-video-studio-page__secondary-action"
+                              type="button"
+                              disabled={
+                                requestSceneRender.isPending ||
+                                canonicalRender.isPending
+                              }
+                              onClick={() => handleRequestSceneRender(index)}
+                            >
+                              <Wand2 size={16} aria-hidden="true" />
+                              {canonicalRender.isPending
+                                ? "Consultando ciclo…"
+                                : selectedProvider.providerName.startsWith(
+                                      "RUNWAY",
+                                    )
+                                  ? "Continuar storyboard no ciclo"
+                                  : jobs.length
+                                    ? "Gerar nova variacao"
+                                    : index === 0
+                                      ? "Gerar clipe"
+                                      : "Gerar com quadro-ponte"}
+                            </button>
+                          ) : null}
                           {jobs.map(({ job }) => (
                             <label key={job.id}>
                               <input

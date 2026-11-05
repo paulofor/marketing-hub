@@ -50,6 +50,66 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SalesVideoJobServiceTest {
 
   /**
+   * Recupera o mesmo job e preserva os checkpoints, sem clonar tentativa ou liberar resultado
+   * incerto.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"accepted", "uncertain", "foreign-tenant"})
+  void shouldRecoverOnlyConfirmedRunwayTasks(String scenario) {
+    var job =
+        SalesVideoJob.builder()
+            .id(23001L)
+            .tenantId("tenant-a")
+            .profile(SalesVideoProfile.builder().id(69L).build())
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("RUNWAY_ROUTER")
+            .jobType(SalesVideoJobType.RENDER)
+            .status(SalesVideoStatus.VIDEO_FAILED)
+            .metadataJson("{\"videoProductionCycleId\":51}")
+            .build();
+    given(jobRepository.findByIdForUpdate(23001L)).willReturn(Optional.of(job));
+    var plan = new com.marketinghub.salesvideo.SalesVideoJobEvent();
+    plan.setDetailsJson("{\"eventType\":\"APOLLO_PLAN_CHECKPOINT\",\"jobId\":23001}");
+    var started = new com.marketinghub.salesvideo.SalesVideoJobEvent();
+    started.setDetailsJson(
+        "{\"eventType\":\"PROVIDER_SUBMISSION_STARTED\",\"jobId\":23001,\"scene\":1}");
+    var accepted = new com.marketinghub.salesvideo.SalesVideoJobEvent();
+    accepted.setDetailsJson(
+        "{\"eventType\":\"PROVIDER_SUBMISSION_ACCEPTED\",\"jobId\":23001,\"scene\":1,\"providerTaskId\":\"task-original\"}");
+    if (!scenario.equals("foreign-tenant"))
+      given(eventRepository.findByJobIdOrderByCreatedAtAsc(23001L))
+          .willReturn(
+              scenario.equals("uncertain")
+                  ? List.of(plan, started)
+                  : List.of(plan, started, accepted));
+    TenantContextHolder.set(
+        new TenantContext(
+            scenario.equals("foreign-tenant") ? "other" : "tenant-a",
+            "teste@sandbox.local",
+            false));
+    try {
+      if (scenario.equals("accepted")) {
+        var result = service.recoverRunway(23001L);
+        assertThat(result.getId()).isEqualTo(23001L);
+        assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
+        assertThat(job.getMetadataJson()).isEqualTo("{\"videoProductionCycleId\":51}");
+        verify(jobRepository).save(job);
+        verify(jobRepository, never())
+            .save(
+                org.mockito.ArgumentMatchers.argThat(
+                    candidate -> !java.util.Objects.equals(candidate.getId(), 23001L)));
+      } else {
+        assertThatThrownBy(() -> service.recoverRunway(23001L))
+            .isInstanceOf(VideoModuleException.class);
+        verify(jobRepository, never()).save(any());
+      }
+    } finally {
+      TenantContextHolder.clear();
+    }
+  }
+
+  /**
    * Persiste callbacks extensos no limite SQL real, preservando outra identidade e o caminho curto.
    */
   @org.junit.jupiter.params.ParameterizedTest

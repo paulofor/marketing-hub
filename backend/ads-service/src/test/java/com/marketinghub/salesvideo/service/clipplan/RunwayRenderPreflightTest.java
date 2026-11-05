@@ -27,7 +27,8 @@ class RunwayRenderPreflightTest {
             cycles,
             mock(VideoProviderFinancialPreflightService.class),
             new ObjectMapper(),
-            mock(VideoProjectRepository.class));
+            mock(VideoProjectRepository.class),
+            mock(VideoProductionSpendingPolicy.class));
     var request = new RequestVideoRenderRequest();
     request.setProviderName("RUNWAY");
     request.setMetadataJson("{}");
@@ -62,7 +63,10 @@ class RunwayRenderPreflightTest {
     reservation.setId(91L);
     reservation.setFullProductionReservedUsd(new BigDecimal("8"));
     when(financial.requireActiveReservation(23L)).thenReturn(reservation);
-    var gate = new RunwayRenderPreflight(models, cycles, financial, new ObjectMapper(), projects);
+    var spendingPolicy = mock(VideoProductionSpendingPolicy.class);
+    var gate =
+        new RunwayRenderPreflight(
+            models, cycles, financial, new ObjectMapper(), projects, spendingPolicy);
     var request = new RequestVideoRenderRequest();
     request.setProviderName("RUNWAY");
     request.setMetadataJson(
@@ -80,5 +84,12 @@ class RunwayRenderPreflightTest {
     model.setLifecycleStatus("ACTIVE");
     cycle.setSalesVideoJobId(55L);
     assertThatThrownBy(() -> gate.validate(70L, 12L, request)).hasMessageContaining("conciliar");
+    cycle.setSalesVideoJobId(null);
+    when(spendingPolicy.paidExecutionBlocker(project))
+        .thenReturn("Teto integral sem controle compartilhado; produção pausada.");
+    clearInvocations(financial);
+    assertThatThrownBy(() -> gate.validate(70L, 12L, request))
+        .hasMessageContaining("controle compartilhado");
+    verifyNoInteractions(financial);
   }
 }

@@ -174,6 +174,18 @@ public class BackendVideoClient {
         }
     }
 
+    /** Lê os checkpoints do mesmo job pelo backend, sem consultar novamente um provider pago. */
+    public List<com.marketinghub.videomanagement.client.dto.VideoJobEvent> fetchJobEvents(Long jobId) {
+        try {
+            return authorized(webClient.get().uri("/internal/video/jobs/{jobId}/events", jobId))
+                    .retrieve().bodyToFlux(com.marketinghub.videomanagement.client.dto.VideoJobEvent.class)
+                    .collectList().block(properties.getJobs().getBackendCallTimeout());
+        } catch (Exception ex) {
+            log.error("Falha ao consultar checkpoints de vídeo; jobId={}", jobId, ex);
+            throw wrap("Checkpoints indisponíveis; nenhuma geração pode ser repetida", ex);
+        }
+    }
+
     /** Consulta o perfil do vídeo sem manter a execução esperando indefinidamente. */
     public SalesVideoProfile fetchProfile(Long profileId) {
         try {

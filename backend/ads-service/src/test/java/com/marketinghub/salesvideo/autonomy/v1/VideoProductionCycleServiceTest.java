@@ -127,6 +127,50 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** O snapshot de Plutus preserva o recibo integral sem convertê-lo em saldo ou parecer. */
+  @Test
+  void exposesSingleVideoReceiptWithoutAuthorizingPaidWork() throws Exception {
+    var budget =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleSingleVideoBudget.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "singleVideoBudget", budget);
+    var project = project();
+    when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+    when(budget.forProject(project))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .singleVideoBudget
+                .SingleVideoBudgetResponse
+                .Authorization(
+                77L,
+                "internal://learning-cycles/21/single-video-budget/test",
+                project.getId(),
+                project.getSalesVideoProfileId(),
+                new BigDecimal("15"),
+                "Operador sintético",
+                "Autorização nova sem histórico",
+                Instant.parse("2026-11-05T12:00:00Z"),
+                true));
+    var result = service.createProviderPreflight(readinessRequest(project.getId()));
+    var snapshot = new ObjectMapper().readTree(result.financialSnapshot());
+    assertThat(snapshot.path("singleVideoAuthorizationScope").asText())
+        .isEqualTo("SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1");
+    assertThat(snapshot.at("/singleVideoIncrementalAuthorization/totalLimitUsd").decimalValue())
+        .isEqualByComparingTo("15");
+    assertThat(snapshot.path("singleVideoAuthorizationGuidance").asText())
+        .contains("não comprova saldo", "todos os agentes", "tentativas");
+    assertThat(result.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT_ONLY");
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(providerPreflightService, never()).reserve(any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Recusa Capella e outro produto antes de persistência, preflight e qualquer parecer pago. */
   @ParameterizedTest
   @ValueSource(longs = {67L, 9202L})
@@ -972,6 +1016,148 @@ class VideoProductionCycleServiceTest {
     assertThat(expired.getFinancialDecision()).isEqualTo("REJECTED");
     assertThat(expired.getCreditAction()).isEqualTo("NO_PURCHASE");
     assertThat(active.getStatus()).isEqualTo("PENDING_FINANCIAL_REVIEW");
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Reutiliza o job governado e rejeita identidades cruzadas antes de qualquer geração. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "valid",
+        "other-product",
+        "other-project",
+        "other-experiment",
+        "other-tenant",
+        "no-approval",
+        "other-profile"
+      })
+  void studioCommandPreservesCanonicalContext(String scenario) {
+    var project = project();
+    project.setTenantId("studio-test");
+    var cycle = cycle();
+    cycle.setExperimentId(project.getExperimentId());
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    var profile = new com.marketinghub.salesvideo.SalesVideoProfile();
+    profile.setId(project.getSalesVideoProfileId());
+    var job = new SalesVideoJob();
+    job.setId(23001L);
+    job.setProfile(profile);
+    if (scenario.equals("other-product")) cycle.setProductId(999L);
+    if (scenario.equals("other-project")) cycle.setVideoProjectId(999L);
+    if (scenario.equals("other-experiment")) cycle.setExperimentId(999L);
+    if (scenario.equals("other-tenant")) project.setTenantId("other-tenant");
+    if (scenario.equals("no-approval")) cycle.setFinancialDecision(null);
+    else cycle.setSalesVideoJobId(job.getId());
+    if (scenario.equals("other-profile")) profile.setId(999L);
+    when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+    lenient()
+        .when(repository.findByVideoProjectIdOrderByCreatedAtDesc(project.getId()))
+        .thenReturn(java.util.List.of(cycle));
+    lenient().when(repository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+    lenient().when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+    com.marketinghub.salesvideo.tenant.TenantContextHolder.set(
+        new com.marketinghub.salesvideo.tenant.TenantContext(
+            "studio-test", "teste@sandbox.local", false));
+    try {
+      if (scenario.equals("valid")) {
+        assertThat(service.renderProject(project.getId()).salesVideoJobId()).isEqualTo(job.getId());
+        assertThat(service.renderProject(project.getId()).salesVideoJobId()).isEqualTo(job.getId());
+      } else
+        assertThatThrownBy(() -> service.renderProject(project.getId()))
+            .isInstanceOf(ResponseStatusException.class);
+      verify(salesVideoService, never()).requestRender(any(), any());
+      verify(providerPreflightService, never()).reserve(any());
+    } finally {
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
+    }
+  }
+
+  /** Completa o bootstrap pela API antes do parecer sem trocar ciclo ou renovar o teto. */
+  @Test
+  void preparesCostsAndReassessesSameCycle() {
+    var project = project();
+    project.setTenantId("studio-test");
+    project.setProviderPlan("RUNWAY");
+    var cycle = cycle();
+    cycle.setExperimentId(project.getExperimentId());
+    cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+    when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+    when(repository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+    var preflight = new VideoProviderPreflight();
+    preflight.setStatus("READY");
+    when(providerPreflightService.reassessFullCosts(cycle)).thenReturn(preflight);
+    var task = org.mockito.Mockito.mock(AgentTaskResponse.class);
+    when(task.id()).thenReturn(900L);
+    when(taskService.createGateByAgent(any(), any())).thenReturn(task);
+    var costs =
+        new java.util.LinkedHashMap<
+            String, com.marketinghub.videocontract.v1.ProductionCostPlan.Item>();
+    com.marketinghub.videocontract.v1.ProductionCostPlan.REQUIRED.forEach(
+        key ->
+            costs.put(
+                key,
+                new com.marketinghub.videocontract.v1.ProductionCostPlan.Item(
+                    new BigDecimal("0.50"), "Fonte sintética local")));
+    var plan =
+        new com.marketinghub.videocontract.v1.ProductionCostPlan(
+            cycle.getId(),
+            project.getProductId(),
+            project.getExperimentId(),
+            com.marketinghub.videocontract.v1.VideoCapabilities.catalog().revision(),
+            "RUNWAY",
+            15,
+            Instant.now().plusSeconds(3600).toString(),
+            costs,
+            java.util.List.of());
+    com.marketinghub.salesvideo.tenant.TenantContextHolder.set(
+        new com.marketinghub.salesvideo.tenant.TenantContext(
+            "studio-test", "teste@sandbox.local", false));
+    try {
+      var result = service.prepareCosts(project.getId(), cycle.getId(), plan);
+      assertThat(result.status()).isEqualTo("PENDING_FINANCIAL_REVIEW");
+      assertThat(result.id()).isEqualTo(cycle.getId());
+      assertThat(result.budgetLimitUsd()).isEqualByComparingTo("12.50");
+      assertThat(project.getProductionCostPlanJson()).contains("Fonte sintética local");
+      var ordered =
+          org.mockito.Mockito.inOrder(projectRepository, providerPreflightService, taskService);
+      ordered.verify(projectRepository).saveAndFlush(project);
+      ordered.verify(providerPreflightService).reassessFullCosts(cycle);
+      ordered.verify(providerPreflightService).reserve(cycle);
+      ordered.verify(taskService).createGateByAgent(any(), any());
+      assertThatThrownBy(() -> service.prepareCosts(project.getId(), cycle.getId(), plan))
+          .hasMessageContaining("antes da revisão");
+      verify(salesVideoService, never()).requestRender(any(), any());
+    } finally {
+      com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
+    }
+  }
+
+  /** Recibo não homologa controle de consumo: bloqueia antes de reservar ou pagar Plutus. */
+  @ParameterizedTest
+  @ValueSource(longs = {14L, 81L})
+  void singleVideoWithoutSharedSpendingControlCannotReachPaidAgents(Long projectId) {
+    var budget =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleSingleVideoBudget.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "singleVideoBudget", budget);
+    var project = project();
+    project.setId(projectId);
+    when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+    var ready = new VideoProviderPreflight();
+    ready.setStatus("READY");
+    when(providerPreflightService.open(any(), any(), any())).thenReturn(ready);
+    when(budget.paidExecutionBlocker(project))
+        .thenReturn(
+            "Recibo integral: controle compartilhado ainda não comprovado; não há nova aprovação de teto pendente.");
+    var result = service.create(readinessRequest(projectId));
+    assertThat(result.status()).isEqualTo("PROVIDER_PREFLIGHT_BLOCKED");
+    assertThat(result.budgetAlertCode()).isEqualTo("SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED");
+    assertThat(result.budgetAlertDetail()).contains("não há nova aprovação");
+    verify(providerPreflightService, never()).reserve(any());
+    verify(taskService, never()).createGateByAgent(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 

@@ -29,6 +29,49 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/{cycleId}/single-video-budget:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      - {name: X-Tenant-ID, in: header, required: true, schema: {type: string}}
+    get:
+      summary: Consultar recibos integrais de produções novas de um vídeo
+      parameters:
+        - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Recibos do contexto e tenant; startsProduction=false; custos não inferidos
+    post:
+      summary: Registrar teto incremental integral de um único vídeo existente
+      description: >-
+        Persiste AUTHORIZE_SINGLE_VIDEO, escopo SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1,
+        moeda USD e quantidade um. Inclui agentes, revisões, imagens, clipes, voz,
+        trilha, montagem, taxas e retries. Não autoriza histórico, mídia ou publicação,
+        não abre reserva ou tarefa e não substitui Plutus. Exige projeto/perfil da mesma
+        versão e tenant. Replay idempotente; outra chave não renova teto do mesmo projeto.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, chainDefinitionId, experimentId, productVersion, videoProjectId, profileId, totalLimitUsd, operatorName, authorizationSource, confirmed]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, minimum: 0}
+                chainDefinitionId: {type: integer, format: int64}
+                experimentId: {type: integer, format: int64}
+                productVersion: {type: string}
+                videoProjectId: {type: integer, format: int64}
+                profileId: {type: integer, format: int64}
+                totalLimitUsd: {type: number, minimum: 0.01, maximum: 999999.99, multipleOf: 0.01}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                authorizationSource: {type: string, minLength: 1, maxLength: 4000}
+                confirmed: {type: boolean, enum: [true]}
+      responses:
+        '200': {description: Recibo registrado ou replay; nenhuma produção iniciada}
+        '400': {description: Contrato ou tenant ausente}
+        '409': {description: Contexto, revisão, confirmação ou duplicação incompatível}
   /products/{productId}/{cycleId}/private-prototype:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}

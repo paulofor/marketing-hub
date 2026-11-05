@@ -752,6 +752,36 @@ class VideoProviderFinancialPreflightServiceTest {
         NOW);
   }
 
+  /** Reavalia a lacuna corrigida com o snapshot preservado, sem outra consulta externa. */
+  @Test
+  void shouldReassessFullCostsAndPreserveSamePreflight() {
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    when(accountRepository.findById(5L)).thenReturn(Optional.of(account));
+    when(preflightRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+    service.complete(cycle(), readyResult("25.0000", "80.0000"));
+    preflight.setStatus("READY_WITH_BLOCKER");
+    preflight.setFailureCode("PROVIDER_FULL_COST_PLAN_REQUIRED");
+    preflight.setFailureDetail("Previsão ausente");
+    assertThat(service.reassessFullCosts(cycle()).getStatus()).isEqualTo("READY");
+    assertThat(preflight.getFailureCode()).isNull();
+    verify(reservationRepository, never()).save(any());
+  }
+
+  /** Um dry run vencido volta à consulta no mesmo ciclo sem renovar teto nem criar reserva. */
+  @Test
+  void shouldRefreshExpiredFullCostPreflightWithoutAnotherCycle() {
+    preflight.setStatus("READY_WITH_BLOCKER");
+    preflight.setFailureCode("PROVIDER_FULL_COST_PLAN_REQUIRED");
+    preflight.setExpiresAt(NOW.minusSeconds(1));
+    Long id = preflight.getId();
+    service.reassessFullCosts(cycle());
+    assertThat(preflight.getStatus()).isEqualTo("PENDING");
+    assertThat(preflight.getId()).isEqualTo(id);
+    assertThat(preflight.getVideoProductionCycleId()).isEqualTo(11L);
+    verify(reservationRepository, never()).save(any());
+  }
+
   /** Monta um preflight Product UGC coerente com a tarifa oficial de quinze segundos em 1080p. */
   private VideoProviderFinancialPreflightData.Result productUgcResult() {
     String requests =

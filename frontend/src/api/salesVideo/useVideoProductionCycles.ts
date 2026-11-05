@@ -1,6 +1,44 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+/** Solicita ao servidor o job do ciclo canônico, sem fabricar autorização nos metadados. */
+export function useRenderVideoProject(projectId?: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      (
+        await axios.post<VideoProductionCycle>(
+          `/api/sales-videos/projects/${projectId}/autonomy/v1/render`,
+        )
+      ).data,
+    onSuccess: () => {
+      client.invalidateQueries({
+        queryKey: ["video-production-cycles", projectId],
+      });
+      client.invalidateQueries({ queryKey: ["sales-video-jobs"] });
+    },
+  });
+}
+
+/** Recupera o mesmo job; o servidor recusa envios sem task confirmada e não cria outra geração. */
+export function useRecoverVideoProductionCycle(projectId?: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (cycleId: number) =>
+      (
+        await axios.post<VideoProductionCycle>(
+          `/api/sales-videos/projects/${projectId}/autonomy/v1/cycles/${cycleId}/recover`,
+        )
+      ).data,
+    onSuccess: () => {
+      client.invalidateQueries({
+        queryKey: ["video-production-cycles", projectId],
+      });
+      client.invalidateQueries({ queryKey: ["sales-video-jobs"] });
+    },
+  });
+}
+
 /** Preserva a causa retornada pelo backend sem tratar uma recusa como produção iniciada. */
 export function videoProductionError(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {

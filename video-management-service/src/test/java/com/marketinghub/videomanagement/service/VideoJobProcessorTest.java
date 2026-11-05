@@ -132,6 +132,31 @@ class VideoJobProcessorTest {
         verify(backendClient, never()).failJob(any(), any());
     }
 
+    /** Usa o plano recuperado do backend sem invocar outra inferência ao retomar o mesmo job. */
+    @Test
+    void shouldNotCallPaidPlannerWhenBackendCheckpointWasRestored() throws Exception {
+        var mapper = new ObjectMapper().findAndRegisterModules();
+        var value = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.valueToTree(job());
+        value.put("providerName", "RUNWAY_ROUTER");
+        var job = mapper.treeToValue(value, SalesVideoJob.class);
+        var store = org.mockito.Mockito.mock(com.marketinghub.videomanagement.service.provider.RunwayRecoveryStore.class);
+        processor.setRecoveryStore(store);
+        when(store.load(job)).thenReturn(new com.marketinghub.videomanagement.service.provider.RunwayRecoveryStore.State(Map.of(), Map.of(), mapper.createObjectNode(), true));
+        when(store.restorePlan(job)).thenReturn(job);
+        when(apolloStoryboardPlanner.validateRestoredPlan(any(), any())).thenReturn(job);
+        when(backendClient.fetchProfile(2L)).thenReturn(profile());
+        when(providerRegistry.resolve(job)).thenReturn(Optional.of(videoProvider));
+        var file = new ProviderFile("fixture.mp4", MediaType.valueOf("video/mp4"), AssetType.VIDEO, ProviderAssetRole.VIDEO, new byte[]{1});
+        var artifacts = new ProviderArtifacts("task-original", file, null, null, Map.of());
+        when(videoProvider.render(any(), any(), any())).thenReturn(artifacts);
+        when(assetUploader.uploadAssets(job, artifacts)).thenReturn(new UploadedAssets(20L, null, null));
+        processor.process(job);
+        verify(apolloStoryboardPlanner).validateRestoredPlan(any(), any());
+        verify(apolloStoryboardPlanner, never()).planAndApprove(any(), any(), any());
+        verify(backendClient).completeJob(org.mockito.Mockito.eq(job.id()), any());
+        verify(backendClient, never()).failJob(any(), any());
+    }
+
     /** Mantém áudio já consumido no backend antes de registrar a reprovação temporal. */
     @Test
     void shouldPersistAudioBeforeReportingProviderFailure() {

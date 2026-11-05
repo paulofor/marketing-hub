@@ -377,6 +377,28 @@ public class VideoProviderFinancialPreflightService {
             .multiply(account.getCreditUnitUsd()));
   }
 
+  /** Reavalia custos no dry run preservado; vencimento solicita nova consulta no mesmo ciclo. */
+  @Transactional
+  public VideoProviderPreflight reassessFullCosts(VideoProductionCycle cycle) {
+    VideoProviderPreflight preflight = preflight(cycle.getId());
+    if (!"PROVIDER_FULL_COST_PLAN_REQUIRED".equals(preflight.getFailureCode()))
+      throw conflict(
+          "O bloqueio atual não é uma lacuna de previsão integral; preserve seu diagnóstico.");
+    if (preflight.getExpiresAt() == null || !preflight.getExpiresAt().isAfter(Instant.now(clock))) {
+      preflight.setStatus("PENDING");
+      preflight.setFailureCode(null);
+      preflight.setFailureDetail(null);
+      preflight.setUpdatedAt(Instant.now(clock));
+      return preflightRepository.save(preflight);
+    }
+    preflight.setStatus("READY");
+    preflight.setFailureCode(null);
+    preflight.setFailureDetail(null);
+    applyFullCostReadiness(cycle, preflight);
+    preflight.setUpdatedAt(Instant.now(clock));
+    return preflightRepository.save(preflight);
+  }
+
   /** Preserva a simulação quando faltar previsão integral, usando a conta já consultada. */
   private VideoProviderPreflight applyFullCostReadiness(
       VideoProductionCycle cycle, VideoProviderPreflight preflight, BigDecimal clipsMaximumUsd) {

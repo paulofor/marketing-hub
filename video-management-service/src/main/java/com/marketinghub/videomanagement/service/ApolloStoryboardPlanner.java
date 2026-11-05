@@ -98,9 +98,26 @@ public class ApolloStoryboardPlanner {
         enriched.put("expectedCostUsd", decision.expectedCostUsd());
         enriched.put("budgetGate", "APPROVED_DETERMINISTICALLY");
         progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING,
+                "Plano aprovado preservado para recuperação sem inferência",
+                objectMapper.createObjectNode().put("eventType", "APOLLO_PLAN_CHECKPOINT")
+                        .put("jobId", job.id()).set("metadata", enriched).toString());
+        progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING,
                 "Storyboard aprovado: %d créditos previstos dentro do teto de US$ %s"
                         .formatted(decision.expectedCredits(), decision.budgetLimitUsd()));
         return withMetadata(job, enriched.toString());
+    }
+
+    /** Revalida somente o plano recuperado de eventos do backend, sem inferência nem nova aprovação. */
+    public SalesVideoJob validateRestoredPlan(SalesVideoJob job, SalesVideoProfile profile) {
+        JsonNode metadata = readJson(job.metadataJson());
+        CustomerVideoCopyGuard.validate(metadata);
+        validatePrerequisites(profile, metadata);
+        if (!"APPROVED".equals(metadata.path("apollo_planner_status").asText())
+                || !metadata.has("apollo_ai_plan") || !metadata.has("apollo_planner_response"))
+            throw blocked("Plano recuperado não contém aprovação e resposta auditadas");
+        GateDecision decision = validate(metadata, metadata.path("apollo_ai_plan"), job.providerName());
+        if (!decision.approved()) throw blocked("Plano recuperado não passou na revalidação: " + decision.reason());
+        return job;
     }
 
     /** Aprova a receita pinada com poucos planos estáveis sem realizar outra chamada de IA. */

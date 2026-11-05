@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-kandinsky-s2v-open-avatars",
+  "collection": "video",
+  "title": "Avaliar Kandinsky S2V com pesos MIT para avatares em vídeos explicativos",
+  "finding": "Kandinsky Lab/Sber publicou em 03/11/2026 código e checkpoints MIT de speech-to-video de corpo inteiro, variantes Lite ~2B e Pro ~21B, com imagem+voz+prompt.",
+  "mechanism": "Geração condicional em blocos de 5 segundos sincroniza movimento, boca e gestos com fala existente; não produz a voz.",
+  "commercialApplication": "Marketing Hub: testar avatares para vídeos explicativos e publicidade autorizada em PT-BR, comparando com Synthesia e HeyGen.",
+  "evidenceStrength": "Alta para código e pesos MIT, modelo e requisitos documentados; limitada para qualidade/fidelidade em PT-BR e custos reais de hospedagem.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-05",
+  "experimentHypothesis": "Para uso recorrente em escala e avatares consentidos, um modelo de pesos abertos pode reduzir dependência e custo incremental de SaaS, dependendo da taxa de aprovação e GPU.",
+  "risks": "Requer direitos de imagem/voz e transparência de avatar sintético; custos de GPU elevados; conferir licenças dos subcomponentes; qualidade de boca, gestos e continuidade não comprovada em PT-BR.",
+  "limits": "Sem API comercial gerenciada confirmada; Lite destilado H100 ~8,7s de GPU por 1s de vídeo SD, pico ~57 GiB; saída 25 FPS; HD exige mais recursos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-05-kandinsky-s2v-open-avatars.md",
+  "sourceTitle": "Kandinsky S2V: avatar com pesos abertos",
+  "sourceSha256": "3ca6468a88a0458b9c29d0925f5119bc84ebbcd5a16d7d19702b3c25217e8932"
+}

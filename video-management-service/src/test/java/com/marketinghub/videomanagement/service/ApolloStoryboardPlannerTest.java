@@ -185,6 +185,8 @@ class ApolloStoryboardPlannerTest {
         assertThat(persisted.path("apollo_ai_plan")).isEqualTo(savedPlan);
         assertThat(persisted.path("apollo_planner_response")).isEqualTo(response);
         assertThat(persisted.path("expectedCostUsd").decimalValue()).isLessThanOrEqualTo(new java.math.BigDecimal("8.00"));
+        assertThat(planner.validateRestoredPlan(approved, profile)).isSameAs(approved);
+        org.mockito.Mockito.verify(aiClient, org.mockito.Mockito.times(1)).plan(eq(91001L), any(), any());
     }
 
     /** Aprova o storyboard quando Apolo aplica ao menos um cartão de cada coleção entregue. */

@@ -18,7 +18,6 @@ Mantenha o servidor local em execução e, em outro terminal, execute:
 
 ```bash
 bash infra/testing/runway-clip-plan/run-round.sh round1
-bash infra/testing/runway-clip-plan/run-round.sh round2
 ```
 
 Ao terminar, encerre o servidor local. As evidências ficam em
@@ -35,3 +34,36 @@ O JSON em `video-management-service/config/runway/` é uma **configuração cand
 Nenhum teste o provisiona. A aplicação depende de intervenção `ACTIVE`, confirmação
 dos modelos homologados e dry run real antes dos gates financeiros. Os valores de
 créditos são limites da configuração, não estimativas de consumo ou novas autorizações.
+
+## Continuação canônica e preparação de custos
+
+A regressão `continuation-browser.cjs` usa a página real do Estúdio e o controller/service
+reais de continuação. Repositórios, Plutus e providers são doubles explícitos da aplicação
+`StudioContinuationLocalApplication`; ela escuta apenas em loopback e não carrega
+credenciais de produção. A fixture cobre duas identidades em desktop, iPhone e Pixel,
+reuso do mesmo job, recusa de outro tenant e registro das sete parcelas de custo no mesmo
+ciclo. Os valores sintéticos não são evidência financeira de produto real.
+
+Compile a fixture e gere seu classpath a partir da raiz:
+
+```bash
+mvn -B -q -f backend/ads-service/pom.xml -DskipTests test-compile dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=target/studio-test-classpath
+java -cp "backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat backend/ads-service/target/studio-test-classpath)" com.marketinghub.salesvideo.service.clipplan.StudioContinuationLocalApplication
+```
+
+Em outro terminal, inicie o Vite; com os dois servidores ativos, execute o navegador:
+
+```bash
+npm --prefix frontend run dev -- --host 127.0.0.1 --port 4173 --strictPort
+```
+
+```bash
+node infra/testing/runway-clip-plan/continuation-browser.cjs artifacts/studio-continuation
+```
+
+Encerre ambos os servidores após o teste. Para a recuperação de clipes, execute
+`RunwayVideoProviderTest`, `VideoJobProcessorTest` e `ApolloStoryboardPlannerTest` no
+`video-management-service`: a regressão usa FFmpeg/ffprobe e HTTP local para simular
+falha na montagem, reinício, hash divergente e resultado incerto, contando os POSTs
+de geração. Nenhum teste chama a API real. A existência dessas fixtures não comprova
+controle integral de custos dos executores pagos nem qualidade premium da candidata.

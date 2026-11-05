@@ -26,18 +26,22 @@ public class RunwayRenderPreflight {
   private final ObjectMapper mapper;
   private final com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository projects;
 
+  private final VideoProductionSpendingPolicy spendingPolicy;
+
   /** Conecta cadastro homologado, ciclo real e reserva antes de criar qualquer job Runway. */
   public RunwayRenderPreflight(
       SalesVideoProviderModelRepository models,
       VideoProductionCycleRepository cycles,
       VideoProviderFinancialPreflightService financial,
       ObjectMapper mapper,
-      com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository projects) {
+      com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository projects,
+      VideoProductionSpendingPolicy spendingPolicy) {
     this.models = models;
     this.cycles = cycles;
     this.financial = financial;
     this.mapper = mapper;
     this.projects = projects;
+    this.spendingPolicy = spendingPolicy;
   }
 
   /**
@@ -70,6 +74,8 @@ public class RunwayRenderPreflight {
               .orElseThrow(() -> new IllegalArgumentException("Projeto do ciclo não encontrado"));
       if (!Objects.equals(project.getSalesVideoProfileId(), profileId))
         throw new IllegalArgumentException("Perfil de vídeo não pertence ao projeto do ciclo");
+      String budgetBlocker = spendingPolicy.paidExecutionBlocker(project);
+      if (budgetBlocker != null) throw new IllegalArgumentException(budgetBlocker);
       if (cycle.getSalesVideoJobId() != null)
         throw new IllegalArgumentException(
             "O ciclo já possui um job; conciliar resultado e reutilizar arquivo/callback antes de repetir");

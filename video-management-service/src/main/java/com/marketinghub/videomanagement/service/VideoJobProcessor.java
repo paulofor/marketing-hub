@@ -44,6 +44,13 @@ public class VideoJobProcessor {
     private final ApolloGovernedLearningReporter learningReporter;
     private final ApolloTechnicalVideoQualityGate technicalVideoQualityGate;
     private final ProductUgcPostProductionContractResolver productUgcContractResolver;
+    private com.marketinghub.videomanagement.service.provider.RunwayRecoveryStore recoveryStore;
+
+    /** Restaura o mesmo plano e os checkpoints antes de qualquer nova inferência. */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setRecoveryStore(com.marketinghub.videomanagement.service.provider.RunwayRecoveryStore recoveryStore) {
+        this.recoveryStore = recoveryStore;
+    }
 
     /** Configura dependências de execução, observabilidade e planejamento prévio. */
     public VideoJobProcessor(BackendVideoClient backendClient,
@@ -80,12 +87,18 @@ public class VideoJobProcessor {
                     "Job em execução pelo worker " + properties.getWorkerId(), null));
             SalesVideoProfile profile = loadProfile(job);
             job = productUgcContractResolver.resolve(job);
+            boolean recoveredPlan = false;
+            if (recoveryStore != null && job.providerName() != null && job.providerName().startsWith("RUNWAY")) {
+                recoveredPlan = recoveryStore.load(job).plan() != null;
+                job = recoveryStore.restorePlan(job);
+            }
             VideoProvider provider = providerRegistry.resolve(job)
                     .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
             provider.validateInput(job, profile);
             SalesVideoJob originalJob = job;
-            job = apolloStoryboardPlanner.planAndApprove(job, profile,
-                    new VideoJobProgressReporter(backendClient, job.id()));
+            job = recoveredPlan ? apolloStoryboardPlanner.validateRestoredPlan(job, profile)
+                    : apolloStoryboardPlanner.planAndApprove(job, profile,
+                            new VideoJobProgressReporter(backendClient, job.id()));
             learningReporter.observe(originalJob, job);
             ProviderArtifacts artifacts = provider.render(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));

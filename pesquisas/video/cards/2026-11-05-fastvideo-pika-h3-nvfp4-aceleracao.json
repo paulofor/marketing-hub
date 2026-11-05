@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-fastvideo-pika-flex-nvfp4",
+  "collection": "video",
+  "title": "Testar inferência Pika H3 Flex com FastVideo NVFP4 e custo por vídeo aprovado",
+  "finding": "Hao AI Lab publicou em 03/11/2026 pesos NVFP4/QAD e integração FastVideo para Pika H3 Flex, acelerando benchmarks de inferência em GB200.",
+  "mechanism": "Kernels fusionados, atenção FlashAttention-4, decoder VAE acelerado e quantização 4 bits reduzem custo computacional potencial, com restrições de hardware.",
+  "commercialApplication": "Marketing Hub: benchmark de prototipagem de vídeo multimodal em GPU alugada antes da criação final; medir tempo completo, fidelidade e custo em vez de confiar em ganho de DiT.",
+  "evidenceStrength": "Alta para publicação de código, pesos e benchmarks do laboratório; limitada para ganho transferível a GPUs comuns e qualidade independente.",
+  "publishedOn": "2026-11-03",
+  "validUntil": "2026-12-05",
+  "experimentHypothesis": "Quando disponível GPU Blackwell e licença adequada, inferência quantizada pode tornar a iteração audiovisual própria mais competitiva que API por segundo.",
+  "risks": "H3 Community License pode excluir territórios/comercialização; NVFP4 exige Blackwell; custo de aluguel GPU pode superar APIs; redução de precisão pode prejudicar áudio/visuais.",
+  "limits": "Ganho ~7x compara 4 GB200 contra baseline de 1; teste 5s/480p em 5,8s é GB200; FastVideo não garante API hospedada; 2K via regeneração e não nativo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-05-fastvideo-pika-h3-flex-nvfp4.md",
+  "sourceTitle": "FastVideo quantização Pika H3 Flex",
+  "sourceSha256": "f3cf2b3ce527f6fc4482019af72015b9e9ca66f9c3a3fe911a34e66ba7988548"
+}

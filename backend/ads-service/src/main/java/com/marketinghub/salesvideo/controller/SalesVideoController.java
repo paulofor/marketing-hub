@@ -477,6 +477,12 @@ public class SalesVideoController {
     return salesVideoService.getJob(jobId);
   }
 
+  /** Entrega checkpoints persistidos ao executor para reuso dos mesmos clipes e tarefas. */
+  @GetMapping("/internal/video/jobs/{jobId}/events")
+  public List<SalesVideoJobEventDto> getInternalVideoJobEvents(@PathVariable Long jobId) {
+    return salesVideoService.getJobEvents(jobId);
+  }
+
   /** Faz claim de job interno do módulo externo de vídeo. */
   @PostMapping("/internal/video/jobs/{jobId}/claim")
   public SalesVideoJobDto claimVideoJob(

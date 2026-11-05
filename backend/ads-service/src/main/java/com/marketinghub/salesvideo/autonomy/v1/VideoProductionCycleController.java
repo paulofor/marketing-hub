@@ -37,6 +37,35 @@ public class VideoProductionCycleController {
     return service.list(projectId);
   }
 
+  /**
+   * Encaminha o botão de render pelo ciclo validado no servidor, sem IDs financeiros do cliente.
+   */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Continua a produção canônica do projeto sem duplicar geração")
+  @PostMapping("/api/sales-videos/projects/{projectId}/autonomy/v1/render")
+  public VideoProductionCycleContracts.Response renderProject(@PathVariable Long projectId) {
+    return service.renderProject(projectId);
+  }
+
+  /** Recupera somente a montagem ou consulta das mesmas tasks, sem geração ou revisão paga nova. */
+  @PostMapping("/api/sales-videos/projects/{projectId}/autonomy/v1/cycles/{cycleId}/recover")
+  public VideoProductionCycleContracts.Response recoverProject(
+      @PathVariable Long projectId, @PathVariable Long cycleId) {
+    return service.recoverProject(projectId, cycleId);
+  }
+
+  /** Completa a previsão e reavalia o gate sem resetar teto, histórico ou identidade do ciclo. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Prepara custos integrais e reavalia o mesmo ciclo")
+  @PutMapping(
+      "/api/sales-videos/projects/{projectId}/autonomy/v1/cycles/{cycleId}/production-cost-plan")
+  public VideoProductionCycleContracts.Response prepareCosts(
+      @PathVariable Long projectId,
+      @PathVariable Long cycleId,
+      @RequestBody com.marketinghub.videocontract.v1.ProductionCostPlan request) {
+    return service.prepareCosts(projectId, cycleId, request);
+  }
+
   /** Entrega ao executor os ciclos que ainda exigem saldo, quota e dry run oficiais. */
   @GetMapping("/api/internal/sales-videos/autonomy/v1/provider-preflight/pending")
   public List<VideoProviderPreflightContracts.PendingResponse> pendingProviderPreflight() {

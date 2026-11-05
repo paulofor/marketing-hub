@@ -819,3 +819,54 @@ Lacuna determinística de previsão integral fica em `PROVIDER_PREFLIGHT_BLOCKED
 O comando genérico de reprocessamento não pode clonar renders Runway com o contrato financeiro anterior: RENDER/RETRY deve voltar à preparação governada, após conciliação e preflight/reserva vigentes. Elegibilidade da UI e comando aplicam a mesma regra. O executor recusa clones legados antes do planejador. Pós-produção, reuso de artefatos e replay de callback permanecem separados de nova geração paga.
 
 A entrada de render confere o parecer de Plutus no ciclo persistido (`financialDecision=APPROVED`); indicação de aprovação no payload do cliente não é autorização e não substitui essa consulta.
+
+## Autorização incremental integral de um vídeo — 05/11/2026
+
+Uma autorização explicitamente restrita a um único vídeo novo não pode ser
+convertida em teto cumulativo que incorpore o histórico, nem em autorização de
+duas peças. O valor é compartilhado por agentes/revisões, imagens, clipes, voz,
+trilha, montagem, taxas e tentativas. Não há renovação por cena, provedor ou retry.
+O registro preserva o operador que o lançou e a fonte da decisão do cliente,
+sem atribuir ao operador identidade do cliente ou parecer de especialista.
+
+O comando `single-video-budget` registra recibo no ledger do próprio ciclo,
+com `SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1`, projeto e perfil existentes. Não abre
+produção, não altera o orçamento histórico e não dispensa os contratos de
+prontidão, custo integral e revisões independentes. Um preflight apenas de
+clipes não comprova cobertura das outras parcelas. Ausência de custo permanece
+uma lacuna; nunca é convertida em zero. O recibo precisa ser consultado e
+respeitado na preparação e execução, sem extrapolar o teto com outro recibo para
+a mesma produção. Ver a [matriz e limites](../homologacao/vega-single-video-budget-2026-11-05.md).
+
+## Continuação pelo ciclo e recuperação de tomadas — 05/11/2026
+
+O comando Runway do editor usa o ciclo canônico do projeto no servidor. O navegador não
+monta aprovação de Plutus nem inventa IDs de reserva. Repetir o comando consulta o mesmo
+job; perfil, produto, experimento, projeto ou tenant divergentes bloqueiam antes da fila.
+O render do storyboard completo continua coordenado pelo backend, sem oito solicitações
+pagas independentes para representar oito cortes editoriais.
+
+A previsão integral pode ser preparada pela tela antes da tarefa financeira: registrar
+parcelas, fontes e validade e reavaliar o mesmo ciclo. Não renovar teto, converter consulta
+isolada em produção ou reabrir parecer já encerrado. Snapshot vencido exige nova consulta
+sem geração no mesmo ciclo; snapshot válido é reutilizado. Incerteza continua bloqueando.
+
+Antes de montar, preservar cada tomada no storage oficial com job, task do provider,
+asset, URL, tamanho e SHA-256, além do plano aprovado. A recuperação consulta as mesmas
+tasks ou baixa os mesmos bytes e revalida hashes; não chama novamente planejador nem POST
+de geração. Envio sem task confirmada requer conciliação. Clipe que nunca foi solicitado
+não pode ser criado silenciosamente durante a recuperação. Metadados enviados pelo cliente
+não substituem checkpoints persistidos pelo executor.
+O replay do aceite preserva data, atribuição e custo já liquidado da task: nunca devolve
+cobrança conciliada ao estado estimado. Identidade ou valor divergente exige conciliação;
+clipe já persistido não repete os callbacks financeiros.
+
+O recibo integral não é um limitador global. Enquanto agentes e revisões apenas contabilizarem
+tokens depois da execução, a produção de escopo `SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1` deve
+permanecer bloqueada antes da tarefa de Plutus, mesmo com previsão preenchida e saldo de
+clipes suficiente. O backend expõe `SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED`; isso é pendência
+técnica de controle, não solicitação de outro teto. Não habilitar consumo por configuração
+ou metadata declarativa sem implementação e regressão de todos os executores.
+
+Evidências, limites e critérios de adoção:
+[retomada privada de Vega](../homologacao/vega-retomada-video-2026-11-05.md).

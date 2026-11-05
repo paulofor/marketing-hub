@@ -73,6 +73,82 @@ const studioCatalog = {
 };
 
 describe("selecao de clipes por cena", () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  it.each([
+    [14, 4, 69],
+    [81, 44, 183],
+  ])(
+    "encaminha Runway do projeto %s ao ciclo do servidor sem fabricar aprovação",
+    async (projectId, productId, profileId) => {
+      const project = {
+        id: projectId,
+        productId,
+        salesVideoProfileId: profileId,
+        campaignKey: "versao-isolada",
+        videoCategory: "COMMERCIAL_SHORT",
+        contextType: "PDE",
+        productionMode: "CINEMATIC_SCENE_BLUEPRINT",
+        targetChannel: "SOCIAL_REELS_STORIES",
+        format: "VERTICAL_9_16",
+        title: "Produção privada",
+        objective: "Demonstrar o mecanismo real",
+        targetDurationSeconds: 32,
+        scenePlan: "Dor\nResultado\nMecanismo\nCTA",
+        providerPlan: "Provider escolhido no Estudio: Runway Gen-4.5 (RUNWAY).",
+        status: "DRAFT",
+      };
+      (axios.get as any).mockImplementation((url: string) =>
+        Promise.resolve({
+          data:
+            url === `/api/sales-videos/projects/${projectId}`
+              ? project
+              : url === "/api/sales-videos/provider-models"
+                ? providerModelFixtures
+                : url === "/api/sales-videos/studio/catalog"
+                  ? studioCatalog
+                  : [],
+        }),
+      );
+      (axios.post as any).mockResolvedValue({
+        data: { id: 51, status: "QUEUED_FOR_APOLLO", salesVideoJobId: 23001 },
+      });
+      render(
+        <QueryClientProvider
+          client={
+            new QueryClient({ defaultOptions: { queries: { retry: false } } })
+          }
+        >
+          <MemoryRouter
+            initialEntries={[`/audio-video-studio/projects/${projectId}`]}
+          >
+            <Routes>
+              <Route
+                path="/audio-video-studio/projects/:projectId"
+                element={<AudioVideoStudioPage />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      const command = await screen.findByRole("button", {
+        name: "Continuar storyboard no ciclo",
+      });
+      await userEvent.click(command);
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          `/api/sales-videos/projects/${projectId}/autonomy/v1/render`,
+        ),
+      );
+      expect(
+        (axios.post as any).mock.calls.some(([url]: [string]) =>
+          url.includes("/request-render"),
+        ),
+      ).toBe(false);
+      expect(
+        await screen.findByText(/Ciclo #51: QUEUED_FOR_APOLLO/),
+      ).toBeTruthy();
+    },
+  );
   it("mantém roteiro e cena neutros com a duração do próprio produto", () => {
     expect(buildStudioTimeline(32).slice(-1)[0]?.time).toBe("0:24-0:32");
     expect(buildStudioTimeline(15).slice(-1)[0]?.time).toMatch(/0:15$/);

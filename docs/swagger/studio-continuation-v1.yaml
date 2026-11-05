@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: Continuação governada do Estúdio
+  version: 1.0.0
+paths:
+  /api/sales-videos/projects/{projectId}/autonomy/v1/render:
+    post:
+      summary: Reutilizar o job canônico do storyboard completo
+      description: O servidor resolve o ciclo de produção do projeto e confere tenant, produto, experimento e perfil. Não aceita metadados financeiros do cliente, não converte preflight isolado em produção nem repete geração paga.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/Tenant'
+      responses:
+        '200':
+          description: Mesmo ciclo e job existentes ou fila canônica já aprovada
+        '404':
+          description: Projeto não disponível neste tenant
+        '409':
+          description: Contexto, parecer, reserva ou prontidão incompatível; sem geração
+  /api/sales-videos/projects/{projectId}/autonomy/v1/cycles/{cycleId}/production-cost-plan:
+    put:
+      summary: Registrar evidências e reavaliar custos no mesmo ciclo
+      description: Permitido antes da revisão de Plutus para ciclo bloqueado. Persiste as parcelas com fontes e reavalia o snapshot preservado; quando vencido, renova somente a consulta no mesmo ciclo. Não altera teto nem recibo. Controle compartilhado indisponível mantém bloqueio antes de tarefa paga.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/CycleId'
+        - $ref: '#/components/parameters/Tenant'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductionCostPlan'
+      responses:
+        '200':
+          description: Estado persistido do mesmo ciclo, com revisão enfileirada ou bloqueio explícito
+        '400':
+          description: Parcela, fonte ou validade inválida
+        '404':
+          description: Projeto não disponível neste tenant
+        '409':
+          description: Contexto divergente ou ciclo já encaminhado
+  /api/sales-videos/projects/{projectId}/autonomy/v1/cycles/{cycleId}/recover:
+    post:
+      summary: Recuperar a mesma tentativa por tasks e clipes persistidos
+      description: Não cria outro job, não chama novamente o planejador e não autoriza nova submissão. Exige aprovação original, contexto e plano preservado. Envio sem task confirmada continua bloqueado. O executor valida hashes antes da montagem.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/CycleId'
+        - $ref: '#/components/parameters/Tenant'
+      responses:
+        '200':
+          description: Mesmo job reenfileirado para consulta ou montagem
+        '404':
+          description: Projeto ou ciclo indisponível
+        '409':
+          description: Falta de checkpoint, task incerta ou contexto divergente
+  /internal/video/jobs/{jobId}/events:
+    get:
+      summary: Ler checkpoints auditáveis do job pelo executor autenticado
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Eventos canônicos com identidade e detalhes auditados
+components:
+  parameters:
+    ProjectId:
+      in: path
+      name: projectId
+      required: true
+      schema: { type: integer, format: int64 }
+    CycleId:
+      in: path
+      name: cycleId
+      required: true
+      schema: { type: integer, format: int64 }
+    Tenant:
+      in: header
+      name: X-Tenant-ID
+      required: true
+      schema: { type: string }
+  schemas:
+    ProductionCostPlan:
+      type: object
+      required: [cycleId, productId, capabilityRevision, providerPlan, finalSeconds, expiresAt, remainingCosts, unresolvedAttemptIds]
+      properties:
+        cycleId: { type: integer, format: int64 }
+        productId: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64, nullable: true }
+        capabilityRevision: { type: string }
+        providerPlan: { type: string }
+        finalSeconds: { type: integer, minimum: 1 }
+        expiresAt: { type: string, format: date-time }
+        unresolvedAttemptIds:
+          type: array
+          items: { type: string }
+          description: Tentativas incertas impedem nova produção
+        remainingCosts:
+          type: object
+          required: [AGENTS, REFERENCES, VOICE, MUSIC, POST_PRODUCTION, FEES, RETRIES]
+          additionalProperties:
+            type: object
+            required: [maximumUsd, evidence]
+            properties:
+              maximumUsd: { type: number, minimum: 0 }
+              evidence: { type: string, minLength: 1 }

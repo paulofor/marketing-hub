@@ -1,0 +1,18 @@
+{
+  "cardKey": "iluminacao-colorida-emocao-musical-improviso",
+  "collection": "prazer-audio-visual",
+  "title": "Iluminação colorida e expressão emocional musical",
+  "finding": "Em 20 estudantes de música, condições de iluminação colorida alteraram avaliações de valência e ativação durante improvisação, sem diferença significativa na criatividade geral.",
+  "mechanism": "A cor pode atuar como pista contextual afetiva durante a produção musical; não foram demonstrados mecanismo neural nem efeitos universais por cor.",
+  "commercialApplication": "Comparar variações controladas de iluminação em vídeos de performance, medindo emoção percebida e sentida, conforto e preferência.",
+  "evidenceStrength": "Moderada-baixa em um pequeno experimento de medidas repetidas; baixa para prazer de espectadores e resultados comerciais.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "A iluminação contextual mudará a avaliação de expressividade emocional de uma performance musical, mas não necessariamente a preferência ou a compreensão do espectador.",
+  "risks": "Evitar estereótipos universais por cor, desconforto visual e alegações de aumento de criatividade.",
+  "limits": "N=20 músicos; três avaliadores; criatividade sem diferença significativa; não avaliou espectadores de anúncios nem conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-05-cores-improvisacao-emocao-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Guarriello e Maldonado: cor e expressão emocional musical",
+  "sourceSha256": "01b102b1a6e536a4f349721090d3a30fb9c5df735fe9af46afe3aac36dc96bee"
+}

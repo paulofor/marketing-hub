@@ -92,3 +92,30 @@ referência `experiment:114`, zero lançamentos no ledger desse experimento e ze
 reservas dos ciclos do projeto #14. O teto novo permanece sem consumo registrado;
 nenhuma conciliação do histórico foi alterada. A autorização nova ainda precisa
 ser registrada em produção após publicação autorizada da funcionalidade.
+
+## Correções confirmadas na conferência do PR
+
+A primeira execução de CI encontrou dois contratos de teste que precisavam
+acompanhar a nova dependência: a fixture local não importava o registrador e o
+manifesto imutável de Mira ainda fixava o hash anterior do serviço compartilhado.
+A fixture passou a importar o serviço real; uma sucessora de compatibilidade
+preserva os pareceres e a experiência anterior, sem autorizar outra publicação.
+Os três testes de composição da fixture passaram. A compatibilidade de Mira foi
+verificada separadamente, sem alterar o manifesto anterior.
+
+Também foi demonstrado que a consulta de Íris selecionava o último ciclo de
+vídeo mesmo quando ele era apenas um preflight isolado. A consulta agora exclui
+somente os três estados de preflight antes de selecionar o pedido mais recente.
+Um pedido real anterior continua visível; STOP/CANCELLED mais recentes continuam
+impedindo a produção. Foram aprovados 22 testes do contexto e 13 da consulta,
+incluindo outra identidade, histórico válido, preflight posterior e parada.
+Esse ajuste melhora o contexto executável de Íris, sem iniciar tarefa ou
+confundir estimativa com autorização. A hipótese é reduzir pedidos e retrabalho
+indevidos; não há resultado comercial medido.
+
+A primeira tentativa local com MySQL 5.7 falhou com `ENOSPC` ao criar `ibdata1`.
+Uma topologia temporária com dados em memória permitiu repetir a validação sem
+mexer em produção. A aplicação local iniciou com a dependência corrigida, e o
+roteiro existente de decisão e passagem entre processos passou para dois
+produtos sintéticos, incluindo rollback, replay, concorrência e pausa. O banco
+era MySQL 5.7 real; os executores externos permaneceram simulados e sem gasto.

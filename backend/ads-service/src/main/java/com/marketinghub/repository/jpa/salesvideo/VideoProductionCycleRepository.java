@@ -27,6 +27,21 @@ public interface VideoProductionCycleRepository extends JpaRepository<VideoProdu
   Optional<VideoProductionCycle> findTopByProductIdAndExperimentIdOrderByCreatedAtDescIdDesc(
       Long productId, Long experimentId);
 
+  /** Busca pedido governado sem confundir consultas isoladas posteriores com produção. */
+  @Query(
+      value =
+          """
+      SELECT c.* FROM video_production_cycle c
+      WHERE c.product_id = :productId
+        AND ((:experimentId IS NULL AND c.experiment_id IS NULL) OR c.experiment_id = :experimentId)
+        AND (c.status IS NULL OR c.status NOT IN
+          ('PENDING_PROVIDER_PREFLIGHT_ONLY', 'PROVIDER_PREFLIGHT_ONLY_COMPLETED', 'PROVIDER_PREFLIGHT_ONLY_BLOCKED'))
+      ORDER BY c.created_at DESC, c.id DESC LIMIT 1
+      """,
+      nativeQuery = true)
+  Optional<VideoProductionCycle> findLatestProductionRequest(
+      @Param("productId") Long productId, @Param("experimentId") Long experimentId);
+
   /** Lista os ciclos financeiros e criativos pertencentes ao plano comercial. */
   List<VideoProductionCycle> findByCommercialPlanIdOrderByUpdatedAtDesc(Long commercialPlanId);
 

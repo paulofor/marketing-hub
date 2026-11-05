@@ -538,3 +538,9 @@ O projeto também preserva instruções editoriais em notas, separadas dos oito
 blocos de narração. Nenhum vídeo ou parecer audiovisual entregue nesta etapa;
 publicação do código depende da confirmação específica da solicitação.
 Matriz, evidências e limites: [autorização de um vídeo](../homologacao/vega-single-video-budget-2026-11-05.md).
+
+Na conferência, o preflight isolado foi identificado como falsa evidência de
+pedido governado no contexto de Íris. A seleção agora ignora apenas consultas
+isoladas, conserva pedidos reais anteriores e respeita STOP/CANCELLED. Os 35
+casos locais de contexto/consulta confirmam essa distinção para outras
+identidades e caminhos antes válidos; nenhuma inferência paga foi iniciada.

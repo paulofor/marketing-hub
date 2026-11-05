@@ -77,16 +77,13 @@ public class PrivateCreativePreparationContext {
     return java.util.Collections.unmodifiableMap(result);
   }
 
-  /** Reconhece somente pedido financeiro explícito da mesma identidade, sem aprovar seu gasto. */
+  /** Reconhece pedido governado da mesma identidade; consulta isolada não solicita produção. */
   private Long currentVideoRequest(JsonNode context) {
     long productId = context.path("product").path("id").asLong();
     long numericExperimentId = context.path("experiment").path("id").asLong();
     Long experimentId = numericExperimentId > 0 ? numericExperimentId : null;
     if (productId <= 0) return null;
-    var cycle =
-        videos
-            .findTopByProductIdAndExperimentIdOrderByCreatedAtDescIdDesc(productId, experimentId)
-            .orElse(null);
+    var cycle = videos.findLatestProductionRequest(productId, experimentId).orElse(null);
     if (cycle == null
         || cycle.getId() == null
         || cycle.getVideoProjectId() == null
@@ -96,6 +93,11 @@ public class PrivateCreativePreparationContext {
         || cycle.getBudgetLimitUsd().signum() <= 0
         || "CANCELLED".equals(cycle.getStatus())
         || "STOPPED".equals(cycle.getStatus())) return null;
+    if (Set.of(
+            "PENDING_PROVIDER_PREFLIGHT_ONLY",
+            "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+            "PROVIDER_PREFLIGHT_ONLY_BLOCKED")
+        .contains(cycle.getStatus() == null ? "" : cycle.getStatus())) return null;
     if (cycle.getStatus() == null || cycle.getStatus().isBlank())
       throw new IllegalStateException("Pedido de vídeo sem estado auditável.");
     var project = projects.findById(cycle.getVideoProjectId()).orElse(null);

@@ -41,7 +41,7 @@ Revalidadas em 05/11/2026. Disponibilidade pública não é homologação da int
 
 ## Resultados observados
 
-- Worker: 305 testes, zero falhas/erros, 9 integrações opcionais ignoradas. Inclui doubles HTTP, Gen-4.5/15s sem POST pago, Router incompatível, Seedance 2.5, tarifas, idempotência e resultado incerto.
+- Worker: 306 testes, zero falhas/erros, 9 integrações opcionais ignoradas. Inclui doubles HTTP, Gen-4.5/15s sem POST pago, Router incompatível, Seedance 2.5, tarifas, idempotência e resultado incerto.
 - Montagem real sintética com ffmpeg/ffprobe: 32s preservados; Veo 15s finais/16s gerados com corte explícito de 1s; streams de vídeo, áudio e legenda mantidos. Não comprova qualidade estética de render externo.
 - Backend focado: 158 testes, incluindo 93 regras de arquitetura; reserva completa, outro produto/ciclo, custo desconhecido, fechamento incerto protegido, replay do mesmo dry run após corrigir custo e HTTP real com retorno 400 acionável.
 - MySQL 5.7.44 local: migração aplicada e repetida sem erro; seis novas rotas sem gates ativados e histórico Pippit preservado. Schema real consultado via MCP para confirmar campos obrigatórios.
@@ -72,3 +72,9 @@ Critério de adoção: manter as regressões locais/CI, atualizar o snapshot ant
 No HEAD e56bb20, jobs MySQL 5.7 e a validação da biblioteca falharam ao compilar: a fixture Docker copiava apenas `pom.xml/src` do módulo, deixando a fonte compartilhada fora da imagem. Não foi falha transitória do runner nem erro do SQL. A compilação local da aplicação e a migração específica haviam passado; a lacuna estava no empacotamento dessas fixtures.
 
 O Dockerfile comum e os 31 contextos de build em 17 descritores agora preservam o layout do monorepo e recebem a mesma fonte/recurso compartilhados; as duas outras fixtures Maven do backend foram conferidas e alinhadas. O cenário físico da Rigel passou localmente com compilação, migração, reaplicação e retomada; o cenário da biblioteca também passou localmente, incluindo rejeição de schema parcial, unicidade e retomada. Quatro testes de contrato previnem a omissão e rodam no CI de vídeo. Docker Compose confirmou os 17 descritores e Actionlint/ShellCheck aprovaram os comandos pertinentes. A correção segue no mesmo PR; a rodada com falha permanece como auditoria, e o resultado final deve ser o do novo HEAD.
+
+## Idempotência do comando genérico de reprocessamento
+
+A revisão final identificou que `SalesVideoJobService.retry` clonava os metadados financeiros do render sem novo preflight; o limite de tentativas era a única regra da política. A consulta MCP não encontrou renders Runway persistidos com `retry_of_job_id` em 05/11, portanto não se atribui gasto duplicado ao histórico. A vulnerabilidade foi comprovada pelo caminho executável, e a política agora impede retry genérico de RENDER/RETRY Runway, inclusive na elegibilidade exibida à UI. Nova geração deve seguir o ciclo governado com conciliação e reserva próprias; reuso/callback/acabamento de material existente não gera outra tomada.
+
+O worker também recusa clones legados antes do planejador/POST pago. Regressões cobrem duas identidades, zero chamadas externas nesse bloqueio, caminhos antes válidos de pós-produção/roteiro/outro provider e limite de tentativas. Os 3 testes da política e os 69 do serviço de jobs passaram, além da suíte completa do worker (306 casos, 9 opcionais ignorados).

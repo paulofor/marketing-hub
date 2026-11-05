@@ -127,10 +127,10 @@ public class RunwayVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Confere a captura do PDE antes de consumir inclusive o planejador de IA. */
+    /** Recusa repetição de tentativa paga e confere a prova do PDE antes de consumir o planejador. */
     @Override
     public void validateInput(SalesVideoJob job, SalesVideoProfile profile) {
-        if (job.status() == SalesVideoStatus.VIDEO_PROCESSING || StringUtils.hasText(job.providerJobId()))
+        if (job.status() == SalesVideoStatus.VIDEO_PROCESSING || StringUtils.hasText(job.providerJobId()) || job.retryOfJobId() != null)
             throw new VideoProviderException("PROVIDER_RECONCILIATION_REQUIRED", "A tentativa anterior pode ter consumido créditos; consultar tarefas e reutilizar resultado/callback antes de repetir");
         new PdeProductProofOverlay(properties, WebClient.builder()).verify(readMetadata(job), job.id());
     }

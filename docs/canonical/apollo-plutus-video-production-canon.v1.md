@@ -815,3 +815,5 @@ nenhuma homologação sintética ativa modelo ou comprova resultado comercial.
 No encerramento do job, `PROVIDER_RESULT_UNCERTAIN` ou cobertura de custo desconhecida mantém a reserva em `CONSUMING`; timeout não libera saldo para outra tentativa. O ciclo persiste `PROVIDER_RECONCILIATION_REQUIRED`, com responsável Apolo e reutilização do ID/callback anterior. Somente resultado e custo conhecidos permitem liquidação.
 
 Lacuna determinística de previsão integral fica em `PROVIDER_PREFLIGHT_BLOCKED`, sem consumir parecer de Plutus. Corrigidos os custos, reaplicar o callback preservado enquanto o snapshot estiver válido permite reavaliar a causa sem repetir consulta ou geração. Não estende validade nem reabre parecer encerrado ou ciclo isolado.
+
+O comando genérico de reprocessamento não pode clonar renders Runway com o contrato financeiro anterior: RENDER/RETRY deve voltar à preparação governada, após conciliação e preflight/reserva vigentes. Elegibilidade da UI e comando aplicam a mesma regra. O executor recusa clones legados antes do planejador. Pós-produção, reuso de artefatos e replay de callback permanecem separados de nova geração paga.

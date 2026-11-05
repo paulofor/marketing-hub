@@ -11714,3 +11714,5 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - **Matriz:** `docs/homologacao/studio-capabilities-2026-11-05.md`.
 
 No mesmo fechamento, o monitor financeiro liquidava qualquer estado terminal do job. A regressão agora cobre submissão incerta em dois ciclos, custo desconhecido, reserva protegida sem valor realizado inventado e liquidação do caminho válido.
+
+A prevenção inclui a política central de reprocessamento: clonar metadata de render Runway não representa novo preflight. RENDER/RETRY genérico é bloqueado no backend e clones legados são recusados no executor antes do planejador; acabamento e caminhos antes válidos têm regressão própria. MCP não encontrou uso persistido desse atalho para render Runway, sem imputação de gasto histórico.

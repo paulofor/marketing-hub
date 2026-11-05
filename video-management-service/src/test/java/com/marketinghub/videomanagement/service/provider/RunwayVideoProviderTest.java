@@ -636,6 +636,20 @@ class RunwayVideoProviderTest {
                 .isEqualTo(15);
     }
 
+    /** Impede que um retry legado gere novamente antes de conciliar a tentativa anterior. */
+    @Test
+    void refusesLegacyRetryBeforeAnyPlannerOrProviderCall() throws Exception {
+        var mapper = new ObjectMapper().findAndRegisterModules();
+        var serialized = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.valueToTree(job());
+        serialized.put("retryOfJobId", 91804L);
+        var retry = mapper.treeToValue(serialized, SalesVideoJob.class);
+        var provider = new RunwayVideoProvider(properties(), mapper, WebClient.builder());
+        assertThatThrownBy(() -> provider.validateInput(retry, profile()))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("consultar", "callback");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
     /** Copia o job alterando somente os metadados de contrato do teste. */
     private SalesVideoJob withMetadata(SalesVideoJob job, String metadata) {
         return new SalesVideoJob(job.id(), job.profileId(), job.scriptId(), job.tenantId(), job.providerFamily(),

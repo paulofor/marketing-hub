@@ -38,6 +38,24 @@ public class FinancialPlanNativePlanningFixture {
     return mock(com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService.class);
   }
 
+  /**
+   * Simula ausência de recibo de vídeo nesta fixture de planejamento, sem tornar o gate produtivo
+   * opcional.
+   */
+  @Bean
+  com.marketinghub.businessprocesschain.learningcycle.v1.service.SingleVideoSpending
+      videoSpendingFixture() {
+    var spending =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.SingleVideoSpending
+                .class);
+    when(spending.context(anyString(), anyLong()))
+        .thenReturn(
+            new com.marketinghub.videocontract.v1.BoundedSpendContracts.Context(
+                false, null, null, null, null, null));
+    return spending;
+  }
+
   /** Monta o alvo real com identidades sintéticas, sem substituir o serviço financeiro. */
   private ExperimentAgentTaskTargetContextProvider planningTarget(
       ProductRepository products,

@@ -81,10 +81,10 @@ public class SingleVideoSpending
     if (scopeBlocker != null) return scopeBlocker;
     if (!boundedTransport())
       return "Este vídeo exige transporte com reserva compartilhada e saída limitada antes da"
-                 + " chamada; o executor antigo não pode consumir este teto.";
+          + " chamada; o executor antigo não pode consumir este teto.";
     if ("IN_PROGRESS".equals(task.getStatus()) && !PROTOCOL.equals(task.getSpendingContract()))
       return "A lease anterior não comprovou transporte limitado; conciliar a execução antes de"
-                 + " liberar outra chamada.";
+          + " liberar outra chamada.";
     return null;
   }
 
@@ -353,7 +353,7 @@ public class SingleVideoSpending
                 .toUpperCase(java.util.Locale.ROOT)
                 .contains("(RUNWAY_ROUTER)")))
       return "O recibo integral exige uma rota de clipes com custo máximo comprovado; outros"
-                 + " provedores não podem consumir por fallback.";
+          + " provedores não podem consumir por fallback.";
     return null;
   }
 
@@ -369,7 +369,7 @@ public class SingleVideoSpending
     if (budgets.protectedReceipt(project) == null) return null;
     if (providerName == null || !providerName.startsWith("RUNWAY"))
       return "O recibo integral não permite render por outro provedor; use o ciclo governado com"
-                 + " custo limitado.";
+          + " custo limitado.";
     return paidExecutionBlocker(project);
   }
 
@@ -1025,7 +1025,7 @@ public class SingleVideoSpending
                 || ("meta-ad-approver".equals(agent) && "commercial".equals(activity)));
     if (finalReview && !reviewVideos(context).isEmpty()) return null;
     return "Esta tarefa não está vinculada à preparação, ao parecer financeiro ou à mídia final"
-               + " deste único vídeo; não consumir seu teto.";
+        + " deste único vídeo; não consumir seu teto.";
   }
 
   /** Confere a mídia final do render fixado no recibo, incluindo sua montagem sem nova geração. */

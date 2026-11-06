@@ -283,3 +283,33 @@ nenhuma tarefa ou despesa paga foi iniciada na preparação. Recibo128, históri
 custos pendentes e reservas anteriores foram preservados. Cotação/cobertura
 integral do pedido real ainda serão reavaliadas pelo fluxo protegido após a
 publicação autorizada; o snapshot vencido 3,84/4,80 não foi tratado como saldo.
+
+
+### Correção das duas falhas observadas no CI do HEAD f6648e4a
+
+O workflow MySQL apontou duas causas distintas. A verificação de ciclos recusou
+cinco indentações de concatenação em `SingleVideoSpending`: executar diretamente
+o formatter depois do Spotless não reproduzia todos os passos do plugin do projeto.
+A aplicação e a checagem foram repetidas com o Spotless versionado, por caminhos
+absolutos, nos arquivos Java alterados dos módulos afetados. Não houve mudança
+funcional para contornar a verificação.
+
+A fixture financeira importava o controller interno real, mas não fornecia o
+novo bean obrigatório de consumo. Tornar a dependência opcional em produção
+fragilizaria a proteção; carregar todo o domínio de vídeo ampliaria uma fixture
+restrita a planejamento; um test double explícito na configuração existente
+preserva o escopo e foi adotado. `FinancialPlanNativePlanningFixtureTest` agora
+inicializa o contexto Spring real com essa configuração, antes de qualquer Docker,
+e detecta a mesma classe de regressão sem banco ou provedor pago. O controller
+produtivo continua exigindo a política real.
+
+Validação local após a correção: 111 casos focados passaram, incluindo 17 do teto,
+93 de arquitetura e a nova regressão de inicialização. Os dois percursos que
+falharam no CI foram executados com MySQL5.7 na topologia exclusiva autorizada:
+planejamento financeiro passou por API, fila nativa, reinício e migração; ciclos
+passou por contratos HTTP, contexto, persistência, migração, reaplicação e
+idempotência. Ambos terminaram em PASS e removeram a topologia temporária.
+O agregado de relatórios de backend passa a 5.902 casos com a nova regressão.
+Os demais resultados locais anteriores permanecem válidos; não houve repetição
+da matriz completa nem chamada paga. O ajuste segue no mesmo PR5793, sem merge,
+deploy ou liberação da produção real enquanto faltar a revisão independente.

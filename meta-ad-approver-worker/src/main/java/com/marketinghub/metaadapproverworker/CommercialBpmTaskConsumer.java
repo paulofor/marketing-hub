@@ -47,6 +47,7 @@ public class CommercialBpmTaskConsumer {
           new BpmContract("landing-page-generation", "commercial"),
           new BpmContract("pde-construction-approval", "commercialIntegrityReview"));
   private final RestClient backend;
+  private final String backendUrlForSpending;
   private final ObjectMapper json;
   private final String codex;
   private final String model;
@@ -70,6 +71,7 @@ public class CommercialBpmTaskConsumer {
       CodexProcessSupervisor processSupervisor,
       CodexTelemetryReporter telemetryReporter,
       @Value("${meta-ad-approver.commercial-model-max-attempts:2}") int maxModelAttempts) {
+    this.backendUrlForSpending = properties.getBackendUrl();
     this.backend = BackendRestClientFactory.create(properties);
     this.codex = codex;
     this.model = model;
@@ -246,17 +248,35 @@ public class CommercialBpmTaskConsumer {
     Process process = null;
     CodexTelemetryReporter.Session telemetry = null;
     try {
-      process =
-          new ProcessBuilder(images.attach(command(output, schema)))
+      List<String> paidCommand = images.attach(command(output, schema));
+      if (Boolean.TRUE.equals(task.get("singleVideoSpendingRequired"))) {
+        List<String> limited =
+            new ArrayList<>(
+                List.of(
+                    "bash",
+                    Path.of(repositoryPath, "scripts/codex-oauth-session-safe.sh").toString(),
+                    "--spending-exec"));
+        limited.addAll(paidCommand);
+        paidCommand = limited;
+      }
+      ProcessBuilder builder =
+          new ProcessBuilder(paidCommand)
               .redirectErrorStream(true)
-              .redirectOutput(processLog.toFile())
-              .start();
+              .redirectOutput(processLog.toFile());
+      if (paidCommand.contains("--spending-exec"))
+        builder.environment().put("MH_EXPECT_SHARED_SPENDING", "true");
+      builder.environment().put("MH_AGENT_TASK_ID", String.valueOf(taskId(task)));
+      builder.environment().put("MH_AGENT_KEY", AGENT_KEY);
+      builder.environment().put("MH_SPENDING_BACKEND_URL", backendUrlForSpending);
+      process = builder.start();
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       telemetry = monitorExecution(task, process, processLog);
       CodexProcessSupervisor.WaitOutcome outcome =
           processSupervisor.awaitCompletion(process, processLog);
       TokenUsage usage = readTokenUsage(json, processLog);
+      String boundedTier = boundedServiceTier(json, processLog);
+      if (boundedTier != null) task.put("singleVideoNativeServiceTier", boundedTier);
       if (outcome != CodexProcessSupervisor.WaitOutcome.COMPLETED) {
         return new AttemptExecution(null, usage, outcome, null);
       }
@@ -323,7 +343,13 @@ public class CommercialBpmTaskConsumer {
   /** Valida o resultado integral antes de marcar a tentativa Codex como bem-sucedida. */
   private void validateExecutionResult(Map<String, Object> task, JsonNode result) {
     if ("creative-production-approval".equals(processCode(task))) {
-      CreativeReviewImages.validate(result, json.valueToTree(task.get("creativeVisualInputs")));
+      JsonNode images = json.valueToTree(task.get("creativeVisualInputs"));
+      JsonNode videos = json.valueToTree(task.get("taskTarget")).at("/pdeContext/finalVideoReview");
+      if (images.isArray() && !images.isEmpty()) CreativeReviewImages.validate(result, images);
+      else if (videos.isMissingNode() || videos.isEmpty())
+        throw new IllegalArgumentException("Peça final ausente para Têmis.");
+      validateFinalVideoEvidence(
+          result, videos, json.valueToTree(task.get("finalVideoEvidenceChecks")));
     }
     if (isAgentValidationTask(task)) {
       validateAgentValidation(result, task);
@@ -335,6 +361,26 @@ public class CommercialBpmTaskConsumer {
         AGENT_KEY,
         jsonTextValues(result.path("evidence")),
         !"BLOCKED".equals(result.path("decision").asText()));
+  }
+
+  /** Recusa aprovação sem quadros verificados e citação do hash exato da candidata recebida. */
+  static void validateFinalVideoEvidence(JsonNode result, JsonNode videos, JsonNode checks) {
+    if (!videos.isArray()
+        || videos.isEmpty()
+        || !"APPROVED".equals(result.path("decision").asText())) return;
+    if (!checks.isArray() || checks.size() != videos.size())
+      throw new IllegalArgumentException("MP4 final não foi verificado por Têmis.");
+    for (JsonNode video : videos) {
+      boolean verified = false;
+      for (JsonNode check : checks) {
+        if (check.path("assetId").asLong() == video.path("assetId").asLong()
+            && check.path("sha256").asText().equals(video.path("sha256").asText())
+            && check.path("hashVerified").asBoolean()
+            && check.path("frames").size() >= 3) verified = true;
+      }
+      if (!verified || !result.path("evidence").toString().contains(video.path("sha256").asText()))
+        throw new IllegalArgumentException("Parecer não corresponde ao MP4 exato recebido.");
+    }
   }
 
   /** Monta a chamada Codex no tier padrão compatível para cada tentativa de revisão comercial. */
@@ -403,7 +449,7 @@ public class CommercialBpmTaskConsumer {
     Map<String, Object> body = new HashMap<>();
     body.put("resultJson", execution.rawResponse());
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, execution.usage());
+    putModelUsage(body, execution.usage(), task);
     body.put(
         "executionAudit",
         executionAudit(
@@ -466,7 +512,7 @@ public class CommercialBpmTaskConsumer {
     body.put("error", "Têmis bloqueou o avanço: " + rationale);
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, execution.usage());
+    putModelUsage(body, execution.usage(), task);
     body.put(
         "executionAudit",
         executionAudit(
@@ -784,7 +830,7 @@ public class CommercialBpmTaskConsumer {
     Map<String, Object> body = new HashMap<>();
     body.put("error", error);
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, usage, task);
     if (promptSent != null) {
       body.put("executionAudit", executionAudit(promptSent, agentPromptPart, activityPromptPart));
     }
@@ -896,24 +942,38 @@ public class CommercialBpmTaskConsumer {
     evidence.put("externalSideEffects", false);
     evidence.put("preferredServiceTier", "FLEX");
     evidence.put("requestedServiceTier", REQUESTED_SERVICE_TIER.toUpperCase(java.util.Locale.ROOT));
-    evidence.put("effectiveServiceTier", EFFECTIVE_SERVICE_TIER);
+    evidence.put(
+        "effectiveServiceTier",
+        task.getOrDefault("singleVideoNativeServiceTier", EFFECTIVE_SERVICE_TIER));
     evidence.put("serviceTierException", SERVICE_TIER_EXCEPTION);
     if (task.get("taskTarget") != null) evidence.put("taskTarget", task.get("taskTarget"));
     return java.util.Collections.unmodifiableMap(evidence);
   }
 
   /** Acrescenta ao callback somente uma medição real informada pelo Codex. */
-  private void putModelUsage(Map<String, Object> body, TokenUsage usage) {
+  private void putModelUsage(Map<String, Object> body, TokenUsage usage, Map<String, Object> task) {
     if (usage == null || !usage.informed()) return;
     body.put(
         "modelUsages",
         List.of(
             Map.of(
                 "modelCode", model,
-                "serviceTier", EFFECTIVE_SERVICE_TIER,
+                "serviceTier",
+                    task.getOrDefault("singleVideoNativeServiceTier", EFFECTIVE_SERVICE_TIER),
                 "inputTokens", usage.inputTokens(),
                 "cachedInputTokens", usage.cachedInputTokens(),
                 "outputTokens", usage.outputTokens())));
+  }
+
+  /** Lê somente o tier realmente devolvido pelo transporte limitado, sem presumir desconto. */
+  static String boundedServiceTier(ObjectMapper json, Path output) throws IOException {
+    for (String line : Files.readAllLines(output)) {
+      if (!line.startsWith("{") || !line.contains("bounded_spend.completed")) continue;
+      JsonNode event = json.readTree(line);
+      if ("bounded_spend.completed".equals(event.path("type").asText()))
+        return event.path("serviceTier").asText("UNKNOWN").toUpperCase(java.util.Locale.ROOT);
+    }
+    return null;
   }
 
   /** Informa o tier efetivamente solicitado ao Codex para auditoria e teste de contrato. */

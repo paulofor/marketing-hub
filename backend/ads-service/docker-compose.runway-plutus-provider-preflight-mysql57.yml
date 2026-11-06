@@ -55,8 +55,8 @@ services:
 
   liquibase-runway-plutus-preflight:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-runway-plutus-preflight:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -68,8 +68,8 @@ services:
 
   liquibase-runway-product-ugc:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-runway-product-ugc:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub

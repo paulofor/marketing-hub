@@ -50,6 +50,24 @@ class StudioCostLedgerServiceTest {
     assertThat(coverage.get("audioAttempts")).isEqualTo(0L);
   }
 
+  /**
+   * Reutiliza a cobertura do ledger com isolamento por ciclo e preserva desconhecido em vez de
+   * zero.
+   */
+  @Test
+  void deveSepararCoberturaDoCicloSemInventarCustoZero() {
+    var repository = mock(StudioCostLedgerEntryRepository.class);
+    var unknown = new StudioCostLedgerEntry();
+    unknown.setAssetType("AUDIO");
+    when(repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(910L))
+        .thenReturn(List.of(unknown));
+    when(repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(911L)).thenReturn(List.of());
+    var service = new StudioCostLedgerService(repository);
+    assertThat(service.cycleCoverage(910L).get("unknownCostAttempts")).isEqualTo(1L);
+    assertThat(service.cycleCoverage(911L).get("status")).isEqualTo("NO_ATTEMPTS_RECORDED");
+    assertThat(unknown.getEstimatedCostUsd()).isNull();
+  }
+
   /** Confirma que áudio entra no ledger antes de existir custo ou resposta do provedor. */
   @Test
   void deveRegistrarTentativaDeAudioSemInventarCustoZero() {
@@ -175,7 +193,7 @@ class StudioCostLedgerServiceTest {
         "OPENAI_USAGE_COHORT_ESTIMATE",
         "NARRATION_MEASURED_DURATION_ESTIMATE_V1",
         "PLANNING_REJECTED_BEFORE_GENERATION_AUDITED",
-                            "FIRST_TTS_AUTHENTICATION_REJECTED_AUDITED",
+        "FIRST_TTS_AUTHENTICATION_REJECTED_AUDITED",
         "PRESERVED_NARRATION_NO_NEW_CALL",
         "FAILED_BEFORE_TTS_AUDITED",
         "PROVIDER_REPORTED"

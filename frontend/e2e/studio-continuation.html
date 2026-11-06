@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Estúdio — homologação local sem geração</title>
+<body><div id="root"></div><script type="module">
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import axios from "axios";
+import AudioVideoStudioPage from "/src/pages/audioVideoStudio/AudioVideoStudioPage.tsx";
+axios.defaults.headers.common["X-Tenant-ID"] = "studio-test";
+const id = new URLSearchParams(location.search).get("projectId");
+createRoot(document.getElementById("root")).render(React.createElement(QueryClientProvider,
+ { client: new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}}) },
+ React.createElement(MemoryRouter,{initialEntries:[`/audio-video-studio/projects/${id}`]},
+  React.createElement(Routes,null,React.createElement(Route,{path:"/audio-video-studio/projects/:projectId",element:React.createElement(AudioVideoStudioPage)})))));
+</script></body></html>

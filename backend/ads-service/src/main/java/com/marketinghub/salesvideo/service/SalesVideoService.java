@@ -72,6 +72,52 @@ public class SalesVideoService {
   private final SalesVideoStudioCatalogService studioCatalogService =
       new SalesVideoStudioCatalogService();
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private VideoProductRecordingService recordings;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spending;
+
+  /** Delega a vinculação da prova temporal sem iniciar geração ou revisão paga. */
+  public java.util.Map<String, Object> uploadProductRecording(
+      Long projectId, MultipartFile file, String manifest) {
+    return recordings.upload(projectId, file, manifest);
+  }
+
+  /** Entrega somente os bytes privados da gravação funcional no contexto do tenant. */
+  public byte[] readProductRecording(Long projectId) {
+    return recordings.read(projectId);
+  }
+
+  /** Consulta a autoridade financeira persistida sem iniciar chamada externa. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Context jobSpendingContext(
+      Long jobId, String purpose) {
+    return spending.jobContext(jobId, purpose);
+  }
+
+  /** Reserva o request concreto no mesmo recibo de agentes, mídia e revisões. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease reserveJobSpend(
+      Long jobId,
+      String purpose,
+      com.marketinghub.videocontract.v1.BoundedSpendContracts.Reserve input) {
+    return spending.reserveJob(jobId, purpose, input);
+  }
+
+  /** Admite um único envio da operação depois de persistir sua reserva. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease beginJobSpend(
+      Long jobId, String purpose, Long reservationId) {
+    return spending.beginJob(jobId, purpose, reservationId);
+  }
+
+  /** Preserva resposta ou incerteza da operação para replay sem gerar novamente. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease recordJobSpend(
+      Long jobId,
+      String purpose,
+      Long reservationId,
+      com.marketinghub.videocontract.v1.BoundedSpendContracts.Result input) {
+    return spending.recordJob(jobId, purpose, reservationId, input);
+  }
+
   /** Inicializa a fachada com os componentes internos do módulo de vídeo. */
   public SalesVideoService(
       SalesVideoProfileService profileService,
@@ -137,6 +183,36 @@ public class SalesVideoService {
   /** Entrega uma captura específica somente após conferir a homologação e o contexto do projeto. */
   public byte[] readProductProof(Long projectId, Long taskId, Long evidenceId) {
     return productProofService.read(projectId, taskId, evidenceId);
+  }
+
+  /** Entrega a simulação governada de tomadas antes de qualquer confirmação financeira. */
+  public com.marketinghub.salesvideo.service.clipplan.StudioClipPlanResponse previewClipPlan(
+      com.marketinghub.salesvideo.service.clipplan.StudioClipPlanRequest request) {
+    try {
+      return providerCatalogService.preview(request);
+    } catch (IllegalArgumentException ex) {
+      org.slf4j.LoggerFactory.getLogger(getClass())
+          .warn(
+              "Plano de tomadas inválido; provider={} finalSeconds={}",
+              request.providerName(),
+              request.finalSeconds(),
+              ex);
+      throw com.marketinghub.salesvideo.exception.VideoModuleException.badRequest(
+          com.marketinghub.salesvideo.exception.VideoModuleErrorCode.BAD_REQUEST, ex.getMessage());
+    }
+  }
+
+  /** Registra custos restantes com fonte no projeto, sem alterar teto ou iniciar produção. */
+  public com.marketinghub.videocontract.v1.ProductionCostPlan registerProductionCosts(
+      Long projectId, com.marketinghub.videocontract.v1.ProductionCostPlan request) {
+    try {
+      return videoProjectService.registerProductionCosts(projectId, request);
+    } catch (IllegalArgumentException ex) {
+      org.slf4j.LoggerFactory.getLogger(getClass())
+          .warn("Previsão integral recusada; projectId={}", projectId, ex);
+      throw com.marketinghub.salesvideo.exception.VideoModuleException.badRequest(
+          com.marketinghub.salesvideo.exception.VideoModuleErrorCode.BAD_REQUEST, ex.getMessage());
+    }
   }
 
   /** Lista o catálogo administrável de provedores e modelos de vídeo. */
@@ -323,8 +399,16 @@ public class SalesVideoService {
       SalesVideoJobType jobType,
       int limit,
       String postProductionContract) {
-    return jobService.findJobsForWorker(
-        providerFamily, status, jobType, limit, postProductionContract);
+    return jobService
+        .findJobsForWorker(providerFamily, status, jobType, limit, postProductionContract)
+        .stream()
+        .filter(
+            job -> {
+              if (spending == null) return true;
+              var authority = spending.jobContext(job.getId(), "PLAN");
+              return !authority.required() || authority.blocker() == null;
+            })
+        .toList();
   }
 
   /** Consulta um job pelo identificador. */
@@ -340,6 +424,11 @@ public class SalesVideoService {
   /** Reprocessa um job elegível. */
   public SalesVideoJobDto retry(Long jobId, RetrySalesVideoJobRequest request) {
     return jobService.retry(jobId, request);
+  }
+
+  /** Reutiliza tasks e arquivos da tentativa Runway original, sem criar job pago novo. */
+  public SalesVideoJobDto recoverRunway(Long jobId) {
+    return jobService.recoverRunway(jobId);
   }
 
   /** Solicita pós-produção de um vídeo bruto já renderizado. */

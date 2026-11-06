@@ -28,10 +28,20 @@ public class ApolloGovernedLearningReporter {
         this.objectMapper = objectMapper;
     }
 
+    private BoundedVideoSpending spending;
+
+    /** Impede comparação paga adicional no recibo de uma única candidata privada. */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setSpending(BoundedVideoSpending spending) { this.spending = spending; }
+
     /** Executa e registra o replay quando habilitado, sem modificar a decisão produtiva do job. */
     public void observe(SalesVideoJob original, SalesVideoJob planned) {
         if (!properties.getApolloPlanner().getCodexShadow().isEnabled()) return;
         try {
+            if (spending != null && spending.context(original.id(), "PLAN").path("required").asBoolean()) {
+                log.info("Replay pago adicional dispensado pelo recibo de vídeo único; jobId={}", original.id());
+                return;
+            }
             JsonNode frozen = objectMapper.readTree(original.metadataJson());
             JsonNode baseline = objectMapper.readTree(planned.metadataJson()).path("apollo_ai_plan");
             ApolloHybridShadowReplay.HybridComparison result =

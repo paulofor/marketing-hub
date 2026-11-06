@@ -92,6 +92,7 @@ class SalesVideoProfileServiceTest {
     }
   }
 
+  /** Configura o serviço e o gate financeiro simulado sem acesso a providers. */
   @BeforeEach
   void setUp() {
     service =
@@ -103,6 +104,9 @@ class SalesVideoProfileServiceTest {
             jobRepository,
             jobService,
             rolloutService);
+    service.setRunwayPreflight(
+        org.mockito.Mockito.mock(
+            com.marketinghub.salesvideo.service.clipplan.RunwayRenderPreflight.class));
   }
 
   @Test
@@ -280,9 +284,9 @@ class SalesVideoProfileServiceTest {
         assertThrows(
             VideoModuleException.class, () -> service.requestRender(profile.getId(), request));
 
-    assertThat(ex.getMessage()).contains("Runway aceita no máximo 10 segundos");
+    assertThat(ex.getMessage()).contains("Runway Gen-4.5 não aceita tomada de");
     assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2")).isEqualTo(15);
-    assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2_5")).isEqualTo(15);
+    assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2_5")).isEqualTo(30);
   }
 
   /** Aceita os quinze segundos previstos pelo contrato fixado da receita Runway Product UGC. */

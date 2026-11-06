@@ -63,6 +63,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -74,6 +75,64 @@ import org.springframework.web.multipart.MultipartFile;
 public class SalesVideoController {
   private final SalesVideoService salesVideoService;
   private final AssetMapper assetMapper;
+
+  /** Registra uma gravação funcional e seu manifesto no projeto sem iniciar análise paga. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Vincular gravação funcional privada do produto")
+  @PostMapping(
+      value = "/api/sales-videos/projects/{projectId}/product-recording",
+      consumes = "multipart/form-data")
+  public java.util.Map<String, Object> uploadProductRecording(
+      @PathVariable Long projectId,
+      @org.springframework.web.bind.annotation.RequestPart("file") MultipartFile file,
+      @org.springframework.web.bind.annotation.RequestPart("manifest") String manifest) {
+    return salesVideoService.uploadProductRecording(projectId, file, manifest);
+  }
+
+  /** Entrega o MP4 funcional somente no contexto do projeto proprietário. */
+  @io.swagger.v3.oas.annotations.Operation(summary = "Ler gravação funcional privada do produto")
+  @GetMapping(
+      value = "/api/sales-videos/projects/{projectId}/product-recording",
+      produces = "video/mp4")
+  public org.springframework.http.ResponseEntity<byte[]> productRecording(
+      @PathVariable Long projectId) {
+    return org.springframework.http.ResponseEntity.ok()
+        .cacheControl(org.springframework.http.CacheControl.noStore())
+        .body(salesVideoService.readProductRecording(projectId));
+  }
+
+  /** Consulta o teto do job e a operação persistida sem iniciar provedor ou modelo. */
+  @GetMapping("/internal/video/jobs/{jobId}/spending/{purpose}")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Context spendingContext(
+      @PathVariable Long jobId, @PathVariable String purpose) {
+    return salesVideoService.jobSpendingContext(jobId, purpose);
+  }
+
+  /** Reserva o request real da etapa do job no mesmo teto de agentes e revisões. */
+  @PostMapping("/internal/video/jobs/{jobId}/spending/{purpose}/reserve")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease reserveSpend(
+      @PathVariable Long jobId,
+      @PathVariable String purpose,
+      @RequestBody com.marketinghub.videocontract.v1.BoundedSpendContracts.Reserve input) {
+    return salesVideoService.reserveJobSpend(jobId, purpose, input);
+  }
+
+  /** Admite uma única chamada externa depois de persistir seu custo máximo. */
+  @PostMapping("/internal/video/jobs/{jobId}/spending/{purpose}/{reservationId}/begin")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease beginSpend(
+      @PathVariable Long jobId, @PathVariable String purpose, @PathVariable Long reservationId) {
+    return salesVideoService.beginJobSpend(jobId, purpose, reservationId);
+  }
+
+  /** Preserva o resultado ou a incerteza da mesma operação sem gastar novamente. */
+  @PostMapping("/internal/video/jobs/{jobId}/spending/{purpose}/{reservationId}/result")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease recordSpend(
+      @PathVariable Long jobId,
+      @PathVariable String purpose,
+      @PathVariable Long reservationId,
+      @RequestBody com.marketinghub.videocontract.v1.BoundedSpendContracts.Result input) {
+    return salesVideoService.recordJobSpend(jobId, purpose, reservationId, input);
+  }
 
   /** Inicializa o controller com a fachada única do módulo e o mapper de assets. */
   public SalesVideoController(SalesVideoService salesVideoService, AssetMapper assetMapper) {
@@ -129,6 +188,26 @@ public class SalesVideoController {
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {
     return salesVideoService.getStudioCatalog();
+  }
+
+  /** Simula duração e custo de cada tomada sem geração paga nem autorização comercial. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Prever tomadas, montagem e custos antes de gerar")
+  @PostMapping("/api/sales-videos/studio/clip-plan")
+  public com.marketinghub.salesvideo.service.clipplan.StudioClipPlanResponse previewClipPlan(
+      @Valid @RequestBody
+          com.marketinghub.salesvideo.service.clipplan.StudioClipPlanRequest request) {
+    return salesVideoService.previewClipPlan(request);
+  }
+
+  /** Registra a previsão integral restante para o ciclo, sem alterar sua autorização. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Registrar previsão integral auditável sem produzir")
+  @PutMapping("/api/sales-videos/projects/{projectId}/production-cost-plan")
+  public com.marketinghub.videocontract.v1.ProductionCostPlan registerProductionCosts(
+      @PathVariable Long projectId,
+      @RequestBody com.marketinghub.videocontract.v1.ProductionCostPlan request) {
+    return salesVideoService.registerProductionCosts(projectId, request);
   }
 
   /** Lista modelos de vídeo e o estado dos gates de homologação. */
@@ -454,6 +533,12 @@ public class SalesVideoController {
   @GetMapping("/internal/video/jobs/{jobId}")
   public SalesVideoJobDto getVideoJob(@PathVariable Long jobId) {
     return salesVideoService.getJob(jobId);
+  }
+
+  /** Entrega checkpoints persistidos ao executor para reuso dos mesmos clipes e tarefas. */
+  @GetMapping("/internal/video/jobs/{jobId}/events")
+  public List<SalesVideoJobEventDto> getInternalVideoJobEvents(@PathVariable Long jobId) {
+    return salesVideoService.getJobEvents(jobId);
   }
 
   /** Faz claim de job interno do módulo externo de vídeo. */

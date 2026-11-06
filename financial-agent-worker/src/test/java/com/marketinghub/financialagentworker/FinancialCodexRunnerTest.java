@@ -154,11 +154,11 @@ class FinancialCodexRunnerTest {
     assertThat(prompt)
         .contains(
             "Não exija retorno, venda ou ROI anterior",
-            "custos históricos irrecuperavelmente desconhecidos são USD 0",
-            "custos históricos conhecidos sem plano são gastos passados",
+            "Custos históricos sem valor permanecem desconhecidos",
+            "não os converta em USD 0",
             "não compare o total histórico sem plano com o teto incremental",
-            "US$ 20 no total",
-            "no máximo US$ 10 por vídeo",
+            "quantidade de peças, o teto e os sub-limites explicitamente autorizados neste ciclo",
+            "não importe valores de templates ou outros produtos",
             "rastreabilidade do custo incremental novo",
             "preflight READY e reserva preventiva ainda vigente",
             "RUNWAY_ROUTER:<routerConfigId>",
@@ -167,6 +167,8 @@ class FinancialCodexRunnerTest {
             "execução determinística sem saldo, quota, compra de créditos ou custo de provider",
             "batchRouteId",
             "recarga mínima");
+    assertThat(prompt).contains("PROVIDER_FULL_COST_PLAN_REQUIRED", "Desconhecido não é zero", "production-cost-plan");
+    assertThat(prompt).doesNotContain("musa-two-video-funnel-v1", "US$ 20 no total", "são USD 0");
     String schema =
         Files.readString(
             Path.of(

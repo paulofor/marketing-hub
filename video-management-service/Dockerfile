@@ -6,6 +6,7 @@ WORKDIR /workspace
 COPY video-management-service/pom.xml video-management-service/pom.xml
 RUN mvn -B -f video-management-service/pom.xml dependency:go-offline
 
+COPY shared/video-capabilities shared/video-capabilities
 COPY video-management-service/src video-management-service/src
 RUN mvn -B -f video-management-service/pom.xml package -DskipTests && \
     mv video-management-service/target/video-management-service-0.0.1-SNAPSHOT.jar video-management-service/target/app.jar

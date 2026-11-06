@@ -50,9 +50,25 @@ public class BackendVideoClient {
                               VideoJobObservabilityService observabilityService) {
         this.webClient = builder
                 .baseUrl(properties.getBackendBaseUrl().toString())
+                .defaultHeader("X-Single-Video-Spending-Contract", "SINGLE_VIDEO_BOUNDED_V1")
                 .build();
         this.properties = properties;
         this.observabilityService = observabilityService;
+    }
+
+    /** Consulta ou registra consumo sem retry implícito no direito de envio de uma chamada paga. */
+    public com.fasterxml.jackson.databind.JsonNode spending(Long jobId, String purpose, String suffix,
+                                                            com.fasterxml.jackson.databind.JsonNode body) {
+        String path = "/internal/video/jobs/" + jobId + "/spending/" + purpose + suffix;
+        try {
+            WebClient.RequestHeadersSpec<?> request = body == null ? webClient.get().uri(path)
+                    : webClient.post().uri(path).contentType(MediaType.APPLICATION_JSON).bodyValue(body);
+            return authorized(request).retrieve().bodyToMono(com.fasterxml.jackson.databind.JsonNode.class)
+                    .block(properties.getJobs().getBackendCallTimeout());
+        } catch (RuntimeException ex) {
+            log.error("Admissão financeira do job indisponível; jobId={} purpose={} endpoint={}", jobId, purpose, path, ex);
+            throw wrap("Nenhum consumo novo autorizado sem resposta do backend", ex);
+        }
     }
 
     /** Reconcilia novos ciclos e, mesmo se essa etapa falhar, consulta jobs já persistidos. */
@@ -171,6 +187,18 @@ public class BackendVideoClient {
         } catch (Exception ex) {
             log.error("Falha na comunicação de vídeo com backend", ex);
             throw wrap("Falha ao consultar job %d".formatted(jobId), ex);
+        }
+    }
+
+    /** Lê os checkpoints do mesmo job pelo backend, sem consultar novamente um provider pago. */
+    public List<com.marketinghub.videomanagement.client.dto.VideoJobEvent> fetchJobEvents(Long jobId) {
+        try {
+            return authorized(webClient.get().uri("/internal/video/jobs/{jobId}/events", jobId))
+                    .retrieve().bodyToFlux(com.marketinghub.videomanagement.client.dto.VideoJobEvent.class)
+                    .collectList().block(properties.getJobs().getBackendCallTimeout());
+        } catch (Exception ex) {
+            log.error("Falha ao consultar checkpoints de vídeo; jobId={}", jobId, ex);
+            throw wrap("Checkpoints indisponíveis; nenhuma geração pode ser repetida", ex);
         }
     }
 

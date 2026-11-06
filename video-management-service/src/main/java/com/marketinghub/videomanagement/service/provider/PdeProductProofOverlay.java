@@ -35,6 +35,10 @@ final class PdeProductProofOverlay {
 
     /** Confere bytes, hash, enquadramento e cortes antes de consumir o gerador pago. */
     void verify(JsonNode metadata, Long jobId) {
+        if (FunctionalRecordingOverlay.requested(metadata)) {
+            new FunctionalRecordingOverlay(properties,backend).verify(metadata,jobId);
+            return;
+        }
         if (hasSequence(metadata)) {
             for (JsonNode shot : sequence(metadata)) verify(withShot(metadata, shot), jobId);
             return;
@@ -56,6 +60,7 @@ final class PdeProductProofOverlay {
     /** Compõe a captura no trecho narrado, reservando faixas distintas para identificação e aviso de IA. */
     ProductUgcReferenceOverlay.OverlayResult apply(Path source, JsonNode metadata, Long jobId,
                                                   List<PdeProofCaptionTiming.Window> captions) {
+        if (FunctionalRecordingOverlay.requested(metadata)) return new FunctionalRecordingOverlay(properties,backend).apply(source,metadata,jobId);
         if (hasSequence(metadata)) return applySequence(source, metadata, jobId, captions);
         if (metadata.at("/post_production/product_proof").isMissingNode()) {
             return new ProductUgcReferenceOverlay.OverlayResult(source, Map.of());

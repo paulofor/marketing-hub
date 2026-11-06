@@ -10,8 +10,16 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: acessar ciclos governados de produção de vídeo. */
 public interface VideoProductionCycleRepository extends JpaRepository<VideoProductionCycle, Long> {
+  /** Serializa comandos administrativos para não duplicar tarefa, reserva ou job do ciclo. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select c from VideoProductionCycle c where c.id = :id")
+  Optional<VideoProductionCycle> findByIdForUpdate(@Param("id") Long id);
+
   /** Lista ciclos de um projeto do mais recente para o mais antigo. */
   List<VideoProductionCycle> findByVideoProjectIdOrderByCreatedAtDesc(Long videoProjectId);
+
+  /** Localiza o pedido proprietário da fala, sem inferir vínculo por título ou metadata. */
+  List<VideoProductionCycle> findByIrisAgentTaskId(Long irisAgentTaskId);
 
   /** Lista ciclos aguardando decisão financeira. */
   List<VideoProductionCycle> findByStatusOrderByCreatedAtAsc(String status);

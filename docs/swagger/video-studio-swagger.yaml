@@ -352,6 +352,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VideoReferenceAnalysisExecution"
+  /api/sales-videos/projects/{projectId}/product-recording:
+    post:
+      summary: Vincular gravação funcional privada pelo Estúdio sem análise paga
+      description: MP4 H264 sem áudio, até 8 MiB, manifesto PRODUCT_FUNCTIONAL_RECORDING_V1
+        com LOCAL_SANDBOX, AGENT_VALIDATION, fonte herdada e ações datadas. Mantém bytes
+        privados no banco existente; não chama storage externo, geração ou fila de análise.
+        Reenvio dos mesmos bytes e manifesto é idempotente. Não renova homologação nem
+        aprova a qualidade final.
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              - manifest
+              properties:
+                file:
+                  type: string
+                  format: binary
+                manifest:
+                  type: string
+                  description: Manifesto JSON íntegro com hash dos bytes, versão de
+                    origem, duração, dimensões e quatro ações em ordem.
+      responses:
+        '200':
+          description: Gravação vinculada automaticamente ao projeto, com hash e proveniência.
+        '404':
+          description: Projeto não encontrado no tenant.
+        '409':
+          description: Manifesto, fonte, estado ou autorização incompatível.
+    get:
+      summary: Ler MP4 funcional privado do projeto
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Bytes privados, Cache-Control no-store.
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Gravação não pertence ao tenant/projeto.
+
 components:
   parameters:
     ProjectId:

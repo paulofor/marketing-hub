@@ -11689,3 +11689,120 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - Limite: proteção e clareza não geram vídeo nem aprovam custo. Pedido cinematográfico
   segue no sucessor #21/#114, sem herdar limites. Evidências e matriz em
   `docs/homologacao/vega-video-estudio-2026-11-04.md`.
+
+## LOOP-VIDEO-CAPACIDADE-DUPLICADA — duração, catálogo e custo divergem antes de gerar
+
+- **Evidência de 05/11/2026:** banco com 15 cadastros; Seedance 2.5 apenas Pippit DRAFT; falta de
+  Kling 4/Aleph 2. Relato auditado da chamada 9ca43054-e345-450c-b68c-7bfc88966a3f: 15s com Gen-4.5
+  como único elegível. O log corrente consultado via MCP não contém essa linha; não inferir bloqueio
+  da conta. Código confirma limites independentes e clamp; Seedance 2.5 era tratado pelo prefixo 2.0.
+- **Causa:** catálogo público/persistido, UI, planner e adapter mantinham regras distintas; o
+  planejamento confundia duração final, tomadas e beats; estimativas diretas usavam tarifa genérica.
+  Conteúdo MUSA e duração de 30s podiam contaminar contexto genérico. Custo integral faltante também
+  poderia fazer a transação do callback perder o dry run e repetir o consumo preparatório.
+- **Mudança reutilizável:** contrato compartilhado v1, resolução exata de modelos, partição com
+  mínimos/conjuntos discretos, prévia anterior à geração, reserva integral com fontes e cobertura
+  do ledger, gates antes de job/POST e bloqueio persistido sem apagar a simulação. Timeout da Runway
+  passa a resultado incerto; recuperação automática não repete geração de job já em processamento.
+- **Regressão:** Gen-4.5/15s bloqueado sem POST; 32s preservados com áudio/legenda em FFmpeg; Veo
+  15s finais/16s cobrados; Seedance 2.5 independente de 2.0; Router divergente, tarifa vencida,
+  custo desconhecido, callback duplicado e identidades distintas. Desktop, iPhone e Pixel com
+  controller real e nenhuma geração. Banco MySQL 5.7/Liquibase preserva Pippit e gates no replay.
+- **Limites:** testes não homologam qualidade de modelos novos, não consultam saldo privado novo e
+  não comprovam vendas. Novos adapters continuam DRAFT/HOMOLOGATION. Registro de tomada parcial
+  preserva ID/URL/hash e impede repetição paga; não implementa replay/download automático permanente.
+- **Matriz:** `docs/homologacao/studio-capabilities-2026-11-05.md`.
+
+No mesmo fechamento, o monitor financeiro liquidava qualquer estado terminal do job. A regressão agora cobre submissão incerta em dois ciclos, custo desconhecido, reserva protegida sem valor realizado inventado e liquidação do caminho válido.
+
+A prevenção inclui a política central de reprocessamento: clonar metadata de render Runway não representa novo preflight. RENDER/RETRY genérico é bloqueado no backend e clones legados são recusados no executor antes do planejador; acabamento e caminhos antes válidos têm regressão própria. MCP não encontrou uso persistido desse atalho para render Runway, sem imputação de gasto histórico.
+
+O gate de render exige o parecer aprovado no ciclo persistido; o marcador de aprovação recebido do cliente não é autoridade. A regressão compara o mesmo contexto com e sem decisão registrada, antes de qualquer geração.
+
+### Continuação do LOOP-VIDEO-CAPACIDADE-DUPLICADA — 05/11/2026
+
+A revisão do botão real confirmou que `buildStudioSceneMetadata` não enviava os campos
+financeiros exigidos pelo gate. Acrescentar IDs no cliente manteria a divergência de
+autoridade. O comando agora resolve ciclo e job no servidor, reutiliza o job e recusa
+contextos cruzados. A preparação integral ganhou formulário e reavaliação do mesmo ciclo,
+sem resetar teto nem chamar parecer pago antes da prontidão.
+
+A inspeção também confirmou que os clipes só sobreviviam em memória até a montagem.
+O executor passa a armazená-los imediatamente, com recibos de task/asset/URL/hash, e a
+restaurar o plano auditado. A regressão força falha de FFmpeg e reinicia o adapter: recupera
+os mesmos clipes, mantendo a contagem de POSTs e de consultas do provider. Envio sem ID
+confirmado continua bloqueado. Testes sintéticos não comprovam qualidade premium externa.
+O replay também podia reenviar o aceite e substituir um custo liquidado por estimativa.
+O ledger compartilhado preserva o primeiro registro da task e recusa contexto/valor
+divergente; clipes preservados não repetem os eventos financeiros. A regressão cobre
+dois jobs, custo conciliado, timestamp original e recusa de reutilização em outro job.
+
+Permanece uma lacuna distinta: o recibo e a reserva integral não impõem teto compartilhado
+às chamadas Codex dos agentes. O wrapper operacional apenas serializa OAuth; os runners
+usam timeout e contabilização posterior. A contenção impede a tarefa paga de Plutus e
+renders diretos com esse recibo, expondo `SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED`.
+Não declarar esse controle integral implementado nem essa pendência resolvida.
+Matriz e fontes em `docs/homologacao/vega-retomada-video-2026-11-05.md`.
+
+## LOOP-HARNESS-FIXTURE-DOCUMENTAL-EXPIRADA — 05/11/2026
+
+- **Evidência:** PDE/Mira passou às 18:48 UTC, mas recusou a mesma fixture às 21:49.
+  Sua observação de 06/10 venceu às 21:13:35, após os 30 dias contratuais; os hashes
+  dos trechos não mudaram. Falha não era de vídeo, SQL ou saldo.
+- **Causa e correção:** fonte estática vencida no harness compartilhado, sem erro
+  que identificasse URL e prazo. Fontes oficiais reconsultadas e correspondentes;
+  nova fixture datada e atestação v78, preservando as anteriores. Validador comum
+  informa fonte/prazo e recusa datas inválidas ou futuras e trecho adulterado.
+- **Prevenção:** cinco testes determinísticos de limites e integridade; CLI de
+  diagnóstico sem abrir navegador. Uma repetição nunca renova a fonte. O gate de
+  30 dias permanece e exige consulta real quando vencer, sem aprovação retroativa.
+- **Validação:** matriz real de 18 percursos, histórico e cenários com MySQL 5.7,
+  sem provider externo; construtor real de evidências e regressões aprovados.
+- **Registro:** `docs/homologacao/mira-fixture-documental-retomada-2026-11-05.md`.
+
+### Continuação do LOOP-VIDEO-CAPACIDADE-DUPLICADA — 06/11/2026
+
+O HEAD 8303130 preservava a pausa por falta de limite efetivo, mas OAuth/timeout e
+contabilização posterior não eram capazes de assegurar o recibo integral. O contrato
+SINGLE_VIDEO_BOUNDED_V1 admite requests finitos sob lock comercial, retém máximos após
+incerteza, bloqueia consumidores antigos e revalida cobertura/STOP antes do envio.
+Clipes transferem valor da reserva comum, sem somar duas vezes; agente, planner,
+locução e escuta usam a mesma autoridade. Callbacks, arquivos `.pending` íntegros e IDs
+originais são reutilizados sem outra inferência. Corpo ou contexto incompatível bloqueia.
+
+O perfil DRAFT agora prepara uma entrada privada de Íris; PRIVATE_READY não fabrica
+aprovação. A ausência de gravação real é tratada antes de inferência, no mesmo pedido,
+e a versão v17 herdada permanece distinta da versão audiovisual alvo. A gravação funcional
+local real de 10,92s confirmou salvar/reabrir em MySQL e celular, sem provedor. O upload
+privado do Estúdio mantém esses bytes e o hash; não aciona a fila genérica de análise.
+Psique/Têmis recebem o mesmo MP4 final e Têmis anexa quadros reais datados, preservando
+segregação do produtor. Nenhum desses testes é um parecer premium nem comprova vendas.
+
+Hipótese de melhoria: reduzir custo de repetição e tempo parado até a peça revisável,
+sem ampliar teto. Medida local: zero POST pago adicional nos replays e recusas; concorrência
+MySQL de três executores aceita apenas cobertura dentro de US$15. Adoção depende de revisão,
+checks, publicação e credenciais próprias válidas; reverter o transporte exige preservar
+a pausa do recibo, nunca voltar a OAuth sem limite. Impacto comercial depende de medição
+posterior. Matriz e limites: `docs/homologacao/vega-retomada-video-2026-11-05.md`.
+
+
+Complemento da regressão de vídeo único em 06/11/2026: a conferência encontrou
+admissão ampla por experimento na implementação local do transporte. A política
+foi restringida à tarefa de Íris e ao gate real de Plutus vinculados ao pedido,
+e às revisões da mídia do render fixado no recibo; áudio exige asset exato.
+`SingleVideoSpendingTest` cobre tarefa alheia no mesmo experimento, gate elegível,
+outro render/tenant/asset e preservação do legado. O teste editorial também mede
+pixels nas sete fronteiras entre oito partes, impedindo declarar cortes somente
+por metadata. Evidência local previne desperdício e falsa conclusão; não comprova
+qualidade premium nem impacto em vendas.
+
+
+Na mesma conferência de 06/11, o caminho de revisão de vídeo sozinho ainda dependia
+de PNG: backend procurava produtor estático, o cliente recusava array vazio e a
+validação misturava VIDEO_FRAME com CREATIVE_RENDER. Regressões atravessam agora
+a rota HTTP de entradas e os dois validadores, preservando o sucesso anterior com
+PNG e o caso misto. A exceção de modalidade exige MP4 canônico pronto da mesma
+versão e ausência de produção estática solicitada; não libera imagem reprovada nem
+aprova vídeo sem frames/áudio. Íris também recusa artes extras no pedido privado
+único. Hipótese: evitar espera e gasto em ativo que não foi pedido para chegar à
+revisão da peça real; resultado comercial ainda sem medição.

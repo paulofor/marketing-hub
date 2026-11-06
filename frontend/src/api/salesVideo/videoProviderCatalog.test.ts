@@ -20,7 +20,9 @@ describe("videoProviderCatalog", () => {
 
     expect(provider).toBeDefined();
 
-    const metadata = JSON.parse(buildSalesVideoRenderMetadata(provider!));
+    const metadata = JSON.parse(
+      buildSalesVideoRenderMetadata(provider!, { template: "MUSA" }),
+    );
 
     expect(metadata.provider_strategy.stream_required).toBe(true);
     expect(metadata.provider_strategy.stream_target).toBe("HLS_ADAPTIVE");
@@ -48,15 +50,15 @@ describe("videoProviderCatalog", () => {
     );
   });
 
-  it("usa imagem-base OpenAI por padrao quando o provider Luma suporta o recurso", () => {
+  it("preserva contexto genérico sem MUSA, 30s ou imagem paga implícita", () => {
     const metadata = JSON.parse(
       buildSalesVideoRenderMetadata(DEFAULT_SALES_VIDEO_PROVIDER),
     );
-
-    expect(metadata.generation_strategy).toBe("OPENAI_IMAGE_TO_LUMA_VIDEO");
-    expect(metadata.image_to_video.enabled).toBe(true);
-    expect(metadata.image_to_video.source_image_provider).toBe("OPENAI");
-    expect(metadata.image_to_video.reference_image_count).toBe(1);
+    expect(metadata.generation_strategy).toBe("TEXT_TO_VIDEO");
+    expect(metadata.image_to_video.enabled).toBe(false);
+    expect(metadata.assembly_plan).toBeUndefined();
+    expect(JSON.stringify(metadata)).not.toContain("MUSA");
+    expect(metadata.targetDurationSeconds).toBeUndefined();
   });
 
   it("preserva diretivas visuais customizadas para teste por provider", () => {
@@ -260,7 +262,7 @@ describe("videoProviderCatalog", () => {
       }),
     );
 
-    expect(metadata.commercial_goal).toBe("ORGANIC_VIDEO_MUSA_SIGNAL_TEST");
+    expect(metadata.commercial_goal).toBe("ORGANIC_VIDEO_SIGNAL_TEST");
     expect(metadata.organic_video_plan.sequence).toBe(1);
     expect(metadata.organic_video_plan.funnel_stage).toBe(
       "Desconhecido -> relevante",

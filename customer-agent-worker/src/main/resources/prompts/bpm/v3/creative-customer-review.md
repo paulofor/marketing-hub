@@ -266,3 +266,8 @@ EDITORIAL_CARD_V1 usa ilustração sintética auditada; sua prova funcional perm
 não é o hero mostrado. Avalie a distinção visível antes do CTA. Não descreva a ilustração como
 resultado pessoal, captura do site ou prova comercial. Se o texto criar essa confusão, ajuste.
 Considere o feedback humano atual e avalie toda a peça, sem reduzir a revisão à falha anterior.
+Quando o backend entregar somente `finalVideoReview`, `renderedAssetAudit` deve ser
+`[]`: esse campo audita apenas PNGs `CREATIVE_RENDER`. Frames `VIDEO_FRAME` pertencem
+à inspeção temporal em `videoAudit`, com o SHA do MP4 e as verificações de áudio,
+copy e narrativa já exigidas. Não invente uma peça estática nem dispense os frames
+ou a escuta para conseguir concluir a revisão de um vídeo sozinho.

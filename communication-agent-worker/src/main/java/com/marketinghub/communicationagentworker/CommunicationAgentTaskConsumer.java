@@ -333,7 +333,7 @@ public class CommunicationAgentTaskConsumer {
         List.of(
             Map.of(
                 "modelCode", modelCode(task),
-                "serviceTier", "STANDARD",
+                "serviceTier", task.getOrDefault("singleVideoNativeServiceTier", "STANDARD"),
                 "inputTokens", usage.inputTokens(),
                 "cachedInputTokens", usage.cachedInputTokens(),
                 "outputTokens", usage.outputTokens())));

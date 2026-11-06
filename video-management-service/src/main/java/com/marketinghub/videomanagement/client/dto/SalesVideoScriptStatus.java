@@ -6,6 +6,7 @@ package com.marketinghub.videomanagement.client.dto;
 public enum SalesVideoScriptStatus {
     DRAFT,
     READY_FOR_REVIEW,
+    PRIVATE_READY,
     APPROVED,
     ARCHIVED
 }

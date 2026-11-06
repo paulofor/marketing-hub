@@ -182,6 +182,9 @@ public class AgentTaskService {
   private List<AgentTaskClaimPreparationHook> claimPreparationHooks = List.of();
 
   @Autowired(required = false)
+  private AgentTaskSpendingPolicy spendingPolicy;
+
+  @Autowired(required = false)
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext
       opalaCommercialContext;
 
@@ -204,6 +207,9 @@ public class AgentTaskService {
 
   @Autowired(required = false)
   private CreativeFinalVideoEvidence creativeFinalVideoEvidence;
+
+  @Autowired(required = false)
+  private AgentTaskPrivateVideoInputProvider privateVideoInput;
 
   @Autowired(required = false)
   private com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService audioReviews;
@@ -2848,9 +2854,14 @@ public class AgentTaskService {
   }
 
   /**
-   * Entrega somente o alvo necessário quando o worker versionado executa uma regra determinística.
+   * Entrega o alvo auditável e recusa transporte pago incompatível, preservando replay já
+   * produzido.
    */
   private AgentTaskPendingResponse pendingResponse(AgentTask task, boolean targetOnly) {
+    if (spendingPolicy != null && !retryCallbackPayloadAvailable(task)) {
+      String blocker = spendingPolicy.claimBlocker(task);
+      if (blocker != null) throw new ResponseStatusException(HttpStatus.CONFLICT, blocker);
+    }
     BusinessProcessDefinition process = task.getProcessDefinition();
     AgentTaskTargetResponse taskTarget =
         taskTargetContextProvider
@@ -2890,11 +2901,32 @@ public class AgentTaskService {
                 String.valueOf(taskTarget)),
         targetOnly || catalogoVivo == null ? null : catalogoVivo.prompt(task),
         retryResultJson(task),
-        retryEvidenceJson(task));
+        retryEvidenceJson(task),
+        spendingPolicy != null && spendingPolicy.protectedExecution(task));
   }
 
-  /** Executa uma única preparação especializada e persiste a espera sem consumir o executor. */
+  /**
+   * Valida o transporte de gasto antes da preparação especializada e persiste a espera sem
+   * inferência.
+   */
   private boolean preparedForClaim(AgentTask task) {
+    if (spendingPolicy != null) {
+      String blocker = spendingPolicy.claimBlocker(task);
+      if (blocker != null) {
+        if (!Objects.equals(task.getBlockerAction(), blocker)) {
+          applyBlockerGuidance(
+              task,
+              new AgentTaskBlockerGuidanceRequest(
+                  "TECHNICAL_FAILURE", blocker, defaultHelpLinks(task)),
+              null,
+              null);
+          task.setUpdatedAt(Instant.now(clock));
+          repository.save(task);
+        }
+        return false;
+      }
+      spendingPolicy.prepareClaim(task);
+    }
     List<AgentTaskClaimPreparationHook> matched =
         claimPreparationHooks.stream().filter(hook -> hook.supports(task)).toList();
     if (matched.size() > 1) {
@@ -3181,6 +3213,10 @@ public class AgentTaskService {
                             "marketStrategicContract", Map.of("availability", "MISSING")));
                   }
                 });
+      }
+      if (privateVideoInput != null) {
+        var studio = privateVideoInput.forTask(task);
+        if (!studio.isEmpty()) context.put("privateStudioVideoBrief", studio);
       }
       return objectMapper.writeValueAsString(context);
     } catch (Exception ex) {

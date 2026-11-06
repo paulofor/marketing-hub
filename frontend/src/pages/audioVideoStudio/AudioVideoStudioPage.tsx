@@ -1,3 +1,5 @@
+import SingleVideoSpendingSummary from "./SingleVideoSpendingSummary";
+import ProductRecordingUpload from "./ProductRecordingUpload";
 import {
   BadgeCheck,
   Ban,
@@ -45,6 +47,8 @@ import {
   useCreateVideoProductionCycle,
   useCreateVideoProviderPreflight,
   useVideoProductionCycles,
+  useRenderVideoProject,
+  useRecoverVideoProductionCycle,
   videoProductionError,
 } from "../../api/salesVideo/useVideoProductionCycles";
 import {
@@ -64,6 +68,9 @@ import type {
   VideoProjectStatus,
 } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
+import { ClipPlanPreview } from "./ClipPlanPreview";
+import { ProductionCostPreparation } from "./ProductionCostPreparation";
+import { useSalesVideoProviderModels } from "../../api/salesVideo/useSalesVideoProviderModels";
 import { videoCycleBudget } from "./videoCycleBudget";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
@@ -510,33 +517,27 @@ const buildSteps = [
 
 const longFormScriptBlocks = [
   {
-    time: "0:00-0:15",
     title: "Gancho",
     objective: "Quebrar rolagem com dor clara e promessa especifica.",
   },
   {
-    time: "0:15-0:45",
     title: "Dor e custo oculto",
     objective: "Mostrar o prejuizo pratico de continuar sem resolver.",
   },
   {
-    time: "0:45-1:20",
     title: "Mecanismo",
     objective:
       "Apresentar a nova forma de obter o resultado com menos esforco.",
   },
   {
-    time: "1:20-2:05",
     title: "Demonstracao",
     objective: "Exibir processo, exemplo, tela, antes/depois ou prova visual.",
   },
   {
-    time: "2:05-2:35",
     title: "Oferta",
     objective: "Conectar promessa, entregaveis, bonus e reducao de risco.",
   },
   {
-    time: "2:35-3:00",
     title: "CTA",
     objective: "Dar uma acao simples e direta para o proximo passo do funil.",
   },
@@ -544,27 +545,21 @@ const longFormScriptBlocks = [
 
 const heroScriptBlocks = [
   {
-    time: "0:00-0:08",
-    title: "Dor do espelho",
-    objective:
-      "Gerar identificacao imediata com a sensacao de faltar presenca.",
+    title: "Dor reconhecível",
+    objective: "Demonstrar a necessidade real descrita no briefing do produto.",
   },
   {
-    time: "0:08-0:16",
-    title: "Resultado possivel",
+    title: "Resultado possível",
     objective:
-      "Mostrar elegancia acessivel, sem luxo e sem transformacao exagerada.",
+      "Mostrar uma melhoria plausível e útil, fiel ao que o produto entrega.",
   },
   {
-    time: "0:16-0:26",
-    title: "Mecanismo MUSA",
-    objective:
-      "Tangibilizar ruido visual, peca-sinal, cor, acabamento e postura.",
+    title: "Mecanismo",
+    objective: "Exibir a ação e a demonstração real do mecanismo aprovado.",
   },
   {
-    time: "0:26-0:34",
-    title: "Diagnostico",
-    objective: "Levar ao clique no plano MUSA de 7 dias.",
+    title: "Próximo passo",
+    objective: "Conectar a chamada para ação ao funil do mesmo produto.",
   },
 ];
 
@@ -604,6 +599,17 @@ const musaV7ScenePrompts = [
 ];
 const MAX_CINEMATIC_SCENES = 48;
 
+export function buildStudioTimeline(targetSeconds: number) {
+  if (!Number.isFinite(targetSeconds) || targetSeconds < 1) return [];
+  const blocks = targetSeconds <= 60 ? heroScriptBlocks : longFormScriptBlocks;
+  const format = (seconds: number) =>
+    `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  return blocks.map((block, index) => ({
+    ...block,
+    time: `${format(Math.floor((index * targetSeconds) / blocks.length))}-${format(Math.floor(((index + 1) * targetSeconds) / blocks.length))}`,
+  }));
+}
+
 export function resolveStudioSceneRole(sceneIndex: number, sceneCount: number) {
   if (sceneIndex === 0) return "DOR";
   if (sceneIndex === sceneCount - 1) return "CTA";
@@ -620,7 +626,7 @@ export function buildStudioSceneMetadata(
   sceneCount = 4,
 ) {
   return JSON.stringify({
-    commercial_goal: "PDE_MUSA_HERO_VIDEO_SCENE",
+    commercial_goal: "PDE_COMMERCIAL_VIDEO_SCENE",
     generation_strategy: "SCENE_BY_SCENE_MONTAGE",
     studio_project_id: project.id,
     campaign_key: project.campaignKey,
@@ -771,7 +777,7 @@ export function selectSingleJobForScene(
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
-const defaultBriefing: StudioBriefing = {
+const musaManifestoBriefing: StudioBriefing = {
   productId: "",
   commercialPlanId: "",
   experimentId: "",
@@ -843,6 +849,20 @@ const defaultBriefing: StudioBriefing = {
     "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
   status: "READY_FOR_SCRIPT",
 };
+
+const defaultBriefing: StudioBriefing = {
+  ...Object.fromEntries(
+    Object.keys(musaManifestoBriefing).map((key) => [key, ""]),
+  ),
+  videoCategory: "COMMERCIAL_SHORT",
+  contextType: "PDE",
+  productionMode: "STORY_FIRST_AUDIO_VIDEO",
+  targetChannel: "PDE_AND_SOCIAL",
+  format: "VERTICAL_9_16",
+  characterPerformanceType: "image",
+  learningDecision: "COLLECTING",
+  status: "DRAFT",
+} as StudioBriefing;
 
 const musaV7Briefing: StudioBriefing = {
   productId: "4",
@@ -1003,7 +1023,7 @@ const studioPresets: StudioPreset[] = [
     badge: "Modelo longo",
     description:
       "Estrutura longa para historia, mecanismo, prova, oferta e CTA.",
-    briefing: defaultBriefing,
+    briefing: musaManifestoBriefing,
   },
 ];
 
@@ -1100,12 +1120,15 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function findProviderFromPlan(providerPlan?: string | null) {
+export function findProviderFromPlan(
+  providerPlan?: string | null,
+  options = SALES_VIDEO_PROVIDER_OPTIONS,
+) {
   if (!providerPlan) {
     return DEFAULT_SALES_VIDEO_PROVIDER;
   }
   const normalizedPlan = providerPlan.toUpperCase();
-  const explicitlySelected = SALES_VIDEO_PROVIDER_OPTIONS.find((option) =>
+  const explicitlySelected = options.find((option) =>
     normalizedPlan.includes(
       `PROVIDER ESCOLHIDO NO ESTUDIO: ${option.label.toUpperCase()} (${option.providerName})`,
     ),
@@ -1113,7 +1136,7 @@ export function findProviderFromPlan(providerPlan?: string | null) {
   if (explicitlySelected) {
     return explicitlySelected;
   }
-  const primaryProvider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+  const primaryProvider = options.find(
     (option) =>
       normalizedPlan.includes(`${option.label.toUpperCase()} COMO PRINCIPAL`) ||
       normalizedPlan.includes(`${option.providerName} COMO PRINCIPAL`),
@@ -1166,6 +1189,8 @@ export default function AudioVideoStudioPage() {
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const productionCycles = useVideoProductionCycles(editableProjectId);
+  const canonicalRender = useRenderVideoProject(editableProjectId);
+  const recoverCycle = useRecoverVideoProductionCycle(editableProjectId);
   const apolloLearning = useApolloLearningExperiments();
   const apolloSkills = useApolloSkillCandidates();
   const storyboardQuery = useVideoStoryboard(editableProjectId);
@@ -1190,8 +1215,30 @@ export default function AudioVideoStudioPage() {
   const [salesVideoProfileId, setSalesVideoProfileId] = useState("");
   const [saveFeedback, setSaveFeedback] = useState("");
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
-  const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
+  const [sourceImageAssetId, setSourceImageAssetId] = useState("");
+  const providerModels = useSalesVideoProviderModels();
+  const liveProviders: SalesVideoProviderOption[] = (
+    providerModels.data ?? []
+  ).map((model) => ({
+    key: model.code,
+    label: model.displayName,
+    providerName: model.providerName,
+    providerFamily: model.providerFamily,
+    recommendedUse: model.recommendedUse,
+    clipDurationSeconds:
+      model.capabilities?.maxSeconds ?? model.clipDurationSeconds,
+    maxDirectDurationSeconds:
+      model.capabilities?.maxSeconds ?? model.maxDirectDurationSeconds,
+    supportsHeroVideo: model.supportsHeroVideo,
+    supportsSceneAssembly: model.supportsSceneAssembly,
+    supportsOpenAiReferenceImage: model.requiresSourceImage,
+    creditsUrl: model.creditsUrl ?? undefined,
+    lifecycleStatus: model.lifecycleStatus,
+  }));
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+  useEffect(() => {
+    setSourceImageAssetId("");
+  }, [editableProjectId, briefing.productId]);
   const productProfilesQuery = useSalesVideoProfiles(briefing.productId);
   const [persistedScenePlan, setPersistedScenePlan] = useState(
     defaultBriefing.scenePlan,
@@ -1237,10 +1284,7 @@ export default function AudioVideoStudioPage() {
     [briefing],
   );
 
-  const selectedTimeline =
-    targetDurationSeconds && targetDurationSeconds <= 60
-      ? heroScriptBlocks
-      : longFormScriptBlocks;
+  const selectedTimeline = buildStudioTimeline(targetDurationSeconds ?? 0);
   const selectedScenePrompts = briefing.scenePlan
     .split("\n")
     .slice(0, MAX_CINEMATIC_SCENES)
@@ -1252,8 +1296,8 @@ export default function AudioVideoStudioPage() {
   const characterOptions = studioCatalogQuery.data?.characters ?? [];
   const captionPresets = studioCatalogQuery.data?.captionPresets ?? [];
   const selectedProvider = useMemo(
-    () => findProviderFromPlan(briefing.providerPlan),
-    [briefing.providerPlan],
+    () => findProviderFromPlan(briefing.providerPlan, liveProviders),
+    [briefing.providerPlan, providerModels.data],
   );
   const providerConfigurationIssue =
     selectedProvider.providerName === "RUNWAY_PRODUCT_UGC" && selectedProject
@@ -1520,6 +1564,28 @@ export default function AudioVideoStudioPage() {
       );
       return;
     }
+    if (selectedProvider.providerName.startsWith("RUNWAY")) {
+      if (briefing.scenePlan.trim() !== persistedScenePlan.trim()) {
+        setSaveFeedback(
+          "Salve o storyboard antes de continuar a produção no ciclo.",
+        );
+        return;
+      }
+      try {
+        const cycle = await canonicalRender.mutateAsync();
+        setSaveFeedback(
+          `Ciclo #${cycle.id}: ${cycle.status}${cycle.salesVideoJobId ? ` · job #${cycle.salesVideoJobId}` : ""}. O backend coordena as tomadas e a montagem do storyboard completo.`,
+        );
+      } catch (error) {
+        setSaveFeedback(
+          videoProductionError(
+            error,
+            "Confira o preflight integral e o parecer de Plutus no mesmo projeto.",
+          ),
+        );
+      }
+      return;
+    }
     const previousSceneJobId =
       sceneIndex === 0
         ? undefined
@@ -1538,6 +1604,12 @@ export default function AudioVideoStudioPage() {
     if (briefing.scenePlan.trim() !== persistedScenePlan.trim()) {
       setSaveFeedback(
         "Salve os prompts das cenas antes de gerar. O render pago deve usar a versao persistida e auditavel no Marketing Hub.",
+      );
+      return;
+    }
+    if (selectedProvider.lifecycleStatus !== "ACTIVE") {
+      setSaveFeedback(
+        "Modelo ainda não homologado. Conclua os gates no catálogo antes de produzir.",
       );
       return;
     }
@@ -1583,8 +1655,13 @@ export default function AudioVideoStudioPage() {
       setSaveFeedback(
         `Cena ${sceneIndex + 1} enviada para geracao no job #${job.id}.`,
       );
-    } catch {
-      setSaveFeedback(`Nao foi possivel gerar a cena ${sceneIndex + 1}.`);
+    } catch (error) {
+      setSaveFeedback(
+        videoProductionError(
+          error,
+          `Não foi possível gerar a cena ${sceneIndex + 1}. Confira o preflight e a reserva integral no ciclo de produção deste projeto.`,
+        ),
+      );
     }
   };
 
@@ -1826,7 +1903,7 @@ export default function AudioVideoStudioPage() {
             <p>
               {isEditingProject
                 ? "Continue o trabalho a partir dos dados persistidos neste projeto."
-                : "Use o preset MUSA v7 como primeiro caso real ou ajuste o blueprint para outro video comercial."}
+                : "Preencha o contexto do produto ou selecione explicitamente um template para iniciar."}
             </p>
           </div>
           <div className="audio-video-studio-page__briefing-grid">
@@ -2925,8 +3002,9 @@ export default function AudioVideoStudioPage() {
                         <small>
                           O teto não é meta de gasto. O preflight consulta e
                           simula sem cobrança; Plutus avalia antes de qualquer
-                          geração paga. O ledger registra apenas custos novos
-                          deste ciclo. Apolo trabalha em TEST e não publica.
+                          geração paga. O recibo integral reúne os custos novos
+                          deste vídeo, incluindo suas revisões e tentativas.
+                          Apolo trabalha em TEST e não publica.
                         </small>
                         {createProductionCycle.isError ? (
                           <p role="alert">
@@ -2974,6 +3052,9 @@ export default function AudioVideoStudioPage() {
                           edição. Texto, legenda e CTA são aplicados na
                           pós-produção.
                         </p>
+                        <SingleVideoSpendingSummary
+                          cycle={productionCycles.data[0]}
+                        />
                         {productionCycles.data[0].providerPreflight ? (
                           <section
                             className="audio-video-studio-page__provider-preflight"
@@ -3195,20 +3276,48 @@ export default function AudioVideoStudioPage() {
                             : " · Aguardando a primeira task do provider."}
                         </p>
                         {productionCycles.data[0].lastFailedJobId ? (
-                          <p role="alert">
-                            Apolo falhou no job #
-                            {productionCycles.data[0].lastFailedJobId}
-                            {productionCycles.data[0].lastApolloFailureCode
-                              ? ` (${productionCycles.data[0].lastApolloFailureCode})`
-                              : ""}
-                            :{" "}
-                            {productionCycles.data[0].lastApolloFailureDetail ||
-                              "O job terminou sem detalhar a causa."}{" "}
-                            {productionCycles.data[0].salesVideoJobId !==
-                            productionCycles.data[0].lastFailedJobId
-                              ? `Uma nova tentativa foi reconciliada no job #${productionCycles.data[0].salesVideoJobId}.`
-                              : "O ciclo requer uma nova tentativa pelo fluxo oficial."}
-                          </p>
+                          <>
+                            <p role="alert">
+                              Apolo falhou no job #
+                              {productionCycles.data[0].lastFailedJobId}
+                              {productionCycles.data[0].lastApolloFailureCode
+                                ? ` (${productionCycles.data[0].lastApolloFailureCode})`
+                                : ""}
+                              :{" "}
+                              {productionCycles.data[0]
+                                .lastApolloFailureDetail ||
+                                "O job terminou sem detalhar a causa."}{" "}
+                              {productionCycles.data[0].salesVideoJobId !==
+                              productionCycles.data[0].lastFailedJobId
+                                ? `Uma nova tentativa foi reconciliada no job #${productionCycles.data[0].salesVideoJobId}.`
+                                : "O ciclo requer uma nova tentativa pelo fluxo oficial."}
+                            </p>
+                            <button
+                              type="button"
+                              disabled={recoverCycle.isPending}
+                              onClick={async () => {
+                                try {
+                                  const cycle = await recoverCycle.mutateAsync(
+                                    productionCycles.data[0].id,
+                                  );
+                                  setSaveFeedback(
+                                    `Recuperação no mesmo ciclo #${cycle.id}, job #${cycle.salesVideoJobId}. Nenhuma nova geração foi solicitada.`,
+                                  );
+                                } catch (error) {
+                                  setSaveFeedback(
+                                    videoProductionError(
+                                      error,
+                                      "Não foi possível recuperar; concilie os IDs anteriores antes de repetir.",
+                                    ),
+                                  );
+                                }
+                              }}
+                            >
+                              {recoverCycle.isPending
+                                ? "Conferindo checkpoints…"
+                                : "Consultar tasks e recuperar montagem sem gerar"}
+                            </button>
+                          </>
                         ) : null}
                       </div>
                     ) : null}
@@ -3216,7 +3325,7 @@ export default function AudioVideoStudioPage() {
                 ) : null}
               </article>
               <div className="audio-video-studio-page__provider-grid">
-                {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
+                {liveProviders.map((option) => {
                   const isSelected =
                     selectedProvider.providerName === option.providerName;
                   return (
@@ -3234,6 +3343,11 @@ export default function AudioVideoStudioPage() {
                       <strong>{option.label}</strong>
                       <small>{option.recommendedUse}</small>
                       <span>
+                        {option.lifecycleStatus === "ACTIVE"
+                          ? "Ativo; preflight obrigatório antes de gerar"
+                          : "Cadastro / homologação — geração bloqueada"}
+                      </span>
+                      <span>
                         {option.supportsSceneAssembly
                           ? "Cenas cinematograficas"
                           : "Formato direto/avatar"}
@@ -3248,10 +3362,33 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
+              <ClipPlanPreview
+                providerName={selectedProvider.providerName}
+                finalSeconds={Number(briefing.targetDurationSeconds)}
+                productionCostPlanJson={selectedProject?.productionCostPlanJson}
+                providerPlan={briefing.providerPlan}
+              />
+              {selectedProject ? (
+                <ProductionCostPreparation
+                  project={selectedProject}
+                  cycle={productionCycles.data?.[0]}
+                />
+              ) : null}
+              {providerModels.isError ? (
+                <p role="alert">
+                  Catálogo indisponível. Nenhuma geração liberada.
+                </p>
+              ) : null}
               {selectedProvider.providerName !== "RUNWAY_PRODUCT_UGC" &&
               selectedProvider.providerName !== "RUNWAY_ACT_TWO" ? (
                 <article className="audio-video-studio-page__project-card">
                   <strong>Prova real do PDE na finalização</strong>
+                  {selectedProject ? (
+                    <ProductRecordingUpload
+                      key={selectedProject.id}
+                      projectId={selectedProject.id}
+                    />
+                  ) : null}
                   <p>
                     Use uma captura homologada da mesma versão. Ela será
                     inserida nos cortes de mecanismo, resultado e prova, com voz
@@ -3415,19 +3552,32 @@ export default function AudioVideoStudioPage() {
                             )}
                           </span>
                           <p>{prompt}</p>
-                          <button
-                            className="audio-video-studio-page__secondary-action"
-                            type="button"
-                            disabled={requestSceneRender.isPending}
-                            onClick={() => handleRequestSceneRender(index)}
-                          >
-                            <Wand2 size={16} aria-hidden="true" />
-                            {jobs.length
-                              ? "Gerar nova variacao"
-                              : index === 0
-                                ? "Gerar clipe"
-                                : "Gerar com quadro-ponte"}
-                          </button>
+                          {!selectedProvider.providerName.startsWith(
+                            "RUNWAY",
+                          ) || index === 0 ? (
+                            <button
+                              className="audio-video-studio-page__secondary-action"
+                              type="button"
+                              disabled={
+                                requestSceneRender.isPending ||
+                                canonicalRender.isPending
+                              }
+                              onClick={() => handleRequestSceneRender(index)}
+                            >
+                              <Wand2 size={16} aria-hidden="true" />
+                              {canonicalRender.isPending
+                                ? "Consultando ciclo…"
+                                : selectedProvider.providerName.startsWith(
+                                      "RUNWAY",
+                                    )
+                                  ? "Continuar storyboard no ciclo"
+                                  : jobs.length
+                                    ? "Gerar nova variacao"
+                                    : index === 0
+                                      ? "Gerar clipe"
+                                      : "Gerar com quadro-ponte"}
+                            </button>
+                          ) : null}
                           {jobs.map(({ job }) => (
                             <label key={job.id}>
                               <input
@@ -3881,7 +4031,7 @@ export default function AudioVideoStudioPage() {
             ))
           ) : (
             <article className="audio-video-studio-page__project-card">
-              Nenhum projeto criado ainda. Use o exemplo MUSA para iniciar os
+              Nenhum projeto criado ainda. Preencha o contexto para iniciar os
               testes.
             </article>
           )}

@@ -31,12 +31,22 @@ public class CreativeVisualEvidenceService {
   private final ObjectMapper json;
   private final CreativeIllustrationSources illustrations;
 
-  /** Entrega somente entradas aprovadas do mesmo contexto à tarefa reservada do agente. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private CreativeFinalVideoEvidence finalVideos;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private AgentTaskTargetContextProvider targets;
+
+  /** Entrega PNGs aprovados ou lista vazia para MP4 canônico sem produção estática solicitada. */
   @Transactional(readOnly = true)
   public List<VisualInput> inputs(String agentKey, Long taskId) {
     AgentTask task = claimed(agentKey, taskId);
     if ("nonAudiovisual".equals(task.getProcessActivityId())) return approvedSources(task).inputs();
     var producer = latestProducer(task);
+    if (producer == null) {
+      require(hasFinalVideo(task), "Produza a peça visual antes da revisão.");
+      return List.of();
+    }
     require("COMPLETED".equals(producer.status()), "A produção criativa ainda não foi concluída.");
     return validatedRenders(producer.id(), task, result(producer.resultJson()));
   }
@@ -98,7 +108,7 @@ public class CreativeVisualEvidenceService {
   }
 
   /**
-   * Resolve o produtor mais recente dentro da mesma definição e referência, inclusive bloqueios.
+   * Resolve o produtor da mesma definição e referência, mantendo ausência explícita e bloqueios.
    */
   private AgentTaskFunctionalSnapshot latestProducer(AgentTask task) {
     return tasks
@@ -107,7 +117,17 @@ public class CreativeVisualEvidenceService {
         .stream()
         .filter(t -> "nonAudiovisual".equals(t.processActivityId()))
         .max(java.util.Comparator.comparing(AgentTaskFunctionalSnapshot::id))
-        .orElseThrow(() -> blocked("Produza a peça visual antes da revisão."));
+        .orElse(null);
+  }
+
+  /** Dispensa somente PNG inexistente quando o servidor comprova MP4 final da mesma versão. */
+  private boolean hasFinalVideo(AgentTask task) {
+    if (finalVideos == null || targets == null) return false;
+    var target =
+        targets
+            .resolve(task.getSourceReference(), task.getProcessDefinition().getProcessCode())
+            .orElse(null);
+    return target != null && !finalVideos.inputs(target).isEmpty();
   }
 
   /** Valida todos os derivados contra arquivos persistidos e provas vigentes da versão aprovada. */

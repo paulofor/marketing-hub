@@ -1,0 +1,588 @@
+{
+  "revision": "2026-11-05.v1",
+  "observedAt": "2026-11-05T00:00:00Z",
+  "priceExpiresAt": "2026-11-12T00:00:00Z",
+  "sources": [
+    "https://docs.dev.runwayml.com/guides/models/",
+    "https://docs.dev.runwayml.com/guides/pricing/",
+    "https://docs.dev.runwayml.com/assets/inputs/",
+    "https://docs.dev.runwayml.com/api/"
+  ],
+  "models": [
+    {
+      "modelId": "gen4.5",
+      "providerName": "RUNWAY",
+      "displayName": "Runway Gen-4.5",
+      "manufacturer": "Runway",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 2,
+      "maxSeconds": 10,
+      "validSeconds": [],
+      "resolutions": [
+        "720p"
+      ],
+      "nativeAudio": false,
+      "maxImageReferences": 1,
+      "adapterModes": [
+        "TEXT",
+        "IMAGE",
+        "ROUTER"
+      ],
+      "rates": {
+        "720p": {
+          "silent": 12
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-gen-4-5",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 1,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "gen4_turbo",
+      "providerName": "RUNWAY_GEN_4_TURBO",
+      "displayName": "Runway Gen-4 Turbo",
+      "manufacturer": "Runway",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 2,
+      "maxSeconds": 10,
+      "validSeconds": [],
+      "resolutions": [
+        "720p"
+      ],
+      "nativeAudio": false,
+      "maxImageReferences": 1,
+      "adapterModes": [
+        "IMAGE",
+        "ROUTER"
+      ],
+      "rates": {
+        "720p": {
+          "silent": 5
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-gen-4-turbo",
+      "modalities": [
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 1,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "veo3.1",
+      "providerName": "RUNWAY_VEO_3_1",
+      "displayName": "Veo 3.1 via Runway",
+      "manufacturer": "Google",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 4,
+      "maxSeconds": 8,
+      "validSeconds": [
+        4,
+        6,
+        8
+      ],
+      "resolutions": [
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 2,
+      "adapterModes": [
+        "TEXT",
+        "IMAGE",
+        "ROUTER"
+      ],
+      "rates": {
+        "720p": {
+          "silent": 20,
+          "audio": 40
+        },
+        "1080p": {
+          "silent": 20,
+          "audio": 40
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-veo-3-1",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 1,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "veo3.1_fast",
+      "providerName": "RUNWAY_VEO_3_1_FAST",
+      "displayName": "Veo 3.1 Fast via Runway",
+      "manufacturer": "Google",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 4,
+      "maxSeconds": 8,
+      "validSeconds": [
+        4,
+        6,
+        8
+      ],
+      "resolutions": [
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 2,
+      "adapterModes": [
+        "TEXT",
+        "IMAGE",
+        "ROUTER"
+      ],
+      "rates": {
+        "720p": {
+          "silent": 10,
+          "audio": 15
+        },
+        "1080p": {
+          "silent": 10,
+          "audio": 15
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-veo-3-1-fast",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 1,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "seedance2_5",
+      "providerName": "RUNWAY_SEEDANCE_2_5",
+      "displayName": "Seedance 2.5 via Runway",
+      "manufacturer": "ByteDance",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 4,
+      "maxSeconds": 30,
+      "validSeconds": [],
+      "resolutions": [
+        "480p",
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 30,
+      "adapterModes": [
+        "TEXT",
+        "IMAGE",
+        "ROUTER"
+      ],
+      "rates": {
+        "480p": {
+          "silent": 20,
+          "audio": 20
+        },
+        "720p": {
+          "silent": 30,
+          "audio": 30
+        },
+        "1080p": {
+          "silent": 68,
+          "audio": 68
+        }
+      },
+      "minimumCredits": 80,
+      "referenceVideoRates": {
+        "480p": 10,
+        "720p": 15,
+        "1080p": 34
+      },
+      "referenceItemCredits": 0,
+      "code": "runway-seedance-2-5",
+      "modalities": [
+        "TEXT",
+        "IMAGE",
+        "VIDEO"
+      ],
+      "adapterMaxImageReferences": 1,
+      "maxVideoReferenceSeconds": 30
+    },
+    {
+      "modelId": "seedance2",
+      "providerName": "RUNWAY_SEEDANCE_2",
+      "displayName": "Seedance 2.0 via Runway",
+      "manufacturer": "ByteDance",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 4,
+      "maxSeconds": 15,
+      "validSeconds": [],
+      "resolutions": [
+        "480p",
+        "720p",
+        "1080p",
+        "4K"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 9,
+      "adapterModes": [],
+      "rates": {
+        "480p": {
+          "silent": 14,
+          "audio": 14
+        },
+        "720p": {
+          "silent": 30,
+          "audio": 30
+        },
+        "1080p": {
+          "silent": 40,
+          "audio": 40
+        },
+        "4K": {
+          "silent": 150,
+          "audio": 150
+        }
+      },
+      "minimumCredits": 56,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-seedance-2",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "kling_4",
+      "providerName": "RUNWAY_KLING_4",
+      "displayName": "Kling 4.0 via Runway",
+      "manufacturer": "Kling",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 3,
+      "maxSeconds": 30,
+      "validSeconds": [],
+      "resolutions": [
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 10,
+      "adapterModes": [],
+      "rates": {
+        "720p": {
+          "audio": 15.7
+        },
+        "1080p": {
+          "audio": 23.5
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {
+        "720p": 9.4,
+        "1080p": 14.1
+      },
+      "referenceItemCredits": 0,
+      "code": "runway-kling-4",
+      "modalities": [
+        "TEXT",
+        "IMAGE",
+        "VIDEO"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 30
+    },
+    {
+      "modelId": "aleph2",
+      "providerName": "RUNWAY_ALEPH_2",
+      "displayName": "Aleph 2.0 via Runway",
+      "manufacturer": "Runway",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 2,
+      "maxSeconds": 30,
+      "validSeconds": [],
+      "resolutions": [
+        "SOURCE_UP_TO_1080P"
+      ],
+      "nativeAudio": false,
+      "maxImageReferences": 1,
+      "adapterModes": [],
+      "rates": {
+        "SOURCE_UP_TO_1080P": {
+          "silent": 28
+        }
+      },
+      "minimumCredits": 56,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-aleph-2",
+      "modalities": [
+        "VIDEO_EDIT"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "hailuo3",
+      "providerName": "RUNWAY_HAILUO_3",
+      "displayName": "Hailuo 3 via Runway",
+      "manufacturer": "MiniMax",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 5,
+      "maxSeconds": 15,
+      "validSeconds": [],
+      "resolutions": [
+        "768P",
+        "2K"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 9,
+      "adapterModes": [],
+      "rates": {
+        "768P": {
+          "silent": 10,
+          "audio": 10
+        },
+        "2K": {
+          "silent": 15,
+          "audio": 15
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {
+        "768P": 10,
+        "2K": 15
+      },
+      "referenceItemCredits": 2,
+      "code": "runway-hailuo-3",
+      "modalities": [
+        "TEXT",
+        "IMAGE",
+        "VIDEO"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 15
+    },
+    {
+      "modelId": "grok_imagine_1_5",
+      "providerName": "RUNWAY_GROK_IMAGINE_1_5",
+      "displayName": "Grok Imagine 1.5 via Runway",
+      "manufacturer": "xAI",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 1,
+      "maxSeconds": 15,
+      "validSeconds": [],
+      "resolutions": [
+        "480p",
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 7,
+      "adapterModes": [],
+      "rates": {
+        "480p": {
+          "silent": 10,
+          "audio": 10
+        },
+        "720p": {
+          "silent": 16,
+          "audio": 16
+        },
+        "1080p": {
+          "silent": 29,
+          "audio": 29
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 1,
+      "code": "runway-grok-imagine-1-5",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "grok_imagine_1_5_lite",
+      "providerName": "RUNWAY_GROK_IMAGINE_1_5_LITE",
+      "displayName": "Grok Imagine 1.5 Lite via Runway",
+      "manufacturer": "xAI",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 1,
+      "maxSeconds": 15,
+      "validSeconds": [],
+      "resolutions": [
+        "480p",
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 1,
+      "adapterModes": [],
+      "rates": {
+        "480p": {
+          "silent": 2,
+          "audio": 2
+        },
+        "720p": {
+          "silent": 3,
+          "audio": 3
+        },
+        "1080p": {
+          "silent": 14,
+          "audio": 14
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 1,
+      "code": "runway-grok-imagine-1-5-lite",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "wan3",
+      "providerName": "RUNWAY_WAN_3",
+      "displayName": "WAN 3.0 via Runway",
+      "manufacturer": "Alibaba",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 2,
+      "maxSeconds": 30,
+      "validSeconds": [],
+      "resolutions": [
+        "480p",
+        "720p",
+        "1080p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 10,
+      "adapterModes": [],
+      "rates": {
+        "480p": {
+          "silent": 5,
+          "audio": 5
+        },
+        "720p": {
+          "silent": 10,
+          "audio": 10
+        },
+        "1080p": {
+          "silent": 20,
+          "audio": 20
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-wan-3",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "modelId": "h3_max",
+      "providerName": "RUNWAY_H3_MAX",
+      "displayName": "MiniMax H3 Max via Runway",
+      "manufacturer": "MiniMax",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 5,
+      "maxSeconds": 15,
+      "validSeconds": [],
+      "resolutions": [
+        "480p",
+        "768p"
+      ],
+      "nativeAudio": true,
+      "maxImageReferences": 2,
+      "adapterModes": [],
+      "rates": {
+        "480p": {
+          "silent": 5,
+          "audio": 5
+        },
+        "768p": {
+          "silent": 8,
+          "audio": 8
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0,
+      "code": "runway-h3-max",
+      "modalities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "adapterMaxImageReferences": 0,
+      "maxVideoReferenceSeconds": 0
+    },
+    {
+      "code": "runway-act-two",
+      "modalities": [
+        "PERFORMANCE"
+      ],
+      "adapterMaxImageReferences": 1,
+      "maxVideoReferenceSeconds": 0,
+      "modelId": "act_two",
+      "providerName": "RUNWAY_ACT_TWO",
+      "displayName": "Runway Act-Two",
+      "manufacturer": "Runway",
+      "aggregator": "Runway",
+      "accountKey": "RUNWAY_PRIMARY",
+      "minSeconds": 3,
+      "maxSeconds": 30,
+      "validSeconds": [],
+      "resolutions": [
+        "720p"
+      ],
+      "nativeAudio": false,
+      "maxImageReferences": 1,
+      "adapterModes": [
+        "PERFORMANCE"
+      ],
+      "rates": {
+        "720p": {
+          "silent": 5
+        }
+      },
+      "minimumCredits": 0,
+      "referenceVideoRates": {},
+      "referenceItemCredits": 0
+    }
+  ]
+}

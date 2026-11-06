@@ -17,6 +17,9 @@ import org.hibernate.annotations.BatchSize;
 @Getter
 @Setter
 public class AgentTask {
+  @Column(name = "spending_contract", length = 40)
+  private String spendingContract;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

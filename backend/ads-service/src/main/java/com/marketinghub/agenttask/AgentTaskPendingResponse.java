@@ -21,7 +21,48 @@ public record AgentTaskPendingResponse(
     ResearchIntelligenceSelectionResponse researchIntelligence,
     com.marketinghub.catalogovivo.v1.service.pending.CatalogPromptResponse catalogPrompt,
     String retryResultJson,
-    String retryEvidenceJson) {
+    String retryEvidenceJson,
+    boolean singleVideoSpendingRequired) {
+
+  /** Preserva consumidores anteriores ao transporte limitado, sem presumir autorização de gasto. */
+  public AgentTaskPendingResponse(
+      Long taskId,
+      String agentKey,
+      String processCode,
+      Integer processVersion,
+      String activityId,
+      String activityName,
+      String title,
+      String description,
+      String sourceReference,
+      Instant receivedAt,
+      AgentTaskExecutionResourceResponse executionResource,
+      AgentTaskTargetResponse taskTarget,
+      String processContextJson,
+      ResearchIntelligenceSelectionResponse researchIntelligence,
+      com.marketinghub.catalogovivo.v1.service.pending.CatalogPromptResponse catalogPrompt,
+      String retryResultJson,
+      String retryEvidenceJson) {
+    this(
+        taskId,
+        agentKey,
+        processCode,
+        processVersion,
+        activityId,
+        activityName,
+        title,
+        description,
+        sourceReference,
+        receivedAt,
+        executionResource,
+        taskTarget,
+        processContextJson,
+        researchIntelligence,
+        catalogPrompt,
+        retryResultJson,
+        retryEvidenceJson,
+        false);
+  }
 
   /** Preserva contratos anteriores ao catálogo textual, que não executam atividades migradas. */
   public AgentTaskPendingResponse(

@@ -59,6 +59,7 @@ public class ApolloPdeAudiovisualBackendClient {
                 .codecs(configurer -> configurer.defaultCodecs()
                         .maxInMemorySize(properties.getPdeAudiovisual().getMaxResponseBytes()))
                 .baseUrl(properties.getBackendBaseUrl().toString())
+                .defaultHeader("X-Single-Video-Spending-Contract", "SINGLE_VIDEO_BOUNDED_V1")
                 .build();
         this.properties = properties;
     }

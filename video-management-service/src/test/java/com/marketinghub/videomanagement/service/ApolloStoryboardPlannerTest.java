@@ -81,6 +81,7 @@ class ApolloStoryboardPlannerTest {
     void shouldPersistHttpFailureWithoutCallingItStoryboardRejection() throws Exception {
         var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
         metadata.put("videoProductionCycleId", 91001);
+        metadata.put("providerReservedCredits", 240);
         SalesVideoJob job = mock(SalesVideoJob.class);
         when(job.id()).thenReturn(91001L);
         when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
@@ -159,6 +160,7 @@ class ApolloStoryboardPlannerTest {
         }
         var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("8.00");
         metadata.put("videoProductionCycleId", 91001);
+        metadata.put("providerReservedCredits", 240);
         metadata.put("targetDurationSeconds", 15);
         metadata.put("providerClipDurationSeconds", 10);
         SalesVideoJob job = mock(SalesVideoJob.class);
@@ -183,6 +185,8 @@ class ApolloStoryboardPlannerTest {
         assertThat(persisted.path("apollo_ai_plan")).isEqualTo(savedPlan);
         assertThat(persisted.path("apollo_planner_response")).isEqualTo(response);
         assertThat(persisted.path("expectedCostUsd").decimalValue()).isLessThanOrEqualTo(new java.math.BigDecimal("8.00"));
+        assertThat(planner.validateRestoredPlan(approved, profile)).isSameAs(approved);
+        org.mockito.Mockito.verify(aiClient, org.mockito.Mockito.times(1)).plan(eq(91001L), any(), any());
     }
 
     /** Aprova o storyboard quando Apolo aplica ao menos um cartão de cada coleção entregue. */

@@ -170,7 +170,7 @@ describe("ProductOrganicVideoPlanPage", () => {
       expect.objectContaining({
         providerName: "RUNWAY",
         executionMode: "TEST",
-        metadataJson: expect.stringContaining("ORGANIC_VIDEO_MUSA_SIGNAL_TEST"),
+        metadataJson: expect.stringContaining("ORGANIC_VIDEO_SIGNAL_TEST"),
       }),
     );
   });
@@ -272,9 +272,7 @@ describe("ProductOrganicVideoPlanPage", () => {
       name: /Renderizar orgânico/i,
     });
 
-    expect(
-      await screen.findByText(/liberar teste controlado/i),
-    ).toBeTruthy();
+    expect(await screen.findByText(/liberar teste controlado/i)).toBeTruthy();
     expect(buttons[0]).not.toBeDisabled();
   });
 });

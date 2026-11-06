@@ -43,6 +43,18 @@ public class SalesVideoProfileService {
   private final SalesVideoJobService jobService;
   private final SalesVideoRolloutService rolloutService;
 
+  private com.marketinghub.salesvideo.service.clipplan.RunwayRenderPreflight runwayPreflight;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spending;
+
+  /** Conecta o gate compartilhado que impede render manual sem reserva integral. */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setRunwayPreflight(
+      com.marketinghub.salesvideo.service.clipplan.RunwayRenderPreflight service) {
+    this.runwayPreflight = service;
+  }
+
   /** Inicializa o serviço com repositórios e componentes de job/rollout do módulo de vídeo. */
   public SalesVideoProfileService(
       SalesVideoProfileRepository profileRepository,
@@ -123,10 +135,16 @@ public class SalesVideoProfileService {
     return toDto(loadProfile(profileId));
   }
 
+  /** Solicita geração legada somente quando ela não contorna o recibo integral do vídeo privado. */
   @Transactional
   public SalesVideoJobDto requestScriptGeneration(
       Long profileId, GenerateSalesVideoScriptRequest request) {
     SalesVideoProfile profile = loadProfile(profileId);
+    if (runwayPreflight != null) {
+      var guard = new RequestVideoRenderRequest();
+      guard.setProviderName("OPENAI_SCRIPT");
+      runwayPreflight.validate(profile.getProduct().getId(), profileId, guard);
+    }
     profile.setStatus(SalesVideoStatus.SCRIPT_PENDING);
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
     SalesVideoJob job =
@@ -180,8 +198,17 @@ public class SalesVideoProfileService {
     loadApprovedScript(profileId);
   }
 
-  /** Reutiliza a regra canônica de roteiro tanto na preparação quanto na renderização. */
+  /** Aceita roteiro aprovado ou entrada privada com fonte e Plutus conferidos no servidor. */
   private SalesVideoScript loadApprovedScript(Long profileId) {
+    var latest = scriptRepository.findFirstByProfileIdOrderByVersionDesc(profileId);
+    if (latest.filter(s -> s.getStatus() == SalesVideoScriptStatus.PRIVATE_READY).isPresent()) {
+      var script = latest.orElseThrow();
+      if (spending != null && spending.privateScriptAllowed(profileId, script.getId()))
+        return script;
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.SCRIPT_NOT_FOUND,
+          "Entrada privada ainda não foi liberada por Plutus neste contexto.");
+    }
     return scriptRepository
         .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
         .orElseThrow(
@@ -204,6 +231,23 @@ public class SalesVideoProfileService {
         request.getProviderName(),
         Optional.ofNullable(request.getTargetDurationSeconds())
             .orElse(profile.getTargetDurationSeconds()));
+    if (runwayPreflight != null
+        || (request.getProviderName() != null && request.getProviderName().startsWith("RUNWAY"))) {
+      if (runwayPreflight == null)
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "Preflight integral indisponível; nenhuma geração iniciada");
+      try {
+        runwayPreflight.validate(profile.getProduct().getId(), profileId, request);
+      } catch (IllegalArgumentException ex) {
+        log.warn(
+            "Preflight bloqueou render; profileId={} provider={}",
+            profileId,
+            request.getProviderName(),
+            ex);
+        throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST, ex.getMessage());
+      }
+    }
     SalesVideoExecutionMode executionMode =
         rolloutService.normalizeExecutionMode(request.getExecutionMode());
     if (executionMode == null) {
@@ -211,6 +255,10 @@ public class SalesVideoProfileService {
           Optional.ofNullable(request.getExecutionMode()).orElse(SalesVideoExecutionMode.TEST);
     }
     if (executionMode == SalesVideoExecutionMode.PRODUCTION) {
+      if (script.getStatus() == SalesVideoScriptStatus.PRIVATE_READY)
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "Entrada privada não autoriza produção comercial nem substitui aprovação editorial.");
       rolloutService.assertProductionRolloutAllowed(profile);
       ensureProductionCompliance(profile);
     }

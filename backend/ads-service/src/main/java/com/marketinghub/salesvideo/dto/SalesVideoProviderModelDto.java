@@ -40,4 +40,6 @@ public record SalesVideoProviderModelDto(
     String pricingResearchStatus,
     String pricingResearchNotes,
     BigDecimal normalizedCostPerSecondUsd,
-    boolean pricingStale) {}
+    boolean pricingStale,
+    String capabilityRevision,
+    com.marketinghub.videocontract.v1.VideoCapabilities.Model capabilities) {}

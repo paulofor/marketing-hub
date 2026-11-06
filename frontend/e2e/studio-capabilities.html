@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Homologação sintética do Estúdio</title>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import "/src/pages/audioVideoStudio/AudioVideoStudioPage.css";
+      import React from "react";
+      import { createRoot } from "react-dom/client";
+      import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+      import { ClipPlanPreview } from "/src/pages/audioVideoStudio/ClipPlanPreview.tsx";
+      function Fixture() {
+        const [provider, setProvider] = React.useState("RUNWAY");
+        const [duration, setDuration] = React.useState(32);
+        return React.createElement(
+          "main",
+          { className: "audio-video-studio-page" },
+          React.createElement("h1", null, "Projeto sintético — sem geração"),
+          React.createElement(
+            "label",
+            null,
+            "Modelo ",
+            React.createElement(
+              "select",
+              {
+                "aria-label": "Modelo",
+                value: provider,
+                onChange: (e) => setProvider(e.target.value),
+              },
+              ...[
+                "RUNWAY",
+                "RUNWAY_VEO_3_1_FAST",
+                "RUNWAY_SEEDANCE_2_5",
+                "RUNWAY_KLING_4",
+              ].map((name) =>
+                React.createElement("option", { key: name }, name),
+              ),
+            ),
+          ),
+          React.createElement(
+            "label",
+            null,
+            "Duração final ",
+            React.createElement("input", {
+              "aria-label": "Duração final",
+              type: "number",
+              value: duration,
+              onChange: (e) => setDuration(Number(e.target.value)),
+            }),
+          ),
+          React.createElement(ClipPlanPreview, {
+            providerName: provider,
+            finalSeconds: duration,
+          }),
+        );
+      }
+      createRoot(document.getElementById("root")).render(
+        React.createElement(
+          QueryClientProvider,
+          {
+            client: new QueryClient({
+              defaultOptions: {
+                queries: { retry: false },
+                mutations: { retry: false },
+              },
+            }),
+          },
+          React.createElement(Fixture),
+        ),
+      );
+    </script>
+  </body>
+</html>

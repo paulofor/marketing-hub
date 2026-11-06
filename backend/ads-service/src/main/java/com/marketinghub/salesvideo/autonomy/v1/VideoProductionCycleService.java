@@ -27,6 +27,7 @@ import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightData;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -69,6 +70,12 @@ public class VideoProductionCycleService {
   private com.marketinghub.businessprocesschain.learningcycle.v1.service
           .LearningCycleSingleVideoBudget
       singleVideoBudget;
+
+  @Autowired(required = false)
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spendingPolicy;
+
+  @Autowired(required = false)
+  private VideoPrivateBriefPreparation privateBrief;
 
   /** Configura persistência, caixas de entrada e o executor canônico de vídeo. */
   public VideoProductionCycleService(
@@ -122,10 +129,34 @@ public class VideoProductionCycleService {
     return create(request, "PENDING_PROVIDER_PREFLIGHT_ONLY");
   }
 
-  /** Valida a prontidão antes de persistir produção; consultas isoladas não exigem roteiro. */
+  /** Registra pedido privado antes do roteiro sem liberar mídia, preservando o gate financeiro. */
   private VideoProductionCycleContracts.Response create(
       VideoProductionCycleContracts.CreateRequest request, String initialStatus) {
-    VideoProject project = project(request.videoProjectId());
+    VideoProject project = administrativeProject(request.videoProjectId());
+    boolean scopedPrivate =
+        privateBrief != null
+            && singleVideoBudget != null
+            && singleVideoBudget.forProject(project) != null;
+    if (scopedPrivate && !"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
+      project = projectRepository.findByIdForUpdate(project.getId()).orElseThrow();
+      var receipt = singleVideoBudget.forProject(project);
+      if (receipt == null || request.budgetLimitUsd().compareTo(receipt.totalLimitUsd()) > 0)
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "O pedido excede o recibo integral vigente.");
+      var existing =
+          repository.findByVideoProjectIdOrderByCreatedAtDesc(project.getId()).stream()
+              .filter(
+                  c ->
+                      !List.of(
+                              "PENDING_PROVIDER_PREFLIGHT_ONLY",
+                              "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+                              "PROVIDER_PREFLIGHT_ONLY_BLOCKED",
+                              "CANCELLED",
+                              "STOPPED")
+                          .contains(c.getStatus()))
+              .findFirst();
+      if (existing.isPresent()) return response(existing.get());
+    }
     validateProviderPlan(project);
     productProof(project);
     if (project.getExperimentId() != null) {
@@ -135,7 +166,7 @@ public class VideoProductionCycleService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O projeto precisa de um perfil de vídeo antes do ciclo autônomo.");
     }
-    if (!"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
+    if (!"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus) && !scopedPrivate) {
       salesVideoService.assertRenderReady(project.getSalesVideoProfileId());
     }
     Instant now = Instant.now();
@@ -157,11 +188,22 @@ public class VideoProductionCycleService {
     VideoProviderPreflight preflight =
         providerPreflightService.open(
             cycle.getId(), request.productionProfile(), project.getProviderPlan());
-    if ("READY".equals(preflight.getStatus())) {
+    if ("READY".equals(preflight.getStatus())
+        && !"PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
+      providerPreflightService.applyFullCostReadiness(cycle, preflight);
+    }
+    if (List.of("READY", "READY_WITH_BLOCKER").contains(preflight.getStatus())) {
       if ("PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
         cycle.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+      } else if ("PROVIDER_FULL_COST_PLAN_REQUIRED".equals(preflight.getFailureCode())) {
+        cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+      } else if (blockUnboundedSingleVideoExecution(cycle, project)) {
+        cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+      } else if (!ensureBriefBeforeFinancial(cycle, project)) {
+        return response(repository.save(cycle));
       } else {
-        providerPreflightService.reserve(cycle);
+        if ("READY".equals(preflight.getStatus()) && !reserveBeforeFinancial(cycle))
+          return response(repository.save(cycle));
         cycle.setAgentTaskId(createFinancialGate(cycle, project).id());
         cycle.setStatus("PENDING_FINANCIAL_REVIEW");
       }
@@ -235,7 +277,9 @@ public class VideoProductionCycleService {
         .toList();
   }
 
-  /** Recebe o preflight e respeita o modo isolado antes de qualquer reserva ou tarefa paga. */
+  /**
+   * Recebe o preflight e bloqueia lacunas determinísticas sem consumir parecer ou geração pagos.
+   */
   @Transactional
   public VideoProductionCycleContracts.Response completeProviderPreflight(
       Long cycleId, VideoProviderPreflightContracts.ResultRequest request) {
@@ -260,8 +304,16 @@ public class VideoProductionCycleService {
       cycle.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
       return response(repository.save(cycle));
     }
+    if ("PROVIDER_FULL_COST_PLAN_REQUIRED".equals(preflight.getFailureCode())) {
+      cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+      return response(repository.save(cycle));
+    }
+    if (blockUnboundedSingleVideoExecution(cycle, project(cycle.getVideoProjectId())))
+      return response(repository.save(cycle));
+    if (!ensureBriefBeforeFinancial(cycle, project(cycle.getVideoProjectId())))
+      return response(repository.save(cycle));
     if ("READY".equals(preflight.getStatus())) {
-      providerPreflightService.reserve(cycle);
+      if (!reserveBeforeFinancial(cycle)) return response(repository.save(cycle));
     }
     if (cycle.getAgentTaskId() == null) {
       cycle.setAgentTaskId(createFinancialGate(cycle, project(cycle.getVideoProjectId())).id());
@@ -270,11 +322,36 @@ public class VideoProductionCycleService {
     return response(repository.save(cycle));
   }
 
+  /**
+   * Impede interpretar o recibo integral como limite efetivo enquanto os executores Codex usam
+   * apenas timeout e contabilização posterior. Não existe habilitação por metadata do cliente.
+   */
+  private boolean blockUnboundedSingleVideoExecution(
+      VideoProductionCycle cycle, VideoProject project) {
+    if (singleVideoBudget == null) return false;
+    String blocker =
+        spendingPolicy == null
+            ? singleVideoBudget.paidExecutionBlocker(project)
+            : spendingPolicy.paidExecutionBlocker(project);
+    if (blocker == null) return false;
+    cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+    cycle.setBudgetMonitorStatus("BLOCKED");
+    cycle.setBudgetAlertCode("SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED");
+    cycle.setBudgetAlertDetail(blocker);
+    cycle.setBudgetAlertAt(Instant.now());
+    cycle.setUpdatedAt(Instant.now());
+    return true;
+  }
+
   /** Lista a fila canônica que Plutus pode avaliar. */
   @Transactional(readOnly = true)
   public List<VideoProductionCycleContracts.FinancialReviewPendingResponse>
       pendingFinancialReview() {
     return repository.findByStatusOrderByCreatedAtAsc("PENDING_FINANCIAL_REVIEW").stream()
+        .filter(
+            cycle ->
+                spendingPolicy == null
+                    || spendingPolicy.workerCanConsume(project(cycle.getVideoProjectId())))
         .map(this::financialReviewPendingResponse)
         .toList();
   }
@@ -350,18 +427,49 @@ public class VideoProductionCycleService {
       cycle.setStatus("FINANCIAL_BLOCKED");
       return response(repository.save(cycle));
     }
-    providerPreflightService.reserve(cycle);
+    if (!reserveBeforeFinancial(cycle)) return response(repository.save(cycle));
     recordFinancialDecision(cycle, decision, request);
     taskService.decideGate(
         cycle.getAgentTaskId(), new DecideAgentGateRequest(PLUTUS_KEY, decision, request.reason()));
     VideoProject project = project(cycle.getVideoProjectId());
+    if (cycle.getIrisAgentTaskId() != null && privateBrief != null)
+      privateBrief.materialize(cycle, project);
     queueApollo(cycle, project, null);
     return response(repository.save(cycle));
   }
 
-  /** Reconcilia somente filas sem job; falhas pagas exigem novo preflight e nunca geram retry. */
+  /** Retoma briefing aceito sem nova inferência e reconcilia jobs sem repetir geração paga. */
   @Transactional
   public void reconcileApolloQueue() {
+    if (privateBrief != null) {
+      var waiting =
+          new ArrayList<>(repository.findByStatusOrderByCreatedAtAsc("PENDING_IRIS_BRIEF"));
+      waiting.addAll(repository.findByStatusOrderByCreatedAtAsc("PENDING_PRODUCT_PROOF"));
+      for (var pending : waiting) {
+        var cycle = repository.findByIdForUpdate(pending.getId()).orElseThrow();
+        var project = project(cycle.getVideoProjectId());
+        if (!ensureBriefBeforeFinancial(cycle, project)) {
+          repository.save(cycle);
+          continue;
+        }
+        var preflight = providerPreflightService.refreshBeforeFinancial(cycle);
+        if ("PENDING".equals(preflight.getStatus())) {
+          cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
+        } else if ("READY".equals(preflight.getStatus())
+            && !blockUnboundedSingleVideoExecution(cycle, project)) {
+          if (!reserveBeforeFinancial(cycle)) {
+            repository.save(cycle);
+            continue;
+          }
+          cycle.setAgentTaskId(createFinancialGate(cycle, project).id());
+          cycle.setStatus("PENDING_FINANCIAL_REVIEW");
+        } else {
+          cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+        }
+        cycle.setUpdatedAt(Instant.now());
+        repository.save(cycle);
+      }
+    }
     repository
         .findByStatusAndFinancialDecisionOrderByCreatedAtAsc("QUEUED_FOR_APOLLO", "APPROVED")
         .forEach(
@@ -448,6 +556,12 @@ public class VideoProductionCycleService {
   private void queueApollo(
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     providerPreflightService.requireActiveReservation(cycle.getId());
+    if (singleVideoBudget != null
+        && singleVideoBudget.forProject(project) != null
+        && productProof(project).isEmpty())
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Falta vincular a prova real do produto nesta versão antes de gerar. Preparar a captura autorizada pelo Estúdio; roteiro e screenshots não comprovam gestos filmados.");
     String provider =
         isProductUgc(project.getProviderPlan())
             ? RUNWAY_PRODUCT_UGC
@@ -469,6 +583,24 @@ public class VideoProductionCycleService {
     cycle.setUpdatedAt(Instant.now());
   }
 
+  /**
+   * Persiste falta de cobertura sem perder preflight, fala de Íris ou criar agente financeiro pago.
+   */
+  private boolean reserveBeforeFinancial(VideoProductionCycle cycle) {
+    if (providerPreflightService.reserve(cycle) != null) return true;
+    var source = providerPreflightService.snapshot(cycle.getId());
+    cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+    cycle.setBudgetMonitorStatus("BLOCKED");
+    cycle.setBudgetAlertCode("SINGLE_VIDEO_BUDGET_COVERAGE_REQUIRED");
+    cycle.setFinancialReason(
+        source == null
+            ? "Cobertura integral indisponível; nenhum gasto novo autorizado."
+            : source.failureDetail());
+    cycle.setBudgetAlertDetail(cycle.getFinancialReason());
+    cycle.setUpdatedAt(Instant.now());
+    return false;
+  }
+
   /** Lista o histórico de ciclos do projeto para a tela. */
   @Transactional(readOnly = true)
   public List<VideoProductionCycleContracts.Response> list(Long projectId) {
@@ -476,6 +608,135 @@ public class VideoProductionCycleService {
     return repository.findByVideoProjectIdOrderByCreatedAtDesc(projectId).stream()
         .map(this::response)
         .toList();
+  }
+
+  /** Reutiliza a produção canônica do projeto sem aceitar metadados financeiros do navegador. */
+  @Transactional
+  public VideoProductionCycleContracts.Response renderProject(Long projectId) {
+    VideoProject project = administrativeProject(projectId);
+    VideoProductionCycle latest =
+        repository.findByVideoProjectIdOrderByCreatedAtDesc(projectId).stream()
+            .filter(c -> !c.getStatus().contains("PREFLIGHT_ONLY"))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Solicite a produção a Apolo sob controle de Plutus. Uma consulta isolada não autoriza gerar cenas."));
+    VideoProductionCycle cycle = lockedProjectCycle(project, latest.getId());
+    if (cycle.getSalesVideoJobId() != null) {
+      SalesVideoJob job =
+          jobRepository
+              .findById(cycle.getSalesVideoJobId())
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(
+                          HttpStatus.CONFLICT,
+                          "Job do ciclo não encontrado; concilie antes de repetir."));
+      if (!java.util.Objects.equals(job.getProfile().getId(), project.getSalesVideoProfileId()))
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "O job não pertence ao perfil deste projeto.");
+      return response(cycle);
+    }
+    if (!"APPROVED".equals(cycle.getFinancialDecision())
+        || !"QUEUED_FOR_APOLLO".equals(cycle.getStatus()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A produção ainda depende do preflight integral e do parecer de Plutus; acompanhe o mesmo ciclo no Estúdio.");
+    queueApollo(cycle, project, null);
+    return response(repository.save(cycle));
+  }
+
+  /**
+   * Retoma a mesma tentativa do ciclo para remontar ou consultar tasks, preservando custos e IDs.
+   */
+  @Transactional
+  public VideoProductionCycleContracts.Response recoverProject(Long projectId, Long cycleId) {
+    VideoProject project = administrativeProject(projectId);
+    VideoProductionCycle cycle = lockedProjectCycle(project, cycleId);
+    if (cycle.getSalesVideoJobId() == null || !"APPROVED".equals(cycle.getFinancialDecision()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O ciclo não possui tentativa aprovada para recuperar.");
+    var job =
+        jobRepository
+            .findById(cycle.getSalesVideoJobId())
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(HttpStatus.CONFLICT, "Tentativa não encontrada."));
+    if (!java.util.Objects.equals(job.getProfile().getId(), project.getSalesVideoProfileId()))
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Tentativa pertence a outro perfil.");
+    salesVideoService.recoverRunway(job.getId());
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setUpdatedAt(Instant.now());
+    return response(repository.save(cycle));
+  }
+
+  /** Registra evidências e reavalia o mesmo ciclo antes de gastar com o parecer financeiro. */
+  @Transactional
+  public VideoProductionCycleContracts.Response prepareCosts(
+      Long projectId, Long cycleId, com.marketinghub.videocontract.v1.ProductionCostPlan plan) {
+    VideoProject project = administrativeProject(projectId);
+    VideoProductionCycle cycle = lockedProjectCycle(project, cycleId);
+    if (plan == null
+        || !java.util.Objects.equals(plan.cycleId(), cycleId)
+        || !java.util.Objects.equals(plan.productId(), cycle.getProductId())
+        || !java.util.Objects.equals(plan.experimentId(), cycle.getExperimentId())
+        || !java.util.Objects.equals(plan.providerPlan(), project.getProviderPlan())
+        || plan.finalSeconds() != project.getTargetDurationSeconds())
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Previsão pertence a outro contexto de produção.");
+    if (!"PROVIDER_PREFLIGHT_BLOCKED".equals(cycle.getStatus())
+        || cycle.getAgentTaskId() != null
+        || cycle.getSalesVideoJobId() != null)
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A previsão só pode ser preparada antes da revisão de Plutus; preserve o ciclo já encaminhado.");
+    plan.maximumRemainingUsd(Instant.now());
+    try {
+      project.setProductionCostPlanJson(objectMapper.writeValueAsString(plan));
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao preparar previsão integral; projectId={} cycleId={}", projectId, cycleId, ex);
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Previsão integral inválida.", ex);
+    }
+    projectRepository.saveAndFlush(project);
+    VideoProviderPreflight preflight = providerPreflightService.reassessFullCosts(cycle);
+    if ("READY".equals(preflight.getStatus())) {
+      if (blockUnboundedSingleVideoExecution(cycle, project))
+        return response(repository.save(cycle));
+      if (!ensureBriefBeforeFinancial(cycle, project)) return response(repository.save(cycle));
+      if (!reserveBeforeFinancial(cycle)) return response(repository.save(cycle));
+      cycle.setAgentTaskId(createFinancialGate(cycle, project).id());
+      cycle.setStatus("PENDING_FINANCIAL_REVIEW");
+    }
+    cycle.setUpdatedAt(Instant.now());
+    return response(repository.save(cycle));
+  }
+
+  /** Exige o tenant real na entrada administrativa; não altera a identidade dos workers. */
+  private VideoProject administrativeProject(Long id) {
+    VideoProject project = project(id);
+    if (!java.util.Objects.equals(
+        project.getTenantId(),
+        com.marketinghub.salesvideo.tenant.TenantContextHolder.requireTenant()))
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Projeto não encontrado neste tenant.");
+    return project;
+  }
+
+  /** Trava e confere o vínculo completo antes de qualquer comando do projeto. */
+  private VideoProductionCycle lockedProjectCycle(VideoProject project, Long id) {
+    VideoProductionCycle cycle =
+        repository
+            .findByIdForUpdate(id)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
+    if (!java.util.Objects.equals(cycle.getVideoProjectId(), project.getId())
+        || !java.util.Objects.equals(cycle.getProductId(), project.getProductId())
+        || !java.util.Objects.equals(cycle.getExperimentId(), project.getExperimentId()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Ciclo pertence a outro projeto, produto ou experimento.");
+    return cycle;
   }
 
   /** Resolve o projeto requerido para o ciclo. */
@@ -512,6 +773,7 @@ public class VideoProductionCycleService {
       metadata.put("tenantId", project.getTenantId());
       metadata.put("videoProjectId", project.getId());
       metadata.put("productId", cycle.getProductId());
+      metadata.put("productVersion", project.getCampaignKey());
       metadata.put("commercialPlanId", cycle.getCommercialPlanId());
       metadata.put("experimentId", cycle.getExperimentId());
       metadata.put("budgetLimitUsd", cycle.getBudgetLimitUsd());
@@ -528,8 +790,32 @@ public class VideoProductionCycleService {
       metadata.put(
           "runwaySelectedRoutesJson", providerPreflightService.selectedRoutes(cycle.getId()));
       metadata.put("publicationAllowed", false);
+      metadata.put(
+          "editorialCutCompositionRequired",
+          singleVideoBudget != null && singleVideoBudget.forProject(project) != null);
+      if (cycle.getIrisAgentTaskId() != null) {
+        var script =
+            salesVideoService.getProfile(project.getSalesVideoProfileId()).getLatestScript();
+        metadata.put(
+            "privateProductionInput",
+            java.util.Map.of(
+                "contractVersion",
+                "IRIS_PRIVATE_VIDEO_INPUT_V1",
+                "scriptId",
+                script.getId(),
+                "irisTaskId",
+                cycle.getIrisAgentTaskId(),
+                "editorialApproval",
+                false));
+      }
       metadata.put("targetDurationSeconds", duration);
       metadata.put("providerClipDurationSeconds", providerClipDuration);
+      metadata.put("capabilityRevision", VideoCapabilities.catalog().revision());
+      metadata.put("productionCostPlanJson", project.getProductionCostPlanJson());
+      metadata.put("fullProductionReservedUsd", reservation.getFullProductionReservedUsd());
+      if (!productUgc && !editorialMotion)
+        VideoCapabilities.selected(project.getProviderPlan())
+            .ifPresent(model -> metadata.put("clipPlan", model.plan(duration)));
       metadata.put(
           "sceneCount",
           productUgc || editorialMotion
@@ -609,6 +895,25 @@ public class VideoProductionCycleService {
                 "requiredReviewers",
                 List.of("Psique", "Temis", "HUMAN")));
       }
+      if (singleVideoBudget != null
+          && singleVideoBudget.forProject(project) != null
+          && project.getSoundtrackPlan() != null
+          && !project.getSoundtrackPlan().isBlank())
+        metadata.put(
+            "originalMusicBed",
+            java.util.Map.of(
+                "contractVersion",
+                "ORIGINAL_MUSIC_BED_V1",
+                "bpm",
+                94,
+                "source",
+                "REPOSITORY_SYNTHESIS",
+                "providerCostUsd",
+                0,
+                "rights",
+                "Original procedural composition; no external samples",
+                "qualityApproved",
+                false));
       if (previous != null) metadata.put("replacesFailedJobId", previous.getId());
       return objectMapper.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {
@@ -1016,7 +1321,14 @@ public class VideoProductionCycleService {
               "Teto integral de uma produção nova, incluindo todos os agentes, revisões, mídia produzida, taxas e tentativas. Não aprova histórico nem renova saldo por ciclo do Estúdio. Este recibo não comprova saldo: concilie custos e reservas de toda a produção antes de aprovar qualquer gasto.");
         }
       }
+      if (spendingPolicy != null)
+        snapshot.put(
+            "singleVideoSpendingControl",
+            spendingPolicy.report(project(cycle.getVideoProjectId())));
       snapshot.put("incrementalLedger", studioCostLedgerService.cycleLedger(cycle.getId()));
+      if (cycle.getIrisAgentTaskId() != null && privateBrief != null)
+        snapshot.put(
+            "irisProductionBrief", privateBrief.input(cycle, project(cycle.getVideoProjectId())));
       snapshot.putAll(providerPreflightService.financialContext(cycle.getId()));
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
@@ -1025,9 +1337,13 @@ public class VideoProductionCycleService {
     }
   }
 
-  /** Revalida o roteiro após o preflight e só então entrega o gate financeiro a Plutus. */
+  /** Confere roteiro aprovado ou fala aceita de Íris antes do parecer independente de Plutus. */
   private AgentTaskResponse createFinancialGate(VideoProductionCycle cycle, VideoProject project) {
-    salesVideoService.assertRenderReady(project.getSalesVideoProfileId());
+    if (cycle.getIrisAgentTaskId() == null)
+      salesVideoService.assertRenderReady(project.getSalesVideoProfileId());
+    else if (privateBrief == null || !privateBrief.completed(cycle, project))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Íris ainda não entregou a fala privada.");
     return taskService.createGateByAgent(
         new CreateAgentTaskByAgentRequest(
             APOLLO_KEY,
@@ -1039,6 +1355,31 @@ public class VideoProductionCycleService {
             "HIGH",
             "video-production-cycle:" + cycle.getId()),
         "VIDEO_PROVIDER_COST_BENEFIT_APPROVAL");
+  }
+
+  /** Encaminha a dependência faltante pelo backend e reutiliza a mesma tarefa até sua conclusão. */
+  private boolean ensureBriefBeforeFinancial(VideoProductionCycle cycle, VideoProject project) {
+    if (privateBrief == null
+        || singleVideoBudget == null
+        || singleVideoBudget.forProject(project) == null) return true;
+    if (productProof(project).isEmpty()) {
+      cycle.setStatus("PENDING_PRODUCT_PROOF");
+      cycle.setFinancialReason(
+          "Falta vincular a prova real autorizada do produto no Estúdio. A preparação preserva o pedido e o teto; nenhum agente ou render pago foi iniciado.");
+      cycle.setUpdatedAt(Instant.now());
+      return false;
+    }
+    if (privateBrief.hasApprovedScript(project)) return true;
+    privateBrief.request(cycle, project);
+    if (privateBrief.completed(cycle, project)) {
+      privateBrief.input(cycle, project);
+      return true;
+    }
+    cycle.setStatus("PENDING_IRIS_BRIEF");
+    cycle.setFinancialReason(
+        "Íris está preparando a fala para este vídeo; Plutus receberá a entrega no mesmo ciclo, sem gerar mídia antes da decisão financeira.");
+    cycle.setUpdatedAt(Instant.now());
+    return false;
   }
 
   /** Persiste a decisão financeira antes de qualquer transição de estado do ciclo. */

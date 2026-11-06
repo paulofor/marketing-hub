@@ -795,6 +795,31 @@ Uma candidata privada READY/PENDING ainda sem parecer pode receber correção de
 
 Antes do parecer e do aceite humano, uma candidata privada pode corrigir texto e locução pelo comando oficial, sem criar rejeição humana fictícia. Exige texto efetivamente alterado, confirmação explícita de nova locução, limite vigente, decisão financeira aceita e custo conhecido abaixo do teto. Com o mesmo texto, a remontagem continua reutilizando a voz auditada. Permanecem os bloqueios de revisão ativa, contexto divergente, peça aprovada e experimento em execução comercial. Os novos arquivos exigem parecer próprio e seleção humana; corrigir rascunho não equivale a aprovar mídia.
 
+## Previsão integral antes de gerar — 05/11/2026
+
+Aplicar a revisão do [Estúdio](audio-video-studio-canon.v1.md#catálogo-governado-tomadas-e-previsão-integral--decisão-de-05112026).
+Plutus não aprova produção pelo subtotal de clipes. A reserva integral usa fontes e a cobertura
+real do ledger do mesmo ciclo, sem consumir orçamento de outro produto. `PROVIDER_FULL_COST_PLAN_REQUIRED`
+indica previsão/conciliação pendente, não aprovação ausente nem prova de saldo insuficiente.
+Apolo deve completar os custos restantes pelo contrato oficial antes de gerar; Plutus conserva
+sua revisão independente. Registro de previsão não autoriza publicação, compra ou recarga.
+
+O fechamento contábil histórico de 12/08 permanece auditável e não é reescrito. Ele não autoriza
+novas análises a apresentar valores desconhecidos como USD 0, nem transferir dívida histórica para
+o teto incremental de uma produção nova. Novos custos sem valor permanecem lacunas explícitas.
+
+O trabalho transversal não usa os US$15 de Vega, não duplica #3925/PR #5792 e não produz outro
+vídeo. Merge/deploy desta solicitação dependem da confirmação específica exigida no pedido;
+nenhuma homologação sintética ativa modelo ou comprova resultado comercial.
+
+No encerramento do job, `PROVIDER_RESULT_UNCERTAIN` ou cobertura de custo desconhecida mantém a reserva em `CONSUMING`; timeout não libera saldo para outra tentativa. O ciclo persiste `PROVIDER_RECONCILIATION_REQUIRED`, com responsável Apolo e reutilização do ID/callback anterior. Somente resultado e custo conhecidos permitem liquidação.
+
+Lacuna determinística de previsão integral fica em `PROVIDER_PREFLIGHT_BLOCKED`, sem consumir parecer de Plutus. Corrigidos os custos, reaplicar o callback preservado enquanto o snapshot estiver válido permite reavaliar a causa sem repetir consulta ou geração. Não estende validade nem reabre parecer encerrado ou ciclo isolado.
+
+O comando genérico de reprocessamento não pode clonar renders Runway com o contrato financeiro anterior: RENDER/RETRY deve voltar à preparação governada, após conciliação e preflight/reserva vigentes. Elegibilidade da UI e comando aplicam a mesma regra. O executor recusa clones legados antes do planejador. Pós-produção, reuso de artefatos e replay de callback permanecem separados de nova geração paga.
+
+A entrada de render confere o parecer de Plutus no ciclo persistido (`financialDecision=APPROVED`); indicação de aprovação no payload do cliente não é autorização e não substitui essa consulta.
+
 ## Autorização incremental integral de um vídeo — 05/11/2026
 
 Uma autorização explicitamente restrita a um único vídeo novo não pode ser
@@ -812,3 +837,122 @@ clipes não comprova cobertura das outras parcelas. Ausência de custo permanece
 uma lacuna; nunca é convertida em zero. O recibo precisa ser consultado e
 respeitado na preparação e execução, sem extrapolar o teto com outro recibo para
 a mesma produção. Ver a [matriz e limites](../homologacao/vega-single-video-budget-2026-11-05.md).
+
+## Continuação pelo ciclo e recuperação de tomadas — 05/11/2026
+
+O comando Runway do editor usa o ciclo canônico do projeto no servidor. O navegador não
+monta aprovação de Plutus nem inventa IDs de reserva. Repetir o comando consulta o mesmo
+job; perfil, produto, experimento, projeto ou tenant divergentes bloqueiam antes da fila.
+O render do storyboard completo continua coordenado pelo backend, sem oito solicitações
+pagas independentes para representar oito cortes editoriais.
+
+A previsão integral pode ser preparada pela tela antes da tarefa financeira: registrar
+parcelas, fontes e validade e reavaliar o mesmo ciclo. Não renovar teto, converter consulta
+isolada em produção ou reabrir parecer já encerrado. Snapshot vencido exige nova consulta
+sem geração no mesmo ciclo; snapshot válido é reutilizado. Incerteza continua bloqueando.
+
+Antes de montar, preservar cada tomada no storage oficial com job, task do provider,
+asset, URL, tamanho e SHA-256, além do plano aprovado. A recuperação consulta as mesmas
+tasks ou baixa os mesmos bytes e revalida hashes; não chama novamente planejador nem POST
+de geração. Envio sem task confirmada requer conciliação. Clipe que nunca foi solicitado
+não pode ser criado silenciosamente durante a recuperação. Metadados enviados pelo cliente
+não substituem checkpoints persistidos pelo executor.
+O replay do aceite preserva data, atribuição e custo já liquidado da task: nunca devolve
+cobrança conciliada ao estado estimado. Identidade ou valor divergente exige conciliação;
+clipe já persistido não repete os callbacks financeiros.
+
+O recibo integral não é um limitador global. Enquanto agentes e revisões apenas contabilizarem
+tokens depois da execução, a produção de escopo `SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1` deve
+permanecer bloqueada antes da tarefa de Plutus, mesmo com previsão preenchida e saldo de
+clipes suficiente. O backend expõe `SINGLE_VIDEO_SHARED_LIMIT_NOT_ENFORCED`; isso é pendência
+técnica de controle, não solicitação de outro teto. Não habilitar consumo por configuração
+ou metadata declarativa sem implementação e regressão de todos os executores.
+
+Evidências, limites e critérios de adoção:
+[retomada privada de Vega](../homologacao/vega-retomada-video-2026-11-05.md).
+
+### Consumo integral limitado — SINGLE_VIDEO_BOUNDED_V1 (06/11/2026)
+
+O executor de um recibo `SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1` deve reservar no backend
+o request real antes da chamada, com entrada materializada, modelo preservado e saída
+finita. OAuth com medição posterior continua bloqueado nesse escopo. O transporte nativo
+usa uma chamada Responses com Flex, sem tools, continuação, streaming ou retries pagos;
+a reserva usa tarifas Standard conservadoras, sem depender do desconto Flex. A contagem
+de entrada do provedor, corpo, hash, fonte/tarifa e máximo ficam persistidos. O mesmo lock
+do ciclo comercial serializa agentes, planner, créditos de clipes, voz e escuta. A reserva
+preventiva dos clipes integra o mesmo teto; transferir uma parcela para a chamada individual
+não soma essa parcela novamente. Resposta, timeout ou expiração não liberam dinheiro como
+se fosse custo faturado. Outra identidade de projeto, tarefa, recibo ou render é recusada.
+
+`SUBMITTED` permite no máximo um envio. Callback perdido usa a resposta preservada no
+volume e no backend; resultado incerto sem resposta/ID bloqueia geração duplicada.
+O worker nunca pode interpretar falta de autoridade como permissão para usar o transporte
+legado. Publicação gradual mantém executores antigos bloqueados. Uma consulta de preflight
+não habilita consumo e sua previsão de clipes não representa saldo integral.
+
+Íris pode preparar um vídeo privado solicitado no Estúdio mesmo quando a cadeia comercial
+está em PLANNING, exclusivamente pelo contrato `STUDIO_PRIVATE_VIDEO_BRIEF_V1`, vinculado
+no servidor à sua tarefa, projeto, versão e recibo atual. Essa entrada é o briefing do usuário;
+não é um novo parecer de Atena ou uma aprovação comercial. Comunicações citadas na herança
+podem fornecer fatos e especificações, sem renovar autorizações antigas. A fala aceita vira
+`PRIVATE_READY/IRIS_PRIVATE_BRIEF` após Plutus, com fonte preservada e sem `approvedBy`.
+Esse status só permite TEST privado; não autoriza produção comercial, publicação ou autoaprovação.
+Entre FALA_FINAL e PROVA_E_LIMITES entram apenas palavras narráveis, nunca direção de voz.
+
+Ausência de prova real é `PENDING_PRODUCT_PROOF`: conserva o pedido, o teto e o preflight,
+sem iniciar inferência ou render. Capturas históricas preservam identidade, versão, limites
+e natureza de estado; não são gravações de salvar/reabrir. A prova atual deve ser preparada
+pelo frontend e pelos fluxos existentes, com a autoridade correspondente, antes de qualquer
+geração paga. A espera por Íris renova somente o preflight vencido no mesmo ciclo, preservando
+o anterior e sem nova inferência por falha de callback. Psique e Têmis avaliam o MP4 final exato;
+frames, áudio, hash e direitos prevalecem sobre storyboard ou descrição.
+
+A opção limitada de voz é explícita na tela: TTS-1 HD/Nova, por caracteres, sem fallback local.
+A fonte oficial observada em 05/11/2026 informa US$30/milhão de caracteres e descontinuação
+em 06/01/2027; a admissão exige revalidar sua tarifa após 05/12/2026. Isso não atesta qualidade
+premium. A trilha ORIGINAL_MUSIC_BED_V1 é síntese original versionada, sem samples ou API paga,
+com hash e redução sob a voz; sua qualidade também depende da revisão. A escuta gpt-audio-1.5
+retém o máximo da janela oficial e da saída textual limitada, sem estimar apenas por segundo.
+Fontes: https://developers.openai.com/api/docs/models/tts-1-hd,
+https://developers.openai.com/api/docs/models/gpt-audio-1.5 e
+https://developers.openai.com/api/docs/guides/token-counting.
+
+Têmis mantém a segregação do produtor de imagens. Seu transporte limitado exige credencial
+própria de revisão textual no volume de autenticação individual (`MH_BOUNDED_REVIEW_KEY_FILE`),
+provisionada por canal seguro com acesso restrito a Responses. A chave do produtor nunca é
+fallback. Íris/Plutus podem usar o secret de API configurado para consumo limitado; a chave
+não entra no prompt, argv, resposta, log ou repositório. GET de modelos não comprova saldo,
+limites da conta, capacidade de gerar nem aprovação da peça.
+
+A gravação funcional local usa `PRODUCT_FUNCTIONAL_RECORDING_V1`, com arquivo H.264 sem áudio,
+hash, fontes versionadas, ações datadas e dados sintéticos. O Estúdio recebe MP4 e manifesto
+em `projects/{id}/product-recording`, confirma no servidor a experiência privada herdada e
+vincula a referência automaticamente. Até 8 MiB ficam privados no banco existente, sem API
+de storage nem fila de análise paga; esta capacidade não é destinada ao arquivo final nem
+a upload genérico. Reenvio dos mesmos bytes/manifesto reaproveita a gravação. Outra fonte
+é recusada após congelar a preparação do pedido; a história anterior não é migrada.
+`sourcePrototypeVersion` identifica o software gravado e `productVersion` continua sendo a
+versão audiovisual alvo. Isso não renova a homologação do predecessor nem aprova a peça.
+O worker verifica hash, codec, streams, duração e janela editorial antes do render pago;
+compõe salvar/reabrir em velocidade real e registra os instantes correspondentes no MP4 final.
+PNG continua sendo estado estático, sem fabricar gestos ou simular navegação.
+
+
+No recibo de vídeo único, a identidade do experimento é necessária, mas não
+suficiente para admitir gasto de agentes. Íris precisa ser a tarefa de preparação
+registrada no ciclo de vídeo; Plutus precisa ser o gate `GATE_DECISION` pendente
+registrado por esse pedido; Psique/Têmis precisam estar na revisão criativa da
+mídia final READY do render fixado no recibo ou de sua pós-produção. Escuta só
+admite o asset exato. Outra atividade no mesmo experimento permanece sem consumir
+esse teto e sem fallback para transporte legado. O vínculo é validado no servidor
+antes da reserva e novamente antes do envio; replay preserva resposta sem gasto.
+
+
+Uma revisão de MP4 não depende de encomendar PNG quando nenhum ativo estático
+foi solicitado. O backend só entrega lista estática vazia se comprovar vídeo final
+READY da mesma versão no contrato canônico; produção estática existente, pendente
+ou reprovada mantém suas próprias exigências. Psique audita CREATIVE_RENDER em
+renderedAssetAudit e VIDEO_FRAME em videoAudit, com frames, hash, áudio, copy e
+narrativa. Lista vazia de PNG não é aprovação nem dispensa de mídia. No briefing
+privado de vídeo único, Íris mantém staticAssets e renderedAssets vazios; o guard
+executável recusa peças estáticas adicionais e preserva o contrato comercial geral.

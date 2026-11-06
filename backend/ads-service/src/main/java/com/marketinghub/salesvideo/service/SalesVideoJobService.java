@@ -42,6 +42,9 @@ import org.springframework.util.StringUtils;
 /** Contém as regras de negócio relativas aos jobs do módulo de vídeo. */
 @Component
 public class SalesVideoJobService {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spending;
+
   private VideoProductProofService productProofService;
   private VideoDeliveryExampleService deliveryExampleService;
 
@@ -236,6 +239,14 @@ public class SalesVideoJobService {
   @Transactional
   public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
     SalesVideoJob candidate = loadJob(jobId);
+    boolean bounded = false;
+    if (spending != null) {
+      var context = spending.jobContext(jobId, "PLAN");
+      bounded = context.required();
+      if (bounded && context.blocker() != null)
+        throw VideoModuleException.conflict(
+            VideoModuleErrorCode.JOB_CLAIM_CONFLICT, context.blocker());
+    }
     VideoNarrationRecovery.requireCompatible(
         candidate, request.getPostProductionContract(), objectMapper);
     SalesVideoStatus previous = candidate.getStatus();
@@ -253,6 +264,10 @@ public class SalesVideoJobService {
           "Job já reservado, concluído ou indisponível para claim: " + jobId);
     }
     SalesVideoJob job = loadJob(jobId);
+    if (bounded) {
+      job.setSpendingContract("SINGLE_VIDEO_BOUNDED_V1");
+      jobRepository.saveAndFlush(job);
+    }
     registerEvent(
         job,
         SalesVideoJobEventType.CLAIMED,
@@ -548,6 +563,10 @@ public class SalesVideoJobService {
               "image_to_video",
               "technicalQualityGate",
               "referenceGovernance",
+              "originalMusicBed",
+              "editorialCutCompositionRequired",
+              "productVersion",
+              "privateProductionInput",
               "premiumFinalization",
               "researchIntelligence")
           .forEach(
@@ -732,6 +751,69 @@ public class SalesVideoJobService {
         "Reprocessamento solicitado por " + requestedBy + " (" + request.getReason().name() + ")",
         request.getNotes());
     return toDto(newJob);
+  }
+
+  /**
+   * Reenfileira o mesmo job apenas para consultar tasks existentes ou remontar clipes persistidos.
+   */
+  @Transactional
+  public SalesVideoJobDto recoverRunway(Long jobId) {
+    SalesVideoJob job =
+        jobRepository
+            .findByIdForUpdate(jobId)
+            .orElseThrow(
+                () ->
+                    VideoModuleException.badRequest(
+                        VideoModuleErrorCode.BAD_REQUEST, "Job não encontrado."));
+    TenantContextHolder.assertTenant(job.getTenantId());
+    if (job.getStatus() == SalesVideoStatus.VIDEO_REQUESTED
+        || job.getStatus() == SalesVideoStatus.VIDEO_PROCESSING) return toDto(job);
+    if (job.getStatus() != SalesVideoStatus.VIDEO_FAILED
+        || job.getProviderName() == null
+        || !job.getProviderName().startsWith("RUNWAY")
+        || job.getRetryOfJob() != null)
+      throw VideoModuleException.conflict(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Recuperação exige a tentativa Runway original falha; não cria outra geração.");
+    java.util.Set<Integer> started = new java.util.HashSet<>();
+    java.util.Set<Integer> accepted = new java.util.HashSet<>();
+    boolean plan = false;
+    for (var event : eventRepository.findByJobIdOrderByCreatedAtAsc(jobId)) {
+      if (!StringUtils.hasText(event.getDetailsJson())
+          || !event.getDetailsJson().stripLeading().startsWith("{")) continue;
+      try {
+        JsonNode details = objectMapper.readTree(event.getDetailsJson());
+        String type = details.path("eventType").asText();
+        if ("APOLLO_PLAN_CHECKPOINT".equals(type) && details.path("jobId").asLong() == jobId)
+          plan = true;
+        if ("PROVIDER_SUBMISSION_STARTED".equals(type)) started.add(details.path("scene").asInt());
+        if ("PROVIDER_SUBMISSION_ACCEPTED".equals(type)
+            && details.path("jobId").asLong() == jobId
+            && !details.path("providerTaskId").asText().isBlank())
+          accepted.add(details.path("scene").asInt());
+      } catch (JsonProcessingException ex) {
+        log.error(
+            "Checkpoint inválido na recuperação; jobId={} eventId={}", jobId, event.getId(), ex);
+        throw VideoModuleException.conflict(
+            VideoModuleErrorCode.BAD_REQUEST, "Checkpoint inválido; concilie sem repetir geração.");
+      }
+    }
+    if (!plan || accepted.isEmpty() || !accepted.containsAll(started))
+      throw VideoModuleException.conflict(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Envio ou plano sem identidade confirmada; conciliação obrigatória antes de recuperar.");
+    SalesVideoStatus previous = job.getStatus();
+    job.setStatus(SalesVideoStatus.VIDEO_REQUESTED);
+    job.setUpdatedAt(Instant.now());
+    jobRepository.save(job);
+    registerEvent(
+        job,
+        SalesVideoJobEventType.STATUS_CHANGED,
+        previous,
+        job.getStatus(),
+        "Recuperação do mesmo job sem novo planejamento ou submissão paga",
+        "{\"recoveryOnly\":true}");
+    return toDto(job);
   }
 
   private com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
@@ -1367,6 +1449,10 @@ public class SalesVideoJobService {
               "post_production",
               "technicalQualityGate",
               "referenceGovernance",
+              "originalMusicBed",
+              "editorialCutCompositionRequired",
+              "productVersion",
+              "privateProductionInput",
               "premiumFinalization",
               "researchIntelligence",
               "apollo_technical_quality")

@@ -97,7 +97,7 @@ public class StudioCostLedgerService {
     repository.save(entry);
   }
 
-  /** Registra uma task aceita e reconcilia seu custo no job mesmo se a montagem final falhar. */
+  /** Registra o primeiro aceite e preserva identidade, data e liquidação em callbacks repetidos. */
   @Transactional
   public void recordProviderTask(
       Long jobId,
@@ -113,10 +113,25 @@ public class StudioCostLedgerService {
       Instant acceptedAt,
       String jobStatus) {
     if (taskConsumptionRepository == null) return;
-    StudioProviderTaskConsumption task =
-        taskConsumptionRepository
-            .findByProviderAndProviderTaskId(provider, providerTaskId)
-            .orElseGet(StudioProviderTaskConsumption::new);
+    var previous =
+        taskConsumptionRepository.findByProviderAndProviderTaskId(provider, providerTaskId);
+    if (previous.isPresent()) {
+      var task = previous.get();
+      if (!java.util.Objects.equals(task.getSalesVideoJobId(), jobId)
+          || !java.util.Objects.equals(task.getVideoProductionCycleId(), cycleId)
+          || !java.util.Objects.equals(task.getModel(), model)
+          || !java.util.Objects.equals(task.getSceneNumber(), sceneNumber)
+          || !java.util.Objects.equals(task.getPlannedSceneCount(), plannedSceneCount)
+          || !java.util.Objects.equals(task.getDurationSeconds(), durationSeconds)
+          || !java.util.Objects.equals(task.getEstimatedCredits(), estimatedCredits)
+          || task.getEstimatedCostUsd() == null
+          || estimatedCostUsd == null
+          || task.getEstimatedCostUsd().compareTo(estimatedCostUsd) != 0)
+        throw new IllegalArgumentException(
+            "Task já registrada com outro contexto ou custo; preserve a conciliação original.");
+      return;
+    }
+    StudioProviderTaskConsumption task = new StudioProviderTaskConsumption();
     task.setSalesVideoJobId(jobId);
     task.setVideoProductionCycleId(cycleId);
     task.setProvider(provider);
@@ -306,7 +321,10 @@ public class StudioCostLedgerService {
             });
   }
 
-  /** Atualiza a tentativa sem apagar cobrança ou estimativa auditada, inclusive recusa da primeira voz, por callback incompleto. */
+  /**
+   * Atualiza a tentativa sem apagar cobrança ou estimativa auditada, inclusive recusa da primeira
+   * voz, por callback incompleto.
+   */
   @Transactional
   public void recordVideo(
       Long jobId,
@@ -416,6 +434,15 @@ public class StudioCostLedgerService {
         "taskCount", taskConsumptionRepository.countByVideoProductionCycleId(cycleId),
         "credits", credits == null ? 0L : credits,
         "costUsd", cost == null ? BigDecimal.ZERO : cost);
+  }
+
+  /**
+   * Expõe a cobertura somente do ciclo solicitado, sem transferir lacunas históricas de outros
+   * produtos.
+   */
+  @Transactional(readOnly = true)
+  public Map<String, Object> cycleCoverage(Long cycleId) {
+    return coverageOf(repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(cycleId));
   }
 
   /** Soma o custo conhecido do ledger associado ao ciclo para conciliar tasks antigas e novas. */

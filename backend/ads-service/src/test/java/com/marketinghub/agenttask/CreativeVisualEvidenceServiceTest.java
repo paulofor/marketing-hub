@@ -69,6 +69,73 @@ class CreativeVisualEvidenceServiceTest {
                     List.of(Map.of("taskId", 910395L, "result", proof)))));
   }
 
+  /** Original e outra referência podem revisar só o MP4, mas ausência de mídia não dispensa PNG. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {114, 91114})
+  void permitsVideoOnlyReviewWithoutSkippingRequestedStaticProduction(long experiment)
+      throws Exception {
+    task.setSourceReference("experiment:" + experiment);
+    task.setAssignedAgent(Agent.builder().agentKey("customer-agent").build());
+    task.setProcessActivityId("customer");
+    var targets = mock(AgentTaskTargetContextProvider.class);
+    var videos = mock(CreativeFinalVideoEvidence.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "targets", targets);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "finalVideos", videos);
+    var target =
+        new AgentTaskTargetResponse(
+            task.getSourceReference(),
+            experiment,
+            4L,
+            "local",
+            "Local",
+            "Local",
+            "test-version",
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(targets.resolve(task.getSourceReference(), "creative-production-approval"))
+        .thenReturn(Optional.of(target));
+    var ready =
+        json.createArrayNode()
+            .addObject()
+            .put("assetId", experiment + 100)
+            .put("sha256", "a".repeat(64));
+    when(videos.inputs(target)).thenReturn(json.createArrayNode().add(ready));
+    assertThat(service.inputs("customer-agent", task.getId())).isEmpty();
+    MockMvcBuilders.standaloneSetup(new InternalCreativeVisualInputController(service))
+        .build()
+        .perform(
+            get(
+                "/api/internal/agent-tasks/customer-agent/stage-executions/"
+                    + task.getId()
+                    + "/visual-inputs"))
+        .andExpect(status().isOk())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().json("[]"));
+    when(videos.inputs(target)).thenReturn(json.createArrayNode());
+    assertThatThrownBy(() -> service.inputs("customer-agent", task.getId()))
+        .hasMessageContaining("Produza");
+    when(videos.inputs(target)).thenReturn(json.createArrayNode().add(ready));
+    when(tasks.findFunctionalSnapshotsByProcessSince(
+            task.getProcessDefinition().getId(), task.getSourceReference(), null))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    12L,
+                    task.getProcessDefinition().getId(),
+                    "creative-production-approval",
+                    "nonAudiovisual",
+                    "communication-director",
+                    "BLOCKED",
+                    null,
+                    null,
+                    "{}")));
+    assertThatThrownBy(() -> service.inputs("customer-agent", task.getId()))
+        .hasMessageContaining("produção criativa");
+  }
+
   /** Permite apoio ilustrativo da tarefa reservada sem tornar o template um passe comercial. */
   @Test
   void routesIllustrationOnlyForClaimedTaskAndPrivateContext() throws Exception {

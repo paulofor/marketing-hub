@@ -7,6 +7,7 @@ import com.marketinghub.videomanagement.client.dto.ProviderPreflightJob;
 import com.marketinghub.videomanagement.client.payload.ProviderPreflightResultPayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.io.IOException;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -132,6 +133,7 @@ public class RunwayProviderPreflightService {
                 routingResponses.add(routing);
                 JsonNode route = routing.path("routing");
                 requireRoutingContract(request, route);
+                requireCompatibleSelection(job, request, route);
                 BigDecimal credits = route.path("estimatedCost").path("credits").decimalValue();
                 BigDecimal priceCeiling = route.path("resolvedSettings").path("priceCeiling").decimalValue();
                 estimatedCredits = estimatedCredits.add(credits);
@@ -383,6 +385,28 @@ public class RunwayProviderPreflightService {
         }
     }
 
+    /** Cruza a decisão real de allow/deny do Router com o modelo pedido e o adapter instalado. */
+    private void requireCompatibleSelection(ProviderPreflightJob job, Map<String, Object> request, JsonNode route) {
+        String id = route.path("model").asText();
+        var model = VideoCapabilities.model(id).orElseThrow(() -> new VideoProviderException(
+                "PROVIDER_MODEL_NOT_GOVERNED", "O Router escolheu modelo sem contrato versionado; nenhuma geração foi iniciada."));
+        var selected = VideoCapabilities.selected(job.providerPlan());
+        if (selected.isPresent() && !selected.get().modelId().equals(id)) throw new VideoProviderException(
+                "PROVIDER_ROUTER_MODEL_MISMATCH", "O Router selecionado não atende ao modelo pedido. Ajustar configuração ou plano explicitamente; não houve substituição nem render.");
+        if (!model.adapterModes().contains("ROUTER")) throw new VideoProviderException(
+                "PROVIDER_ADAPTER_UNSUPPORTED", "A decisão do Router usa modalidade não implementada no adapter.");
+        var input = objectMapper.valueToTree(request.get("input"));
+        model.requireDuration(input.path("duration").asInt());
+        if (route.path("resolvedInput").has("duration") && route.path("resolvedInput").path("duration").asInt() != input.path("duration").asInt())
+            throw new VideoProviderException("PROVIDER_ROUTER_DURATION_MISMATCH", "Router alterou a duração pedida; revisar plano antes de gerar.");
+        int references = input.path("referenceImages").size();
+        if (!model.adapterModes().contains(references > 0 ? "IMAGE" : "TEXT") || references > model.adapterMaxImageReferences())
+            throw new VideoProviderException("PROVIDER_ADAPTER_UNSUPPORTED", "O Router escolheu modalidade/referências que este adapter ainda não suporta; nenhuma geração foi feita.");
+        var governedCredits = model.credits(input.path("duration").asInt(), input.path("resolution").asText("720p"), input.path("audio").asBoolean(), references, 0, Instant.now());
+        if (governedCredits.compareTo(route.path("resolvedSettings").path("priceCeiling").decimalValue()) > 0)
+            throw new VideoProviderException("PROVIDER_PRICE_CONTRACT_MISMATCH", "O teto do Router não cobre a tarifa governada da tomada; renovar preflight/preço antes de gerar.");
+    }
+
     /** Verifica quota diária e concorrência configurada de cada modelo selecionado pelo router. */
     private QuotaValidation validateQuota(
             JsonNode organization, List<Map<String, Object>> selectedRoutes) {
@@ -580,6 +604,7 @@ public class RunwayProviderPreflightService {
 
     /** Explica a ação necessária sem devolver credencial ou resposta externa ilimitada. */
     private String httpDetail(WebClientResponseException ex, String body) {
+        if (body.contains("no_eligible_model")) return "O modelo, a duração ou o custo pedidos não atendem às regras do Router selecionado. Confira suas listas de modelos permitidos/proibidos e o plano de tomadas. Isso não comprova restrição de toda a conta. Nenhum render foi iniciado; não troque modelo nem aumente teto automaticamente.";
         return "Runway respondeu HTTP %d no preflight: %s"
                 .formatted(ex.getStatusCode().value(), body);
     }

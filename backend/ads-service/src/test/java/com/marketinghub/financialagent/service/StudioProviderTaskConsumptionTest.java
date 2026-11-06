@@ -1,9 +1,12 @@
 package com.marketinghub.financialagent.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
@@ -18,6 +21,63 @@ import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: provar a conciliação financeira por task mesmo quando o job não concluir. */
 class StudioProviderTaskConsumptionTest {
+  /** Replay do aceite preserva a cobrança liquidada e recusa reaproveitamento em outro job. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {21105L, 91105L})
+  void devePreservarConciliacaoOriginalDuranteRecuperacao(Long jobId) {
+    var ledger = mock(StudioCostLedgerEntryRepository.class);
+    var tasks = mock(StudioProviderTaskConsumptionRepository.class);
+    var task = new StudioProviderTaskConsumption();
+    task.setSalesVideoJobId(jobId);
+    task.setVideoProductionCycleId(6L);
+    task.setModel("gen4.5");
+    task.setSceneNumber(1);
+    task.setPlannedSceneCount(4);
+    task.setDurationSeconds(10);
+    task.setEstimatedCredits(120);
+    task.setEstimatedCostUsd(new BigDecimal("1.20"));
+    task.setAcceptedAt(Instant.parse("2026-11-05T18:00:00Z"));
+    task.setBilledCostUsd(new BigDecimal("1.20"));
+    task.setSettlementStatus("CONTRACTUAL_CHARGE");
+    when(tasks.findByProviderAndProviderTaskId("RUNWAY", "task-" + jobId))
+        .thenReturn(Optional.of(task));
+    var service = new StudioCostLedgerService(ledger, tasks);
+    service.recordProviderTask(
+        jobId,
+        6L,
+        "RUNWAY",
+        "task-" + jobId,
+        "gen4.5",
+        1,
+        4,
+        10,
+        120,
+        new BigDecimal("1.200000"),
+        Instant.now(),
+        "VIDEO_PROCESSING");
+    assertThat(task.getAcceptedAt()).isEqualTo(Instant.parse("2026-11-05T18:00:00Z"));
+    assertThat(task.getBilledCostUsd()).isEqualByComparingTo("1.20");
+    assertThat(task.getSettlementStatus()).isEqualTo("CONTRACTUAL_CHARGE");
+    assertThatThrownBy(
+            () ->
+                service.recordProviderTask(
+                    jobId + 1,
+                    6L,
+                    "RUNWAY",
+                    "task-" + jobId,
+                    "gen4.5",
+                    1,
+                    4,
+                    10,
+                    120,
+                    new BigDecimal("1.20"),
+                    Instant.now(),
+                    "VIDEO_PROCESSING"))
+        .hasMessageContaining("outro contexto");
+    verify(tasks, never()).save(any());
+    verifyNoInteractions(ledger);
+  }
+
   /** Persiste a cena idempotente e atualiza o custo parcial conhecido do job falho. */
   @Test
   void deveConciliarTaskAceitaAntesDaFalhaDoJob() {

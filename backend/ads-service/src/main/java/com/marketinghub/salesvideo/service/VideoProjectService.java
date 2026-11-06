@@ -192,6 +192,36 @@ public class VideoProjectService {
     return toDto(repository.save(project), true);
   }
 
+  /** Persiste previsão restante com escopo e fontes, sem autorizar gasto ou reabrir histórico. */
+  @Transactional
+  public com.marketinghub.videocontract.v1.ProductionCostPlan registerProductionCosts(
+      Long projectId, com.marketinghub.videocontract.v1.ProductionCostPlan request) {
+    VideoProject project = loadProject(projectId);
+    if (request == null
+        || request.cycleId() == null
+        || !Objects.equals(request.productId(), project.getProductId())
+        || !Objects.equals(request.experimentId(), project.getExperimentId())
+        || !Objects.equals(request.providerPlan(), project.getProviderPlan())
+        || request.finalSeconds() != project.getTargetDurationSeconds())
+      throw new IllegalArgumentException(
+          "Previsão diverge do projeto, experimento, modelo ou duração");
+    request.maximumRemainingUsd(java.time.Instant.now());
+    try {
+      project.setProductionCostPlanJson(
+          new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(request));
+      repository.save(project);
+      return request;
+    } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+      org.slf4j.LoggerFactory.getLogger(getClass())
+          .error(
+              "Falha ao registrar custos de produção; projectId={} cycleId={}",
+              projectId,
+              request.cycleId(),
+              ex);
+      throw new IllegalArgumentException("Previsão de custos inválida", ex);
+    }
+  }
+
   /** Carrega um projeto garantindo isolamento por tenant. */
   private VideoProject loadProject(Long projectId) {
     String tenantId = TenantContextHolder.requireTenant();
@@ -444,6 +474,7 @@ public class VideoProjectService {
         project.getUpdatedAt(),
         !includeResearchIntelligence || researchIntelligenceMapper == null
             ? null
-            : researchIntelligenceMapper.selectForVideoProject(project));
+            : researchIntelligenceMapper.selectForVideoProject(project),
+        project.getProductionCostPlanJson());
   }
 }

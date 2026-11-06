@@ -927,6 +927,36 @@ class ArquiteturaTest {
                   + " pipeline, repositories canônicos de pipeline e exceção explícita do modelo"
                   + " OpenAI");
 
+  /** Mantém o contrato compartilhado independente de backend, executor e configuração Spring. */
+  @ArchTest
+  static final ArchRule videoCapabilitiesMustRemainAnIndependentContract =
+      classes()
+          .that()
+          .resideInAPackage("com.marketinghub.videocontract.v1..")
+          .should(
+              new ArchCondition<JavaClass>(
+                  "[ARQUITETURA] contrato de vídeo não depende de módulos executáveis") {
+                /**
+                 * Impede importar aplicação, persistência ou coordenação no contrato compartilhado.
+                 */
+                @Override
+                public void check(JavaClass item, ConditionEvents events) {
+                  item.getDirectDependenciesFromSelf()
+                      .forEach(
+                          dependency -> {
+                            String target = dependency.getTargetClass().getName();
+                            if ((target.startsWith("com.marketinghub.")
+                                    && !target.startsWith("com.marketinghub.videocontract.v1."))
+                                || target.startsWith("org.springframework."))
+                              events.add(
+                                  SimpleConditionEvent.violated(
+                                      item,
+                                      "[ARQUITETURA] contrato de vídeo acoplado: "
+                                          + dependency.getDescription()));
+                          });
+                }
+              });
+
   @ArchTest
   static final ArchRule salesVideoControllersShouldOnlyAccessModuleContractsAndFacade =
       classes()
@@ -3868,6 +3898,7 @@ class ArquiteturaTest {
     return new ArchCondition<>(
         "[ARQUITETURA] [BACKEND][SalesVideo] controller only depends on SalesVideo"
             + " facade/contracts") {
+      /** Confere cada dependência sem liberar implementações na borda de contratos. */
       @Override
       public void check(JavaClass item, ConditionEvents events) {
         item.getDirectDependenciesFromSelf()
@@ -3883,6 +3914,10 @@ class ArquiteturaTest {
                       targetPackage.equals(SALES_VIDEO_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_CONTROLLER_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
+                          || (targetPackage.equals("com.marketinghub.salesvideo.service.clipplan")
+                              && targetClass.reflect().isRecord())
+                          || (targetPackage.equals("com.marketinghub.videocontract.v1")
+                              && targetClass.reflect().isRecord())
                           || (targetPackage.equals(
                                   "com.marketinghub.salesvideo.service.reconcileNarrationCosts")
                               && targetClass.reflect().isRecord())
@@ -3918,6 +3953,7 @@ class ArquiteturaTest {
     return new ArchCondition<>(
         "[ARQUITETURA] [BACKEND][SalesVideo] service only depends on SalesVideo and approved"
             + " repositories") {
+      /** Confere cada dependência sem liberar implementações na borda de contratos. */
       @Override
       public void check(JavaClass item, ConditionEvents events) {
         item.getDirectDependenciesFromSelf()
@@ -3930,7 +3966,8 @@ class ArquiteturaTest {
                   }
                   String targetPackage = targetClass.getPackageName();
                   boolean valid =
-                      targetPackage.equals(SALES_VIDEO_PACKAGE)
+                      targetPackage.equals("com.marketinghub.videocontract.v1")
+                          || targetPackage.equals(SALES_VIDEO_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_SERVICE_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
                           || targetPackage.startsWith("com.marketinghub.salesvideo.mapper")
@@ -3978,6 +4015,7 @@ class ArquiteturaTest {
     return new ArchCondition<>(
         "[ARQUITETURA] [BACKEND][SalesVideo] dto only depends on SalesVideo contracts") {
       /** Confere dependências de contratos legados e records canônicos da pós-produção. */
+      /** Confere cada dependência sem liberar implementações na borda de contratos. */
       @Override
       public void check(JavaClass item, ConditionEvents events) {
         item.getDirectDependenciesFromSelf()
@@ -3990,7 +4028,9 @@ class ArquiteturaTest {
                   }
                   String targetPackage = targetClass.getPackageName();
                   boolean valid =
-                      targetPackage.equals(SALES_VIDEO_PACKAGE)
+                      (targetPackage.equals("com.marketinghub.videocontract.v1")
+                              && targetClass.reflect().isRecord())
+                          || targetPackage.equals(SALES_VIDEO_PACKAGE)
                           || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
                           || (targetPackage.equals(SALES_VIDEO_PACKAGE + ".service.postproduction")
                               && targetClass.reflect().isRecord());

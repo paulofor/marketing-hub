@@ -66,10 +66,18 @@ public class FinancialCodexRunner {
       if (backend != null && job.agentTaskId() != null) {
         backend.recordTaskExecutionAudit(job.agentTaskId(), executionAudit(prompt, selectedModel));
       }
-      ProcessBuilder builder = new ProcessBuilder(buildCommand(output, schema, mcp, selectedModel));
+      List<String> command = buildCommand(output, schema, mcp, selectedModel);
+      ProcessBuilder builder = new ProcessBuilder(command);
       builder.redirectErrorStream(true).redirectOutput(processOutput.toFile());
       builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
       builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
+      if (job.agentTaskId() != null) {
+        if (command.contains("--spending-exec"))
+          builder.environment().put("MH_EXPECT_SHARED_SPENDING", "true");
+        builder.environment().put("MH_AGENT_TASK_ID", String.valueOf(job.agentTaskId()));
+        builder.environment().put("MH_AGENT_KEY", "financial-agent");
+        builder.environment().put("MH_SPENDING_BACKEND_URL", properties.getBackendUrl());
+      }
       Process process = builder.start();
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
@@ -110,7 +118,7 @@ public class FinancialCodexRunner {
         payload.put("activityPromptPart", prompt.activityPromptPart());
         payload.put("reasoningEffort", properties.requiredReasoningEffort());
         payload.put("requestedServiceTier", configuredServiceTier());
-        payload.put("effectiveServiceTier", "STANDARD");
+        payload.put("effectiveServiceTier", boundedServiceTier(processOutput));
         payload.put("serviceTierExceptionReason", properties.getServiceTierExceptionReason());
         if (usage.informed()) {
           payload.put("inputTokens", usage.inputTokens());
@@ -156,11 +164,31 @@ public class FinancialCodexRunner {
     Path schema = materialize("prompts/financial-agent/v1/video-cycle-review-schema.json", ".json");
     try {
       List<String> command = buildVideoReviewCommand(output, schema);
-      Process process =
+      if (objectMapper
+          .readTree(cycle.financialSnapshot())
+          .has("singleVideoIncrementalAuthorization")) {
+        List<String> limited =
+            new ArrayList<>(
+                List.of(
+                    "bash",
+                    Path.of(properties.getRepositoryPath(), "scripts/codex-oauth-session-safe.sh")
+                        .toString(),
+                    "--spending-exec"));
+        limited.addAll(command);
+        command = limited;
+      }
+      ProcessBuilder builder =
           new ProcessBuilder(command)
               .redirectErrorStream(true)
-              .redirectOutput(processOutput.toFile())
-              .start();
+              .redirectOutput(processOutput.toFile());
+      if (cycle.agentTaskId() != null) {
+        if (command.contains("--spending-exec"))
+          builder.environment().put("MH_EXPECT_SHARED_SPENDING", "true");
+        builder.environment().put("MH_AGENT_TASK_ID", String.valueOf(cycle.agentTaskId()));
+        builder.environment().put("MH_AGENT_KEY", "financial-agent");
+        builder.environment().put("MH_SPENDING_BACKEND_URL", properties.getBackendUrl());
+      }
+      Process process = builder.start();
       PromptComposition prompt = buildVideoPromptComposition(cycle);
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
@@ -184,7 +212,7 @@ public class FinancialCodexRunner {
       executionAudit.put("activityPromptPart", prompt.activityPromptPart());
       executionAudit.put("accessedUrls", List.of());
       executionAudit.put("requestedServiceTier", configuredServiceTier());
-      executionAudit.put("effectiveServiceTier", "STANDARD");
+      executionAudit.put("effectiveServiceTier", boundedServiceTier(processOutput));
       executionAudit.put("serviceTierExceptionReason", properties.getServiceTierExceptionReason());
       LinkedHashMap<String, Object> audit = new LinkedHashMap<>();
       audit.put("rawModelResponse", raw);
@@ -195,7 +223,7 @@ public class FinancialCodexRunner {
               ? List.of(
                   Map.of(
                       "modelCode", properties.getModel(),
-                      "serviceTier", "STANDARD",
+                      "serviceTier", boundedServiceTier(processOutput),
                       "inputTokens", usage.inputTokens(),
                       "cachedInputTokens", usage.cachedInputTokens(),
                       "outputTokens", usage.outputTokens()))
@@ -206,6 +234,19 @@ public class FinancialCodexRunner {
       Files.deleteIfExists(processOutput);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /**
+   * Preserva o tier nativo observado; o caminho OAuth anterior continua classificado como Standard.
+   */
+  private String boundedServiceTier(Path output) throws IOException {
+    for (String line : Files.readAllLines(output)) {
+      if (!line.startsWith("{") || !line.contains("bounded_spend.completed")) continue;
+      JsonNode event = objectMapper.readTree(line);
+      if ("bounded_spend.completed".equals(event.path("type").asText()))
+        return event.path("serviceTier").asText("UNKNOWN").toUpperCase(java.util.Locale.ROOT);
+    }
+    return "STANDARD";
   }
 
   /** Converte uma resposta já auditada em decisão sem invocar novamente o modelo. */

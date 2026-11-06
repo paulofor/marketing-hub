@@ -17,11 +17,18 @@ services:
       AGENT_HEALTH_KEY: financial-agent
       AGENT_HEALTH_VERSION: "7"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      MH_BOUNDED_OPENAI_API_KEY_FILE: /run/secrets/single_video_openai_api_key
       CODEX_HOME: /home/financial-agent/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095"
     volumes:
+      - type: bind
+        source: ${SINGLE_VIDEO_OPENAI_API_KEY_HOST_FILE:-/opt/growth-operator/agents/customer-agent/secrets/openai_api_key}
+        target: /run/secrets/single_video_openai_api_key
+        read_only: true
+        bind:
+          create_host_path: false
       - ${MARKETING_HUB_REPOSITORY_PATH:-..}:/workspace/marketing-hub:ro
       - ${FINANCIAL_AGENT_CODEX_HOME:?Defina a sessão Codex individual do Plutus}:/home/financial-agent/.codex
     read_only: true

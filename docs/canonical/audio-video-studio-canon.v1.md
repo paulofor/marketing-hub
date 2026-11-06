@@ -692,3 +692,49 @@ ou erro ambíguo preservam custo pendente. Nenhum desses diagnósticos autoriza 
 limite da conta, ampliar tetos do produto, retentar automaticamente ou aprovar o vídeo.
 Fontes: [erros oficiais](https://developers.openai.com/api/docs/guides/error-codes) e
 [limites de gasto](https://developers.openai.com/api/docs/guides/spend-limits).
+
+## Catálogo governado, tomadas e previsão integral — decisão de 05/11/2026
+
+A fonte técnica única é `shared/video-capabilities/src/main/resources/video-capabilities/catalog.json`,
+revisão `2026-11-05.v1`, interpretada pelo mesmo código no backend e executor e consumida pelo
+frontend. O cadastro persistido conserva fabricante, agregador, conta, identificador exato e gates;
+a capacidade pública e o subconjunto implementado do adapter são informações distintas. Consultar
+os modelos, preços e parâmetros oficiais da Runway antes de renovar a revisão. A tarifa vence em
+12/11/2026; promoção não pode continuar depois de sua validade.
+
+- Criar a rota Runway `seedance2_5` separadamente. Nunca retargetar o histórico Pippit, converter
+  para `seedance2`, solicitar credenciais Pippit/ByteDance/MiniMax ou ativar modelos por cadastro.
+  Kling 4, Aleph 2 e alternativas econômicas ficam DRAFT; Seedance 2.5 fica HOMOLOGATION, com gates
+  desmarcados até comprovação real. Nenhum render pago foi autorizado para esta homologação.
+- Duração final é diferente da duração faturada por tomada. Gen-4.5: 2–10s; 32s finais podem usar
+  10+10+10+2. Seedance 2.5: 4–30s; 32s podem usar 28+4, preservando o mínimo. Veo 3.1/Fast usa
+  4, 6 ou 8s; excedente necessário é mostrado e cortado explicitamente na montagem. Preservar áudio,
+  legendas, continuidade e duração final. Beats de edição não são automaticamente tomadas pagas.
+- Preflight deve cruzar o modelo solicitado com a decisão real do Router (incluindo allow/deny),
+  adapter, duração, resolução, áudio, homologação, referências/direitos, quota, saldo e orçamento.
+  `no_eligible_model` para uma combinação não comprova restrição de toda a conta. Nunca trocar
+  modelo/provider, aumentar teto ou habilitar fallback silenciosamente para fazer passar.
+- O Estúdio exibe a simulação por tomada antes de confirmação: modelo, segundos pedidos/usados/
+  cobrados, custo parcial e função narrativa. `POST /api/sales-videos/studio/clip-plan` não gera
+  nem reserva. Novos projetos e metadados genéricos não herdam MUSA, 30s, casting ou CTA; templates
+  comerciais exigem seleção explícita. O catálogo operacional da tela vem do backend.
+- A previsão restante integral (`production-cost-plan`) vincula revisão, produto, experimento,
+  ciclo, plano e duração. Apolo reúne fontes; Plutus confere agentes/revisões, referências/imagens,
+  voz, trilha, montagem/legendas, taxas e tentativas, além dos clipes. Zero exige fonte. Desconhecido
+  permanece pendência e nunca vira zero. Somar custos já incorridos uma única vez, preservando a
+  segregação histórica e o teto aprovado. A reserva guarda tanto créditos do provider quanto o
+  máximo integral em USD; teto e reserva não são gastos conciliados.
+- A lacuna integral vira bloqueio persistido, com simulação e callback preservados; não pode causar
+  rollback do dry run, nova cobrança ou pedido redundante de orçamento. Render administrativo,
+  inclusive TEST, exige ciclo e reserva governados. Conferir o ledger real do mesmo ciclo; uma
+  lista declarada vazia de tentativas incertas não comprova conciliação.
+- Timeout ou resposta incerta exige consultar o ID original e preservar request, resposta, hash,
+  custos e clipes disponíveis antes de repetir. Recuperação de job em processamento não inicia
+  outra geração automaticamente. Reusar callback/artefato quando suportado; não fabricar um novo
+  resultado. O registro de URL/hash de uma tomada não é armazenamento permanente dos seus bytes.
+
+Fontes: [modelos](https://docs.dev.runwayml.com/guides/models/),
+[preços](https://docs.dev.runwayml.com/guides/pricing/),
+[entradas](https://docs.dev.runwayml.com/assets/inputs/),
+[Router](https://docs.dev.runwayml.com/model-routers/generating/).
+Matriz e limites: [homologação local](../homologacao/studio-capabilities-2026-11-05.md).

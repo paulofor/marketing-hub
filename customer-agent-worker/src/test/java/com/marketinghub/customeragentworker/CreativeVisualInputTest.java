@@ -20,6 +20,41 @@ class CreativeVisualInputTest {
   @TempDir Path directory;
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
+  /** A lista estática vazia só é utilizável quando a tarefa tem vídeo final a inspecionar. */
+  @Test
+  void permitsEmptyStaticInputsOnlyWithExpectedFinalVideo() throws Exception {
+    var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          byte[] body = "[]".getBytes(StandardCharsets.UTF_8);
+          exchange.getResponseHeaders().set("Content-Type", "application/json");
+          exchange.sendResponseHeaders(200, body.length);
+          exchange.getResponseBody().write(body);
+          exchange.close();
+        });
+    server.start();
+    try {
+      var client =
+          new BpmVisualEvidenceBackendClient("http://127.0.0.1:" + server.getAddress().getPort());
+      assertThatThrownBy(() -> client.creativeInputs(69, directory))
+          .hasMessageContaining("imagem final");
+      assertThat(client.creativeInputs(69, directory, true)).isEmpty();
+      var frames = VideoNarrativeReviewContractTest.evidence(69);
+      var result = json.createObjectNode();
+      result.putArray("renderedAssetAudit");
+      assertThatCode(() -> CustomerBpmTaskConsumer.validateCreativeAudit(result, frames))
+          .doesNotThrowAnyException();
+      assertThatThrownBy(() -> CustomerBpmTaskConsumer.validateCreativeAudit(result, List.of()))
+          .hasMessageContaining("imagens finais");
+      result.withArray("renderedAssetAudit").addObject().put("artifactId", frames.getFirst().id());
+      assertThatThrownBy(() -> CustomerBpmTaskConsumer.validateCreativeAudit(result, frames))
+          .hasMessageContaining("imagens finais");
+    } finally {
+      server.stop(0);
+    }
+  }
+
   /**
    * Baixa e confere o original, anexa a redução mobile e preserva a auditoria da peça persistida.
    */
@@ -84,6 +119,9 @@ class CreativeVisualInputTest {
                   + hash
                   + "\",\"assessment\":\"Peça inspecionada nos pixels recebidos\"}]}");
       CustomerBpmTaskConsumer.validateCreativeAudit(result, images);
+      var mixed = new ArrayList<>(images);
+      mixed.addAll(VideoNarrativeReviewContractTest.evidence(69));
+      CustomerBpmTaskConsumer.validateCreativeAudit(result, mixed);
       assertThatThrownBy(
               () ->
                   CustomerBpmTaskConsumer.validateCreativeAudit(

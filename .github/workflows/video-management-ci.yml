@@ -1,0 +1,46 @@
+name: Video Management CI
+on:
+  pull_request:
+    paths:
+      - "video-management-service/**"
+      - "shared/video-capabilities/**"
+      - ".github/workflows/video-management-ci.yml"
+      - "scripts/test-shared-video-build-contexts.py"
+      - "backend/ads-service/Dockerfile*"
+      - "backend/ads-service/docker-compose*.yml"
+      - "infra/testing/facebook-resumption/Dockerfile.stop-reason-test"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: video-management-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Validar capacidades, preflight e montagem sem geração paga
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: video-management-service/pom.xml
+      - name: Disponibilizar montagem determinística local
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - name: Validar contexto de build das fixtures compartilhadas
+        run: python3 scripts/test-shared-video-build-contexts.py
+      - name: Executar regressões com doubles e mídia sintética
+        run: mvn -B -f video-management-service/pom.xml -Dvideo.proof.real-ffmpeg=true test
+      - name: Preservar resultados dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-management-tests
+          path: video-management-service/target/surefire-reports/

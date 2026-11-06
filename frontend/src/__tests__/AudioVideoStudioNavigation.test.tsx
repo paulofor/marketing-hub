@@ -126,7 +126,8 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByText(/padronize o video antes de gerar cenas/i),
     ).toBeTruthy();
-    expect(screen.getByText(/180 segundos ou mais/i)).toBeTruthy();
+    expect(screen.getByLabelText(/duracao alvo/i)).toHaveValue(null);
+    expect(screen.getByLabelText(/^CTA$/i)).toHaveValue("");
     expect(
       screen.getByRole("form", {
         name: /blueprint operacional de video comercial/i,
@@ -816,7 +817,7 @@ describe("audio video studio navigation", () => {
     );
   });
 
-  it("blocks audio video studio project below three minutes", async () => {
+  it("blocks an explicitly long-form project below three minutes", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
@@ -827,6 +828,7 @@ describe("audio video studio navigation", () => {
           data: {
             id: 8,
             title: "Projeto curto",
+            videoCategory: "LONG_FORM",
             objective: "Testar corte curto.",
             storyText: "Historia curta para criativo rapido.",
             contextType: "PDE",

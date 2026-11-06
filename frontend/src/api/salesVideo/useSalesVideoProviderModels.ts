@@ -38,6 +38,17 @@ export type SalesVideoProviderModel = {
   pricingResearchNotes?: string | null;
   normalizedCostPerSecondUsd?: number | null;
   pricingStale?: boolean;
+  capabilityRevision?: string;
+  capabilities?: {
+    modelId: string;
+    minSeconds: number;
+    maxSeconds: number;
+    validSeconds: number[];
+    resolutions: string[];
+    nativeAudio: boolean;
+    maxImageReferences: number;
+    adapterModes: string[];
+  } | null;
 };
 
 export type UpdateSalesVideoProviderModel = Pick<

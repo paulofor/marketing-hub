@@ -7,6 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Acesso aos projetos editáveis do estúdio de vídeos. */
 public interface VideoProjectRepository extends JpaRepository<VideoProject, Long> {
+  /** Serializa a abertura de um único pedido privado no projeto existente. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @org.springframework.data.jpa.repository.Query("select p from VideoProject p where p.id = :id")
+  Optional<VideoProject> findByIdForUpdate(
+      @org.springframework.data.repository.query.Param("id") Long id);
+
   /** Lista os projetos do tenant mais recentes primeiro. */
   List<VideoProject> findByTenantIdOrderByUpdatedAtDesc(String tenantId);
 

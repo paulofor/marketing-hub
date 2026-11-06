@@ -63,10 +63,33 @@ public class ApolloBudgetMonitorService {
             });
   }
 
-  /** Liquida a reserva quando o job chega a um estado terminal, mesmo sem consumo cobrado. */
+  /**
+   * Liquida somente resultado conhecido; preserva reserva e pendência quando faltar conciliação.
+   */
   @Transactional
   public void settleReservation(Long cycleId) {
     if (cycleId == null) return;
+    VideoProductionCycle cycle = cycleRepository.findById(cycleId).orElse(null);
+    if (cycle == null) return;
+    var job =
+        cycle.getSalesVideoJobId() == null
+            ? null
+            : jobRepository.findById(cycle.getSalesVideoJobId()).orElse(null);
+    var coverage = ledgerService.cycleCoverage(cycleId);
+    boolean unknownCost =
+        !(coverage.get("unknownCostAttempts") instanceof Number unknown) || unknown.longValue() > 0;
+    if (job == null || "PROVIDER_RESULT_UNCERTAIN".equals(job.getFailureCode()) || unknownCost) {
+      providerPreflightService.preserveUncertainReservation(cycleId);
+      cycle.setStatus(APOLLO_BLOCKED);
+      cycle.setBudgetMonitorStatus("BLOCKED");
+      cycle.setBudgetAlertCode("PROVIDER_RECONCILIATION_REQUIRED");
+      cycle.setBudgetAlertDetail(
+          "Resultado ou custo ainda incerto. Apolo deve consultar a tentativa anterior e reaproveitar seu resultado/callback antes de repetir. A reserva continua protegida; não há pedido de novo teto.");
+      cycle.setBudgetAlertAt(Instant.now());
+      cycle.setUpdatedAt(Instant.now());
+      cycleRepository.save(cycle);
+      return;
+    }
     java.util.Map<String, Object> consumption = ledgerService.cycleProviderConsumption(cycleId);
     providerPreflightService.settle(
         cycleId, decimal(consumption.get("credits")), (BigDecimal) consumption.get("costUsd"));

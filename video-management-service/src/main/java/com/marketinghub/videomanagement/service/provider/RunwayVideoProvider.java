@@ -12,6 +12,7 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoScript;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.io.IOException;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -56,6 +57,20 @@ public class RunwayVideoProvider implements VideoProvider {
     private final RunwayProductUgcRequestFactory productUgcRequestFactory;
     private final WebClient webClient;
     private final WebClient downloadWebClient;
+    private RunwayRecoveryStore recoveryStore;
+    private com.marketinghub.videomanagement.service.BoundedVideoSpending spending;
+
+    /** Conecta o teto compartilhado para cada tomada antes do primeiro POST ao provedor. */
+    @Autowired
+    public void setSpending(com.marketinghub.videomanagement.service.BoundedVideoSpending spending) {
+        this.spending = spending;
+    }
+
+    /** Conecta a persistência obrigatória de tomadas e consultas para recuperação no runtime. */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setRecoveryStore(RunwayRecoveryStore recoveryStore) {
+        this.recoveryStore = recoveryStore;
+    }
 
     /** Inicializa o provider Runway com configuração, mapper JSON e clients HTTP. */
     @Autowired
@@ -71,7 +86,7 @@ public class RunwayVideoProvider implements VideoProvider {
         this.productUgcRequestFactory = productUgcRequestFactory;
         this.webClient = webClientBuilder
                 .baseUrl(resolveBaseUrl())
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().disableRetry(true).followRedirect(false)))
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
@@ -126,13 +141,17 @@ public class RunwayVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Confere a captura do PDE antes de consumir inclusive o planejador de IA. */
+    /** Permite recuperação comprovada, recusa clones pagos e confere a prova antes do planejador. */
     @Override
     public void validateInput(SalesVideoJob job, SalesVideoProfile profile) {
+        var checkpoints = recoveryStore == null ? null : recoveryStore.load(job);
+        if (job.retryOfJobId() != null || ((job.status() == SalesVideoStatus.VIDEO_PROCESSING || StringUtils.hasText(job.providerJobId()))
+                && (checkpoints == null || !checkpoints.recovery())))
+            throw new VideoProviderException("PROVIDER_RECONCILIATION_REQUIRED", "A tentativa anterior pode ter consumido créditos; consultar tarefas e reutilizar resultado/callback antes de repetir");
         new PdeProductProofOverlay(properties, WebClient.builder()).verify(readMetadata(job), job.id());
     }
 
-    /** Confere a prova privada, gera clipes na Runway e devolve o MP4 bruto com auditoria. */
+    /** Reutiliza tomadas persistidas ou gera e preserva clipes novos antes da montagem auditável. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -146,17 +165,21 @@ public class RunwayVideoProvider implements VideoProvider {
             return renderProductUgc(job, jobMetadata, progressCallback);
         }
         new PdeProductProofOverlay(properties, WebClient.builder()).verify(jobMetadata, job.id());
+        var checkpoints = recoveryStore == null ? null : recoveryStore.load(job);
+        boolean recovering = checkpoints != null && checkpoints.recovery();
         List<Map<String, Object>> routerRequests = routerRequests(job, jobMetadata);
         boolean routed = !routerRequests.isEmpty();
         List<JsonNode> selectedRoutes = routed
-                ? validateRoutedPlan(job, jobMetadata, routerRequests)
+                ? validateRoutedPlan(job, jobMetadata, routerRequests, recovering)
                 : List.of();
         BigDecimal reservedCredits = routed
                 ? jobMetadata.path("providerReservedCredits").decimalValue()
                 : BigDecimal.ZERO;
-        int sceneCount = routed
-                ? routerRequests.size()
-                : Math.max(1, jobMetadata.path("sceneCount").asInt(1));
+        var directContract = VideoCapabilities.provider(job.providerName());
+        var directPlan = !recovering && !routed && jobMetadata.path("sceneCount").asInt(1) > 1 && directContract.isPresent()
+                ? directContract.get().plan(jobMetadata.path("targetDurationSeconds").asInt(0)) : null;
+        int sceneCount = routed ? routerRequests.size() : recovering ? jobMetadata.path("sceneCount").asInt(1)
+                : directPlan != null ? directPlan.clipSeconds().size() : 1;
         List<ProviderFile> scenes = new ArrayList<>();
         List<String> taskIds = new ArrayList<>();
         Map<String, Object> payload = null;
@@ -166,18 +189,42 @@ public class RunwayVideoProvider implements VideoProvider {
         int totalDurationSeconds = 0;
         BigDecimal totalEstimatedCredits = BigDecimal.ZERO;
         for (int scene = 1; scene <= sceneCount; scene++) {
-            if (routed) {
+            JsonNode previousSubmission = checkpoints == null ? null : checkpoints.submissions().get(scene);
+            if (checkpoints != null && checkpoints.recovery() && previousSubmission == null)
+                throw new VideoProviderException("PROVIDER_RECONCILIATION_REQUIRED",
+                        "A recuperação só consulta tasks existentes; tomada " + scene + " não foi enviada. Preserve o saldo e reavalie o plano antes de qualquer nova geração.");
+            if (routed && previousSubmission == null) {
                 requireFreshReservation(job, jobMetadata);
             }
-            payload = routed
+            payload = previousSubmission != null
+                    ? objectMapper.convertValue(previousSubmission.path("request"), new TypeReference<LinkedHashMap<String, Object>>() {}) : routed
                     ? new LinkedHashMap<>(routerRequests.get(scene - 1))
-                    : buildPayload(job, profile, script, scene, sceneCount);
+                    : buildPayload(job, profile, script, scene, sceneCount,
+                            directPlan == null ? null : directPlan.clipSeconds().get(scene - 1));
             boolean characterPerformance = "act_two".equals(payload.get("model"));
-            if (!routed && sceneCount > 1 && !characterPerformance) {
+            if (previousSubmission == null && !routed && sceneCount > 1 && !characterPerformance) {
                 payload.put("promptText", sceneDirective(scene, sceneCount) + " " + payload.get("promptText"));
             }
-            JsonNode submission = submitRender(job, payload);
+            BigDecimal plannedCredits = previousSubmission != null ? previousSubmission.path("estimatedCredits").decimalValue()
+                    : routed ? selectedRoutes.get(scene - 1).path("estimatedCredits").decimalValue() : BigDecimal.ZERO;
+            if (!routed && previousSubmission == null) {
+                String selectedModel = String.valueOf(payload.get("model"));
+                var capability = VideoCapabilities.model(selectedModel).orElseThrow();
+                plannedCredits = capability.credits(characterPerformance
+                        ? resolveDuration(job, properties.getProviders().getRunway(), jobMetadata)
+                        : ((Number) payload.get("duration")).intValue(), jobMetadata.path("resolution").asText("720p"),
+                        jobMetadata.path("audio").asBoolean(false), payload.containsKey("promptImage") ? 1 : 0, 0, Instant.now());
+            }
+            if (plannedCredits.signum() <= 0) throw new VideoProviderException("PROVIDER_RECONCILIATION_REQUIRED",
+                    "Estimativa original da tomada não foi preservada; conciliar sem nova geração");
+            JsonNode submission = previousSubmission == null ? submitGoverned(job, payload, scene, plannedCredits, progressCallback) : previousSubmission.path("rawResponse");
             String taskId = firstText(submission, "/id", "/taskId", "/task_id");
+            if (!StringUtils.hasText(taskId)) throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN",
+                    "Envio Runway sem task confirmada; conciliar antes de repetir");
+            if (previousSubmission == null) progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING,
+                    "Identidade da tomada Runway preservada", json(Map.of("eventType", "PROVIDER_SUBMISSION_ACCEPTED",
+                            "jobId", job.id(), "scene", scene, "providerTaskId", taskId,
+                            "request", payload, "rawResponse", submission, "estimatedCredits", plannedCredits)));
             taskIds.add(taskId);
             RoutedSubmission routedSubmission = routed
                     ? validateRoutedSubmission(
@@ -199,7 +246,7 @@ public class RunwayVideoProvider implements VideoProvider {
                             : ((Number) payload.get("duration")).intValue();
             BigDecimal estimatedCredits = routed
                     ? routedSubmission.estimatedCredits()
-                    : BigDecimal.valueOf(estimateCredits(model, durationSeconds));
+                    : plannedCredits;
             if (!StringUtils.hasText(model) || estimatedCredits.signum() <= 0) {
                 throw new VideoProviderException("PROVIDER_AUDIT_FAILED",
                         "Runway Router não confirmou modelo e custo antes de processar a task");
@@ -208,25 +255,41 @@ public class RunwayVideoProvider implements VideoProvider {
             lastClipDuration = durationSeconds;
             totalDurationSeconds += durationSeconds;
             totalEstimatedCredits = totalEstimatedCredits.add(estimatedCredits);
-            progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
+            JsonNode persistedClip = checkpoints == null ? null : checkpoints.clips().get(scene);
+            if (persistedClip == null) progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
                     "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
                     providerTaskDetails(taskId, model, scene, sceneCount, durationSeconds, estimatedCredits));
-            finalStatus = waitUntilCompleted(
+            finalStatus = persistedClip != null ? persistedClip.path("rawResponse") : waitUntilCompleted(
                     taskId, model, scene, sceneCount, durationSeconds, estimatedCredits, progressCallback);
             String videoUrl = resolveVideoUrl(finalStatus);
             if (!StringUtils.hasText(videoUrl)) {
                 throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Runway não retornou URL da cena " + scene);
             }
-            scenes.add(downloadVideo(job, videoUrl));
+            ProviderFile clip = persistedClip != null
+                    ? recoveryStore.recover(job, scene, previousSubmission, persistedClip) : downloadVideo(job, videoUrl);
+            if (persistedClip == null && recoveryStore != null)
+                recoveryStore.preserve(job, scene, taskId, videoUrl, finalStatus, clip, progressCallback);
+            scenes.add(clip);
+            progressCallback.onProgress(85, SalesVideoStatus.VIDEO_PROCESSING, "Tomada " + scene + " preservada para montagem",
+                    json(Map.of("eventType", "PROVIDER_SCENE_READY", "jobId", job.id(), "scene", scene, "providerTaskId", taskId,
+                        "sourceUrl", videoUrl, "rawResponse", finalStatus, "byteSize", clip.content().length,
+                        "sha256", fileSha256(clip.content()), "reconciliationRequiredBeforeRetry", true)));
         }
 
-        ProviderFile video = scenes.size() == 1 ? scenes.getFirst() : assembleScenes(job, scenes);
+        int finalSeconds = jobMetadata.path("targetDurationSeconds").asInt(totalDurationSeconds);
+        if (finalSeconds > totalDurationSeconds) throw new VideoProviderException("PROVIDER_ASSEMBLY_DURATION_INVALID", "As tomadas não cobrem a duração final pedida; preservar clipes e corrigir montagem sem regenerar");
+        ProviderFile video = scenes.size() == 1 && finalSeconds == totalDurationSeconds
+                ? scenes.getFirst() : assembleScenes(job, scenes);
         String taskId = String.join(",", taskIds);
         Map<String, Object> metadata = metadata(
                 job, taskId, payload, finalStatus, sceneCount, lastModel, lastClipDuration,
                 totalDurationSeconds, totalEstimatedCredits);
         metadata.put("scene_count", sceneCount);
         metadata.put("assembled_locally", sceneCount > 1);
+        metadata.put("capability_revision", VideoCapabilities.catalog().revision());
+        metadata.put("generated_duration_seconds", totalDurationSeconds);
+        metadata.put("duration_seconds", finalSeconds);
+        metadata.put("trimmed_seconds", totalDurationSeconds - finalSeconds);
         progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Runway finalizada com MP4 disponível");
         return new ProviderArtifacts(taskId, video, null, null, metadata);
     }
@@ -253,7 +316,7 @@ public class RunwayVideoProvider implements VideoProvider {
                 10,
                 SalesVideoStatus.VIDEO_PROCESSING,
                 "Enviando receita Product UGC premium para Runway");
-        JsonNode submission = submitRender(job, request);
+        JsonNode submission = submitGoverned(job, request, 1, metadata.path("providerReservedCredits").decimalValue(), progressCallback);
         String taskId = productUgcRequestFactory.requireAcceptedTaskId(submission);
         int duration = ((Number) request.get("duration")).intValue();
         progressCallback.onProgress(
@@ -336,7 +399,9 @@ public class RunwayVideoProvider implements VideoProvider {
             files.add(output);
             Process process = new ProcessBuilder(
                     properties.getProviders().getPostProduction().getFfmpegPath(), "-y", "-f", "concat", "-safe", "0",
-                    "-i", manifest.toString(), "-c", "copy", output.toString()).redirectErrorStream(true).start();
+                    "-i", manifest.toString(), "-t", String.valueOf(readMetadata(job).path("targetDurationSeconds").asInt(3600)),
+                    "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?", "-c:s", "mov_text", "-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac",
+                    "-movflags", "+faststart", output.toString()).redirectError(ProcessBuilder.Redirect.DISCARD).start();
             if (process.waitFor() != 0) {
                 throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED", "ffmpeg falhou ao montar cenas Runway");
             }
@@ -383,15 +448,35 @@ public class RunwayVideoProvider implements VideoProvider {
                     .bodyToMono(JsonNode.class)
                     .block();
         } catch (WebClientResponseException ex) {
-            throw providerHttpError(job, "criação", path, ex);
+            var cause = providerHttpError(job, "criação", path, ex);
+            if (ex.getStatusCode().is5xxServerError() || ex.getStatusCode().value() == 408)
+                throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN", "A Runway não confirmou o resultado do envio; conciliar request e tarefas antes de repetir", cause);
+            if (ex.getStatusCode().value() == 429)
+                throw new VideoProviderException("PROVIDER_REQUEST_BLOCKED", "Runway recusou a submissão por limite operacional; atualizar preflight antes de gerar novamente", cause);
+            throw cause;
+        } catch (org.springframework.web.reactive.function.client.WebClientRequestException ex) {
+            log.error("Submissão Runway com resultado incerto; jobId={} url={}", job.id(), resolveBaseUrl() + path, ex);
+            throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN", "Conexão interrompida durante envio; conciliar a submissão antes de repetir", ex);
         }
         log.info("Resposta Runway create; jobId={} response={}", job.id(), response);
         String taskId = firstText(response, "/id", "/taskId", "/task_id");
         if (!StringUtils.hasText(taskId)) {
-            throw new VideoProviderException("PROVIDER_RENDER_FAILED",
-                    "Runway não retornou id de tarefa para o job " + job.id());
+            throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN",
+                    "Runway não retornou id de tarefa para o job " + job.id() + "; conciliar a submissão antes de repetir");
         }
         return response;
+    }
+
+    /** Reserva a tomada antes de gravar intenção e enviar, preservando o mesmo resultado no replay. */
+    private JsonNode submitGoverned(SalesVideoJob job, Map<String, Object> payload, int scene, BigDecimal estimatedCredits, ProgressCallback progress) {
+        java.util.function.Supplier<JsonNode> submit = () -> {
+            progress.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Iniciando tomada " + scene,
+                    json(Map.of("eventType", "PROVIDER_SUBMISSION_STARTED", "jobId", job.id(), "scene", scene,
+                            "request", payload, "estimatedCredits", estimatedCredits, "reconciliationRequiredBeforeRetry", true)));
+            return submitRender(job, payload);
+        };
+        return spending == null ? submit.get() : spending.jsonCall(job.id(), "CLIP_" + scene,
+                objectMapper.valueToTree(payload), null, submit);
     }
 
     /** Lê o payload Product UGC congelado e impede campos, versões ou referências divergentes. */
@@ -548,9 +633,9 @@ public class RunwayVideoProvider implements VideoProvider {
         }
     }
 
-    /** Valida teto reservado, conta e decisão de cada cena antes da primeira chamada faturável. */
+    /** Valida novas chamadas; recuperação conserva a tarifa original sem exigir preço novo para baixar bytes. */
     private List<JsonNode> validateRoutedPlan(
-            SalesVideoJob job, JsonNode metadata, List<Map<String, Object>> requests) {
+            SalesVideoJob job, JsonNode metadata, List<Map<String, Object>> requests, boolean recovering) {
         String raw = metadata.path("runwaySelectedRoutesJson").asText(null);
         BigDecimal reserved = metadata.path("providerReservedCredits").decimalValue();
         if (!StringUtils.hasText(raw)
@@ -594,6 +679,20 @@ public class RunwayVideoProvider implements VideoProvider {
                     throw new VideoProviderException(
                             "PROVIDER_PREFLIGHT_ROUTE_MISMATCH",
                             "Rota financeira do preflight está incompleta; jobId=" + job.id());
+                }
+                if (!recovering) {
+                var contract = VideoCapabilities.model(route.path("model").asText()).orElseThrow(() ->
+                        new VideoProviderException("PROVIDER_MODEL_NOT_GOVERNED", "Modelo escolhido sem contrato compartilhado"));
+                var input = objectMapper.valueToTree(requests.get(index).get("input"));
+                contract.requireDuration(input.path("duration").asInt());
+                int referenceCount = input.path("referenceImages").size();
+                if (!contract.adapterModes().contains(referenceCount > 0 ? "IMAGE" : "TEXT") || referenceCount > contract.adapterMaxImageReferences())
+                    throw new VideoProviderException("PROVIDER_ADAPTER_UNSUPPORTED", "Modalidade/referências do Router não implementadas no adapter");
+                var governedCost = contract.credits(input.path("duration").asInt(), input.path("resolution").asText("720p"), input.path("audio").asBoolean(), referenceCount, 0, Instant.now());
+                if (governedCost.compareTo(ceiling) > 0) throw new VideoProviderException("PROVIDER_PRICE_CONTRACT_MISMATCH", "Tarifa governada excede teto reservado da tomada");
+                var requested = VideoCapabilities.provider(job.providerName());
+                if (requested.isPresent() && !requested.get().modelId().equals(contract.modelId()))
+                    throw new VideoProviderException("PROVIDER_ROUTER_MODEL_MISMATCH", "Plano substitui modelo pedido; refazer preflight sem geração");
                 }
                 maximum = maximum.add(ceiling);
                 result.add(route);
@@ -704,6 +803,24 @@ public class RunwayVideoProvider implements VideoProvider {
         }
     }
 
+    /** Serializa evidência estruturada antes de prosseguir para uma chamada faturável. */
+    private String json(Map<String, Object> value) {
+        try { return objectMapper.writeValueAsString(value); }
+        catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar evidência Runway; eventType={}", value.get("eventType"), ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Não foi possível persistir auditoria da tomada", ex);
+        }
+    }
+
+    /** Calcula identidade dos bytes recebidos sem depender da URL transitória do provider. */
+    private String fileSha256(byte[] bytes) {
+        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
+        catch (NoSuchAlgorithmException ex) {
+            log.error("SHA-256 indisponível ao auditar clipe Runway", ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "SHA-256 indisponível", ex);
+        }
+    }
+
     /** Aguarda a tarefa Runway chegar em sucesso ou falha objetiva. */
     private JsonNode waitUntilCompleted(String taskId,
                                         String model,
@@ -723,7 +840,11 @@ public class RunwayVideoProvider implements VideoProvider {
                         .bodyToMono(JsonNode.class)
                         .block();
             } catch (WebClientResponseException ex) {
-                throw providerHttpError(null, "consulta", path, ex);
+                var cause = providerHttpError(null, "consulta", path, ex);
+                throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN", "Não foi possível confirmar a tarefa Runway " + taskId + "; consultar o mesmo ID antes de repetir geração", cause);
+            } catch (org.springframework.web.reactive.function.client.WebClientRequestException ex) {
+                log.error("Consulta Runway sem resultado confirmado; taskId={} url={}", taskId, resolveBaseUrl() + path, ex);
+                throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN", "Conexão perdida ao consultar " + taskId + "; preservar reserva e consultar a mesma tarefa", ex);
             }
             log.info("Resposta Runway status; taskId={} response={}", taskId, status);
             String taskStatus = normalize(firstText(status, "/status"));
@@ -755,7 +876,7 @@ public class RunwayVideoProvider implements VideoProvider {
                     "Runway ainda processando (tentativa %d/%d)".formatted(attempt, config.getMaxPollAttempts()));
             sleep(config.getPollInterval().toMillis());
         }
-        throw new VideoProviderException("PROVIDER_TIMEOUT", "Timeout aguardando conclusão da Runway");
+        throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN", "A tarefa Runway " + taskId + " ainda não tem resultado terminal; consultar a mesma tarefa antes de repetir ou liberar reserva");
     }
 
     /** Monta payload aceito pela Runway com prompt comercial e imagem de referência quando existir. */
@@ -763,7 +884,7 @@ public class RunwayVideoProvider implements VideoProvider {
                                              SalesVideoProfile profile,
                                              SalesVideoScript script,
                                              int scene,
-                                             int sceneCount) {
+                                             int sceneCount, Integer plannedDuration) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         JsonNode metadata = readMetadata(job);
         if ("RUNWAY_ACT_TWO".equals(normalize(job.providerName()))) {
@@ -773,7 +894,12 @@ public class RunwayVideoProvider implements VideoProvider {
         payload.put("model", resolveModel(job, config));
         payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata, scene, sceneCount), 1000));
         payload.put("ratio", config.getRatio());
-        payload.put("duration", resolveDuration(job, config, metadata));
+        int duration = plannedDuration == null ? resolveDuration(job, config, metadata) : plannedDuration;
+        var modelContract = VideoCapabilities.model(resolveModel(job, config)).orElseThrow();
+        if (!modelContract.adapterModes().contains("TEXT") && !modelContract.adapterModes().contains("IMAGE"))
+            throw new VideoProviderException("PROVIDER_ADAPTER_UNSUPPORTED", "Modalidade ainda não implementada no adapter Runway");
+        payload.put("duration", duration);
+        if (modelContract.nativeAudio()) payload.put("audio", metadata.path("audio").asBoolean(false));
         String promptImage = firstText(metadata,
                 "/characterImageReferenceUrl",
                 "/image_to_video/reference_image_url",
@@ -782,6 +908,8 @@ public class RunwayVideoProvider implements VideoProvider {
         if (StringUtils.hasText(promptImage)) {
             payload.put("promptImage", promptImage);
         }
+        if (!modelContract.adapterModes().contains(StringUtils.hasText(promptImage) ? "IMAGE" : "TEXT"))
+            throw new VideoProviderException("PROVIDER_INPUT_INVALID", "O modelo Runway selecionado exige uma imagem-base aprovada ou modalidade implementada");
         if ((resolveModel(job, config).equals("gen4_turbo")
                 || resolveModel(job, config).equals("grok_imagine_1_5"))
                 && !StringUtils.hasText(promptImage)) {
@@ -839,38 +967,24 @@ public class RunwayVideoProvider implements VideoProvider {
         return payload;
     }
 
-    /** Resolve o modelo pelo contrato do job, mantendo Gen-4.5 como padrão da Runway. */
+    /** Resolve apenas aliases governados e impede trocar silenciosamente o modelo do job. */
     private String resolveModel(SalesVideoJob job, VideoManagementProperties.Runway config) {
-        String providerName = normalize(job.providerName());
-        return switch (providerName) {
-            case "RUNWAY_SEEDANCE_2" -> "seedance2";
-            case "RUNWAY_SEEDANCE_2_5" -> "seedance2_5";
-            case "RUNWAY_HAILUO_3" -> "hailuo3";
-            case "RUNWAY_GROK_IMAGINE_1_5" -> "grok_imagine_1_5";
-            case "RUNWAY_ACT_TWO" -> "act_two";
-            case "RUNWAY_GEN_4_TURBO" -> "gen4_turbo";
-            case "RUNWAY_VEO_3_1" -> "veo3.1";
-            case "RUNWAY_VEO_3_1_FAST" -> "veo3.1_fast";
-            default -> config.getModel();
-        };
+        return VideoCapabilities.provider(normalize(job.providerName()))
+                .orElseThrow(() -> new VideoProviderException("PROVIDER_MODEL_NOT_GOVERNED", "Modelo Runway não cadastrado no contrato compartilhado")).modelId();
     }
 
-    /** Resolve duração compatível com o modelo selecionado antes de consumir créditos. */
-    private int resolveDuration(SalesVideoJob job,
-                                VideoManagementProperties.Runway config,
-                                JsonNode metadata) {
-        String providerName = normalize(job.providerName());
-        if (providerName.equals("RUNWAY_ACT_TWO")) {
-            return metadata.at("/characterPerformance/referencePerformanceDurationSeconds").asInt(0);
+    /** Exige os segundos exatos do contrato; incompatibilidade nunca vira truncamento silencioso. */
+    private int resolveDuration(SalesVideoJob job, VideoManagementProperties.Runway config, JsonNode metadata) {
+        int planned = "RUNWAY_ACT_TWO".equals(normalize(job.providerName()))
+                ? metadata.at("/characterPerformance/referencePerformanceDurationSeconds").asInt(0)
+                : metadata.path("providerClipDurationSeconds").asInt(config.getDurationSeconds());
+        if ("RUNWAY_ACT_TWO".equals(normalize(job.providerName()))) return planned;
+        try { VideoCapabilities.model(resolveModel(job, config)).orElseThrow().requireDuration(planned); }
+        catch (IllegalArgumentException ex) {
+            log.error("Duração Runway inválida; jobId={} provider={} seconds={}", job.id(), job.providerName(), planned, ex);
+            throw new VideoProviderException("PROVIDER_DURATION_INVALID", ex.getMessage(), ex);
         }
-        if (providerName.equals("RUNWAY_VEO_3_1") || providerName.equals("RUNWAY_VEO_3_1_FAST")) {
-            return Math.min(config.getDurationSeconds(), 8);
-        }
-        int planned = metadata.path("providerClipDurationSeconds").asInt(config.getDurationSeconds());
-        if (providerName.contains("SEEDANCE_2")) {
-            return Math.max(4, Math.min(planned, 15));
-        }
-        return Math.min(planned, 10);
+        return planned;
     }
 
     /** Limita o prompt ao contrato oficial da Runway sem cortar um par substituto UTF-16. */
@@ -1011,24 +1125,6 @@ public class RunwayVideoProvider implements VideoProvider {
         metadata.put("polled_at", Instant.now().toString());
         metadata.put("source_job_id", job.id());
         return metadata;
-    }
-
-    /** Calcula custo aproximado por task com créditos de US$0,01. */
-    private BigDecimal estimateCostUsd(String model, int clipDurationSeconds, int sceneCount) {
-        return BigDecimal.valueOf(estimateCredits(model, clipDurationSeconds))
-                .multiply(BigDecimal.valueOf(Math.max(1, sceneCount)))
-                .multiply(new BigDecimal("0.01"));
-    }
-
-    /** Calcula os créditos comprometidos quando a Runway aceita uma task. */
-    private int estimateCredits(String model, int durationSeconds) {
-        int creditsPerSecond = switch (model.toLowerCase(Locale.ROOT)) {
-            case "gen4_turbo" -> 5;
-            case "act_two" -> 5;
-            case "seedance2_5" -> 30;
-            default -> 12;
-        };
-        return creditsPerSecond * Math.max(1, durationSeconds);
     }
 
     /** Aceita somente referências HTTPS persistíveis nos contratos do provider. */

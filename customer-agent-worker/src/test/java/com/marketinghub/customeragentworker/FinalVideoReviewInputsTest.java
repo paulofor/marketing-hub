@@ -41,7 +41,11 @@ class FinalVideoReviewInputsTest {
   /** Não aceita um relatório do PNG como se tivesse analisado vídeo nem audição inexistente. */
   @Test
   void refusesAbsentVideoAuditAndFalseListening() {
-    assertThatThrownBy(() -> validate(task(53), json.createObjectNode()))
+    assertThatThrownBy(
+            () ->
+                validate(
+                    task(53),
+                    json.createObjectNode().set("renderedAssetAudit", json.createArrayNode())))
         .hasMessageContaining("cada vídeo");
     var result = result(53);
     ((ObjectNode) result.path("videoAudit").get(0)).put("audioAssessment", "LISTENED");
@@ -76,6 +80,9 @@ class FinalVideoReviewInputsTest {
   /** Valida a entrada com os frames persistidos que a mesma tentativa teria recebido. */
   private void validate(Map<String, Object> task, com.fasterxml.jackson.databind.JsonNode result) {
     long id = FinalVideoReviewInputs.inputs(json, task).path(0).path("assetId").asLong();
+    if (id > 0)
+      CustomerBpmTaskConsumer.validateCreativeAudit(
+          result, VideoNarrativeReviewContractTest.evidence(id));
     FinalVideoReviewInputs.validate(
         json, task, result, VideoNarrativeReviewContractTest.evidence(id));
   }
@@ -156,6 +163,7 @@ class FinalVideoReviewInputsTest {
   /** Produz um parecer simulado exclusivamente para testar a validação determinística. */
   private ObjectNode result(long id) {
     var result = json.createObjectNode().put("decision", "APPROVED");
+    result.putArray("renderedAssetAudit");
     var sensory = result.putObject("behavioralResponse").putObject("sensoryExperience");
     sensory.put("evidenceAvailable", true);
     sensory.putArray("availableModalities").add("VISUAL");

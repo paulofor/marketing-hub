@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - scripts/codex-oauth-session-safe.sh
+      - scripts/single-video-bounded-agent.mjs
+      - scripts/single-video-bounded-agent.test.mjs
       - customer-agent-worker/**
       - meta-ad-approver-worker/src/**
       - pde-platform/**
@@ -15,6 +18,9 @@ on:
       - scripts/coordinate-agent-deployment.mjs
   pull_request:
     paths:
+      - scripts/codex-oauth-session-safe.sh
+      - scripts/single-video-bounded-agent.mjs
+      - scripts/single-video-bounded-agent.test.mjs
       - customer-agent-worker/**
       - meta-ad-approver-worker/src/**
       - pde-platform/**
@@ -78,6 +84,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           APP_DEPLOY_REGISTRATION_TIMEOUT_SECONDS: 120
         run: node scripts/coordinate-agent-deployment.mjs assert-application-run deploy-containers.yml
+      - name: Validate shared single-video spending transport
+        run: node --test scripts/single-video-bounded-agent.test.mjs
       - name: Validate premium agent architecture
         run: bash scripts/validate-premium-agents.sh
       - uses: actions/setup-java@v4
@@ -254,7 +262,7 @@ jobs:
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/customer-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete customer-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/customer-agent-worker/"
-          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs scripts/codex-oauth-session-safe.sh scripts/single-video-bounded-agent.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Start and validate tested worker
         run: |
           set -euo pipefail

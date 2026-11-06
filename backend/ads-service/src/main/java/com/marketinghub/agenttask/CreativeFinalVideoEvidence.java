@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/** Vincula a revisão de Psique aos bytes finais dos vídeos da mesma versão do produto. */
+/** Vincula revisões independentes aos bytes finais dos vídeos da mesma versão do produto. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -27,11 +27,14 @@ public class CreativeFinalVideoEvidence {
 
   /** Acrescenta as mídias finais sem substituir o contexto ou as peças estáticas da tarefa. */
   public AgentTaskTargetResponse project(AgentTask task, AgentTaskTargetResponse target) {
-    if (!supports(task) || target == null || target.experimentId() == null) return target;
+    if ((!supports(task) && !supportsIntegrity(task))
+        || target == null
+        || target.experimentId() == null) return target;
     ObjectNode context =
         target.pdeContext() instanceof ObjectNode node ? node.deepCopy() : json.createObjectNode();
     context.set("finalVideoReview", inputs(target));
-    context.put("audioReviewRequired", !context.path("finalVideoReview").isEmpty());
+    context.put(
+        "audioReviewRequired", supports(task) && !context.path("finalVideoReview").isEmpty());
     return new AgentTaskTargetResponse(
         target.sourceReference(),
         target.experimentId(),
@@ -276,6 +279,18 @@ public class CreativeFinalVideoEvidence {
         && "customer-agent".equals(task.getAssignedAgent().getAgentKey())
         && "creative-production-approval".equals(task.getProcessDefinition().getProcessCode())
         && "customer".equals(task.getProcessActivityId());
+  }
+
+  /**
+   * Entrega a mesma candidata a Têmis sem dar a ela autoridade de produção ou aprovação de Psique.
+   */
+  private boolean supportsIntegrity(AgentTask task) {
+    return task != null
+        && task.getAssignedAgent() != null
+        && task.getProcessDefinition() != null
+        && "meta-ad-approver".equals(task.getAssignedAgent().getAgentKey())
+        && "creative-production-approval".equals(task.getProcessDefinition().getProcessCode())
+        && "commercial".equals(task.getProcessActivityId());
   }
 
   /** Mantém JSON inválido sem evidência e registra contexto suficiente para diagnóstico. */

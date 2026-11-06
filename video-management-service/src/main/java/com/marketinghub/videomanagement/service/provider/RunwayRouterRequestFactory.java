@@ -3,6 +3,7 @@ package com.marketinghub.videomanagement.service.provider;
 import com.marketinghub.videomanagement.client.dto.ProviderPreflightJob;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.io.IOException;
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -39,20 +40,30 @@ public class RunwayRouterRequestFactory {
             throw new VideoProviderException(
                     "PROVIDER_ROUTER_CONFIG_MISSING", "Configuração do Model Router não informada.");
         }
-        int sceneCount = Math.max(1, job.generationClipCount());
-        int targetDuration = Math.max(2, job.targetDurationSeconds());
-        int clipDuration = Math.max(2, Math.min(30, job.providerClipDurationSeconds()));
+        var selected = VideoCapabilities.selected(job.providerPlan());
+        if (selected.isEmpty() && job.providerPlan() != null && job.providerPlan().toUpperCase(java.util.Locale.ROOT).contains("LUMA"))
+            throw new VideoProviderException("PROVIDER_MODEL_SELECTION_REQUIRED", "Plano legado cita Luma; escolha explicitamente uma rota homologada no Estúdio. Nenhuma substituição ou geração foi feita.");
+        var model = selected.orElseGet(() -> VideoCapabilities.model("gen4.5").orElseThrow());
+        if (!model.adapterModes().contains("ROUTER")) throw new VideoProviderException(
+                "PROVIDER_ADAPTER_UNSUPPORTED", "Modelo selecionado ainda não é suportado pelo adapter Router; concluir homologação.");
+        var plan = model.plan(job.targetDurationSeconds());
+        int sceneCount = plan.clipSeconds().size();
         List<String> sceneObjectives = sceneObjectives(job.scenePlan());
         List<Map<String, Object>> requests = new ArrayList<>();
         for (int index = 0; index < sceneCount; index++) {
-            int consumedBefore = index * clipDuration;
-            int duration = Math.max(2, Math.min(clipDuration, targetDuration - consumedBefore));
+            int duration = plan.clipSeconds().get(index);
+            model.credits(duration, fallback(job.resolution(), "720p"), job.audio(), 0, 0, java.time.Instant.now());
             LinkedHashMap<String, Object> input = new LinkedHashMap<>();
             input.put("promptText", prompt(job, index, sceneCount, sceneObjectives));
             input.put("duration", duration);
             input.put("aspectRatio", fallback(job.aspectRatio(), "9:16"));
             input.put("resolution", fallback(job.resolution(), "720p"));
             input.put("audio", job.audio());
+            if (StringUtils.hasText(job.characterPerformanceUri())) {
+                if (!job.characterPerformanceUri().startsWith("https://") || !StringUtils.hasText(job.performanceConsentEvidence()) || !StringUtils.hasText(job.performanceRightsEvidence()))
+                    throw new VideoProviderException("PROVIDER_REFERENCE_RIGHTS_REQUIRED", "A referência da tomada exige URL HTTPS, consentimento e direitos registrados antes de gerar.");
+                input.put("referenceImages", List.of(Map.of("uri", job.characterPerformanceUri(), "role", "first")));
+            }
             LinkedHashMap<String, Object> request = new LinkedHashMap<>();
             request.put("configId", configId.trim());
             request.put("input", input);

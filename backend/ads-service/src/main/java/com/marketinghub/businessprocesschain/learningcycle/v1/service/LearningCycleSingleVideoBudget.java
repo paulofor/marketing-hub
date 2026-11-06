@@ -125,6 +125,35 @@ public class LearningCycleSingleVideoBudget {
         .orElse(null);
   }
 
+  /**
+   * Mantém proteção mesmo após STOP, fechamento ou mudança de versão; recibo vencido não vira
+   * ausência de teto.
+   */
+  public SingleVideoBudgetResponse.Authorization protectedReceipt(
+      com.marketinghub.salesvideo.VideoProject project) {
+    if (project == null || project.getExperimentId() == null || project.getTenantId() == null)
+      return null;
+    var cycle = cycles.findByExperimentId(project.getExperimentId()).orElse(null);
+    if (cycle == null) return null;
+    return read(cycle, project.getTenantId()).authorizations().stream()
+        .filter(a -> Objects.equals(a.videoProjectId(), project.getId()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * Expõe o bloqueio real enquanto os executores não oferecem limite compartilhado antes do gasto.
+   */
+  public String paidExecutionBlocker(com.marketinghub.salesvideo.VideoProject project) {
+    var receipt = forProject(project);
+    if (receipt == null) return null;
+    return "Recibo #"
+        + receipt.eventId()
+        + ": US$ "
+        + receipt.totalLimitUsd()
+        + " no total para um vídeo. A reserva de clipes e a previsão integral não limitam as chamadas de agentes e revisões: os executores atuais contabilizam tokens depois da execução. Produção pausada antes de Plutus até existir controle compartilhado comprovado em todos os executores; não há nova aprovação de teto pendente.";
+  }
+
   /** Persiste decisão idempotente sob o lock do ciclo, preservando histórico e confirmações. */
   public void authorize(LearningSalesCycle cycle, SingleVideoBudgetRequest request, Instant now) {
     require(request != null && request.requestKey() != null, "Informe a identidade da decisão.");

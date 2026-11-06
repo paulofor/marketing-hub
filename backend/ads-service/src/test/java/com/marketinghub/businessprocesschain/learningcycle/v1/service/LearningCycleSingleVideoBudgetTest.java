@@ -322,8 +322,11 @@ class LearningCycleSingleVideoBudgetTest {
     var receipt = budget.forProject(project);
     assertThat(receipt.reference()).isEqualTo(history.getFirst().getEvidenceReference());
     assertThat(receipt.totalLimitUsd()).isEqualByComparingTo("15");
+    assertThat(budget.paidExecutionBlocker(project))
+        .contains("Recibo #", "controle compartilhado", "não há nova aprovação");
     project.setExperimentId(111L);
     assertThat(budget.forProject(project)).isNull();
+    assertThat(budget.paidExecutionBlocker(project)).isNull();
   }
 
   /** Projeto inexistente devolve ausência explícita sem gravar uma autorização órfã. */

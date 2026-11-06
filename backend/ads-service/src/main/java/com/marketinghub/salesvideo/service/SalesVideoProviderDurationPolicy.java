@@ -1,19 +1,14 @@
 package com.marketinghub.salesvideo.service;
 
+import com.marketinghub.videocontract.v1.VideoCapabilities;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /** Centraliza os limites de duração aceitos por cada provider de vídeo comercial. */
 public final class SalesVideoProviderDurationPolicy {
-  private static final Pattern RUNWAY_PLAN_SELECTION =
-      Pattern.compile("\\((RUNWAY(?:_[A-Z0-9]+)*)\\)");
   private static final int KLING_MAX_SECONDS = 10;
   private static final int RUNWAY_MAX_SECONDS = 10;
   private static final int RUNWAY_PRODUCT_UGC_MAX_SECONDS = 15;
-  private static final int RUNWAY_SEEDANCE_2_MAX_SECONDS = 15;
-  private static final int RUNWAY_HAILUO_3_MAX_SECONDS = 10;
-  private static final int RUNWAY_GROK_IMAGINE_1_5_MAX_SECONDS = 10;
   private static final int VEO_MAX_SECONDS = 8;
   private static final int HEYGEN_MAX_SECONDS = 600;
   private static final int EDITORIAL_MOTION_MAX_SECONDS = 60;
@@ -25,6 +20,15 @@ public final class SalesVideoProviderDurationPolicy {
   public static Optional<String> validate(String providerName, Integer targetDurationSeconds) {
     if (targetDurationSeconds == null || targetDurationSeconds <= 0) {
       return Optional.empty();
+    }
+    var capability = VideoCapabilities.provider(providerName);
+    if (capability.isPresent()) {
+      try {
+        capability.get().requireDuration(targetDurationSeconds);
+        return Optional.empty();
+      } catch (IllegalArgumentException ex) {
+        return Optional.of(ex.getMessage());
+      }
     }
     ProviderLimit limit = resolveLimit(providerName);
     if (limit == null || targetDurationSeconds <= limit.maxSeconds()) {
@@ -51,22 +55,16 @@ public final class SalesVideoProviderDurationPolicy {
     if (plan.contains("(EDITORIAL_MOTION)")) {
       return maxSeconds("EDITORIAL_MOTION");
     }
-    var selected = RUNWAY_PLAN_SELECTION.matcher(plan);
-    if (selected.find()) {
-      return Optional.ofNullable(maxSeconds(selected.group(1))).orElse(RUNWAY_MAX_SECONDS);
-    }
-    // Planos antigos de Luma continuam usando o padrão Seedance já definido para os ciclos.
-    if (plan.contains("LUMA") || plan.contains("SEEDANCE_2")) {
-      return maxSeconds("RUNWAY_SEEDANCE_2_5");
-    }
-    if (plan.contains("VEO_3_1")) {
-      return maxSeconds("RUNWAY_VEO_3_1");
-    }
-    return RUNWAY_MAX_SECONDS;
+    return VideoCapabilities.selected(providerPlan)
+        .map(VideoCapabilities.Model::maxSeconds)
+        .orElse(RUNWAY_MAX_SECONDS);
   }
 
   /** Resolve aliases conhecidos dos providers integrados. */
   private static ProviderLimit resolveLimit(String providerName) {
+    var capability = VideoCapabilities.provider(providerName);
+    if (capability.isPresent())
+      return new ProviderLimit(capability.get().displayName(), capability.get().maxSeconds());
     String normalized =
         Optional.ofNullable(providerName).map(String::trim).orElse("").toUpperCase(Locale.ROOT);
     if (!hasText(normalized)) {
@@ -83,18 +81,6 @@ public final class SalesVideoProviderDurationPolicy {
     }
     if (normalized.contains("RUNWAY_PRODUCT_UGC") || normalized.contains("PRODUCT_UGC")) {
       return new ProviderLimit("Runway Product UGC", RUNWAY_PRODUCT_UGC_MAX_SECONDS);
-    }
-    if (normalized.contains("SEEDANCE_2") || normalized.contains("SEEDANCE2")) {
-      return new ProviderLimit("Seedance 2.0 via Runway", RUNWAY_SEEDANCE_2_MAX_SECONDS);
-    }
-    if (normalized.contains("HAILUO_3") || normalized.contains("HAILUO3")) {
-      return new ProviderLimit("Hailuo 3 via Runway", RUNWAY_HAILUO_3_MAX_SECONDS);
-    }
-    if (normalized.contains("GROK_IMAGINE_1_5") || normalized.contains("GROKIMAGINE1_5")) {
-      return new ProviderLimit("Grok Imagine 1.5 via Runway", RUNWAY_GROK_IMAGINE_1_5_MAX_SECONDS);
-    }
-    if (normalized.contains("RUNWAY_VEO_3_1")) {
-      return new ProviderLimit("Veo 3.1 via Runway", VEO_MAX_SECONDS);
     }
     if (normalized.contains("RUNWAY") || normalized.contains("RUNAWAY")) {
       return new ProviderLimit("Runway", RUNWAY_MAX_SECONDS);

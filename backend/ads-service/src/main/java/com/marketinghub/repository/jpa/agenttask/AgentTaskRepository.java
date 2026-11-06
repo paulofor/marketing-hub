@@ -11,6 +11,7 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.FinancialTaskSnapshot;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -333,6 +334,19 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       """)
   List<AgentTaskMeasurementSnapshot> findMeasurementSnapshotsBySourceReference(
       @Param("sourceReference") String sourceReference);
+
+  /** Consulta tentativas de modelo no contexto exato e seus sufixos, sem confundir IDs vizinhos. */
+  @Query(
+      """
+      select t from AgentTask t
+      where (t.sourceReference = :reference
+        or t.sourceReference like concat(:reference, ':%')
+        or t.sourceReference like concat(:reference, '@%'))
+      and t.executionMode = 'MODEL' and t.updatedAt >= :since
+      order by t.id
+      """)
+  List<AgentTask> findModelAttemptsForSpending(
+      @Param("reference") String reference, @Param("since") Instant since);
 
   /** Busca a delegação mais recente de um agente para uma origem operacional exata. */
   Optional<AgentTask> findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(

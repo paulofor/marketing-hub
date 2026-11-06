@@ -111,6 +111,50 @@ class ApolloBudgetMonitorServiceTest {
     verify(cycles).save(cycle);
   }
 
+  /** Preserva o resultado incerto em dois contextos e mantém o fechamento antes válido. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "6,21105,true,0",
+    "206,91804,true,0",
+    "207,91805,false,1",
+    "208,91806,false,0"
+  })
+  void preservesUncertainAndUnknownCostsBeforeSettlement(
+      Long cycleId, Long jobId, boolean uncertain, long unknownCosts) {
+    var cycles = mock(VideoProductionCycleRepository.class);
+    var ledger = mock(StudioCostLedgerService.class);
+    var jobs = mock(SalesVideoJobRepository.class);
+    var financial = mock(VideoProviderFinancialPreflightService.class);
+    var cycle = cycle("15.00");
+    cycle.setId(cycleId);
+    cycle.setSalesVideoJobId(jobId);
+    var job = new SalesVideoJob();
+    job.setId(jobId);
+    job.setFailureCode(uncertain ? "PROVIDER_RESULT_UNCERTAIN" : null);
+    when(cycles.findById(cycleId)).thenReturn(Optional.of(cycle));
+    when(jobs.findById(jobId)).thenReturn(Optional.of(job));
+    when(ledger.cycleCoverage(cycleId))
+        .thenReturn(java.util.Map.of("unknownCostAttempts", unknownCosts));
+    if (!uncertain && unknownCosts == 0)
+      when(ledger.cycleProviderConsumption(cycleId))
+          .thenReturn(java.util.Map.of("credits", 120L, "costUsd", new BigDecimal("1.20")));
+    new ApolloBudgetMonitorService(cycles, ledger, jobs, financial).settleReservation(cycleId);
+    if (uncertain || unknownCosts > 0) {
+      verify(financial).preserveUncertainReservation(cycleId);
+      verify(financial, org.mockito.Mockito.never())
+          .settle(
+              org.mockito.ArgumentMatchers.any(),
+              org.mockito.ArgumentMatchers.any(),
+              org.mockito.ArgumentMatchers.any());
+      assertThat(cycle.getBudgetAlertCode()).isEqualTo("PROVIDER_RECONCILIATION_REQUIRED");
+      assertThat(cycle.getBudgetAlertDetail())
+          .contains("reserva continua protegida", "não há pedido de novo teto");
+    } else {
+      verify(financial).settle(cycleId, new BigDecimal("120"), new BigDecimal("1.20"));
+      verify(financial, org.mockito.Mockito.never()).preserveUncertainReservation(cycleId);
+    }
+  }
+
   /** Cria um ciclo mínimo monitorável. */
   private VideoProductionCycle cycle(String budget) {
     VideoProductionCycle cycle = new VideoProductionCycle();

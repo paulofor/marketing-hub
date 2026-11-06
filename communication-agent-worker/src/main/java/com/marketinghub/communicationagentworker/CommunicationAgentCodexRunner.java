@@ -449,7 +449,7 @@ public class CommunicationAgentCodexRunner {
     return String.join("; ", missing);
   }
 
-  /** Valida a entrega de cada atividade, incluindo fala utilizável quando há briefing de vídeo. */
+  /** Valida a entrega e o escopo privado de cada atividade, incluindo fala utilizável de vídeo. */
   private static void validateActivityOutput(
       JsonNode output, String outputType, Map<String, Object> task) {
     if ("COMMUNICATION_PACKAGE".equals(outputType)
@@ -460,6 +460,7 @@ public class CommunicationAgentCodexRunner {
     if ("COMMUNICATION_PACKAGE".equals(outputType)) {
       validateCommercialCoverage(output.path("messageStrategy").asText());
       validateInitialProductVersion(output, task);
+      validatePrivateVideoOutput(output, task);
       AudiovisualBriefContract.validate(output.path("audiovisualBrief"));
     }
     if ("NON_AUDIOVISUAL_PACKAGE".equals(outputType)
@@ -485,6 +486,28 @@ public class CommunicationAgentCodexRunner {
           || !html.toLowerCase(java.util.Locale.ROOT).contains("</html>")) {
         throw new IllegalArgumentException("Íris deve entregar o HTML integral da landing.");
       }
+    }
+  }
+
+  /** Impede que a preparação de um vídeo privado encomende peças estáticas fora do pedido. */
+  static void validatePrivateVideoOutput(JsonNode output, Map<String, Object> task) {
+    try {
+      var studio =
+          new ObjectMapper()
+              .readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")))
+              .path("privateStudioVideoBrief");
+      if (studio.isMissingNode()) return;
+      validatePrivateStudioInput(studio, task);
+      for (String field : List.of("staticAssets", "renderedAssets"))
+        if (!output.path(field).isArray() || !output.path(field).isEmpty())
+          throw new IllegalArgumentException(
+              "Pedido privado de vídeo não autoriza peças estáticas adicionais.");
+    } catch (IOException ex) {
+      log.error(
+          "Contrato privado inválido ao limitar a entrega de Íris. taskId={}",
+          task.get("taskId"),
+          ex);
+      throw new IllegalArgumentException("Não foi possível validar o escopo privado do vídeo.", ex);
     }
   }
 

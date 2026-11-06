@@ -11795,3 +11795,14 @@ outro render/tenant/asset e preservação do legado. O teste editorial também m
 pixels nas sete fronteiras entre oito partes, impedindo declarar cortes somente
 por metadata. Evidência local previne desperdício e falsa conclusão; não comprova
 qualidade premium nem impacto em vendas.
+
+
+Na mesma conferência de 06/11, o caminho de revisão de vídeo sozinho ainda dependia
+de PNG: backend procurava produtor estático, o cliente recusava array vazio e a
+validação misturava VIDEO_FRAME com CREATIVE_RENDER. Regressões atravessam agora
+a rota HTTP de entradas e os dois validadores, preservando o sucesso anterior com
+PNG e o caso misto. A exceção de modalidade exige MP4 canônico pronto da mesma
+versão e ausência de produção estática solicitada; não libera imagem reprovada nem
+aprova vídeo sem frames/áudio. Íris também recusa artes extras no pedido privado
+único. Hipótese: evitar espera e gasto em ativo que não foi pedido para chegar à
+revisão da peça real; resultado comercial ainda sem medição.

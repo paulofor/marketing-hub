@@ -169,6 +169,9 @@ paths:
         creative-production-approval. Íris recebe capturas aprovadas da versão vigente;
         Psique e Têmis recebem PNGs finais da produção mais recente da mesma definição
         e referência. Confere origem, versão e SHA-256 sem reservar nova tarefa.
+        Quando não existe produção estática solicitada e o servidor comprova MP4 final
+        da mesma versão, retorna array vazio; o MP4 permanece em taskTarget.pdeContext.finalVideoReview
+        e exige frames, áudio e parecer próprios. Vídeo não dispensa PNG já solicitado ou reprovado.
       parameters:
         - $ref: "#/components/parameters/AgentKey"
         - $ref: "#/components/parameters/TaskId"

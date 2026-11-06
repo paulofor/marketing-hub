@@ -313,3 +313,36 @@ O agregado de relatórios de backend passa a 5.902 casos com a nova regressão.
 Os demais resultados locais anteriores permanecem válidos; não houve repetição
 da matriz completa nem chamada paga. O ajuste segue no mesmo PR5793, sem merge,
 deploy ou liberação da produção real enquanto faltar a revisão independente.
+
+
+### Revisão de vídeo sem peça estática adicional
+
+A conferência do percurso após a montagem encontrou um bloqueio anterior à revisão:
+o backend exigia um produtor não audiovisual e o cliente de Psique recusava lista
+vazia de PNG. Além disso, a auditoria estática contava VIDEO_FRAME como se fosse
+CREATIVE_RENDER. Os testes anteriores isolavam a revisão temporal do MP4 e não
+atravessavam esse gate estático. O histórico de teste bem-sucedido com PNG 1080x1350
+foi preservado como regressão; não era prova do caminho somente de vídeo.
+
+Foram comparadas: produzir PNG adicional (fora do pedido e com possível custo);
+criar outra atividade de revisão (duplicação do mecanismo existente); reutilizar
+a revisão criativa e separar suas modalidades pelos contratos existentes
+(escolhida). O servidor agora retorna array estático vazio somente quando não há
+produção estática solicitada e existe MP4 final canônico da mesma versão. A tarefa
+continua reservada ao agente correto. Produtor estático bloqueado não é dispensado.
+Psique aceita essa lista para preparar os frames, mas exige auditagem de PNGs apenas
+quando realmente recebidos, mantendo videoAudit/áudio/copy/narrativa para a mídia
+final. O guard de Íris exige listas estáticas vazias no pedido privado de vídeo
+único, evitando encomenda paralela. Não houve nova atividade, autoaprovação ou
+remoção dos gates do MP4.
+
+Regressões locais: 146 verificações focadas do backend, zero falhas/erros e dois
+casos condicionais; 13 casos da rota de entradas visuais passaram com HTTP real
+MockMvc, contexto original, outra referência, ausência de MP4 e produção estática
+reprovada. A suíte completa de Psique passou 258 casos (13 condicionais) e a de
+Íris 158 (cinco condicionais), zero falhas/erros. A auditoria combinada temporal e
+estática foi exercitada com o arquivo correto e recusas de hash/parecer ausente;
+a regressão de PNG anterior e o caso misto PNG+frames continuam válidos. O bundle
+comercial passou novamente com 799 arquivos/208 manifestos, sem nova atestação ou
+republicação. O agregado do backend é 5.904 casos após as duas variantes adicionais.
+Esses resultados validam software, não constituem parecer premium nem venda.

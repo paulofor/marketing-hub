@@ -353,10 +353,13 @@ public class CustomerBpmTaskConsumer {
     if ("creative-production-approval".equals(processCode(task))) {
       Path directory = Files.createTempDirectory("psique-creative-" + taskId(task) + "-");
       try {
+        var videos = FinalVideoReviewInputs.inputs(json, task);
+        boolean finalVideoExpected = videos.isArray() && !videos.isEmpty();
         var images =
-            new ArrayList<>(visualEvidenceBackendClient.creativeInputs(taskId(task), directory));
-        if (!FinalVideoReviewInputs.inputs(json, task).isMissingNode()
-            && !FinalVideoReviewInputs.inputs(json, task).isEmpty()) {
+            new ArrayList<>(
+                visualEvidenceBackendClient.creativeInputs(
+                    taskId(task), directory, finalVideoExpected));
+        if (finalVideoExpected) {
           if (finalVideoReviewInputs == null)
             throw new IllegalStateException("Capturador audiovisual de Psique indisponível.");
           images.addAll(
@@ -1477,17 +1480,25 @@ public class CustomerBpmTaskConsumer {
   }
 
   /**
-   * Exige avaliação rastreável de cada peça final, sem confundir criativo com captura de página.
+   * Audita PNGs finais e mantém frames na revisão audiovisual própria, sem exigir arte estática
+   * inexistente.
    */
   static void validateCreativeAudit(
       JsonNode result, List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> images) {
     var audit = result.path("renderedAssetAudit");
-    if (images == null || images.isEmpty() || !audit.isArray() || audit.size() != images.size())
+    if (images == null || images.isEmpty())
+      throw new IllegalArgumentException("A revisão criativa não auditou todas as imagens finais.");
+    var staticImages =
+        images.stream().filter(i -> "CREATIVE_RENDER".equals(i.evidenceType())).toList();
+    if (!audit.isArray()
+        || audit.size() != staticImages.size()
+        || (staticImages.isEmpty()
+            && images.stream().noneMatch(i -> "VIDEO_FRAME".equals(i.evidenceType()))))
       throw new IllegalArgumentException("A revisão criativa não auditou todas as imagens finais.");
     Set<Long> seen = new LinkedHashSet<>();
     for (JsonNode item : audit) {
       var image =
-          images.stream()
+          staticImages.stream()
               .filter(i -> i.id() == item.path("artifactId").asLong())
               .findFirst()
               .orElseThrow(

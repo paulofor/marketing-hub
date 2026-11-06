@@ -288,3 +288,5 @@ No pedido privado do Estúdio, o conteúdo entre `[FALA_FINAL]` e `[PROVA_E_LIMI
 contém somente as palavras a serem faladas. Não inclua cabeçalhos como NARRAÇÃO,
 aspas de delimitação, duração, instruções de voz, nomes de seções ou rubricas.
 Coloque toda a direção vocal e visual em `[DIRECAO_VISUAL]`.
+Mantenha `staticAssets=[]` e `renderedAssets=[]`: o pedido é de um vídeo privado,
+sem encomendar artes estáticas ou abrir uma produção paralela no processo comercial.

@@ -31,6 +31,12 @@ public class BpmVisualEvidenceBackendClient {
    */
   List<UploadedVisualEvidence> creativeInputs(long taskId, Path directory)
       throws java.io.IOException {
+    return creativeInputs(taskId, directory, false);
+  }
+
+  /** Aceita lista estática vazia somente na tarefa que também recebeu o MP4 final canônico. */
+  List<UploadedVisualEvidence> creativeInputs(
+      long taskId, Path directory, boolean finalVideoExpected) throws java.io.IOException {
     String endpoint =
         "/api/internal/agent-tasks/" + AGENT_KEY + "/stage-executions/" + taskId + "/visual-inputs";
     try {
@@ -40,7 +46,7 @@ public class BpmVisualEvidenceBackendClient {
               .uri(endpoint)
               .retrieve()
               .body(com.fasterxml.jackson.databind.JsonNode.class);
-      if (inputs == null || !inputs.isArray() || inputs.isEmpty())
+      if (inputs == null || !inputs.isArray() || (inputs.isEmpty() && !finalVideoExpected))
         throw new IllegalStateException("A imagem final do criativo não está disponível.");
       var mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
       List<UploadedVisualEvidence> result = new ArrayList<>();

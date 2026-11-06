@@ -946,3 +946,13 @@ mídia final READY do render fixado no recibo ou de sua pós-produção. Escuta 
 admite o asset exato. Outra atividade no mesmo experimento permanece sem consumir
 esse teto e sem fallback para transporte legado. O vínculo é validado no servidor
 antes da reserva e novamente antes do envio; replay preserva resposta sem gasto.
+
+
+Uma revisão de MP4 não depende de encomendar PNG quando nenhum ativo estático
+foi solicitado. O backend só entrega lista estática vazia se comprovar vídeo final
+READY da mesma versão no contrato canônico; produção estática existente, pendente
+ou reprovada mantém suas próprias exigências. Psique audita CREATIVE_RENDER em
+renderedAssetAudit e VIDEO_FRAME em videoAudit, com frames, hash, áudio, copy e
+narrativa. Lista vazia de PNG não é aprovação nem dispensa de mídia. No briefing
+privado de vídeo único, Íris mantém staticAssets e renderedAssets vazios; o guard
+executável recusa peças estáticas adicionais e preserva o contrato comercial geral.

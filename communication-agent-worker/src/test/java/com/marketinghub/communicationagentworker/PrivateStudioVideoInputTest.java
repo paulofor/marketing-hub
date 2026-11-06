@@ -52,6 +52,15 @@ class PrivateStudioVideoInputTest {
         "processContextJson",
         json.createObjectNode().set("privateStudioVideoBrief", input).toString());
     CommunicationAgentCodexRunner.validateInput(task);
+    var output = json.createObjectNode();
+    output.putArray("staticAssets");
+    output.putArray("renderedAssets");
+    CommunicationAgentCodexRunner.validatePrivateVideoOutput(output, task);
+    output.withArray("staticAssets").addObject().put("headline", "Fora do pedido");
+    assertThatThrownBy(() -> CommunicationAgentCodexRunner.validatePrivateVideoOutput(output, task))
+        .hasMessageContaining("peças estáticas adicionais");
+    assertThatCode(() -> CommunicationAgentCodexRunner.validatePrivateVideoOutput(output, Map.of()))
+        .doesNotThrowAnyException();
     input.put("taskId", 999);
     assertThatThrownBy(() -> CommunicationAgentCodexRunner.validatePrivateStudioInput(input, task))
         .hasMessageContaining("contexto");

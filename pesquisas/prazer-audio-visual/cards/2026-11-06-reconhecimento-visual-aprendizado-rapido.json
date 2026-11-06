@@ -1,0 +1,18 @@
+{
+  "cardKey": "reconhecimento-visual-aprendizado-rapido",
+  "collection": "prazer-audio-visual",
+  "title": "Explicação visual breve pode facilitar reconhecimento posterior",
+  "finding": "Em 13 pacientes, a exposição a uma versão clara de imagens de Mooney mudou seu reconhecimento e a codificação neuronal da versão ambígua após poucas exposições; não é estudo comercial.",
+  "mechanism": "Informação recém-aprendida pode favorecer processamento visual recorrente e reconhecimento de imagens degradadas; não há demonstração de prazer ou dopamina.",
+  "commercialApplication": "Em onboarding, comparar pictogramas pouco reconhecíveis com e sem uma explicação visual verdadeira e clara, medindo identificação, erros, confiança e esforço.",
+  "evidenceStrength": "Moderada no paradigma de aprendizagem visual e registros intracranianos; baixa para UX, prazer, vídeo e vendas.",
+  "publishedOn": "2026-11-06",
+  "validUntil": "2026-12-21",
+  "experimentHypothesis": "Uma explicação clara antes da reapresentação de um ícone ambíguo aumentará a taxa de reconhecimento correto e reduzirá erros em usuários reais, sem piorar compreensão ou conforto.",
+  "risks": "Não produzir mistério enganoso, induzir confusão nem ocultar informações essenciais; prever alternativas acessíveis.",
+  "limits": "13 pacientes com epilepsia, imagens estáticas abstratas, ausência de randomização e cegamento; nenhum resultado de satisfação, conversão, compras ou memória de marca.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-06-reconhecimento-visual-aprendizado-rapido-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Aprendizagem visual rápida e reconhecimento",
+  "sourceSha256": "f9cf96f723f9af0c8584f8b06f1e3b97aecfe9bea1750c15ea152dbe4b83ec64"
+}

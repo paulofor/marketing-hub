@@ -140,6 +140,28 @@ novos agendamentos, etapas BPM ou um bloqueio automático transversal de vendas 
 A homologação de cada produto deve comprovar suas travas de consumo antes da ativação; ausência
 de contrato executável precisa ficar explícita, não pode ser declarada resolvida por um prompt.
 
+## Pendência financeira e retomada — decisão de 04/11/2026
+
+O cartão da atividade e o resumo junto do parecer devem informar a situação atual,
+o que falta, quem decide e o próximo passo, com ação para a demonstração financeira
+do mesmo produto, cadeia, ciclo e versão, focada no teto de preparação. Plano genérico
+ou parecer histórico não substitui a aprovação vigente. Preservar pareceres, fontes,
+custos e histórico; sem parecer atual, informar sua ausência sem fabricar análise.
+
+Ausência de aprovação, aprovação desatualizada, limite insuficiente e custo desconhecido
+são pendências distintas, apuradas no servidor. Falta de aprovação não comprova falta
+de saldo. O mesmo guard financeiro que protege novas tarefas governa a elegibilidade
+de retomada na consulta e é revalidado no comando, com os demais controles vigentes.
+**Atualização de 06/11/2026:** quando o servidor informar pendência financeira,
+manter **Retomar processo** visível e desabilitado, com o motivo junto ao botão.
+Esta apresentação substitui a orientação anterior de ocultá-lo nessa situação.
+Nos demais impedimentos, carregamento ou erro de revalidação, ocultar a ação;
+cache anterior não comprova elegibilidade. Digitação, visita e aprovação
+de outro contexto não liberam a ação. Ao voltar da demonstração, atualizar a situação
+sem perder contexto. Execução legada identificada por experimento sem ciclo explícito
+deve conservar essa referência no retorno, sem migrar sua identidade. Salvar aprovação
+não retoma automaticamente o processo.
+
 ## Autoridade
 
 - O backend congela planejamento, campanha, custos de IA/vídeo, demais custos atribuídos e receita aprovada.

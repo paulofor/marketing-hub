@@ -1,5 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { useEffect } from "react";
+
+export interface ProcessFinancialPending {
+  code: string;
+  activityId: string;
+  productVersion: string | null;
+  title: string;
+  reason: string;
+  responsible: string;
+  actionLabel: string;
+  actionUrl: string | null;
+  afterAction: string;
+}
 
 export interface ProcessAutomation {
   id: number | null;
@@ -28,6 +41,7 @@ export interface ProcessAutomation {
   automaticExecution: boolean;
   childRunId: number | null;
   financialReviewUrl?: string;
+  financialPending?: ProcessFinancialPending | null;
   navigationUrl: string | null;
   lastReconciledAt: string | null;
   updatedAt: string | null;
@@ -109,8 +123,18 @@ export function useProcessAutomation(
         })
       ).data,
     refetchInterval: 3000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     retry: 1,
   });
+  useEffect(() => {
+    const refresh = () => {
+      if (chainId) void status.refetch();
+    };
+    window.addEventListener("pageshow", refresh);
+    return () => window.removeEventListener("pageshow", refresh);
+  }, [chainId, status.refetch]);
   const command = useMutation({
     mutationFn: async (action: "start" | "pause" | "resume") => {
       if (action !== "start" && !status.data?.id)
@@ -137,6 +161,9 @@ export function useProcessAutomation(
       void client.invalidateQueries({
         queryKey: ["process-automation-events", data.id],
       });
+    },
+    onError: () => {
+      void client.invalidateQueries({ queryKey });
     },
   });
   return { status, command, root };

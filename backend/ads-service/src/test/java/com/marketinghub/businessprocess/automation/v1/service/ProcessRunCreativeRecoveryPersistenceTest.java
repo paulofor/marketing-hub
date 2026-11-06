@@ -60,7 +60,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
   private long nextTask = 941410;
   private final String root = "/api/business-processes/94164/products/94110/automation/v1";
 
-  /** Usa controller e persistência reais; o executor simulado exige a referência congelada. */
+  /** Usa controller e persistência reais; consulta e despacho simulam o mesmo guard financeiro. */
   @BeforeEach
   void setup() throws Exception {
     var product =
@@ -73,6 +73,24 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     when(products.findById(94110L)).thenReturn(Optional.of(product));
     when(products.findLockedById(94110L)).thenReturn(Optional.of(product));
     context = mock(ProcessRunContext.class);
+    when(context.financialPending(any(), any()))
+        .thenAnswer(
+            inv -> {
+              String reason =
+                  context.correctionBudgetBlockReason(inv.getArgument(0), inv.getArgument(1));
+              if (reason == null) return null;
+              ProductProcessActivityExecutionGroupResponse activity = inv.getArgument(1);
+              return new ProcessRunFinancialPending(
+                  "APPROVAL_REQUIRED",
+                  activity.activityId(),
+                  "QA_PRIVATE_V3",
+                  "Ajuste financeiro pendente",
+                  reason,
+                  "Operador TEST",
+                  "Ajustar limite de preparação",
+                  "/financial/execution?productId=94110&chainId=94114&cycleId=94119#ceiling-AGENTS",
+                  "Salvar não retoma automaticamente.");
+            });
     String diagram =
         """
         {"nodes":[{"id":"route","type":"TASK"},{"id":"nonAudiovisual","type":"TASK"},
@@ -302,7 +320,13 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
     assertThat(requested).isEmpty();
     for (int i = 0; i < 2; i++) {
-      service.resume(94110L, 94164L, run.id());
+      assertThat(
+              service
+                  .status(94110L, 94164L, new ProcessRunCommand(94114L, null, reference))
+                  .canResume())
+          .isFalse();
+      assertThatThrownBy(() -> service.resume(94110L, 94164L, run.id()))
+          .hasMessageContaining("falta o teto");
       assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
     }
     assertThat(requested).isEmpty();
@@ -320,7 +344,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     assertThat(requested).containsExactly("nonAudiovisual");
   }
 
-  /** A conciliação e o botão retomar preservam a pausa financeira até uma decisão válida. */
+  /** A consulta oculta retomada e o comando a recusa até corrigir a pendência financeira. */
   @Test
   void pausedFinancialCorrectionSurvivesReconciliationAndResumeWithoutReceipt() throws Exception {
     var run = start();
@@ -340,7 +364,8 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     assertThat(blocked.currentActivityId()).isEqualTo("nonAudiovisual");
     assertThat(blocked.reason()).contains("demonstração financeira");
     for (int i = 0; i < 3; i++) tick(run.id());
-    service.resume(94110L, 94164L, run.id());
+    assertThatThrownBy(() -> service.resume(94110L, 94164L, run.id()))
+        .hasMessageContaining("demonstração financeira");
     assertThat(tick(run.id()).status()).isEqualTo("PAUSED");
     assertThat(requested).containsExactly("nonAudiovisual", "customer");
     assertThat(service.history(94110L, 94164L, run.id(), null))

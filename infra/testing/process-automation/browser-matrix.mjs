@@ -232,7 +232,7 @@ try {
     await expect(panel.getByRole("alert")).toBeVisible({ timeout: 20000 });
     await expect(
       panel.getByRole("button", { name: "Retomar processo" }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
     failStatus = false;
     await panel.getByRole("button", { name: "Atualizar", exact: true }).click();
     await expect(

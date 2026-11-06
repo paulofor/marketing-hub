@@ -10452,6 +10452,45 @@ retomada repetida, orçamento e callbacks idempotentes. Não há autorização r
 para os US$ 2,155494 estimados de 898 nem transferência do teto do ciclo 19.
 [Matriz, evidências e limites](../homologacao/capella898-validacao-e-teto-v1.md).
 
+### Pendência de Plutus e comando de retomada — 04/11/2026
+
+Capella, produto 7/cadeia 27/ciclo 20/experimento 113, execução 97:
+o banco e a tela confirmaram pausa sem recibo vigente, mas `canResume=true`.
+O guard financeiro protegia apenas o disparo; o comando era projetado pelo
+status e pela versão, e o cartão de Plutus não recebia a orientação financeira.
+Não havia parecer atual de Plutus. O ciclo 19 concluído não autorizava o 20.
+
+O mesmo guard agora produz `financialPending` em `automation/v1`, com causa,
+responsável e destino do ciclo na seção AGENTS, e é revalidado no POST de retomada.
+O seletor de atividade reutiliza as regras de recuperação e precedência do despacho.
+A tela oculta a retomada em consulta/erro ou impedimento, atualiza ao retornar e
+preserva pareceres, custos e histórico sem aprovação automática. Recibos também
+conferem o produto na identidade congelada. Nenhum prompt fabrica um parecer ausente.
+O retorno financeiro conserva referências legadas sem ciclo explícito; a conferência
+do experimento impede criar outra identidade de execução ou aceitar destino cruzado.
+
+Regressões persistem recibos locais, recusam contexto cruzado/versão anterior,
+gravação concorrente, limite insuficiente, STOP e contratos ausentes; confirmam
+outra identidade e caminhos antes válidos. O navegador exercita rascunho, falha,
+aprovação e retorno em desktop/iPhone/Pixel, inclusive ao lado do parecer histórico.
+A matriz geral também foi alinhada: consulta com erro exige botão ausente, não
+visível e desabilitado. O harness real com MySQL 5.7 passou em API, ciclo de vida,
+reinício e cinco matrizes de navegador nos três perfis; a retomada válida após
+reconsulta continua coberta. Isso evita que o teste preventivo restaure a UX incorreta.
+A hipótese operacional é reduzir cliques de retomada recusados e tempo parado;
+não há medição comercial posterior nem alegação de aumento de vendas.
+[Matriz, comandos e evidências](../homologacao/plutus-pendencia-retomada-v1.md).
+
+**Atualização de 06/11/2026:** a execução 98 do Método MUSA reproduziu o mesmo
+bloqueio financeiro já na atividade inicial de Atena. O PR 5787 continuava aberto;
+o guard ainda não estava publicado, portanto não houve regressão de uma entrega
+integrada. O pedido atual substitui a ocultação por botão **visível e desabilitado**
+quando houver `financialPending`; erro e revalidação continuam sem ação disponível.
+O harness passa a cobrir Atena e Plutus com produtos distintos, inclusive resposta
+permissiva acompanhada de pendência e clique incapaz de enviar retomada. Nenhum
+limite ou processo real é alterado por esse teste.
+[Matriz da atualização](../homologacao/retomada-financeira-desabilitada-2026-11-06.md).
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a

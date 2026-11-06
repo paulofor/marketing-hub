@@ -198,7 +198,8 @@ public class ProcessRunService {
 
   /**
    * Confere resultados antes de nova tentativa e recusa contextos sem autorização, inclusive na
-   * origem de uma delegação, preservando conclusões e recuperando sua passagem no ciclo aberto.
+   * origem de uma delegação. Revalida também orçamento e requisitos atuais antes de qualquer
+   * transição, preservando conclusões e recuperando sua passagem no ciclo aberto.
    */
   public ProcessRunResponse resume(Long productId, Long processId, Long runId) {
     return locked(
@@ -220,7 +221,7 @@ public class ProcessRunService {
               return response(run);
             }
             requirePlay(productId);
-            String blocker = dispatchBlockReason(run);
+            String blocker = resumeBlockReason(run, readiness, financialPending(run, readiness));
             if (blocker != null) throw new ResponseStatusException(HttpStatus.CONFLICT, blocker);
             updateCounts(run, readiness);
             run.setFinishedAt(null);
@@ -435,22 +436,8 @@ public class ProcessRunService {
           "QUEUED");
       return response(run);
     }
-    var candidates =
-        ordered.stream()
-            .filter(
-                a ->
-                    a.selectedVersionActivity()
-                        && !a.objectiveAchieved()
-                        && !OMITTED.contains(a.operationalState()))
-            .toList();
-    var recovery = candidates.stream().filter(a -> graph.recovery(a, ordered)).findFirst();
-    var selected =
-        recovery.or(
-            () ->
-                candidates.stream()
-                    .filter(graph::belongsToRegularSequence)
-                    .filter(a -> graph.predecessorsSatisfied(a.activityId(), ordered))
-                    .findFirst());
+    var selected = nextActivity(graph, ordered);
+    var recovery = selected.filter(a -> graph.recovery(a, ordered));
     if (selected.isEmpty()) {
       transition(
           run,
@@ -655,6 +642,91 @@ public class ProcessRunService {
       if (run.getParentRunId() == null) return null;
       run = runs.findById(run.getParentRunId()).orElseThrow();
     }
+  }
+
+  /** Consulta a pendência apenas da próxima atividade de agente que ainda exige execução. */
+  private ProcessRunFinancialPending financialPending(
+      ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
+    if (readiness == null
+        || readiness.objectiveAchieved()
+        || "CLOSED".equals(readiness.operationalState())) return null;
+    var activity = currentActivity(run, readiness);
+    if (activity == null
+        || activity.objectiveAchieved()
+        || activity.executionControl() == null
+        || !"AGENT".equals(activity.executionControl().executorType())
+        || activity.tasks().stream().anyMatch(task -> ACTIVE_TASK.contains(task.status())))
+      return null;
+    return context.financialPending(run, activity);
+  }
+
+  /** Reutiliza o seletor do despacho quando a projeção ainda não indica a atividade atual. */
+  private ProductProcessActivityExecutionGroupResponse currentActivity(
+      ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
+    var explicit =
+        readiness.activities().stream()
+            .filter(ProductProcessActivityExecutionGroupResponse::selectedVersionActivity)
+            .filter(
+                activity -> Objects.equals(activity.activityId(), readiness.currentActivityId()))
+            .findFirst();
+    if (explicit.isPresent()
+        || readiness.currentActivityId() != null
+        || readiness.objectiveAchieved()) return explicit.orElse(null);
+    var graph = context.graph(run.getProcessDefinitionId());
+    return nextActivity(graph, graph.ordered(readiness.activities())).orElse(null);
+  }
+
+  /** Mantém recuperação, ordem e predecessoras idênticas na elegibilidade e no despacho. */
+  private Optional<ProductProcessActivityExecutionGroupResponse> nextActivity(
+      ProcessExecutionGraph graph, List<ProductProcessActivityExecutionGroupResponse> ordered) {
+    var candidates =
+        ordered.stream()
+            .filter(
+                a ->
+                    a.selectedVersionActivity()
+                        && !a.objectiveAchieved()
+                        && !OMITTED.contains(a.operationalState()))
+            .toList();
+    return candidates.stream()
+        .filter(a -> graph.recovery(a, ordered))
+        .findFirst()
+        .or(
+            () ->
+                candidates.stream()
+                    .filter(graph::belongsToRegularSequence)
+                    .filter(a -> graph.predecessorsSatisfied(a.activityId(), ordered))
+                    .findFirst());
+  }
+
+  /** Usa na leitura e no comando as mesmas restrições de contexto, produto e atividade. */
+  private String resumeBlockReason(
+      ProcessRun run,
+      ProductProcessActivityExecutionHistoryResponse readiness,
+      ProcessRunFinancialPending pending) {
+    String blocker = dispatchBlockReason(run);
+    if (blocker != null) return blocker;
+    if (Boolean.FALSE.equals(
+        products.findById(run.getProductId()).orElseThrow().getAutomaticExecutionEnabled()))
+      return "O produto está em STOP.";
+    if (pending != null) return pending.reason();
+    if (readiness == null)
+      return "Não foi possível confirmar os requisitos de retomada. Atualize a execução.";
+    var activity = currentActivity(run, readiness);
+    if (activity == null && !readiness.objectiveAchieved())
+      return "Não foi possível confirmar a próxima atividade. Atualize a execução antes de retomar.";
+    if (activity != null && !activity.objectiveAchieved() && activity.executionControl() == null)
+      return "Os requisitos da atividade ainda não foram confirmados. Atualize a execução.";
+    if (activity != null
+        && !activity.objectiveAchieved()
+        && activity.executionControl() != null
+        && "AGENT".equals(activity.executionControl().executorType())
+        && activity.tasks().stream().noneMatch(task -> ACTIVE_TASK.contains(task.status()))
+        && (!activity.executionControl().actionAvailable()
+            || !activity.executionRequestAvailable()))
+      return Objects.toString(
+          activity.executionControl().availabilityReason(),
+          "Conclua a pendência da atividade antes de retomar.");
+    return null;
   }
 
   /** Libera dependência comercial exata sem ultrapassar tarefa real, pausa ou outra ocorrência. */
@@ -1250,6 +1322,11 @@ public class ProcessRunService {
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
     boolean persisted = run.getId() != null;
+    boolean resumable =
+        persisted
+            && Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT", "COMPLETED")
+                .contains(run.getStatus());
+    if (resumable && readiness == null) readiness = context.read(run, false);
     boolean closed = readiness != null && "CLOSED".equals(readiness.operationalState());
     boolean revalidation =
         !closed
@@ -1264,12 +1341,13 @@ public class ProcessRunService {
     int omitted =
         readiness == null ? run.getOmittedActivities() : Math.max(0, total - completed - remaining);
     int applicable = total - omitted;
+    var financialPending = resumable ? financialPending(run, readiness) : null;
     String resumeBlocker =
         persisted
                 && (revalidation
                     || Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT")
                         .contains(run.getStatus()))
-            ? dispatchBlockReason(run)
+            ? resumeBlockReason(run, readiness, financialPending)
             : null;
     var userAction = closed ? null : guidance.resolve(run);
     boolean redirected =
@@ -1278,16 +1356,7 @@ public class ProcessRunService {
             && !readiness.objectiveAchieved()
             && readiness.currentActivityId() != null
             && !Objects.equals(run.getCurrentActivityId(), readiness.currentActivityId());
-    var currentActivity =
-        readiness == null
-            ? null
-            : readiness.activities().stream()
-                .filter(activity -> activity.selectedVersionActivity())
-                .filter(
-                    activity ->
-                        Objects.equals(activity.activityId(), readiness.currentActivityId()))
-                .findFirst()
-                .orElse(null);
+    var currentActivity = readiness == null || closed ? null : currentActivity(run, readiness);
     String ownerName =
         closed
             ? null
@@ -1324,10 +1393,18 @@ public class ProcessRunService {
                             : run.getReason(),
         closed
             ? null
-            : readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),
+            : readiness == null
+                ? run.getCurrentActivityId()
+                : currentActivity == null
+                    ? readiness.currentActivityId()
+                    : currentActivity.activityId(),
         closed
             ? null
-            : readiness == null ? run.getCurrentActivityName() : readiness.currentActivityName(),
+            : readiness == null
+                ? run.getCurrentActivityName()
+                : currentActivity == null
+                    ? readiness.currentActivityName()
+                    : currentActivity.activityName(),
         ownerName,
         ownerPortrait.resolve(ownerName),
         closed
@@ -1371,7 +1448,8 @@ public class ProcessRunService {
                 + "&chainId="
                 + run.getChainDefinitionId()
                 + "&cycleId="
-                + run.getLearningCycleId());
+                + run.getLearningCycleId(),
+        financialPending);
   }
 
   /** Gera identidade compacta com todos os limites de segregação, inclusive ciclo ausente. */

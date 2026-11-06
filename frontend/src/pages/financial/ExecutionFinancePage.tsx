@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
   useExecutionFinance,
@@ -15,19 +15,40 @@ const money = (n: number | null | undefined, currency = "USD") =>
     ? "Não informado"
     : new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(n);
 const errorText = (error: unknown) =>
-  axios.isAxiosError(error)
-    ? error.response?.data?.detail ||
-      error.response?.data?.message ||
-      "Não foi possível concluir. Atualize a leitura e tente novamente."
+  axios.isAxiosError(error) && error.response?.status === 409
+    ? "O contexto financeiro mudou. Atualize os valores para conferir este ciclo e versão."
     : "Não foi possível concluir a consulta.";
 
 export default function ExecutionFinancePage() {
+  const location = useLocation();
   const [params] = useSearchParams();
   const productId = Number(params.get("productId")),
     chainId = Number(params.get("chainId")),
     cycleId = Number(params.get("cycleId"));
   const { query } = useExecutionFinance(productId, chainId, cycleId);
   const data = query.data;
+  const candidate =
+    typeof location.state?.returnTo === "string" &&
+    location.state.returnTo.startsWith(
+      `/products/${productId}/value-chain-history/processes/`,
+    )
+      ? location.state.returnTo
+      : null;
+  const returnUrl =
+    typeof candidate === "string" ? new URL(candidate, "http://local") : null;
+  const returnTo =
+    returnUrl?.origin === "http://local" &&
+    new RegExp(
+      `^/products/${productId}/value-chain-history/processes/[1-9][0-9]*/activities$`,
+    ).test(returnUrl.pathname) &&
+    (returnUrl.searchParams.get("learningCycleId") === String(cycleId) ||
+      (!returnUrl.searchParams.get("learningCycleId") &&
+        returnUrl.searchParams.get("sourceReference") ===
+          `experiment:${data?.experimentId}`)) &&
+    returnUrl.searchParams.get("chainId") === String(chainId) &&
+    data?.productVersion === location.state?.productVersion
+      ? candidate
+      : null;
   return (
     <main className="execution-finance container py-4">
       <h1>Demonstração financeira</h1>
@@ -66,6 +87,11 @@ export default function ExecutionFinancePage() {
           <div className="d-flex flex-wrap gap-3 align-items-center mb-3">
             <h2 className="h4 mb-0">{data.productName}</h2>
             <Link to={data.cycleUrl}>Voltar ao ciclo</Link>
+            {returnTo && (
+              <Link className="btn btn-outline-primary" to={returnTo}>
+                Voltar à atividade e conferir retomada
+              </Link>
+            )}
             <button
               className="btn btn-outline-secondary btn-sm"
               disabled={query.isFetching}
@@ -138,6 +164,7 @@ export default function ExecutionFinancePage() {
             key={`worksheet:${data.productId}:${data.cycleId}`}
             data={data}
             disabled={query.isError || query.isFetching}
+            focusPreparation={location.hash === "#ceiling-AGENTS"}
           />
           <ExecutionBudgetOverview
             key={`overview:${data.productId}:${data.cycleId}`}

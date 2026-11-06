@@ -41,4 +41,5 @@ public record ProcessRunResponse(
     List<ProcessRunRelationResponse> subprocesses,
     ProcessRunUserAction userAction,
     ProcessRunQueueBlocker queueBlocker,
-    String financialReviewUrl) {}
+    String financialReviewUrl,
+    ProcessRunFinancialPending financialPending) {}

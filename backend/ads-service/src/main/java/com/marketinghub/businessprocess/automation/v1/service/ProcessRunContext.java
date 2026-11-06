@@ -161,6 +161,22 @@ public class ProcessRunContext {
     return correctionBudget.blockReason(run, activity);
   }
 
+  /** Projeta a pendência do mesmo guard utilizado antes de criar tarefas pagas. */
+  public com.marketinghub.businessprocess.automation.v1.service.status.ProcessRunFinancialPending
+      financialPending(
+          ProcessRun run,
+          com.marketinghub
+                  .businessprocess
+                  .execution
+                  .service
+                  .productProcessExecutions
+                  .ProductProcessActivityExecutionGroupResponse
+              activity) {
+    if (correctionBudget == null)
+      throw new IllegalStateException("Validador financeiro de preparação indisponível.");
+    return correctionBudget.inspect(run, activity);
+  }
+
   /**
    * Bloqueia homologação encerrada, ciclo fechado ou versão sem autorização, preservando callbacks
    * existentes e versões retiradas que foram fixadas pela ficha da mesma referência.

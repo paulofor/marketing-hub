@@ -1,0 +1,18 @@
+{
+  "cardKey": "alinhamento-contexto-visual-tutoriais-video",
+  "collection": "video",
+  "title": "Vídeo tutorial alinhado ao contexto visual pode melhorar execução de tarefas",
+  "finding": "Em dois estudos laboratoriais com 56 participantes em quatro tarefas físicas, vídeos alinhados ao contexto do usuário (N=16) apresentaram 11,1% maior qualidade de execução e conclusão 15,5% mais rápida que vídeos convencionais. No estudo de ablação (N=40), divergências isoladas de objetos, estado, ambiente ou perspectiva prejudicaram o desempenho objetivo sem serem claramente percebidas pelos usuários.",
+  "mechanism": "Correspondência de objetos, estado inicial, ambiente e perspectiva pode reduzir tradução visual e esforço de comparação. Trata-se de interpretação compatível com carga cognitiva e simulação motora: no estudo comparativo os vídeos também diferiam em narração, ordem e edição, logo o ganho agregado não isola o mecanismo.",
+  "commercialApplication": "Para Apolo, comparar vídeos de demonstração ou onboarding que reproduzam fielmente tela, estado inicial, objetos e perspectiva do público-alvo com tutoriais genéricos. Usar validação humana de etapas e execução correta antes de avaliar retenção, CTA e custos de produção.",
+  "evidenceStrength": "Preprint revisado em 05/11/2026, baseado em dois experimentos de laboratório (N=16 e N=40; quatro tarefas físicas). Evidência moderada para o contexto específico, ainda insuficiente para eficácia comercial ou para tutoriais de software.",
+  "publishedOn": "2026-11-06",
+  "validUntil": "2026-12-21",
+  "experimentHypothesis": "Em um teste controlado de onboarding de produto digital, vídeos com interface, estados e passos correspondentes à versão realmente utilizada pelo usuário reduzirão erros de execução e tempo até completar uma tarefa, em comparação com tutorial genérico; medir também esforço, custo, abandono e eventual efeito comercial separadamente.",
+  "risks": "Videos gerados podem mostrar passos inexequíveis ou incorretos; adaptação contextual pode exigir coleta excessiva de dados; diferença de versão de interface pode induzir erros. Não usar números dos estudos para prometer aumento de vendas.",
+  "limits": "Estudos limitados a primeiros socorros e culinária, com 56 participantes. Estudo 1 também modificou narração, ordem e edição; ausência de diferença autorrelatada no estudo 2 não equivale a prova de equivalência. Não foram testados produtos digitais, anúncios, compras nem vídeo gerado por IA em produção.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-06-alinhamento-contexto-visual-tutoriais.md",
+  "sourceTitle": "Li et al. (2026) — Desalinhamento visual em vídeos instrucionais, arXiv:2605.17184v2",
+  "sourceSha256": "fc318d0c84bbf79e3245e96ae3e415d13d0a7a05a5f5fa1ebb29261b8e8c7dab"
+}

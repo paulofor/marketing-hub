@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-atmee-v2-live-avatar",
+  "collection": "video",
+  "title": "Testar Atmee V2 como avatar audiovisual interativo por API",
+  "finding": "Atmee V2, apresentado em 04/11/2026, oferece avatares de vídeo em tempo real dirigidos por comportamento Causeur, criáveis por foto e amostra de voz, com planos Growth+ ou convite.",
+  "mechanism": "API de criação de avatar e sessões, voz e comportamento em tempo real; modelo proprietário, V2 512x512, taxas 2 créditos/min full-stack e 1 crédito/min avatar-only.",
+  "commercialApplication": "Marketing Hub: protótipo de atendente audiovisual para páginas de oferta ou demonstrações, comparando latência, consistência, engajamento e custo de sessão.",
+  "evidenceStrength": "Alta para API e preços do site oficial; lançamento datado por registro secundário; qualidade, latência e PT-BR não testados.",
+  "publishedOn": "2026-11-06",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "Um avatar interativo autorizado pode aumentar engajamento e conclusão de briefing sem custo proibitivo por sessão.",
+  "risks": "Acesso V2 pode exigir convite mesmo em plano elegível; consentimento de voz/imagem, licenças comerciais, dados pessoais, viés e 512x512 requerem atenção.",
+  "limits": "V1 ativo amplo; V2 limitado por plano/convite; V2 HD somente Enterprise; nenhum peso aberto; não equivalente a gerador de cinema.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-06-atmee-v2-status-precos.md",
+  "sourceTitle": "Atmee V2: avatares de vídeo em tempo real, preços e acesso",
+  "sourceSha256": "ab43ea649c552e2d55e11e289405cf54505f30f58828ec14fe3662b35f7ed0ff"
+}

@@ -102,7 +102,7 @@ worker com 168 testes, zero falhas/erros. Os replays integrais de 899 foram exec
 explicitamente e passaram; não estão incluídos nos ignorados. O worker também foi empacotado.
 A composição de 5787/5793 passou em 246 testes, com dois replays opcionais ausentes nessa
 árvore sintética, sem falhas/erros. Arquitetura: 92 casos incluídos no backend. JavaScript do
-worker: oito testes aprovados. Contratos de workflows: 68; compartilhamento: três;
+worker: oito testes aprovados. Contratos de workflows: 68; compartilhamento: quatro;
 Bash/ShellCheck, YAML, Spotless dos arquivos Java alterados e diff sem erros.
 
 A suíte ampla do backend excedeu a memória de 6 GiB da sandbox (saída 137, sem falha funcional nos casos concluídos).
@@ -117,6 +117,13 @@ O HEAD foi novamente validado nos contratos alterados, no replay completo e nos 
 arquitetura, após atualizar a base local para `ea6ed0ea6b69f04cf169a74f94bff50c53b01e30`.
 A main avançou somente com sete arquivos de pesquisa audiovisual, sem sobreposição com a
 correção. Nenhuma mudança de terceiros foi sobrescrita ou publicada por esta solicitação.
+
+O primeiro CI do PR 5798 recusou o formato da etapa de testes, antes de executar Java: o contrato
+vigente exige `run: mvn -B test` na etapa canônica. A checagem adicional do compartilhamento foi
+movida para a etapa de validação do CI, mantendo a chamada canônica e a suíte completa. Passaram
+localmente os 14 testes desse contrato, os três do compartilhamento, os 14 do leitor de artefatos
+e a análise YAML antes de atualizar o mesmo PR. A revisão local do POM também aplicou a ordem
+canônica de elementos do Spotless. A matriz financeira ainda enviava o handshake V1; foi atualizada para V2, preservando a recusa do executor incompatível. Nenhuma asserção foi enfraquecida.
 
 ## Integração paralela e sequência preparada para publicação/recuperação
 
@@ -175,3 +182,16 @@ se comparação realmente obrigatória for dispensada, se o caminho comparativo 
 se replay provocar nova inferência/cobrança. Não desabilitar o gate como compensação. A mudança
 versiona política, prompt/schema, catálogo e testes; não grava memória produtiva nem altera pesos
 dos agentes. Não há medição comercial suficiente para alegar aumento de vendas ou lucro.
+
+### Conferência local da correção do CI
+
+A matriz financeira que usa o consumidor nativo foi executada contra MySQL 5.7 real:
+65 verificações de API (incluindo oito requisições concorrentes, quatro execuções de fila e
+dois produtos privados) e 26 de planejamento, todas aprovadas, zero chamadas ao modelo.
+O teste de compartilhamento agora confere que backend, worker e essa matriz declaram o mesmo
+handshake V2; a recusa de V1 continua protegida pelo teste Java.
+
+A engine efêmera esgotou o disco ao criar `ibdata1` (erro 28). Sem apagar cache ou recursos
+alheios, a homologação usou somente um override local com diretório MySQL em memória. Isso não
+altera Compose produtivo, schema ou configuração do repositório. API e banco temporários foram
+encerrados e a topologia foi removida pelo mesmo projeto exclusivo.

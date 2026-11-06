@@ -53,7 +53,7 @@
   "localDockerImageRecreation": "PASS; temporary topology and image removed",
   "nodeTests": 8,
   "workflowContractTests": 68,
-  "sharedBuildContractTests": 3,
+  "sharedBuildContractTests": 4,
   "shellSyntaxAndShellCheck": "PASS",
   "sourceSha256": {
     "shared/pde-validation-scope/src/main/java/com/marketinghub/pde/validationscope/v1/PdeValidationScopePolicy.java": "e1baaaf41f5c3854f23ad102cf01aa45bafd9608e35e31c6b08a0849977125e1",
@@ -66,5 +66,18 @@
     "sha": "ea6ed0ea6b69f04cf169a74f94bff50c53b01e30",
     "changes": "sete arquivos de pesquisa audiovisual; nenhuma sobreposição com a correção",
     "integration": "fast-forward local preservando todas as alterações, sem merge ou publicação"
+  },
+  "ciContractTests": 14,
+  "artifactReaderTests": 14,
+  "financialMysql57": {
+    "apiChecks": 65,
+    "concurrencyRequests": 8,
+    "queueExecutions": 4,
+    "privateProducts": 2,
+    "nativePlanningChecks": 26,
+    "modelsInvoked": 0,
+    "result": "PASS",
+    "temporaryDataStorage": "tmpfs local; engine disk exhausted with errno 28",
+    "cleanup": "PASS"
   }
 }

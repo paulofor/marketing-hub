@@ -191,10 +191,10 @@
         <executions>
           <execution>
             <id>pde-validation-scope</id>
-            <phase>generate-sources</phase>
             <goals>
               <goal>add-source</goal>
             </goals>
+            <phase>generate-sources</phase>
             <configuration>
               <sources>
                 <source>${project.basedir}/../../shared/pde-validation-scope/src/main/java</source>
@@ -203,10 +203,10 @@
           </execution>
           <execution>
             <id>pde-validation-scope-tests</id>
-            <phase>generate-test-sources</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
+            <phase>generate-test-sources</phase>
             <configuration>
               <sources>
                 <source>${project.basedir}/../../shared/pde-validation-scope/src/test/java</source>

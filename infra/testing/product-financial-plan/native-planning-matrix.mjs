@@ -4,7 +4,7 @@ const base = "http://127.0.0.1:18095";
 const queue =
   "/api/internal/agent-tasks/experiment-strategist/stage-executions";
 const legacyPending = `${queue}/pending?processCode=pde-commercial-plan-offer&activityId=marketStrategy`;
-const compatiblePending = `${legacyPending}&workerContract=ATENA_PDE_MARKET_STRATEGY_V1`;
+const compatiblePending = `${legacyPending}&workerContract=ATENA_PDE_MARKET_STRATEGY_REPLAY_V2`;
 let checks = 0;
 async function request(path, method = "GET", body) {
   const response = await fetch(base + path, {

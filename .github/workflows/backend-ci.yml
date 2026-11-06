@@ -67,6 +67,7 @@ jobs:
         run: |
           python3 scripts/test-backend-ci-workflow.py
           python3 scripts/test-download-run-artifact.py
+          python3 scripts/test-pde-validation-shared-contract.py
       - name: Validar atestações vigentes contra as fontes do backend
         run: |
           node --test scripts/build-commercial-review-evidence.test.mjs
@@ -87,9 +88,7 @@ jobs:
           VEGA_TEST_DB_USER: root
           VEGA_TEST_DB_PASSWORD: root
         working-directory: backend/ads-service
-        run: |
-          python3 ../../scripts/test-pde-validation-shared-contract.py
-          mvn -B test
+        run: mvn -B test
       - name: Validar cobertura e sanitização das provas de controles
         run: python3 infra/testing/mira-candidate/test-emit-controls-evidence.py
       - name: Validar Liquibase contra MySQL 5.7

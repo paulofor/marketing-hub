@@ -9,6 +9,16 @@ NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 
 
 class SharedValidationContractTest(unittest.TestCase):
+    def test_active_clients_match_backend_replay_handshake(self):
+        import re
+        source = (ROOT / "backend/ads-service/src/main/java/com/marketinghub/agenttask/AtenaBpmWorkerContract.java").read_text()
+        contract = re.search(r'VERSION\s*=\s*"([^"]+)"', source).group(1)
+        for name in (
+            "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/PdeMarketStrategyBpmTaskConsumer.java",
+            "infra/testing/product-financial-plan/native-planning-matrix.mjs",
+        ):
+            self.assertIn(contract, (ROOT / name).read_text(), name)
+
     def test_modules_compile_same_policy_and_regressions(self):
         for module in ("backend/ads-service", "experiment-strategist-worker"):
             base = ROOT / module

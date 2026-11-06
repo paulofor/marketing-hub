@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-eleven-ads-review-human",
+  "collection": "video",
+  "title": "Avaliar revisão humana de localizações audiovisuais com ElevenLabs Ads Engine",
+  "finding": "Em 06/11/2026 ElevenLabs acrescentou revisão por linguistas de ElevenProductions e especialistas criativos às variações e dublagens de anúncios localizados.",
+  "mechanism": "Hibridização de dublagem Dubbing v2, adaptação textual/visual e QA humano antes de aprovação e publicação de campanhas.",
+  "commercialApplication": "Marketing Hub: adicionar checkpoints especializados opcionais de idioma, sotaque, sincronismo e coerência de marca a peças publicitárias internacionais.",
+  "evidenceStrength": "Alta para anúncio e funcionalidades oficiais; disponibilidade em alpha, preços e planos contraditórios em páginas do próprio fornecedor.",
+  "publishedOn": "2026-11-06",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "QA de especialistas reduz erros críticos de marca e tradução em campanha internacional, compensando custo extra em peças importantes.",
+  "risks": "Ads Engine alpha, não há API pública; landing page pede contato Enterprise enquanto documentação cita Pro+; custos de revisão não publicados; publicação exige autorização.",
+  "limits": "Meta Ads vídeo/texto/imagem, Google Search texto; LinkedIn desempenho; não é modelo novo de geração de vídeo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-06-elevenlabs-ads-engine-revisao-humana.md",
+  "sourceTitle": "ElevenLabs Ads Engine: revisão humana de campanhas localizadas",
+  "sourceSha256": "d3baa630890236e9cd246da5f4286beafe653ec6dca7e219ce174dfbef4b145d"
+}

@@ -79,5 +79,21 @@
     "result": "PASS",
     "temporaryDataStorage": "tmpfs local; engine disk exhausted with errno 28",
     "cleanup": "PASS"
+  },
+  "miraSharedHarnessCompatibility": {
+    "manifest": "pde-platform/contracts/mira-private-candidate-v80.json",
+    "previousManifest": "pde-platform/contracts/mira-private-candidate-v75.json",
+    "backendTests": 104,
+    "workerTests": 108,
+    "evidenceAndPublicationTests": 39,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "bundledFiles": 794,
+    "bundledManifests": 205,
+    "frontendVersion": "none",
+    "hasDeployment": false,
+    "commercialApprovalRenewed": false,
+    "modelCalls": 0
   }
 }

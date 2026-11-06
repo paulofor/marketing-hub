@@ -121,7 +121,7 @@ correção. Nenhuma mudança de terceiros foi sobrescrita ou publicada por esta 
 O primeiro CI do PR 5798 recusou o formato da etapa de testes, antes de executar Java: o contrato
 vigente exige `run: mvn -B test` na etapa canônica. A checagem adicional do compartilhamento foi
 movida para a etapa de validação do CI, mantendo a chamada canônica e a suíte completa. Passaram
-localmente os 14 testes desse contrato, os três do compartilhamento, os 14 do leitor de artefatos
+localmente os 14 testes desse contrato, os quatro do compartilhamento, os 14 do leitor de artefatos
 e a análise YAML antes de atualizar o mesmo PR. A revisão local do POM também aplicou a ordem
 canônica de elementos do Spotless. A matriz financeira ainda enviava o handshake V1; foi atualizada para V2, preservando a recusa do executor incompatível. Nenhuma asserção foi enfraquecida.
 
@@ -195,3 +195,17 @@ A engine efêmera esgotou o disco ao criar `ibdata1` (erro 28). Sem apagar cache
 alheios, a homologação usou somente um override local com diretório MySQL em memória. Isso não
 altera Compose produtivo, schema ou configuração do repositório. API e banco temporários foram
 encerrados e a topologia foi removida pelo mesmo projeto exclusivo.
+
+### Compatibilidade de Mira preservada
+
+O CI detectou seis fontes compartilhadas diferentes dos hashes da atestação v75 de Mira.
+O relatório específico
+[`mira-compatibilidade-escopo-atena-2026-11-06.md`](mira-compatibilidade-escopo-atena-2026-11-06.md)
+registra a regressão executada: 104 casos de backend, 108 do executor e 39 de empacotamento e
+seleção de publicação, todos aprovados e sem ignorados. Inclui comparação legítima implementada
+na mesma candidata e o replay integral de 899. A nova atestação v80 referencia a v75 imutável;
+as versões v76–v79 do PR 5793 continuam pertencendo àquela entrega ainda aberta.
+
+O bundle real foi construído localmente com 794 arquivos e 205 manifestos. A inclusão isolada
+da v80 resulta em `frontend-version=none` e `has-deployment=false`. Isso comprova compatibilidade
+da infraestrutura compartilhada, sem renovar parecer, versão comercial, orçamento ou publicação.

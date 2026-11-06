@@ -58,6 +58,13 @@ public class RunwayVideoProvider implements VideoProvider {
     private final WebClient webClient;
     private final WebClient downloadWebClient;
     private RunwayRecoveryStore recoveryStore;
+    private com.marketinghub.videomanagement.service.BoundedVideoSpending spending;
+
+    /** Conecta o teto compartilhado para cada tomada antes do primeiro POST ao provedor. */
+    @Autowired
+    public void setSpending(com.marketinghub.videomanagement.service.BoundedVideoSpending spending) {
+        this.spending = spending;
+    }
 
     /** Conecta a persistência obrigatória de tomadas e consultas para recuperação no runtime. */
     @org.springframework.beans.factory.annotation.Autowired
@@ -79,7 +86,7 @@ public class RunwayVideoProvider implements VideoProvider {
         this.productUgcRequestFactory = productUgcRequestFactory;
         this.webClient = webClientBuilder
                 .baseUrl(resolveBaseUrl())
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().disableRetry(true).followRedirect(false)))
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
@@ -210,10 +217,7 @@ public class RunwayVideoProvider implements VideoProvider {
             }
             if (plannedCredits.signum() <= 0) throw new VideoProviderException("PROVIDER_RECONCILIATION_REQUIRED",
                     "Estimativa original da tomada não foi preservada; conciliar sem nova geração");
-            if (previousSubmission == null) progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Iniciando tomada " + scene,
-                    json(Map.of("eventType", "PROVIDER_SUBMISSION_STARTED", "jobId", job.id(), "scene", scene,
-                        "request", payload, "reconciliationRequiredBeforeRetry", true)));
-            JsonNode submission = previousSubmission == null ? submitRender(job, payload) : previousSubmission.path("rawResponse");
+            JsonNode submission = previousSubmission == null ? submitGoverned(job, payload, scene, plannedCredits, progressCallback) : previousSubmission.path("rawResponse");
             String taskId = firstText(submission, "/id", "/taskId", "/task_id");
             if (!StringUtils.hasText(taskId)) throw new VideoProviderException("PROVIDER_RESULT_UNCERTAIN",
                     "Envio Runway sem task confirmada; conciliar antes de repetir");
@@ -312,7 +316,7 @@ public class RunwayVideoProvider implements VideoProvider {
                 10,
                 SalesVideoStatus.VIDEO_PROCESSING,
                 "Enviando receita Product UGC premium para Runway");
-        JsonNode submission = submitRender(job, request);
+        JsonNode submission = submitGoverned(job, request, 1, metadata.path("providerReservedCredits").decimalValue(), progressCallback);
         String taskId = productUgcRequestFactory.requireAcceptedTaskId(submission);
         int duration = ((Number) request.get("duration")).intValue();
         progressCallback.onProgress(
@@ -461,6 +465,18 @@ public class RunwayVideoProvider implements VideoProvider {
                     "Runway não retornou id de tarefa para o job " + job.id() + "; conciliar a submissão antes de repetir");
         }
         return response;
+    }
+
+    /** Reserva a tomada antes de gravar intenção e enviar, preservando o mesmo resultado no replay. */
+    private JsonNode submitGoverned(SalesVideoJob job, Map<String, Object> payload, int scene, BigDecimal estimatedCredits, ProgressCallback progress) {
+        java.util.function.Supplier<JsonNode> submit = () -> {
+            progress.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Iniciando tomada " + scene,
+                    json(Map.of("eventType", "PROVIDER_SUBMISSION_STARTED", "jobId", job.id(), "scene", scene,
+                            "request", payload, "estimatedCredits", estimatedCredits, "reconciliationRequiredBeforeRetry", true)));
+            return submitRender(job, payload);
+        };
+        return spending == null ? submit.get() : spending.jsonCall(job.id(), "CLIP_" + scene,
+                objectMapper.valueToTree(payload), null, submit);
     }
 
     /** Lê o payload Product UGC congelado e impede campos, versões ou referências divergentes. */

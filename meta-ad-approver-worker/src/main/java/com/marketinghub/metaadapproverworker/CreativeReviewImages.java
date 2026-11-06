@@ -40,7 +40,11 @@ final class CreativeReviewImages implements AutoCloseable {
         "/api/internal/agent-tasks/meta-ad-approver/stage-executions/" + id + "/visual-inputs";
     try {
       var inputs = CreativeEvidenceReader.read(backend, endpoint, id, JsonNode.class);
-      if (inputs == null || !inputs.isArray() || inputs.isEmpty())
+      var finalVideos =
+          new com.fasterxml.jackson.databind.ObjectMapper()
+              .valueToTree(task.get("taskTarget"))
+              .at("/pdeContext/finalVideoReview");
+      if (inputs == null || !inputs.isArray() || (inputs.isEmpty() && finalVideos.isEmpty()))
         throw new IllegalStateException("Peça final indisponível para Têmis.");
       var checks = new ArrayList<Map<String, Object>>();
       for (JsonNode input : inputs) {
@@ -85,6 +89,7 @@ final class CreativeReviewImages implements AutoCloseable {
             evidence.path("sha256").asText(),
             bytes.length);
       }
+      result.loadFinalVideos(task, finalVideos, id);
       task.put("creativeVisualInputs", List.copyOf(result.metadata));
       task.put("creativeEvidenceChecks", List.copyOf(checks));
       return result;
@@ -96,6 +101,52 @@ final class CreativeReviewImages implements AutoCloseable {
           "Não foi possível verificar as provas de Têmis. taskId=" + id + ": " + ex.getMessage(),
           ex);
     }
+  }
+
+  /** Anexa quadros reais do mesmo MP4 usando o decoder já adotado pelo MCP de Têmis. */
+  private void loadFinalVideos(Map<String, Object> task, JsonNode videos, long taskId)
+      throws Exception {
+    if (!videos.isArray() || videos.isEmpty()) return;
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    Path input = directory.resolve("video-input.json");
+    Files.writeString(input, mapper.writeValueAsString(Map.of("taskId", taskId, "videos", videos)));
+    for (String resource : List.of("video-frame-extractor.mjs", "video-review-inputs.mjs")) {
+      try (var content =
+          new org.springframework.core.io.ClassPathResource("mcp/" + resource).getInputStream()) {
+        Files.copy(content, directory.resolve(resource));
+      }
+    }
+    Path logFile = directory.resolve("video-review.log");
+    Process process =
+        new ProcessBuilder(
+                "node",
+                directory.resolve("video-review-inputs.mjs").toString(),
+                input.toString(),
+                directory.toString())
+            .redirectErrorStream(true)
+            .redirectOutput(logFile.toFile())
+            .start();
+    if (!process.waitFor(240, java.util.concurrent.TimeUnit.SECONDS)) {
+      process.destroyForcibly();
+      throw new IOException(
+          "A captura do vídeo final excedeu o prazo; nenhuma inferência iniciada.");
+    }
+    if (process.exitValue() != 0)
+      throw new IOException("Falha ao conferir MP4: " + Files.readString(logFile));
+    JsonNode checks = mapper.readTree(Files.readString(directory.resolve("video-evidence.json")));
+    if (!checks.isArray() || checks.size() != videos.size())
+      throw new IOException("Captura audiovisual incompleta.");
+    for (var check : checks) {
+      for (var frame : check.path("frames")) {
+        String name = frame.path("fileName").asText();
+        if (!name.matches("video-[0-9]+-frame-[0-9]+\\.jpg"))
+          throw new IOException("Nome de frame inválido.");
+        paths.add(directory.resolve(name));
+        ((com.fasterxml.jackson.databind.node.ObjectNode) frame)
+            .put("attachmentIndex", paths.size());
+      }
+    }
+    task.put("finalVideoEvidenceChecks", checks);
   }
 
   /** Acrescenta a fonte exata, uma prévia do recorte e as capturas datadas do destino aprovado. */

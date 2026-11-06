@@ -37,6 +37,13 @@ public class ApolloPlanningAiClient {
     private final WebClient webClient;
     private final ObjectMapper mapper = new ObjectMapper();
     private final Sleeper sleeper;
+    private com.marketinghub.videomanagement.service.BoundedVideoSpending spending;
+
+    /** Conecta a admissão compartilhada antes de iniciar planejamento pago com teto integral. */
+    @Autowired
+    public void setSpending(com.marketinghub.videomanagement.service.BoundedVideoSpending spending) {
+        this.spending = spending;
+    }
 
     /** Configura a integração com espera limitada somente após rejeição temporária explícita. */
     @Autowired
@@ -55,6 +62,40 @@ public class ApolloPlanningAiClient {
     /** Persiste cada interação e repete somente rejeições conhecidas, mantendo modelo e Flex. */
     public JsonNode plan(Long jobId, JsonNode request, Consumer<JsonNode> audit) {
         String apiKey = resolveApiKey();
+        JsonNode authority=spending == null ? null : spending.context(jobId,"PLAN");
+        if (authority != null && authority.path("required").asBoolean()) {
+            var replay = spending.replayOnly(jobId,"PLAN");
+            if (replay != null) return replay.path("response");
+            if (!StringUtils.hasText(apiKey)) throw new VideoProviderException("APOLLO_PLANNING_AUTH_ERROR", "Credencial do planejador ausente; vídeo não iniciado.");
+            var preserved=authority.at("/reservation/request");
+            var bounded = (com.fasterxml.jackson.databind.node.ObjectNode)(preserved.isObject() ? preserved.deepCopy() : request);
+            String prompt = bounded.path("input").asText();
+            if (bounded.path("input").isTextual()) bounded.putArray("input").addObject().put("role", "user")
+                    .putArray("content").addObject().put("type", "input_text").put("text", prompt);
+            bounded.put("store", false).put("max_output_tokens", 32768);
+            bounded.remove("metadata");
+            return spending.jsonCall(jobId, "PLAN", bounded, () -> {
+                var counted = bounded.deepCopy();
+                counted.remove(java.util.List.of("store", "service_tier", "max_output_tokens"));
+                return webClient.post().uri("/responses/input_tokens").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + apiKey).bodyValue(counted)
+                        .retrieve().bodyToMono(JsonNode.class).block(Duration.ofMinutes(2));
+            }, () -> {
+                audit.accept(mapper.createObjectNode().put("eventType", "APOLLO_PLANNING_HTTP")
+                        .put("jobId", jobId).put("status", "BOUNDED_REQUESTED").set("request", bounded));
+                var reply = webClient.post().uri("/responses").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + apiKey).bodyValue(bounded)
+                        .exchangeToMono(result -> result.toEntity(String.class)).block(Duration.ofMinutes(10));
+                String raw = reply == null || reply.getBody() == null ? "" : reply.getBody().replace(apiKey, "[CREDENCIAL_REMOVIDA]");
+                audit.accept(mapper.createObjectNode().put("eventType", "APOLLO_PLANNING_HTTP")
+                        .put("jobId", jobId).put("status", "BOUNDED_RECEIVED").put("rawResponse", raw));
+                if (reply == null || !reply.getStatusCode().is2xxSuccessful())
+                    throw new VideoProviderException("APOLLO_PLANNING_BLOCKED", "Chamada limitada recusada; sem retry automático");
+                var body = readResponse(raw, jobId);
+                if (body == null) throw new VideoProviderException("APOLLO_PLANNING_INVALID", "Resposta preservada fora do contrato");
+                return body;
+            });
+        }
         if (!StringUtils.hasText(apiKey)) {
             throw new VideoProviderException("APOLLO_PLANNING_AUTH_ERROR", "Credencial do planejador ausente; vídeo não iniciado.");
         }

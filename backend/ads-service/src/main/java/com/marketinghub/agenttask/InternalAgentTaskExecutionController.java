@@ -19,6 +19,43 @@ public class InternalAgentTaskExecutionController {
   @Autowired
   private com.marketinghub.agenttask.audioreview.v1.service.AgentAudioReviewService audioReviews;
 
+  @Autowired
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.SingleVideoSpending
+      spending;
+
+  /** Consulta se a tarefa exige o transporte limitado, sem reservar nem iniciar inferência. */
+  @GetMapping("/{taskId}/spending-context")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Context spendingContext(
+      @PathVariable String agentKey, @PathVariable Long taskId) {
+    return spending.context(agentKey, taskId);
+  }
+
+  /** Reserva o custo máximo da chamada concreta antes de qualquer envio externo. */
+  @PostMapping("/{taskId}/spend-reservations")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease reserveSpend(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @RequestBody com.marketinghub.videocontract.v1.BoundedSpendContracts.Reserve request) {
+    return spending.reserve(agentKey, taskId, request);
+  }
+
+  /** Permite somente o primeiro envio da operação persistida, inclusive após reinício. */
+  @PostMapping("/{taskId}/spend-reservations/{reservationId}/begin")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease beginSpend(
+      @PathVariable String agentKey, @PathVariable Long taskId, @PathVariable Long reservationId) {
+    return spending.begin(agentKey, taskId, reservationId);
+  }
+
+  /** Preserva a resposta ou o estado incerto sem gerar nova inferência ou liberar reserva. */
+  @PostMapping("/{taskId}/spend-reservations/{reservationId}/result")
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease recordSpend(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @PathVariable Long reservationId,
+      @RequestBody com.marketinghub.videocontract.v1.BoundedSpendContracts.Result request) {
+    return spending.record(agentKey, taskId, reservationId, request);
+  }
+
   private final AgentTaskService service;
   private final AgentTaskVisualEvidenceService visualEvidenceService;
   private final AgentTaskOperatorGuidance operatorGuidance;

@@ -67,3 +67,31 @@ Encerre ambos os servidores após o teste. Para a recuperação de clipes, execu
 falha na montagem, reinício, hash divergente e resultado incerto, contando os POSTs
 de geração. Nenhum teste chama a API real. A existência dessas fixtures não comprova
 controle integral de custos dos executores pagos nem qualidade premium da candidata.
+
+### Gravação funcional privada sem geração paga
+
+O comando `pde-platform/frontend/tests/capture-vega-functional-recording.mjs` grava o
+aplicativo real v17 com o backend/MySQL locais da fixture `VegaStyleLocalApplication`;
+recusa destino externo. Banco/IDs de teste permanecem segregados. Use o servidor local
+v17 já documentado em `infra/testing/vega-contextual-style`, com Chromium e FFmpeg do
+ambiente; o Playwright também precisa de seu encoder de gravação, instalado apenas no
+workspace quando necessário. O MP4, hash, fontes e quatro ações ficam em
+`.codex/vega-resume/functional-recording/`. Esse arquivo **não é** o vídeo premium final.
+
+Para validar o upload pelo editor, inicie o Vite com o proxy local explícito:
+
+```bash
+MH_LOCAL_TEST_BACKEND=http://127.0.0.1:18081 npm --prefix frontend run dev -- --host 127.0.0.1 --port 4173 --strictPort
+```
+
+```bash
+STUDIO_FUNCTIONAL_RECORDING_DIR="$PWD/.codex/vega-resume/functional-recording" node infra/testing/runway-clip-plan/continuation-browser.cjs artifacts/studio-continuation
+```
+
+A captura inclui prova real local de salvar/reabrir; o formulário usa o controller e
+service oficiais com armazenamento simulado explícito. Em desktop/iPhone/Pixel,
+confira o mesmo SHA no GET privado, reenvio idempotente e recusa de outro tenant.
+Multipart segue pelo proxy HTTP nativo: `route.fetch` sobre a interceptação do Chromium
+pode omitir bytes de arquivos e fabricar uma falha de upload. Nenhum corpo binário
+é serializado como JSON pelo harness. A gravação só é vinculada em contexto real após
+publicação revisada do software; não escrever no banco ou storage produtivo por atalho.

@@ -870,3 +870,79 @@ ou metadata declarativa sem implementação e regressão de todos os executores.
 
 Evidências, limites e critérios de adoção:
 [retomada privada de Vega](../homologacao/vega-retomada-video-2026-11-05.md).
+
+### Consumo integral limitado — SINGLE_VIDEO_BOUNDED_V1 (06/11/2026)
+
+O executor de um recibo `SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1` deve reservar no backend
+o request real antes da chamada, com entrada materializada, modelo preservado e saída
+finita. OAuth com medição posterior continua bloqueado nesse escopo. O transporte nativo
+usa uma chamada Responses com Flex, sem tools, continuação, streaming ou retries pagos;
+a reserva usa tarifas Standard conservadoras, sem depender do desconto Flex. A contagem
+de entrada do provedor, corpo, hash, fonte/tarifa e máximo ficam persistidos. O mesmo lock
+do ciclo comercial serializa agentes, planner, créditos de clipes, voz e escuta. A reserva
+preventiva dos clipes integra o mesmo teto; transferir uma parcela para a chamada individual
+não soma essa parcela novamente. Resposta, timeout ou expiração não liberam dinheiro como
+se fosse custo faturado. Outra identidade de projeto, tarefa, recibo ou render é recusada.
+
+`SUBMITTED` permite no máximo um envio. Callback perdido usa a resposta preservada no
+volume e no backend; resultado incerto sem resposta/ID bloqueia geração duplicada.
+O worker nunca pode interpretar falta de autoridade como permissão para usar o transporte
+legado. Publicação gradual mantém executores antigos bloqueados. Uma consulta de preflight
+não habilita consumo e sua previsão de clipes não representa saldo integral.
+
+Íris pode preparar um vídeo privado solicitado no Estúdio mesmo quando a cadeia comercial
+está em PLANNING, exclusivamente pelo contrato `STUDIO_PRIVATE_VIDEO_BRIEF_V1`, vinculado
+no servidor à sua tarefa, projeto, versão e recibo atual. Essa entrada é o briefing do usuário;
+não é um novo parecer de Atena ou uma aprovação comercial. Comunicações citadas na herança
+podem fornecer fatos e especificações, sem renovar autorizações antigas. A fala aceita vira
+`PRIVATE_READY/IRIS_PRIVATE_BRIEF` após Plutus, com fonte preservada e sem `approvedBy`.
+Esse status só permite TEST privado; não autoriza produção comercial, publicação ou autoaprovação.
+Entre FALA_FINAL e PROVA_E_LIMITES entram apenas palavras narráveis, nunca direção de voz.
+
+Ausência de prova real é `PENDING_PRODUCT_PROOF`: conserva o pedido, o teto e o preflight,
+sem iniciar inferência ou render. Capturas históricas preservam identidade, versão, limites
+e natureza de estado; não são gravações de salvar/reabrir. A prova atual deve ser preparada
+pelo frontend e pelos fluxos existentes, com a autoridade correspondente, antes de qualquer
+geração paga. A espera por Íris renova somente o preflight vencido no mesmo ciclo, preservando
+o anterior e sem nova inferência por falha de callback. Psique e Têmis avaliam o MP4 final exato;
+frames, áudio, hash e direitos prevalecem sobre storyboard ou descrição.
+
+A opção limitada de voz é explícita na tela: TTS-1 HD/Nova, por caracteres, sem fallback local.
+A fonte oficial observada em 05/11/2026 informa US$30/milhão de caracteres e descontinuação
+em 06/01/2027; a admissão exige revalidar sua tarifa após 05/12/2026. Isso não atesta qualidade
+premium. A trilha ORIGINAL_MUSIC_BED_V1 é síntese original versionada, sem samples ou API paga,
+com hash e redução sob a voz; sua qualidade também depende da revisão. A escuta gpt-audio-1.5
+retém o máximo da janela oficial e da saída textual limitada, sem estimar apenas por segundo.
+Fontes: https://developers.openai.com/api/docs/models/tts-1-hd,
+https://developers.openai.com/api/docs/models/gpt-audio-1.5 e
+https://developers.openai.com/api/docs/guides/token-counting.
+
+Têmis mantém a segregação do produtor de imagens. Seu transporte limitado exige credencial
+própria de revisão textual no volume de autenticação individual (`MH_BOUNDED_REVIEW_KEY_FILE`),
+provisionada por canal seguro com acesso restrito a Responses. A chave do produtor nunca é
+fallback. Íris/Plutus podem usar o secret de API configurado para consumo limitado; a chave
+não entra no prompt, argv, resposta, log ou repositório. GET de modelos não comprova saldo,
+limites da conta, capacidade de gerar nem aprovação da peça.
+
+A gravação funcional local usa `PRODUCT_FUNCTIONAL_RECORDING_V1`, com arquivo H.264 sem áudio,
+hash, fontes versionadas, ações datadas e dados sintéticos. O Estúdio recebe MP4 e manifesto
+em `projects/{id}/product-recording`, confirma no servidor a experiência privada herdada e
+vincula a referência automaticamente. Até 8 MiB ficam privados no banco existente, sem API
+de storage nem fila de análise paga; esta capacidade não é destinada ao arquivo final nem
+a upload genérico. Reenvio dos mesmos bytes/manifesto reaproveita a gravação. Outra fonte
+é recusada após congelar a preparação do pedido; a história anterior não é migrada.
+`sourcePrototypeVersion` identifica o software gravado e `productVersion` continua sendo a
+versão audiovisual alvo. Isso não renova a homologação do predecessor nem aprova a peça.
+O worker verifica hash, codec, streams, duração e janela editorial antes do render pago;
+compõe salvar/reabrir em velocidade real e registra os instantes correspondentes no MP4 final.
+PNG continua sendo estado estático, sem fabricar gestos ou simular navegação.
+
+
+No recibo de vídeo único, a identidade do experimento é necessária, mas não
+suficiente para admitir gasto de agentes. Íris precisa ser a tarefa de preparação
+registrada no ciclo de vídeo; Plutus precisa ser o gate `GATE_DECISION` pendente
+registrado por esse pedido; Psique/Têmis precisam estar na revisão criativa da
+mídia final READY do render fixado no recibo ou de sua pós-produção. Escuta só
+admite o asset exato. Outra atividade no mesmo experimento permanece sem consumir
+esse teto e sem fallback para transporte legado. O vínculo é validado no servidor
+antes da reserva e novamente antes do envio; replay preserva resposta sem gasto.

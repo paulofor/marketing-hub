@@ -16,7 +16,11 @@ public class FinancialAgentBackendClient {
 
   /** Configura o cliente exclusivamente contra os contratos do backend principal. */
   public FinancialAgentBackendClient(FinancialAgentProperties properties) {
-    client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    client =
+        RestClient.builder()
+            .baseUrl(properties.getBackendUrl())
+            .defaultHeader("X-Single-Video-Spending-Contract", "SINGLE_VIDEO_BOUNDED_V1")
+            .build();
   }
 
   /** Reserva a conciliacao pendente mais antiga. */

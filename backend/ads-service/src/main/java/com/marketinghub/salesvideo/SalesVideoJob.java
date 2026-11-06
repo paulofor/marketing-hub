@@ -19,6 +19,9 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SalesVideoJob {
+  @Column(name = "spending_contract", length = 40)
+  private String spendingContract;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

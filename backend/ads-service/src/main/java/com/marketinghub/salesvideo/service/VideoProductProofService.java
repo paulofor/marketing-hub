@@ -28,6 +28,9 @@ public class VideoProductProofService {
   private final VideoProjectRepository projectRepository;
   private final ObjectMapper mapper;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private VideoProductRecordingService recordings;
+
   /** Conecta prova persistida, bytes privados e o projeto proprietário. */
   public VideoProductProofService(
       VideoProductProofSource source,
@@ -40,7 +43,9 @@ public class VideoProductProofService {
 
   /** Reconhece somente o identificador interno canônico e o enquadramento explícito opcional. */
   public static boolean isInternalReference(String value) {
-    return value != null && REFERENCE.matcher(value.trim()).matches();
+    return value != null
+        && (REFERENCE.matcher(value.trim()).matches()
+            || VideoProductRecordingService.isReference(value));
   }
 
   /**
@@ -48,6 +53,10 @@ public class VideoProductProofService {
    */
   @Transactional(readOnly = true)
   public Map<String, Object> resolve(VideoProject project) {
+    if (VideoProductRecordingService.isReference(project.getReferencePerformanceUri())) {
+      if (recordings == null) throw invalid("Leitor da gravação funcional indisponível.");
+      return recordings.resolve(project);
+    }
     if (!isInternalReference(project.getReferencePerformanceUri())) return Map.of();
     return resolveReference(project, project.getReferencePerformanceUri(), false);
   }
@@ -104,7 +113,8 @@ public class VideoProductProofService {
   /** Resolve apenas referências canônicas, sem confiar em hash ou URL enviados pelo editor. */
   private Map<String, Object> resolveReference(
       VideoProject project, String reference, boolean explicit) {
-    if (!isInternalReference(reference)) throw invalid("Referência de prova inválida.");
+    if (reference == null || !REFERENCE.matcher(reference.trim()).matches())
+      throw invalid("Referência de captura estática inválida.");
     var match = REFERENCE.matcher(reference.trim());
     match.matches();
     var proof =

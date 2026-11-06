@@ -24,6 +24,7 @@ final class BackendRestClientFactory {
     requestFactory.setReadTimeout(readTimeout);
     return RestClient.builder()
         .baseUrl(properties.getBackendUrl())
+        .defaultHeader("X-Single-Video-Spending-Contract", "SINGLE_VIDEO_BOUNDED_V1")
         .requestFactory(requestFactory)
         .build();
   }

@@ -22,6 +22,7 @@ services:
       AGENT_HEALTH_VERSION: "6"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       TEMIS_EXECUTION_ROLE: review
+      MH_BOUNDED_REVIEW_KEY_FILE: /home/approver/.codex/marketing-hub-bounded/review_api_key
       CODEX_HOME: /home/approver/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:

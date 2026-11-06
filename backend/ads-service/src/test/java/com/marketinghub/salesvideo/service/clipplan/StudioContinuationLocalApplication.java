@@ -33,6 +33,8 @@ import org.springframework.context.annotation.*;
       JpaRepositoriesAutoConfiguration.class
     })
 public class StudioContinuationLocalApplication {
+  private final VideoProjectRepository recordingProjects = mock(VideoProjectRepository.class);
+
   /** Inicia somente em loopback; o cenário não possui credenciais nem clientes de providers. */
   public static void main(String[] args) {
     var app = new SpringApplication(StudioContinuationLocalApplication.class);
@@ -57,7 +59,39 @@ public class StudioContinuationLocalApplication {
   /** Mantém o catálogo real já usado pela homologação de tomadas. */
   @Bean
   com.marketinghub.salesvideo.controller.SalesVideoController catalogController() {
-    return new StudioLocalApplication().controller();
+    var controller = new StudioLocalApplication().controller();
+    var repository = mock(VideoProductRecordingRepository.class);
+    Map<Long, VideoProductRecording> rows = new LinkedHashMap<>();
+    when(repository.findByVideoProjectIdAndSha256(any(), any()))
+        .thenAnswer(
+            a ->
+                rows.values().stream()
+                    .filter(
+                        r ->
+                            Objects.equals(r.getVideoProjectId(), a.getArgument(0))
+                                && Objects.equals(r.getSha256(), a.getArgument(1)))
+                    .findFirst());
+    when(repository.findById(any()))
+        .thenAnswer(a -> Optional.ofNullable(rows.get(a.getArgument(0))));
+    when(repository.saveAndFlush(any()))
+        .thenAnswer(
+            a -> {
+              var row = (VideoProductRecording) a.getArgument(0);
+              row.setId((long) rows.size() + 91000);
+              rows.put(row.getId(), row);
+              return row;
+            });
+    var recordings =
+        new VideoProductRecordingService(
+            repository,
+            recordingProjects,
+            mock(VideoProductionSpendingPolicy.class),
+            new ObjectMapper());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        org.springframework.test.util.ReflectionTestUtils.getField(controller, "salesVideoService"),
+        "recordings",
+        recordings);
+    return controller;
   }
 
   /**
@@ -65,7 +99,7 @@ public class StudioContinuationLocalApplication {
    */
   @Bean
   VideoProductionCycleController cycleController() {
-    var projects = mock(VideoProjectRepository.class);
+    var projects = recordingProjects;
     var cycles = mock(VideoProductionCycleRepository.class);
     var jobs = mock(SalesVideoJobRepository.class);
     var tasks = mock(AgentTaskService.class);
@@ -75,7 +109,7 @@ public class StudioContinuationLocalApplication {
     var preflights = mock(VideoProviderFinancialPreflightService.class);
     Map<Long, VideoProject> projectRows = new LinkedHashMap<>();
     Map<Long, VideoProductionCycle> cycleRows = new LinkedHashMap<>();
-    for (long offset : List.of(0L, 100L, 200L)) {
+    for (long offset : List.of(0L, 100L, 200L, 400L)) {
       for (long base : List.of(14L, 81L)) {
         long projectId = base + offset;
         var project =
@@ -102,8 +136,11 @@ public class StudioContinuationLocalApplication {
         cycle.setKnownCostUsd(BigDecimal.ZERO);
         cycle.setCreatedAt(Instant.now());
         cycle.setUpdatedAt(Instant.now());
-        cycle.setStatus(base == 14 ? "QUEUED_FOR_APOLLO" : "PROVIDER_PREFLIGHT_BLOCKED");
-        if (base == 14) {
+        cycle.setStatus(
+            offset >= 400
+                ? "PENDING_PRODUCT_PROOF"
+                : base == 14 ? "QUEUED_FOR_APOLLO" : "PROVIDER_PREFLIGHT_BLOCKED");
+        if (base == 14 && offset < 400) {
           cycle.setFinancialDecision("APPROVED");
           cycle.setSalesVideoJobId(projectId + 23000);
           var profile = new SalesVideoProfile();
@@ -115,6 +152,7 @@ public class StudioContinuationLocalApplication {
         }
         cycleRows.put(cycle.getId(), cycle);
         when(projects.findById(projectId)).thenReturn(Optional.of(project));
+        when(projects.findByIdForUpdate(projectId)).thenReturn(Optional.of(project));
         when(cycles.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycles.findByVideoProjectIdOrderByCreatedAtDesc(projectId)).thenReturn(List.of(cycle));
       }
@@ -124,6 +162,7 @@ public class StudioContinuationLocalApplication {
     when(financial.intelligence(any())).thenReturn(Map.of("fixture", "LOCAL_ONLY"));
     when(ledger.cycleLedger(any())).thenReturn(Map.of("segregated", true));
     when(preflights.financialContext(any())).thenReturn(Map.of("fixture", "LOCAL_ONLY"));
+    when(preflights.reserve(any())).thenReturn(new VideoCreditReservation());
     when(preflights.snapshot(any()))
         .thenAnswer(
             call -> {

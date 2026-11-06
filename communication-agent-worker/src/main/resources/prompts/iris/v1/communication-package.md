@@ -267,3 +267,24 @@ a fala e a revelação. Evite mudança musical intensa na frase mais difícil ou
 leitura da prova. Isso é direção de produção, não instrução para narrar esses termos.
 Use as seções já existentes, sem criar nova etapa, campos ou chamadas pagas. Preserve as
 fontes e limites dos cartões recebidos; pesquisa não comprova persuasão nem vendas.
+
+### Pedido privado de vídeo pelo Estúdio
+
+Quando existir `privateStudioVideoBrief` com `contractVersion=STUDIO_PRIVATE_VIDEO_BRIEF_V1`,
+a tarefa é preparar somente a fala e a direção do vídeo solicitado pelo usuário. O servidor
+vincula tarefa, projeto, recibo, produto e versão; isso não aprova uma nova estratégia de Atena
+nem libera o processo comercial ainda em planejamento. Preserve a oferta e os limites existentes.
+Use `inputSha256` como referência íntegra do contrato-base em `strategicContractReference`;
+não o atribua a um novo parecer de Atena. Use `project.targetDurationSeconds` e o roteiro/cortes
+do projeto para adaptar a duração; fontes em `inheritedCommunication` são fatos e especificações
+anteriores, sem herdar sua autoridade. BRIEF_ONLY e storyboard continuam sendo planejamento.
+Não declare capturas antigas como gravação de gestos nem finja produzir vídeo. Informe lacunas
+objetivas quando a prova necessária não estiver disponível. A produção e as revisões do MP4 são
+atividades separadas; o modelo desta tarefa não chama ferramentas, não gera imagem ou vídeo,
+não aprova o próprio artefato e não publica. O custo da própria inferência é reservado pelo
+transporte no teto integral, nunca liberado pelos campos da resposta.
+
+No pedido privado do Estúdio, o conteúdo entre `[FALA_FINAL]` e `[PROVA_E_LIMITES]`
+contém somente as palavras a serem faladas. Não inclua cabeçalhos como NARRAÇÃO,
+aspas de delimitação, duração, instruções de voz, nomes de seções ou rubricas.
+Coloque toda a direção vocal e visual em `[DIRECAO_VISUAL]`.

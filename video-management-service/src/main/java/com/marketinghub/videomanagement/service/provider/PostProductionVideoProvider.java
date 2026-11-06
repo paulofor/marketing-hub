@@ -54,6 +54,13 @@ public class PostProductionVideoProvider implements VideoProvider {
     private final ProductUgcReferenceOverlay productReferenceOverlay;
     private final PdeProductProofOverlay pdeProductProofOverlay;
     private final DeliveryExamplesMontage deliveryExamplesMontage;
+    private com.marketinghub.videomanagement.service.BoundedVideoSpending spending;
+
+    /** Conecta reserva de voz por request e recuperação dos mesmos bytes antes de nova inferência. */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setSpending(com.marketinghub.videomanagement.service.BoundedVideoSpending spending) {
+        this.spending = spending;
+    }
 
     /** Inicializa o provider de pós-produção com configuração e cliente de download. */
     public PostProductionVideoProvider(VideoManagementProperties properties,
@@ -69,6 +76,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .build();
         this.openAiWebClient = webClientBuilder.clone()
                 .baseUrl(properties.getProviders().getPostProduction().getOpenAiBaseUrl().toString())
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().disableRetry(true).followRedirect(false)))
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
@@ -110,6 +118,7 @@ public class PostProductionVideoProvider implements VideoProvider {
         Path preparedSource = null;
         Path durationAdjustedSource = null;
         Path voice = null;
+        Path music = null;
         Path caption = null;
         Path output = null;
         List<Map<String, Object>> ttsInteractions = List.of();
@@ -194,6 +203,13 @@ public class PostProductionVideoProvider implements VideoProvider {
                 productReferenceAudit = deliveryExamples
                         ? combineVisualAudits(productReferenceAudit, proofOverlay.audit()) : proofOverlay.audit();
             }
+            if (EditorialCutComposition.requested(metadata)) {
+                var edited=EditorialCutComposition.apply(preparedSource,metadata,job.id(),properties);
+                if (!preparedSource.equals(source)) deleteIfExists(preparedSource);
+                preparedSource=edited.videoFile();
+                var visualAudit=new java.util.LinkedHashMap<String,Object>(productReferenceAudit);
+                visualAudit.put("editorialCuts",edited.audit()); productReferenceAudit=visualAudit;
+            }
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
             Files.writeString(
@@ -201,14 +217,19 @@ public class PostProductionVideoProvider implements VideoProvider {
                     buildAss(captionTimeline, aiDisclosureText(metadata, voiceOverAudio != null), deliveryExamples),
                     StandardCharsets.UTF_8);
             if (voiceOverAudio != null) {
-                progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e voz premium sincronizadas");
+                boolean originalMusic = "ORIGINAL_MUSIC_BED_V1".equals(metadata.at("/originalMusicBed/contractVersion").asText());
+                if (originalMusic) {
+                    music = Files.createTempFile("sales-video-" + job.id() + "-original-music", ".wav");
+                    OriginalMusicBed.write(music, durationSeconds);
+                }
+                progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda, voz e trilha previstas");
                 runFfmpegWithVoice(
                         preparedSource,
                         voice,
                         caption,
                         output,
                         durationSeconds,
-                        sourceAudioPreserved);
+                        sourceAudioPreserved, music);
                 audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
             } else {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda grande sem voz off");
@@ -237,6 +258,9 @@ public class PostProductionVideoProvider implements VideoProvider {
                     ttsInteractions,
                     productReferenceAudit,
                     sourceAudioPreserved);
+            if (music != null) resultMetadata.put("originalMusicBed", Map.of("contractVersion","ORIGINAL_MUSIC_BED_V1",
+                    "source","REPOSITORY_SYNTHESIS","sha256",sha256(Files.readAllBytes(music)),
+                    "bpm",94,"durationSeconds",durationSeconds,"providerCostUsd",0,"qualityApproved",false));
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Arquivo finalizado; revisão de uso pendente");
             return new ProviderArtifacts(
                     "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
@@ -257,6 +281,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 deleteIfExists(preparedSource);
             }
             deleteIfExists(voice);
+            deleteIfExists(music);
             deleteIfExists(caption);
             deleteIfExists(output);
         }
@@ -303,21 +328,25 @@ public class PostProductionVideoProvider implements VideoProvider {
         return source;
     }
 
-    /** Gera a voz off usando OpenAI TTS quando configurado, com fallback local explícito. */
+    /** Gera a voz explícita do recibo; fallback local permanece apenas nos pedidos legados. */
     private VoiceOverAudio generateVoiceOver(String voiceOverScript, Long jobId, int segmentIndex) throws IOException {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
-        if (config.isOpenAiTtsEnabled() && StringUtils.hasText(resolveOpenAiApiKey())) {
+        boolean protectedVoice = spending != null && spending.context(jobId, "VOICE_" + segmentIndex).path("required").asBoolean();
+        if (protectedVoice || (config.isOpenAiTtsEnabled() && StringUtils.hasText(resolveOpenAiApiKey()))) {
             Path voice = Files.createTempFile("sales-video-" + jobId + "-voiceover-openai", "."
                     + config.getOpenAiTtsResponseFormat());
             TtsResponse response = runOpenAiTts(voiceOverScript, voice, jobId, segmentIndex);
+            var rawRequest = (Map<?, ?>) response.interaction().get("raw_request");
             return new VoiceOverAudio(
                     voice,
                     "OPENAI_TTS",
-                    config.getOpenAiTtsModel(),
-                    config.getOpenAiTtsVoice(),
+                    String.valueOf(rawRequest.get("model")),
+                    String.valueOf(rawRequest.get("voice")),
                     response.interaction(),
                     response.rawResponseFile());
         }
+        if (spending != null && spending.context(jobId, "VOICE_" + segmentIndex).path("required").asBoolean())
+            throw new VideoProviderException("BOUNDED_VOICE_UNAVAILABLE", "Voz HD autorizada indisponível; não substituir por voz local.");
         Path voice = Files.createTempFile("sales-video-" + jobId + "-voiceover-espeak", ".wav");
         runEspeak(voiceOverScript, voice);
         return new VoiceOverAudio(
@@ -447,6 +476,11 @@ public class PostProductionVideoProvider implements VideoProvider {
         payload.put("input", voiceOverScript);
         payload.put("response_format", config.getOpenAiTtsResponseFormat());
         payload.put("instructions", openAiTtsInstructions(config));
+        if (spending != null && spending.context(jobId, "VOICE_" + segmentIndex).path("required").asBoolean()) {
+            payload.put("model", "tts-1-hd");
+            payload.put("voice", "nova");
+            payload.remove("instructions");
+        }
         String endpoint = config.getOpenAiBaseUrl().toString().replaceFirst("/+$", "") + "/audio/speech";
         String rawRequest = objectMapper.writeValueAsString(payload);
         log.info(
@@ -457,7 +491,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 rawRequest);
         ResponseEntity<byte[]> response;
         try {
-            response = openAiWebClient.post()
+            java.util.function.Supplier<ResponseEntity<byte[]>> send = () -> openAiWebClient.post()
                     .uri("/audio/speech")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + resolveOpenAiApiKey())
                     .accept(MediaType.APPLICATION_OCTET_STREAM)
@@ -465,6 +499,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                     .bodyValue(payload)
                     .exchangeToMono(clientResponse -> clientResponse.toEntity(byte[].class))
                     .block();
+            response = spending == null ? send.get() : spending.binaryCall(jobId, "VOICE_" + segmentIndex,
+                    objectMapper.valueToTree(payload), send);
         } catch (RuntimeException ex) {
             log.error(
                     "Falha ao chamar OpenAI TTS; jobId={} segment={} url={}",
@@ -563,9 +599,16 @@ public class PostProductionVideoProvider implements VideoProvider {
         Map<String, Object> pricing = new LinkedHashMap<>();
         pricing.put("status", "PENDING_PROVIDER_RECONCILIATION");
         pricing.put("cost_usd", null);
-        pricing.put("input_usd_per_million_text_tokens", 0.60);
-        pricing.put("output_usd_per_million_audio_tokens", 12.00);
-        pricing.put("catalog_source", "OPENAI_GPT_4O_MINI_TTS_2026_09_04");
+        if ("tts-1-hd".equals(rawRequest.get("model"))) {
+            pricing.put("usd_per_million_characters", 30);
+            pricing.put("catalog_source", "https://developers.openai.com/api/docs/models/tts-1-hd");
+            pricing.put("maximum_reserved_usd", new java.math.BigDecimal("0.00003000")
+                    .multiply(java.math.BigDecimal.valueOf(String.valueOf(rawRequest.get("input")).getBytes(StandardCharsets.UTF_8).length)));
+        } else {
+            pricing.put("input_usd_per_million_text_tokens", 0.60);
+            pricing.put("output_usd_per_million_audio_tokens", 12.00);
+            pricing.put("catalog_source", "OPENAI_GPT_4O_MINI_TTS_2026_09_04");
+        }
         pricing.put("reason", "O endpoint de Speech devolve áudio binário sem usage por request.");
 
         Map<String, Object> interaction = new LinkedHashMap<>();
@@ -665,13 +708,13 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "ffmpeg falhou ao aplicar legenda no vídeo");
     }
 
-    /** Compõe voz com folga para AAC e reduz o áudio real da fonte sem fabricar trilha. */
+    /** Compõe voz e reduz a fonte ou a trilha original explicitamente prevista, mantendo folga para AAC. */
     private void runFfmpegWithVoice(Path source,
                                     Path voice,
                                     Path caption,
                                     Path output,
                                     double durationSeconds,
-                                    boolean sourceHasAudio) {
+                                    boolean sourceHasAudio, Path music) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         String videoFilter = captionSubtitles(caption);
         String audioFilter;
@@ -680,7 +723,13 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-y",
                 "-i", source.toAbsolutePath().toString(),
                 "-i", voice.toAbsolutePath().toString()));
-        if (sourceHasAudio) {
+        if (music != null) {
+            command.addAll(List.of("-i", music.toAbsolutePath().toString()));
+            audioFilter = "[2:a]volume=0.50[bed];[1:a]volume=1.0,asplit=2[voice_sc][voice_mix];"
+                    + "[bed][voice_sc]sidechaincompress=threshold=0.02:ratio=6:attack=20:release=350[ducked];"
+                    + "[ducked][voice_mix]amix=inputs=2:duration=longest:normalize=0[mixed];"
+                    + "[mixed]loudnorm=I=-17:TP=-3:LRA=7[aout];";
+        } else if (sourceHasAudio) {
             audioFilter = "[0:a]volume=0.30[bed];[1:a]volume=1.0,asplit=2[voice_sc][voice_mix];"
                     + "[bed][voice_sc]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=400[ducked];"
                     + "[ducked][voice_mix]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
@@ -1195,16 +1244,18 @@ public class PostProductionVideoProvider implements VideoProvider {
         String disclosureText = aiDisclosureText(sourceMetadata, hasVoice);
         metadata.put("has_audio", hasAudio);
         metadata.put("audio_streams", hasAudio ? 1 : 0);
+        boolean originalMusic = "ORIGINAL_MUSIC_BED_V1".equals(sourceMetadata.at("/originalMusicBed/contractVersion").asText()) && hasVoice;
+        if (originalMusic) metadata.put("originalMusicBed", objectMapper.convertValue(sourceMetadata.path("originalMusicBed"), Map.class));
         metadata.put("audio", Map.of(
                 "voice_over", hasVoice,
                 "source_audio_preserved", sourceAudioPreserved,
                 "language", "pt-BR",
                 "ai_generated_disclosure", StringUtils.hasText(disclosureText),
                 "ai_generated_disclosure_text", disclosureText,
-                "mix", hasVoice && sourceAudioPreserved
+                "mix", originalMusic ? "ORIGINAL_MUSIC_DUCKED_UNDER_VOICE" : hasVoice && sourceAudioPreserved
                         ? "SOURCE_DUCKED_UNDER_VOICE"
                         : sourceAudioPreserved ? "SOURCE_PRESERVED" : hasVoice ? "VOICE_ONLY" : "NONE",
-                "music", sourceAudioPreserved ? "not_classified_source_audio" : "none",
+                "music", originalMusic ? "ORIGINAL_MUSIC_BED_V1" : sourceAudioPreserved ? "not_classified_source_audio" : "none",
                 "review", audioReview));
         metadata.put("synthetic_media_disclosure", Map.of(
                 "required", StringUtils.hasText(disclosureText),

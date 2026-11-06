@@ -50,6 +50,13 @@ public class RunwayRenderPreflight {
    */
   public void validate(Long productId, Long profileId, RequestVideoRenderRequest request) {
     String name = request.getProviderName();
+    projects
+        .findFirstBySalesVideoProfileIdOrderByUpdatedAtDesc(profileId)
+        .ifPresent(
+            project -> {
+              String blocker = spendingPolicy.requestBlocker(project, name);
+              if (blocker != null) throw new IllegalArgumentException(blocker);
+            });
     if (name == null || !name.toUpperCase(java.util.Locale.ROOT).startsWith("RUNWAY")) return;
     try {
       var metadata =

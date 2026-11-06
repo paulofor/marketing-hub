@@ -99,6 +99,7 @@ export type VideoProductionCycle = {
       releasedAt?: string;
     };
   };
+  financialSnapshot?: string;
   financialDecision?: string;
   financialReason?: string;
   recommendedAggregator?: string;

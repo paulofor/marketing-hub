@@ -20,8 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class LearningCycleSingleVideoBudget
-    implements com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy {
+public class LearningCycleSingleVideoBudget {
   private static final String ACTION = "AUTHORIZE_SINGLE_VIDEO";
   public static final String SCOPE = "SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1";
   private final LearningSalesCycleEventRepository events;
@@ -127,9 +126,24 @@ public class LearningCycleSingleVideoBudget
   }
 
   /**
+   * Mantém proteção mesmo após STOP, fechamento ou mudança de versão; recibo vencido não vira
+   * ausência de teto.
+   */
+  public SingleVideoBudgetResponse.Authorization protectedReceipt(
+      com.marketinghub.salesvideo.VideoProject project) {
+    if (project == null || project.getExperimentId() == null || project.getTenantId() == null)
+      return null;
+    var cycle = cycles.findByExperimentId(project.getExperimentId()).orElse(null);
+    if (cycle == null) return null;
+    return read(cycle, project.getTenantId()).authorizations().stream()
+        .filter(a -> Objects.equals(a.videoProjectId(), project.getId()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
    * Expõe o bloqueio real enquanto os executores não oferecem limite compartilhado antes do gasto.
    */
-  @Override
   public String paidExecutionBlocker(com.marketinghub.salesvideo.VideoProject project) {
     var receipt = forProject(project);
     if (receipt == null) return null;

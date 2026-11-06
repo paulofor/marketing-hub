@@ -1,0 +1,90 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-05-single-video-spend-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: single_video_spend_v1
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE single_video_spend_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                receipt_id BIGINT NOT NULL,
+                commercial_cycle_id BIGINT NOT NULL,
+                video_project_id BIGINT NOT NULL,
+                operation_key VARCHAR(160) NOT NULL,
+                request_sha256 VARCHAR(64) NOT NULL,
+                request_json LONGTEXT NOT NULL,
+                provider VARCHAR(32) NOT NULL,
+                model_code VARCHAR(128) NOT NULL,
+                max_cost_usd DECIMAL(18,8) NOT NULL,
+                settled_cost_usd DECIMAL(18,8) NULL,
+                state VARCHAR(24) NOT NULL,
+                provider_reference VARCHAR(160) NULL,
+                raw_response LONGTEXT NULL,
+                pricing_evidence_json LONGTEXT NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                UNIQUE KEY uk_single_video_spend_operation (receipt_id, operation_key),
+                KEY ix_single_video_spend_project (video_project_id, id),
+                CONSTRAINT fk_single_video_spend_receipt FOREIGN KEY (receipt_id)
+                  REFERENCES learning_sales_cycle_event_v1(id),
+                CONSTRAINT fk_single_video_spend_cycle FOREIGN KEY (commercial_cycle_id)
+                  REFERENCES learning_sales_cycle_v1(id),
+                CONSTRAINT fk_single_video_spend_project FOREIGN KEY (video_project_id)
+                  REFERENCES video_project(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  - changeSet:
+      id: 2026-11-05-single-video-private-brief-input-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_production_cycle ADD COLUMN iris_agent_task_id BIGINT NULL;
+              ALTER TABLE video_production_cycle ADD COLUMN preparation_audit_json LONGTEXT NULL;
+              ALTER TABLE sales_video_script ADD COLUMN source_evidence_json LONGTEXT NULL;
+              ALTER TABLE sales_video_script MODIFY source ENUM('MANUAL','OPENAI','IRIS_PRIVATE_BRIEF') NOT NULL;
+              ALTER TABLE sales_video_script MODIFY status ENUM('DRAFT','READY_FOR_REVIEW','APPROVED','ARCHIVED','PRIVATE_READY') NOT NULL;
+              ALTER TABLE agent_task ADD COLUMN spending_contract VARCHAR(40) NULL;
+              ALTER TABLE sales_video_job ADD COLUMN spending_contract VARCHAR(40) NULL;
+  - changeSet:
+      id: 2026-11-06-video-product-recording-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: video_product_recording_v1
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_product_recording_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                video_project_id BIGINT NOT NULL,
+                tenant_id VARCHAR(64) NOT NULL,
+                sha256 VARCHAR(64) NOT NULL,
+                source_version VARCHAR(191) NOT NULL,
+                manifest_json LONGTEXT NOT NULL,
+                video_bytes LONGBLOB NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                UNIQUE KEY uk_video_product_recording_bytes (video_project_id, sha256),
+                CONSTRAINT fk_video_product_recording_project FOREIGN KEY (video_project_id)
+                  REFERENCES video_project(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,3 +1,5 @@
+import SingleVideoSpendingSummary from "./SingleVideoSpendingSummary";
+import ProductRecordingUpload from "./ProductRecordingUpload";
 import {
   BadgeCheck,
   Ban,
@@ -3000,8 +3002,9 @@ export default function AudioVideoStudioPage() {
                         <small>
                           O teto não é meta de gasto. O preflight consulta e
                           simula sem cobrança; Plutus avalia antes de qualquer
-                          geração paga. O ledger registra apenas custos novos
-                          deste ciclo. Apolo trabalha em TEST e não publica.
+                          geração paga. O recibo integral reúne os custos novos
+                          deste vídeo, incluindo suas revisões e tentativas.
+                          Apolo trabalha em TEST e não publica.
                         </small>
                         {createProductionCycle.isError ? (
                           <p role="alert">
@@ -3049,6 +3052,9 @@ export default function AudioVideoStudioPage() {
                           edição. Texto, legenda e CTA são aplicados na
                           pós-produção.
                         </p>
+                        <SingleVideoSpendingSummary
+                          cycle={productionCycles.data[0]}
+                        />
                         {productionCycles.data[0].providerPreflight ? (
                           <section
                             className="audio-video-studio-page__provider-preflight"
@@ -3377,6 +3383,12 @@ export default function AudioVideoStudioPage() {
               selectedProvider.providerName !== "RUNWAY_ACT_TWO" ? (
                 <article className="audio-video-studio-page__project-card">
                   <strong>Prova real do PDE na finalização</strong>
+                  {selectedProject ? (
+                    <ProductRecordingUpload
+                      key={selectedProject.id}
+                      projectId={selectedProject.id}
+                    />
+                  ) : null}
                   <p>
                     Use uma captura homologada da mesma versão. Ela será
                     inserida nos cortes de mecanismo, resultado e prova, com voz

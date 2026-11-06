@@ -57,6 +57,7 @@ public class CustomerBpmTaskConsumer {
           new BpmContract("pde-construction-approval", "psiqueRecovery"),
           new BpmContract("pde-construction-approval", "psiqueSafety"));
   private final RestClient backend;
+  private final String backendUrlForSpending;
   private final ObjectMapper json;
   private final String codex;
   private final String model;
@@ -88,7 +89,12 @@ public class CustomerBpmTaskConsumer {
       BpmVisualEvidenceBackendClient visualEvidenceBackendClient,
       PdeAgentValidationHarnessRunner pdeAgentValidationHarnessRunner,
       CodexProcessSupervisor processSupervisor) {
-    this.backend = RestClient.builder().baseUrl(backendUrl).build();
+    this.backendUrlForSpending = backendUrl;
+    this.backend =
+        RestClient.builder()
+            .baseUrl(backendUrl)
+            .defaultHeader("X-Single-Video-Spending-Contract", "SINGLE_VIDEO_BOUNDED_V1")
+            .build();
     this.codex = codex;
     this.model = model;
     this.reasoningEffort = PsiqueReasoningPolicy.requireMaximum(reasoningEffort);
@@ -593,11 +599,27 @@ public class CustomerBpmTaskConsumer {
           new CustomerBpmTaskOutbox.Pending(task, audit, visualEvidence, false, null, null));
       recordExecutionAudit(task, audit);
       outbox.save(new CustomerBpmTaskOutbox.Pending(task, audit, visualEvidence, true, null, null));
-      process =
-          new ProcessBuilder(command(output, schema, visualEvidence))
+      List<String> paidCommand = command(output, schema, visualEvidence);
+      if (Boolean.TRUE.equals(task.get("singleVideoSpendingRequired"))) {
+        List<String> limited =
+            new ArrayList<>(
+                List.of(
+                    "bash",
+                    Path.of(repositoryPath, "scripts/codex-oauth-session-safe.sh").toString(),
+                    "--spending-exec"));
+        limited.addAll(paidCommand);
+        paidCommand = limited;
+      }
+      ProcessBuilder builder =
+          new ProcessBuilder(paidCommand)
               .redirectErrorStream(true)
-              .redirectOutput(processLog.toFile())
-              .start();
+              .redirectOutput(processLog.toFile());
+      if (paidCommand.contains("--spending-exec"))
+        builder.environment().put("MH_EXPECT_SHARED_SPENDING", "true");
+      builder.environment().put("MH_AGENT_TASK_ID", String.valueOf(taskId(task)));
+      builder.environment().put("MH_AGENT_KEY", "customer-agent");
+      builder.environment().put("MH_SPENDING_BACKEND_URL", backendUrlForSpending);
+      process = builder.start();
       try (CodexTelemetryReporter.Session telemetry = monitorExecution(task, process, processLog)) {
         process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
         process.getOutputStream().close();
@@ -614,6 +636,8 @@ public class CustomerBpmTaskConsumer {
               visualEvidence);
         }
         TokenUsage usage = readTokenUsage(json, processLog);
+        String boundedTier = boundedServiceTier(json, processLog);
+        if (boundedTier != null) task.put("singleVideoNativeServiceTier", boundedTier);
         if (process.exitValue() != 0) {
           throw new BpmExecutionException(
               "Codex encerrou com falha: " + Files.readString(processLog),
@@ -846,7 +870,7 @@ public class CustomerBpmTaskConsumer {
     Map<String, Object> body = new HashMap<>();
     body.put("resultJson", execution.rawResponse());
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
-    putModelUsage(body, execution.usage());
+    putModelUsage(body, execution.usage(), task);
     Map<String, Object> audit =
         executionAudit(
             execution.promptSent(),
@@ -943,7 +967,7 @@ public class CustomerBpmTaskConsumer {
     body.put("error", "Psique bloqueou o avanço: " + perspective);
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
-    putModelUsage(body, execution.usage());
+    putModelUsage(body, execution.usage(), task);
     Map<String, Object> audit =
         executionAudit(
             execution.promptSent(),
@@ -1697,7 +1721,7 @@ public class CustomerBpmTaskConsumer {
     Map<String, Object> body = new HashMap<>();
     body.put("error", error.toString());
     body.put("evidenceJson", evidence(task, visualEvidence));
-    putModelUsage(body, usage);
+    putModelUsage(body, usage, task);
     if (promptSent != null) {
       body.put(
           "executionAudit",
@@ -1892,7 +1916,9 @@ public class CustomerBpmTaskConsumer {
     evidence.put("externalSideEffects", false);
     evidence.put("preferredServiceTier", "FLEX");
     evidence.put("requestedServiceTier", REQUESTED_SERVICE_TIER.toUpperCase(java.util.Locale.ROOT));
-    evidence.put("effectiveServiceTier", EFFECTIVE_SERVICE_TIER);
+    evidence.put(
+        "effectiveServiceTier",
+        task.getOrDefault("singleVideoNativeServiceTier", EFFECTIVE_SERVICE_TIER));
     evidence.put("serviceTierException", SERVICE_TIER_EXCEPTION);
     if (task.get("taskTarget") != null) evidence.put("taskTarget", task.get("taskTarget"));
     if (task.get("creativeMobilePreviews") != null)
@@ -1901,17 +1927,29 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Acrescenta ao callback somente uma medição real informada pelo Codex. */
-  private void putModelUsage(Map<String, Object> body, TokenUsage usage) {
+  private void putModelUsage(Map<String, Object> body, TokenUsage usage, Map<String, Object> task) {
     if (usage == null || !usage.informed()) return;
     body.put(
         "modelUsages",
         List.of(
             Map.of(
                 "modelCode", model,
-                "serviceTier", EFFECTIVE_SERVICE_TIER,
+                "serviceTier",
+                    task.getOrDefault("singleVideoNativeServiceTier", EFFECTIVE_SERVICE_TIER),
                 "inputTokens", usage.inputTokens(),
                 "cachedInputTokens", usage.cachedInputTokens(),
                 "outputTokens", usage.outputTokens())));
+  }
+
+  /** Lê somente o tier realmente devolvido pelo transporte limitado, sem presumir desconto. */
+  static String boundedServiceTier(ObjectMapper json, Path output) throws IOException {
+    for (String line : Files.readAllLines(output)) {
+      if (!line.startsWith("{") || !line.contains("bounded_spend.completed")) continue;
+      JsonNode event = json.readTree(line);
+      if ("bounded_spend.completed".equals(event.path("type").asText()))
+        return event.path("serviceTier").asText("UNKNOWN").toUpperCase(java.util.Locale.ROOT);
+    }
+    return null;
   }
 
   /** Informa o tier efetivamente solicitado ao Codex para auditoria e teste de contrato. */

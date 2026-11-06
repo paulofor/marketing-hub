@@ -356,6 +356,132 @@ paths:
       responses:
         "204": { description: Falha e consumo já realizado persistidos }
         "409": { description: Tarefa não reservada pelo agente }
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/spending-context:
+    get:
+      summary: Consultar autoridade do recibo integral sem inferência
+      description: 'SINGLE_VIDEO_BOUNDED_V1: o header é handshake do executor; o servidor
+        resolve recibo, contexto, STOP, tarifa, reserva e lock compartilhado. Não aprova
+        produto nem publicação.'
+      parameters:
+      - &id001
+        name: agentKey
+        in: path
+        required: true
+        schema:
+          type: string
+      - &id002
+        name: taskId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Estado persistido, inclusive replay sem novo consumo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleVideoSpendContext'
+        '400':
+          description: Contrato, cobertura, vigência ou executor recusado antes de chamada
+            externa.
+        '409':
+          description: Estado ou contexto incompatível; preservar reservas e conciliar.
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/spend-reservations:
+    post:
+      summary: Reservar chamada Responses limitada no mesmo teto do vídeo
+      description: 'SINGLE_VIDEO_BOUNDED_V1: o header é handshake do executor; o servidor
+        resolve recibo, contexto, STOP, tarifa, reserva e lock compartilhado. Não aprova
+        produto nem publicação.'
+      parameters:
+      - *id001
+      - *id002
+      - &id003
+        name: X-Single-Video-Spending-Contract
+        in: header
+        required: true
+        schema:
+          type: string
+          enum:
+          - SINGLE_VIDEO_BOUNDED_V1
+      responses:
+        '200':
+          description: Estado persistido, inclusive replay sem novo consumo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleVideoSpendLease'
+        '400':
+          description: Contrato, cobertura, vigência ou executor recusado antes de chamada
+            externa.
+        '409':
+          description: Estado ou contexto incompatível; preservar reservas e conciliar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SingleVideoSpendReserve'
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/spend-reservations/{reservationId}/begin:
+    post:
+      summary: Admitir uma única chamada paga da tarefa
+      description: 'SINGLE_VIDEO_BOUNDED_V1: o header é handshake do executor; o servidor
+        resolve recibo, contexto, STOP, tarifa, reserva e lock compartilhado. Não aprova
+        produto nem publicação.'
+      parameters:
+      - *id001
+      - *id002
+      - name: reservationId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - *id003
+      responses:
+        '200':
+          description: Estado persistido, inclusive replay sem novo consumo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleVideoSpendLease'
+        '400':
+          description: Contrato, cobertura, vigência ou executor recusado antes de chamada
+            externa.
+        '409':
+          description: Estado ou contexto incompatível; preservar reservas e conciliar.
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/spend-reservations/{reservationId}/result:
+    post:
+      summary: Preservar resultado ou incerteza para replay sem gasto
+      description: 'SINGLE_VIDEO_BOUNDED_V1: o header é handshake do executor; o servidor
+        resolve recibo, contexto, STOP, tarifa, reserva e lock compartilhado. Não aprova
+        produto nem publicação.'
+      parameters:
+      - *id001
+      - *id002
+      - name: reservationId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Estado persistido, inclusive replay sem novo consumo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleVideoSpendLease'
+        '400':
+          description: Contrato, cobertura, vigência ou executor recusado antes de chamada
+            externa.
+        '409':
+          description: Estado ou contexto incompatível; preservar reservas e conciliar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SingleVideoSpendResult'
+
 components:
   parameters:
     AgentKey:
@@ -369,6 +495,95 @@ components:
       required: true
       schema: { type: integer, format: int64 }
   schemas:
+    SingleVideoSpendContext:
+      type: object
+      properties:
+        required:
+          type: boolean
+        receiptId:
+          type: integer
+          format: int64
+        projectId:
+          type: integer
+          format: int64
+        blocker:
+          type: string
+          nullable: true
+        reservation:
+          $ref: '#/components/schemas/SingleVideoSpendLease'
+        voiceModel:
+          type: string
+          nullable: true
+    SingleVideoSpendLease:
+      type: object
+      required:
+      - id
+      - receiptId
+      - state
+      - mayInvoke
+      - maximumUsd
+      - requestSha256
+      - request
+      - quoteExpiresAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        receiptId:
+          type: integer
+          format: int64
+        state:
+          type: string
+          enum:
+          - RESERVED
+          - SUBMITTED
+          - UNCERTAIN
+          - RESPONSE_RECORDED
+        mayInvoke:
+          type: boolean
+          description: Somente a primeira transição begin permite enviar; replay nunca
+            autoriza novo POST.
+        maximumUsd:
+          type: number
+          description: Máximo retido, não custo faturado ou saldo conciliado.
+        requestSha256:
+          type: string
+        request:
+          type: object
+          additionalProperties: true
+        rawResponse:
+          type: string
+          nullable: true
+        quoteExpiresAt:
+          type: string
+          format: date-time
+          description: Renovar RESERVED vencida no mesmo ID antes de begin, sem reduzir
+            reserva ou zerar histórico.
+    SingleVideoSpendReserve:
+      type: object
+      required:
+      - request
+      properties:
+        request:
+          type: object
+          additionalProperties: true
+        inputTokenCount:
+          type: object
+          description: Responses usa contagem oficial response.input_tokens do corpo imutável;
+            voz/clipes dispensam contagem de tokens.
+          nullable: true
+    SingleVideoSpendResult:
+      type: object
+      properties:
+        httpStatus:
+          type: integer
+          nullable: true
+        rawResponse:
+          type: string
+          nullable: true
+        providerRequestId:
+          type: string
+          nullable: true
     ProcessInstance:
       type: object
       required:

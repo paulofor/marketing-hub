@@ -72,6 +72,52 @@ public class SalesVideoService {
   private final SalesVideoStudioCatalogService studioCatalogService =
       new SalesVideoStudioCatalogService();
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private VideoProductRecordingService recordings;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spending;
+
+  /** Delega a vinculação da prova temporal sem iniciar geração ou revisão paga. */
+  public java.util.Map<String, Object> uploadProductRecording(
+      Long projectId, MultipartFile file, String manifest) {
+    return recordings.upload(projectId, file, manifest);
+  }
+
+  /** Entrega somente os bytes privados da gravação funcional no contexto do tenant. */
+  public byte[] readProductRecording(Long projectId) {
+    return recordings.read(projectId);
+  }
+
+  /** Consulta a autoridade financeira persistida sem iniciar chamada externa. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Context jobSpendingContext(
+      Long jobId, String purpose) {
+    return spending.jobContext(jobId, purpose);
+  }
+
+  /** Reserva o request concreto no mesmo recibo de agentes, mídia e revisões. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease reserveJobSpend(
+      Long jobId,
+      String purpose,
+      com.marketinghub.videocontract.v1.BoundedSpendContracts.Reserve input) {
+    return spending.reserveJob(jobId, purpose, input);
+  }
+
+  /** Admite um único envio da operação depois de persistir sua reserva. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease beginJobSpend(
+      Long jobId, String purpose, Long reservationId) {
+    return spending.beginJob(jobId, purpose, reservationId);
+  }
+
+  /** Preserva resposta ou incerteza da operação para replay sem gerar novamente. */
+  public com.marketinghub.videocontract.v1.BoundedSpendContracts.Lease recordJobSpend(
+      Long jobId,
+      String purpose,
+      Long reservationId,
+      com.marketinghub.videocontract.v1.BoundedSpendContracts.Result input) {
+    return spending.recordJob(jobId, purpose, reservationId, input);
+  }
+
   /** Inicializa a fachada com os componentes internos do módulo de vídeo. */
   public SalesVideoService(
       SalesVideoProfileService profileService,
@@ -353,8 +399,16 @@ public class SalesVideoService {
       SalesVideoJobType jobType,
       int limit,
       String postProductionContract) {
-    return jobService.findJobsForWorker(
-        providerFamily, status, jobType, limit, postProductionContract);
+    return jobService
+        .findJobsForWorker(providerFamily, status, jobType, limit, postProductionContract)
+        .stream()
+        .filter(
+            job -> {
+              if (spending == null) return true;
+              var authority = spending.jobContext(job.getId(), "PLAN");
+              return !authority.required() || authority.blocker() == null;
+            })
+        .toList();
   }
 
   /** Consulta um job pelo identificador. */

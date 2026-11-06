@@ -27,8 +27,8 @@ export type SalesVideoRetryReason =
   | "AUTO_RECOVERY"
   | "OTHER";
 export type SalesVideoScriptStatus =
-  "DRAFT" | "READY_FOR_REVIEW" | "APPROVED" | "ARCHIVED";
-export type SalesVideoScriptSource = "MANUAL" | "OPENAI";
+  "DRAFT" | "READY_FOR_REVIEW" | "APPROVED" | "ARCHIVED" | "PRIVATE_READY";
+export type SalesVideoScriptSource = "MANUAL" | "OPENAI" | "IRIS_PRIVATE_BRIEF";
 
 export interface SalesVideoScript {
   id: number;

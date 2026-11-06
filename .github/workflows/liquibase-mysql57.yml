@@ -732,7 +732,7 @@ jobs:
           cache-dependency-path: backend/ads-service/pom.xml
       - name: Aplicar migração, repetir Liquibase e preservar gates e histórico
         run: >-
-          mvn -B -f backend/ads-service/pom.xml -Dtest=VideoCapabilitiesMysql57Test
+          mvn -B -f backend/ads-service/pom.xml -Dtest=VideoCapabilitiesMysql57Test,SingleVideoSpendMysql57Test
           -Dstudio.mysql=true
           '-Dstudio.mysql.url=jdbc:mysql://127.0.0.1:3306/studio_test?useSSL=false&allowPublicKeyRetrieval=true'
           test
@@ -741,4 +741,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: video-capabilities-mysql57
-          path: backend/ads-service/target/surefire-reports/*VideoCapabilitiesMysql57Test*
+          path: |
+            backend/ads-service/target/surefire-reports/*VideoCapabilitiesMysql57Test*
+            backend/ads-service/target/surefire-reports/*SingleVideoSpendMysql57Test*

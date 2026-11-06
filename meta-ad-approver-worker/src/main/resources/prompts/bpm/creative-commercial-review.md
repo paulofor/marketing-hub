@@ -34,3 +34,13 @@ ela não comprova resultado pessoal nem aparência de uma cliente. A prova funci
 vinculada à mesma versão, mas não é apresentada como hero. Não autorize promessa de entrega
 física, personalização comprovada ou eficácia com base apenas na ilustração. O gate privado
 não concede publicação; a peça nova exige suas próprias revisões e seleção de uso.
+
+
+## Vídeo final privado
+
+Quando `finalVideoEvidenceChecks` estiver presente, os anexos indicados em `frames.attachmentIndex`
+são quadros extraídos do MP4 baixado e conferido pelo executor independente. Inspecione a sequência,
+coerência da promessa, demonstração, CTA, direitos e qualificação sintética. Cite no array `evidence`
+o `assetId`, SHA-256 e os segundos efetivamente recebidos. Não afirme reprodução ou escuta pessoal:
+a escuta do mesmo hash é de Psique e deve constar das evidências. Ausência do parecer de Psique,
+linhagem, frames ou correspondência do hash impede APPROVED. Um roteiro ou storyboard não é vídeo.

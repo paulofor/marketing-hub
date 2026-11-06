@@ -18,6 +18,9 @@ public interface VideoProductionCycleRepository extends JpaRepository<VideoProdu
   /** Lista ciclos de um projeto do mais recente para o mais antigo. */
   List<VideoProductionCycle> findByVideoProjectIdOrderByCreatedAtDesc(Long videoProjectId);
 
+  /** Localiza o pedido proprietário da fala, sem inferir vínculo por título ou metadata. */
+  List<VideoProductionCycle> findByIrisAgentTaskId(Long irisAgentTaskId);
+
   /** Lista ciclos aguardando decisão financeira. */
   List<VideoProductionCycle> findByStatusOrderByCreatedAtAsc(String status);
 

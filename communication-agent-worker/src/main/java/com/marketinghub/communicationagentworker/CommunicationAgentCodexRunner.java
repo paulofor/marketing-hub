@@ -55,10 +55,26 @@ public class CommunicationAgentCodexRunner {
         command.add("--image");
         command.add(image.toAbsolutePath().toString());
       }
+      if (Boolean.TRUE.equals(task.get("singleVideoSpendingRequired"))) {
+        List<String> limited =
+            new ArrayList<>(
+                List.of(
+                    "bash",
+                    Path.of(properties.getRepositoryPath(), "scripts/codex-oauth-session-safe.sh")
+                        .toString(),
+                    "--spending-exec"));
+        limited.addAll(command);
+        command = limited;
+      }
       ProcessBuilder builder =
           new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(processLog.toFile());
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getBackendUrl());
       builder.environment().put("MCP_TASK_ID", String.valueOf(task.get("taskId")));
+      if (command.contains("--spending-exec"))
+        builder.environment().put("MH_EXPECT_SHARED_SPENDING", "true");
+      builder.environment().put("MH_AGENT_TASK_ID", String.valueOf(task.get("taskId")));
+      builder.environment().put("MH_AGENT_KEY", "communication-director");
+      builder.environment().put("MH_SPENDING_BACKEND_URL", properties.getBackendUrl());
       builder
           .environment()
           .put("MCP_SOURCE_REFERENCE", String.valueOf(task.get("sourceReference")));
@@ -88,6 +104,15 @@ public class CommunicationAgentCodexRunner {
         }
         TokenUsage usage = readTokenUsage(processLog);
         String rawLog = Files.readString(processLog);
+        for (String line : rawLog.lines().toList()) {
+          if (line.startsWith("{") && line.contains("bounded_spend.completed")) {
+            JsonNode event = json.readTree(line);
+            if ("bounded_spend.completed".equals(event.path("type").asText()))
+              task.put(
+                  "singleVideoNativeServiceTier",
+                  event.path("serviceTier").asText("UNKNOWN").toUpperCase(java.util.Locale.ROOT));
+          }
+        }
         if (process.exitValue() != 0) {
           throw new ExecutionException(
               "Codex encerrou com código " + process.exitValue() + ": " + rawLog,
@@ -326,6 +351,11 @@ public class CommunicationAgentCodexRunner {
       JsonNode context =
           new ObjectMapper()
               .readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
+      JsonNode studio = context.path("privateStudioVideoBrief");
+      if (!studio.isMissingNode()) {
+        validatePrivateStudioInput(studio, task);
+        return;
+      }
       JsonNode strategy = context.path("marketStrategicContract");
       JsonNode communication = context.path("communicationMaterializationContext");
       if (!"AVAILABLE".equals(strategy.path("availability").asText())
@@ -528,13 +558,44 @@ public class CommunicationAgentCodexRunner {
     }
   }
 
+  /**
+   * Reconhece somente o pedido privado vinculado pelo servidor, sem declarar estratégia de Atena
+   * aprovada.
+   */
+  static void validatePrivateStudioInput(JsonNode input, Map<String, Object> task) {
+    if (!Boolean.TRUE.equals(task.get("singleVideoSpendingRequired"))
+        || !"STUDIO_PRIVATE_VIDEO_BRIEF_V1".equals(input.path("contractVersion").asText())
+        || !"SINGLE_PRIVATE_VIDEO_ONLY".equals(input.path("scope").asText())
+        || !"pde-communication-sales-journey".equals(task.get("processCode"))
+        || !"communicationContract".equals(task.get("activityId"))
+        || input.path("taskId").asLong() != ((Number) task.get("taskId")).longValue()
+        || !input.path("sourceReference").asText().equals(task.get("sourceReference"))
+        || input.path("receiptId").asLong() <= 0
+        || input.path("totalLimitUsd").decimalValue().signum() <= 0
+        || input.path("videoProductionCycleId").asLong() <= 0
+        || input.path("videoProjectId").asLong() != input.at("/project/id").asLong()
+        || !input.path("productVersion").asText().equals(input.at("/project/campaignKey").asText())
+        || !input.path("inputSha256").asText().matches("[a-f0-9]{64}")
+        || input.path("commercialPublicationAuthorized").asBoolean(true)
+        || input.path("newStrategyApproved").asBoolean(true)
+        || input.path("mediaAuthorized").asBoolean(true)
+        || input.path("qualityApproved").asBoolean(true))
+      throw new IllegalArgumentException(
+          "Briefing privado de vídeo sem contexto ou limite válido; não usar como estratégia aprovada.");
+  }
+
   /** Extrai o hash estratégico congelado do contexto BPM. */
   private static String strategicHash(Map<String, Object> task) {
     try {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode context =
           mapper.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
-      String hash = context.path("marketStrategicContract").path("contentHash").asText();
+      JsonNode studio = context.path("privateStudioVideoBrief");
+      if (!studio.isMissingNode()) validatePrivateStudioInput(studio, task);
+      String hash =
+          studio.isMissingNode()
+              ? context.path("marketStrategicContract").path("contentHash").asText()
+              : studio.path("inputSha256").asText();
       if (!hash.matches("[0-9a-f]{64}")) {
         throw new IllegalArgumentException("Íris exige contrato estratégico íntegro de Atena.");
       }

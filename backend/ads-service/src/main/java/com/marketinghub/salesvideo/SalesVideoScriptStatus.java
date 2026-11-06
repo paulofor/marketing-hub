@@ -4,6 +4,7 @@ package com.marketinghub.salesvideo;
 public enum SalesVideoScriptStatus {
   DRAFT,
   READY_FOR_REVIEW,
+  PRIVATE_READY,
   APPROVED,
   ARCHIVED
 }

@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
-const FFMPEG_PATH = '/usr/local/bin/ffmpeg';
-const FFPROBE_PATH = '/usr/local/bin/ffprobe';
+const FFMPEG_PATH = process.env.FFMPEG_BIN ?? '/usr/local/bin/ffmpeg';
+const FFPROBE_PATH = process.env.FFPROBE_BIN ?? '/usr/local/bin/ffprobe';
 const MAX_VIDEO_BYTES = 64 * 1024 * 1024;
 const MAX_FRAME_BYTES = 12 * 1024 * 1024;
 const PROCESS_TIMEOUT_MS = 120000;
@@ -128,7 +128,7 @@ async function extractVideoFrames(bytes, reviewMoments = []) {
     await writeFile(input, bytes, { mode: 0o600 });
     const duration = await probeDuration(input);
     const frames = [];
-    if (!Array.isArray(reviewMoments) || reviewMoments.length > 12 ||
+    if (!Array.isArray(reviewMoments) || reviewMoments.length > 24 ||
         reviewMoments.some(value => !Number.isFinite(value) || value < 0 || value >= duration)) {
       throw new Error('Momentos de revisão fora da duração física do vídeo.');
     }

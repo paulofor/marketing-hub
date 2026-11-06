@@ -63,6 +63,17 @@ public class VideoProviderFinancialPreflightService {
 
   private com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository projectRepository;
 
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spendingPolicy;
+
+  /**
+   * Inclui os créditos preventivos no recibo integral antes de adquirir o lock da conta externa.
+   */
+  @Autowired(required = false)
+  public void setSpendingPolicy(
+      com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy policy) {
+    this.spendingPolicy = policy;
+  }
+
   /**
    * Conecta projetos persistidos para impedir reserva com previsão integral ausente ou de outro
    * ciclo.
@@ -399,6 +410,41 @@ public class VideoProviderFinancialPreflightService {
     return preflightRepository.save(preflight);
   }
 
+  /** Renova apenas a consulta vencida após Íris, no mesmo ciclo e sem repetir sua inferência. */
+  @Transactional
+  public VideoProviderPreflight refreshBeforeFinancial(VideoProductionCycle cycle) {
+    VideoProviderPreflight current = preflight(cycle.getId());
+    if (current.getExpiresAt() != null && current.getExpiresAt().isAfter(Instant.now(clock))) {
+      return applyFullCostReadiness(cycle, current);
+    }
+    try {
+      com.fasterxml.jackson.databind.node.ArrayNode history = objectMapper.createArrayNode();
+      if (cycle.getPreparationAuditJson() != null) {
+        JsonNode saved = objectMapper.readTree(cycle.getPreparationAuditJson());
+        if (!saved.isArray()) throw new IllegalStateException("Histórico de preparação inválido.");
+        history.addAll((com.fasterxml.jackson.databind.node.ArrayNode) saved);
+      }
+      history.add(
+          objectMapper.valueToTree(
+              Map.of(
+                  "reason",
+                  "QUOTE_EXPIRED_AFTER_IRIS",
+                  "recordedAt",
+                  Instant.now(clock).toString(),
+                  "preflight",
+                  current)));
+      cycle.setPreparationAuditJson(objectMapper.writeValueAsString(history));
+    } catch (Exception ex) {
+      log.error("Não foi possível preservar cotação anterior; cycleId={}", cycle.getId(), ex);
+      throw conflict("Não renovar antes de preservar a cotação anterior.");
+    }
+    current.setStatus("PENDING");
+    current.setFailureCode(null);
+    current.setFailureDetail(null);
+    current.setUpdatedAt(Instant.now(clock));
+    return preflightRepository.save(current);
+  }
+
   /** Preserva a simulação quando faltar previsão integral, usando a conta já consultada. */
   private VideoProviderPreflight applyFullCostReadiness(
       VideoProductionCycle cycle, VideoProviderPreflight preflight, BigDecimal clipsMaximumUsd) {
@@ -421,6 +467,25 @@ public class VideoProviderFinancialPreflightService {
   /** Reserva atomicamente o teto das rotas antes do parecer de Plutus e de qualquer consumo. */
   @Transactional
   public VideoCreditReservation reserve(VideoProductionCycle cycle) {
+    if (spendingPolicy != null && projectRepository != null) {
+      var project = projectRepository.findById(cycle.getVideoProjectId()).orElseThrow();
+      var snapshot = preflight(cycle.getId());
+      var source = accountRepository.findById(snapshot.getProviderAccountId()).orElseThrow();
+      String blocker =
+          spendingPolicy.holdProviderCredits(
+              project,
+              cycle,
+              maximumAuthorizedCredits(snapshot.getSelectedRoutesJson())
+                  .multiply(source.getCreditUnitUsd()));
+      if (blocker != null) {
+        snapshot.setStatus("READY_WITH_BLOCKER");
+        snapshot.setFailureCode("SINGLE_VIDEO_BUDGET_COVERAGE_REQUIRED");
+        snapshot.setFailureDetail(blocker);
+        snapshot.setUpdatedAt(Instant.now(clock));
+        preflightRepository.save(snapshot);
+        return null;
+      }
+    }
     VideoProviderAccount account = accountByCycleForUpdate(cycle.getId());
     Instant now = Instant.now(clock);
     releaseExpiredReservations(account, now);

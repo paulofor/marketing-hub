@@ -16,10 +16,12 @@ const backend = 'http://127.0.0.1:18081';
       const page = await context.newPage();
       const errors = [], requests = [];
       page.on('pageerror', error => errors.push(error.message));
+
       await page.route('**/*', async route => {
         const request = route.request(), url = new URL(request.url());
         if (url.pathname.startsWith('/api/')) {
-          requests.push({ method: request.method(), path: url.pathname, body: request.postDataJSON() });
+          requests.push({ method: request.method(), path: url.pathname, body: request.headers()['content-type']?.includes('multipart/form-data') ? 'PRIVATE_RECORDING_MULTIPART' : request.postDataJSON() });
+          if (url.pathname.endsWith('/product-recording')) return route.continue();
           if (url.pathname.includes('/autonomy/v1/') || ['/api/sales-videos/provider-models', '/api/sales-videos/studio/clip-plan'].includes(url.pathname)) {
             const response = await route.fetch({ url: backend + url.pathname, headers: { ...request.headers(), 'X-Tenant-ID': 'studio-test' } });
             return route.fulfill({ response });
@@ -61,6 +63,21 @@ const backend = 'http://127.0.0.1:18081';
       await form.getByRole('button', { name: 'Registrar evidências e reavaliar o ciclo' }).click();
       await expect(page.getByText(`Ciclo #${preparationId + 1000}: PENDING_FINANCIAL_REVIEW`, { exact: false })).toBeVisible();
       await page.screenshot({ path: `${out}/${name}-costs.png`, fullPage: true });
+      if (process.env.STUDIO_FUNCTIONAL_RECORDING_DIR) {
+        const source=process.env.STUDIO_FUNCTIONAL_RECORDING_DIR;
+        await page.goto(`${frontend}/e2e/studio-continuation.html?projectId=414`, { waitUntil: 'networkidle' });
+        await page.getByLabel('MP4 da gravação (até 8 MiB)',{exact:true}).setInputFiles(`${source}/functional-recording.mp4`);
+        await page.getByLabel('Manifesto da captura (JSON)',{exact:true}).setInputFiles(`${source}/manifest.json`);
+        await expect(page.getByLabel('Prévia da gravação funcional')).toBeVisible();
+        await page.getByRole('button',{name:'Vincular gravação privada',exact:true}).click();
+        await expect(page.getByText('Gravação privada vinculada ao projeto. Nenhuma produção paga foi iniciada.')).toBeVisible().catch(async error => { await page.screenshot({path:`${out}/${name}-recording-failure.png`,fullPage:true}); fs.writeFileSync(`${out}/${name}-recording-failure.txt`,await page.locator('body').innerText()); throw error; });
+        const retrieved=await context.request.get(`${backend}/api/sales-videos/projects/414/product-recording`,{headers:{'X-Tenant-ID':'studio-test'}});
+        expect(retrieved.status()).toBe(200);
+        expect(require('node:crypto').createHash('sha256').update(await retrieved.body()).digest('hex')).toBe(JSON.parse(fs.readFileSync(`${source}/manifest.json`)).sha256);
+        const other=await context.request.get(`${backend}/api/sales-videos/projects/414/product-recording`,{headers:{'X-Tenant-ID':'other-tenant'}});
+        expect(other.status()).toBe(404);
+        await page.screenshot({path:`${out}/${name}-functional-recording.png`,fullPage:true});
+      }
       if (requests.some(r => r.path.endsWith('/request-render'))) throw new Error('Atalho administrativo de render foi chamado');
       if (errors.length) throw new Error(errors.join('\n'));
       fs.writeFileSync(`${out}/${name}-requests.json`, JSON.stringify(requests, null, 2));

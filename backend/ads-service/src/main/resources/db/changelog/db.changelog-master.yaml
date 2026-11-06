@@ -2260,3 +2260,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-11-05-video-capabilities-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-11-05-single-video-spend-v1.yaml
+      relativeToChangelogFile: true

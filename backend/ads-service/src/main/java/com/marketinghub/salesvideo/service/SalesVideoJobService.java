@@ -42,6 +42,9 @@ import org.springframework.util.StringUtils;
 /** Contém as regras de negócio relativas aos jobs do módulo de vídeo. */
 @Component
 public class SalesVideoJobService {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy spending;
+
   private VideoProductProofService productProofService;
   private VideoDeliveryExampleService deliveryExampleService;
 
@@ -236,6 +239,14 @@ public class SalesVideoJobService {
   @Transactional
   public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
     SalesVideoJob candidate = loadJob(jobId);
+    boolean bounded = false;
+    if (spending != null) {
+      var context = spending.jobContext(jobId, "PLAN");
+      bounded = context.required();
+      if (bounded && context.blocker() != null)
+        throw VideoModuleException.conflict(
+            VideoModuleErrorCode.JOB_CLAIM_CONFLICT, context.blocker());
+    }
     VideoNarrationRecovery.requireCompatible(
         candidate, request.getPostProductionContract(), objectMapper);
     SalesVideoStatus previous = candidate.getStatus();
@@ -253,6 +264,10 @@ public class SalesVideoJobService {
           "Job já reservado, concluído ou indisponível para claim: " + jobId);
     }
     SalesVideoJob job = loadJob(jobId);
+    if (bounded) {
+      job.setSpendingContract("SINGLE_VIDEO_BOUNDED_V1");
+      jobRepository.saveAndFlush(job);
+    }
     registerEvent(
         job,
         SalesVideoJobEventType.CLAIMED,
@@ -548,6 +563,10 @@ public class SalesVideoJobService {
               "image_to_video",
               "technicalQualityGate",
               "referenceGovernance",
+              "originalMusicBed",
+              "editorialCutCompositionRequired",
+              "productVersion",
+              "privateProductionInput",
               "premiumFinalization",
               "researchIntelligence")
           .forEach(
@@ -1430,6 +1449,10 @@ public class SalesVideoJobService {
               "post_production",
               "technicalQualityGate",
               "referenceGovernance",
+              "originalMusicBed",
+              "editorialCutCompositionRequired",
+              "productVersion",
+              "privateProductionInput",
               "premiumFinalization",
               "researchIntelligence",
               "apollo_technical_quality")

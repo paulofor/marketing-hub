@@ -39,11 +39,15 @@ public class AgentAudioReviewService {
   private final ProductRepository products;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.SingleVideoSpending
+      spending;
+
   /**
-   * Reutiliza a escuta idêntica ou estima reserva pela entrada sob o lock do ciclo, sem repetir
-   * envio incerto.
+   * Reutiliza a escuta idêntica ou reserva seu máximo no teto integral quando presente, sem repetir
+   * envio incerto nem usar o teto audiovisual histórico como autorização adicional.
    */
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public AudioReviewReceipt reserve(String agent, long taskId, AudioReviewReserveRequest input) {
     var task = owned(agent, taskId);
     require(input.assetId() != null && input.request() != null, "Entrada auditiva incompleta.");
@@ -85,7 +89,8 @@ public class AgentAudioReviewService {
     var product = products.findById(target.productId()).orElseThrow();
     require(Boolean.TRUE.equals(product.getAutomaticExecutionEnabled()), "Produto está em STOP.");
     var authority = budgets.current(cycle);
-    require(authority != null, "Não há teto audiovisual autorizado para esta escuta.");
+    boolean integral = spending != null && spending.protectedExecution(task);
+    require(authority != null || integral, "Não há teto audiovisual autorizado para esta escuta.");
     var reusable =
         reviews
             .findFirstByProductIdAndExperimentIdAndAssetIdAndVideoSha256AndAudioSha256AndRequestHashAndStatusAndEstimatedUsdIsNotNullOrderByIdDesc(
@@ -107,37 +112,42 @@ public class AgentAudioReviewService {
           source.getId());
       return receipt(source, false);
     }
-    var entries = ledger.findByExperimentIdOrderByCreatedAtAsc(target.experimentId());
-    BigDecimal used = BigDecimal.ZERO;
-    for (var entry : entries) {
-      if (!Set.of("VIDEO", "AUDIO", "AUDIO_REVIEW").contains(entry.getAssetType())) continue;
+    BigDecimal reservation;
+    if (integral) {
+      reservation = spending.reserveAudio(agent, taskId, input.assetId(), input.request());
+    } else {
+      var entries = ledger.findByExperimentIdOrderByCreatedAtAsc(target.experimentId());
+      BigDecimal used = BigDecimal.ZERO;
+      for (var entry : entries) {
+        if (!Set.of("VIDEO", "AUDIO", "AUDIO_REVIEW").contains(entry.getAssetType())) continue;
+        require(
+            !Set.of("RESERVED", "COST_PENDING").contains(entry.getStatus()),
+            "Há chamada audiovisual pendente de resposta ou conciliação.");
+        BigDecimal cost =
+            entry.getProviderCostUsd() != null
+                ? entry.getProviderCostUsd()
+                : entry.getEstimatedCostUsd();
+        require(cost != null, "Há custo audiovisual desconhecido. Concilie antes da escuta.");
+        used = used.add(cost);
+      }
+      for (var old : tasks.findMeasurementSnapshotsBySourceReference(task.getSourceReference())) {
+        if (old.id().equals(taskId)
+            || !"creative-production-approval".equals(old.processCode())
+            || !"customer".equals(old.processActivityId())) continue;
+        var result = read(old.resultJson());
+        if (!result.path("videoAudit").isArray() || result.path("videoAudit").isEmpty()) continue;
+        require(
+            old.estimatedCostUsd() != null,
+            "Custo de revisão audiovisual anterior ainda desconhecido.");
+        used = used.add(old.estimatedCostUsd());
+      }
+      reservation = AudioReviewReservation.estimate(input.request());
       require(
-          !Set.of("RESERVED", "COST_PENDING").contains(entry.getStatus()),
-          "Há chamada audiovisual pendente de resposta ou conciliação.");
-      BigDecimal cost =
-          entry.getProviderCostUsd() != null
-              ? entry.getProviderCostUsd()
-              : entry.getEstimatedCostUsd();
-      require(cost != null, "Há custo audiovisual desconhecido. Concilie antes da escuta.");
-      used = used.add(cost);
+          used.add(reservation).compareTo(authority.budgetLimitUsd()) <= 0,
+          "Saldo audiovisual insuficiente para a reserva estimada da escuta (USD "
+              + reservation
+              + "); nenhum consumo foi iniciado.");
     }
-    for (var old : tasks.findMeasurementSnapshotsBySourceReference(task.getSourceReference())) {
-      if (old.id().equals(taskId)
-          || !"creative-production-approval".equals(old.processCode())
-          || !"customer".equals(old.processActivityId())) continue;
-      var result = read(old.resultJson());
-      if (!result.path("videoAudit").isArray() || result.path("videoAudit").isEmpty()) continue;
-      require(
-          old.estimatedCostUsd() != null,
-          "Custo de revisão audiovisual anterior ainda desconhecido.");
-      used = used.add(old.estimatedCostUsd());
-    }
-    BigDecimal reservation = AudioReviewReservation.estimate(input.request());
-    require(
-        used.add(reservation).compareTo(authority.budgetLimitUsd()) <= 0,
-        "Saldo audiovisual insuficiente para a reserva estimada da escuta (USD "
-            + reservation
-            + "); nenhum consumo foi iniciado.");
     var entry = new AgentAudioReview();
     entry.setTaskId(taskId);
     entry.setAssetId(input.assetId());
@@ -165,7 +175,7 @@ public class AgentAudioReviewService {
    * Preserva respostas, identifica limites financeiros e valida o parecer somente quando houver
    * saída.
    */
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public AudioReviewReceipt complete(
       String agent, long taskId, long assetId, AudioReviewResultRequest input) {
     var task = owned(agent, taskId);
@@ -199,6 +209,7 @@ public class AgentAudioReviewService {
       }
       return receipt(entry, false);
     }
+    if (spending != null) spending.recordAudio(agent, taskId, assetId, input.rawResponse());
     entry.setResponseJson(input.rawResponse());
     entry.setFinishedAt(Instant.now());
     entry.setStatus("COST_PENDING");
@@ -293,7 +304,7 @@ public class AgentAudioReviewService {
   }
 
   /** Expõe recibos existentes sem reservar trabalho nem repetir chamadas de modelo. */
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public List<AudioReviewReceipt> list(String agent, long taskId) {
     owned(agent, taskId);
     return reviews.findByTaskIdOrderByIdAsc(taskId).stream().map(e -> receipt(e, false)).toList();

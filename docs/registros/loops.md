@@ -11759,3 +11759,39 @@ Matriz e fontes em `docs/homologacao/vega-retomada-video-2026-11-05.md`.
 - **Validação:** matriz real de 18 percursos, histórico e cenários com MySQL 5.7,
   sem provider externo; construtor real de evidências e regressões aprovados.
 - **Registro:** `docs/homologacao/mira-fixture-documental-retomada-2026-11-05.md`.
+
+### Continuação do LOOP-VIDEO-CAPACIDADE-DUPLICADA — 06/11/2026
+
+O HEAD 8303130 preservava a pausa por falta de limite efetivo, mas OAuth/timeout e
+contabilização posterior não eram capazes de assegurar o recibo integral. O contrato
+SINGLE_VIDEO_BOUNDED_V1 admite requests finitos sob lock comercial, retém máximos após
+incerteza, bloqueia consumidores antigos e revalida cobertura/STOP antes do envio.
+Clipes transferem valor da reserva comum, sem somar duas vezes; agente, planner,
+locução e escuta usam a mesma autoridade. Callbacks, arquivos `.pending` íntegros e IDs
+originais são reutilizados sem outra inferência. Corpo ou contexto incompatível bloqueia.
+
+O perfil DRAFT agora prepara uma entrada privada de Íris; PRIVATE_READY não fabrica
+aprovação. A ausência de gravação real é tratada antes de inferência, no mesmo pedido,
+e a versão v17 herdada permanece distinta da versão audiovisual alvo. A gravação funcional
+local real de 10,92s confirmou salvar/reabrir em MySQL e celular, sem provedor. O upload
+privado do Estúdio mantém esses bytes e o hash; não aciona a fila genérica de análise.
+Psique/Têmis recebem o mesmo MP4 final e Têmis anexa quadros reais datados, preservando
+segregação do produtor. Nenhum desses testes é um parecer premium nem comprova vendas.
+
+Hipótese de melhoria: reduzir custo de repetição e tempo parado até a peça revisável,
+sem ampliar teto. Medida local: zero POST pago adicional nos replays e recusas; concorrência
+MySQL de três executores aceita apenas cobertura dentro de US$15. Adoção depende de revisão,
+checks, publicação e credenciais próprias válidas; reverter o transporte exige preservar
+a pausa do recibo, nunca voltar a OAuth sem limite. Impacto comercial depende de medição
+posterior. Matriz e limites: `docs/homologacao/vega-retomada-video-2026-11-05.md`.
+
+
+Complemento da regressão de vídeo único em 06/11/2026: a conferência encontrou
+admissão ampla por experimento na implementação local do transporte. A política
+foi restringida à tarefa de Íris e ao gate real de Plutus vinculados ao pedido,
+e às revisões da mídia do render fixado no recibo; áudio exige asset exato.
+`SingleVideoSpendingTest` cobre tarefa alheia no mesmo experimento, gate elegível,
+outro render/tenant/asset e preservação do legado. O teste editorial também mede
+pixels nas sete fronteiras entre oito partes, impedindo declarar cortes somente
+por metadata. Evidência local previne desperdício e falsa conclusão; não comprova
+qualidade premium nem impacto em vendas.

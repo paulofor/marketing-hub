@@ -95,6 +95,13 @@ public class VideoProductionCycle {
   @Column(name = "sales_video_job_id")
   private Long salesVideoJobId;
 
+  @Column(name = "iris_agent_task_id")
+  private Long irisAgentTaskId;
+
+  @Lob
+  @Column(name = "preparation_audit_json", columnDefinition = "LONGTEXT")
+  private String preparationAuditJson;
+
   @Column(name = "last_failed_job_id")
   private Long lastFailedJobId;
 

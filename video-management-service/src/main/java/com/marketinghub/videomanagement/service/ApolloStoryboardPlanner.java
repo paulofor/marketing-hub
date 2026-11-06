@@ -504,10 +504,15 @@ public class ApolloStoryboardPlanner {
         return null;
     }
 
-    /** Bloqueia a IA e o provider quando roteiro, duração ou plano-base ainda não estão prontos. */
+    /** Confere roteiro aprovado ou entrada privada já autorizada pelo backend, sem alegar qualidade premium. */
     private void validatePrerequisites(SalesVideoProfile profile, JsonNode metadata) {
         SalesVideoScript script = profile.latestScript();
-        if (script == null || script.status() != SalesVideoScriptStatus.APPROVED
+        boolean privateInput = script != null && script.status() == SalesVideoScriptStatus.PRIVATE_READY
+                && metadata.at("/privateProductionInput/scriptId").asLong() == script.id()
+                && "IRIS_PRIVATE_VIDEO_INPUT_V1".equals(metadata.at("/privateProductionInput/contractVersion").asText())
+                && "Plutus".equals(metadata.path("financialApprovedBy").asText())
+                && !metadata.path("publicationAllowed").asBoolean(true);
+        if (script == null || (script.status() != SalesVideoScriptStatus.APPROVED && !privateInput)
                 || !StringUtils.hasText(script.scriptText())
                 || !StringUtils.hasText(script.hookText())
                 || !StringUtils.hasText(script.ctaText())) {

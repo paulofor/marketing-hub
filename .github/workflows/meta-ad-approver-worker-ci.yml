@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - scripts/single-video-bounded-agent.mjs
+      - scripts/single-video-bounded-agent.test.mjs
       - meta-ad-approver-worker/**
       - customer-agent-worker/src/**
       - pde-platform/**
@@ -16,6 +18,8 @@ on:
       - scripts/coordinate-agent-deployment.mjs
   pull_request:
     paths:
+      - scripts/single-video-bounded-agent.mjs
+      - scripts/single-video-bounded-agent.test.mjs
       - meta-ad-approver-worker/**
       - ai-worker/src/main/java/com/marketinghub/worker/creativereview/**
       - ai-worker/src/test/java/com/marketinghub/worker/architecture/MetaAdApproverIsolationTest.java
@@ -68,6 +72,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
+      - name: Validate shared single-video spending transport
+        run: node --test scripts/single-video-bounded-agent.test.mjs
       - name: Validate premium agent architecture
         run: bash scripts/validate-premium-agents.sh
       - uses: actions/setup-java@v4
@@ -96,6 +102,12 @@ jobs:
       - name: Validate Java and architecture
         working-directory: meta-ad-approver-worker
         run: mvn -B verify
+      - name: Install local media inspection tools
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
       - name: Validate MCP handshake
         working-directory: meta-ad-approver-worker
         run: |
@@ -103,6 +115,7 @@ jobs:
           node --check src/main/resources/mcp/meta-ad-approver.mjs
           node --check src/main/resources/mcp/landing-evidence.mjs
           node --check src/main/resources/mcp/video-frame-extractor.mjs
+          FFMPEG_BIN=ffmpeg FFPROBE_BIN=ffprobe node --test src/main/resources/mcp/video-review-inputs.test.mjs
           node --check src/main/resources/mcp/editorial-evidence.mjs
           node --check src/main/resources/mcp/editorial-runtime-check.mjs
           node --check src/main/resources/mcp/temis-library-review.mjs
@@ -290,7 +303,7 @@ jobs:
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete meta-ad-approver-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/meta-ad-approver-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/contracts/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/contracts/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/frontend/public/materials/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/frontend/public/materials/"
-          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs scripts/single-video-bounded-agent.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Start validated agent
         run: |

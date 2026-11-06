@@ -17,7 +17,11 @@ public class CommunicationAgentBackendClient {
 
   /** Configura o cliente com a URL operacional do Marketing Hub. */
   public CommunicationAgentBackendClient(CommunicationAgentProperties properties) {
-    client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    client =
+        RestClient.builder()
+            .baseUrl(properties.getBackendUrl())
+            .defaultHeader("X-Single-Video-Spending-Contract", "SINGLE_VIDEO_BOUNDED_V1")
+            .build();
   }
 
   /** Reserva uma atividade e declara suporte à renderização delegada somente na fila própria. */

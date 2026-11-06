@@ -54,7 +54,7 @@ jobs:
       - name: Testar catálogo, tomadas e isolamento de contexto do Estúdio
         env:
           NODE_ENV: test
-        run: cd frontend && npm test -- --run src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx src/pages/audioVideoStudio/ClipPlanPreview.test.tsx src/pages/audioVideoStudio/ProductionCostPreparation.test.tsx src/api/salesVideo/videoProviderCatalog.test.ts src/__tests__/AudioVideoStudioNavigation.test.tsx src/pages/product/ProductOrganicVideoPlanPage.test.tsx --maxWorkers=1 --minWorkers=1
+        run: cd frontend && npm test -- --run src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx src/pages/audioVideoStudio/ClipPlanPreview.test.tsx src/pages/audioVideoStudio/ProductionCostPreparation.test.tsx src/pages/audioVideoStudio/SingleVideoSpendingSummary.test.tsx src/pages/audioVideoStudio/ProductRecordingUpload.test.tsx src/api/salesVideo/videoProviderCatalog.test.ts src/__tests__/AudioVideoStudioNavigation.test.tsx src/pages/product/ProductOrganicVideoPlanPage.test.tsx --maxWorkers=1 --minWorkers=1
       - name: Type-check
         run: cd frontend && npm run typecheck
       - name: Build

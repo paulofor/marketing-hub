@@ -7,7 +7,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** Versão editorial do script utilizado na geração do vídeo. */
+/**
+ * Responsabilidade: preservar a versão do roteiro e distinguir entrada privada de aprovação
+ * editorial.
+ */
 @Entity
 @Table(name = "sales_video_script")
 @Data
@@ -49,6 +52,10 @@ public class SalesVideoScript {
   @Lob
   @JdbcTypeCode(SqlTypes.LONGVARCHAR)
   private String storyboardJson;
+
+  @Lob
+  @Column(name = "source_evidence_json", columnDefinition = "LONGTEXT")
+  private String sourceEvidenceJson;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)

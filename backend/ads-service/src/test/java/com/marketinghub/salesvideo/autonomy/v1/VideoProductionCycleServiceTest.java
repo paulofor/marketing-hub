@@ -67,6 +67,11 @@ class VideoProductionCycleServiceTest {
   /** Prepara persistência simulada sem consumir qualquer provider real. */
   @BeforeEach
   void setUp() {
+    com.marketinghub.salesvideo.tenant.TenantContextHolder.set(
+        new com.marketinghub.salesvideo.tenant.TenantContext("default", "test@local", false));
+    lenient()
+        .when(providerPreflightService.reserve(any()))
+        .thenReturn(new VideoCreditReservation());
     service =
         new VideoProductionCycleService(
             repository,
@@ -96,6 +101,12 @@ class VideoProductionCycleServiceTest {
               if (cycle.getId() == null) cycle.setId(ids.incrementAndGet());
               return cycle;
             });
+  }
+
+  /** Remove o escopo sintético ao final de cada teste. */
+  @org.junit.jupiter.api.AfterEach
+  void clearTenant() {
+    com.marketinghub.salesvideo.tenant.TenantContextHolder.clear();
   }
 
   /** Comprova que a abertura cria somente o preflight e não antecipa Plutus ou Apolo. */
@@ -1159,6 +1170,63 @@ class VideoProductionCycleServiceTest {
     verify(providerPreflightService, never()).reserve(any());
     verify(taskService, never()).createGateByAgent(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Mantém DRAFT elegível para preparar o mesmo pedido, sem inferência antes da gravação real. */
+  @ParameterizedTest
+  @ValueSource(longs = {7L, 81L})
+  void privateDraftWaitsForFunctionalRecordingWithoutChargingOrDuplicating(Long id) {
+    var project = project();
+    project.setId(id);
+    var budget =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleSingleVideoBudget.class);
+    var brief = org.mockito.Mockito.mock(VideoPrivateBriefPreparation.class);
+    var spending =
+        org.mockito.Mockito.mock(
+            com.marketinghub.salesvideo.service.clipplan.VideoProductionSpendingPolicy.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "singleVideoBudget", budget);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "privateBrief", brief);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "spendingPolicy", spending);
+    when(projectRepository.findById(id)).thenReturn(Optional.of(project));
+    when(projectRepository.findByIdForUpdate(id)).thenReturn(Optional.of(project));
+    when(budget.forProject(project))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .singleVideoBudget
+                .SingleVideoBudgetResponse
+                .Authorization(
+                99128L,
+                "local-receipt",
+                id,
+                project.getSalesVideoProfileId(),
+                new BigDecimal("15"),
+                "fixture",
+                "fixture",
+                Instant.now().minusSeconds(60),
+                true));
+    var ready = new VideoProviderPreflight();
+    ready.setStatus("READY");
+    when(providerPreflightService.open(any(), any(), any())).thenReturn(ready);
+    var response = service.create(readinessRequest(id));
+    assertThat(response.status()).isEqualTo("PENDING_PRODUCT_PROOF");
+    assertThat(response.financialReason()).contains("prova real", "nenhum agente");
+    verify(salesVideoService, never()).assertRenderReady(any());
+    verify(brief, never()).request(any(), any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(providerPreflightService, never()).reserve(any());
+    var original = org.mockito.ArgumentCaptor.forClass(VideoProductionCycle.class);
+    verify(repository, org.mockito.Mockito.atLeastOnce()).save(original.capture());
+    when(repository.findByVideoProjectIdOrderByCreatedAtDesc(id))
+        .thenReturn(java.util.List.of(original.getValue()));
+    assertThat(service.create(readinessRequest(id)).id()).isEqualTo(response.id());
+    verify(providerPreflightService).open(any(), any(), any());
   }
 
   /** Cria o projeto mínimo de teste com perfil operacional. */

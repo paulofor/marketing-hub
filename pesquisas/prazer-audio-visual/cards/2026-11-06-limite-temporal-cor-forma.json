@@ -1,0 +1,18 @@
+{
+  "cardKey": "limite-temporal-cor-forma",
+  "collection": "prazer-audio-visual",
+  "title": "Evitar vinculação rápida demais de cor e forma separadas",
+  "finding": "Em psicofísica e MEG, associar cor e orientação espacialmente separadas torna-se difícil quando a alternância é rápida demais para o processamento visual recorrente.",
+  "mechanism": "A ligação dos atributos envolve processamento recorrente em V1/V2 e atenção seletiva, com limites temporais que dependem da tarefa experimental.",
+  "commercialApplication": "Comparar indicadores animados que apresentam cor, rótulo e estado juntos e por tempo legível contra alternâncias rápidas e separadas, medindo acerto e conforto.",
+  "evidenceStrength": "Moderada a forte para psicofísica e MEG do paradigma, baixa para efeitos em UX, prazer ou vendas.",
+  "publishedOn": "2026-11-06",
+  "validUntil": "2026-12-21",
+  "experimentHypothesis": "Maior clareza espacial e tempo de apresentação dos atributos cor/objeto aumentará a identificação correta de estados em uma interface real, sem aumentar o desconforto.",
+  "risks": "Evitar flashes, sobrecarga visual e afirmações de limiar de segurança a partir da latência neural experimental.",
+  "limits": "120 participantes na psicofísica, 45 em MEG; estímulos abstratos e nenhum teste comercial. O pico neural de 120 ms não equivale a recomendação universal de timing.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-06-limite-temporal-cor-forma-fonte-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Limite temporal para associar cor e forma",
+  "sourceSha256": "99a97670d1947a12f41899d628fa91fa6d093e836cfffae2d078594ebe27a262"
+}

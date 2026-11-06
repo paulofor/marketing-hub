@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-eleven-video-to-music-api",
+  "collection": "video",
+  "title": "Integrar trilha e efeitos sincronizados pela API Video-to-Music da ElevenLabs",
+  "finding": "API Video-to-Music documentada em 19/10/2026 (não registrada anteriormente no radar), aceita vídeo e cria trilha, SFX associados, faixas separadas e aproveitamento do áudio original.",
+  "mechanism": "POST /v1/music/video-to-music com até 10 arquivos, 200 MB, 600 s; add_sfx, separate_tracks, use_audio_as_reference; SFX v3 ativo para todos desde 02/11.",
+  "commercialApplication": "Marketing Hub: pós-processamento automático de anúncios e vídeos, com mixagem de trilha e SFX em canais separados, após geração de imagem/vídeo.",
+  "evidenceStrength": "Alta para endpoint, parâmetros e ciclo de vida em documentação oficial; custo exato por execução e qualidade não verificados.",
+  "publishedOn": "2026-11-06",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "Uma etapa de trilha auto-adaptada gera mais peças aprováveis com menos edição manual do que música genérica.",
+  "risks": "Direitos comerciais variam por plano, cinema/TV/jogos de estúdio requerem Enterprise; preço da chamada deve ser confirmado; SFX v2 será removido 01/03/2027.",
+  "limits": "API em planos pagos; até 10 vídeos, 200 MB e 600 s; serviço de áudio para vídeo já produzido, não novo gerador de vídeo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-06-elevenlabs-video-to-music-api-limites.md",
+  "sourceTitle": "ElevenLabs Video-to-Music: API, stems, limites e direitos",
+  "sourceSha256": "e988327edc9ac677ecd465c893658e90f621de62b6db2c909ca717c8271caf14"
+}

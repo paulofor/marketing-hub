@@ -95,5 +95,42 @@
     "hasDeployment": false,
     "commercialApprovalRenewed": false,
     "modelCalls": 0
+  },
+  "miraDocumentaryCompatibility": {
+    "privateManifest": "pde-platform/contracts/mira-private-candidate-v81.json",
+    "commercialManifest": "pde-platform/contracts/mira-commercial-homologation-v29.json",
+    "sourcesRechecked": 2,
+    "historicalSnapshotPreserved": true,
+    "validityDays": 30,
+    "nodeTests": 75,
+    "realBrowserTechnicalPaths": 18,
+    "history": "PASS",
+    "isolatedScenarios": 3,
+    "backendContractTests": 28,
+    "workerJavaTests": 257,
+    "workerJavaConditionalSkipped": 8,
+    "failures": 0,
+    "errors": 0,
+    "providerCalls": 0,
+    "bundledFiles": 800,
+    "bundledManifests": 207,
+    "frontendVersion": "none",
+    "hasDeployment": false,
+    "topologyRemoved": true,
+    "reportSha256": {
+      "report.json": "a34e33c723204e93fc48a6f8b3124eac2baf9c429575166a51568c9e631b14ac",
+      "history.json": "1ecb44d9dc84e4ca4524245392718b669bdedb33901d62215d92b8936cc6adaa",
+      "scenario-ADHERENT.json": "217d224627bfa1779052bcd9321252472cd7609a0c5e8516da47294325361dc4",
+      "scenario-RECOVERY.json": "fedbc2017678c24fbc323ebad09b3bd7c7c03d78dbc4565be30aebd71590dec8",
+      "scenario-SAFETY.json": "b6c37860bba7e22780c98e20a80acc15ccbeb3c9b8d78d690278b63b1765c964"
+    },
+    "reusedPreventiveTests": 5,
+    "reusedFromPr": 5793,
+    "reusedFromSha": "250f9f0e875895eb6c591df81c0deca3393a944f",
+    "reusedFilesSha256": {
+      "customer-agent-worker/src/main/resources/browser/mira-manufacturer-fixture.mjs": "d208cd411c33984dbe713eb16bab65713a24edbe900495fe81711b3c8f87bbc0",
+      "customer-agent-worker/src/main/resources/browser/fixtures/mira-manufacturer-20261105.json": "08569b4755affe277b882fb89d855cd6675105d63bed3e7c7ad291e18c0b32dd",
+      "customer-agent-worker/src/test/js/mira-manufacturer-fixture.test.mjs": "40a3ee16006bd58bcfade20d11c67005b86ce30bfaf8daf80d4ec8d220273ad0"
+    }
   }
 }

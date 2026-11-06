@@ -209,3 +209,19 @@ as versões v76–v79 do PR 5793 continuam pertencendo àquela entrega ainda abe
 O bundle real foi construído localmente com 794 arquivos e 205 manifestos. A inclusão isolada
 da v80 resulta em `frontend-version=none` e `has-deployment=false`. Isso comprova compatibilidade
 da infraestrutura compartilhada, sem renovar parecer, versão comercial, orçamento ou publicação.
+
+A suíte adicional de navegador recusou a fixture documental observada em outubro: havia vencido
+o limite vigente de 30 dias. As duas páginas oficiais foram reconsultadas e os mesmos trechos
+confirmados, sem redatar o snapshot antigo. A evidência nova, o validador compartilhado e a
+conferência antecipada preservam o prazo e passam a recusar também data inválida/futura. O
+[relatório específico](mira-compatibilidade-fontes-documentais-2026-11-06.md) registra alternativas,
+fontes, interrupções locais e resultados: 75 testes Node, 18 percursos reais, histórico, três
+cenários isolados, 28 casos backend e 257 do worker (oito condicionais ignorados), sem provedor.
+
+As sucessoras de compatibilidade v81 privada e v29 comercial preservam v80/v28 imutáveis; o bundle
+final contém 800 arquivos e 207 manifestos. A inclusão isolada continua sem publicação. Essa
+correção foi conciliada também na árvore temporária dos PRs paralelos, preservando suas mudanças.
+O vencimento futuro exige nova consulta real e nova versão, sem renovação automática de data.
+O validador, snapshot de 05/11 e cinco testes foram reutilizados com bytes idênticos ao PR 5793,
+em vez de manter a implementação paralela encontrada durante a composição. O harness conciliado
+preserva o mesmo import e comportamento daquela entrega; nenhuma branch de terceiros foi alterada.

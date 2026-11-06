@@ -197,7 +197,14 @@ try {
     );
     await expect(
       page.getByRole("button", { name: "Retomar processo" }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Retomar processo" })
+      .evaluate((button) => button.click());
+    assert.equal(commands.length, 0, "Botão desabilitado não envia retomada.");
+    await page.locator("#process-execution").screenshot({
+      path: `${output}/${profile}-financial-resume-disabled.png`,
+    });
     await activity.screenshot({
       path: `${output}/${profile}-plutus-pending.png`,
     });
@@ -250,7 +257,7 @@ try {
       .click();
     await expect(
       page.getByRole("button", { name: "Retomar processo" }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
     assert.equal(commands.length, 0, "Visitar e digitar não é aprovação.");
     await page
       .locator("#activity-economics")
@@ -286,7 +293,7 @@ try {
       .click();
     await expect(
       page.getByRole("button", { name: "Retomar processo" }),
-    ).toBeVisible();
+    ).toBeEnabled();
     await expect(
       page.getByRole("region", { name: "Execução automática do processo" }),
     ).toContainText("Pausado");
@@ -313,7 +320,7 @@ try {
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Retomar processo" }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: `${output}/${profile}-plutus-report.png`,

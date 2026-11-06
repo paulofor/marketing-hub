@@ -1,0 +1,18 @@
+{
+  "cardKey": "sobreconfianca-identificacao-videos-ia-compartilhamento",
+  "collection": "video",
+  "title": "Certeza sobre a origem de vídeos de IA não garante autenticidade",
+  "finding": "Em estudo online com 973 pessoas, a identificação de vídeos cotidianos como sintéticos ou humanos atingiu 62,5% de acurácia. A certeza excessiva no julgamento específico associou-se à intenção declarada de compartilhar (b=0,33 por pessoa e b=0,05 por tentativa, ambos p<0,001); o sinal variou conforme a origem percebida. Não é resultado causal.",
+  "mechanism": "Confiança metacognitiva mal calibrada pode reduzir o escrutínio da procedência ou reforçar a disposição declarada de compartilhar segundo a convicção atual. O mecanismo é hipotético e não foi isolado experimentalmente.",
+  "commercialApplication": "No Apolo/Têmis, verificar procedência de cenas e alegações de autenticidade antes de publicar vídeos; usar metadados e avisos verdadeiros quando apropriados, sem sugerir gravação real para conteúdo sintético. Testar compreensão da origem pelo público.",
+  "evidenceStrength": "Preprint observacional online N=973; medições de acurácia, autoconfiança e intenção declarada de compartilhar, com associação multivariada, sem manipulação causal de rótulos ou observação de compartilhamento real.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Um aviso de procedência verificável e contextualizado melhorará a calibração e o reconhecimento correto da origem de vídeos em comparação à exibição sem contexto. Medir acertos, confiança calibrada e compartilhamento efetivo, sem inferir efeito comercial.",
+  "risks": "Avisos falsos ou excessivamente confiantes; falsa segurança dada por detectores imperfeitos; atribuição indevida de autenticidade; redução de confiança em gravações verdadeiras; discriminação ou manipulação de espectadores.",
+  "limits": "Vídeos sem áudio e de cenas cotidianas, ambiente estruturado, certeza e compartilhamento declarados na mesma tarefa; não demonstrou efeito de rótulos, aumento de viralização, conversão, CTA, retenção ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-05-sobreconfianca-origem-videos-ia.md",
+  "sourceTitle": "Xue et al. (2026) — Sobreconfiança na identificação e compartilhamento de vídeos sintéticos",
+  "sourceSha256": "ea0c3edb000fccb8edf8b3a77dd5aee02880d718abe826aa84b3598f11a9e9e7"
+}

@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -151,21 +152,46 @@ class ProcessRunFinancialEligibilityTest {
             .build();
   }
 
-  /** Aprovação ausente nunca é descrita como falta de saldo nem permite POST de retomada. */
+  /** Recusa retomada sem aprovação desde Atena até Plutus, em produtos e execuções distintos. */
   @ParameterizedTest
-  @ValueSource(longs = {7, 99107})
-  void requiresSavedApprovalForTheExactContext(long productId) throws Exception {
+  @CsvSource({
+    "4,21,114,marketStrategy,musa-pde-entry-v18-video-cinematico",
+    "7,20,113,economics,capella-beleza-v4",
+    "99104,99221,99314,marketStrategy,sintetico-v1",
+    "99107,99220,99313,economics,sintetico-v2"
+  })
+  void requiresSavedApprovalForTheExactContext(
+      long productId, long cycleId, long experimentId, String activityId, String productVersion)
+      throws Exception {
     run.setProductId(productId);
+    run.setLearningCycleId(cycleId);
+    run.setSourceReference("experiment:" + experimentId);
+    cycle.setId(cycleId);
     cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    cycle.setProductVersion(productVersion);
+    when(cycles.findById(cycleId)).thenReturn(Optional.of(cycle));
+    when(context.command(any()))
+        .thenReturn(new ProcessRunCommand(27L, cycleId, run.getSourceReference()));
+    run.setCurrentActivityId(activityId);
+    var currentHistory =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(history);
+    currentHistory.put("currentActivityId", activityId);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) currentHistory.at("/activities/0"))
+        .put("activityId", activityId);
+    history = json.treeToValue(currentHistory, ProductProcessActivityExecutionHistoryResponse.class);
     var result = readStatus();
     assertThat(result.canResume()).isFalse();
     assertThat(result.financialPending().code()).isEqualTo("APPROVAL_REQUIRED");
+    assertThat(result.financialPending().activityId()).isEqualTo(activityId);
     assertThat(result.financialPending().reason()).contains("não comprova falta de saldo");
     assertThat(result.financialPending().actionUrl())
         .isEqualTo(
             "/financial/execution?productId="
                 + productId
-                + "&chainId=27&cycleId=20#ceiling-AGENTS");
+                + "&chainId=27&cycleId="
+                + cycleId
+                + "#ceiling-AGENTS");
     // Preparar um rascunho não executa o comando de aprovação.
     decision("150.00");
     assertThat(readStatus().canResume()).isFalse();

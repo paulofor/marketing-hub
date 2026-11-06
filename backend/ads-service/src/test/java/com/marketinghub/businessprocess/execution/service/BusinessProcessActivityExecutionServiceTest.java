@@ -93,6 +93,26 @@ class BusinessProcessActivityExecutionServiceTest {
     verifyNoInteractions(agentTasks, products, tasks);
   }
 
+  /** Preserva o motivo de adiamento audiovisual e o caminho legado sem motivo registrado. */
+  @ParameterizedTest
+  @CsvSource({
+    "817,Briefing de vídeo preservado; falta pedido governado",
+    "918,Contrato não prevê audiovisual"
+  })
+  void exposesRecordedOmissionReason(long id, String reason) {
+    var instance = new BusinessProcessActivityInstance();
+    instance.setId(id);
+    instance.setStatus("NOT_APPLICABLE");
+    instance.setBlockedReason(reason);
+    String actual =
+        ReflectionTestUtils.invokeMethod(service, "activityInstanceStateReason", instance);
+    assertThat(actual).isEqualTo(reason);
+    instance.setBlockedReason(null);
+    String fallback =
+        ReflectionTestUtils.invokeMethod(service, "activityInstanceStateReason", instance);
+    assertThat(fallback).contains("dispensada neste escopo", "objetivo não comprovado");
+  }
+
   /** Lista dez tarefas do processo canônico e preserva a versão real de cada execução. */
   @Test
   void returnsTenRecentExecutionsAcrossProcessVersions() {

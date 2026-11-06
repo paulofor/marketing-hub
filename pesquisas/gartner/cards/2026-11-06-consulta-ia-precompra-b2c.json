@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-generativa-pesquisa-precompra-b2c",
+  "collection": "momentos-de-compra-b2c",
+  "title": "IA generativa como ponto de pesquisa antes da compra",
+  "finding": "Em apresentação divulgada pela Gartner em 05/11/2026, 47% dos consumidores e 60% dos clientes B2B haviam consultado IA generativa antes de uma compra; ao buscar ajuda, clientes eram 3x mais propensos a usar IA generativa de terceiros que chatbot da empresa. Metodologia desses indicadores não é detalhada no resumo público.",
+  "mechanism": "Hipótese: assistentes de IA de terceiros podem intermediar a descoberta e avaliação de ofertas, reduzindo o esforço de comparar informações. A fonte descreve comportamento declarado, sem comprovar aumento de conversão por qualquer formato de conteúdo.",
+  "commercialApplication": "Testar landing page de produto digital B2C com preço, escopo, limitações, demonstração e FAQ verificáveis versus página atual. Medir clique qualificado, checkout, pagamentos reconciliados e origem de descoberta declarada, sem presumir tráfego vindo de IA.",
+  "evidenceStrength": "Apresentação oficial da Gartner com percentuais descritivos; resumo público sem amostra, geografia e método suficientes. Evidência de uso relatado de IA antes da compra, não de eficácia comercial de páginas adaptadas.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2027-01-05",
+  "experimentHypothesis": "Conteúdo pré-compra mais claro e comparável poderá melhorar a progressão de usuários qualificados até checkout ou pagamento; comparar variantes sob condições equivalentes e avaliar resultado líquido.",
+  "risks": "Viés de seleção, atribuição incorreta de origem, diferenças Brasil versus público pesquisado, manipulação de informação para IA, promessas comerciais não verificadas e queda da qualidade da experiência humana.",
+  "limits": "Não há inferência causal, taxa de conversão, amostra pública detalhada nem validação no Marketing Hub. Consultar IA antes de comprar não implica concluir compra por causa da IA.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/gartner/cards/fontes/2026-11-06-consulta-ia-precompra-b2c-fonte-v1.md",
+  "sourceTitle": "Gartner (05/11/2026) — uso de IA generativa na etapa pré-compra, fonte revisada",
+  "sourceSha256": "8b118a0dbe00f35d90bc36bb86a49537700601494be372e5a26560f056c141ec"
+}

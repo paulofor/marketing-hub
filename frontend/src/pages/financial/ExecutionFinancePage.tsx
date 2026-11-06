@@ -4,6 +4,7 @@ import {
   useExecutionFinance,
   type ExecutionFinance,
 } from "../../api/financial/useExecutionFinance";
+import SingleVideoBudgetPanel from "./SingleVideoBudgetPanel";
 import ExecutionCostWorksheet from "./ExecutionCostWorksheet";
 import ExecutionFinancialAdvice from "./ExecutionFinancialAdvice";
 import ExecutionBudgetOverview from "./ExecutionBudgetOverview";
@@ -153,6 +154,12 @@ export default function ExecutionFinancePage() {
                 )}
             </section>
           )}
+          <SingleVideoBudgetPanel
+            key={`${productId}:${cycleId}:${chainId}`}
+            productId={productId}
+            cycleId={cycleId}
+            chainId={chainId}
+          />
           <ExecutionCostWorksheet
             key={`worksheet:${data.productId}:${data.cycleId}`}
             data={data}

@@ -194,7 +194,7 @@ components:
               canPause: {type: boolean}
               canResume:
                 type: boolean
-                description: Elegibilidade atual apurada no servidor, incluindo aprovação de preparação do ciclo/versão, cobertura, STOP, contexto e disponibilidade da atividade. A mesma verificação é repetida no POST de retomada. Aprovar orçamento não retoma automaticamente; a UI oculta esta ação durante consulta/erro.
+                description: Elegibilidade atual apurada no servidor, incluindo aprovação de preparação do ciclo/versão, cobertura, STOP, contexto e disponibilidade da atividade. A mesma verificação é repetida no POST de retomada. Aprovar orçamento não retoma automaticamente; a UI oculta esta ação durante consulta/erro e a mantém desabilitada quando financialPending estiver preenchido, mesmo diante de um canResume permissivo.
               financialPending:
                 allOf:
                   - $ref: '#/components/schemas/FinancialPending'

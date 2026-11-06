@@ -1,0 +1,54 @@
+{
+  "evidenceType": "LOCAL_TEST",
+  "recordedAt": "2026-11-06T17:38:13.060482+00:00",
+  "backend": {
+    "functionalTests": 403,
+    "architectureTests": 92,
+    "failures": 0,
+    "errors": 0,
+    "contextRegressionCases": [
+      "MUSA: product4/cycle21/experiment114/marketStrategy",
+      "Capella: product7/cycle20/experiment113/economics",
+      "TEST: product99104/cycle99221/experiment99314/marketStrategy",
+      "TEST: product99107/cycle99220/experiment99313/economics"
+    ]
+  },
+  "frontend": {
+    "tests": 87,
+    "failures": 0,
+    "typecheck": "PASS",
+    "build": "PASS",
+    "profiles": [
+      "Chromium desktop 1440x1000",
+      "Chromium iPhone 15 Pro",
+      "Chromium Pixel 7"
+    ],
+    "browserOutput": [
+      "PASS desktop: pendência contextual, rascunho, erro seguro, aprovação, retorno e nenhuma retomada automática",
+      "PASS iphone: pendência contextual, rascunho, erro seguro, aprovação, retorno e nenhuma retomada automática",
+      "PASS pixel: pendência contextual, rascunho, erro seguro, aprovação, retorno e nenhuma retomada automática"
+    ]
+  },
+  "acceptance": [
+    "Financial pending produces disabled resume button",
+    "Disabled button sends no resume command",
+    "Saved approval still requires backend revalidation",
+    "Draft and failed save do not enable resume",
+    "Eligible prior path remains enabled",
+    "No automatic real process resumption"
+  ],
+  "limits": [
+    "No production mutations or paid inference",
+    "No market effect measured",
+    "Initial concurrent build was killed under 6GiB cgroup limit; isolated build passed",
+    "Publication requires specific confirmation retained from request3912"
+  ],
+  "sha256": {
+    "frontend/src/pages/product/ProductProcessAutomationPanel.tsx": "25f9dab2591c2878021dd75485e49bbd08089b562cfa4dc6589813dd5df1d397",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunFinancialEligibilityTest.java": "3615d7ad3494e93d51addd4ea4fdcbc66a1f0faa992fd7354de67b3cdef74ee5",
+    "infra/testing/process-automation/plutus-financial-browser.mjs": "a8fc194113385aa96d6954e8b50a0dc5e69e80b877459b6c3f22a0e14c4af088",
+    "docs/homologacao/evidencias/retomada-financeira-2026-11-06/iphone-botao-desabilitado.png": "127ac62fafa0827b4a8ca9744fd13f1c25eb489467340c0513dff45b14ec6847",
+    "docs/homologacao/evidencias/retomada-financeira-2026-11-06/pixel-botao-desabilitado.png": "c2dc5494df45023e7ccab50c3570306331a0160ddf3e2fec89805b894ee5553b",
+    "docs/homologacao/evidencias/retomada-financeira-2026-11-06/desktop-botao-desabilitado.png": "5165fd66ecbfc2c3087087cf08cbe297c036c527bfeeabd75ae37807896eb29b"
+  }
+}

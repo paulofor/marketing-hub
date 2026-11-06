@@ -101,41 +101,59 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
-  it("mostra a pendência financeira e oculta retomada mesmo com cache permissivo", async () => {
-    vi.mocked(axios.get).mockResolvedValue({
-      data: {
-        ...running,
-        status: "PAUSED",
-        canResume: true,
-        canPause: false,
-        financialPending: {
-          code: "APPROVAL_REQUIRED",
-          activityId: "economics",
-          productVersion: "produto-v4",
-          title: "Falta aprovar o limite de preparação deste ciclo",
-          reason:
-            "Ajuste na demonstração financeira para continuar. Falta de aprovação não comprova falta de saldo.",
-          responsible: "Você · responsável pelo limite de preparação",
-          actionLabel: "Ajustar limite de preparação",
-          actionUrl:
-            "/financial/execution?productId=92001&chainId=92014&cycleId=92001#ceiling-AGENTS",
-          afterAction: "A aprovação não retoma o processo automaticamente.",
+  it.each([
+    [false, "marketStrategy", "Atena"],
+    [false, "economics", "Plutus"],
+    [true, "marketStrategy", "Atena"],
+    [true, "economics", "Plutus"],
+  ])(
+    "desabilita retomada financeira com canResume=%s na atividade %s de %s",
+    async (canResume, activityId, owner) => {
+      vi.mocked(axios.get).mockResolvedValue({
+        data: {
+          ...running,
+          status: "PAUSED",
+          canResume,
+          canPause: false,
+          currentActivityId: activityId,
+          currentOwnerName: owner,
+          financialPending: {
+            code: "APPROVAL_REQUIRED",
+            activityId,
+            productVersion: "produto-v4",
+            title: "Falta aprovar o limite de preparação deste ciclo",
+            reason:
+              "Ajuste na demonstração financeira para continuar. Falta de aprovação não comprova falta de saldo.",
+            responsible: "Você · responsável pelo limite de preparação",
+            actionLabel: "Ajustar limite de preparação",
+            actionUrl:
+              "/financial/execution?productId=92001&chainId=92014&cycleId=92001#ceiling-AGENTS",
+            afterAction: "A aprovação não retoma o processo automaticamente.",
+          },
         },
-      },
-    });
-    setup();
-    expect(
-      await screen.findByRole("link", { name: "Ajustar limite de preparação" }),
-    ).toHaveAttribute(
-      "href",
-      "/financial/execution?productId=92001&chainId=92014&cycleId=92001#ceiling-AGENTS",
-    );
-    expect(screen.getByText(/não comprova falta de saldo/)).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Retomar processo" }),
-    ).not.toBeInTheDocument();
-    expect(axios.post).not.toHaveBeenCalled();
-  });
+      });
+      setup();
+      expect(
+        await screen.findByRole("link", {
+          name: "Ajustar limite de preparação",
+        }),
+      ).toHaveAttribute(
+        "href",
+        "/financial/execution?productId=92001&chainId=92014&cycleId=92001#ceiling-AGENTS",
+      );
+      expect(
+        screen.getByText(/não comprova falta de saldo/),
+      ).toBeInTheDocument();
+      const resume = screen.getByRole("button", { name: "Retomar processo" });
+      expect(resume).toBeDisabled();
+      expect(resume).toHaveAttribute(
+        "title",
+        expect.stringContaining("não comprova falta de saldo"),
+      );
+      fireEvent.click(resume);
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
 
   it("oculta retomada durante revalidação e erro, mesmo preservando o último dado elegível", async () => {
     vi.mocked(axios.get).mockResolvedValue({

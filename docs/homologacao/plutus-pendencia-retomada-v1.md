@@ -1,5 +1,10 @@
 # Pendência financeira de Plutus e retomada — v1
 
+> Atualização de 06/11/2026: a apresentação financeira passa a manter o botão
+> visível e desabilitado, conforme o pedido atual. As evidências e resultados
+> abaixo preservam a rodada histórica de 04/11. A nova matriz e validação estão
+> [no registro de atualização](retomada-financeira-desabilitada-2026-11-06.md).
+
 ## Escopo e reprodução — 04/11/2026
 
 Capella, produto 7, cadeia 27, ciclo 20, experimento 113, versão

@@ -391,14 +391,18 @@ export default function ProductProcessAutomationPanel({
                 {command.isPending ? "Iniciando..." : "Executar processo"}
               </button>
             )}
-            {data.canResume &&
+            {(data.canResume || data.financialPending) &&
               !status.isError &&
-              !status.isFetching &&
-              !data.financialPending && (
+              !status.isFetching && (
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={command.isPending || status.isError}
+                  disabled={
+                    command.isPending ||
+                    !data.canResume ||
+                    Boolean(data.financialPending)
+                  }
+                  title={data.financialPending?.reason}
                   onClick={() => command.mutate("resume")}
                 >
                   {command.isPending ? (

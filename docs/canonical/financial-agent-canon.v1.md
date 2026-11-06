@@ -152,8 +152,11 @@ Ausência de aprovação, aprovação desatualizada, limite insuficiente e custo
 são pendências distintas, apuradas no servidor. Falta de aprovação não comprova falta
 de saldo. O mesmo guard financeiro que protege novas tarefas governa a elegibilidade
 de retomada na consulta e é revalidado no comando, com os demais controles vigentes.
-Ocultar **Retomar processo** enquanto houver impedimento, carregamento ou erro de
-revalidação; cache anterior não comprova elegibilidade. Digitação, visita e aprovação
+**Atualização de 06/11/2026:** quando o servidor informar pendência financeira,
+manter **Retomar processo** visível e desabilitado, com o motivo junto ao botão.
+Esta apresentação substitui a orientação anterior de ocultá-lo nessa situação.
+Nos demais impedimentos, carregamento ou erro de revalidação, ocultar a ação;
+cache anterior não comprova elegibilidade. Digitação, visita e aprovação
 de outro contexto não liberam a ação. Ao voltar da demonstração, atualizar a situação
 sem perder contexto. Execução legada identificada por experimento sem ciclo explícito
 deve conservar essa referência no retorno, sem migrar sua identidade. Salvar aprovação

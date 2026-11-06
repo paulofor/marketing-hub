@@ -31,9 +31,11 @@ class PrivateCreativePreparationContextTest {
     var before = input(productId);
     var after = declaration.enrich(reference(productId), before);
     var contract = json.valueToTree(after).path(PrivateCreativePreparationContext.FIELD);
-    assertThat(contract.path("nonAudiovisualEvidencePurpose").asText()).isEqualTo("INDEPENDENT_REVIEW");
+    assertThat(contract.path("nonAudiovisualEvidencePurpose").asText())
+        .isEqualTo("INDEPENDENT_REVIEW");
     assertThat(contract.path("commercialFormatDecisionPreserved").asBoolean()).isTrue();
-    assertThat(PrivateCreativePreparationContext.isBriefOnly(contract, reference(productId))).isTrue();
+    assertThat(PrivateCreativePreparationContext.isBriefOnly(contract, reference(productId)))
+        .isTrue();
     assertThat(contract.path("videoProductionRequestId").asLong()).isZero();
     assertThat(IrisCommunicationInputFingerprint.hash(json, after))
         .isEqualTo(IrisCommunicationInputFingerprint.hash(json, before));
@@ -56,12 +58,14 @@ class PrivateCreativePreparationContextTest {
       reference = "product:91010@agent-validation-v1";
       currentInput.put("sourceReference", reference);
     }
-    when(videos.findTopByProductIdAndExperimentIdOrderByCreatedAtDescIdDesc(91010L, productOnly ? null : 92010L))
+    when(videos.findLatestProductionRequest(91010L, productOnly ? null : 92010L))
         .thenReturn(Optional.of(cycle));
     when(projects.findById(93010L)).thenReturn(Optional.of(currentProject));
-    var contract = json.valueToTree(declaration.enrich(reference, currentInput))
-        .path(PrivateCreativePreparationContext.FIELD);
-    assertThat(contract.path("audiovisualProductionIntent").asText()).isEqualTo("GOVERNED_PRODUCTION_REQUESTED");
+    var contract =
+        json.valueToTree(declaration.enrich(reference, currentInput))
+            .path(PrivateCreativePreparationContext.FIELD);
+    assertThat(contract.path("audiovisualProductionIntent").asText())
+        .isEqualTo("GOVERNED_PRODUCTION_REQUESTED");
     assertThat(contract.path("videoProductionRequestId").asLong()).isEqualTo(94010L);
     assertThat(contract.path("spendAuthorized").asBoolean(true)).isFalse();
     assertThat(PrivateCreativePreparationContext.isBriefOnly(contract, reference)).isFalse();
@@ -69,7 +73,19 @@ class PrivateCreativePreparationContextTest {
 
   /** Não transfere pedidos de vídeo antigos, de outro produto ou cancelados para a versão atual. */
   @ParameterizedTest
-  @ValueSource(strings = {"VERSION", "PRODUCT", "EXPERIMENT", "CANCELLED", "STOPPED", "NO_REQUESTER", "NO_BUDGET"})
+  @ValueSource(
+      strings = {
+        "VERSION",
+        "PRODUCT",
+        "EXPERIMENT",
+        "CANCELLED",
+        "STOPPED",
+        "NO_REQUESTER",
+        "NO_BUDGET",
+        "PENDING_PROVIDER_PREFLIGHT_ONLY",
+        "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+        "PROVIDER_PREFLIGHT_ONLY_BLOCKED"
+      })
   void ignoresIncompatibleOrUnauthorizedRequest(String mismatch) {
     var cycle = requested();
     var project = project();
@@ -77,23 +93,28 @@ class PrivateCreativePreparationContextTest {
       case "VERSION" -> project.setCampaignKey("sandbox-private-v0");
       case "PRODUCT" -> project.setProductId(99999L);
       case "EXPERIMENT" -> project.setExperimentId(99999L);
-      case "CANCELLED", "STOPPED" -> cycle.setStatus(mismatch);
+      case "CANCELLED",
+          "STOPPED",
+          "PENDING_PROVIDER_PREFLIGHT_ONLY",
+          "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+          "PROVIDER_PREFLIGHT_ONLY_BLOCKED" ->
+          cycle.setStatus(mismatch);
       case "NO_REQUESTER" -> cycle.setRequestedBy(null);
       case "NO_BUDGET" -> cycle.setBudgetLimitUsd(BigDecimal.ZERO);
       default -> throw new AssertionError("Caso desconhecido.");
     }
-    when(videos.findTopByProductIdAndExperimentIdOrderByCreatedAtDescIdDesc(91010L, 92010L))
-        .thenReturn(Optional.of(cycle));
+    when(videos.findLatestProductionRequest(91010L, 92010L)).thenReturn(Optional.of(cycle));
     when(projects.findById(93010L)).thenReturn(Optional.of(project));
-    var contract = json.valueToTree(declaration.enrich(reference(91010L), input(91010L)))
-        .path(PrivateCreativePreparationContext.FIELD);
+    var contract =
+        json.valueToTree(declaration.enrich(reference(91010L), input(91010L)))
+            .path(PrivateCreativePreparationContext.FIELD);
     assertThat(PrivateCreativePreparationContext.isBriefOnly(contract, reference(91010L))).isTrue();
   }
 
   /** Falha da consulta gera bloqueio explícito; não assume ausência de pedido governado. */
   @Test
   void blocksUnknownVideoStateWithoutDeclaringOmission() {
-    when(videos.findTopByProductIdAndExperimentIdOrderByCreatedAtDescIdDesc(91010L, 92010L))
+    when(videos.findLatestProductionRequest(91010L, 92010L))
         .thenThrow(new IllegalStateException("Banco simulado indisponível"));
     var output = declaration.enrich(reference(91010L), input(91010L));
     assertThat(output).containsEntry("inputReadiness", "BLOCKED");
@@ -124,42 +145,56 @@ class PrivateCreativePreparationContextTest {
     String destination = System.getenv("PRIVATE_CREATIVE_IRIS_INPUT_FILE");
     if (destination == null || destination.isBlank()) return;
     var task = json.readTree(Files.readString(Path.of(System.getenv("VEGA_IRIS_INPUT_FILE"))));
-    var context = (com.fasterxml.jackson.databind.node.ObjectNode)
-        json.readTree(task.path("processContextJson").asText());
+    var context =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(task.path("processContextJson").asText());
     var input = json.convertValue(context.path("communicationMaterializationContext"), Map.class);
-    context.set("communicationMaterializationContext",
+    context.set(
+        "communicationMaterializationContext",
         json.valueToTree(declaration.enrich(task.path("sourceReference").asText(), input)));
-    ((com.fasterxml.jackson.databind.node.ObjectNode) task).put("processContextJson", context.toString());
+    ((com.fasterxml.jackson.databind.node.ObjectNode) task)
+        .put("processContextJson", context.toString());
     Files.writeString(Path.of(destination), task.toPrettyString());
   }
 
   /** Monta uma entrada privada íntegra com orçamento somente de IA e preço preservado. */
   private Map<String, Object> input(long productId) {
     return Map.ofEntries(
-        Map.entry("mode", "LEARNING_CYCLE_PRIVATE"), Map.entry("availability", "AVAILABLE"),
-        Map.entry("inputReadiness", "READY"), Map.entry("sourceReference", reference(productId)),
+        Map.entry("mode", "LEARNING_CYCLE_PRIVATE"),
+        Map.entry("availability", "AVAILABLE"),
+        Map.entry("inputReadiness", "READY"),
+        Map.entry("sourceReference", reference(productId)),
         Map.entry("prototypeVersion", "sandbox-private-v1"),
         Map.entry("product", Map.of("id", productId, "unitPriceBrl", 49)),
         Map.entry("experiment", Map.of("id", productId + 1000)),
-        Map.entry("publicationAuthorized", false), Map.entry("paymentEnabled", false),
+        Map.entry("publicationAuthorized", false),
+        Map.entry("paymentEnabled", false),
         Map.entry("externalMediaSpendAuthorized", false));
   }
 
   /** Calcula uma referência segregada sem identificar registros produtivos. */
-  private String reference(long productId) { return "experiment:" + (productId + 1000); }
+  private String reference(long productId) {
+    return "experiment:" + (productId + 1000);
+  }
 
   /** Simula o registro explícito de vídeo, cuja aprovação financeira continua pendente. */
   private VideoProductionCycle requested() {
     var cycle = new VideoProductionCycle();
-    cycle.setId(94010L); cycle.setVideoProjectId(93010L); cycle.setRequestedBy("sandbox-only");
-    cycle.setBudgetLimitUsd(BigDecimal.TEN); cycle.setStatus("PENDING_FINANCIAL_REVIEW");
+    cycle.setId(94010L);
+    cycle.setVideoProjectId(93010L);
+    cycle.setRequestedBy("sandbox-only");
+    cycle.setBudgetLimitUsd(BigDecimal.TEN);
+    cycle.setStatus("PENDING_FINANCIAL_REVIEW");
     return cycle;
   }
 
   /** Liga o pedido governado à mesma versão do produto e do experimento. */
   private VideoProject project() {
     var project = new VideoProject();
-    project.setId(93010L); project.setProductId(91010L); project.setExperimentId(92010L);
-    project.setCampaignKey("sandbox-private-v1"); return project;
+    project.setId(93010L);
+    project.setProductId(91010L);
+    project.setExperimentId(92010L);
+    project.setCampaignKey("sandbox-private-v1");
+    return project;
   }
 }

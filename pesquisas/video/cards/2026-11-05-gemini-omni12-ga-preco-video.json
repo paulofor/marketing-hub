@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-gemini-omni-1-2-flash-ga-price",
+  "collection": "video",
+  "title": "Testar Gemini Omni 1.2 Flash como gerador e editor de vídeo de menor custo",
+  "finding": "Google Cloud lançou em 05/11/2026 o gemini-omni-1.2-flash em GA, com vídeo+áudio de até 15 s, edição/continuação, referências e upscale, e saída de vídeo US$12/1M tokens versus US$17,50 da versão 1.1.",
+  "mechanism": "API Interactions no Google Cloud permite orquestrar produção multimodal e revisão por prompt; créditos/tokens de vídeo por segundo escalam por resolução.",
+  "commercialApplication": "Marketing Hub: testar anúncios e vídeos curtos 720p/1080p com produtos fixos, comparar com Kling 4.0, Wan 3.0 e Seedance no custo por vídeo aprovado.",
+  "evidenceStrength": "Alta para disponibilidade GA, limites e preço por fontes oficiais Google Cloud; sem benchmark independente de qualidade ou teste autenticado.",
+  "publishedOn": "2026-11-05",
+  "validUntil": "2026-12-05",
+  "experimentHypothesis": "Redução do preço de vídeo de saída em cerca de 31% frente ao Omni 1.1 e edição por prompt reduzirão o custo de campanhas aprovadas sem perda de consistência visual.",
+  "risks": "API Interactions diferente da GenerateContent; preço de saída não inclui tokens de entrada; direitos de imagem/marca, limitação 15s, disponibilidade por conta/região, benchmarking necessário.",
+  "limits": "GA Google Cloud; 3-15 s, 360p/720p/1080p/4K; 3 saídas por prompt; não afirma suporte a agentic video understanding; proprietário; aposentadoria >=05/11/2027.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-05-gemini-omni12-ga-preco-duracao.md",
+  "sourceTitle": "Gemini Omni 1.2 Flash: GA, preço e vídeo",
+  "sourceSha256": "fdbc6a2bc82d6548110c29f421d2ce5ae8a81dc1903dc60eced645aff31d57c3"
+}

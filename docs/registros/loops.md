@@ -10481,6 +10481,16 @@ A hipótese operacional é reduzir cliques de retomada recusados e tempo parado;
 não há medição comercial posterior nem alegação de aumento de vendas.
 [Matriz, comandos e evidências](../homologacao/plutus-pendencia-retomada-v1.md).
 
+**Atualização de 06/11/2026:** a execução 98 do Método MUSA reproduziu o mesmo
+bloqueio financeiro já na atividade inicial de Atena. O PR 5787 continuava aberto;
+o guard ainda não estava publicado, portanto não houve regressão de uma entrega
+integrada. O pedido atual substitui a ocultação por botão **visível e desabilitado**
+quando houver `financialPending`; erro e revalidação continuam sem ação disponível.
+O harness passa a cobrir Atena e Plutus com produtos distintos, inclusive resposta
+permissiva acompanhada de pendência e clique incapaz de enviar retomada. Nenhum
+limite ou processo real é alterado por esse teste.
+[Matriz da atualização](../homologacao/retomada-financeira-desabilitada-2026-11-06.md).
+
 ## LOOP-ATENA-PUBLICACAO-DURANTE-INFERENCIA — 10/10/2026
 
 - **Evidência:** Vega #106/ciclo #13, tarefa #709. Backend #5572 encaminhou a
@@ -11705,3 +11715,16 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
   `infra/testing/private-kit/run-local.sh`.
 - Escopo/limite: kits privados de até 32 MiB, sem alterar autorização de mercado ou
   aprovação independente; [matriz](../homologacao/capella-persistencia-pacotes-v1.md).
+
+## LOOP-VEGA-VIDEO-PLANEJADO-DISPENSA-OPACA — 04/11/2026
+
+- Evidência: Íris #873 contém briefing; rota #816/dispensa #817 registram BRIEF_ONLY,
+  sem pedido audiovisual. A tela ocultava o motivo registrado e o ciclo não expunha
+  WAITING_HUMAN do subprocesso #94, mostrando ausência de decisão.
+- Correção: preservar o motivo na projeção; seguir somente filhos do mesmo contexto;
+  explicitar no aceite estático a exclusão de audiovisual.
+- Prevenção: testes de motivo/fallback, duas identidades, filho alheio, vínculo pai
+  inválido, ciclo de referências, pausas existentes e recibo STATIC_IMAGE.
+- Limite: proteção e clareza não geram vídeo nem aprovam custo. Pedido cinematográfico
+  segue no sucessor #21/#114, sem herdar limites. Evidências e matriz em
+  `docs/homologacao/vega-video-estudio-2026-11-04.md`.

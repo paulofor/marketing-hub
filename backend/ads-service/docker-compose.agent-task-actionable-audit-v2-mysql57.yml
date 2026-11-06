@@ -28,8 +28,8 @@ services:
 
   liquibase-agent-task-actionable-audit-v2:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-task-actionable-audit-v2:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -41,8 +41,8 @@ services:
 
   liquibase-psique-visual-evidence:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-task-actionable-audit-v2:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -54,8 +54,8 @@ services:
 
   liquibase-agent-task-prompt-parts-v1:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-task-actionable-audit-v2:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -67,8 +67,8 @@ services:
 
   liquibase-agent-task-history-source-index:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-task-actionable-audit-v2:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -80,8 +80,8 @@ services:
 
   liquibase-geralanding-queue-index:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-task-actionable-audit-v2:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub

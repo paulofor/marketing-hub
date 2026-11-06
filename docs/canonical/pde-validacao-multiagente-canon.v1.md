@@ -372,6 +372,39 @@ propostas comerciais; não exigir quotas de integração paga ou atendimento de 
 Consulta idempotente e duas organizações úteis continuam verificáveis. O prazo de execução de
 uma tarefa não é o período de validade da credencial nem uma condição de venda.
 
+### Escopo verificável e recuperação da estratégia — 06/11/2026
+
+A política Java compartilhada em `shared/pde-validation-scope` é compilada pelo backend e pelo
+executor de Atena; não manter detectores independentes. A capacidade comparativa depende do contrato
+implementado e da identidade exata de produto, ciclo, experimento e versão. A frase isolada não
+concede capacidade. Comparação pública entre ofertas concorrentes é diferente das condições de
+entrada `REFERENCE/REDUCED`.
+
+O prompt/schema v13 acrescenta `validationExecutionScope` (`PDE_VALIDATION_REQUIREMENTS_V1`):
+identidade exata, comparação aplicável, uma matriz técnica de nove combinações comuns ou 18 quando
+a mesma candidata implementar a comparação, e três pareceres independentes. Sem protocolo de
+escopo, o campo é nulo. O modelo não modifica esse protocolo nem substitui a matriz por 27 casos.
+Campos estruturados e texto devem ser coerentes entre si.
+
+Respostas históricas sem o campo novo continuam sujeitas ao protocolo original. Exclusões com
+`sem`, `nenhum/nenhuma` e proibições delimitadas não significam obrigação. A exceção vale somente
+para sua cláusula/valor: obrigação afirmativa em outra frase, campo, lista ou condição contraditória
+continua bloqueante. Condicional de capacidade não concede implementação; orçamento disponível
+não torna uma capacidade existente.
+
+Uma estratégia paga preservada e recusada pelo detector legado pode receber uma retomada explícita
+da mesma tarefa, depois de revalidação integral sem modelo. O backend não reabre automaticamente
+bloqueios de escopo. O handshake `ATENA_PDE_MARKET_STRATEGY_REPLAY_V2` impede que o executor anterior
+receba a retomada. A fila reexpõe `retryResultJson/retryEvidenceJson`, confere contexto e versão
+atuais, preserva os bytes, prompts, tokens e custo originais e usa o callback normal. O executor
+revalida todos os contratos; sucesso técnico do replay não substitui Plutus ou os gates seguintes.
+Uma segunda recusa permanece bloqueada e não autoriza outra inferência. Ausência de dados,
+contexto alterado ou tentativa substituída não autoriza reconstruir parecer ou renovar histórico.
+
+Na falha visível, explicar o impedimento e a recuperação em linguagem de negócio. Código e caminho
+do campo ficam no diagnóstico técnico; saída bruta do runtime e stack trace não viram mensagem de
+orientação. [Matriz, evidências e limites desta correção](../homologacao/atena-escopo-recuperacao-2026-11-06.md).
+
 Na comparação documental V3, os sinais EXPERIENCE_STARTED, VALUE_MOMENT, READY_RESULT_USED,
 PREFERRED_OVER_FREE e CHECKOUT_STARTED são persistidos com a sessão segregada. Os dois últimos
 são simulações explicitamente internas, realizadas somente depois de consultar o resultado.

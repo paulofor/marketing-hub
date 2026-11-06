@@ -268,3 +268,16 @@ git -C "$TEST_REPO" commit -qm 'teste isolado de executor'
 )
 grep -Fxq 'backend=false' "$TEST_REPO/worker-test-output"
 printf 'Prompts, schemas e remoções recompilam o catálogo; testes isolados não.\n'
+
+# A política compartilhada precisa chegar ao backend mesmo sem alteração em sua pasta.
+scope_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+mkdir -p "$TEST_REPO/shared/pde-validation-scope/src/main/java"
+printf 'politica sintetica\n' > "$TEST_REPO/shared/pde-validation-scope/src/main/java/Scope.java"
+git -C "$TEST_REPO" add shared/pde-validation-scope
+git -C "$TEST_REPO" commit -qm 'politica compartilhada de homologacao'
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$scope_base" HEAD "$TEST_REPO/scope-output"
+)
+grep -Fxq 'backend=true' "$TEST_REPO/scope-output"
+grep -Fxq 'app_deploy=true' "$TEST_REPO/scope-output"

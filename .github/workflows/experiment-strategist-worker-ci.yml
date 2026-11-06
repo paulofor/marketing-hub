@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - experiment-strategist-worker/**
+      - shared/pde-validation-scope/**
+      - scripts/test-pde-validation-shared-contract.py
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/with-agent-consumer-lock.py
       - scripts/test-agent-consumer-publication-lock.py
@@ -12,6 +14,8 @@ on:
   pull_request:
     paths:
       - experiment-strategist-worker/**
+      - shared/pde-validation-scope/**
+      - scripts/test-pde-validation-shared-contract.py
       - .github/workflows/experiment-strategist-worker-ci.yml
       - config/agents/codex-agent-health-compliance.json
       - scripts/test-codex-agent-health-standard.mjs
@@ -80,7 +84,9 @@ jobs:
 
       - name: Run unit tests
         working-directory: experiment-strategist-worker
-        run: mvn -B test
+        run: |
+          python3 ../scripts/test-pde-validation-shared-contract.py
+          mvn -B test
 
       - name: Run Clarity MCP adapter tests
         run: |
@@ -92,7 +98,7 @@ jobs:
             mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8 npm test
 
       - name: Validate container build
-        run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -t marketing-hub/experiment-strategist-worker:${{ github.sha }} experiment-strategist-worker
+        run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -f experiment-strategist-worker/Dockerfile -t marketing-hub/experiment-strategist-worker:${{ github.sha }} .
 
       - name: Package tested images
         if: github.event_name != 'pull_request'

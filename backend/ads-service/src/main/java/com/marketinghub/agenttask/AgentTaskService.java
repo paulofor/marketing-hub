@@ -560,7 +560,8 @@ public class AgentTaskService {
                       + sourceId
                       + ": "
                       + request.reason()
-                      + ". Reutilizar o plano sem inferência; novos pixels exigem novas revisões e seleção humana.",
+                      + ". Reutilizar o plano sem inferência; novos pixels exigem novas revisões e"
+                      + " seleção humana.",
                   "HIGH",
                   source.getSourceReference(),
                   source.getProcessDefinition().getId(),
@@ -1121,7 +1122,7 @@ public class AgentTaskService {
 
   /**
    * Atualiza o estado e retoma callbacks ou planos de renderização preservados sem nova inferência.
-   * A fila continua exigindo o handshake do worker compatível antes de entregar um plano pronto.
+   * A fila exige worker compatível; estratégia paga só reabre para reaplicar a mesma saída íntegra.
    */
   @Transactional
   public AgentTaskResponse updateStatus(Long taskId, UpdateAgentTaskStatusRequest request) {
@@ -1157,6 +1158,32 @@ public class AgentTaskService {
       requireTerminalExecutionAudit(task, false);
     }
     Instant now = Instant.now(clock);
+    if ("BLOCKED".equals(task.getStatus())
+        && "IN_PROGRESS".equals(next)
+        && AtenaPreservedStrategyRecovery.supports(task)
+        && task.getResultJson() != null
+        && (!AtenaPreservedStrategyRecovery.available(task, objectMapper)
+            || task.getExecutionError().startsWith("AUTO_RETRY_ONCE|")
+            || repository.existsNewerAttemptForCallback(
+                task.getSourceReference(),
+                task.getProcessDefinition().getProcessCode(),
+                task.getProcessActivityId(),
+                task.getId())))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A análise paga ainda não pode ser reaproveitada com segurança. Preserve o resultado e"
+              + " confira o impedimento antes de retomar.");
+    if ("BLOCKED".equals(task.getStatus())
+        && "IN_PROGRESS".equals(next)
+        && AtenaPreservedStrategyRecovery.supports(task)
+        && task.getResultJson() != null)
+      AtenaPreservedStrategyRecovery.requireCurrentContext(
+          task,
+          taskTargetContextProvider
+              .resolve(task.getSourceReference(), task.getProcessDefinition().getProcessCode())
+              .orElse(null),
+          processContext(task),
+          objectMapper);
     if ("BLOCKED".equals(task.getStatus())
         && "IN_PROGRESS".equals(next)
         && trimToNull(task.getExecutionError()) != null
@@ -1658,7 +1685,8 @@ public class AgentTaskService {
       throw ex;
     } catch (Exception ex) {
       log.error(
-          "Falha ao validar vínculo da tarefa ao processo. processDefinitionId={} activityId={} agentKey={}",
+          "Falha ao validar vínculo da tarefa ao processo. processDefinitionId={} activityId={}"
+              + " agentKey={}",
           request.processDefinitionId(),
           request.processActivityId(),
           assignee.getAgentKey(),
@@ -1959,7 +1987,8 @@ public class AgentTaskService {
       if (!canRecoverDeterministicResourceLease(task, now)) continue;
       task.setExecutionError(
           DETERMINISTIC_RESOURCE_RECOVERY_PREFIX
-              + "A reserva foi persistida, mas o worker não recebeu o contrato antes da interrupção.");
+              + "A reserva foi persistida, mas o worker não recebeu o contrato antes da"
+              + " interrupção.");
       task.setUpdatedAt(now);
       AgentTask saved = repository.save(task);
       synchronizeActivityInstance(saved, now);
@@ -2003,7 +2032,8 @@ public class AgentTaskService {
   private void blockExhaustedDeterministicResourceLease(AgentTask task, Instant now) {
     String error =
         DETERMINISTIC_RESOURCE_EXHAUSTED_PREFIX
-            + "Apolo foi interrompido novamente após a única retomada segura; nenhum modelo ou provider foi chamado.";
+            + "Apolo foi interrompido novamente após a única retomada segura; nenhum modelo ou"
+            + " provider foi chamado.";
     task.setExecutionError(error);
     ensurePreModelFailureAudit(task, null, null);
     applyBlockerGuidance(task, null, error, null);
@@ -2025,7 +2055,9 @@ public class AgentTaskService {
       String executionResourceCode,
       boolean irisRenderContract,
       boolean psiqueDecisionReplay) {
-    if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
+    if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())
+        && !AtenaBpmWorkerContract.supports(agentKey, processCode, activityId))
+      return Optional.empty();
     return repository.findReplayableClaimedCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
         .filter(
@@ -2058,7 +2090,8 @@ public class AgentTaskService {
       if (task.getExecutionError() != null
           && task.getExecutionError().startsWith(AtenaUnreceivedLease.RECOVERED)) {
         String error =
-            "ATENA_UNRECEIVED_LEASE_EXHAUSTED|A entrega da reserva falhou novamente antes do modelo; conferir a conexão do executor com o backend.";
+            "ATENA_UNRECEIVED_LEASE_EXHAUSTED|A entrega da reserva falhou novamente antes do"
+                + " modelo; conferir a conexão do executor com o backend.";
         task.setExecutionError(error);
         ensurePreModelFailureAudit(task, null, null);
         applyBlockerGuidance(task, null, error, null);
@@ -2067,7 +2100,8 @@ public class AgentTaskService {
       } else {
         task.setExecutionError(
             AtenaUnreceivedLease.RECOVERED
-                + "Reserva reentregue sem auditoria, saída ou consumo do modelo; mesma tarefa preservada.");
+                + "Reserva reentregue sem auditoria, saída ou consumo do modelo; mesma tarefa"
+                + " preservada.");
       }
       task.setUpdatedAt(now);
       AgentTask saved = repository.save(task);
@@ -2156,7 +2190,8 @@ public class AgentTaskService {
   private void blockExhaustedCustomerAgentLease(AgentTask task, Instant now) {
     String error =
         ORPHANED_LEASE_EXHAUSTED_PREFIX
-            + "Psique foi interrompida novamente depois da única retomada automática; nenhuma nova inferência foi iniciada para evitar cobrança duplicada.";
+            + "Psique foi interrompida novamente depois da única retomada automática; nenhuma nova"
+            + " inferência foi iniciada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     ensurePreModelFailureAudit(task, null, null);
     applyBlockerGuidance(task, null, error, null);
@@ -2289,7 +2324,8 @@ public class AgentTaskService {
   private void blockDedaloLeaseWithObservedOutput(AgentTask task, Instant now) {
     String error =
         DEDALO_LEASE_EXHAUSTED_PREFIX
-            + "Dédalo produziu saída antes da interrupção; nova inferência automática foi recusada para evitar cobrança duplicada.";
+            + "Dédalo produziu saída antes da interrupção; nova inferência automática foi recusada"
+            + " para evitar cobrança duplicada.";
     task.setExecutionError(error);
     applyBlockerGuidance(task, null, error, null);
     requireTerminalExecutionAudit(task, false);
@@ -2303,7 +2339,8 @@ public class AgentTaskService {
   private void blockDedaloLeaseWithoutSufficientTelemetry(AgentTask task, Instant now) {
     String error =
         DEDALO_LEASE_EXHAUSTED_PREFIX
-            + "A chamada de Dédalo foi auditada, mas a telemetria se perdeu; nova inferência automática foi recusada para evitar cobrança duplicada.";
+            + "A chamada de Dédalo foi auditada, mas a telemetria se perdeu; nova inferência"
+            + " automática foi recusada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     applyBlockerGuidance(task, null, error, null);
     requireTerminalExecutionAudit(task, false);
@@ -2317,7 +2354,8 @@ public class AgentTaskService {
   private void blockExhaustedDedaloLease(AgentTask task, Instant now) {
     String error =
         DEDALO_LEASE_EXHAUSTED_PREFIX
-            + "Dédalo foi interrompido novamente após a única retomada; nova inferência automática foi recusada para evitar cobrança duplicada.";
+            + "Dédalo foi interrompido novamente após a única retomada; nova inferência automática"
+            + " foi recusada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     ensurePreModelFailureAudit(task, null, null);
     applyBlockerGuidance(task, null, error, null);
@@ -2448,7 +2486,8 @@ public class AgentTaskService {
   private void blockTemisLeaseWithObservedOutput(AgentTask task, Instant now) {
     String error =
         TEMIS_LEASE_EXHAUSTED_PREFIX
-            + "Têmis produziu saída antes da interrupção; nova inferência automática foi recusada para evitar cobrança duplicada.";
+            + "Têmis produziu saída antes da interrupção; nova inferência automática foi recusada"
+            + " para evitar cobrança duplicada.";
     task.setExecutionError(error);
     applyBlockerGuidance(task, null, error, null);
     requireTerminalExecutionAudit(task, false);
@@ -2462,7 +2501,8 @@ public class AgentTaskService {
   private void blockTemisLeaseWithoutSufficientTelemetry(AgentTask task, Instant now) {
     String error =
         TEMIS_LEASE_EXHAUSTED_PREFIX
-            + "A chamada de Têmis foi auditada, mas a telemetria se perdeu; nova inferência automática foi recusada para evitar cobrança duplicada.";
+            + "A chamada de Têmis foi auditada, mas a telemetria se perdeu; nova inferência"
+            + " automática foi recusada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     applyBlockerGuidance(task, null, error, null);
     requireTerminalExecutionAudit(task, false);
@@ -2476,7 +2516,8 @@ public class AgentTaskService {
   private void blockExhaustedTemisLease(AgentTask task, Instant now) {
     String error =
         TEMIS_LEASE_EXHAUSTED_PREFIX
-            + "Têmis foi interrompida novamente após a única retomada; nova inferência automática foi recusada para evitar cobrança duplicada.";
+            + "Têmis foi interrompida novamente após a única retomada; nova inferência automática"
+            + " foi recusada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     ensurePreModelFailureAudit(task, null, null);
     applyBlockerGuidance(task, null, error, null);
@@ -2772,7 +2813,8 @@ public class AgentTaskService {
    * Autoriza retomada automática somente quando o executor sabe reaplicar a saída preservada sem
    * chamar o modelo; Psique V2 também recupera ajustes/bloqueios e Íris somente refaz a
    * materialização não audiovisual. Especificações prontas exigem o worker compatível para permitir
-   * publicação gradual sem expor o estado novo ao executor anterior.
+   * publicação gradual sem expor o estado novo ao executor anterior. Atena exige retomada explícita
+   * validada e não participa da busca automática de bloqueios recuperáveis.
    */
   private boolean callbackCanReplayWithoutInference(
       AgentTask task, boolean irisRenderContract, boolean psiqueDecisionReplay) {
@@ -2780,6 +2822,8 @@ public class AgentTaskService {
       return false;
     }
     String agentKey = task.getAssignedAgent().getAgentKey();
+    if (AtenaPreservedStrategyRecovery.supports(task))
+      return AtenaPreservedStrategyRecovery.available(task, objectMapper);
     if (LANDING_GENERATOR_AGENT_KEY.equals(agentKey)) return true;
     if (COMMUNICATION_AGENT_KEY.equals(agentKey)) {
       try {
@@ -2802,7 +2846,8 @@ public class AgentTaskService {
                         || delegatedRenderPlan(task) != null)));
       } catch (Exception ex) {
         log.error(
-            "Saída preservada de Íris ilegível; materialização automática recusada. taskId={} agentKey={}",
+            "Saída preservada de Íris ilegível; materialização automática recusada. taskId={}"
+                + " agentKey={}",
             task.getId(),
             agentKey,
             ex);
@@ -2847,9 +2892,7 @@ public class AgentTaskService {
     return pendingResponse(task, false);
   }
 
-  /**
-   * Entrega somente o alvo necessário quando o worker versionado executa uma regra determinística.
-   */
+  /** Entrega o alvo necessário e revalida o contexto antes de expor uma recuperação de Atena. */
   private AgentTaskPendingResponse pendingResponse(AgentTask task, boolean targetOnly) {
     BusinessProcessDefinition process = task.getProcessDefinition();
     AgentTaskTargetResponse taskTarget =
@@ -2863,6 +2906,9 @@ public class AgentTaskService {
       taskTarget = creativeFinalVideoEvidence.project(task, taskTarget);
     if (bigIdeaContext != null) taskTarget = bigIdeaContext.project(task, taskTarget);
     String processContextJson = targetOnly ? null : processContext(task);
+    if (AtenaPreservedStrategyRecovery.supports(task) && retryCallbackPayloadAvailable(task))
+      AtenaPreservedStrategyRecovery.requireCurrentContext(
+          task, taskTarget, processContextJson, objectMapper);
     return new AgentTaskPendingResponse(
         task.getId(),
         task.getAssignedAgent().getAgentKey(),
@@ -3185,7 +3231,8 @@ public class AgentTaskService {
       return objectMapper.writeValueAsString(context);
     } catch (Exception ex) {
       log.error(
-          "Falha ao consolidar contexto do processo. taskId={} processDefinitionId={} sourceReference={}",
+          "Falha ao consolidar contexto do processo. taskId={} processDefinitionId={}"
+              + " sourceReference={}",
           task.getId(),
           task.getProcessDefinition().getId(),
           task.getSourceReference(),
@@ -3319,7 +3366,7 @@ public class AgentTaskService {
 
   /**
    * Conclui trabalho ou recupera retorno original após lease perdida, sem duplicar efeitos e
-   * consumo.
+   * consumo. A retomada de Atena exige os bytes originais e mantém sua auditoria anterior.
    */
   @Transactional
   public void completeClaimedProcessTask(
@@ -3334,6 +3381,7 @@ public class AgentTaskService {
         null,
         request.executionAudit())) return;
     requireClaimedOrOriginalDedaloCallback(task, request.executionAudit(), true);
+    AtenaPreservedStrategyRecovery.requireOriginal(task, request, objectMapper);
     if (audioReviews != null) audioReviews.validateCompletion(task, request.resultJson());
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
@@ -3452,7 +3500,8 @@ public class AgentTaskService {
       return objectMapper.writeValueAsString(evidence);
     } catch (Exception ex) {
       log.error(
-          "Falha ao consolidar evidências de gate assíncrono. taskEvidencePresent={} technicalEvidencePresent={}",
+          "Falha ao consolidar evidências de gate assíncrono. taskEvidencePresent={}"
+              + " technicalEvidencePresent={}",
           materializationEvidenceJson != null,
           technicalEvidenceJson != null,
           ex);
@@ -3462,11 +3511,13 @@ public class AgentTaskService {
   }
 
   /**
-   * Preserva falha e consumo de trabalho reservado, cancelado ou interrompido por lease perdida.
+   * Preserva falha e consumo e reconhece recusa repetida da recuperação sem substituir auditoria.
    */
   @Transactional
   public void failClaimedProcessTask(String agentKey, Long taskId, FailAgentTaskRequest request) {
     AgentTask task = lockedForCallback(agentKey, taskId);
+    request = AtenaPreservedStrategyRecovery.preserveFailure(task, request);
+    if (AtenaPreservedStrategyRecovery.repeatedFailure(task, request)) return;
     if (recordCancelledFailure(task, request)) return;
     if (terminalCallbackRecorded(
         task,
@@ -3630,7 +3681,8 @@ public class AgentTaskService {
             || trimToNull(task.getExecutionActivityPrompt()) == null)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Execução de modelo exige modelo, tipo de raciocínio, parte do agente, parte da atividade e prompt integral.");
+          "Execução de modelo exige modelo, tipo de raciocínio, parte do agente, parte da atividade"
+              + " e prompt integral.");
     }
     if ("MODEL".equals(mode)) {
       validatePromptComposition(task);
@@ -3643,7 +3695,8 @@ public class AgentTaskService {
             || trimToNull(task.getExecutionPrompt()) == null)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Execução determinística exige identificador, entrada integral e raciocínio não aplicável.");
+          "Execução determinística exige identificador, entrada integral e raciocínio não"
+              + " aplicável.");
     }
     if (terminalCompletion && "NOT_STARTED".equals(mode)) {
       throw new ResponseStatusException(
@@ -4070,10 +4123,12 @@ public class AgentTaskService {
               task.getProcessActivityId(), task.getId())) {
         throw new ResponseStatusException(
             HttpStatus.CONFLICT,
-            "Uma tentativa posterior já governa esta atividade; preserve o retorno antigo como falha auditada.");
+            "Uma tentativa posterior já governa esta atividade; preserve o retorno antigo como"
+                + " falha auditada.");
       }
       log.info(
-          "Recuperando callback original de Dédalo sem nova inferência. taskId={} sourceReference={} completing={}",
+          "Recuperando callback original de Dédalo sem nova inferência. taskId={}"
+              + " sourceReference={} completing={}",
           task.getId(),
           task.getSourceReference(),
           completing);

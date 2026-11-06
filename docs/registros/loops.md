@@ -11568,6 +11568,25 @@ Evidências: `docs/homologacao/capella-homologacao-beleza-v1.md`.
 - **Limites e adoção:** [matriz e aprendizado](../homologacao/capella-ressalva-protocolo-2026-10-27.md).
   Sem nova estratégia, aprovação fabricada ou inferência necessária para corrigir o contexto.
 
+#### Recorrência em Vega: exclusão com nenhum/nenhuma — 06/11/2026
+
+- **Evidência:** tarefa 899, ciclo 21/experimento 114, preservou estratégia, prompt, tokens e
+  US$ 2,689692 estimados, mas o executor recusou `agentValidationPlan.continueCriteria` ao ler
+  “nenhuma condição REFERENCE/REDUCED e nenhuma matriz de 18 ou 27 casos”. O retorno proíbe a
+  comparação; não a exige. O replay Java integral anterior reproduziu a recusa.
+- **Causa compartilhada:** dois detectores independentes reconheciam somente algumas negações.
+  O acoplamento à palavra isolada também ignorava contagens e flags estruturadas.
+- **Correção reutilizável:** fonte e regressão Java únicas em `shared/pde-validation-scope`,
+  capacidade ligada à mesma candidata e requisitos estruturados no prompt/schema v13, mantendo
+  compatibilidade delimitada. Contradições e obrigações reais continuam recusadas.
+- **Recuperação preparada:** retomada explícita pela tarefa original e fila V2, sem modelo,
+  reescrita ou duplicação de tokens/custo. Contexto divergente, tentativa substituída e segunda
+  recusa não liberam outro consumo. As mensagens separam orientação de negócio e diagnóstico.
+- **Prova e limites:** [homologação](../homologacao/atena-escopo-recuperacao-2026-11-06.md),
+  com replays completos de 899, 898, 827 e 850, duas identidades sintéticas, casos comparativos
+  válidos, integração HTTP e recriação da imagem. Nenhum replay produtivo, merge, deploy ou gasto
+  foi executado nesta solicitação; teste local não comprova aumento de vendas.
+
 ## LOOP-KIT-FIXTURE-COMO-PROVA-VISUAL — 27/10/2026
 
 - **Evidência:** Psique 843, Capella ciclo 15, pediu ajuste de repertório e legibilidade;

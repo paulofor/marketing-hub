@@ -15,14 +15,41 @@ import org.junit.jupiter.params.provider.ValueSource;
 class LearningCycleValidationProtocolTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Revalida os dados completos exportados sem callback, persistência ou chamada ao modelo. */
+  @org.junit.jupiter.api.Test
+  void validatesCompletePreservedResponseWhenProvided() throws Exception {
+    String responseFile = System.getProperty("atena.replay.result");
+    String taskFile = System.getProperty("atena.replay.task");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        responseFile != null || taskFile != null,
+        "Replay integral exige exportações completas; não é executado sem os arquivos.");
+    var result = json.readTree(java.nio.file.Files.readString(java.nio.file.Path.of(responseFile)));
+    var task = json.readTree(java.nio.file.Files.readString(java.nio.file.Path.of(taskFile)));
+    var context = json.readTree(task.path("processContextJson").asText());
+    var saved = context.path("learningSalesCycle");
+    var cycle = new LearningSalesCycle();
+    cycle.setId(saved.path("cycleId").asLong());
+    cycle.setProductId(saved.path("productId").asLong());
+    cycle.setExperimentId(saved.path("experimentId").asLong());
+    cycle.setProductVersion(saved.path("productVersion").asText());
+    var protocol =
+        LearningCycleValidationProtocol.resolve(json, cycle, saved.get("implementedInput"));
+    assertThat(json.readTree(protocol.toString()))
+        .isEqualTo(saved.path("agentValidationExecution"));
+    assertThat(LearningCycleValidationProtocol.hasUnscopedComparison(result, protocol)).isFalse();
+    assertThat(result.path("decision").asText()).isEqualTo("APPROVE");
+  }
+
   /** Distingue ressalva condicional de obrigação e impede vazamento entre campos e frases. */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource(
       delimiter = '|',
       value = {
-        "Aplicar o protocolo recebido: inputComparisonApplicable=false, uma matriz de nove combinações, sem REFERENCE/REDUCED.|false",
+        "Aplicar o protocolo recebido: inputComparisonApplicable=false, uma matriz de nove"
+            + " combinações, sem REFERENCE/REDUCED.|false",
         "Sem a comparação documental PDE_DOCUMENTED_INPUT_COMPARISON_V3.|false",
-        "inputComparisonApplicable=false: não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais.|false",
+        "inputComparisonApplicable=false: não impor comparação documental de entradas,"
+            + " REFERENCE/REDUCED ou matrizes adicionais.|false",
         "Não exigir REFERENCE/REDUCED.|false",
         "Não executar a comparação documental PDE_DOCUMENTED_INPUT_COMPARISON_V3.|false",
         "Não realizar REFERENCE e REDUCED nem matrizes adicionais.|false",
@@ -32,7 +59,8 @@ class LearningCycleValidationProtocolTest {
         "Não deixar de exigir REFERENCE/REDUCED.|true",
         "Não apenas executar REFERENCE/REDUCED.|true",
         "Não impor REFERENCE/REDUCED se faltar orçamento.|true",
-        "Não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais, porém comparar.|true",
+        "Não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais,"
+            + " porém comparar.|true",
         "Aplicar nove combinações, sem REFERENCE/REDUCED. Exigir REDUCED.|true",
         "Exigir REFERENCE, sem REFERENCE/REDUCED.|true",
         "Sem REFERENCE/REDUCED, mas exigir a comparação.|true",

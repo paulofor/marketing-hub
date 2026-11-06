@@ -15,6 +15,7 @@ class AtenaBpmWorkerContractTest {
                 "experiment-strategist", "pde-commercial-plan-offer", "marketStrategy"))
         .isTrue();
     assertThat(AtenaBpmWorkerContract.accepts(null)).isFalse();
+    assertThat(AtenaBpmWorkerContract.accepts("ATENA_PDE_MARKET_STRATEGY_V1")).isFalse();
     assertThat(AtenaBpmWorkerContract.accepts(AtenaBpmWorkerContract.VERSION)).isTrue();
     assertThatThrownBy(() -> AtenaBpmWorkerContract.accepts("ATENA_LEGACY_V1"))
         .isInstanceOf(ResponseStatusException.class);

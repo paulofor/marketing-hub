@@ -10,6 +10,7 @@
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
   </dependencies>
   <build><finalName>app</finalName><plugins>
+    <plugin><groupId>org.codehaus.mojo</groupId><artifactId>build-helper-maven-plugin</artifactId><version>3.5.0</version><executions><execution><id>pde-validation-scope</id><phase>generate-sources</phase><goals><goal>add-source</goal></goals><configuration><sources><source>${project.basedir}/../shared/pde-validation-scope/src/main/java</source></sources></configuration></execution><execution><id>pde-validation-scope-tests</id><phase>generate-test-sources</phase><goals><goal>add-test-source</goal></goals><configuration><sources><source>${project.basedir}/../shared/pde-validation-scope/src/test/java</source></sources></configuration></execution></executions></plugin>
     <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin>
     <plugin><groupId>com.diffplug.spotless</groupId><artifactId>spotless-maven-plugin</artifactId><version>3.8.0</version><configuration><java><googleJavaFormat><version>1.35.0</version></googleJavaFormat><removeUnusedImports/><trimTrailingWhitespace/><endWithNewline/></java></configuration></plugin>
   </plugins></build>

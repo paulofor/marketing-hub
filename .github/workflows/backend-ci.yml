@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "shared/pde-validation-scope/**"
+      - "scripts/test-pde-validation-shared-contract.py"
       - "config/agents/codex-agent-health-compliance.json"
       - ".github/workflows/backend-ci.yml"
       - ".github/workflows/deploy-containers.yml"
@@ -85,7 +87,9 @@ jobs:
           VEGA_TEST_DB_USER: root
           VEGA_TEST_DB_PASSWORD: root
         working-directory: backend/ads-service
-        run: mvn -B test
+        run: |
+          python3 ../../scripts/test-pde-validation-shared-contract.py
+          mvn -B test
       - name: Validar cobertura e sanitização das provas de controles
         run: python3 infra/testing/mira-candidate/test-emit-controls-evidence.py
       - name: Validar Liquibase contra MySQL 5.7

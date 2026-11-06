@@ -14,7 +14,7 @@ cleanup() {
   exit "$result"
 }
 trap cleanup EXIT
-bash scripts/docker-build-temporary-image.sh atena-bpm experiment-strategist-worker
+bash scripts/docker-build-temporary-image.sh atena-bpm -f experiment-strategist-worker/Dockerfile .
 tar -C experiment-strategist-worker/target/test-classes -cf - . | "${compose[@]}" run --rm -T atena-bpm-seed
 "${compose[@]}" run --rm atena-bpm-smoke produce
 "${compose[@]}" run --rm atena-bpm-smoke deliver

@@ -95,7 +95,8 @@ public class PdeMarketStrategyBpmTaskConsumer {
                 pending.task(),
                 pending.audit(),
                 new IllegalStateException(
-                    "Execução de Atena interrompida antes de confirmar o resultado; reinicie a atividade pelo BPM."));
+                    "Execução de Atena interrompida antes de confirmar o resultado; reinicie a"
+                        + " atividade pelo BPM."));
         enqueue(pending.task(), pending.audit(), "failure", failure);
         return;
       }
@@ -105,6 +106,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
       if (pending == null) {
         outbox.save(new PdeMarketStrategyOutbox.Pending(task, null, false, null, null));
       }
+      if (replayPreservedResult(task)) return;
       PromptComposition prompt;
       try {
         validateTaskContext(task);
@@ -154,7 +156,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
             ex);
         Map<String, Object> failure = technicalFailure(task, audit, ex);
         if (execution != null) failure.putAll(callback(task, execution));
-        failure.put("error", "Atena não concluiu a estratégia: " + ex.getMessage());
+        failure.put("error", "Atena não concluiu a estratégia: " + businessFailure(ex));
         enqueue(task, audit, "failure", failure);
         return;
       }
@@ -178,7 +180,8 @@ public class PdeMarketStrategyBpmTaskConsumer {
       enqueue(task, audit, operation, body);
     } catch (Exception ex) {
       log.error(
-          "Atena preservou a entrega local para retomada; nenhuma nova inferência será iniciada. backend={}",
+          "Atena preservou a entrega local para retomada; nenhuma nova inferência será iniciada."
+              + " backend={}",
           properties.getBackendUrl(),
           ex);
     }
@@ -222,11 +225,11 @@ public class PdeMarketStrategyBpmTaskConsumer {
     outbox.acknowledge();
   }
 
-  /** Preserva auditoria, resposta disponível e consumo real em falha ou interrupção do modelo. */
+  /** Preserva auditoria e consumo na falha, mostrando somente orientação de negócio ao usuário. */
   private Map<String, Object> technicalFailure(
       Map<String, Object> task, Map<String, Object> audit, Exception ex) throws IOException {
     Map<String, Object> body = new LinkedHashMap<>();
-    body.put("error", ex.toString());
+    body.put("error", businessFailure(ex));
     body.put("evidenceJson", evidence(task, audit));
     if (audit != null) body.put("executionAudit", audit);
     if (Files.exists(outbox.output())) body.put("resultJson", Files.readString(outbox.output()));
@@ -241,10 +244,27 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "category",
             "TECHNICAL_FAILURE",
             "recommendedAction",
-            "Corrija a falha técnica registrada e reinicie a atividade de Atena pelo BPM.",
+            Files.exists(outbox.output())
+                ? "Preserve a análise já produzida e confira sua recuperação sem repetir o consumo."
+                : "Confira o impedimento técnico da atividade antes de retomar.",
             "helpLinks",
             List.of(taskLink())));
     return body;
+  }
+
+  /** Mostra causa de negócio conhecida e mantém saídas técnicas do runtime somente nos logs. */
+  private String businessFailure(Exception ex) {
+    if (ex.getClass() == IllegalArgumentException.class
+        && ex.getMessage() != null
+        && !ex.getMessage().contains("{")
+        && !ex.getMessage().contains("\n")) return ex.getMessage();
+    if (ex.getClass() == IllegalStateException.class
+        && ex.getMessage() != null
+        && ex.getMessage().startsWith("Execução de Atena interrompida"))
+      return "Execução de Atena interrompida. Preserve os dados e confira a recuperação antes de"
+          + " retomar.";
+    return "A conferência técnica de Atena não foi concluída. Os dados disponíveis foram"
+        + " preservados para diagnóstico e recuperação.";
   }
 
   /** Reserva a atividade oficial com handshake que impede claims da imagem anterior ao rollout. */
@@ -257,7 +277,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
                 AGENT_KEY,
                 PROCESS_CODE,
                 ACTIVITY_ID,
-                "ATENA_PDE_MARKET_STRATEGY_V1")
+                "ATENA_PDE_MARKET_STRATEGY_REPLAY_V2")
             .retrieve()
             .body(new ParameterizedTypeReference<>() {});
     return pending == null || pending.isEmpty() ? null : pending.getFirst();
@@ -393,12 +413,71 @@ public class PdeMarketStrategyBpmTaskConsumer {
     return new PromptComposition(agent + "\n\n" + activity, agent, activity);
   }
 
-  /** Monta o callback comum sem omitir o envelope de execução do modelo. */
+  /**
+   * Reaplica o parecer preservado pela fila oficial, sem inferência nem reporte repetido de tokens.
+   */
+  private boolean replayPreservedResult(Map<String, Object> task) throws IOException {
+    Object raw = task.get("retryResultJson");
+    Object proof = task.get("retryEvidenceJson");
+    if (raw == null && proof == null) return false;
+    Map<String, Object> body = new LinkedHashMap<>();
+    if (raw != null) body.put("resultJson", raw);
+    if (proof != null) body.put("evidenceJson", proof);
+    String operation = "result";
+    try {
+      if (!(raw instanceof String)
+          || !(proof instanceof String)
+          || ((String) raw).isBlank()
+          || ((String) proof).isBlank())
+        throw new IllegalArgumentException("A análise preservada está incompleta.");
+      validateTaskContext(task);
+      JsonNode result = objectMapper.readTree((String) raw);
+      JsonNode evidence = objectMapper.readTree((String) proof);
+      if (!sourceReference(task).equals(evidence.path("sourceReference").asText())
+          || !"APPROVE".equals(result.path("decision").asText()))
+        throw new IllegalArgumentException(
+            "A análise preservada não corresponde a esta atividade.");
+      validate(
+          result,
+          sourceReference(task),
+          requiresProductIdentity(task),
+          objectMapper.valueToTree(task));
+    } catch (Exception ex) {
+      log.error(
+          "Atena recusou recuperação sem inferência taskId={} sourceReference={}",
+          taskId(task),
+          sourceReference(task),
+          ex);
+      operation = "failure";
+      body.put(
+          "error",
+          "A análise paga foi preservada, mas ainda não atende aos critérios desta candidata."
+              + " Confira o impedimento antes de retomar.");
+      body.put(
+          "blockerGuidance",
+          Map.of(
+              "category",
+              "TECHNICAL_FAILURE",
+              "recommendedAction",
+              "Corrigir o impedimento da recuperação preservada, sem iniciar outra análise paga.",
+              "helpLinks",
+              List.of(taskLink())));
+    }
+    log.info(
+        "Atena revalidou retorno preservado sem modelo taskId={} sourceReference={} operation={}",
+        taskId(task),
+        sourceReference(task),
+        operation);
+    enqueue(task, null, operation, body);
+    return true;
+  }
+
+  /** Monta o callback comum preservando o prompt efetivo e o envelope de execução do modelo. */
   private Map<String, Object> callback(Map<String, Object> task, Execution execution)
       throws IOException {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("resultJson", execution.raw());
-    body.put("evidenceJson", evidence(task));
+    body.put("evidenceJson", evidence(task, audit(execution.prompt())));
     body.put("executionAudit", audit(execution.prompt()));
     putUsage(body, execution.usage(), modelCode());
     return body;
@@ -802,7 +881,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
   /** Seleciona o prompt compatível com a versão persistida da definição BPM. */
   private String promptResource(Map<String, Object> task) {
     if (requiresBigIdea(CONTRACT_MAPPER.valueToTree(task)))
-      return "prompts/pde-commercial-plan/v12/market-strategy.md";
+      return "prompts/pde-commercial-plan/v13/market-strategy.md";
     return requiresAgentValidation(task)
         ? AGENT_VALIDATION_PROMPT
         : requiresProductIdentity(task) ? IDENTITY_PROMPT : LEGACY_PROMPT;
@@ -811,7 +890,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
   /** Seleciona o schema compatível com a versão persistida da definição BPM. */
   private String schemaResource(Map<String, Object> task) {
     if (requiresBigIdea(CONTRACT_MAPPER.valueToTree(task)))
-      return "prompts/pde-commercial-plan/v12/market-strategy-schema.json";
+      return "prompts/pde-commercial-plan/v13/market-strategy-schema.json";
     return requiresAgentValidation(task)
         ? AGENT_VALIDATION_SCHEMA
         : requiresProductIdentity(task) ? IDENTITY_SCHEMA : LEGACY_SCHEMA;

@@ -49,7 +49,10 @@ public class InternalAgentTaskExecutionController {
       @RequestParam(required = false) String executionResourceCode,
       @Parameter(
               description =
-                  "Contrato versionado do executor. Atena em pde-commercial-plan-offer/marketStrategy exige ATENA_PDE_MARKET_STRATEGY_V1; sem contrato essa fila não reserva tarefas.")
+                  "Contrato versionado do executor. Atena em"
+                      + " pde-commercial-plan-offer/marketStrategy exige"
+                      + " ATENA_PDE_MARKET_STRATEGY_REPLAY_V2; sem contrato essa fila não reserva"
+                      + " tarefas.")
           @RequestParam(required = false)
           String workerContract) {
     return service

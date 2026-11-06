@@ -1911,6 +1911,20 @@
           "version": "v1",
           "path": ".github/workflows/experiment-strategist-worker-ci.yml",
           "description": "Testes, build e publicação versionados."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Estratégia com escopo verificável de homologação",
+          "version": "v13",
+          "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v13/market-strategy.md",
+          "description": "Preserva Big Idea e referências públicas, declara requisitos estruturados da mesma candidata e separa exclusão de obrigação comparativa."
+        },
+        {
+          "artifactType": "OUTPUT_SCHEMA",
+          "name": "Schema da estratégia com escopo verificável",
+          "version": "v13",
+          "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v13/market-strategy-schema.json",
+          "description": "Vincula produto, ciclo, experimento, versão e contagem da matriz ao protocolo do backend, mantendo compatibilidade das respostas anteriores."
         }
       ]
     },

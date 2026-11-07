@@ -1,0 +1,18 @@
+{
+  "cardKey": "novidade-visual-nao-implica-utilidade-anuncios-ia",
+  "collection": "neuromarketing",
+  "title": "Criativos de IA: originalidade visual não garante utilidade da oferta",
+  "finding": "Em estudo intraindivíduo com 36 participantes que criaram anúncios com e sem IA, clientes e voluntários avaliaram os criativos assistidos por IA como mais criativos e não convencionais, mas não detectaram melhora na utilidade percebida; clientes tampouco detectaram melhora no alinhamento à marca.",
+  "mechanism": "Hipótese interpretativa: originalidade e apelo estético são dimensões distintas de compreensão, utilidade e coerência com a marca. O estudo não isolou o mecanismo psicológico causal.",
+  "commercialApplication": "Separar avaliação de novidade visual, compreensão da oferta e aderência à marca em campanhas do Marketing Hub. Verificar separadamente CTA, checkout, pagamento e custo reconciliado.",
+  "evidenceStrength": "Estudo experimental intraindivíduo em CHI 2026, 36 criadores e avaliações humanas de anúncios; evidência de percepções sobre criativos, não de desempenho comercial.",
+  "publishedOn": "2026-11-07",
+  "validUntil": "2026-12-22",
+  "experimentHypothesis": "Para uma mesma oferta e público, selecionar criativos apenas por originalidade visual não melhorará necessariamente compreensão, alinhamento à marca ou conversão em comparação com seleção multicritério. Testar com randomização e métricas do funil.",
+  "risks": "Otimizar somente estética pode obscurecer a proposta ou criar peças incoerentes com a marca; não afirmar superioridade comercial da IA sem ensaio em campo.",
+  "limits": "Amostra pequena, designers iniciantes, ferramenta e tarefas específicas; avaliação perceptual, não compras. Ausência de diferença estatística não equivale a prova de igualdade.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-07-novidade-utilidade-anuncios-ia.md",
+  "sourceTitle": "Fonte revisada — Decoupling of Usefulness and Novelty (Fu et al., CHI 2026)",
+  "sourceSha256": "a9476dcbab6eb2a91f98f2fe304f3986a172742b2f67b6d66adae780ac3bf925"
+}

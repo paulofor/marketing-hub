@@ -65,6 +65,7 @@ while IFS= read -r file; do
     .dockerignore) backend=true; frontend=true ;;
     backend/settings.xml) backend=true ;;
     backend/ads-service/*) backend=true ;;
+    shared/pde-validation-scope/*) backend=true ;;
     process-execution-worker/*) backend=true ;;
     config/agents/codex-agent-health-compliance.json) backend=true ;;
     pesquisas/*) backend=true ;;

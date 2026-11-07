@@ -19,9 +19,11 @@ class PdeValidationScopeTest {
   @org.junit.jupiter.params.provider.CsvSource(
       delimiter = '|',
       value = {
-        "Aplicar o protocolo recebido: inputComparisonApplicable=false, uma matriz de nove combinações, sem REFERENCE/REDUCED.|false",
+        "Aplicar o protocolo recebido: inputComparisonApplicable=false, uma matriz de nove"
+            + " combinações, sem REFERENCE/REDUCED.|false",
         "Sem a comparação documental PDE_DOCUMENTED_INPUT_COMPARISON_V3.|false",
-        "inputComparisonApplicable=false: não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais.|false",
+        "inputComparisonApplicable=false: não impor comparação documental de entradas,"
+            + " REFERENCE/REDUCED ou matrizes adicionais.|false",
         "Não exigir REFERENCE/REDUCED.|false",
         "Não executar a comparação documental PDE_DOCUMENTED_INPUT_COMPARISON_V3.|false",
         "Não realizar REFERENCE e REDUCED nem matrizes adicionais.|false",
@@ -31,20 +33,26 @@ class PdeValidationScopeTest {
         "Não deixar de exigir REFERENCE/REDUCED.|true",
         "Não apenas executar REFERENCE/REDUCED.|true",
         "Não impor REFERENCE/REDUCED se faltar orçamento.|true",
-        "Não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais, porém comparar.|true",
+        "Não impor comparação documental de entradas, REFERENCE/REDUCED ou matrizes adicionais,"
+            + " porém comparar.|true",
         "Aplicar nove combinações, sem REFERENCE/REDUCED. Exigir REDUCED.|true",
         "Exigir REFERENCE, sem REFERENCE/REDUCED.|true",
         "Sem REFERENCE/REDUCED, mas exigir a comparação.|true",
         "Não homologar sem REFERENCE/REDUCED.|true",
         "Não apenas sem REFERENCE/REDUCED.|true",
         "18 combinações somente se implementada a comparação REFERENCE/REDUCED.|false",
-        "Se houver comparação documental implementada, executar 18 combinações: três cenários, três dispositivos e duas condições REFERENCE/REDUCED.|false",
+        "Se houver comparação documental implementada, executar 18 combinações: três cenários, três"
+            + " dispositivos e duas condições REFERENCE/REDUCED.|false",
         "Comparar REFERENCE e REDUCED em 18 combinações.|true",
-        "18 combinações somente se implementada a comparação REFERENCE/REDUCED. Executar REFERENCE obrigatoriamente.|true",
-        "Se houver comparação documental implementada, executar REFERENCE/REDUCED; exigir REDUCED mesmo sem implementação.|true",
+        "18 combinações somente se implementada a comparação REFERENCE/REDUCED. Executar REFERENCE"
+            + " obrigatoriamente.|true",
+        "Se houver comparação documental implementada, executar REFERENCE/REDUCED; exigir REDUCED"
+            + " mesmo sem implementação.|true",
         "Comparar REFERENCE e REDUCED somente se houver orçamento.|true",
-        "Se houver comparação documental implementada, executar REFERENCE/REDUCED, mas exigir REDUCED mesmo sem implementação.|true",
-        "Exigir REFERENCE e 18 combinações somente se implementada a comparação REFERENCE/REDUCED.|true",
+        "Se houver comparação documental implementada, executar REFERENCE/REDUCED, mas exigir"
+            + " REDUCED mesmo sem implementação.|true",
+        "Exigir REFERENCE e 18 combinações somente se implementada a comparação"
+            + " REFERENCE/REDUCED.|true",
         "Executar REFERENCE/REDUCED. A comparação só será implementada depois.|true"
       })
   void distinguishesConditionalCapabilityFromRequiredComparison(String text, boolean blocked)
@@ -112,7 +120,9 @@ class PdeValidationScopeTest {
   void validatesPreservedResponseWhenProvided() throws Exception {
     String responseFile = System.getProperty("atena.replay.result");
     String taskFile = System.getProperty("atena.replay.task");
-    if (responseFile == null && taskFile == null) return;
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        responseFile != null || taskFile != null,
+        "Replay integral exige exportações completas; não é executado sem os arquivos.");
     assertThat(responseFile).isNotBlank();
     assertThat(taskFile).isNotBlank();
     var result = json.readTree(Files.readString(Path.of(responseFile)));
@@ -125,8 +135,38 @@ class PdeValidationScopeTest {
         .doesNotThrowAnyException();
   }
 
+  /** Recusa a comparação declarada com identidade de implementação diferente em qualquer eixo. */
+  @ParameterizedTest
+  @ValueSource(strings = {"productId", "cycleId", "experimentId", "prototypeVersion"})
+  void rejectsComparisonImplementedForAnotherCandidate(String field) throws Exception {
+    var task = task(97007L, true);
+    var context = (ObjectNode) json.readTree(task.path("processContextJson").asText());
+    context.withObject("/learningSalesCycle/implementedInput").put(field, "outra-candidata");
+    task.put("processContextJson", context.toString());
+    assertThatThrownBy(() -> PdeValidationScope.protocol(task))
+        .hasMessageContaining("sem capacidade compatível");
+  }
+
+  /** Recusa identidade divergente do protocolo e experimento incompatível no alvo exposto. */
+  @ParameterizedTest
+  @ValueSource(strings = {"productId", "cycleId", "experimentId", "prototypeVersion"})
+  void rejectsProtocolIdentityMismatch(String field) throws Exception {
+    var task = task(97007L, false);
+    var context = (ObjectNode) json.readTree(task.path("processContextJson").asText());
+    context
+        .withObject("/learningSalesCycle/agentValidationExecution")
+        .put(field, "outra-identidade");
+    task.put("processContextJson", context.toString());
+    assertThatThrownBy(() -> PdeValidationScope.protocol(task))
+        .hasMessageContaining("não corresponde");
+    var crossed = task(97007L, false);
+    crossed.withObject("/taskTarget").put("experimentId", 999001L);
+    assertThatThrownBy(() -> PdeValidationScope.protocol(crossed))
+        .hasMessageContaining("não corresponde");
+  }
+
   /** Constrói transporte sintético usando os contratos reais do módulo produtor. */
-  private ObjectNode task(long productId, boolean comparison) throws Exception {
+  ObjectNode task(long productId, boolean comparison) throws Exception {
     Path contracts = Path.of("../backend/ads-service/src/main/resources/contracts");
     var protocol =
         (ObjectNode)
@@ -152,13 +192,18 @@ class PdeValidationScopeTest {
               Files.readString(contracts.resolve("pde-documented-input-comparison-v3.json"))));
       cycle
           .putObject("implementedInput")
-          .put("validationFixtureContract", "PDE_DOCUMENTED_INPUT_COMPARISON_V3");
+          .put("contractVersion", "PDE_IMPLEMENTED_INPUT_V1")
+          .put("validationFixtureContract", "PDE_DOCUMENTED_INPUT_COMPARISON_V3")
+          .put("productId", productId)
+          .put("cycleId", productId + 100)
+          .put("experimentId", productId + 200)
+          .put("prototypeVersion", "fixture-v2");
     }
     var task = json.createObjectNode().put("sourceReference", "experiment:" + (productId + 200));
     task.put("processCode", "pde-commercial-plan-offer");
     task.put("processVersion", 11);
     task.putObject("processDefinition").put("versionNumber", 11);
-    task.putObject("taskTarget").put("productId", productId);
+    task.putObject("taskTarget").put("productId", productId).put("experimentId", productId + 200);
     task.put("processContextJson", context.toString());
     return task;
   }

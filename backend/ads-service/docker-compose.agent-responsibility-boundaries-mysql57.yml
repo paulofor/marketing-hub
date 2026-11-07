@@ -28,8 +28,8 @@ services:
 
   liquibase-agent-responsibility-boundaries:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -41,8 +41,8 @@ services:
 
   liquibase-agent-responsibility-matrix:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -54,8 +54,8 @@ services:
 
   liquibase-iris-communication-agent:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -67,8 +67,8 @@ services:
 
   liquibase-customer-agent-visual-composition:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -80,8 +80,8 @@ services:
 
   liquibase-customer-agent-max-reasoning:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -93,8 +93,8 @@ services:
 
   liquibase-argos-agent-version-v4-audit:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -106,8 +106,8 @@ services:
 
   liquibase-argos-agent-version-v6-strict-contracts:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub
@@ -119,8 +119,8 @@ services:
 
   liquibase-argos-agent-version-v7-public-evidence:
     build:
-      context: .
-      dockerfile: Dockerfile.liquibase-mysql57
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.liquibase-mysql57
     environment:
       ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       ADS_LIQUIBASE_USERNAME: marketinghub

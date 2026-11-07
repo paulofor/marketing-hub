@@ -3,7 +3,8 @@ services:
     image: ${EXPERIMENT_STRATEGIST_IMAGE:-marketing-hub/experiment-strategist-worker:local}
     restart: unless-stopped
     build:
-      context: .
+      context: ..
+      dockerfile: experiment-strategist-worker/Dockerfile
       args:
         CODEX_VERSION: "0.159.3"
     environment:

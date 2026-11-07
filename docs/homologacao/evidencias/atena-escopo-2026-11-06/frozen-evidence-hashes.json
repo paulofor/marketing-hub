@@ -1,0 +1,38 @@
+{
+  "task899.json": {
+    "sha256": "0418a49e9e2445c34bf54221d64745a7b577cd8397cf2b21b356957554857086",
+    "bytes": 153633
+  },
+  "result899-original.json": {
+    "sha256": "a664c715079be46132429e6abb8fc16822f22cb8cef2bef61988e7a5d3a0f665",
+    "bytes": 36930
+  },
+  "task899-api.json": {
+    "sha256": "81a8ab24c932d2f0dc646d53b2b659c5ba09a40cbe5f54c897fa81f9b3a43a04",
+    "bytes": 419549
+  },
+  "task898.json": {
+    "sha256": "7ebdf323a7e12e08be434a015b3d8839c9c013513ce5501ed7ec5ad6489a4abc",
+    "bytes": 158209
+  },
+  "result898.json": {
+    "sha256": "a1eedb8418b38146621532d1c8e0e8218dbf96f45a2cb0aae2d2b47cde278a78",
+    "bytes": 39267
+  },
+  "task827.json": {
+    "sha256": "de0d4d4a7be06d261621c416dda132a43b3510e1b47e737a8567adaad9aedcba",
+    "bytes": 120163
+  },
+  "result827.json": {
+    "sha256": "72d157b2b93248c2c3709d7a98129a16fd524686983297cb0b14fbbe0955bfb5",
+    "bytes": 32123
+  },
+  "task850.json": {
+    "sha256": "43d7b74b4f42a44be98c0c983fe499a1dee35ebf4efcb49583767395f32d314a",
+    "bytes": 148777
+  },
+  "result850.json": {
+    "sha256": "3b31d6d692180f5953eac1744d862273ddc5ffa781fe959454ed52dab9e9ccd0",
+    "bytes": 27872
+  }
+}

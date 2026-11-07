@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { MiraCandidateMeasurements } from "./mira-candidate-metrics.mjs";
+import { loadManufacturerSources } from "./mira-manufacturer-fixture.mjs";
 import {
   verifyVideoIdentity,
   verifyIntegratedPage,
@@ -21,23 +22,7 @@ const [inputFile, outputFile, directory] = process.argv.slice(2);
 const input = JSON.parse(await readFile(inputFile, "utf8"));
 const credential = process.env.PDE_INTERNAL_API_TOKEN;
 if (!credential) throw new Error("Credencial interna necessária.");
-const sources = JSON.parse(
-  await readFile(
-    new URL("./fixtures/mira-manufacturer-20261006.json", import.meta.url),
-    "utf8",
-  ),
-);
-for (const source of sources) {
-  if (
-    Date.now() - Date.parse(source.observedAt) > 30 * 86400000 ||
-    createHash("sha256").update(source.labelDirections).digest("hex") !==
-      source.sourceExcerptSha256
-  ) {
-    throw new Error(
-      "Fixture documental vencida ou alterada; confira a fonte antes da homologação.",
-    );
-  }
-}
+const sources = await loadManufacturerSources();
 // O segundo rótulo inclui o título documental do fabricante; não é inferência sobre outro produto.
 const inventory = sources.map((s, i) => ({
   name: s.name,

@@ -6,5 +6,6 @@ COPY backend/ads-service/pom.xml ./pom.xml
 RUN mvn -q -DskipTests dependency:go-offline
 
 COPY backend/ads-service ./
+COPY shared/pde-validation-scope /workspace/shared/pde-validation-scope
 
 CMD ["mvn", "-q", "-Dtest=FacebookCampaignStopReasonMysqlTest", "test"]

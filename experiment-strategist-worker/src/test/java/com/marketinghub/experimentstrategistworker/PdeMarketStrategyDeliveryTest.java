@@ -260,7 +260,7 @@ class PdeMarketStrategyDeliveryTest {
     assertThat(Files.exists(temporary.resolve("state/pending.json"))).isFalse();
   }
 
-  /** Envia o schema v12 estrito e recupera o callback sem inventar pesquisa em outro produto. */
+  /** Envia o schema v13 estrito e recupera o callback sem inventar pesquisa em outro produto. */
   @ParameterizedTest
   @ValueSource(longs = {4L, 99122L})
   void sendsStrictBigIdeaSchemaAndReplaysWithoutModeling(long productId) throws Exception {
@@ -292,7 +292,12 @@ class PdeMarketStrategyDeliveryTest {
     assertThat(schema.path("properties").path("internationalAssessment").path("type"))
         .anyMatch(v -> v.asText().equals("null"));
     assertThat(Files.readString(temporary.resolve("prompt.txt")))
-        .contains("# Prompt v12", "internationalAssessment: null");
+        .contains("# Prompt v13", "internationalAssessment: null");
+    assertThat(
+            json.readTree(callbacks.getFirst().path("evidenceJson").asText())
+                .path("promptVersion")
+                .asText())
+        .isEqualTo("pde-commercial-plan-v13");
   }
 
   /** Confere todos os schemas empacotados, inclusive propriedades novas e objetos anuláveis. */

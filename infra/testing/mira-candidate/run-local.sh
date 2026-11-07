@@ -4,6 +4,12 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$repo_dir"
 : "${MIRA_TEST_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo desta homologação}"
+# Recusa fonte vencida antes de compilar, construir frontend ou iniciar banco/navegador.
+if [[ "${MIRA_CONTROLS_ONLY:-false}" != "true" ]]; then
+  node customer-agent-worker/src/main/resources/browser/mira-manufacturer-fixture.mjs
+fi
+compose=(docker compose -p "$MIRA_TEST_COMPOSE_PROJECT" -f infra/testing/mira-candidate/compose.yml)
+if [[ -n "${MIRA_TEST_COMPOSE_OVERRIDE_FILE:-}" ]]; then compose+=(-f "$MIRA_TEST_COMPOSE_OVERRIDE_FILE"); fi
 round_dir="$(mktemp -d)"
 backend_pid=''
 frontend_pid=''
@@ -11,13 +17,13 @@ cleanup() {
   if [[ -n "${MIRA_TEST_EVIDENCE_DIR:-}" ]]; then mkdir -p "$MIRA_TEST_EVIDENCE_DIR"; cp -a "$round_dir/." "$MIRA_TEST_EVIDENCE_DIR/"; fi
   if [[ -n "$frontend_pid" ]]; then kill "$frontend_pid" 2>/dev/null || true; fi
   if [[ -n "$backend_pid" ]]; then kill "$backend_pid" 2>/dev/null || true; fi
-  docker compose -p "$MIRA_TEST_COMPOSE_PROJECT" -f infra/testing/mira-candidate/compose.yml down --volumes --remove-orphans
+  "${compose[@]}" down --volumes --remove-orphans
 }
 trap cleanup EXIT
 mvn -q -f backend/ads-service/pom.xml test-compile dependency:build-classpath \
   -Dmdep.outputFile="$round_dir/classpath" -DincludeScope=test -DskipTests
 cp="backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat "$round_dir/classpath")"
-docker compose -p "$MIRA_TEST_COMPOSE_PROJECT" -f infra/testing/mira-candidate/compose.yml up -d --wait
+"${compose[@]}" up -d --wait
 if [[ "${MIRA_CONTROLS_ONLY:-false}" == "true" ]]; then
   MIRA_CONTROLS_DB_HOST="${MIRA_TEST_DB_HOST:-127.0.0.1}" \
     mvn -q -f backend/ads-service/pom.xml -Dtest=MiraPrivateControlsMysql57Test test

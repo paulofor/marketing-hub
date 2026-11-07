@@ -1,0 +1,136 @@
+{
+  "classification": "LOCAL_TEST_ONLY",
+  "productionMutated": false,
+  "newInferenceOrRenderCalls": 0,
+  "productionCallbacksSent": 0,
+  "baselineMain": "0c3bad528589cb4875a803124eb9e34e741436e4",
+  "finalBaseMain": "ea6ed0ea6b69f04cf169a74f94bff50c53b01e30",
+  "preservedTask": {
+    "taskId": 899,
+    "productId": 4,
+    "chainId": 27,
+    "cycleId": 21,
+    "experimentId": 114,
+    "version": "musa-pde-entry-v18-video-cinematico",
+    "estimatedCostUsd": "2.689692",
+    "inputTokens": 739404,
+    "cachedInputTokens": 630272,
+    "outputTokens": 19362
+  },
+  "checks": {
+    "backend/ads-service": {
+      "suites": 769,
+      "tests": 5893,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 66
+    },
+    "experiment-strategist-worker": {
+      "suites": 15,
+      "tests": 168,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    ".codex/atena-integration-20261106/backend/ads-service": {
+      "suites": 8,
+      "tests": 246,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    }
+  },
+  "fullReadOnlyReplays": {
+    "899": "PASS",
+    "898": "PASS",
+    "827": "PASS",
+    "850": "PASS"
+  },
+  "parallelPrHeads": {
+    "5787": "fe29868900fc693018c46d0e75eaab682c461549",
+    "5793": "250f9f0e875895eb6c591df81c0deca3393a944f"
+  },
+  "localDockerImageRecreation": "PASS; temporary topology and image removed",
+  "nodeTests": 8,
+  "workflowContractTests": 68,
+  "sharedBuildContractTests": 4,
+  "shellSyntaxAndShellCheck": "PASS",
+  "sourceSha256": {
+    "shared/pde-validation-scope/src/main/java/com/marketinghub/pde/validationscope/v1/PdeValidationScopePolicy.java": "e1baaaf41f5c3854f23ad102cf01aa45bafd9608e35e31c6b08a0849977125e1",
+    "backend/ads-service/src/main/java/com/marketinghub/agenttask/AtenaPreservedStrategyRecovery.java": "c537d94b84265f6aa75843bfe88c56e6994d41ce74a4ae132497983764eea714",
+    "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskService.java": "38b645e39e7bf152dccd7dd8a9476523501578b5b7cd2eea87b08935ece5a00b",
+    "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/PdeMarketStrategyBpmTaskConsumer.java": "73c7820a4a33a1ca1054c03e61c93e3bc074846b687901827444e17df016c126",
+    "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v13/market-strategy-schema.json": "8431bae05ab79fe9fd853b513e095f3915bbb8e2d193ef1ec3fe542ef51c3600"
+  },
+  "mainAdvanceDuringWork": {
+    "sha": "ea6ed0ea6b69f04cf169a74f94bff50c53b01e30",
+    "changes": "sete arquivos de pesquisa audiovisual; nenhuma sobreposição com a correção",
+    "integration": "fast-forward local preservando todas as alterações, sem merge ou publicação"
+  },
+  "ciContractTests": 14,
+  "artifactReaderTests": 14,
+  "financialMysql57": {
+    "apiChecks": 65,
+    "concurrencyRequests": 8,
+    "queueExecutions": 4,
+    "privateProducts": 2,
+    "nativePlanningChecks": 26,
+    "modelsInvoked": 0,
+    "result": "PASS",
+    "temporaryDataStorage": "tmpfs local; engine disk exhausted with errno 28",
+    "cleanup": "PASS"
+  },
+  "miraSharedHarnessCompatibility": {
+    "manifest": "pde-platform/contracts/mira-private-candidate-v80.json",
+    "previousManifest": "pde-platform/contracts/mira-private-candidate-v75.json",
+    "backendTests": 104,
+    "workerTests": 108,
+    "evidenceAndPublicationTests": 39,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "bundledFiles": 794,
+    "bundledManifests": 205,
+    "frontendVersion": "none",
+    "hasDeployment": false,
+    "commercialApprovalRenewed": false,
+    "modelCalls": 0
+  },
+  "miraDocumentaryCompatibility": {
+    "privateManifest": "pde-platform/contracts/mira-private-candidate-v81.json",
+    "commercialManifest": "pde-platform/contracts/mira-commercial-homologation-v29.json",
+    "sourcesRechecked": 2,
+    "historicalSnapshotPreserved": true,
+    "validityDays": 30,
+    "nodeTests": 75,
+    "realBrowserTechnicalPaths": 18,
+    "history": "PASS",
+    "isolatedScenarios": 3,
+    "backendContractTests": 28,
+    "workerJavaTests": 257,
+    "workerJavaConditionalSkipped": 8,
+    "failures": 0,
+    "errors": 0,
+    "providerCalls": 0,
+    "bundledFiles": 800,
+    "bundledManifests": 207,
+    "frontendVersion": "none",
+    "hasDeployment": false,
+    "topologyRemoved": true,
+    "reportSha256": {
+      "report.json": "a34e33c723204e93fc48a6f8b3124eac2baf9c429575166a51568c9e631b14ac",
+      "history.json": "1ecb44d9dc84e4ca4524245392718b669bdedb33901d62215d92b8936cc6adaa",
+      "scenario-ADHERENT.json": "217d224627bfa1779052bcd9321252472cd7609a0c5e8516da47294325361dc4",
+      "scenario-RECOVERY.json": "fedbc2017678c24fbc323ebad09b3bd7c7c03d78dbc4565be30aebd71590dec8",
+      "scenario-SAFETY.json": "b6c37860bba7e22780c98e20a80acc15ccbeb3c9b8d78d690278b63b1765c964"
+    },
+    "reusedPreventiveTests": 5,
+    "reusedFromPr": 5793,
+    "reusedFromSha": "250f9f0e875895eb6c591df81c0deca3393a944f",
+    "reusedFilesSha256": {
+      "customer-agent-worker/src/main/resources/browser/mira-manufacturer-fixture.mjs": "d208cd411c33984dbe713eb16bab65713a24edbe900495fe81711b3c8f87bbc0",
+      "customer-agent-worker/src/main/resources/browser/fixtures/mira-manufacturer-20261105.json": "08569b4755affe277b882fb89d855cd6675105d63bed3e7c7ad291e18c0b32dd",
+      "customer-agent-worker/src/test/js/mira-manufacturer-fixture.test.mjs": "40a3ee16006bd58bcfade20d11c67005b86ce30bfaf8daf80d4ec8d220273ad0"
+    }
+  }
+}

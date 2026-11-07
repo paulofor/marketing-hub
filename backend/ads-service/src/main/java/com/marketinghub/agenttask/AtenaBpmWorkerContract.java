@@ -5,7 +5,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: exigir a imagem compatível antes de reservar o planejamento de Atena. */
 final class AtenaBpmWorkerContract {
-  static final String VERSION = "ATENA_PDE_MARKET_STRATEGY_V1";
+  static final String VERSION = "ATENA_PDE_MARKET_STRATEGY_REPLAY_V2";
 
   /** Impede criação de uma política sem estado que só descreve o protocolo da fila. */
   private AtenaBpmWorkerContract() {}
@@ -17,10 +17,11 @@ final class AtenaBpmWorkerContract {
         && "marketStrategy".equals(normalize(activity));
   }
 
-  /** Recusa contrato diferente e deixa a imagem legada sem trabalho durante o rollout. */
+  /** Exige replay sem modelo e deixa a imagem anterior sem trabalho durante o rollout. */
   static boolean accepts(String contract) {
     String value = normalize(contract);
     if (value == null) return false;
+    if ("ATENA_PDE_MARKET_STRATEGY_V1".equals(value)) return false;
     if (!VERSION.equals(value))
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,

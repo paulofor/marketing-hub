@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "shared/pde-validation-scope/**"
+      - "scripts/test-pde-validation-shared-contract.py"
       - "config/agents/codex-agent-health-compliance.json"
       - ".github/workflows/backend-ci.yml"
       - ".github/workflows/deploy-containers.yml"
@@ -65,6 +67,7 @@ jobs:
         run: |
           python3 scripts/test-backend-ci-workflow.py
           python3 scripts/test-download-run-artifact.py
+          python3 scripts/test-pde-validation-shared-contract.py
       - name: Validar atestações vigentes contra as fontes do backend
         run: |
           node --test scripts/build-commercial-review-evidence.test.mjs

@@ -2,35 +2,17 @@ package com.marketinghub.experimentstrategistworker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.pde.validationscope.v1.PdeValidationScopePolicy;
 import java.io.IOException;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Responsabilidade: impedir que Atena imponha uma comparação pertencente a outro harness. */
+/**
+ * Responsabilidade: limitar a homologação de Atena à capacidade da candidata vinculada à tarefa.
+ */
 final class PdeValidationScope {
   private static final Logger log = LoggerFactory.getLogger(PdeValidationScope.class);
   private static final ObjectMapper JSON = new ObjectMapper();
-  private static final Pattern COMPARISON =
-      Pattern.compile("\\b(?:REFERENCE|REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\b");
-
-  private static final Pattern EXPLICIT_EXCLUSION =
-      Pattern.compile(
-          "(?iu)(?:^|,)\\s*sem\\s+(?:(?:a\\s+)?comparação(?:\\s+documental)?\\s+)?"
-              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\s*$");
-
-  private static final Pattern EXPLICIT_PROHIBITION =
-      Pattern.compile(
-          "(?iu)(?:^|[:,])\\s*não\\s+(?:impor|exigir|executar|realizar)\\s+"
-              + "(?:(?:a\\s+)?comparação(?:\\s+documental)?(?:\\s+de\\s+entradas)?\\s*,?\\s*)?"
-              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])"
-              + "(?:\\s+(?:ou|nem)\\s+matrizes\\s+adicionais)?\\s*$");
-
-  private static final Pattern IMPLEMENTED_CONDITION =
-      Pattern.compile(
-          "(?iu)(?!(?:.*\\b(?:mas|independentemente|sempre|obrigatoriamente)\\b|.*mesmo sem))(?:se houver comparação documental implementada, executar .*"
-              + "|(?:\\d+ combinações\\s+)?(?:somente|apenas) se implementada a comparação\\s+"
-              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3]))");
 
   /** Impede instâncias de uma validação sem estado operacional. */
   private PdeValidationScope() {}
@@ -48,12 +30,15 @@ final class PdeValidationScope {
           || protocol.path("productId").asLong(-1) != cycle.path("productId").asLong(-2)
           || protocol.path("productId").asLong(-1)
               != task.path("taskTarget").path("productId").asLong(-2)
+          || protocol.path("experimentId").asLong(-1)
+              != task.path("taskTarget").path("experimentId").asLong(-2)
           || protocol.path("cycleId").asLong(-1) != cycle.path("cycleId").asLong(-2)
           || protocol.path("experimentId").asLong(-1) != cycle.path("experimentId").asLong(-2)
           || !protocol
               .path("prototypeVersion")
               .asText()
               .equals(cycle.path("productVersion").asText())
+          || protocol.path("prototypeVersion").asText().isBlank()
           || !task.path("sourceReference")
               .asText()
               .equals("experiment:" + protocol.path("experimentId").asLong(-1)))
@@ -61,7 +46,9 @@ final class PdeValidationScope {
             "Protocolo de homologação não corresponde ao alvo da tarefa.");
       boolean applicable = protocol.path("inputComparisonApplicable").asBoolean();
       if (applicable
-              && (!"PDE_DOCUMENTED_INPUT_COMPARISON_V3"
+              && (!"PDE_IMPLEMENTED_INPUT_V1"
+                      .equals(cycle.path("implementedInput").path("contractVersion").asText())
+                  || !"PDE_DOCUMENTED_INPUT_COMPARISON_V3"
                       .equals(
                           cycle.path("implementedInput").path("validationFixtureContract").asText())
                   || !"PDE_DOCUMENTED_INPUT_COMPARISON_V3"
@@ -69,7 +56,9 @@ final class PdeValidationScope {
                           protocol
                               .path("documentedInputComparison")
                               .path("contractVersion")
-                              .asText()))
+                              .asText())
+                  || !PdeValidationScopePolicy.sameCandidate(
+                      cycle.path("implementedInput"), protocol))
           || !applicable && protocol.has("documentedInputComparison"))
         throw new IllegalArgumentException(
             "Comparação documental sem capacidade compatível da candidata.");
@@ -83,38 +72,20 @@ final class PdeValidationScope {
     }
   }
 
-  /** Recusa obrigação comparativa sem capacidade; ressalva explícita não habilita outra matriz. */
+  /** Confere requisitos estruturados e históricos sem conceder comparação ou matriz por menção. */
   static void validate(JsonNode result, JsonNode task) {
     var protocol = protocol(task);
-    if (protocol.isMissingNode()
-        || protocol.path("inputComparisonApplicable").asBoolean()
-        || !"APPROVE".equals(result.path("decision").asText())) return;
-    var strategy = result.path("marketStrategicContract");
-    if (requiresComparison(strategy.path("causalHypothesis"))
-        || requiresComparison(strategy.path("continueCriteria"))
-        || requiresComparison(strategy.path("agentValidationPlan")))
-      throw new IllegalArgumentException(
-          "Atena exigiu comparação fora do protocolo da candidata; alinhe a hipótese à base disponível.");
-  }
-
-  /** Reconhece exclusões e proibições delimitadas sem dispensar obrigações em outras cláusulas. */
-  private static boolean requiresComparison(JsonNode value) {
-    if (value.isContainerNode()) {
-      var fields = value.fields();
-      while (fields.hasNext()) {
-        var field = fields.next();
-        if (COMPARISON.matcher(field.getKey()).find()) return true;
-      }
-      for (var child : value) if (requiresComparison(child)) return true;
-      return false;
-    }
-    if (!value.isTextual()) return false;
-    for (String sentence : value.asText().split("[.!?;\\r\\n]+")) {
-      String clause = EXPLICIT_EXCLUSION.matcher(sentence.strip()).replaceFirst("").strip();
-      clause = EXPLICIT_PROHIBITION.matcher(clause).replaceFirst("").strip();
-      if (COMPARISON.matcher(clause).find() && !IMPLEMENTED_CONDITION.matcher(clause).matches())
-        return true;
-    }
-    return false;
+    if (protocol.isMissingNode() || !"APPROVE".equals(result.path("decision").asText())) return;
+    PdeValidationScopePolicy.violation(result, protocol)
+        .ifPresent(
+            issue -> {
+              log.warn(
+                  "Atena recusou escopo taskId={} sourceReference={} code={} path={}",
+                  task.path("taskId"),
+                  task.path("sourceReference").asText(),
+                  issue.code(),
+                  issue.path());
+              throw new IllegalArgumentException(issue.message());
+            });
   }
 }

@@ -3,6 +3,7 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "shared/pde-validation-scope/**"
       - "infra/testing/private-kit/**"
       - "backend/ads-service/src/main/java/com/marketinghub/pde/kit/privateprototype/**"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/kit/**"

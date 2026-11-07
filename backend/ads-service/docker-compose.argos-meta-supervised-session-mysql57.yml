@@ -25,8 +25,8 @@ services:
 
   argos-meta-session-test:
     build:
-      context: .
-      dockerfile: Dockerfile.argos-meta-supervised-session-test
+      context: ../..
+      dockerfile: backend/ads-service/Dockerfile.argos-meta-supervised-session-test
     image: marketing-hub/argos-meta-supervised-session-test:validation
     environment:
       ARGOS_META_MYSQL_URL: jdbc:mysql://mysql57-argos-meta-session:3306/marketinghub_argos_meta?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

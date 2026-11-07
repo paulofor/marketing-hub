@@ -4,34 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.pde.validationscope.v1.PdeValidationScopePolicy;
 import java.io.IOException;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 
 /** Responsabilidade: delimitar a homologação às capacidades declaradas da candidata exata. */
 @Slf4j
 public final class LearningCycleValidationProtocol {
-  private static final Pattern COMPARISON =
-      Pattern.compile("\\b(?:REFERENCE|REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\b");
-
-  private static final Pattern EXPLICIT_EXCLUSION =
-      Pattern.compile(
-          "(?iu)(?:^|,)\\s*sem\\s+(?:(?:a\\s+)?comparação(?:\\s+documental)?\\s+)?"
-              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])\\s*$");
-
-  private static final Pattern EXPLICIT_PROHIBITION =
-      Pattern.compile(
-          "(?iu)(?:^|[:,])\\s*não\\s+(?:impor|exigir|executar|realizar)\\s+"
-              + "(?:(?:a\\s+)?comparação(?:\\s+documental)?(?:\\s+de\\s+entradas)?\\s*,?\\s*)?"
-              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3])"
-              + "(?:\\s+(?:ou|nem)\\s+matrizes\\s+adicionais)?\\s*$");
-
-  private static final Pattern IMPLEMENTED_CONDITION =
-      Pattern.compile(
-          "(?iu)(?!(?:.*\\b(?:mas|independentemente|sempre|obrigatoriamente)\\b|.*mesmo sem))(?:se houver comparação documental implementada, executar .*"
-              + "|(?:\\d+ combinações\\s+)?(?:somente|apenas) se implementada a comparação\\s+"
-              + "(?:REFERENCE\\s*(?:/|e)\\s*REDUCED|PDE_DOCUMENTED_INPUT_COMPARISON_V[1-3]))");
-
   /** Impede instâncias de uma política sem estado. */
   private LearningCycleValidationProtocol() {}
 
@@ -50,10 +29,8 @@ public final class LearningCycleValidationProtocol {
       boolean comparison =
           input != null
               && input.isObject()
-              && input.path("productId").asLong(-1) == cycle.getProductId()
-              && input.path("cycleId").asLong(-1) == cycle.getId()
-              && input.path("experimentId").asLong(-1) == cycle.getExperimentId()
-              && cycle.getProductVersion().equals(input.path("prototypeVersion").asText())
+              && "PDE_IMPLEMENTED_INPUT_V1".equals(input.path("contractVersion").asText())
+              && PdeValidationScopePolicy.sameCandidate(input, result)
               && "PDE_DOCUMENTED_INPUT_COMPARISON_V3"
                   .equals(input.path("validationFixtureContract").asText());
       result.put("inputComparisonApplicable", comparison);
@@ -77,34 +54,8 @@ public final class LearningCycleValidationProtocol {
     }
   }
 
-  /** Recusa obrigação comparativa sem capacidade, preservando ressalvas condicionais históricas. */
+  /** Aplica a mesma política do executor, sem conceder capacidade por menção textual. */
   public static boolean hasUnscopedComparison(JsonNode result, JsonNode protocol) {
-    if (!"PDE_VALIDATION_SCOPE_V1".equals(protocol.path("scopeContractVersion").asText())
-        || protocol.path("inputComparisonApplicable").asBoolean(false)) return false;
-    JsonNode strategy = result.path("marketStrategicContract");
-    return requiresComparison(strategy.path("causalHypothesis"))
-        || requiresComparison(strategy.path("continueCriteria"))
-        || requiresComparison(strategy.path("agentValidationPlan"));
-  }
-
-  /** Reconhece exclusões e proibições delimitadas sem dispensar obrigações em outras cláusulas. */
-  private static boolean requiresComparison(JsonNode value) {
-    if (value.isContainerNode()) {
-      var fields = value.fields();
-      while (fields.hasNext()) {
-        var field = fields.next();
-        if (COMPARISON.matcher(field.getKey()).find()) return true;
-      }
-      for (var child : value) if (requiresComparison(child)) return true;
-      return false;
-    }
-    if (!value.isTextual()) return false;
-    for (String sentence : value.asText().split("[.!?;\\r\\n]+")) {
-      String clause = EXPLICIT_EXCLUSION.matcher(sentence.strip()).replaceFirst("").strip();
-      clause = EXPLICIT_PROHIBITION.matcher(clause).replaceFirst("").strip();
-      if (COMPARISON.matcher(clause).find() && !IMPLEMENTED_CONDITION.matcher(clause).matches())
-        return true;
-    }
-    return false;
+    return PdeValidationScopePolicy.violation(result, protocol).isPresent();
   }
 }

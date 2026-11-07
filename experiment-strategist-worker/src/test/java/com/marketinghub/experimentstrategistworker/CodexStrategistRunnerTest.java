@@ -189,7 +189,9 @@ class CodexStrategistRunnerTest {
         .contains("node --version | grep -Eq '^v2[0-9]\\.'")
         .contains("npm cache clean --force")
         .doesNotContain("playwright-core install", "apt-get", "chmod -R a+rX /ms-playwright")
-        .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
+        .contains(
+            "COPY --from=build /build/experiment-strategist-worker/src/main/resources/browser"
+                + " /app/browser");
     assertThat(prompt)
         .contains("consultar_paginas_publicas")
         .doesNotContain("node /app/browser/public-research.mjs")

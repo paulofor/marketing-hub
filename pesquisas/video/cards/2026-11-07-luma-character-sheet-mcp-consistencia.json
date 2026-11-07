@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-luma-character-sheet-consistencia-mcp",
+  "collection": "video",
+  "title": "Testar workflow Luma Character Sheet para continuidade de mascotes",
+  "finding": "Luma disponibiliza workflow Character Sheet via MCP, preservando personagem de referência através de ângulos, vestuários e cenas, com IDs reaproveitáveis em produção audiovisual.",
+  "mechanism": "Luma MCP e skill /luma:character-sheet no Claude; âncora visual e edições das vistas a partir do mesmo original, com IDs de saída para workflows.",
+  "commercialApplication": "Marketing Hub: padronizar mascotes e personagens em anúncios sequenciais e vídeos explicativos, reduzindo deriva de identidade e revisão.",
+  "evidenceStrength": "Alta para existência e funcionamento do workflow na documentação oficial; anúncio de 04/11 descrito por fonte secundária; sem benchmarking, API REST ou preços específicos confirmados.",
+  "publishedOn": "2026-11-07",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Usar âncora e character sheet reduz inconsistências visuais entre variantes do mesmo personagem versus gerações independentes.",
+  "risks": "Custo em créditos desconhecido, limites e licença comercial por conta não discriminados; consentimento e direitos sobre fotografias; dependência de MCP/Claude.",
+  "limits": "Workflow de imagens para preparação audiovisual; não é novo modelo texto-para-vídeo; sem endpoint REST dedicado confirmado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-07-luma-character-sheet-mcp.md",
+  "sourceTitle": "Luma Character Sheet: MCP e consistência visual",
+  "sourceSha256": "10cfa16faa766d449cee98915213de88236994c4a4fd34e16aed64b1ebdb7233"
+}

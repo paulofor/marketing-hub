@@ -1,0 +1,18 @@
+{
+  "cardKey": "preparacao-atencional-emocao-musical",
+  "collection": "prazer-audio-visual",
+  "title": "Preparação atencional pode modificar emoções sentidas ao ouvir música",
+  "finding": "Em experimento randomizado com 191 adultos chineses mais velhos, 10 minutos de atenção plena antes de ouvir música foram seguidos de maior transcendência e tranquilidade autorrelatadas e menor tristeza do que 10 minutos de descanso, com correção FDR; seis outras dimensões não mostraram diferença robusta.",
+  "mechanism": "O estado atencional anterior à escuta pode alterar a avaliação estética da música; efeito afetivo residual da meditação não foi isolado.",
+  "commercialApplication": "Testar orientação de atenção breve e opcional em experiências musicais longas, comparada a pausa neutra de igual duração, mantendo trilha e nível de áudio constantes. Não introduzir pausa obrigatória em anúncios.",
+  "evidenceStrength": "Moderada para diferenças emocionais imediatas no experimento randomizado (n=191) e baixa para generalização a experiências digitais comerciais, outras idades e culturas.",
+  "publishedOn": "2026-11-07",
+  "validUntil": "2026-12-22",
+  "experimentHypothesis": "Em uma experiência musical voluntária, uma preparação atencional curta, pulável e não terapêutica alterará tranquilidade e transcendência autorrelatadas em comparação com instrução neutra, sem comprometer compreensão, conforto e conclusão da experiência; incluir condição controle sem música quando viável.",
+  "risks": "Não prometer terapia, regulação de dopamina nem maior conversão; evitar coerção, atrasos obrigatórios, segmentação por condições clínicas e interpretação de emoções auto-relatadas como diagnóstico.",
+  "limits": "Amostra chinesa de 60+ anos, trechos específicos de pop instrumental, avaliações somente após escuta, possível carryover da meditação, ausência de replicação independente, prazer comercial e métricas de venda não avaliados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-07-preparacao-atencional-emocao-musical-v1.md",
+  "sourceTitle": "Fonte revisada v1 — preparação atencional e emoções estéticas musicais",
+  "sourceSha256": "408c42ad5d0ebfa0400e689394ac15047434f9b7ff09098b7ceeefe1c4b4f58f"
+}

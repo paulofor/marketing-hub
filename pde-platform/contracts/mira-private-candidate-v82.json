@@ -615,7 +615,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunConstructionContinuationPersistenceTest.java",
-      "sha256": "7f3248d28108a961cfbcbf45ca9569deeb273ff6ad56ce2ef61d446749dd6b5e",
+      "sha256": "459f93843833abf276657528b1eee5a3d269b2a13c260f07a2b64dbf0009339e",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
     },
@@ -1066,7 +1066,7 @@
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/mira-private-candidate-v81.json",
     "previousManifestSha256": "bdc5acca8fe3c12d492ece09f794f3e511a0c9f94b4ccbb611ae5f8a11bcbb48",
-    "validatedAt": "2026-11-07T04:10:49.532107+00:00",
+    "validatedAt": "2026-11-07T04:23:05.569526+00:00",
     "scope": "Compatibilidade do encadeamento administrativo 2→3→4: construção e homologação atuais antes da comunicação, sem alterar a experiência Mira ou renovar aprovações.",
     "changedEvidence": [
       {

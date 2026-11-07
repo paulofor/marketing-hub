@@ -43,7 +43,7 @@ import org.springframework.web.server.ResponseStatusException;
     properties = {
       "spring.liquibase.enabled=false",
       "spring.jpa.show-sql=false",
-      "spring.datasource.url=jdbc:h2:mem:construction-continuation-${random.uuid};DB_CLOSE_DELAY=0"
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.businessprocess.automation.v1.service.ProcessRunConstructionContinuationPersistenceTest-${random.uuid};DB_CLOSE_DELAY=0"
     })
 class ProcessRunConstructionContinuationPersistenceTest {
   @Autowired private ProcessRunRepository runs;

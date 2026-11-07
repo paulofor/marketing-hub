@@ -81,3 +81,22 @@ venda ou impacto comercial. A publicação e a recuperação produtiva serão co
 SHA, workflows, identidade de runtime, tela e dados persistidos antes de encerrar a solicitação.
 Os tetos produtivos lidos antes da entrega são US$ 200 acumulados de agentes e US$ 15 de
 planejamento audiovisual; mídia do experimento permanece R$ 0. Não foram alterados.
+
+
+### Ajuste do CI antes da integração
+
+Os dois jobs recusados no HEAD inicial tinham a mesma causa: a URL H2 da nova fixture
+já era aleatória, mas faltava o nome completo da classe exigido pelo contrato de isolamento.
+A correção foi feita localmente; os 32 validadores de contrato de CI/artefato/validação
+compartilhada e os três testes de recuperação/concorrência passaram antes da atualização do PR.
+Node 22 foi instalado somente no workspace para validar o runner (quatro testes) e o worker
+(seis testes), preservando os executáveis compartilhados em `/usr/local`.
+
+A matriz HTTP adicional do motor real passou em MySQL 5.7: **21 casos de API e 22 de ciclo de
+vida**, com agentes simulados e nenhuma gravação produtiva. A engine local apresentou
+`No space left on device`; o banco descartável foi executado em memória pelo mesmo projeto
+Compose exclusivo. O verificador de provas permanece íntegro após o ajuste da fixture.
+
+O reinício do motor conservou provas, tarefas, conclusões e deduplicação. A matriz visual
+integrada ao MySQL também passou em desktop, iPhone e Pixel, cobrindo início, pausa, retomada,
+falha, histórico, subprocesso e retorno contextual. A topologia temporária foi removida.

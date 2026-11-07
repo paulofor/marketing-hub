@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-kling4-flash-api-custo-rascunho",
+  "collection": "video",
+  "title": "Testar Kling 4.0 Flash para gerar variações baratas de vídeo",
+  "finding": "Kling 4.0 Flash teve abertura geral anunciada em 04/11/2026 e entrou na Runway Dev em 05/11. Oferece áudio, referências e edição de vídeo em 720p, 3–20s, por US$0,094/s sem entrada de vídeo.",
+  "mechanism": "Modelo proprietário da Kuaishou com API Runway kling_4_flash; texto, imagem e vídeo como referências. 9,4 créditos/s; edição com input cobra 6,3 créditos × (saída + max(entrada, saída)).",
+  "commercialApplication": "Marketing Hub: produção de rascunhos, hooks e variantes para testes de anúncios, antes de finalizar em 1080p com outro modelo.",
+  "evidenceStrength": "Alta para disponibilidade, modalidades, limites e preços pela documentação oficial da Runway; abertura da interface em 04/11 reportada por fontes especializadas; qualidade não testada.",
+  "publishedOn": "2026-11-07",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Flash reduz o custo por variação aprovada em pelo menos 15% relativamente ao 4.0 completo em 720p, sem comprometer o criativo de teste.",
+  "risks": "720p apenas; menor controle, sem keyframes intermediários; cobranças de vídeo de entrada e refações; licença comercial por plano; políticas de conteúdo e consentimento.",
+  "limits": "3–20 s, até 10 imagens e 5 vídeos de referência (20s totais). Pesos não abertos; desconto completo 4.0 Runway até 30/11; preço pode mudar.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-07-kling4-flash-api-custo.md",
+  "sourceTitle": "Kling 4.0 Flash: status, custos e limites oficiais",
+  "sourceSha256": "7abbdcb4f59def9e23646ab6d3ac2820cbc2a4c3adfb4d2567bfaf1e587b3fe2"
+}

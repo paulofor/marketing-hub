@@ -358,7 +358,14 @@ class PdeTechnicalHomologationActivityExecutionTest {
     learningCycle.setStage("ADJUSTMENT");
     learningCycle.setStatus("OPEN");
     clearInvocations(tasks, experiments);
-    var next = new LearningCycleWorkResolver(chains, service).resolve(learningCycle);
+    var next =
+        new LearningCycleWorkResolver(
+                chains,
+                service,
+                mock(
+                    com.marketinghub.businessprocesschain.learningcycle.v1.service
+                        .LearningCycleConstructionPrerequisite.class))
+            .resolve(learningCycle);
     verify(tasks).findProcessExecutionListSnapshots("experiment:92", "pde-construction-approval");
     verify(tasks, never())
         .findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
@@ -451,7 +458,13 @@ class PdeTechnicalHomologationActivityExecutionTest {
         Files.writeString(
             Path.of(output + ".after-next-work.json"),
             json.writeValueAsString(
-                new LearningCycleWorkResolver(chains, service).resolve(learningCycle)));
+                new LearningCycleWorkResolver(
+                        chains,
+                        service,
+                        mock(
+                            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                                .LearningCycleConstructionPrerequisite.class))
+                    .resolve(learningCycle)));
       }
       var recoveryTask =
           history.stream()

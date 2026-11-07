@@ -21,8 +21,10 @@ class LearningCycleWorkResolverTest {
       mock(BusinessProcessChainDefinitionRepository.class);
   private final BusinessProcessActivityExecutionService executions =
       mock(BusinessProcessActivityExecutionService.class);
+  private final LearningCycleConstructionPrerequisite prerequisite =
+      mock(LearningCycleConstructionPrerequisite.class);
   private final LearningCycleWorkResolver resolver =
-      new LearningCycleWorkResolver(chains, executions);
+      new LearningCycleWorkResolver(chains, executions, prerequisite);
   private final LearningSalesCycle cycle = new LearningSalesCycle();
 
   /** Modela o retorno ao planejamento seguido da construção na mesma cadeia. */
@@ -209,5 +211,52 @@ class LearningCycleWorkResolverTest {
     verifyNoMoreInteractions(executions);
     assertThat(cycle.getStatus()).isEqualTo("OPEN");
     assertThat(cycle.getStage()).isEqualTo("ADJUSTMENT");
+  }
+
+  /** Retorno direto à comunicação exige primeiro a construção, também em outro produto. */
+  @ParameterizedTest
+  @CsvSource({"4,21,114,27", "93004,93021,93114,93027"})
+  void directCommunicationReturnCannotSkipConstruction(
+      long productId, long cycleId, long experimentId, long chainId) {
+    var chain = chains.findById(14L).orElseThrow();
+    chain.getItems().add(item(71, 4, "pde-communication-sales-journey"));
+    when(chains.findById(chainId)).thenReturn(Optional.of(chain));
+    cycle.setProductId(productId);
+    cycle.setId(cycleId);
+    cycle.setExperimentId(experimentId);
+    cycle.setChainDefinitionId(chainId);
+    cycle.setReturnProcessId(71L);
+    state(70, false, "NOT_STARTED");
+    assertThat(resolver.resolve(cycle).processDefinitionId()).isEqualTo(70L);
+    verify(executions, never()).productProcessExecutions(67L, productId, cycleId, chainId, false);
+    verify(executions, never()).productProcessExecutions(71L, productId, cycleId, chainId, false);
+    state(70, true, null);
+    state(71, false, "NOT_STARTED");
+    assertThat(resolver.resolve(cycle).processDefinitionId()).isEqualTo(71L);
+    assertThat(cycle.getReturnProcessId()).isEqualTo(71L);
+  }
+
+  /** A projeção concluída não pode substituir a prova atual de homologação da construção. */
+  @Test
+  void rejectsStaleProjectedConstructionApproval() {
+    var chain = chains.findById(14L).orElseThrow();
+    chain.getItems().add(item(71, 4, "pde-communication-sales-journey"));
+    cycle.setReturnProcessId(71L);
+    state(70, true, null);
+    var state = executions.productProcessExecutions(70L, 4L, 2L, 14L, false);
+    var gate = mock(ProductProcessActivityExecutionGroupResponse.class);
+    when(gate.activityId()).thenReturn("agentValidationGate");
+    when(gate.activityName()).thenReturn("Aprovar versão");
+    when(gate.activityOwnerName()).thenReturn("Backend");
+    when(state.activities()).thenReturn(List.of(gate));
+    when(prerequisite.pending(cycle))
+        .thenReturn(
+            new LearningCycleConstructionPrerequisite.Pending(
+                70L, 3, "Processo 3 pendente", "/construction"));
+    var next = resolver.resolve(cycle);
+    assertThat(next.processDefinitionId()).isEqualTo(70L);
+    assertThat(next.activityId()).isEqualTo("agentValidationGate");
+    assertThat(next.state()).isEqualTo("BLOCKED");
+    verify(executions, never()).productProcessExecutions(71L, 4L, 2L, 14L, false);
   }
 }

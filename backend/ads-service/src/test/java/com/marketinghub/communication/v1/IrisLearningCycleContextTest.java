@@ -113,6 +113,7 @@ class IrisLearningCycleContextTest {
     activity.setActivityId("agentValidationGate");
     activity.setProcessDefinition(process);
     gate.setId(910258L);
+    gate.setSourceReference(source);
     gate.setActivityDefinition(activity);
     gate.setOccurrenceNumber(1);
     gate.setStatus("COMPLETED");
@@ -964,5 +965,75 @@ class IrisLearningCycleContextTest {
     assertThat(provider.resolve("experiment:1")).isEmpty();
     cycle.setStatus("CLOSED");
     assertThat(provider.resolve(SOURCE).orElseThrow().get("availability")).isEqualTo("MISSING");
+  }
+
+  /** Usa a prova real de Íris no predecessor compartilhado para identidades diferentes. */
+  @ParameterizedTest
+  @CsvSource({"4,21,114,27", "92004,92021,92114,92027"})
+  void sharesVerifiedConstructionBeforeCommunication(
+      long productId, long cycleId, long experimentId, long chainId) throws Exception {
+    fixture(productId, cycleId, experimentId, chainId);
+    var prerequisite =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service
+            .LearningCycleConstructionPrerequisite(chains, instances, provider);
+    assertThat(prerequisite.pending(cycle)).isNull();
+    gate.setObjectiveAchieved(false);
+    var pending = prerequisite.pending(cycle);
+    assertThat(pending.reason()).contains("Processo 3 pendente", "ciclo #" + cycleId, VERSION);
+    assertThat(pending.url())
+        .isEqualTo(
+            "/products/"
+                + productId
+                + "/value-chain-history/processes/70/activities?learningCycleId="
+                + cycleId
+                + "&chainId="
+                + chainId);
+    verify(tasks, never()).save(any());
+    verify(instances, never()).save(any());
+  }
+
+  /**
+   * Prova histórica, versão divergente, revisão posterior e identidade cruzada não liberam Íris.
+   */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "version",
+        "product",
+        "reference",
+        "cycle",
+        "chain",
+        "latest",
+        "source",
+        "missingGate",
+        "laterAttempt"
+      })
+  void rejectsInvalidConstructionAtSharedBoundary(String change) throws Exception {
+    var prerequisite =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service
+            .LearningCycleConstructionPrerequisite(chains, instances, provider);
+    switch (change) {
+      case "version" -> proof.put("prototypeVersion", "historical-v1");
+      case "product" -> proof.put("productId", 9999);
+      case "reference" -> proof.put("sourceReference", "experiment:9999");
+      case "cycle" -> pde.with("lineage").put("learningCycleId", 9999);
+      case "chain" -> cycle.setChainDefinitionId(9999L);
+      case "latest" -> gate.setObjectiveAchieved(false);
+      case "source" -> gate.setSourceReference("experiment:9999");
+      case "missingGate" ->
+          when(instances
+                  .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                      70L, SOURCE))
+              .thenReturn(List.of());
+      case "laterAttempt" ->
+          history.add(
+              new PdeValidationTaskSnapshot(
+                  99999L, 70L, "psiqueAdherent", "PENDING", null, null, null, null));
+    }
+    if ("chain".equals(change)) {
+      assertThatThrownBy(() -> prerequisite.pending(cycle))
+          .isInstanceOf(java.util.NoSuchElementException.class);
+    } else assertThat(prerequisite.pending(cycle)).isNotNull();
+    verify(tasks, never()).save(any());
   }
 }

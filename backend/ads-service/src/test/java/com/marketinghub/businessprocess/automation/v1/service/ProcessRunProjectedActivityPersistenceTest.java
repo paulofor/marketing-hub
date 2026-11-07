@@ -497,7 +497,12 @@ class ProcessRunProjectedActivityPersistenceTest {
             (ProductRepository)
                 org.springframework.test.util.ReflectionTestUtils.getField(service, "products"),
             new com.marketinghub.businessprocesschain.learningcycle.v1.service
-                .LearningCycleWorkResolver(chains, activities),
+                .LearningCycleWorkResolver(
+                chains,
+                activities,
+                mock(
+                    com.marketinghub.businessprocesschain.learningcycle.v1.service
+                        .LearningCycleConstructionPrerequisite.class)),
             cycleService);
     org.springframework.test.util.ReflectionTestUtils.setField(
         service, "cycleContinuation", continuation);

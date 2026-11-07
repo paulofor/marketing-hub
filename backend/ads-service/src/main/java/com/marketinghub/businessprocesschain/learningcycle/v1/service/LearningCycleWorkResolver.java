@@ -15,13 +15,16 @@ import org.springframework.stereotype.Component;
 public class LearningCycleWorkResolver {
   private final BusinessProcessChainDefinitionRepository chains;
   private final BusinessProcessActivityExecutionService executions;
+  private final LearningCycleConstructionPrerequisite constructionPrerequisite;
 
   /** Resolve a projeção de atividades sob demanda, evitando recursão pela atividade chamadora. */
   public LearningCycleWorkResolver(
       BusinessProcessChainDefinitionRepository chains,
-      @Lazy BusinessProcessActivityExecutionService executions) {
+      @Lazy BusinessProcessActivityExecutionService executions,
+      LearningCycleConstructionPrerequisite constructionPrerequisite) {
     this.chains = chains;
     this.executions = executions;
+    this.constructionPrerequisite = constructionPrerequisite;
   }
 
   /**
@@ -47,7 +50,7 @@ public class LearningCycleWorkResolver {
   }
 
   /**
-   * Consulta o estado compacto do contexto, sem auditorias, e inclui comunicação quando exigida.
+   * Consulta o estado compacto e exige construção homologada mesmo no retorno direto à comunicação.
    */
   private Resolution resolvePreparation(LearningSalesCycle cycle, boolean includeCommunication) {
     if (!"OPEN".equals(cycle.getStatus())
@@ -80,7 +83,12 @@ public class LearningCycleWorkResolver {
             : Set.of(initialCode);
     var delegated =
         chain.getItems().stream()
-            .filter(value -> value.getSequenceNumber() >= initial.getSequenceNumber())
+            .filter(
+                value ->
+                    value.getSequenceNumber() >= initial.getSequenceNumber()
+                        || adjustment
+                            && "pde-construction-approval"
+                                .equals(value.getProcessDefinition().getProcessCode()))
             .filter(value -> allowed.contains(value.getProcessDefinition().getProcessCode()))
             .sorted(Comparator.comparing(BusinessProcessChainItem::getSequenceNumber))
             .toList();
@@ -94,10 +102,19 @@ public class LearningCycleWorkResolver {
               cycle.getId(),
               cycle.getChainDefinitionId(),
               false);
-      if (state.objectiveAchieved()) continue;
+      var pending =
+          state.objectiveAchieved() && "pde-construction-approval".equals(process.getProcessCode())
+              ? constructionPrerequisite.pending(cycle)
+              : null;
+      if (state.objectiveAchieved() && pending == null) continue;
       var activity =
           state.activities().stream()
-              .filter(value -> value.activityId().equals(state.currentActivityId()))
+              .filter(
+                  value ->
+                      value
+                          .activityId()
+                          .equals(
+                              pending == null ? state.currentActivityId() : "agentValidationGate"))
               .findFirst()
               .orElse(null);
       if (activity == null) return new Resolution(null, false);
@@ -110,8 +127,8 @@ public class LearningCycleWorkResolver {
               activity.sequenceNumber(),
               activity.activityName(),
               activity.activityOwnerName(),
-              activity.operationalState(),
-              activity.stateReason(),
+              pending == null ? activity.operationalState() : "BLOCKED",
+              pending == null ? activity.stateReason() : pending.reason(),
               "/products/"
                   + cycle.getProductId()
                   + "/value-chain-history/processes/"

@@ -80,9 +80,7 @@ public class ProcessRunService {
     this.transaction = new TransactionTemplate(manager);
   }
 
-  /**
-   * Consulta a origem e as provas em controles parados ou bloqueados, sem retomar nem autorizar.
-   */
+  /** Consulta provas e predecessores sem retomar, autorizar ou habilitar comunicação prematura. */
   public ProcessRunResponse status(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
         ignored -> {
@@ -136,6 +134,12 @@ public class ProcessRunService {
               preview.setStatus("UNAVAILABLE");
               preview.setReason(blocker);
             }
+          }
+          var prerequisite = context.constructionPrerequisite(preview);
+          if (prerequisite != null) {
+            preview.setStatus("WAITING_INPUT");
+            preview.setReason(prerequisite.reason());
+            preview.setNavigationUrl(prerequisite.url());
           }
           return response(preview);
         });
@@ -198,7 +202,7 @@ public class ProcessRunService {
 
   /**
    * Confere resultados antes de nova tentativa e recusa contextos sem autorização, inclusive na
-   * origem de uma delegação, preservando conclusões e recuperando sua passagem no ciclo aberto.
+   * origem de uma delegação; exige construção homologada antes de retomar comunicação.
    */
   public ProcessRunResponse resume(Long productId, Long processId, Long runId) {
     return locked(
@@ -211,6 +215,9 @@ public class ProcessRunService {
           boolean revalidation = "COMPLETED".equals(run.getStatus());
           if (Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT", "COMPLETED")
               .contains(run.getStatus())) {
+            var prerequisite = context.constructionPrerequisite(run);
+            if (prerequisite != null)
+              throw new ResponseStatusException(HttpStatus.CONFLICT, prerequisite.reason());
             var readiness = context.read(run, false);
             if (completedObjectives(readiness) && !hasRequestedChildRevalidation(run)) {
               if (!revalidation) {
@@ -266,7 +273,10 @@ public class ProcessRunService {
       if (ex instanceof PessimisticLockingFailureException)
         return transaction.execute(
             ignored ->
-                response(requiredRun(identity.productId(), identity.processDefinitionId(), runId)));
+                response(
+                    requiredRun(identity.productId(), identity.processDefinitionId(), runId),
+                    null,
+                    false));
       return locked(
           identity.productId(),
           identity.processDefinitionId(),
@@ -328,7 +338,8 @@ public class ProcessRunService {
    * congelada; preserva esperas legítimas e encerra contextos sem autorização após receber o
    * trabalho das delegações. Lê pareceres pela projeção funcional, sem auditoria, e registra a
    * impressão digital da entrada usada em cada disparo. Toda nova tarefa de agente confere o teto
-   * do ciclo antes do disparo, inclusive a primeira; saldo ausente pausa o fluxo.
+   * do ciclo antes do disparo, inclusive a primeira; saldo ausente pausa o fluxo. Comunicação sem
+   * homologação atual aguarda o Processo 3 e expõe seu caminho sem disparar nova tarefa.
    */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
@@ -349,6 +360,16 @@ public class ProcessRunService {
             "PAUSED");
         return response(run);
       }
+    }
+    var prerequisite = context.constructionPrerequisite(run);
+    if (prerequisite != null && !"PAUSING".equals(run.getStatus())) {
+      run.setNavigationUrl(prerequisite.url());
+      transition(
+          run,
+          inFlight(run, new HashSet<>()) ? "WAITING_ACTIVITY" : "WAITING_INPUT",
+          prerequisite.reason(),
+          "CONSTRUCTION_PREREQUISITE_REQUIRED");
+      return response(run, snapshot);
     }
     if (dispatchBlockReason(run) == null && awaitRequestedChildRevalidation(run, snapshot))
       return response(run);
@@ -1245,12 +1266,25 @@ public class ProcessRunService {
    * Expõe progresso e custos das provas consultadas, incluindo callbacks tardios, sem reescrever a
    * pausa histórica ou apresentar atividade encerrada como trabalho atual; o retrato acompanha o
    * mesmo responsável e o acesso financeiro preserva produto, cadeia e ciclo. Bloqueios antigos
-   * mostram a origem atualmente pendente sem reativar o processo por uma consulta.
+   * mostram a origem atualmente pendente sem reativar o processo por uma consulta. A falta de
+   * homologação da construção bloqueia retomada e aponta o predecessor no mesmo ciclo.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
+    return response(run, readiness, true);
+  }
+
+  /** Preserva a leitura durável após disputa de lock, sem recalcular dependências nesse retorno. */
+  private ProcessRunResponse response(
+      ProcessRun run,
+      ProductProcessActivityExecutionHistoryResponse readiness,
+      boolean refreshPrerequisites) {
     boolean persisted = run.getId() != null;
     boolean closed = readiness != null && "CLOSED".equals(readiness.operationalState());
+    var prerequisite =
+        !refreshPrerequisites || closed || Set.of("COMPLETED", "CLOSED").contains(run.getStatus())
+            ? null
+            : context.constructionPrerequisite(run);
     boolean revalidation =
         !closed
             && readiness != null
@@ -1269,7 +1303,7 @@ public class ProcessRunService {
                 && (revalidation
                     || Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT")
                         .contains(run.getStatus()))
-            ? dispatchBlockReason(run)
+            ? prerequisite == null ? dispatchBlockReason(run) : prerequisite.reason()
             : null;
     var userAction = closed ? null : guidance.resolve(run);
     boolean redirected =
@@ -1310,18 +1344,20 @@ public class ProcessRunService {
                 : userAction != null ? userAction.waitingStatus() : run.getStatus(),
         closed
             ? readiness.currentActivityStateReason()
-            : resumeBlocker != null
-                ? resumeBlocker
-                : revalidation
-                    ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
-                    : userAction != null
-                        ? userAction.reason()
-                        : redirected
-                            ? "Correção pendente na origem: "
-                                + readiness.currentActivityName()
-                                + ". "
-                                + Objects.toString(readiness.currentActivityStateReason(), "")
-                            : run.getReason(),
+            : prerequisite != null
+                ? prerequisite.reason()
+                : resumeBlocker != null
+                    ? resumeBlocker
+                    : revalidation
+                        ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
+                        : userAction != null
+                            ? userAction.reason()
+                            : redirected
+                                ? "Correção pendente na origem: "
+                                    + readiness.currentActivityName()
+                                    + ". "
+                                    + Objects.toString(readiness.currentActivityStateReason(), "")
+                                : run.getReason(),
         closed
             ? null
             : readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),
@@ -1342,19 +1378,20 @@ public class ProcessRunService {
         applicable <= 0 ? 0 : Math.min(100, completed * 100 / applicable),
         readiness == null ? run.getKnownCostUsd() : knownCost(readiness),
         readiness == null ? run.getCostCoverage() : readiness.costCoverage(),
-        !closed && !persisted && "READY".equals(run.getStatus()),
+        !closed && prerequisite == null && !persisted && "READY".equals(run.getStatus()),
         !closed
             && persisted
             && !Set.of("PAUSING", "PAUSED", "COMPLETED", "CLOSED").contains(run.getStatus()),
         !closed
             && persisted
+            && prerequisite == null
             && resumeBlocker == null
             && (revalidation
                 || Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT")
                     .contains(run.getStatus())),
         true,
         run.getChildRunId(),
-        run.getNavigationUrl(),
+        prerequisite == null ? run.getNavigationUrl() : prerequisite.url(),
         persisted ? run.getCreatedAt() : null,
         persisted ? run.getUpdatedAt() : null,
         persisted ? run.getLastReconciledAt() : null,

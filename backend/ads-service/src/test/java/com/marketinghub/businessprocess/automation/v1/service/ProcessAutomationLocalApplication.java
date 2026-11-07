@@ -53,6 +53,18 @@ import org.springframework.web.server.ResponseStatusException;
 })
 public class ProcessAutomationLocalApplication {
   /**
+   * Isola a prova de construção, coberta pela regressão integrada com o verificador real de Íris.
+   */
+  @Bean
+  com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleConstructionPrerequisite
+      constructionPrerequisites() {
+    return mock(
+        com.marketinghub.businessprocesschain.learningcycle.v1.service
+            .LearningCycleConstructionPrerequisite.class);
+  }
+
+  /**
    * Isola recibos financeiros, exercitados pelo guard real e pela regressão de pausa persistida.
    */
   @Bean

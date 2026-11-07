@@ -176,6 +176,11 @@ class IrisCreativeExecutionInputVersionTest {
             com.marketinghub.businessprocess.automation.v1.service.ProcessRunCorrectionBudget
                 .class));
     factory.registerSingleton("communicationInputs", provider);
+    factory.registerSingleton(
+        "constructionPrerequisites",
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleConstructionPrerequisite.class));
     var injector = new AutowiredAnnotationBeanPostProcessor();
     injector.setBeanFactory(factory);
     injector.processInjection(context);

@@ -513,6 +513,11 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     var factory = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
     factory.registerSingleton("correctionBudget", mock(ProcessRunCorrectionBudget.class));
     factory.registerSingleton("communicationInputs", provider);
+    factory.registerSingleton(
+        "constructionPrerequisites",
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleConstructionPrerequisite.class));
     var injector =
         new org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor();
     injector.setBeanFactory(factory);

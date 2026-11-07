@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Execução automática de processos v1
-  version: 1.2.2
-  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita. Preparação Safira e homologação verificam o ciclo pelo experimento mesmo quando seu ID foi omitido. Conclusões históricas são conciliadas sem novos disparos; ciclo encerrado com objetivos ausentes permanece CLOSED e não equivale a sucesso. A conclusão de processo preparatório autorizado em ciclo aberto registra automaticamente sua passagem e enfileira o próximo processo indicado pelo resolvedor do ciclo. O evento CYCLE_PROCESS_CONTINUED vincula origem e destino; STOP e pausas são preservados, e leitura não inicia trabalho.
+  version: 1.2.3
+  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita. Preparação Safira e homologação verificam o ciclo pelo experimento mesmo quando seu ID foi omitido. Conclusões históricas são conciliadas sem novos disparos; ciclo encerrado com objetivos ausentes permanece CLOSED e não equivale a sucesso. A conclusão de processo preparatório autorizado em ciclo aberto registra automaticamente sua passagem e enfileira o próximo processo indicado pelo resolvedor do ciclo. O evento CYCLE_PROCESS_CONTINUED vincula origem e destino; STOP e pausas são preservados, e leitura não inicia trabalho. Retorno direto à comunicação não dispensa construção, validação multiagente e aprovação do Processo 3 para o mesmo produto/cadeia/ciclo/versão. Sem prova válida, canStart/canResume são falsos, reason explica o predecessor e navigationUrl aponta suas atividades; iniciar ou retomar comunicação retorna 409. Uma comunicação em WAITING_INPUT sem tarefa em curso permite somente o predecessor exato passar na fila.
 paths:
   /api/business-processes/{processId}/products/{productId}/automation/v1:
     parameters:

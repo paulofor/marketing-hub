@@ -48,6 +48,11 @@ public class ProcessRunContext {
   private com.marketinghub.agenttask.CommunicationMaterializationContextProvider
       communicationInputs;
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleConstructionPrerequisite
+      constructionPrerequisites;
+
   /** Reconhece a versão publicada ou congelada previamente por esta execução do produto. */
   public boolean executableVersion(
       Long productId, Long processId, ProcessRunCommand command, String status) {
@@ -60,7 +65,8 @@ public class ProcessRunContext {
 
   /**
    * Valida identidade, ficha, BPM e adesão explícita, preservando a referência congelada em toda
-   * leitura; navegação sem referência e homologação encerrada não permitem execução.
+   * leitura; navegação sem referência, homologação encerrada e construção pendente impedem
+   * execução.
    */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
@@ -130,6 +136,15 @@ public class ProcessRunContext {
     if (execution) {
       String blocker = experimentBlockReason(process, productId, command.sourceReference());
       if (blocker != null) throw new ResponseStatusException(HttpStatus.CONFLICT, blocker);
+      var scope = new ProcessRun();
+      scope.setProductId(productId);
+      scope.setProcessDefinitionId(processId);
+      scope.setChainDefinitionId(command.chainId());
+      scope.setLearningCycleId(command.learningCycleId());
+      scope.setSourceReference(command.sourceReference());
+      var prerequisite = constructionPrerequisite(scope);
+      if (prerequisite != null)
+        throw new ResponseStatusException(HttpStatus.CONFLICT, prerequisite.reason());
     }
     graph(processId).ordered(result.activities());
     return result;
@@ -226,9 +241,10 @@ public class ProcessRunContext {
 
   /**
    * Reconhece preparação e revisão de vídeos da mesma ocorrência sem liberar trabalho em curso,
-   * selecionar peças ou atravessar os gates de cada atividade.
+   * selecionar peças ou atravessar os gates; libera também a construção exigida pela comunicação.
    */
   public boolean permitsCommercialContinuation(ProcessRun waiting, ProcessRun candidate) {
+    if (permitsConstructionPrerequisite(waiting, candidate)) return true;
     if (permitsInitialPlanning(waiting, candidate)) return true;
     if (waiting.getLearningCycleId() == null
         || !"learningCycle".equals(waiting.getCurrentActivityId())
@@ -257,6 +273,48 @@ public class ProcessRunContext {
                 "quartzo-commercial-preparation-v1",
                 "safira-commercial-preparation-v1")
             .contains(candidateCode);
+  }
+
+  /**
+   * Expõe a dependência da construção sem encerrar o contexto nem tratar navegação como aprovação.
+   */
+  public com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleConstructionPrerequisite.Pending
+      constructionPrerequisite(ProcessRun run) {
+    if (!"pde-communication-sales-journey"
+        .equals(process(run.getProcessDefinitionId()).getProcessCode())) return null;
+    if (run.getSourceReference() == null
+        || !run.getSourceReference().matches("experiment:[1-9][0-9]*")) return null;
+    var cycle =
+        cycles
+            .findByExperimentId(Long.parseLong(run.getSourceReference().substring(11)))
+            .orElse(null);
+    if (cycle == null || cycle.isBaseline() || !"OPEN".equals(cycle.getStatus())) return null;
+    if (!Objects.equals(cycle.getProductId(), run.getProductId())
+        || !Objects.equals(cycle.getChainDefinitionId(), run.getChainDefinitionId())
+        || !Objects.equals(cycle.getId(), run.getLearningCycleId()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Informe o produto, a cadeia e o ciclo corretos antes de iniciar a comunicação.");
+    return constructionPrerequisites.pending(cycle);
+  }
+
+  /**
+   * Libera somente o predecessor exato da comunicação que aguarda homologação, nunca outra fila.
+   */
+  private boolean permitsConstructionPrerequisite(ProcessRun waiting, ProcessRun candidate) {
+    if (!"WAITING_INPUT".equals(waiting.getStatus())
+        || waiting.getFailureCount() > 0
+        || waiting.getLearningCycleId() == null
+        || !Objects.equals(waiting.getProductId(), candidate.getProductId())
+        || !Objects.equals(waiting.getChainDefinitionId(), candidate.getChainDefinitionId())
+        || !Objects.equals(waiting.getLearningCycleId(), candidate.getLearningCycleId())
+        || !Objects.equals(waiting.getSourceReference(), candidate.getSourceReference())
+        || !"pde-construction-approval"
+            .equals(process(candidate.getProcessDefinitionId()).getProcessCode())) return false;
+    var pending = constructionPrerequisite(waiting);
+    return pending != null
+        && Objects.equals(pending.processId(), candidate.getProcessDefinitionId());
   }
 
   /** Permite preparar o primeiro experimento enquanto sua comunicação aguarda os predecessores. */

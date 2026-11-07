@@ -11708,3 +11708,23 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - Limite: proteção e clareza não geram vídeo nem aprovam custo. Pedido cinematográfico
   segue no sucessor #21/#114, sem herdar limites. Evidências e matriz em
   `docs/homologacao/vega-video-estudio-2026-11-04.md`.
+
+
+## LOOP-CICLO-RETORNO-COMUNICACAO-PULA-CONSTRUCAO — 07/11/2026
+
+- **Evidência:** produto 4, ciclo 21/experimento 114, execução 98 concluiu as tarefas
+  899/900/901 e abriu 99 na comunicação, sem execução/gate do Processo 3 nessa referência.
+  Gate histórico 814 pertence ao experimento 111/versão v17; não aprova v18.
+- **Causa:** o resolvedor usava o retorno como limite inferior e excluía construção;
+  comando direto não exigia essa prova, e uma comunicação anterior podia reservar a fila
+  contra seu próprio predecessor. A prontidão de Íris rotulava a lacuna como estratégia.
+- **Correção reutilizável:** construção é predecessor obrigatório, incluindo retorno direto
+  à comunicação; o motor reutiliza a verificação canônica integral de Íris antes de iniciar,
+  retomar ou disparar comunicação. Pendência e link são expostos sem fabricar aprovação.
+  Somente o predecessor do mesmo contexto pode passar na fila, sem tarefa real em andamento.
+- **Prevenção:** regressões do caso e outra identidade, 2→3→4, prova histórica/cruzada,
+  aprovação revogada, tarefa posterior, comandos concorrentes e preservação de custos;
+  navegador desktop/iPhone/Pixel com respostas do serviço local.
+- **Limites:** reaproveitamento exige rastreabilidade e homologação independente atual.
+  Sem mudança dos tetos, mídia, cobrança ou inferência para repetir planejamento pago.
+  Matriz: `docs/homologacao/ciclo-predecessor-construcao-2026-11-07.md`.

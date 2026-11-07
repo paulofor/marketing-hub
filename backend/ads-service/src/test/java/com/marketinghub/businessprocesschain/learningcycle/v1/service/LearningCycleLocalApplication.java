@@ -110,6 +110,18 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleController.class
 })
 public class LearningCycleLocalApplication {
+  /**
+   * Isola a prova de construção, coberta pela regressão integrada com o verificador real de Íris.
+   */
+  @Bean
+  com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleConstructionPrerequisite
+      constructionPrerequisites() {
+    return mock(
+        com.marketinghub.businessprocesschain.learningcycle.v1.service
+            .LearningCycleConstructionPrerequisite.class);
+  }
+
   /** Isola consumo de novos retornos; recibos e guard financeiro possuem regressões próprias. */
   @Bean
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunCorrectionBudget

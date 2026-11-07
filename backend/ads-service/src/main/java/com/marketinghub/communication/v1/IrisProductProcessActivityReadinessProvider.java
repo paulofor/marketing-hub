@@ -58,7 +58,7 @@ public class IrisProductProcessActivityReadinessProvider
 
   /**
    * Exige aceite estratégico V2 e predecessores do mesmo contexto, preserva os gates privados e
-   * antecipa pendências do HTML sem interromper a leitura da ficha.
+   * expõe a construção pendente sem culpar a estratégia e antecipa pendências do HTML.
    */
   @Override
   public AgentProductProcessActivityReadiness readiness(
@@ -71,6 +71,12 @@ public class IrisProductProcessActivityReadinessProvider
     boolean approvedPrivateDestination =
         IrisLearningCycleContext.MODE.equals(context.get("mode"))
             || IrisPrivateProductContext.MODE.equals(context.get("mode"));
+    if (IrisLearningCycleContext.MODE.equals(context.get("mode"))
+        && !"READY".equals(context.get("inputReadiness"))) {
+      return new AgentProductProcessActivityReadiness(
+          false,
+          "Processo 3 pendente: conclua a construção, a validação multiagente e a aprovação da mesma versão deste ciclo antes de Íris. Consulte a próxima atividade indicada na cadeia.");
+    }
     boolean privateStrategy =
         approvedPrivateDestination
             || IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE

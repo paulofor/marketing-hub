@@ -1290,3 +1290,18 @@ para pagar. Plutus, Dédalo, comunicação e revisores recebem essa decisão na 
 Não criar outro produto para uma evolução, transferir autorização ou reescrever experimentos.
 Pesquisa estrangeira pode orientar hipóteses; demanda e contribuição brasileiras exigem o teste
 próprio autorizado. A preparação é acessível por Produtos e Cadeias, sem adicionar sétimo processo.
+
+## Encadeamento obrigatório 2 → 3 → 4 — decisão de 07/11/2026
+
+Construção, validação multiagente e aprovação do Processo 3 são obrigatórias antes do
+Processo 4, inclusive nos retornos de ciclos de aprendizado para comunicação. O destino
+registrado do retorno não dispensa predecessores nem comprova homologação. O backend deve
+conferir a prova válida do mesmo produto, cadeia, ciclo e versão antes de iniciar ou
+retomar comunicação, tanto por continuação automática quanto por comando direto.
+
+Artefatos compatíveis podem ser reaproveitados com origem e compatibilidade explícitas e
+rastreáveis; isso não dispensa a homologação independente do Processo 3 no contexto atual.
+Prova histórica, de outro produto, ciclo ou versão não autoriza o avanço. Quando faltar
+homologação, apresentar a pendência real e o acesso ao Processo 3, preservando tarefas
+concluídas, custos, limites financeiros, segregação e aprovações. Essa passagem não autoriza
+mídia, cobrança ou publicação comercial.

@@ -1,0 +1,18 @@
+{
+  "cardKey": "contexto-local-decisao-compra",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Informação contextual relevante pode reduzir incerteza perto da compra",
+  "finding": "Em 05/11/2026, a Airbnb afirmou que páginas informativas de bairros lançadas inicialmente em Paris vieram acompanhadas de aumento relevante de reservas, sem divulgar percentual ou método. Na plataforma, mais de 75% dos hóspedes usam mapas, mais de 90% consultam várias fotos e 70% leem avaliações antes de reservar.",
+  "mechanism": "Hipótese: informações concretas sobre o contexto de uso e sinais verificáveis de confiança ajudam o comprador a avaliar adequação e riscos antes de pagar; o mecanismo não foi isolado nos dados publicados.",
+  "commercialApplication": "Testar em landing page de produto digital um bloco curto de contexto de uso, exemplos concretos, condições e limitações, sem alegar prova de conversão adicional. Comparar com página idêntica sem o bloco.",
+  "evidenceStrength": "Relato primário corporativo de aumento de reservas não quantificado; métricas descritivas de comportamento; sem experimento ou causalidade publicada. Evidência exploratória.",
+  "publishedOn": "2026-11-07",
+  "validUntil": "2026-12-22",
+  "experimentHypothesis": "Visitantes expostos ao contexto verificável terão maior receita líquida por visitante e menor taxa de reembolso do que visitantes aleatorizados para a página controle, mantendo público e oferta constantes.",
+  "risks": "Provas sociais inventadas, excesso de conteúdo, uso indevido de dados de clientes, interpretação causal do relato do Airbnb, piora da clareza comercial.",
+  "limits": "O efeito relatado não tem dimensão nem protocolo públicos; vem de reservas de hospedagem em Paris e não prova melhoria de vendas para produtos digitais no Brasil. Apenas eventos reais de pagamento e satisfação podem validar impacto no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-07-airbnb-contexto-bairros-reservas.md",
+  "sourceTitle": "Airbnb Q3 2026: páginas de bairros e decisão de reserva — fonte revisada",
+  "sourceSha256": "317a76ee42b5e21bc83baf79530f6cae290f2f69bf804059ae47e3c8ddc13518"
+}

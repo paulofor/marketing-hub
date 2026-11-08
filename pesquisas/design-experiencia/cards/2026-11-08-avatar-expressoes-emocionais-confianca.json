@@ -1,0 +1,18 @@
+{
+  "cardKey": "avatar-expressividade-emocional-confianca-intencao-uso",
+  "collection": "neuromarketing",
+  "title": "Expressividade emocional de avatares pode reduzir confiança e intenção de uso",
+  "finding": "Três experimentos em saúde e turismo encontraram menor intenção declarada de utilizar aplicativos com avatares digitais que exibiam emoções, relacionada à menor confiança percebida, sobretudo entre pessoas com baixa tendência ao antropomorfismo.",
+  "mechanism": "Expressões emocionais de um avatar artificial podem gerar expectativas sociais e uma percepção de incongruência ou artificialidade; o caminho pela confiança é uma mediação estatística, não uma lei psicológica universal.",
+  "commercialApplication": "Testar atendimento B2C sem avatar versus avatar neutro versus avatar emocional, com conteúdo equivalente, mensurando confiança calibrada, conclusão da tarefa, rejeição e comportamento real, sem usar emoções artificiais enganosas.",
+  "evidenceStrength": "Média: três estudos experimentais publicados em revista científica, mas em contextos delimitados e com desfecho de intenção declarada, não uso ou compra observados.",
+  "publishedOn": "2026-11-08",
+  "validUntil": "2026-12-23",
+  "experimentHypothesis": "Expressividade moderada ou neutra produzirá maior confiança e maior conclusão de tarefas que expressividade intensa em parte do público; a hipótese deve ser testada por público e contexto.",
+  "risks": "Antropomorfismo manipulativo, ilusões de vínculo humano, vieses culturais, desconforto com avatar, menor acessibilidade e confundir preferência declarada com comportamento.",
+  "limits": "Não demonstrado para o Marketing Hub, mercado brasileiro ou vendas efetivas; fonte originalmente publicada em dezembro de 2025 e interpretada como evidência complementar, não descoberta publicada hoje.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-08-avatar-expressoes-emocionais-confianca.md",
+  "sourceTitle": "Fonte revisada — expressões emocionais de avatares e confiança",
+  "sourceSha256": "d46bee995be91ecf4f64dbeee6b7837b23a69b3666848ed31d5c23a18d536834"
+}

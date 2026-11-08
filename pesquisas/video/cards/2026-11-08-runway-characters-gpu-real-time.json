@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-runway-characters-57b-inferencia-metade-gpus",
+  "collection": "video",
+  "title": "Avatares conversacionais: Runway reduz H100 de 8 para 4 por sessão",
+  "finding": "Pesquisa publicada em 05/11/2026 documenta Runway Characters (57B) em 24 fps, 704×1088, operando com 4 H100 por sessão em vez de 8, sem novo anúncio de desconto.",
+  "mechanism": "KV cache circular e otimização RoPE/FP8 reduzem manutenção de 69,7 ms para 6,2 ms; etapa em quatro H100 de 240,9 para 159,3 ms, ou 147,4 ms com kernel fundido.",
+  "commercialApplication": "Testar apresentador visual interativo de produtos com voz, comparando custo/latência versus atendimento sem avatar e serviços concorrentes.",
+  "evidenceStrength": "Alta para métricas internas reproduzidas em artigo técnico do fabricante; independente não validado, sem preço de API reduzido confirmado.",
+  "publishedOn": "2026-11-08",
+  "validUntil": "2026-12-08",
+  "experimentHypothesis": "Uma apresentação interativa com avatar pode melhorar o engajamento sem elevar demais o custo por lead qualificado.",
+  "risks": "Quatro GPUs H100 por sessão ainda é caro em autohospedagem; qualidade/lipsync em PT-BR incertos; consentimento da imagem/voz; sem pesos abertos.",
+  "limits": "Web demo 2 min e API até 5 min conforme documentação; redução de hardware não significa desconto. Qualidade verificada pelo fabricante.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-08-runway-characters-inferencia-57b.md",
+  "sourceTitle": "Runway Characters: eficiência de inferência 57B",
+  "sourceSha256": "016d244a51a4932da5cf33436a229720bef674cd3fea3d7c1ad3c5d4a8ccf5a8"
+}

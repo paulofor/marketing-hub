@@ -1,0 +1,18 @@
+{
+  "cardKey": "esforco-auditivo-controle-ruido",
+  "collection": "prazer-audio-visual",
+  "title": "Reduzir esforço auditivo por meio de controle de ruído",
+  "finding": "Em dois experimentos, pessoas aceitaram pressionar repetidamente teclas para diminuir o ruído antes de identificar palavras faladas; a escolha aumentou após tentativas mais difíceis ou incorretas e em frases menos previsíveis.",
+  "mechanism": "Troca de esforço físico voluntário por condições que exigem menor esforço cognitivo de escuta; não é uma medida direta de prazer nem demonstra a eficácia de controle de trilha em vídeos.",
+  "commercialApplication": "Em experiências narradas, testar controles opcionais de equilíbrio música/voz ou atenuação suave de trilha versus mixagem fixa; preservar legendas e acessibilidade.",
+  "evidenceStrength": "Moderada para o comportamento auditivo em dois experimentos, baixa para UX de vídeo; artigo não pré-registrado e evidência pública resumida.",
+  "publishedOn": "2026-11-08",
+  "validUntil": "2026-12-23",
+  "experimentHypothesis": "Usuários terão menor esforço autorrelatado e melhor compreensão da narração quando puderem reduzir trilha/ruído sem perda de conforto, comparados a mixagem fixa de volume equivalente; medir erros, ajustes, abandono e lembrança.",
+  "risks": "Alterações abruptas de volume, inaudibilidade, fricção de controles, inferência de deficiência auditiva, exposição a sons desconfortáveis e promessa de conversão sem teste.",
+  "limits": "Tarefa de reconhecimento da última palavra de frases sob ruído, não anúncios ou vídeos; experimento sem registro prévio, nenhum efeito comprovado em prazer, dopamina, memória comercial ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-08-esforco-auditivo-controle-ruido-v1.md",
+  "sourceTitle": "Fonte revisada v1 — esforço de escuta e escolha ativa por menor ruído",
+  "sourceSha256": "fdca636abdc00be54d2ab8b37f9d8c7edf4505c9a3259ac8301fb4f11da4b08c"
+}

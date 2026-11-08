@@ -1,0 +1,18 @@
+{
+  "cardKey": "rotulos-semanticos-reconhecimento-sonoro",
+  "collection": "prazer-audio-visual",
+  "title": "Rótulos ajudam a reconhecer sons, mas podem aumentar falsos reconhecimentos",
+  "finding": "Três experimentos mostraram que rótulos verbais de categoria aumentaram vividez e acerto de reconhecimento de sons previamente apresentados; porém, imagens ainda facilitaram rejeitar exemplares falsos e a vividez auditiva se associou a falsos reconhecimentos.",
+  "mechanism": "A pista semântica facilita recuperar a categoria auditiva, mas pode reforçar familiaridade genérica em detrimento da discriminação exata de exemplares.",
+  "commercialApplication": "Comparar vídeos/tutoriais com sons importantes rotulados por texto curto versus áudio isolado, avaliando se o rótulo esclarece o evento específico e não aumenta confusão.",
+  "evidenceStrength": "Moderada para reconhecimento de sons ambientais em três experimentos e baixa para transferência a UX e vídeos; estudos não pré-registrados.",
+  "publishedOn": "2026-11-08",
+  "validUntil": "2026-12-23",
+  "experimentHypothesis": "Legenda curta e específica de um acontecimento sonoro poderá melhorar reconhecimento verdadeiro sem elevar falsos positivos em sons parecidos, confusão ou esforço visual; avaliar ambos os tipos de resposta.",
+  "risks": "Legendas podem competir visualmente, criar falsa familiaridade, confundir exemplares similares; evitar prometer memorização ou conversão.",
+  "limits": "Tarefas laboratoriais de som ambiental e imagem mental, não anúncios; suporte semântico não eliminou vantagem das imagens para rejeição correta; sem prova sobre prazer, dopamina ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-08-rotulos-semanticos-reconhecimento-sonoro-v1.md",
+  "sourceTitle": "Fonte revisada v1 — rótulos semânticos e memória de sons ambientais",
+  "sourceSha256": "1380d06320421dba7c566ea65cf3e2877c59ff06852b73c8094c33eedee4b6d9"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "presenca-social-concerto-imersivo",
+  "collection": "prazer-audio-visual",
+  "title": "Presença social e prazer em concerto virtual",
+  "finding": "Em experimento randomizado com 240 adultos, assistir a quatro minutos de concerto em headset 360° gerou avaliações maiores de presença social, prazer e ativação do que ver o mesmo desempenho em vídeo 2D com áudio idêntico; recursos tecnológicos variaram em conjunto.",
+  "mechanism": "Sensação de compartilhar a experiência com artista e público pode acompanhar prazer e engajamento; presença social foi apenas medida, não manipulada, logo mediação estatística não demonstra causalidade.",
+  "commercialApplication": "Testar pistas sociais em vídeo de apresentação musical, ou experimento fatorial VR/2D x presença de público, com conteúdo e áudio comparáveis; avaliar custo e acessibilidade.",
+  "evidenceStrength": "Moderada para a diferença entre configurações completas de visualização (n=240, alocação aleatória); baixa para recursos específicos, causalidade da presença social e aplicação comercial.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2026-12-24",
+  "experimentHypothesis": "Pistas sociais visuais em experiência musical poderão elevar presença social e prazer relatados sem piorar compreensão, desconforto ou conclusão; comparar versões e medir resultados separadamente.",
+  "risks": "Confundir mediação estatística com efeito causal; criar falsa sensação de audiência real; desconforto em VR; custo elevado, acessibilidade e uso indevido de alegações de venda.",
+  "limits": "Um concerto de quatro minutos, 18–30 anos, comparação de headset 360°/monitor 2D com diversos atributos diferentes; medidas subjetivas imediatas, sem vendas ou memória longitudinal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-09-presenca-social-concerto-imersivo-v1.md",
+  "sourceTitle": "Fonte revisada v1 — presença social e prazer em concerto virtual",
+  "sourceSha256": "7f9a647d014ed81d1167bf338a9a324405423050ee19c623ac191c26a4cf2a4e"
+}

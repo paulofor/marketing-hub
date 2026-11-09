@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-ai-studios-5-creditos-unificados-2026-11",
+  "collection": "video",
+  "title": "AI Studios 5.0: carteira de créditos unificada para avatar, dublagem e vídeo",
+  "finding": "A partir de 09/11/2026, a DeepBrain AI consolida minutos e créditos em uma carteira única, com planos Personal de 700 créditos/mês e Team de 1.000 créditos/assento/mês; promoção temporária de dobro de créditos no primeiro mês.",
+  "mechanism": "Custos parametrizados por minuto: exportação de vídeo com avatar 9 créditos, dublagem 3, lipsync+dublagem 6; gerações por modelo têm consumo variável. Migração de assinaturas antigas é opcional e não transfere saldos-base.",
+  "commercialApplication": "Montar estratégia de geração e dublagem PT-BR de vídeos de explicação no Marketing Hub, acompanhando custo por entrega revisada e benefício de orçamento compartilhado.",
+  "evidenceStrength": "Alta para política, data e preços publicados em documentação oficial; sem demonstração de preço permanentemente menor ou teste de API.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "Uma carteira única pode simplificar orquestração de vídeo+avatar+lipsync para anúncios localizados, mas custo por vídeo aprovado depende dos renders e revisões.",
+  "risks": "Créditos mensais não acumulam; perder saldo ao trocar de plano; período de bônus curto; licenças e consentimento; custo de geração adicional não fixo.",
+  "limits": "Status SaaS ativo, API da nova estrutura não aferida; 2× crédito é promoção 09–16/11 para novas contas e até 09/12 para migração elegível, somente no 1º mês.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-09-ai-studios-5-creditos-unificados.md",
+  "sourceTitle": "AI Studios 5.0: créditos unificados em vigor 09/11",
+  "sourceSha256": "882e75152cfccced4e3828fa405d7df7b52352511f66be829b07e5ecdba9a8a5"
+}

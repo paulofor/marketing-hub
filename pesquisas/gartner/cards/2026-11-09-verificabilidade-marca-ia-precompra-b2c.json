@@ -1,0 +1,18 @@
+{
+  "cardKey": "verificabilidade-marca-respostas-ia-precompra-b2c",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Verificar representação da oferta em respostas de IA antes da compra",
+  "finding": "Em pesquisa Gartner divulgada em 09/11/2026 com 408 líderes seniores de marketing, 42% dos CMOs relataram ações para monitorar e corrigir informação incorreta sobre marcas em saídas de IA; 61% adaptaram conteúdo para legibilidade por máquinas. Esses percentuais descrevem ações declaradas, não impacto em compra.",
+  "mechanism": "Hipótese: consistência entre página pública, FAQ e condições da oferta pode tornar mais fácil a sistemas de IA recuperar fatos corretos. Monitoramento independente pode identificar representações incorretas; não há comprovação de melhora de resposta ou conversão.",
+  "commercialApplication": "Em landing pages B2C do Marketing Hub, manter preço, escopo, entrega, condições e limitações acessíveis e atualizados; fazer auditoria documentada de respostas de IA sobre a oferta. Testar página estruturada e verificável contra a atual, medindo dúvidas, CTA, checkout e pagamentos reconciliados.",
+  "evidenceStrength": "Pesquisa descritiva oficial com 408 líderes seniores de marketing (jul-ago/2026). Evidência sobre práticas e intenções de CMOs, sem experimento com consumidores, avaliação de precisão de respostas ou dados de vendas. Resumo público com limitações metodológicas.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2027-02-09",
+  "experimentHypothesis": "Conteúdo de oferta com informações verificáveis e consistentes poderá reduzir divergências factuais em respostas de IA e dúvidas pré-compra, sem prejudicar conversão; testar métricas qualitativas de precisão separadamente de checkout e pagamentos reais.",
+  "risks": "Otimização enganosa para IA, informação desatualizada, respostas alucinadas apesar de fonte correta, atribuição indevida de vendas à IA, amostra de CMOs não representativa dos compradores brasileiros e aumento de esforço editorial.",
+  "limits": "Não inferir causalidade entre adaptação de conteúdo e visibilidade, acurácia ou receita. 42%/61% medem comportamento relatado de CMOs, não preferência de consumidores. Nenhum ganho foi medido no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/gartner/cards/fontes/2026-11-09-verificabilidade-marca-ia-precompra-fonte-v1.md",
+  "sourceTitle": "Gartner (09/11/2026) — CMOs, desinformação de marca e visibilidade em IA: fonte revisada",
+  "sourceSha256": "729078776733295a71f7d9f4efa06cf749c81c9699cc0098f8223f7cb882f6c3"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "ordem-explicacao-perfil-interpretativo-compreensao",
+  "collection": "neuromarketing",
+  "title": "Ordem pessoal de explicações melhora compreensão sem evidência de maior aceitação",
+  "finding": "Com 122 pessoas, ordenar frases de uma recomendação conforme o perfil interpretativo próprio rendeu 86,5% de respostas corretas, ante 63,9% com perfil populacional, 66,0% com perfil de outro participante e 73,0% com o procedimento LLM testado. Aceitação declarada não melhorou de modo confiável.",
+  "mechanism": "Hipótese interpretativa: a ordem alinhada a saliências anteriores pode facilitar a integração e recuperação de condições; a pesquisa não isolou processos cognitivos e também mediu memória imediata.",
+  "commercialApplication": "Testar em explicações de ofertas do Marketing Hub a organização das mesmas condições de preço, escopo e cancelamento por perfil autorizado, medindo compreensão e resultados reais do funil separadamente.",
+  "evidenceStrength": "Preprint com experimento controlado intraindivíduo (N=122) e resultado estatístico em compreensão objetiva; sem aumento confiável de aceitação, sem compras medidas.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2026-12-24",
+  "experimentHypothesis": "Mantendo idênticos todos os fatos, uma ordem baseada em preferências interpretativas consentidas elevará compreensão correta de preços e limitações versus ordem padrão, sem ocultar restrições.",
+  "risks": "Personalização por histórico pode exagerar relevância, induzir erro ou invadir privacidade. Não esconder detalhes nem substituir a intenção atual por hábitos antigos.",
+  "limits": "Amostra de conveniência, quatro cenários, inglês/francês, seis frases e quatro interpretações prévias; prova de compreensão e memória imediata, não de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-09-ordem-explicacao-perfil-interpretativo.md",
+  "sourceTitle": "Munduku e Negre — ordem personalizada de explicações (revisão da evidência)",
+  "sourceSha256": "6b77c8677febbfcecaec464488395b29054b2ce04c8b47be1c92ee4fb7ffd72c"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-luma-v2v-custo-segundos-entrada-saida-2026-11",
+  "collection": "video",
+  "title": "Luma: tarifa V2V com base em segundos de entrada + saída exige comparar custo real",
+  "finding": "A Luma incorporou Kling 4.0 Flash no marketplace (32 créditos/s em 720p) e passou a informar Video-to-Video com base na soma de duração da referência e saída; redução nominal ~50% de taxa Seedance 2.0 não equivale a desconto garantido.",
+  "mechanism": "Formula tarifa atual: créditos por segundo × (duração do vídeo de referência + duração gerada). Exemplo para Seedance 480p: saída10s+referência10s a 15 créditos/s =300 créditos, igual a 10s de saída a 30 créditos/s anteriores.",
+  "commercialApplication": "Criar comparador de custo entre Luma, Runway e outros fornecedores para render, edição e variantes de peças publicitárias, incluindo duração de referência, qualidade, áudio e refações.",
+  "evidenceStrength": "Alta para tarifas atuais na página oficial Luma; comparativo histórico capturado por monitor externo de preços, sem confirmação independente da base anterior.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "Normalizar custos por operação e não por preço unitário anunciado reduz erros na escolha de modelo para anúncios.",
+  "risks": "Tarifas e unidades mudam rapidamente; custos de assinatura não são tarifas API em USD; variação de duração de referência pode fazer custo subir, e comparabilidade de qualidade não demonstrada.",
+  "limits": "Kling Flash já fora lançado via Runway; novidade é disponibilidade pela Luma e cobrança documentada. API própria Luma para este modelo não verificada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-09-luma-kling-flash-v2v-metrica.md",
+  "sourceTitle": "Luma: Kling Flash e medição justa do Video-to-Video",
+  "sourceSha256": "b19fbd47bf6880b342bf9df281be8255cdfa6048b2230050f6e6fcb185dfd4d0"
+}

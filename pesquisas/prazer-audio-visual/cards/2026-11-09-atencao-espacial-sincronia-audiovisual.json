@@ -1,0 +1,18 @@
+{
+  "cardKey": "atencao-espacial-sincronia-audiovisual",
+  "collection": "prazer-audio-visual",
+  "title": "Atenção espacial e simultaneidade som-imagem",
+  "finding": "Dois experimentos com EEG (n=39 e n=36) encontraram efeitos dependentes da pista espacial e do atraso sobre julgamentos de simultaneidade e ilusões de flash, com associações contextuais à atividade alfa pré-estímulo.",
+  "mechanism": "Preparação da atenção visuoespacial pode alterar como o cérebro reúne acontecimentos auditivos e visuais no tempo; alfa posterior é correlato, não causa demonstrada.",
+  "commercialApplication": "Em feedback audiovisual discreto de interface, comparar pistas espaciais válidas e neutras, com conteúdo controlado; medir interpretação de estados e conforto.",
+  "evidenceStrength": "Moderada para fenômenos de psicofísica audiovisual em tarefas com flashes/bipes; baixa para UX, prazer, memória e conversão.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2026-12-24",
+  "experimentHypothesis": "Uma pista espacial coerente com a área acionada poderá modificar a percepção de sincronia e reduzir erros de identificação de feedback em tarefas específicas sem causar desconforto.",
+  "risks": "Estimulação visual incômoda, excesso de flashes, atrasos intencionais confusos, inferir padrões neurais de espectadores e usar 50/100 ms como limite universal.",
+  "limits": "Estímulos artificiais e dois pequenos experimentos; EEG observacional, padrões de fusão e fissão não equivalentes; ausência de testes de prazer, vídeos e comportamento comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-09-atencao-espacial-sincronia-audiovisual-v1.md",
+  "sourceTitle": "Fonte revisada v1 — atenção espacial e percepção do tempo audiovisual",
+  "sourceSha256": "8e51e68b74e6807680d3e5a047ca8928642b1ce984c71f5bc5581e126d5011eb"
+}

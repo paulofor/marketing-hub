@@ -1,0 +1,18 @@
+{
+  "cardKey": "biossinais-ocultos-persuasao-controles-transparentes",
+  "collection": "neuromarketing",
+  "title": "Persuasão por biossinais ocultos: exigir transparência e autonomia do usuário",
+  "finding": "Em experimento intraindivíduo N=24 em VR, a condição com biossinais antes de divulgação elevou a persuasividade percebida do chatbot em 1,42 ponto na escala 1–7. Ao longo do estudo, foi associada a mudanças imediatas de opinião; o efeito da divulgação está confundido com a ordem.",
+  "mechanism": "Hipótese: sinais fisiológicos combinados a instruções para adaptar a resposta alteram estilo argumentativo e a experiência de influência; não foi demonstrado reconhecimento correto de emoções.",
+  "commercialApplication": "Usar como salvaguarda em Psique/Têmis: evitar adaptação persuasiva biométrica oculta, disponibilizar indicador de sensores, consentimento, modo real sem sensores e registro auditável do fluxo, nunca como tática para explorar vulnerabilidades.",
+  "evidenceStrength": "Preprint experimental intraindivíduo N=24; resultado perceptivo em VR/opiniões, associação com atitude imediata. Sem evidência de conversão ou vendas.",
+  "publishedOn": "2026-11-09",
+  "validUntil": "2026-12-24",
+  "experimentHypothesis": "Com somente adaptações transparentes e consentidas, explicações claras e opção persistente de desativar sensores aumentarão compreensão do uso de dados e controle percebido, sem avaliar persuasão clandestina.",
+  "risks": "Manipulação emocional, coleta sensível, vigilância e inferência falsa de estados psicológicos; nenhuma adaptação oculta de mensagens comerciais.",
+  "limits": "Amostra pequena universitária, VR, GPT-4 Turbo, mandarim/inglês, temas diferentes e divulgação sempre no bloco posterior; não generalizar para e-commerce.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-09-biossinais-persuasao-transparencia.md",
+  "sourceTitle": "Wei et al. — biossinais ocultos e persuasão (revisão da evidência)",
+  "sourceSha256": "bb6de3cdb9eaca47d330e3606e899b988afcd8b2f55a8a9d1336938da891cb60"
+}

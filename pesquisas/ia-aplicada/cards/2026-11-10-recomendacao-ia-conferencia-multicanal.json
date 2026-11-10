@@ -1,0 +1,18 @@
+{
+  "cardKey": "recomendacao-ia-conferencia-multicanal",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Após recomendação de IA, consumidor verifica em buscadores e avaliações",
+  "finding": "State of Search Brasil 7 (lançado 06/11/2026; n=4.327, painel online): entre 3.782 usuários de IA, 94,6% declaram pelo menos uma conferência após recomendação; 39,1% consultam buscadores, 36,3% procuram avaliações e 31,6% comparam preços. Apenas 6,5% dizem comprar imediatamente. Ações podem se sobrepor.",
+  "mechanism": "Hipótese: IA pode iniciar consideração, enquanto checagem externa de preço, reputação e condições ajuda a reduzir incerteza na etapa pré-pagamento. Não há teste causal do mecanismo.",
+  "commercialApplication": "Testar consistência da proposta e evidências verificáveis entre páginas oficiais, buscas de marca, avaliações reais e material legível por IAs; explicitar entrega, preço, limites, política de reembolso e fontes.",
+  "evidenceStrength": "Moderada para descrição de atitudes relatadas no Brasil: painel online ponderado (4.327 entrevistas, jul-ago/2026), bases detalhadas; baixa para inferir comportamento efetivo, transações ou impacto causal em conversão.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-25",
+  "experimentHypothesis": "Com a mesma oferta e tráfego randomizado, uma experiência com informações comerciais verificáveis e consistentes aumentará pagamentos conciliados por visitante versus a experiência atual, sem elevar reembolsos, reclamações ou CAC.",
+  "risks": "Fabricar avaliações, métricas, urgência ou fontes; expor dados de compradores; confundir crescimento de busca de marca com venda incremental; depender de respostas voláteis de agentes.",
+  "limits": "São autorrelatos de painel online, não sessões rastreadas nem vendas; proporções de ações múltiplas não se somam. O levantamento é patrocinado/conduzido por atores do mercado SEO/GEO; coleta anterior à publicação. Nenhum impacto foi validado no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-10-state-of-search-ia-conferencia-multicanal.md",
+  "sourceTitle": "State of Search Brasil 7 — conferência de recomendações de IA (revisão de 10/11/2026)",
+  "sourceSha256": "e3a23bdf98d4cdc0b4c89b9671092655eb46091a55854f426d72f72b5b14ec99"
+}

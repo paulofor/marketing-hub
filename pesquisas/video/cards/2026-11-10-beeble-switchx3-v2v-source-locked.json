@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-beeble-switchx3-v2v-source-locked-2026-11",
+  "collection": "video",
+  "title": "Beeble SwitchX 3.0: trocar locação e iluminação preservando filmagem real",
+  "finding": "Em 10/11/2026, Beeble lançou SwitchX 3.0, que utiliza a performance original dentro do alfa e altera cenário/luz com até quatro referências, background dinâmico e tracking de câmera.",
+  "mechanism": "Modelo vídeo-para-vídeo adaptado do MiniMax H3, Source-Locked Rendering, comando temporal por prompt e saída Cloud Professional até 4K 10-bit; máximo anunciado de 360 frames.",
+  "commercialApplication": "Testar anúncios com um apresentador autorizado gravado uma vez e três cenários diferentes, medindo fidelidade facial, preparação da máscara, custo por vídeo aprovado e refações.",
+  "evidenceStrength": "Alta para anúncio/limites/precificação publicados pela Beeble; desempenho real sem benchmark independente; disponibilidade da variante 3.0 na API não confirmada.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2027-01-10",
+  "experimentHypothesis": "Uma edição V2V que preserva o ator pode reduzir custo e risco de inconsistência de múltiplos comerciais, versus regenerar vídeo completo.",
+  "risks": "Erros de alfa, cabelo/reflexos/oclusões, consentimento do ator, atribuição obrigatória na API pública e licenciamento de conteúdo de terceiros.",
+  "limits": "Status 3.0 ativo Cloud; API SwitchX em beta público sem comprovação explícita da versão 3.0; 720p/1080p API geral US$0,10/US$0,30 por 30 quadros, recarga mínima US$50; 4K no Cloud Professional.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-10-beeble-switchx3-v2v.md",
+  "sourceTitle": "Beeble SwitchX 3.0: anúncio, Cloud, API e limites",
+  "sourceSha256": "0f72bcc79003552cad0e7517813f5413e43f3738f0fdf25f564ca51fa2dfafd5"
+}

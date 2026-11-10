@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-adobe-max-agentes-mcp-firefly-premiere-2026-11",
+  "collection": "video",
+  "title": "Adobe MAX 2026: Firefly Graph, Premiere Generative Remove e agentes criativos",
+  "finding": "Em 10/11/2026, Adobe anunciou Generative Remove beta em Premiere, Firefly Graph beta para workflows repetíveis e expansão de agentes criativos nos seus editores.",
+  "mechanism": "Generative Remove mascara/rastreia o objeto e recompõe apenas a região mascarada; Creative Agent opera sequências e efeitos; Firefly Graph combina etapas de múltiplos modelos em fluxos reutilizáveis.",
+  "commercialApplication": "Investigar integração de identidade de marca, storyboard, geração e edição de anúncios no mesmo pipeline. Avaliar posteriormente MCP local para automação com agentes próprios.",
+  "evidenceStrength": "Alta para anúncios e datas oficiais Adobe; MCP local apenas futuro e qualidade/custo ainda não testados.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2027-02-10",
+  "experimentHypothesis": "Workflows multietapas reutilizáveis com edição por agente podem reduzir o tempo de produção de variações de anúncios e acelerar revisão.",
+  "risks": "Acesso de beta, custos de créditos/modelos, upload de materiais em nuvem, diretrizes comerciais dos geradores, dependência de fornecedor e intervenção humana na edição.",
+  "limits": "Creative Agent AI Assistants beta; Firefly Graph beta; Premiere Generative Remove beta; MCP local de terceiros só beta privada prevista início de 2027, sem endpoint de produção hoje.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-10-adobe-max-agentes-video.md",
+  "sourceTitle": "Adobe MAX 2026: agentes e produção audiovisual",
+  "sourceSha256": "0c13de4161148b77741776a25f00789f32c6e15e086a55e6cb91d63c06460068"
+}

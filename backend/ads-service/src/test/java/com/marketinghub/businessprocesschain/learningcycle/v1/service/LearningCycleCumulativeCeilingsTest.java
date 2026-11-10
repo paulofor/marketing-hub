@@ -261,4 +261,78 @@ class LearningCycleCumulativeCeilingsTest {
     assertThat(f.budget.history(f.cycle).getFirst().current()).isFalse();
     assertThat(f.history).hasSize(1);
   }
+
+  /** Um teto planejado herdado não pode ocultar uma decisão operacional posterior e explícita. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"MEDIA", "PRODUCTION"})
+  void preservesExplicitOperationalLimitInsteadOfOlderInheritedPlanning(String code) {
+    var ceilings = new LearningCycleCostCeilings(f.events, f.json, f.cumulative);
+    ceilings.record(
+        f.cycle,
+        new ApproveCostCeilingRequest(
+            UUID.randomUUID(),
+            f.cycle.getRevision(),
+            27L,
+            112L,
+            f.cycle.getProductVersion(),
+            ApproveCostCeilingRequest.Group.valueOf(code),
+            new BigDecimal("100"),
+            "Teste local",
+            "Planejamento anterior",
+            true),
+        f.now);
+    var next = successor(f.cycle, 20, 113);
+    var observedAt = f.now.plusSeconds(30);
+    if ("MEDIA".equals(code)) {
+      next.setStage("AUTHORIZATION");
+      next.setBudgetLimitBrl(new BigDecimal("80"));
+      next.setWindowEnd(observedAt.plusSeconds(3600));
+      var event = new LearningSalesCycleEvent();
+      event.setId(900L);
+      event.setCycleId(next.getId());
+      event.setAction("COMPLETE");
+      event.setFromStage("AUTHORIZATION");
+      event.setCreatedAt(observedAt);
+      event.setEvidenceJson(
+          f.json.write(
+              Map.of(
+                  "confirmed",
+                  true,
+                  "productVersion",
+                  next.getProductVersion(),
+                  "budgetLimitBrl",
+                  80)));
+      f.history.add(event);
+    } else {
+      next.setStage("VIDEO_BRIEF");
+      f.video.authorize(
+          next,
+          new com.marketinghub
+              .businessprocesschain
+              .learningcycle
+              .v1
+              .service
+              .videoBudget
+              .AuthorizeVideoBudgetRequest(
+              UUID.randomUUID(),
+              next.getRevision(),
+              270L,
+              113L,
+              next.getProductVersion(),
+              new BigDecimal("80"),
+              "Teste local",
+              "Limite operacional posterior",
+              true),
+          true,
+          observedAt);
+    }
+    var sheet =
+        new LearningCycleCostWorksheet(f.events, f.json, new ObjectMapper(), ceilings)
+            .read(next, f.review.read(next, f.product, observedAt), null);
+    var row =
+        sheet.rows().stream().filter(item -> code.equals(item.code())).findFirst().orElseThrow();
+    assertThat(row.approved()).isEqualByComparingTo("80");
+    assertThat(row.approvalStatus()).contains("operacional").doesNotContain("mantido do ciclo");
+    assertThat(ceilings.history(next).getFirst().approved()).isEqualByComparingTo("100");
+  }
 }

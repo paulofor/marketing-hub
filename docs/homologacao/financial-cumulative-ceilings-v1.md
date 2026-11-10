@@ -106,3 +106,9 @@ Validação adicional na sandbox, antes de atualizar o PR:
 
 As evidências adicionais ficam em `artifacts/cumulative-ceilings/mysql-fixed`.
 A confirmação da recuperação de credenciais continua pendente e impede publicação.
+
+A revisão final preservou a prioridade de decisões operacionais explícitas de vídeos e
+mídia sobre um teto de planejamento mais antigo. Duas regressões verificam valores
+diferentes e impedem atribuir ao recibo herdado a decisão operacional atual. A rodada
+final relevante teve **195 testes Java aprovados**, sem falhas ou skips; frontend e
+persistência já validados não foram repetidos sem alteração relacionada.

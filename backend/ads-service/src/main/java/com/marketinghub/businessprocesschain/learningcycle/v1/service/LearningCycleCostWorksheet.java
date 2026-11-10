@@ -72,8 +72,14 @@ public class LearningCycleCostWorksheet {
           switch (i) {
             case 0 ->
                 review.authorization() == null ? null : review.authorization().totalLimitUsd();
-            case 1 -> ceiling != null ? ceiling.approved() : review.videoBudgetUsd();
-            case 2 -> ceiling != null ? ceiling.approved() : authorizedMedia;
+            case 1 ->
+                review.videoBudgetUsd() != null
+                    ? review.videoBudgetUsd()
+                    : ceiling == null ? null : ceiling.approved();
+            case 2 ->
+                authorizedMedia != null
+                    ? authorizedMedia
+                    : ceiling == null ? null : ceiling.approved();
             default ->
                 ceiling != null
                     ? ceiling.approved()
@@ -121,7 +127,7 @@ public class LearningCycleCostWorksheet {
                 + " · recibo #"
                 + review.authorization().eventId()
                 + ". Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.";
-      else if (i > 0 && ceiling != null && ceiling.carriedForward())
+      else if (i > 0 && !operational && ceiling != null && ceiling.carriedForward())
         approval =
             "Teto acumulado mantido do ciclo #"
                 + ceiling.sourceCycleId()

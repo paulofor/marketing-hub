@@ -1,0 +1,18 @@
+{
+  "cardKey": "ritmo-narrativo-atencao-imersao",
+  "collection": "prazer-audio-visual",
+  "title": "Ritmo narrativo e imersão emocional",
+  "finding": "Em survey transversal de 1.074 pessoas, ritmo narrativo percebido se associou à imersão emocional; atenção e transporte narrativo explicaram associações indiretas estatísticas, não mediações causais.",
+  "mechanism": "Padrão correlacional compatível com ligação entre ritmo percebido, manutenção de atenção e envolvimento no universo da história; direção causal e importância de edição física não estabelecidas.",
+  "commercialApplication": "Comparar montagens controladas de roteiro audiovisual, variando cadência narrativa sem ocultar informações nem depender de mais estímulos por padrão.",
+  "evidenceStrength": "Moderada para associação autorrelatada em grande survey; baixa para causalidade de edição, prazer subjetivo induzido e resultado comercial.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-25",
+  "experimentHypothesis": "Duas montagens da mesma narrativa, randomizadas entre espectadores, produzirão diferenças testáveis em envolvimento, compreensão e lembrança após 48h, sem piorar conforto; reportar nulos.",
+  "risks": "Confundir ritmo percebido com cortes por segundo; transformar mediação estatística em causalidade; sobrecarregar cenas, comprometer acessibilidade ou prometer conversões.",
+  "limits": "Questionário transversal retrospectivo, obras variadas lembradas por participantes, mesma fonte de autorrelato para todas as variáveis, sem manipulação experimental de vídeo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-10-ritmo-narrativo-atencao-imersao-v1.md",
+  "sourceTitle": "Fonte revisada v1 — ritmo narrativo percebido e imersão emocional",
+  "sourceSha256": "a8b4a8bd30d10715ef8393117cc96a45810ca4665fab243d4853a2712de0f1fb"
+}

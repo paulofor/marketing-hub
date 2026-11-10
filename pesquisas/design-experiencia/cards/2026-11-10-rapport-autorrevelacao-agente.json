@@ -1,0 +1,18 @@
+{
+  "cardKey": "autorrevelacao-agente-rapport-sem-autodivulgacao-usuario",
+  "collection": "neuromarketing",
+  "title": "Autorrevelação de agente eleva rapport percebido, sem evidência de mais revelação pelo usuário",
+  "finding": "Em estudo intraindivíduo com 44 pessoas e um robô social, autorrevelação do robô elevou rapport percebido (4,13 vs. 3,47/5; d=0,79), mas não elevou de modo confiável a autorrevelação dos usuários (p=0,512) e reduziu os turnos médios (15,46 vs. 18,73).",
+  "mechanism": "Hipótese: reciprocidade e contextualização podem tornar o diálogo mais relevante e acolhedor; o estudo não isolou o mecanismo, e vínculo subjetivo não equivale a confiança factual.",
+  "commercialApplication": "Comparar atendimento objetivo com reciprocidade contextual transparente, sem simular vivências humanas reais, medindo compreensão da oferta, resolução de demandas, confiança calibrada e satisfação; acompanhar eventos comerciais independentemente.",
+  "evidenceStrength": "Experimento presencial contrabalanceado com 44 participantes, medidas perceptivas e comportamentais; preprint aceito em RO-MAN 2026; sem vendas ou retenção longitudinal.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-25",
+  "experimentHypothesis": "Comentários contextuais transparentemente gerados por IA elevarão relevância percebida e resolução correta de atendimento frente ao diálogo objetivo, sem aumentar pedidos desnecessários de dados pessoais.",
+  "risks": "Memórias autobiográficas simuladas podem enganar o consumidor; não fingir sentimentos, experiências vividas ou vínculos pessoais nem estimular revelação de informações sensíveis.",
+  "limits": "Robô físico em sessão única, amostra de conveniência; resultados de rapport não provam efeito em confiança factual, vendas, uso prolongado nem conversão brasileira.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-10-rapport-autorrevelacao-agente.md",
+  "sourceTitle": "Anupindi et al. — autorrevelação de robô e rapport (fonte revisada)",
+  "sourceSha256": "486d199f6d12634a05ad4b7ff678931c1804c8bf4826c4cfe52306edf052d524"
+}

@@ -7,6 +7,8 @@ cadeia. A mudança de ciclo ou de sua versão executável, por si só, não exig
 monetária, não zera consumo, não libera reservas e não multiplica o limite. O saldo disponível
 é o teto total vigente menos o consumo acumulado e as reservas ainda comprometidas, contando
 cada parcela uma única vez. Alterar o teto exige decisão explícita na mesma planilha central.
+Uma decisão substituída permanece histórica. Se a decisão mais recente não puder ser
+aplicada ao contexto, bloquear para revisão; não reativar automaticamente um teto anterior.
 
 Recuperar o recibo original e sua origem pela linhagem persistida dos ciclos; não copiar uma
 aprovação como se fosse nova nem transferir valores entre produtos, cadeias ou moedas.

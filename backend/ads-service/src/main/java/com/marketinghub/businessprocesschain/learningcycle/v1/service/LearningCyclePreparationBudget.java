@@ -25,14 +25,14 @@ public class LearningCyclePreparationBudget {
   private final LearningCycleJson json;
   private final LearningCycleCumulativeBudgetHistory cumulative;
 
-  /** Reutiliza o teto da linhagem, preservando origem e reserva sem renová-lo no sucessor. */
+  /** Reutiliza o último teto da linhagem sem reativar decisões substituídas ou renovar reservas. */
   public List<CycleFinancialReview.Authorization> history(LearningSalesCycle cycle) {
     var receipts = cumulative.history(cycle, ACTION);
     Long currentId =
         receipts.stream()
+            .findFirst()
             .filter(receipt -> receipt.eligible() && eligible(receipt.event()))
             .map(receipt -> receipt.event().getId())
-            .findFirst()
             .orElse(null);
     return receipts.stream()
         .map(

@@ -118,7 +118,7 @@ public class LearningCycleFinancialReview {
       return new CycleFinancialReview.PreparationBalance(
           "NOT_AUTHORIZED",
           "Falta registrar o limite de preparação",
-          "Não há teto aprovado neste ciclo nem em seus predecessores do mesmo produto e cadeia. Confira os custos e registre sua decisão na planilha.",
+          "Não há teto vigente aplicável a este contexto. Confira os custos e o histórico na planilha. Mudar de ciclo, por si só, não exige nova aprovação.",
           null,
           true);
     if (known == null)

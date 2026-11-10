@@ -71,7 +71,7 @@ public class LearningCycleCostCeilings {
         request.approved());
   }
 
-  /** Mantém um teto por grupo na linhagem, sem renovar valores pela mudança de ciclo. */
+  /** Mantém a última decisão por grupo sem renovar valores ou reativar limites substituídos. */
   public List<CostWorksheet.CeilingReceipt> history(LearningSalesCycle cycle) {
     Set<String> seen = new HashSet<>();
     return cumulative.history(cycle, ACTION).stream()
@@ -80,6 +80,7 @@ public class LearningCycleCostCeilings {
               var event = receipt.event();
               var data = json.read(event.getEvidenceJson());
               String code = data.path("code").asText();
+              boolean latest = seen.add(code);
               return new CostWorksheet.CeilingReceipt(
                   event.getId(),
                   code,
@@ -87,7 +88,7 @@ public class LearningCycleCostCeilings {
                   event.getOperatorName(),
                   event.getCreatedAt(),
                   data.path("justification").asText(),
-                  receipt.eligible() && seen.add(code),
+                  receipt.eligible() && latest,
                   event.getCycleId(),
                   !Objects.equals(cycle.getId(), event.getCycleId()));
             })

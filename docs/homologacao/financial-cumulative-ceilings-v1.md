@@ -112,3 +112,10 @@ mídia sobre um teto de planejamento mais antigo. Duas regressões verificam val
 diferentes e impedem atribuir ao recibo herdado a decisão operacional atual. A rodada
 final relevante teve **195 testes Java aprovados**, sem falhas ou skips; frontend e
 persistência já validados não foram repetidos sem alteração relacionada.
+
+A seleção também é definitiva por substituição: a invalidação contextual da última
+decisão bloqueia a cobertura, sem ressuscitar teto antigo maior. A regressão usa
+redução explícita de US$ 200 para US$ 100 e comprova histórico preservado e nenhum
+recibo vigente após invalidar o contexto da última decisão. Rodada relevante final:
+**196 testes Java aprovados**, sem falhas ou skips. A mudança não altera consultas,
+persistência ou os cenários MySQL já conferidos; valida somente a seleção e o aviso.

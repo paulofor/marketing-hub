@@ -335,4 +335,63 @@ class LearningCycleCumulativeCeilingsTest {
     assertThat(row.approvalStatus()).contains("operacional").doesNotContain("mantido do ciclo");
     assertThat(ceilings.history(next).getFirst().approved()).isEqualByComparingTo("100");
   }
+
+  /** A invalidação da última decisão nunca ressuscita um teto anterior maior já substituído. */
+  @Test
+  void neverReactivatesSupersededHigherLimitWhenLatestContextBecomesInvalid() {
+    authorize("200", "20");
+    var ceilings = new LearningCycleCostCeilings(f.events, f.json, f.cumulative);
+    ceilings.record(
+        f.cycle,
+        new ApproveCostCeilingRequest(
+            UUID.randomUUID(),
+            f.cycle.getRevision(),
+            27L,
+            112L,
+            f.cycle.getProductVersion(),
+            ApproveCostCeilingRequest.Group.AGENTS,
+            new BigDecimal("200"),
+            "Teste local",
+            "Teto anterior",
+            true),
+        f.now);
+    var next = successor(f.cycle, 20, 113);
+    var at = f.now.plusSeconds(30);
+    f.budget.authorize(
+        next,
+        new PreparationBudgetRequest(
+            UUID.randomUUID(),
+            next.getRevision(),
+            270L,
+            113L,
+            next.getProductVersion(),
+            new BigDecimal("100"),
+            new BigDecimal("15"),
+            "Teste local",
+            "Redução explícita do teto",
+            true),
+        BigDecimal.ONE,
+        0,
+        at);
+    ceilings.record(
+        next,
+        new ApproveCostCeilingRequest(
+            UUID.randomUUID(),
+            next.getRevision(),
+            270L,
+            113L,
+            next.getProductVersion(),
+            ApproveCostCeilingRequest.Group.AGENTS,
+            new BigDecimal("100"),
+            "Teste local",
+            "Redução explícita do teto",
+            true),
+        at);
+    assertThat(f.budget.current(next).totalLimitUsd()).isEqualByComparingTo("100");
+    next.setProductVersion("contexto-invalidado-no-mesmo-ciclo");
+    next.setVersionChangedAt(at.plusSeconds(1));
+    assertThat(f.budget.current(next)).isNull();
+    assertThat(f.budget.history(next)).hasSize(2).noneMatch(receipt -> receipt.current());
+    assertThat(ceilings.history(next)).hasSize(2).noneMatch(receipt -> receipt.current());
+  }
 }

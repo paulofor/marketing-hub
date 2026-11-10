@@ -1,0 +1,18 @@
+{
+  "cardKey": "privacidade-contextual-video-egocentrico-ugc",
+  "collection": "video",
+  "title": "Vídeo em primeira pessoa exige revisão de privacidade contextual",
+  "finding": "EgoVeil, avaliado em dados de 10 usuários de smart glasses, reportou 91,93% de balanced accuracy e 84,42% de Mask recall ao identificar regiões de vídeo a ocultar segundo preferências individuais; não comprovou anonimização universal.",
+  "mechanism": "Interpretação: sensibilidade visual é contextual e pessoal; preferências explícitas podem guiar mascaramento mais adequado que regras genéricas, embora permaneçam falsos negativos.",
+  "commercialApplication": "Para vídeos UGC e demonstrações em primeira pessoa, testar revisão de rostos, telas, dados e terceiros com preferências/autorizações explícitas, comparação de ocultação global e contextual e validação humana antes da publicação.",
+  "evidenceStrength": "Preprint técnico com avaliação cronológica entre usuários em vídeos reais de 10 pessoas, métricas de decisão de máscara; sem validação publicitária ou teste de segurança de publicação.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-25",
+  "experimentHypothesis": "Uma revisão de privacidade contextual, com auditoria humana e lista de autorização, identificará mais exposições indevidas relevantes que um desfoque genérico, sem sacrificar indevidamente informação útil da cena.",
+  "risks": "Vazamento de dados pessoais, erros de máscara, falsa sensação de anonimização, risco adicional pela retenção de memória de privacidade e captura de terceiros sem consentimento.",
+  "limits": "Contexto de óculos inteligentes, N=10, métricas de benchmark e não segurança real; não permite inferir impacto em qualidade do criativo ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-10-privacidade-video-egocentrico.md",
+  "sourceTitle": "Wang e Zhang — EgoVeil e privacidade de vídeo (fonte revisada)",
+  "sourceSha256": "af56545dca0f999ead56d12573bcb0a4d15171083db8b0674b1cb16d3627c870"
+}

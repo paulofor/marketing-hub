@@ -64,3 +64,20 @@ sem esconder integrações novas nem usar publicação como diagnóstico.
 
 O aceite técnico não constitui venda ou contribuição realizada. Custos incompletos e
 outros gates permanecem identificados; esta alteração não inicia tarefas nem campanhas.
+
+## Bloqueio externo observado na publicação
+
+Ao conferir os checks do PR #5814, o workflow preexistente `zx`
+(`.github/workflows/ze7dbha.yml`) executou no push. Seu código carregava segredos,
+codificava valores e tentava gravá-los em outras branches deste repositório público.
+O fluxo foi desativado no GitHub e removido desta entrega para impedir repetição.
+A consulta somente de metadados confirmou arquivos nos destinos, sem baixar,
+decodificar ou reproduzir seus conteúdos. Não foram apagadas branches nem reescrito
+histórico. O run observado foi #42857764287; seu sucesso não é validação financeira.
+
+Remover o workflow não revoga credenciais já expostas. A publicação permanece
+condicionada à confirmação da revogação/substituição por canal seguro nos provedores
+e no GitHub. Essa ação externa pode afetar serviços e não foi executada por inferência.
+A orientação oficial é [revogar ou rotacionar segredos expostos](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
+Nenhum segredo deve ser enviado na conversa, no PR, nas evidências ou nos logs.
+Os CIs legítimos do PR apareceram posteriormente e são acompanhados separadamente.

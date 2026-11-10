@@ -1,0 +1,18 @@
+{
+  "cardKey": "congruencia-letra-musica-prosodia",
+  "collection": "prazer-audio-visual",
+  "title": "Integração afetiva entre letra, música e prosódia",
+  "finding": "Mini revisão de resultados comportamentais e eletrofisiológicos sugere que letra, estrutura musical e prosódia são processadas por sistemas parcialmente distintos e interativos; congruência afetiva não garante mais agrado.",
+  "mechanism": "Modelo provisório de ponderação dinâmica entre conteúdo semântico, melodia e expressão vocal, influenciado por expectativa, atenção e compreensão linguística; mecanismo neural específico não comprovado.",
+  "commercialApplication": "Testar com música licenciada ou original se a coerência ou contraste entre mensagem cantada/narrada e trilha modifica compreensão emocional e conforto em experiências digitais.",
+  "evidenceStrength": "Moderada para síntese dos processos musicais e linguísticos; baixa para integração emocional causal específica, recompensa e transferência para publicidade.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-25",
+  "experimentHypothesis": "Para o mesmo texto inteligível e duração controlada, uma trilha coerente e uma contrastante poderão gerar respostas diferentes em interpretação emocional, agrado, ativação e memória, sem presumir qual será melhor.",
+  "risks": "Conflito emocional distrair da proposta, tradução e cultura mudarem interpretação, problemas de direitos autorais, falsos indicadores de dopamina ou alegações de venda.",
+  "limits": "Mini revisão focalizada, sem estimativa meta-analítica; evidência direta de manipulação neural da congruência letra-melodia limitada e alguns achados baseados em paradigmas indiretos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-10-congruencia-letra-musica-prosodia-v1.md",
+  "sourceTitle": "Fonte revisada v1 — integração emocional de melodia, letra e prosódia",
+  "sourceSha256": "7b1f6272c2c6b03ddb389058259a0a1b7ea1998aee868167ad474738336def23"
+}

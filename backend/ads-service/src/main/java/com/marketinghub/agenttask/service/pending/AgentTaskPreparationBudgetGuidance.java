@@ -7,14 +7,14 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: entregar ao executor somente o recibo financeiro do próprio ciclo aberto. */
+/** Responsabilidade: entregar ao executor o teto acumulado válido na linhagem do ciclo aberto. */
 @Component
 @RequiredArgsConstructor
 public class AgentTaskPreparationBudgetGuidance {
   private final LearningSalesCycleRepository cycles;
   private final LearningCyclePreparationBudget preparation;
 
-  /** Obtém a decisão estruturada, sem interpretar notas nem transferir teto de outro ciclo. */
+  /** Obtém o recibo original da linhagem sem interpretar notas ou renovar o teto no sucessor. */
   public PreparationBudgetContext read(Long productId, String sourceReference) {
     if (sourceReference == null || !sourceReference.matches("experiment:[1-9][0-9]{0,17}"))
       return null;

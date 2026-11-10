@@ -75,5 +75,7 @@ public record CycleFinancialReview(
       String justification,
       Instant approvedAt,
       String productVersion,
-      boolean current) {}
+      boolean current,
+      Long sourceCycleId,
+      boolean carriedForward) {}
 }

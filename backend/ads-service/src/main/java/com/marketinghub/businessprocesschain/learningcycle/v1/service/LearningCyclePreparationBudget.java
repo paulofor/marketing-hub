@@ -23,19 +23,21 @@ public class LearningCyclePreparationBudget {
   private static final String ACTION = "AUTHORIZE_PREPARATION_BUDGET";
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
+  private final LearningCycleCumulativeBudgetHistory cumulative;
 
-  /** Obtém recibos sem herdar decisões de outro ciclo ou versão executável. */
+  /** Reutiliza o teto da linhagem, preservando origem e reserva sem renová-lo no sucessor. */
   public List<CycleFinancialReview.Authorization> history(LearningSalesCycle cycle) {
-    var receipts = events.findByCycleIdAndActionOrderByRevisionDesc(cycle.getId(), ACTION);
+    var receipts = cumulative.history(cycle, ACTION);
     Long currentId =
         receipts.stream()
-            .filter(event -> eligible(event, cycle))
-            .map(LearningSalesCycleEvent::getId)
+            .filter(receipt -> receipt.eligible() && eligible(receipt.event()))
+            .map(receipt -> receipt.event().getId())
             .findFirst()
             .orElse(null);
     return receipts.stream()
         .map(
-            event -> {
+            receipt -> {
+              var event = receipt.event();
               var data = json.read(event.getEvidenceJson());
               return new CycleFinancialReview.Authorization(
                   event.getId(),
@@ -46,7 +48,9 @@ public class LearningCyclePreparationBudget {
                   data.path("justification").asText(),
                   event.getCreatedAt(),
                   data.path("productVersion").asText(),
-                  Objects.equals(currentId, event.getId()));
+                  Objects.equals(currentId, event.getId()),
+                  event.getCycleId(),
+                  !Objects.equals(cycle.getId(), event.getCycleId()));
             })
         .toList();
   }
@@ -59,15 +63,10 @@ public class LearningCyclePreparationBudget {
         .orElse(null);
   }
 
-  /** Confere a identidade congelada e invalida recibos anteriores à mudança de versão. */
-  private boolean eligible(LearningSalesCycleEvent event, LearningSalesCycle cycle) {
+  /** Confere finalidade e moeda após validar a identidade original pela linhagem. */
+  private boolean eligible(LearningSalesCycleEvent event) {
     var data = json.read(event.getEvidenceJson());
-    return (cycle.getVersionChangedAt() == null
-            || !event.getCreatedAt().isBefore(cycle.getVersionChangedAt()))
-        && Objects.equals(cycle.getProductVersion(), data.path("productVersion").asText())
-        && cycle.getExperimentId() == data.path("experimentId").asLong()
-        && cycle.getChainDefinitionId() == data.path("chainDefinitionId").asLong()
-        && "PREPARATION_CUMULATIVE".equals(data.path("scope").asText())
+    return "PREPARATION_CUMULATIVE".equals(data.path("scope").asText())
         && "USD".equals(data.path("currency").asText());
   }
 

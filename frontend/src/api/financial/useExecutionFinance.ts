@@ -12,6 +12,8 @@ export interface PreparationAuthorization {
   approvedAt: string;
   productVersion: string;
   current: boolean;
+  sourceCycleId: number;
+  carriedForward: boolean;
 }
 export interface ExecutionFinance {
   preparationBalance?: {

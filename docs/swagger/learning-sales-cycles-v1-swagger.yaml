@@ -5,6 +5,12 @@ info:
   title: Ciclos de aprendizado e vendas da Cadeia de Valor
   version: 1.0.0
   description: >-
+    Os tetos acumulados da planilha e de preparação continuam nos ciclos sucessores
+    do mesmo produto e cadeia. A linhagem referencia os recibos originais, sem copiar
+    decisões ou renovar saldo. authorization e ceilingHistory informam sourceCycleId e
+    carriedForward. Saldo de preparação = teto vigente menos custo acumulado menos reserva.
+    NO_BALANCE exige aviso de atenção e revisão na planilha; moeda, gates comerciais,
+    janela de mídia e autorizações pontuais de vídeo permanecem separados.
     O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
     Definições com diagram.experimentChangePolicy=CHANGE_PER_CYCLE_V1 exigem novo ciclo
     e experimento para cada mudança: REWORK, SCALE e AUTHORIZE_SCALE são recusados.
@@ -516,7 +522,7 @@ paths:
   /products/{productId}/{cycleId}/preparation-budget:
     post:
       summary: Registrar aprovação humana do teto cumulativo de preparação e revisão
-      description: Não inicia tarefas nem autoriza mídia ou audiovisual. Recibo no ledger, idempotência por requestKey e concorrência por expectedRevision. Não herda decisão em sucessores. A resposta inclui preparationBalance; salvar limite insuficiente preserva a decisão e indica NO_BALANCE, sem liberar nova tarefa.
+      description: Não inicia tarefas nem autoriza mídia ou audiovisual. Recibo no ledger, idempotência por requestKey e concorrência por expectedRevision. Mantém o teto acumulado nos sucessores da mesma linhagem, com recibo original e sem renovar o saldo. A resposta inclui preparationBalance; salvar limite insuficiente preserva a decisão e indica NO_BALANCE, sem liberar nova tarefa.
       parameters:
         - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
         - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}

@@ -468,11 +468,16 @@ class LearningCycleAuthorizationCommandTest {
           service,
           "costWorksheet",
           new LearningCycleCostWorksheet(
-              events, json, new ObjectMapper(), new LearningCycleCostCeilings(events, json)));
+              events,
+              json,
+              new ObjectMapper(),
+              new LearningCycleCostCeilings(
+                  events, json, new LearningCycleCumulativeBudgetHistory(cycles, events, json))));
       ReflectionTestUtils.setField(
           service,
           "costCeilings",
-          new LearningCycleCostCeilings(events, new LearningCycleJson(new ObjectMapper())));
+          new LearningCycleCostCeilings(
+              events, json, new LearningCycleCumulativeBudgetHistory(cycles, events, json)));
     }
     for (int attempt = 0; attempt < 2; attempt++) {
       if (viaWorksheet) {

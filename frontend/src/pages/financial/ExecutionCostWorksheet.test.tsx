@@ -220,3 +220,31 @@ it("exige novo aceite quando a etapa muda o efeito de planejamento para limite o
   expect(screen.getByText(/O teto operacional cobre/)).toBeVisible();
   expect(axios.post).not.toHaveBeenCalled();
 });
+
+it("apresenta o teto herdado e a origem do recibo sem exigir outra aprovação", async () => {
+  const next = structuredClone(fixture);
+  next.rows[0].approved = 120;
+  next.rows[0].approvalStatus =
+    "Teto acumulado mantido do ciclo #1899 · recibo #8001. Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.";
+  next.ceilingHistory = [
+    {
+      eventId: 8001,
+      code: "AGENTS",
+      approved: 120,
+      operatorName: "Operador local",
+      recordedAt: finance.observedAt,
+      justification: "Teto acumulado",
+      current: true,
+      sourceCycleId: 1899,
+      carriedForward: true,
+    },
+  ];
+  vi.mocked(axios.get).mockResolvedValue({ data: next });
+  mount();
+  expect(await screen.findByLabelText("Aprovado — Agentes")).toHaveValue("120");
+  expect(
+    screen.getByText(/Teto acumulado mantido do ciclo #1899/),
+  ).toBeVisible();
+  expect(screen.getByText(/Ciclo de origem #1899/)).toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});

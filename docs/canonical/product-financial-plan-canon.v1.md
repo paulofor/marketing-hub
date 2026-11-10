@@ -1,5 +1,28 @@
 # Plano financeiro de produto — v1
 
+## Continuidade dos tetos acumulados — decisão de 10/11/2026
+
+Os tetos acumulados aprovados continuam válidos nos ciclos sucessores do mesmo produto e
+cadeia. A mudança de ciclo ou de sua versão executável, por si só, não exige nova aprovação
+monetária, não zera consumo, não libera reservas e não multiplica o limite. O saldo disponível
+é o teto total vigente menos o consumo acumulado e as reservas ainda comprometidas, contando
+cada parcela uma única vez. Alterar o teto exige decisão explícita na mesma planilha central.
+
+Recuperar o recibo original e sua origem pela linhagem persistida dos ciclos; não copiar uma
+aprovação como se fosse nova nem transferir valores entre produtos, cadeias ou moedas.
+Autorizações pontuais de um vídeo, validade comercial, janela de mídia, homologação, revisões
+independentes, STOP e demais gates mantêm seus contratos próprios. A continuidade do teto não
+inicia tarefa, campanha, produção ou cobrança. Custos sem fonte permanecem desconhecidos.
+
+Quando consumo e reservas alcançarem ou ultrapassarem o teto, mostrar **Atenção: teto atingido**,
+explicar o saldo e solicitar revisão na linha correspondente da planilha. Impedir novo consumo
+sem cobertura, preservando resultados e custos existentes. Um custo projetado que não caiba
+no saldo também deve bloquear antes do gasto; revisar o limite não equivale a iniciar execução.
+
+Esta decisão substitui as restrições anteriores deste documento que exigiam nova aprovação
+monetária somente por mudança de ciclo. A implementação e as regressões ficam registradas em
+`docs/homologacao/financial-cumulative-ceilings-v1.md`.
+
 ## Planilha de custos — decisão de 02/11/2026
 
 ### Centralização das decisões — decisão de 02/11/2026
@@ -19,7 +42,7 @@ reutiliza os contratos existentes, sem aprovar conteúdo, ativar campanha ou ini
 Limite operacional já vigente não pode ser substituído indiretamente por um teto de
 planejamento enquanto sua alteração estiver bloqueada. O impedimento deve ser explicado
 na própria linha. Ciclos encerrados, revisões concorrentes e outras versões permanecem
-protegidos. Não herdar decisões entre ciclos nem liberar execução por mero avanço de etapa.
+protegidos. Tetos acumulados seguem a continuidade acima; decisões comerciais e avanço de etapa mantêm seus gates.
 
 Na preparação para revisão comercial, um teto positivo de mídia salvo na planilha do mesmo
 ciclo, cadeia, experimento e versão atende ao requisito de planejamento. Não exigir que a verba
@@ -411,8 +434,8 @@ detalhes e fontes permanecem nos demais campos do contrato.
 
 O card de execução deve oferecer **Ver demonstração financeira**, inclusive em pausa ou bloqueio. A URL identifica produto, cadeia e ciclo. A demonstração apresenta custos conhecidos, lacunas, gráficos, limites separados por finalidade/moeda e o parecer real de Plutus do plano associado ao experimento. Ausência, ambiguidade e desatualização não podem ser apresentadas como aprovação.
 
-O usuário pode ajustar e aprovar o teto cumulativo de preparação e revisão em US$, incluindo custos anteriores e uma reserva explícita para valores ainda não informados. O recibo imutável usa o ledger de eventos do ciclo, revisão esperada e chave de idempotência. A aprovação não inicia tarefas, não amplia mídia nem audiovisual, não substitui homologação e não migra autorização para sucessores. Mídia e audiovisual continuam pelos contratos existentes.
+O usuário pode ajustar e aprovar o teto cumulativo de preparação e revisão em US$, incluindo custos anteriores e uma reserva explícita para valores ainda não informados. O recibo imutável usa o ledger de eventos do ciclo, revisão esperada e chave de idempotência. A aprovação não inicia tarefas, não amplia mídia nem audiovisual, não substitui homologação; o teto acumulado continua nos sucessores conforme a decisão de 10/11/2026. Mídia e audiovisual continuam pelos contratos existentes.
 
 O subtotal de preparação agrega estimativas das tarefas vinculadas exatamente aos experimentos do produto, incluindo tentativas com custo informado. Não é fatura nem custo integral: referências sem vínculo e serviços externos não entram silenciosamente. Valores desconhecidos permanecem identificados; não inferir autorizações monetárias de notas livres. O saldo mostrado é teto menos estimativas conhecidas menos reserva, podendo ser negativo. Créditos promocionais não apagam o custo econômico.
 
-O `operatorGuidance.preparationBudget` entrega o recibo como objeto JSON nativo no pending/lease. Ele explicita ciclo, experimento, moeda, inclusão de custos anteriores e ausência de autorização de mídia/audiovisual. As notas históricas permanecem em `commercialNotes`; o campo estruturado governa apenas o teto de preparação da versão correspondente.
+O `operatorGuidance.preparationBudget` entrega o recibo como objeto JSON nativo no pending/lease. Ele explicita ciclo, experimento, moeda, inclusão de custos anteriores e ausência de autorização de mídia/audiovisual. As notas históricas permanecem em `commercialNotes`; o campo estruturado governa o teto de preparação acumulado da linhagem, com `sourceCycleId` e `carriedForward` identificando o recibo original.

@@ -53,7 +53,8 @@ export default function ExecutionCostWorksheet({
             Informe somente o teto na coluna Aprovado. Custos e previsões vêm
             das fontes do sistema. Todas as decisões de teto ficam nesta
             planilha, inclusive as de produção e mídia antes da liberação de
-            execução.
+            execução. Os tetos acumulados continuam entre ciclos; consumo e
+            reservas anteriores não são liberados pela mudança de ciclo.
           </p>
         </div>
         <button
@@ -466,11 +467,14 @@ function Worksheet({
             <article className="border-top py-2" key={receipt.eventId}>
               <strong>
                 {group?.label} · {money(receipt.approved, group?.currency)} ·{" "}
-                {receipt.current ? "Última decisão da versão" : "Histórico"}
+                {receipt.current ? "Teto acumulado vigente" : "Histórico"}
               </strong>
               <p>
                 Recibo #{receipt.eventId} · {receipt.operatorName} ·{" "}
                 {new Date(receipt.recordedAt).toLocaleString("pt-BR")}
+                {receipt.sourceCycleId != null && (
+                  <> · Ciclo de origem #{receipt.sourceCycleId}</>
+                )}
                 <br />
                 {receipt.justification}
               </p>

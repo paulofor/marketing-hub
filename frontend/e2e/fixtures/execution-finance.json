@@ -24,7 +24,7 @@
   "preparationBalance": {
     "status": "NOT_AUTHORIZED",
     "title": "Falta registrar o limite de preparação",
-    "explanation": "Não há aprovação vigente para este ciclo e versão. Confira os custos e registre sua decisão abaixo.",
+    "explanation": "Não há teto aprovado neste ciclo nem em seus predecessores do mesmo produto e cadeia. Confira os custos e registre sua decisão abaixo.",
     "shortfallUsd": null,
     "requiresBudgetReview": true
   },

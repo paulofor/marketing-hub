@@ -46,7 +46,9 @@ public record CostWorksheet(
       String operatorName,
       Instant recordedAt,
       String justification,
-      boolean current) {}
+      boolean current,
+      Long sourceCycleId,
+      boolean carriedForward) {}
 
   /** Responsabilidade: manter subtotal conhecido e cobertura por moeda. */
   public record Total(

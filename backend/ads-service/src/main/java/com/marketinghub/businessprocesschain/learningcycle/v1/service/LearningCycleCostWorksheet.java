@@ -72,14 +72,8 @@ public class LearningCycleCostWorksheet {
           switch (i) {
             case 0 ->
                 review.authorization() == null ? null : review.authorization().totalLimitUsd();
-            case 1 ->
-                review.videoBudgetUsd() != null
-                    ? review.videoBudgetUsd()
-                    : ceiling == null ? null : ceiling.approved();
-            case 2 ->
-                authorizedMedia != null
-                    ? authorizedMedia
-                    : ceiling == null ? null : ceiling.approved();
+            case 1 -> ceiling != null ? ceiling.approved() : review.videoBudgetUsd();
+            case 2 -> ceiling != null ? ceiling.approved() : authorizedMedia;
             default ->
                 ceiling != null
                     ? ceiling.approved()
@@ -120,6 +114,20 @@ public class LearningCycleCostWorksheet {
                     ? "Orçamento ainda não aprovado"
                     : "Aprovado para planejamento; sem autorização de execução";
           };
+      if (i == 0 && review.authorization() != null && review.authorization().carriedForward())
+        approval =
+            "Teto acumulado mantido do ciclo #"
+                + review.authorization().sourceCycleId()
+                + " · recibo #"
+                + review.authorization().eventId()
+                + ". Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.";
+      else if (i > 0 && ceiling != null && ceiling.carriedForward())
+        approval =
+            "Teto acumulado mantido do ciclo #"
+                + ceiling.sourceCycleId()
+                + " · recibo #"
+                + ceiling.eventId()
+                + ". Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.";
       var forecast = input == null ? null : input.forecast();
       if (forecast == null)
         gaps.add(LABELS[i] + ": previsão total ainda não disponível no sistema.");

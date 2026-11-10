@@ -43,7 +43,10 @@ class LearningCycleFinancialReviewTest {
   final CommercialPlanRepository commercial = mock(CommercialPlanRepository.class);
   final FinancialPlanService plans = mock(FinancialPlanService.class);
   final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
-  final LearningCyclePreparationBudget budget = new LearningCyclePreparationBudget(events, json);
+  final LearningCycleCumulativeBudgetHistory cumulative =
+      new LearningCycleCumulativeBudgetHistory(cycles, events, json);
+  final LearningCyclePreparationBudget budget =
+      new LearningCyclePreparationBudget(events, json, cumulative);
   final LearningCycleVideoBudget video = new LearningCycleVideoBudget(events, json);
   final LearningCycleFinancialReview review =
       new LearningCycleFinancialReview(
@@ -74,6 +77,15 @@ class LearningCycleFinancialReviewTest {
                     .filter(
                         e ->
                             e.getCycleId().equals(inv.getArgument(0))
+                                && e.getAction().equals(inv.getArgument(1)))
+                    .toList());
+    when(events.findByCycleIdInAndActionOrderByCreatedAtDescIdDesc(anyCollection(), anyString()))
+        .thenAnswer(
+            inv ->
+                history.reversed().stream()
+                    .filter(
+                        e ->
+                            ((Collection<Long>) inv.getArgument(0)).contains(e.getCycleId())
                                 && e.getAction().equals(inv.getArgument(1)))
                     .toList());
     when(events.findByCycleIdAndRequestKey(anyLong(), anyString()))
@@ -112,7 +124,7 @@ class LearningCycleFinancialReviewTest {
     process.setVersionNumber(2);
     cycle.setProcessDefinitionId(126L);
     when(processes.findById(126L)).thenReturn(Optional.of(process));
-    var ceilings = new LearningCycleCostCeilings(events, json);
+    var ceilings = new LearningCycleCostCeilings(events, json, cumulative);
     var service =
         new LearningCycleService(
             cycles,

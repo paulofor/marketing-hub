@@ -111,14 +111,14 @@ public class LearningCycleFinancialReview {
       return new CycleFinancialReview.PreparationBalance(
           "CLOSED",
           "Ciclo encerrado: limites preservados para consulta",
-          "Os recibos e custos deste ciclo são históricos. Esta leitura não permite retomar tarefas nem transferir autorizações para outro ciclo.",
+          "Os recibos deste ciclo são históricos. O teto acumulado continua nos sucessores da mesma linhagem; esta consulta não retoma tarefas.",
           null,
           false);
     if (authorization == null)
       return new CycleFinancialReview.PreparationBalance(
           "NOT_AUTHORIZED",
           "Falta registrar o limite de preparação",
-          "Não há aprovação vigente para este ciclo e versão. Confira os custos e registre sua decisão abaixo.",
+          "Não há teto aprovado neste ciclo nem em seus predecessores do mesmo produto e cadeia. Confira os custos e registre sua decisão na planilha.",
           null,
           true);
     if (known == null)
@@ -133,14 +133,14 @@ public class LearningCycleFinancialReview {
     if (available.signum() <= 0)
       return new CycleFinancialReview.PreparationBalance(
           "NO_BALANCE",
-          "Aprovação registrada, mas sem saldo para novas tarefas",
-          "O recibo está salvo. O limite precisa cobrir os custos estimados, a reserva e o custo da próxima tarefa. Revise o teto total ou a reserva abaixo, ou mantenha a pausa. A reserva fica dentro do teto; não é verba adicional nem cobrança.",
+          "Atenção: teto de agentes atingido",
+          "O recibo está salvo, mas o consumo acumulado e a reserva atingiram o teto. Não há cobertura para a próxima tarefa. Solicite a revisão do teto na linha Agentes da planilha, ou mantenha a pausa. A reserva fica dentro do teto; não é verba adicional nem cobrança. Mudar de ciclo não renova o saldo.",
           available.negate().setScale(2, RoundingMode.CEILING),
           true);
     return new CycleFinancialReview.PreparationBalance(
         "BALANCE_AVAILABLE",
         "Aprovação registrada e saldo estimado disponível",
-        "O saldo ainda precisa cobrir o custo da próxima tarefa. A execução deve ser retomada na atividade e o sistema revalida os limites antes de iniciar trabalho. Salvar o limite não retoma o processo nem autoriza vídeos ou anúncios.",
+        "O teto e a reserva continuam entre ciclos; não é necessário aprovar novamente apenas pela mudança de ciclo. O saldo acumulado ainda precisa cobrir o custo da próxima tarefa. O sistema revalida os limites antes de iniciar trabalho. Salvar o limite não retoma o processo nem autoriza vídeos ou anúncios.",
         BigDecimal.ZERO,
         false);
   }
@@ -155,12 +155,10 @@ public class LearningCycleFinancialReview {
             "Preparar o produto",
             "USD",
             "Trabalho dos agentes para pesquisar, construir e revisar o produto e sua comunicação.",
-            "Teto acumulado: inclui as tarefas anteriores do produto e as próximas desta preparação.",
+            "Teto acumulado do produto: inclui tarefas e reservas anteriores e continua nos ciclos sucessores, sem renovar o saldo.",
             preparation == null ? null : preparation.totalLimitUsd(),
             "Limite total de preparação",
-            preparation == null
-                ? "Sem limite registrado para esta versão"
-                : "Limite registrado para esta versão",
+            preparation == null ? "Sem teto acumulado registrado" : "Teto acumulado vigente",
             "Não libera geração paga de vídeos nem anúncios. A reserva ocupa parte deste limite; não é um valor extra.",
             "O subtotal abaixo reúne estimativas de tarefas, inclusive revisões vinculadas. Não é uma fatura nem o custo completo de produção."),
         new CycleFinancialReview.BudgetSection(

@@ -1,0 +1,18 @@
+{
+  "cardKey": "confiabilidade-codificacao-visual-video",
+  "collection": "prazer-audio-visual",
+  "title": "Confiabilidade da anotação visual de vídeos",
+  "finding": "Framework com 17 categorias cinematográficas em 48 vídeos naturais obteve 72% de concordância modal, mas alfa de Krippendorff de 0,043–0,463, indicando confiabilidade limitada por item.",
+  "mechanism": "Anotações estruturadas permitem registrar propriedades visuais separadamente de respostas afetivas; baixa concordância corrigida pelo acaso exige calibração entre humanos antes de modelagem.",
+  "commercialApplication": "Criar amostra de vídeos com avaliações cegas de dois anotadores e de IA para calibrar atributos visuais antes de utilizá-los em revisão do Apolo ou Psique.",
+  "evidenceStrength": "Moderada para avaliação exploratória de uma taxonomia; baixa para estabilidade entre domínios, predição de emoção e vantagem comercial.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-25",
+  "experimentHypothesis": "Um protocolo curto de treino e anotações independentes em vídeos variados poderá elevar concordância entre avaliadores para atributos concretos, antes de quaisquer análises de prazer ou conversão.",
+  "risks": "Confundir concordância modal com confiabilidade geral, interpretar atributos visuais como sentimento do espectador, viés de anotação de IA, excesso de confiança em categorias ambíguas.",
+  "limits": "48 vídeos apenas de paisagens naturais 360° mostrados em telas 2D; poucos avaliadores e baixa concordância ajustada; nenhuma medida humana de prazer dos clipes.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-10-confiabilidade-codificacao-visual-video-v1.md",
+  "sourceTitle": "Fonte revisada v1 — confiabilidade da codificação visual de vídeos",
+  "sourceSha256": "568bcd04eb0f598b59fcbede389a2db3380c9a0945592fccb041c50d6457ef9c"
+}

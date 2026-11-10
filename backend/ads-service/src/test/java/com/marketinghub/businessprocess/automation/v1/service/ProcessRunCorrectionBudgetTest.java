@@ -162,7 +162,9 @@ class ProcessRunCorrectionBudgetTest {
                 "Reserva explícita de QA",
                 Instant.now(),
                 "candidata-v3",
-                true));
+                true,
+                cycle.getId(),
+                false));
   }
 
   /** Oferece o custo conhecido de uma tentativa da mesma atividade e referência. */

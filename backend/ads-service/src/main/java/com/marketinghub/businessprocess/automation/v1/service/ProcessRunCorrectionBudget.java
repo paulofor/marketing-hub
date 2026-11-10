@@ -38,8 +38,8 @@ public class ProcessRunCorrectionBudget {
       return "A preparação exige um ciclo aberto e a autorização financeira do mesmo contexto.";
     var authorization = budgets.current(cycle);
     if (authorization == null)
-      return "Preparação pausada: falta o teto de preparação aprovado para este ciclo e versão. "
-          + "Use Ver demonstração financeira para conferir custos e registrar a decisão; autorizações históricas não são transferidas automaticamente.";
+      return "Preparação pausada: falta o teto acumulado de preparação neste produto e na linhagem do ciclo. "
+          + "Use Ver demonstração financeira para conferir custos e registrar a decisão.";
     var slices = costs.summarize(run.getProductId());
     BigDecimal known =
         slices.stream()
@@ -66,7 +66,7 @@ public class ProcessRunCorrectionBudget {
             .max(BigDecimal::compareTo)
             .orElse(BigDecimal.ZERO);
     if (available.signum() <= 0 || available.compareTo(previous) < 0)
-      return "Preparação pausada: o saldo estimado, após custos anteriores e reserva, não cobre outra tarefa desta atividade. "
+      return "Atenção: o saldo estimado do teto acumulado, após custos anteriores e reserva, não cobre outra tarefa desta atividade. "
           + "Confira e ajuste o teto em Ver demonstração financeira. A estimativa histórica não é garantia do custo futuro.";
     return null;
   }

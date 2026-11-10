@@ -98,7 +98,14 @@ export default function ExecutionFinancePage() {
                     "pt-BR",
                   )}
                   {" · "}Recibo #{data.authorization.eventId} · Ciclo #
-                  {data.cycleId}
+                  {data.authorization.sourceCycleId ?? data.cycleId}
+                </p>
+              )}
+              {data.authorization?.carriedForward && (
+                <p>
+                  Teto e reserva mantidos do ciclo anterior, com o recibo
+                  original. A mudança de ciclo não exige nova aprovação do teto
+                  e não renova o saldo.
                 </p>
               )}
               <p>{data.preparationBalance.explanation}</p>
@@ -176,9 +183,9 @@ export default function ExecutionFinancePage() {
             </p>
             {!data.authorization && (
               <div className="alert alert-info">
-                Ainda não há limite de preparação registrado neste formulário
-                para esta versão. Decisões anteriores ficam preservadas no
-                histórico e não são aplicadas automaticamente a outro ciclo.
+                Ainda não há teto de preparação aprovado neste ciclo nem nos
+                predecessores do mesmo produto e cadeia. Registre a decisão na
+                linha Agentes da planilha.
               </div>
             )}
             <CostChart data={data} />

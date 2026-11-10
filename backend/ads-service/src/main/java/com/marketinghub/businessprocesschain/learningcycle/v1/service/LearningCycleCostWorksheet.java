@@ -120,6 +120,20 @@ public class LearningCycleCostWorksheet {
                     ? "Orçamento ainda não aprovado"
                     : "Aprovado para planejamento; sem autorização de execução";
           };
+      if (i == 0 && review.authorization() != null && review.authorization().carriedForward())
+        approval =
+            "Teto acumulado mantido do ciclo #"
+                + review.authorization().sourceCycleId()
+                + " · recibo #"
+                + review.authorization().eventId()
+                + ". Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.";
+      else if (i > 0 && !operational && ceiling != null && ceiling.carriedForward())
+        approval =
+            "Teto acumulado mantido do ciclo #"
+                + ceiling.sourceCycleId()
+                + " · recibo #"
+                + ceiling.eventId()
+                + ". Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.";
       var forecast = input == null ? null : input.forecast();
       if (forecast == null)
         gaps.add(LABELS[i] + ": previsão total ainda não disponível no sistema.");

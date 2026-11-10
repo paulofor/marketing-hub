@@ -83,6 +83,7 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleJson.class,
   LearningCycleCostWorksheet.class,
   LearningCycleCostCeilings.class,
+  LearningCycleCumulativeBudgetHistory.class,
   LearningCycleOptionalAudiovisual.class,
   LearningCycleEvidence.class,
   LearningCycleCommercialAuthorization.class,

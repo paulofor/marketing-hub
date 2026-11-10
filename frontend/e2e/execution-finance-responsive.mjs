@@ -63,6 +63,13 @@ try {
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
       if (!url.pathname.startsWith("/api/")) return route.continue();
+      if (route.request().method() !== "GET") {
+        sent.push({ url: url.pathname, method: route.request().method() });
+        return route.fulfill({
+          status: 500,
+          json: { detail: "Teste consultivo: mutação inesperada" },
+        });
+      }
       if (url.pathname.endsWith("/automation/v1"))
         return route.fulfill({
           json: {
@@ -87,11 +94,37 @@ try {
               "/financial/execution?productId=700&chainId=2700&cycleId=1900",
           },
         });
-      assert(
-        url.pathname.startsWith(
+      if (url.pathname === "/api/sales-videos/projects")
+        return route.fulfill({ json: [] });
+      if (url.pathname.endsWith("/single-video-budget"))
+        return route.fulfill({
+          json: {
+            productId: 700,
+            chainDefinitionId: 2700,
+            cycleId: 1900,
+            experimentId: 11200,
+            productVersion: fixture.productVersion,
+            revision: data.revision,
+            scope: "SINGLE_VIDEO_INCREMENTAL_ALL_IN_V1",
+            currency: "USD",
+            canAuthorize: false,
+            blocker: null,
+            startsProduction: false,
+            guidance: "Sem projeto de vídeo único neste teste.",
+            authorizations: [],
+          },
+        });
+      if (
+        !url.pathname.startsWith(
           "/api/business-process-chains/learning-cycles/v1/products/700/1900/",
-        ),
-      );
+        )
+      ) {
+        errors.push(`Chamada inesperada: ${url.pathname}`);
+        return route.fulfill({
+          status: 500,
+          json: { detail: "Contrato de teste ausente" },
+        });
+      }
       if (url.pathname.endsWith("/cost-worksheet")) {
         const worksheet = JSON.parse(
           await readFile(
@@ -100,6 +133,10 @@ try {
           ),
         );
         worksheet.rows[0].approved = data.authorization?.totalLimitUsd ?? null;
+        worksheet.rows[0].estimatedCost = data.knownPreparationUsd;
+        if (data.authorization?.carriedForward) {
+          worksheet.rows[0].approvalStatus = `Teto acumulado mantido do ciclo #${data.authorization.sourceCycleId} · recibo #${data.authorization.eventId}. Mudar de ciclo não exige nova aprovação do teto nem renova o saldo.`;
+        }
         return route.fulfill({ json: worksheet });
       }
       if (url.pathname.endsWith("/financial-review"))
@@ -129,7 +166,11 @@ try {
             financeUrl: fixture.videoUrl,
           },
         });
-      throw new Error(`Chamada inesperada: ${url.pathname}`);
+      errors.push(`Chamada inesperada: ${url.pathname}`);
+      return route.fulfill({
+        status: 500,
+        json: { detail: "Contrato de teste ausente" },
+      });
     });
     await page.goto("http://127.0.0.1:15278/execution-finance-test.html");
     await page
@@ -239,6 +280,11 @@ try {
         eventId: 8001,
         totalLimitUsd: 80,
         reserveUsd: 20,
+        operatorName: "Operador local",
+        approvedAt: fixture.observedAt,
+        productVersion: fixture.productVersion,
+        sourceCycleId: data.cycleId,
+        carriedForward: false,
       },
       preparationBalance: {
         status: "NO_BALANCE",
@@ -283,8 +329,35 @@ try {
       path: new URL(`${name}-saved-without-balance.png`, output).pathname,
       fullPage: true,
     });
+    data.authorization.sourceCycleId = 1899;
+    data.authorization.carriedForward = true;
+    data.authorization.productVersion = "versao-predecessora";
+    data.preparationBalance.title = "Atenção: teto de agentes atingido";
+    await page.getByRole("button", { name: "Atualizar valores" }).click();
+    await expect(balance).toContainText("Atenção: teto de agentes atingido");
+    await expect(balance).toContainText("Recibo #8001 · Ciclo #1899");
+    await expect(balance).toContainText(
+      "Teto e reserva mantidos do ciclo anterior",
+    );
+    await expect(
+      page.getByRole("link", { name: "Rever teto aprovado" }),
+    ).toHaveAttribute("href", "#ceiling-AGENTS");
+    assert.equal(
+      sent.length,
+      0,
+      "O sucessor não duplica aprovação nem inicia gasto",
+    );
+    await expect(
+      page.getByRole("button", { name: "Atualizar valores" }),
+    ).toBeEnabled();
+    assert.equal(errors.length, 0, JSON.stringify(errors));
+    await expect(balance).not.toContainText("Invalid Date");
+    await page.screenshot({
+      path: new URL(`${name}-cumulative-ceiling.png`, output).pathname,
+      fullPage: true,
+    });
     console.log(
-      `${name}: card, gráficos, parecer, tetos na planilha e recibo sem cobertura passaram`,
+      `${name}: recibo original no sucessor, reserva preservada e atenção ao teto passaram`,
     );
     await context.close();
   }

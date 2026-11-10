@@ -19,6 +19,7 @@ public class LearningCycleCostCeilings {
   private static final String ACTION = "APPROVE_COST_CEILING";
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
+  private final LearningCycleCumulativeBudgetHistory cumulative;
 
   /** Confere contexto e recupera somente uma decisão idêntica, antes de reaplicar limites. */
   public boolean replay(LearningSalesCycle cycle, ApproveCostCeilingRequest request) {
@@ -70,21 +71,16 @@ public class LearningCycleCostCeilings {
         request.approved());
   }
 
-  /** Retorna os recibos e distingue o último teto de cada grupo da história de outras versões. */
+  /** Mantém a última decisão por grupo sem renovar valores ou reativar limites substituídos. */
   public List<CostWorksheet.CeilingReceipt> history(LearningSalesCycle cycle) {
     Set<String> seen = new HashSet<>();
-    return events.findByCycleIdAndActionOrderByRevisionDesc(cycle.getId(), ACTION).stream()
+    return cumulative.history(cycle, ACTION).stream()
         .map(
-            event -> {
+            receipt -> {
+              var event = receipt.event();
               var data = json.read(event.getEvidenceJson());
               String code = data.path("code").asText();
-              boolean eligible =
-                  Objects.equals(cycle.getProductVersion(), data.path("productVersion").asText())
-                      && Objects.equals(
-                          cycle.getChainDefinitionId(), data.path("chainDefinitionId").asLong())
-                      && Objects.equals(cycle.getExperimentId(), data.path("experimentId").asLong())
-                      && (cycle.getVersionChangedAt() == null
-                          || !event.getCreatedAt().isBefore(cycle.getVersionChangedAt()));
+              boolean latest = seen.add(code);
               return new CostWorksheet.CeilingReceipt(
                   event.getId(),
                   code,
@@ -92,7 +88,9 @@ public class LearningCycleCostCeilings {
                   event.getOperatorName(),
                   event.getCreatedAt(),
                   data.path("justification").asText(),
-                  eligible && seen.add(code));
+                  receipt.eligible() && latest,
+                  event.getCycleId(),
+                  !Objects.equals(cycle.getId(), event.getCycleId()));
             })
         .toList();
   }

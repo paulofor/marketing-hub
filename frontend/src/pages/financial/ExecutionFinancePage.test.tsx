@@ -185,3 +185,79 @@ it("concentra os atalhos dos três orçamentos na planilha sem formulários mone
   expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
   expect(axios.post).not.toHaveBeenCalled();
 });
+
+it("preserva o ciclo de origem e não solicita aprovação repetida ao consultar um sucessor", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...fixture,
+      knownPreparationUsd: 76.35,
+      availableUsd: 23.65,
+      authorization: {
+        eventId: 8001,
+        sourceCycleId: 1899,
+        carriedForward: true,
+        reference: "internal://learning-cycles/1899/preparation-budget/test",
+        totalLimitUsd: 120,
+        reserveUsd: 20,
+        operatorName: "Operador local",
+        justification: "Teto acumulado",
+        approvedAt: fixture.observedAt,
+        productVersion: "versao-anterior",
+        current: true,
+      },
+      preparationBalance: {
+        status: "BALANCE_AVAILABLE",
+        title: "Teto acumulado vigente",
+        explanation: "O saldo acumulado cobre a preparação sem renovar o teto.",
+        shortfallUsd: 0,
+        requiresBudgetReview: false,
+      },
+    },
+  });
+  mount();
+  await screen.findByText("Teto acumulado vigente");
+  expect(screen.getByText(/Recibo #8001 · Ciclo #1899/)).toBeVisible();
+  expect(
+    screen.getByText(/Teto e reserva mantidos do ciclo anterior/),
+  ).toBeVisible();
+  expect(screen.getByText(/23,65 disponíveis/)).toBeVisible();
+  expect(
+    screen.queryByRole("link", { name: "Rever teto aprovado" }),
+  ).not.toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+it.each([0, -1.25])(
+  "mostra atenção e revisão quando o backend informa teto atingido: %s",
+  async (availableUsd) => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...fixture,
+        availableUsd,
+        authorization: {
+          totalLimitUsd: 120,
+          reserveUsd: 20,
+          sourceCycleId: 1899,
+          carriedForward: true,
+          eventId: 8001,
+          operatorName: "Operador local",
+          approvedAt: fixture.observedAt,
+        },
+        preparationBalance: {
+          status: "NO_BALANCE",
+          title: "Atenção: teto de agentes atingido",
+          explanation:
+            "Revise o teto acumulado na planilha antes de nova tarefa.",
+          shortfallUsd: Math.abs(availableUsd),
+          requiresBudgetReview: true,
+        },
+      },
+    });
+    mount();
+    await screen.findByText("Atenção: teto de agentes atingido");
+    expect(
+      screen.getByRole("link", { name: "Rever teto aprovado" }),
+    ).toHaveAttribute("href", "#ceiling-AGENTS");
+    expect(axios.post).not.toHaveBeenCalled();
+  },
+);

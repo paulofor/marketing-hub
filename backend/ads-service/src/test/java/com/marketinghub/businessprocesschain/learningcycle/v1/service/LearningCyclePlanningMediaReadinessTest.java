@@ -52,7 +52,9 @@ class LearningCyclePlanningMediaReadinessTest {
         new LearningCycleCommercialReadiness(
             fixture.experiments, gate, mock(PdeProductionSlotRepository.class));
     ReflectionTestUtils.setField(
-        readiness, "costCeilings", new LearningCycleCostCeilings(fixture.events, fixture.json));
+        readiness,
+        "costCeilings",
+        new LearningCycleCostCeilings(fixture.events, fixture.json, fixture.cumulative));
     context(7, 19, 112, 27);
   }
 

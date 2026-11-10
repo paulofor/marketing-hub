@@ -1,3 +1,18 @@
+## LOOP-TETO-ACUMULADO-REAPROVACAO-POR-CICLO — 10/11/2026
+
+- **Evidência:** Capella 19→20 e Vega 21→22 mantêm consumo por produto, mas os
+  recibos de teto ficam nos predecessores. A consulta do novo ciclo os ignorava.
+- **Causa confirmada:** lookup financeiro restrito ao ID e à versão do ciclo
+  atual, incompatível com custos acumulados e com a decisão de continuidade.
+- **Correção v1:** resolver recibos originais pela linhagem do produto/cadeia,
+  sem copiar decisões ou renovar saldo. Preservar consumo e reserva; avisar e
+  pedir revisão na planilha quando não houver cobertura para outra tarefa.
+- **Prevenção:** contratos HTTP, JPA local, pending e guard reais; dois produtos,
+  seis grupos, revisão concorrente, replay e isolamento. Browser desktop e
+  celulares conferem origem e alerta. [Matriz e limites](../homologacao/financial-cumulative-ceilings-v1.md).
+- **Aprendizado:** corrigir a fonte comum do limite reduz aprovações repetidas;
+  os testes não comprovam aumento de vendas nem autorizam publicação comercial.
+
 ## LOOP-PDE-CONTROLES-DE-IMPLEMENTACAO-ANTERIOR — 29/10/2026
 
 - **Evidência:** Têmis #864 recebeu a v17 com recuperação comprovada, mas faltavam

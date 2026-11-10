@@ -67,6 +67,8 @@ export interface CostWorksheet {
     recordedAt: string;
     justification: string;
     current: boolean;
+    sourceCycleId: number;
+    carriedForward: boolean;
   }>;
   history: Array<{
     eventId: number;

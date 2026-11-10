@@ -516,4 +516,18 @@ other_finance = http(f'{API}/products/91002', brief(91006))
 assert http(f'{API}/products/91002/{other_finance["id"]}/financial-review?chainId=91002')['authorization'] is None
 check('Demonstração financeira e recibo MySQL: confirmação, replay, concorrência e isolamento sem iniciar gastos')
 
+# Estado terminal sintético apenas do fixture; o sucessor e a leitura usam a API canônica.
+sql(f"UPDATE learning_sales_cycle_v1 SET status='ADJUSTED',stage='ADJUSTMENT',open_slot=NULL,closed_at=NOW(6),return_process_id={return_to['returnProcessId']},return_activity_id='{return_to['returnActivityId']}' WHERE id={finance_cycle['id']} AND product_id=91001")
+next_finance = http(f'{API}/products/91001', dict(brief(91002, finance_cycle['id']), productVersion='fixture-finance-successor-v2'))
+next_review = http(f'{API}/products/91001/{next_finance["id"]}/financial-review?chainId=91002')
+assert next_review['authorization']['eventId'] == approved['authorization']['eventId']
+assert next_review['authorization']['sourceCycleId'] == finance_cycle['id']
+assert next_review['authorization']['carriedForward']
+assert next_review['authorization']['totalLimitUsd'] == 50
+assert next_review['authorization']['reserveUsd'] == 3.5
+assert next_review['availableUsd'] is None  # Custos simulados ausentes não viram zero.
+assert sql("SELECT COUNT(*) FROM learning_sales_cycle_event_v1 WHERE action='AUTHORIZE_PREPARATION_BUDGET'") == '1'
+assert not http(f'{finance_path}/financial-review?chainId=91002')['authorization']['carriedForward']
+check('Teto acumulado MySQL: nova versão/ciclo reutiliza recibo e reserva sem nova aprovação, sem reiniciar saldo nem contaminar histórico')
+
 print(json.dumps({'checks':len(checks),'passed':checks,'database':'MySQL 5.7','externalCalls':0},ensure_ascii=False),flush=True)

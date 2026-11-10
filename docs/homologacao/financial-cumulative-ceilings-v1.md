@@ -81,3 +81,28 @@ e no GitHub. Essa ação externa pode afetar serviços e não foi executada por 
 A orientação oficial é [revogar ou rotacionar segredos expostos](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
 Nenhum segredo deve ser enviado na conversa, no PR, nas evidências ou nos logs.
 Os CIs legítimos do PR apareceram posteriormente e são acompanhados separadamente.
+
+## Complemento após o CI real
+
+O CI completo executou 5.948 testes e encontrou uma única falha: a configuração
+explícita `LearningCycleLocalApplication` não importava o novo auxiliar financeiro.
+O mesmo motivo impedia o bootstrap do job MySQL. A aplicação normal usa descoberta
+de componentes; a falha estava no harness. O import foi corrigido e a verificação
+existente de dependências da fixture passou a incluir os auxiliares financeiros.
+
+Validação adicional na sandbox, antes de atualizar o PR:
+
+- Nove testes de fixture, continuidade e consulta JPA aprovados.
+- MySQL 5.7 real com projeto Compose exclusivo: API inicializada, 18 testes de analytics,
+  22 cenários REST (incluindo teto/recibo/reserva entre versões e ciclos), continuidade
+  entre processos em dois produtos, 14 verificações de recuperação e segregação e
+  rollback/reaplicação/idempotência de migração aprovados. Nenhuma chamada externa paga.
+- O daemon da sandbox é remoto; o host de banco foi `sandbox-docker`, conforme o
+  contrato já suportado. A primeira tentativa em localhost foi descartada por erro
+  de conexão, sem alterar produção. Containers, rede e volumes temporários encerrados.
+- `bash -n` e ShellCheck aprovados nos scripts shell pertinentes. Os blocos do workflow
+  removido foram analisados estaticamente, nunca executados; seus achados foram
+  eliminados com a remoção integral do fluxo inseguro.
+
+As evidências adicionais ficam em `artifacts/cumulative-ceilings/mysql-fixed`.
+A confirmação da recuperação de credenciais continua pendente e impede publicação.

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 
 /** Responsabilidade: detectar dependências ausentes na fixture antes da rodada MySQL completa. */
 class ProcessAutomationFixtureWiringTest {
-  /** Confere também injeções obrigatórias por campo para impedir falha tardia da fixture MySQL. */
+  /** Confere motor e auxiliares financeiros para impedir dependência ausente na fixture MySQL. */
   @Test
   void cycleFixtureProvidesFinancialAndCycleDependencies() {
     var fixture =
@@ -28,6 +28,10 @@ class ProcessAutomationFixtureWiringTest {
                 .LearningCycleFinancialReview.class,
             com.marketinghub.businessprocesschain.learningcycle.v1.service
                 .LearningCyclePreparationBudget.class,
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleCostCeilings
+                .class,
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleCumulativeBudgetHistory.class,
             com.marketinghub.businessprocesschain.learningcycle.v1.service
                 .LearningCycleSingleVideoBudget.class)) {
       var required = new HashSet<Class<?>>();

@@ -138,7 +138,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/LearningCycleSuccessorPreparation.java",
-      "sha256": "cf0a661e31b8b486c3e2d9bf67be289af65d63a5f0a6e29696249e572e2acefd",
+      "sha256": "dff3c937fae8f4e08d590f5510944c2746242d818ea2867095f3753a71983d2d",
       "promptMode": "FULL"
     },
     {
@@ -633,11 +633,11 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePlanningAlignment.java",
-      "sha256": "3025eb6f0c24f5e50ecef68227d7d84850ff61a68f7cb68910f23d02622cee32"
+      "sha256": "8b524c76029705ad85a3c00e662b91a5ebec001199cc78b6e2993851a8d92e39"
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePlanningDefinition.java",
-      "sha256": "aaa270cf0e47d0d29d071ca1a9e23f211de941e0ce94badbc42d621736176c76"
+      "sha256": "2a92ebbc29a6ce62954ec7ce4903d9a335023b3f6329bb2856e0b2dacfb8221e"
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/planningAlignment/PlanningAlignmentRequest.java",
@@ -650,6 +650,16 @@
     {
       "path": "frontend/src/pages/learningCycle/CyclePlanningAlignment.tsx",
       "sha256": "cef1cddd58ae437ed39abec75c3c4a09bf57e5cb9fd4fae2f1a2ac288e1c3eac"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/hypothesis/service/HypothesisService.java",
+      "sha256": "08a76cae3614c259451b570a978d427c6324778e3aee3724c1025e08c4fabd24",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/hypothesis/HypothesisServiceTest.java",
+      "sha256": "187559fb879f99377c9cafe39f495c83ed2c8e24d7bcfa8ea8aed568451b931c",
+      "promptMode": "FULL"
     }
   ],
   "executableEvidence": [
@@ -720,7 +730,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleSuccessorPreparationTest.java",
-      "sha256": "ea0b8c9d5b6ce081c4dd4dcb4d33f7a7dd85665d3fe40294afaadb203dcfab63",
+      "sha256": "57031154ba7ca28b2e23d19facbadd9fc31663f80de1cec80eadc2b7aa37a3e6",
       "promptMode": "FULL"
     },
     {
@@ -988,7 +998,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePlanningAlignmentTest.java",
-      "sha256": "700193e012acbb1b98f16e7f58f1755740f898994fe66eab03ddba17a0eb2b84"
+      "sha256": "9e36e8adfeae309f38379231840745b27f718ab425308ac102b8a912fbd583af"
     },
     {
       "path": "frontend/src/pages/learningCycle/CyclePlanningAlignment.test.tsx",
@@ -1096,7 +1106,7 @@
     },
     {
       "path": "docs/homologacao/musa-planejamento-oferta-2026-11-11.md",
-      "sha256": "7b953625379f7c3533957efeba0fb058c17f138cdcf442a41de2aeaa029831a6",
+      "sha256": "50fa0e6348c6bfc7b89df95840a2de2d4b0dace7c5c4cf88bc1c445ca9def037",
       "promptMode": "FULL"
     }
   ],
@@ -1114,7 +1124,7 @@
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/LearningCycleSuccessorPreparation.java",
         "previousSha256": "64034fcd9287f01134ca36548f1e67ac855d510e26f68258a19aeab293fc9844",
-        "sha256": "cf0a661e31b8b486c3e2d9bf67be289af65d63a5f0a6e29696249e572e2acefd"
+        "sha256": "dff3c937fae8f4e08d590f5510944c2746242d818ea2867095f3753a71983d2d"
       },
       {
         "path": "frontend/src/pages/learningCycle/LearningCyclesPage.tsx",
@@ -1144,7 +1154,7 @@
       {
         "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleSuccessorPreparationTest.java",
         "previousSha256": "c8b7b8f98f992727b9e799bd3488f654f983b8f441d805dcb31534870b9de53e",
-        "sha256": "ea0b8c9d5b6ce081c4dd4dcb4d33f7a7dd85665d3fe40294afaadb203dcfab63"
+        "sha256": "57031154ba7ca28b2e23d19facbadd9fc31663f80de1cec80eadc2b7aa37a3e6"
       }
     ],
     "removedMutableEvidence": [],

@@ -430,11 +430,15 @@ class LearningCycleSuccessorPreparationTest {
             (ObjectNode)
                 mapper.readTree(
                     "{\"offer\":\"Aplicativo contínuo, base gratuita e premium opcional; preço com Plutus\",\"economics\":{\"priceBrl\":null}}"));
+    var version = new com.marketinghub.hypothesis.Hypothesis();
+    version.setId(java.util.UUID.randomUUID());
+    version.setSourceHypothesis(source.getHypothesisRef());
+    when(definitions.hypothesisFor(source)).thenReturn(version);
     preparation.prepare(productId, cycle.getId());
     var saved = ArgumentCaptor.forClass(Experiment.class);
     verify(experiments).saveAndFlush(saved.capture());
     assertThat(saved.getValue().getUnitPrice()).isNull();
-    assertThat(saved.getValue().getHypothesisRef()).isNull();
+    assertThat(saved.getValue().getHypothesisRef()).isSameAs(version);
     assertThat(source.getUnitPrice()).isEqualByComparingTo("67");
     var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
     verify(service).createPreparation(eq(productId), request.capture());

@@ -42,8 +42,10 @@ class LearningCyclePlanningAlignmentTest {
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
   private final ObjectMapper mapper = new ObjectMapper();
   private final LearningCycleJson json = new LearningCycleJson(mapper);
+  private final com.marketinghub.hypothesis.service.HypothesisService hypotheses =
+      mock(com.marketinghub.hypothesis.service.HypothesisService.class);
   private final LearningCyclePlanningDefinition definitions =
-      new LearningCyclePlanningDefinition(bindings, json);
+      new LearningCyclePlanningDefinition(bindings, json, hypotheses);
   private final LearningCyclePlanningAlignment alignment =
       new LearningCyclePlanningAlignment(
           products, cycles, experiments, events, bindings, tasks, definitions, json);
@@ -65,6 +67,8 @@ class LearningCyclePlanningAlignmentTest {
             .name("Aplicativo " + id)
             .bigIdea(idea)
             .automaticExecutionEnabled(true)
+            .targetAudience("Público do produto " + id)
+            .explicitPain("Dificuldade no dia a dia")
             .productFormat("Aplicativo de uso contínuo")
             .revenueModel("Base gratuita e premium opcional")
             .validationDefinitionVersion("continuo-v1")
@@ -87,6 +91,14 @@ class LearningCyclePlanningAlignmentTest {
     cycle.setInheritedLearningJson("{\"previousCycleId\":21}");
     var hypothesis = new Hypothesis();
     hypothesis.setId(UUID.randomUUID());
+    when(hypotheses.createPlanningVersion(eq(hypothesis.getId()), eq(id), any()))
+        .thenAnswer(
+            call -> {
+              var version = new Hypothesis();
+              version.setId(UUID.randomUUID());
+              version.setSourceHypothesis(hypothesis);
+              return version;
+            });
     experiment =
         Experiment.builder()
             .id(cycle.getExperimentId())
@@ -140,7 +152,8 @@ class LearningCyclePlanningAlignmentTest {
     verify(events, never()).save(any());
     alignment.apply(id, cycle.getId(), request());
     assertThat(experiment.getUnitPrice()).isNull();
-    assertThat(experiment.getHypothesisRef()).isNull();
+    assertThat(experiment.getHypothesisRef()).isNotNull().isNotSameAs(oldHypothesis);
+    assertThat(experiment.getHypothesisRef().getSourceHypothesis()).isSameAs(oldHypothesis);
     assertThat(experiment.getHypothesis()).contains("Uso contínuo");
     assertThat(oldHypothesis.getId()).isNotNull();
     assertThat(cycle.getCreationJson()).isEqualTo(creation);

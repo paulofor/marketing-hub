@@ -18,6 +18,31 @@ import org.springframework.stereotype.Component;
 public class LearningCyclePlanningDefinition {
   private final ProductBigIdeaBindingRepository bindings;
   private final LearningCycleJson json;
+  private final com.marketinghub.hypothesis.service.HypothesisService hypotheses;
+
+  /** Cria uma versão vinculada ao predecessor sem manter a oferta vencida nem inventar preço. */
+  public com.marketinghub.hypothesis.Hypothesis hypothesisFor(Experiment source) {
+    var product = source.getProduct();
+    var definition = snapshot(product);
+    require(source.getHypothesisRef() != null, "O experimento precisa de uma hipótese de origem.");
+    String persona = product.getTargetAudience();
+    require(persona != null && !persona.isBlank(), "A definição precisa informar o público.");
+    if (persona.codePointCount(0, persona.length()) > 255)
+      persona = persona.substring(0, persona.offsetByCodePoints(0, 252)) + "...";
+    return hypotheses.createPlanningVersion(
+        source.getHypothesisRef().getId(),
+        product.getId(),
+        new com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest(
+            product.getExplicitPain(),
+            persona,
+            product.getPromise(),
+            product.getUniqueMechanism(),
+            product.getUniqueMechanism(),
+            definition.path("offer").asText(),
+            product.getPrimaryHypothesis(),
+            null,
+            product.getCurrentPriceBrl()));
+  }
 
   /** Detecta mudança explícita de direção em relação à referência fixada no predecessor. */
   public boolean changedSince(Experiment source) {

@@ -96,9 +96,11 @@ public class LearningCyclePlanningAlignment {
     var brief = (ObjectNode) json.read(cycle.getBriefJson());
     brief.put("offer", view.proposedOffer());
     brief.set("planningDefinition", definition);
+    var hypothesisVersion = definitions.hypothesisFor(experiment);
+    brief.put("planningHypothesisId", hypothesisVersion.getId().toString());
     cycle.setBriefJson(json.write(brief));
     experiment.setUnitPrice(view.proposedPriceBrl());
-    experiment.setHypothesisRef(null);
+    experiment.setHypothesisRef(hypothesisVersion);
     String hypothesis = brief.path("hypothesis").asText();
     experiment.setHypothesis(
         hypothesis.codePointCount(0, hypothesis.length()) <= 255
@@ -109,6 +111,7 @@ public class LearningCyclePlanningAlignment {
     var proof = (ObjectNode) json.read("{}");
     proof.set("before", before);
     proof.set("planningDefinition", definition);
+    proof.put("hypothesisId", hypothesisVersion.getId().toString());
     proof.put("productId", productId);
     proof.put("experimentId", experiment.getId());
     proof.put("productVersion", cycle.getProductVersion());
@@ -168,7 +171,12 @@ public class LearningCyclePlanningAlignment {
         && definition.equals(brief.path("planningDefinition"))
         && definition.path("offer").asText().equals(brief.path("offer").asText())
         && Objects.equals(experiment.getUnitPrice(), product.getCurrentPriceBrl())
-        && experiment.getHypothesisRef() == null)
+        && experiment.getHypothesisRef() != null
+        && experiment
+            .getHypothesisRef()
+            .getId()
+            .toString()
+            .equals(brief.path("planningHypothesisId").asText()))
       blocker = "O planejamento já está alinhado à definição registrada.";
     return new PlanningAlignmentView(
         blocker == null,

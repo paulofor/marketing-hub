@@ -435,7 +435,7 @@ public class LearningCycleSuccessorPreparation {
         .orElse(null);
   }
 
-  /** Preserva a oferta estável ou remove vínculos legados quando há nova definição registrada. */
+  /** Preserva a oferta estável ou versiona a hipótese quando há nova definição registrada. */
   private Experiment plannedExperiment(
       Experiment source, Long cycleId, ObjectNode proposal, ObjectNode definition) {
     return Experiment.builder()
@@ -446,7 +446,8 @@ public class LearningCycleSuccessorPreparation {
                 + source.getName().substring(0, Math.min(190, source.getName().length())))
         .product(source.getProduct())
         .niche(source.getNiche())
-        .hypothesisRef(definition == null ? source.getHypothesisRef() : null)
+        .hypothesisRef(
+            definition == null ? source.getHypothesisRef() : definitions.hypothesisFor(source))
         .experimentType(source.getExperimentType())
         .productAiSubtype(source.getProductAiSubtype())
         .campaignObjective(source.getCampaignObjective())

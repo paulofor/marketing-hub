@@ -18,7 +18,7 @@ Big Idea fixada no predecessor difere da atual. Oferta estável continua preserv
 
 | Cenário | Prova esperada |
 | --- | --- |
-| Caso original e outro produto com IDs diferentes | Oferta contínua, preço nulo, vínculo antigo removido, hipótese nova preservada |
+| Caso original e outro produto com IDs diferentes | Oferta contínua, preço nulo, nova versão da hipótese ligada à origem, preço em aberto |
 | Histórico anteriormente válido | Predecessor, tarefas, custos, recibos e oferta estável intactos |
 | Replay e concorrência | Uma revisão e um recibo; chave divergente/revisão vencida recusadas |
 | Identidade/Big Idea divergentes | Correção recusada sem escrita |
@@ -30,7 +30,7 @@ Big Idea fixada no predecessor difere da atual. Oferta estável continua preserv
 | Segregação | Doubles locais sem modelos, mídia, vídeos, cobrança ou dados de teste em produção |
 
 O alinhamento não reescreve `creation_json`, a hipótese H003 nem a tarefa #906;
-conserva o briefing anterior no novo recibo. Não produz aprovação estratégica.
+conserva o briefing anterior no novo recibo e cria uma versão BACKLOG da hipótese pela linhagem canônica. A referência obrigatória do experimento continua preenchida; preço em aberto não se torna zero. Não produz aprovação estratégica.
 Depois de publicado, o comando normal de retomada cria a nova análise somente
 com saldo, identidade, STOP e revisão dos agentes conferidos.
 
@@ -80,3 +80,16 @@ comercial. Os 105 testes locais de Mira, planejamento, reconciliação e passage
 passaram; os 17 testes de integridade do bundle também. O empacotador validou
 808 arquivos e 209 manifestos. Esta compatibilidade não é nova homologação premium,
 nem evidência de uso, satisfação ou venda.
+
+A revisão final identificou que `experiment.hypothesis_id` é obrigatório: apenas
+retirar a referência antiga falharia na gravação. O alinhamento e o sucessor agora
+usam o versionamento canônico de hipóteses, com predecessor preservado, produto
+vinculado e preço explicitamente em aberto somente no planejamento privado.
+O contrato comercial de criação de versões continua exigindo preço positivo.
+A regressão de persistência cobre o MUSA e outro produto, grava e recarrega o
+experimento real, preserva o custo, verifica a linhagem e repete a mesma chave sem
+criar outra versão. Isso corrige a lacuna dos doubles que aceitavam vínculo nulo.
+
+Depois da correção do vínculo obrigatório: 187 testes de alinhamento, sucessor,
+hipóteses com persistência H2 real, prontidão e arquitetura aprovados, sem dispensas.
+A navegação desktop/iPhone/Pixel foi repetida com o contrato atualizado e passou.

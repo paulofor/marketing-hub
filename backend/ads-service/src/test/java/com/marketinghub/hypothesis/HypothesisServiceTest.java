@@ -293,4 +293,127 @@ class HypothesisServiceTest {
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
         .hasMessageContaining("price must be positive");
   }
+
+  @Autowired
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCyclePlanningAlignment
+      planningAlignment;
+
+  @Autowired
+  private com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository planningCycles;
+
+  @Autowired private com.marketinghub.repository.jpa.product.ProductBigIdeaRepository bigIdeas;
+
+  @Autowired
+  private com.marketinghub.repository.jpa.product.ProductBigIdeaBindingRepository bigIdeaBindings;
+
+  @Autowired private com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments;
+  @Autowired private jakarta.persistence.EntityManager entityManager;
+
+  /**
+   * Comprova a gravação real da correção, com hipótese obrigatória, linhagem e histórico intactos.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"MUSA", "Outro produto"})
+  void persistsPlanningAlignmentWithoutLegacyPrice(String name) {
+    var niche = fixtures.createAndSaveNiche();
+    var source = fixtures.createAndSaveExperiment(niche);
+    var product =
+        productRepository.save(
+            com.marketinghub.product.Product.builder()
+                .name(name)
+                .marketNiche(niche)
+                .automaticExecutionEnabled(true)
+                .explicitPain("Escolher combinações demanda esforço")
+                .targetAudience("Mulheres adultas com rotinas e preferências diversas. ".repeat(9))
+                .promise("Reutilizar combinações úteis no dia a dia")
+                .uniqueMechanism("Guarda-roupa pessoal e orientação contextual")
+                .primaryHypothesis("Uso útil recorrente pode sustentar premium opcional")
+                .productFormat("Aplicativo de uso contínuo")
+                .revenueModel("Base gratuita e premium opcional; preço com Plutus")
+                .validationDefinitionVersion("continuo-v1")
+                .validationDefinitionJson("{\"economics\":{\"priceBrl\":null}}")
+                .build());
+    var idea = new com.marketinghub.product.bigidea.v1.ProductBigIdea();
+    idea.setProductId(product.getId());
+    idea.setRevision(3);
+    idea.setCentralIdea("Aplicativo de uso contínuo");
+    idea.setContentJson("{}");
+    idea.setChangeReason("Proposta aprovada");
+    idea.setCreatedBy("Teste local");
+    idea.setCreatedAt(java.time.Instant.now());
+    bigIdeas.saveAndFlush(idea);
+    product.setBigIdea(idea);
+    var oldHypothesis = source.getHypothesisRef();
+    oldHypothesis.setPrice(new java.math.BigDecimal("67"));
+    oldHypothesis.setProduct(product);
+    source.setProduct(product);
+    source.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    source.setUnitPrice(new java.math.BigDecimal("67"));
+    source.setTotalCost(new java.math.BigDecimal("1.75"));
+    experiments.saveAndFlush(source);
+    var binding = new com.marketinghub.product.bigidea.v1.ProductBigIdeaBinding();
+    binding.setProductId(product.getId());
+    binding.setSourceReference("experiment:" + source.getId());
+    binding.setBigIdea(idea);
+    bigIdeaBindings.saveAndFlush(binding);
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setProductId(product.getId());
+    cycle.setExperimentId(source.getId());
+    cycle.setChainDefinitionId(27L);
+    cycle.setChainCode("fixture");
+    cycle.setProcessDefinitionId(126L);
+    cycle.setRequestKey(java.util.UUID.randomUUID().toString());
+    cycle.setCreationJson("{\"offer\":\"Sete dias por R$67\"}");
+    cycle.setBriefJson(
+        "{\"offer\":\"Sete dias por R$67\",\"hypothesis\":\"Uso contínuo e premium opcional\"}");
+    cycle.setInheritedLearningJson("{}");
+    cycle.setStage("PLANNING");
+    cycle.setStatus("OPEN");
+    cycle.setProductVersion("continuo-v1");
+    cycle.setBudgetLimitBrl(java.math.BigDecimal.ZERO);
+    cycle.setCreatedAt(java.time.Instant.now());
+    cycle.setUpdatedAt(cycle.getCreatedAt());
+    cycle.setVersionChangedAt(cycle.getCreatedAt());
+    cycle.setRevision(1);
+    planningCycles.saveAndFlush(cycle);
+    var request =
+        new com.marketinghub
+            .businessprocesschain
+            .learningcycle
+            .v1
+            .service
+            .planningAlignment
+            .PlanningAlignmentRequest(
+            java.util.UUID.randomUUID(), 1, 3, "Teste local", "Corrigir oferta vencida");
+    Long productId = product.getId(), cycleId = cycle.getId(), experimentId = source.getId();
+    var oldId = oldHypothesis.getId();
+    planningAlignment.apply(productId, cycleId, request);
+    entityManager.flush();
+    entityManager.clear();
+    var saved = experiments.findById(experimentId).orElseThrow();
+    var current = saved.getHypothesisRef();
+    assertThat(current).isNotNull();
+    assertThat(current.getId()).isNotEqualTo(oldId);
+    assertThat(current.getSourceHypothesis().getId()).isEqualTo(oldId);
+    assertThat(current.getProduct().getId()).isEqualTo(productId);
+    assertThat(current.getVersionNumber()).isEqualTo(2);
+    assertThat(current.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
+    assertThat(current.getPrice()).isNull();
+    assertThat(current.getPersona().length()).isLessThanOrEqualTo(255);
+    assertThat(current.getEntrega()).contains("contínuo", "premium opcional", "Plutus");
+    assertThat(current.getSourceHypothesis().getPrice()).isEqualByComparingTo("67");
+    assertThat(frameworkMapperSupport.resolve(current).getOffer().getPriceAmount()).isNull();
+    assertThat(frameworkMapperSupport.resolve(current).getChecklist().getApprovedForExperiment())
+        .isFalse();
+    assertThat(saved.getUnitPrice()).isNull();
+    assertThat(saved.getTotalCost()).isEqualByComparingTo("1.75");
+    assertThat(saved.getFacebookReleaseRequestedAt()).isNull();
+    assertThat(planningCycles.findById(cycleId).orElseThrow().getCreationJson()).contains("R$67");
+    assertThat(planningAlignment.preview(productId, cycleId).available()).isFalse();
+    planningAlignment.apply(productId, cycleId, request);
+    entityManager.flush();
+    assertThat(experiments.findById(experimentId).orElseThrow().getHypothesisRef().getId())
+        .isEqualTo(current.getId());
+  }
 }

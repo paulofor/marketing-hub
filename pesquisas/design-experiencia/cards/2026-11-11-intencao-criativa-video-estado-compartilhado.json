@@ -1,0 +1,18 @@
+{
+  "cardKey": "intencao-criativa-compartilhada-producao-video",
+  "collection": "video",
+  "title": "Estado compartilhado de intenção criativa pode reduzir desvios entre briefing e vídeo",
+  "finding": "Em estudo intraindivíduo com 30 participantes, VideoMaker obteve maior avaliação de preservação de intenção (5,33 vs. 3,90; p=0,046) e tradução narrativa (5,87 vs. 4,47; p=0,028) do que interface de referência. O item sobre negociar iniciativa da IA não alcançou significância corrigida (p=0,056).",
+  "mechanism": "Hipótese: externalizar e versionar intenções criativas aprovadas ajuda a evitar deriva semântica quando ideias são convertidas em roteiro, storyboard e cenas, mantendo espaço para exploração nos elementos não fixados.",
+  "commercialApplication": "No Apolo, manter briefing, público, benefícios verificáveis, tom e restrições como seeds versionadas; comparar cenas e revisões com esse estado, pedindo intervenção do criador somente quando a mudança alterar intenção confirmada.",
+  "evidenceStrength": "Preprint com 12 entrevistas formativas e experimento intraindivíduo com 30 participantes; evidência sobretudo perceptiva, com diferenças em itens específicos e limites de generalização.",
+  "publishedOn": "2026-11-11",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "Explicitar intenções confirmadas em todas as etapas da criação de vídeo reduzirá desvios identificados por revisores cegos e retrabalho comparado ao fluxo de prompts livres, mantendo diversidade de propostas.",
+  "risks": "Intenções inferidas incorretamente podem congelar decisões erradas, reduzir criatividade e aumentar cliques; registrar como confirmadas apenas intenções efetivamente aprovadas por pessoas.",
+  "limits": "Participantes de 18–26 anos, atividades curtas, resultados autorrelatados; nenhuma evidência de melhor desempenho comercial, retenção, CTA ou vendas; negociação de iniciativa da IA não foi significativa.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-11-intencao-criativa-video-estado-compartilhado.md",
+  "sourceTitle": "Jin et al. — intenção criativa persistente em co-criação de vídeo (fonte revisada)",
+  "sourceSha256": "1881966e0ce09d3c6094712f27b3a45e6310f1cb75961a3891006377c2f5fedc"
+}

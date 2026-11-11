@@ -56,6 +56,38 @@ public class LearningCycleService {
 
   @Autowired private LearningCycleWorkResolver workResolver;
 
+  @Autowired private LearningCyclePlanningAlignment planningAlignment;
+
+  /** Consulta a oferta conciliável sem alterar decisões, tarefas ou permissões. */
+  @Transactional(readOnly = true)
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .service
+          .planningAlignment
+          .PlanningAlignmentView
+      planningAlignment(Long productId, Long cycleId) {
+    return planningAlignment.preview(productId, cycleId);
+  }
+
+  /** Corrige a entrada privada do planejamento com recibo e preserva a continuidade existente. */
+  @Transactional
+  public LearningCycleResponse reconcilePlanning(
+      Long productId,
+      Long cycleId,
+      com.marketinghub
+              .businessprocesschain
+              .learningcycle
+              .v1
+              .service
+              .planningAlignment
+              .PlanningAlignmentRequest
+          request) {
+    planningAlignment.apply(productId, cycleId, request);
+    return get(productId, cycleId);
+  }
+
   @Autowired private LearningCycleVideoBudget videoBudget;
   @Autowired private LearningCycleSingleVideoBudget singleVideoBudget;
   @Autowired private LearningCycleFinancialReview financialReview;

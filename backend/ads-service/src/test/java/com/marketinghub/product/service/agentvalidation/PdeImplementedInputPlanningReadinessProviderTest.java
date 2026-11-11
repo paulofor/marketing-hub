@@ -30,7 +30,14 @@ class PdeImplementedInputPlanningReadinessProviderTest {
   private final LearningCycleImplementedInputContext inputs =
       new LearningCycleImplementedInputContext(products, json);
   private final PdeImplementedInputPlanningReadinessProvider gate =
-      new PdeImplementedInputPlanningReadinessProvider(cycles, inputs, tasks, json);
+      new PdeImplementedInputPlanningReadinessProvider(
+          cycles,
+          inputs,
+          tasks,
+          json,
+          mock(
+              com.marketinghub.businessprocesschain.learningcycle.v1.service
+                  .LearningCyclePlanningAlignment.class));
   private final List<AgentTaskFunctionalSnapshot> history = new ArrayList<>();
   private final BusinessProcessDefinition process = process();
 

@@ -52,7 +52,15 @@ class PdeImplementedInputPlanningHandoffTest {
     var cycles = mock(LearningSalesCycleRepository.class);
     var agentTasks = mock(AgentTaskService.class);
     var input = new LearningCycleImplementedInputContext(products, json);
-    var gate = new PdeImplementedInputPlanningReadinessProvider(cycles, input, tasks, json);
+    var gate =
+        new PdeImplementedInputPlanningReadinessProvider(
+            cycles,
+            input,
+            tasks,
+            json,
+            mock(
+                com.marketinghub.businessprocesschain.learningcycle.v1.service
+                    .LearningCyclePlanningAlignment.class));
     var service =
         new BusinessProcessActivityExecutionService(
             processes,

@@ -41,6 +41,7 @@ public class LearningCycleSuccessorPreparation {
   private final BusinessProcessChainDefinitionRepository chains;
   private final LearningCycleService service;
   private final LearningCycleJson json;
+  private final LearningCyclePlanningDefinition definitions;
 
   @org.springframework.beans.factory.annotation.Autowired
   @org.springframework.context.annotation.Lazy
@@ -314,7 +315,7 @@ public class LearningCycleSuccessorPreparation {
     return result;
   }
 
-  /** Preserva a mudança registrada no briefing e na memória, sem copiar autorizações ou mídia. */
+  /** Usa a definição vigente quando a direção mudou, preservando a oferta do histórico intacto. */
   private LearningCycleResponse createPreparedSuccessor(
       Long productId,
       LearningSalesCycle cycle,
@@ -325,7 +326,11 @@ public class LearningCycleSuccessorPreparation {
       String version,
       String evidenceReference) {
     Long cycleId = cycle.getId();
-    var successor = experiments.saveAndFlush(plannedExperiment(source, cycleId, decision));
+    var definition =
+        definitions.changedSince(source) ? definitions.snapshot(source.getProduct()) : null;
+    if (definition != null) decision.set("planningDefinition", definition);
+    var successor =
+        experiments.saveAndFlush(plannedExperiment(source, cycleId, decision, definition));
     var prepared =
         service.createPreparation(
             productId,
@@ -340,7 +345,9 @@ public class LearningCycleSuccessorPreparation {
                 decision.path("nextHypothesis").asText(),
                 brief.path("successCriterion").asText(),
                 decision.path("successorAudience").asText(brief.path("audience").asText()),
-                brief.path("offer").asText(),
+                definition == null
+                    ? brief.path("offer").asText()
+                    : definition.path("offer").asText(),
                 "Canal de referência: "
                     + source.getPlatform()
                     + "; mídia zero, sem janela ou autorização herdada.",
@@ -428,8 +435,9 @@ public class LearningCycleSuccessorPreparation {
         .orElse(null);
   }
 
-  /** Usa a hipótese nova e a oferta preservada; campanha, artefatos e permissões nascem vazios. */
-  private Experiment plannedExperiment(Experiment source, Long cycleId, ObjectNode proposal) {
+  /** Preserva a oferta estável ou remove vínculos legados quando há nova definição registrada. */
+  private Experiment plannedExperiment(
+      Experiment source, Long cycleId, ObjectNode proposal, ObjectNode definition) {
     return Experiment.builder()
         .name(
             "Planejamento do ciclo "
@@ -438,14 +446,15 @@ public class LearningCycleSuccessorPreparation {
                 + source.getName().substring(0, Math.min(190, source.getName().length())))
         .product(source.getProduct())
         .niche(source.getNiche())
-        .hypothesisRef(source.getHypothesisRef())
+        .hypothesisRef(definition == null ? source.getHypothesisRef() : null)
         .experimentType(source.getExperimentType())
         .productAiSubtype(source.getProductAiSubtype())
         .campaignObjective(source.getCampaignObjective())
         .platform(source.getPlatform())
         .facebookPage(source.getFacebookPage())
         .instagramAccount(source.getInstagramAccount())
-        .unitPrice(source.getUnitPrice())
+        .unitPrice(
+            definition == null ? source.getUnitPrice() : source.getProduct().getCurrentPriceBrl())
         .desireTerritoryCode(source.getDesireTerritoryCode())
         .desireTerritorySnapshotJson(source.getDesireTerritorySnapshotJson())
         .hypothesis(experimentHypothesis(proposal.path("nextHypothesis").asText()))

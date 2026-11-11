@@ -21,6 +21,9 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Impede alterar a entrada de um experimento com trabalho ativo ou resultado já aceito. */
+  boolean existsBySourceReferenceAndStatusIn(String sourceReference, List<String> statuses);
+
   /** Lê a última avaliação de Plutus do experimento, incluindo tentativa ainda não concluída. */
   @Query(
       """

@@ -35,6 +35,37 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/{cycleId}/planning-alignment:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    get:
+      summary: Conferir elegibilidade e oferta registrada antes da retomada de Atena
+      description: Somente planejamento privado aberto, com direção fixada compatível e sem tarefas pendentes, em execução ou aceitas. Não grava nem executa agentes.
+      responses:
+        '200':
+          description: Prévia oficial com available, reason, cycleRevision, bigIdeaRevision, currentOffer, proposedOffer e proposedPriceBrl (nulo quando em aberto).
+        '409': {description: Definição econômica inconsistente ou identidade incompatível}
+    post:
+      summary: Reconciliar a oferta com a definição já registrada do produto
+      description: Preserva criação, tarefas, custos, tetos e hipótese histórica. Registra antes/depois; remove preço/vínculo legados somente do experimento planejado. Não inicia agentes nem autoriza cobrança, anúncios ou vídeos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, expectedBigIdeaRevision, operatorName, reason]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, minimum: 0}
+                expectedBigIdeaRevision: {type: integer, minimum: 1}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                reason: {type: string, minLength: 1, maxLength: 2000}
+      responses:
+        '200': {description: Ciclo atualizado, ou mesmo resultado no replay idêntico}
+        '400': {description: Parâmetro obrigatório ausente ou inválido}
+        '409': {description: Revisão vencida, direção divergente, STOP ou trabalho ativo/aceito}
   /products/{productId}/{cycleId}/single-video-budget:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}

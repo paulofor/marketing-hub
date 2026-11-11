@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-adobe-sneaks-2026-controle-cena-tempo-som-pesquisa",
+  "collection": "video",
+  "title": "Adobe Sneaks 2026: pesquisa em edição interativa, continuidade e sincronização",
+  "finding": "Em 11/11/2026, Adobe apresentou seis propostas de pesquisa relevantes para audiovisual: Scene Sweep, Screen Test, Live Set, On Cue, Sound Bender e Sight Span.",
+  "mechanism": "Propagação de edição entre cortes, persona conversacional para personagens, alteração contínua em vídeo, sinais temporais para ações, design interativo de áudio e exploração de espaço a partir de imagem.",
+  "commercialApplication": "Acompanhar futuros controles estruturados de timeline, consistência de personagem e som sincronizado para anúncios, curtas, séries e animações; ainda não integrar produto.",
+  "evidenceStrength": "Alta para anúncio de pesquisa oficial Adobe em 11/11; sem disponibilidade pública, benchmark, preço ou documentação de API.",
+  "publishedOn": "2026-11-11",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Quando comercializados, controles de eventos por tempo e edições propagadas em cenas poderão reduzir refações e aumentar continuidade audiovisual.",
+  "risks": "Protótipos podem nunca virar produto; nenhum custo, limite, licença comercial ou performance real está validado; não confundir com ferramentas beta de Premiere anunciadas dia 10.",
+  "limits": "Todos os projetos citados são Sneaks de pesquisa, sem API/SDK pública nem acesso comercial confirmado. Labs Playground inicial não inclui esses projetos de vídeo/áudio.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-11-adobe-max-sneaks-video-audio.md",
+  "sourceTitle": "Adobe MAX 2026 Sneaks: pesquisa audiovisual e restrições",
+  "sourceSha256": "1fe753e83f56e4ffd1d6c6f4eb681523a345a36c30ba115be5adfa1e6ebb6201"
+}

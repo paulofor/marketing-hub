@@ -186,7 +186,7 @@
     },
     {
       "path": "docs/homologacao/musa-ci-dependencias-2026-11-11.md",
-      "sha256": "cdf584447dd4ea5c8d6854456f3967376a7632e25095e7db26460283f9fbd951",
+      "sha256": "af2df61baab0332553db8bfb80c69c0b10fe6acca03adf820a91e1546cbaa08c",
       "promptMode": "FULL"
     }
   ],
@@ -248,7 +248,7 @@
     },
     {
       "path": "scripts/prepare-ci-video-tools.sh",
-      "sha256": "8eb398ac8971157ea2e293d31e806680ca5137d236a9330cab3525cb29f98522"
+      "sha256": "8e46ae2d17cf6627558dadbb66a07f5db8624aa21aa73269aeb5d18c38bd19e7"
     }
   ],
   "executableEvidence": [
@@ -264,14 +264,14 @@
     },
     {
       "path": "scripts/test-prepare-ci-video-tools.py",
-      "sha256": "21a07e4c7dcf5148da983fba1e645b1af2e722de8f93a9868ab0dc3bdad8c99b"
+      "sha256": "fe754faebfe73e7c3c11d3ad54ba3aea63ab8b8e4f64a634e259f382c0878e5c"
     }
   ],
   "validationReport": "docs/homologacao/musa-ci-dependencias-2026-11-11.md",
   "compatibilityAttestation": {
     "previousManifest": "pde-platform/contracts/mira-commercial-homologation-v29.json",
     "previousManifestSha256": "e336a7a345ac3a8498561ebd447b02e2d86f27b8f132fa81c83e02533d7c05d5",
-    "validatedAt": "2026-11-11T14:58:41.139319+00:00",
+    "validatedAt": "2026-11-11T15:12:53.606371+00:00",
     "scope": "Compatibilidade do preparo de ferramentas e Chromium nos gates de CI, sem índices APT mutáveis; experiência, provas e autorizações anteriores preservadas.",
     "changedEvidence": [
       {

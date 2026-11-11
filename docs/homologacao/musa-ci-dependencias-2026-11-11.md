@@ -50,3 +50,17 @@ recusa local como deveria; nenhum merge ou deploy ocorreu. O lote seguinte usa
 falha imediata, revalida o bundle antes de commit e preserva cada manifesto anterior.
 As sucessoras de compatibilidade alteram apenas a prova do workflow e acrescentam
 os testes determinísticos do preparo; não alteram experiências ou autorizações.
+
+
+A execução real do gerador SVG encontrou uma incompatibilidade adicional: o FFmpeg
+estático extraído da imagem 7.1.1 respondia `-version`, mas encerrava com SIGSEGV
+no decoder SVG, também reproduzido na sandbox. O preparo agora usa a distribuição
+GNU/glibc do FFmpeg 8.1, build imutável `autobuild-2026-11-11-12-39`, da organização
+FFmpeg-Builds, com SHA-256 fixado. A seleção anterior foi descartada para este gate;
+a imagem original de Têmis não foi alterada. O download e a extração reais passaram.
+
+O preparo só expõe os binários ao job após renderizar a referência SVG real e
+conferir o PNG 1080×1920. Seis regressões cobrem também dimensões inválidas e hash
+incorreto; o gerador Product UGC completo passou localmente com os binários novos.
+Arquivos publicáveis gerados nessa prova foram restaurados aos bytes anteriores;
+não houve publicação de peça nem mudança da oferta pela homologação.

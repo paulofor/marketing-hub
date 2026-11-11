@@ -358,8 +358,8 @@ public class ProcessRunContext {
   }
 
   /**
-   * Incorpora versão, definição validada e revisão funcional do contrato criativo à proteção contra
-   * repetição sem progresso, preservando o contrato anterior dos demais processos.
+   * Incorpora versão, definição reconciliada e revisão funcional do contrato criativo à proteção
+   * contra repetição sem progresso, preservando o contrato anterior dos demais processos.
    */
   public String inputVersion(ProcessRun run) {
     var product = products.findById(run.getProductId()).orElseThrow();
@@ -368,13 +368,32 @@ public class ProcessRunContext {
             ? ""
             : cycles.findById(run.getLearningCycleId()).orElseThrow().getProductVersion();
     String base = version + "|" + product.getValidationDefinitionJson();
+    if (run.getLearningCycleId() != null) {
+      var cycle = cycles.findById(run.getLearningCycleId()).orElseThrow();
+      if (Objects.equals(cycle.getProductId(), run.getProductId())
+          && Objects.equals("experiment:" + cycle.getExperimentId(), run.getSourceReference())
+          && cycle.getBriefJson() != null) {
+        try {
+          var definition = json.readTree(cycle.getBriefJson()).path("planningDefinition");
+          if (definition.isObject()) base += "|planningDefinition:" + definition;
+        } catch (java.io.IOException ex) {
+          log.error(
+              "Falha ao conferir entrada reconciliada runId={} cycleId={}",
+              run.getId(),
+              cycle.getId(),
+              ex);
+          throw new IllegalStateException("A definição reconciliada não pôde ser conferida.", ex);
+        }
+      }
+    }
+    String resolvedBase = base;
     return communicationInputs == null
-        ? base
+        ? resolvedBase
         : communicationInputs
             .executionInputVersion(
                 process(run.getProcessDefinitionId()).getProcessCode(), run.getSourceReference())
-            .map(revision -> base + "|" + revision)
-            .orElse(base);
+            .map(revision -> resolvedBase + "|" + revision)
+            .orElse(resolvedBase);
   }
 
   /** Lê o grafo para que a decisão respeite as dependências reais da versão selecionada. */

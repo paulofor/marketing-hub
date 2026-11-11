@@ -846,3 +846,30 @@ os cenários e dispositivos de homologação e revisões independentes.
 Se a estratégia aprovada contradizer esse escopo, o backend revalida a origem e
 os pareceres dependentes antes de repetir Dédalo, preservando tentativas, resultados
 e custos. Isso não autoriza nova inferência sem saldo nem transfere mídia.
+
+
+## Oferta coerente na preparação do sucessor — 11/11/2026
+
+Quando a direção registrada do produto mudou em relação à Big Idea fixada no
+predecessor, preparar o sucessor com a definição econômica vigente, não com o
+preço, oferta ou vínculo de hipótese antigos. Preço explicitamente em aberto
+permanece nulo e segue para Plutus; não significa preço zero. Direção estável
+preserva a oferta antes válida. Custos e tetos seguem a linhagem cumulativa
+vigente, sem renovação de saldo ou nova aprovação apenas pela troca de ciclo.
+
+Uma divergência de entrada detectada antes do aceite de Atena pode ser reconciliada
+pela tela do ciclo no mesmo experimento PLANNED, aberto e privado. Exigir direção
+fixada compatível, revisão corrente, ausência de tarefa pendente/em execução/aceita
+e recibo idempotente com antes/depois. Não reescrever criação, tarefas, pareceres,
+hipóteses históricas, custos ou autorizações. Experimento exposto ou planejamento
+já aceito exige o fluxo de sucessor; nunca migrar uma execução histórica.
+
+A reconciliação não executa agentes nem libera cobrança, mídia ou audiovisual.
+Retomada usa o comando normal do processo, com os gates e saldo acumulado.
+Referência: [matriz e evidências da correção](../homologacao/musa-planejamento-oferta-2026-11-11.md).
+
+A proteção contra repetição reconhece o recibo compatível posterior à recusa de
+Atena como mudança real de entrada. Uma tentativa criada depois dessa correção
+não pode reutilizar o recibo para liberar outra inferência. A chave operacional
+inclui a definição reconciliada; revisão de teto ou comentário não conta como
+mudança funcional. Assim, corrigir a origem destrava o caso sem abrir um loop.

@@ -257,6 +257,24 @@ public class HypothesisService {
    */
   @Transactional
   public Hypothesis createVersion(UUID sourceId, CreateHypothesisVersionRequest req) {
+    return createVersion(sourceId, req, null);
+  }
+
+  /** Versiona uma hipótese somente para planejamento privado, admitindo preço ainda em aberto. */
+  @Transactional
+  public Hypothesis createPlanningVersion(
+      UUID sourceId, Long productId, CreateHypothesisVersionRequest req) {
+    Product product = productRepository.findById(productId).orElseThrow();
+    if (req == null || !java.util.Objects.equals(req.price(), product.getCurrentPriceBrl())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Preço diverge da definição do produto");
+    }
+    return createVersion(sourceId, req, product);
+  }
+
+  /** Reutiliza a linhagem canônica sem transportar preço, aprovação ou custo da versão anterior. */
+  private Hypothesis createVersion(
+      UUID sourceId, CreateHypothesisVersionRequest req, Product planningProduct) {
     Hypothesis source =
         repository
             .findById(sourceId)
@@ -264,14 +282,25 @@ public class HypothesisService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Hipótese de origem não encontrada"));
-    validateVersion(req);
+    validateVersion(req, planningProduct != null);
+    if (planningProduct != null
+        && ((source.getProduct() != null
+                && !source.getProduct().getId().equals(planningProduct.getId()))
+            || !java.util.Objects.equals(
+                source.getMarketNiche() == null ? null : source.getMarketNiche().getId(),
+                planningProduct.getMarketNiche() == null
+                    ? null
+                    : planningProduct.getMarketNiche().getId()))) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Hipótese pertence a outro produto ou nicho");
+    }
     Hypothesis root = source.getRootHypothesis() == null ? source : source.getRootHypothesis();
     root = repository.findByIdForVersioning(root.getId()).orElseThrow();
     int nextVersion = repository.findMaximumVersionNumber(root.getId()) + 1;
     Hypothesis version =
         Hypothesis.builder()
             .marketNiche(source.getMarketNiche())
-            .product(source.getProduct())
+            .product(planningProduct == null ? source.getProduct() : planningProduct)
             .sourceHypothesis(source)
             .rootHypothesis(root)
             .versionNumber(nextVersion)
@@ -319,8 +348,8 @@ public class HypothesisService {
     frameworkMapperSupport.storeSnapshot(version, framework, null);
   }
 
-  /** Impede que uma nova versão seja criada sem os dados mínimos para um teste comercial. */
-  private void validateVersion(CreateHypothesisVersionRequest req) {
+  /** Exige dados mínimos e mantém preço positivo fora do planejamento privado. */
+  private void validateVersion(CreateHypothesisVersionRequest req, boolean planning) {
     if (req == null || req.problem() == null || req.problem().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
     }
@@ -330,7 +359,7 @@ public class HypothesisService {
     if (req.entrega() == null || req.entrega().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entrega required");
     }
-    if (req.price() == null || req.price().signum() <= 0) {
+    if ((!planning && req.price() == null) || (req.price() != null && req.price().signum() <= 0)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price must be positive");
     }
     if (req.offerType() != null) {

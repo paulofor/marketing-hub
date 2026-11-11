@@ -46,6 +46,8 @@ class LearningCycleSuccessorPreparationTest {
       mock(BusinessProcessChainDefinitionRepository.class);
   private final LearningCycleService service = mock(LearningCycleService.class);
   private final ObjectMapper mapper = new ObjectMapper();
+  private final LearningCyclePlanningDefinition definitions =
+      mock(LearningCyclePlanningDefinition.class);
   private final LearningCycleSuccessorPreparation preparation =
       new LearningCycleSuccessorPreparation(
           cycles,
@@ -56,7 +58,8 @@ class LearningCycleSuccessorPreparationTest {
           experiments,
           chains,
           service,
-          new LearningCycleJson(mapper));
+          new LearningCycleJson(mapper),
+          definitions);
 
   private final com.marketinghub.businessprocess.automation.v1.service.ProcessRunService
       processRuns =
@@ -413,6 +416,33 @@ class LearningCycleSuccessorPreparationTest {
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     verify(experiments, never()).saveAndFlush(any());
     verifyNoInteractions(service, processRuns);
+  }
+
+  /** A nova direção usa oferta vigente e preço em aberto, sem carregar a hipótese histórica. */
+  @ParameterizedTest
+  @ValueSource(longs = {4, 83})
+  void changedDirectionDoesNotCopyLegacyOffer(long productId) throws Exception {
+    var cycle = fixture(productId);
+    var source = experiments.findById(cycle.getExperimentId()).orElseThrow();
+    when(definitions.changedSince(source)).thenReturn(true);
+    when(definitions.snapshot(source.getProduct()))
+        .thenReturn(
+            (ObjectNode)
+                mapper.readTree(
+                    "{\"offer\":\"Aplicativo contínuo, base gratuita e premium opcional; preço com Plutus\",\"economics\":{\"priceBrl\":null}}"));
+    var version = new com.marketinghub.hypothesis.Hypothesis();
+    version.setId(java.util.UUID.randomUUID());
+    version.setSourceHypothesis(source.getHypothesisRef());
+    when(definitions.hypothesisFor(source)).thenReturn(version);
+    preparation.prepare(productId, cycle.getId());
+    var saved = ArgumentCaptor.forClass(Experiment.class);
+    verify(experiments).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getUnitPrice()).isNull();
+    assertThat(saved.getValue().getHypothesisRef()).isSameAs(version);
+    assertThat(source.getUnitPrice()).isEqualByComparingTo("67");
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(productId), request.capture());
+    assertThat(request.getValue().offer()).contains("contínuo", "Plutus").doesNotContain("67");
   }
 
   /** Reproduz Capella e outro produto sem copiar mídia, ativos, custos, janela ou autorizações. */

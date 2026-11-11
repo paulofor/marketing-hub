@@ -34,6 +34,9 @@ public class PdeImplementedInputPlanningReadinessProvider
   private final LearningCycleImplementedInputContext inputs;
   private final AgentTaskRepository tasks;
   private final ObjectMapper json;
+  private final com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCyclePlanningAlignment
+      planningAlignment;
 
   /** Reconhece apenas a sequência multiagente de planejamento, sem alterar contratos legados. */
   @Override
@@ -75,11 +78,13 @@ public class PdeImplementedInputPlanningReadinessProvider
         true, "Os predecessores preservam a entrada implementada e a ordem dos pareceres.");
   }
 
-  /** Impede repetição funcional por botão ou retomada; falha técnica conserva sua recuperação. */
+  /** Exige predecessor corrigido ou reconciliação comprovada posterior à recusa de Atena. */
   private boolean unchangedFunctionalBlock(PlanningState state, String activity) {
     var current = latest(state.history(), activity);
     if (current == null || !"BLOCKED".equals(current.status()) || current.resultJson() == null)
       return false;
+    if ("marketStrategy".equals(activity)
+        && planningAlignment.correctedAfter(state.cycle(), current.createdAt())) return false;
     try {
       var result = json.readTree(current.resultJson());
       if (result == null || !Set.of("ADJUST", "REJECT").contains(result.path("decision").asText()))
@@ -119,7 +124,9 @@ public class PdeImplementedInputPlanningReadinessProvider
     var current = latest(value.history(), activity.getActivityId());
     if (current == null || !Set.of("COMPLETED", "BLOCKED").contains(current.status())) return false;
     if ("marketStrategy".equals(activity.getActivityId()))
-      return "COMPLETED".equals(current.status()) && !aligned(value);
+      return "COMPLETED".equals(current.status()) && !aligned(value)
+          || "BLOCKED".equals(current.status())
+              && planningAlignment.correctedAfter(value.cycle(), current.createdAt());
     if (!aligned(value)) return true;
     var strategy = latest(value.history(), "marketStrategy");
     if ("economics".equals(activity.getActivityId())) return current.id() < strategy.id();

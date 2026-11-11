@@ -1,0 +1,1169 @@
+{
+  "contractVersion": "mira-private-candidate.v83",
+  "processCode": "pde-construction-approval",
+  "processVersion": 4,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:10@mira-private-candidate-v3-build",
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-private-candidate-v3",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Compatibilidade do encadeamento administrativo 2→3→4: construção e homologação atuais antes da comunicação, sem alterar a experiência Mira ou renovar aprovações.",
+  "operationalState": {
+    "verifiedAt": "2026-10-21",
+    "experimentStatus": "PLANNED",
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+    "requiredFrontendSourceSha256": "023cf881ddd2b9e0064d1a90ab8b9c002f005325f9d7d1f7e839735d208d2046",
+    "publishedByManifest": "pde-platform/contracts/mira-commercial-homologation-v25.json"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "mira-private-candidate-v3",
+      "experienceVersion": "mira-private-candidate-v3",
+      "frontendSourceSha256": "023cf881ddd2b9e0064d1a90ab8b9c002f005325f9d7d1f7e839735d208d2046"
+    },
+    "diagnosticsUrl": "https://mira.digicomdigital.com.br/mira-candidate/version-diagnostics.json"
+  },
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/mira-candidate.html",
+      "sha256": "56023ac769d7b41c0f03a285d9af803293583e5ee6e4febfd5541a99333a6207",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCandidateEntry.tsx",
+      "sha256": "266bb93ab40eb151fa7aa9b2cc9d2d1d19c6a70ff8c859f72bc320d9f2f41173",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/vite.mira-commercial.config.ts",
+      "sha256": "d97422427de7433508cf72456b23095d507a5139a2272671a4e048c7658ae002",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
+      "sha256": "0cba7071a2c05800ccb8f3f990f2848fe26ee2492a7687465d8139e48a670e23",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeContext.java",
+      "sha256": "e29bfdbfcf55504e7d1936f55f34423e4b692e433ff6ca98df8b7eff123e7dae",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.tsx",
+      "sha256": "ccc23411a9b7aad61b36b87c0328f2161d5db3341ebb6619ca5107e6c8fb66df",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1.java",
+      "sha256": "5cc32b87ae051e6490a9a2cbb298be9ed763e40cb6ffd515960c7c7bcbd4d6e7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
+      "sha256": "7418313593c245d1426345b2dfc6685b2558b3f3edba0948352bccc2a7439d45",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/controller/MiraPrivateController.java",
+      "sha256": "ebfd3da9a40bf721b331bf0d7d2acdad4e099ab317ca4a5564974983255e3ce9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCandidateApp.tsx",
+      "sha256": "0ecf47719056e3d8af50b26dae1d4a44c274b231457f98088e8f2c4de81ab076",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-candidate.css",
+      "sha256": "c5146857d822ec2df8930c5db724da01f749b0a5eb07223e225f28ac977aee66",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/nginx.mira-commercial.conf",
+      "sha256": "1f8e0ae0e2cde3e3cc36a48caa54e9f827196e7add05bb52ec261bc674e2b665",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraPrivateService.java",
+      "sha256": "e8e0342fc7467d5d526ac37189804398862c20dcb734e9633696b2c735a1dcae",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs",
+      "sha256": "af36ad2c4f556ea1c53ced11708e3d797db2fc9b14b699bd2062d8a7b05d0137",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/contract/MiraPrivateContract.java",
+      "sha256": "c37f4aa0af5591982d3fa173d3c01f00da8a8b392de899bac1840cd04c7dbfdd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraRoutinePolicy.java",
+      "sha256": "480c2550e1891f7eb46ae2e5dcafe83fe74d5e47161b824bfde9cf085b1bf864",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mira-candidate-metrics.mjs",
+      "sha256": "4cf0316cf5e5805a502b872d4d4af2760c286082afd8a23265002795585ef1c1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/prompts/bpm/v5/pde-agent-validation-scenario-review.md",
+      "sha256": "c07d1208949a8480529c1b7e46c6af045e7408e4b45dbe5f0c21aa366f573404",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "sha256": "3d37d40f058809988c4a40e95f500be800f58180a18db3fded6b4d478dc97bfa",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/write-mira-candidate-diagnostics.mjs",
+      "sha256": "05b89b004ff2bfe5e8998344cb93e631fd226b7f930efd134b868aa354ba9d6f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/LearningCycleSuccessorPreparation.java",
+      "sha256": "dff3c937fae8f4e08d590f5510944c2746242d818ea2867095f3753a71983d2d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/controller/LearningCycleDecisionController.java",
+      "sha256": "1a8ff63ff77b9b6ef5583ccaf5fa668dd9daadcd5f184aeffb70d82fbd886599",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/prepareAdjustment/PrepareAdjustmentSuccessorRequest.java",
+      "sha256": "9c70ec613d05207664ba9238e1857cbf6416046d4a40ff4efcc7bca3d9fd424d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/prepareAdjustment/AdjustmentPreparationAvailability.java",
+      "sha256": "055b966ddd098fee6e8e12ac34b33e69d3e47d45bc969274d0e95693b13a7f16",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/api/learningCycle/useDecisionProposal.ts",
+      "sha256": "bca4be828a2c22e1f47a078a8458783f0c9b50d069cd655ac0223d2f28513990",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CycleAdjustmentPreparationForm.tsx",
+      "sha256": "8b8a2ff663e6c1667a1c1be5a4236a8646c1f45091636ae86a2f7c219f2951be",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/LearningCyclesPage.tsx",
+      "sha256": "e1f7a2e0c3bf1477179ab4d7c63d08b232ba920221e444510405653373fe3899",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContext.java",
+      "sha256": "28fc7262e90de26d8f239b6258eab1268711a5d3307252ce2ad21c2378c57ade",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/pde-agent-validation-plan-v1.json",
+      "sha256": "f797803bf6ee882855029c9cbe7420d020700e9d2b71d69b9f075e395b1230d1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/PdeMarketStrategyBpmTaskConsumer.java",
+      "sha256": "73c7820a4a33a1ca1054c03e61c93e3bc074846b687901827444e17df016c126",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v10/market-strategy.md",
+      "sha256": "83cb6cdbfdafa6b3e28a70ba71f114243b95afaf0fec5c4d63b55dd5d4bd5a58",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v10/market-strategy-schema.json",
+      "sha256": "a7b4ec5dcbbdd7e606672b0e2772241eea8ea12361d8eb54a0f9b6e1f7f1e592",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/economics.md",
+      "sha256": "c40ea7c97cac68cd3912018b33cb25b094ea6531ad392d8a896fd70988071eab",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture.md",
+      "sha256": "9ed1b929a2e5bc56bbde5607ba403c64b45d1118abcd9c869fe133036a4ab9d8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v2/specification-boundary.md",
+      "sha256": "bae1574432758c70e876d9ded4a4d7a3e24fddebdbd61ae529a1c441d477dfcb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.mjs",
+      "sha256": "0300528acfabcd50e60d623c9d9e5f87f71b05d6cb1dc88fc71783f243eb8424",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoader.java",
+      "sha256": "75b95ee47c3f2cc0947afb1120c29dea52680fcdf54487fc93b7a44860226e35",
+      "promptMode": "FULL"
+    },
+    {
+      "promptMode": "FULL",
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/mira-private-controls-v2.json",
+      "sha256": "a0f3527492deffaacfc5b2a3f0242ad337dc2c2650670d5b10227d7f8d0ad9ed"
+    },
+    {
+      "promptMode": "FULL",
+      "path": "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json",
+      "sha256": "7bae9e10ce8a1369ac4ffc60ddc13ca41f2a0f69a1b40fa8122df60a829f9a7c"
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidence.java",
+      "sha256": "87dbd1e54f134310a1356d4e39eb920b5eedb605ec10625ce9a4c381bf1a2ea3",
+      "reviewSummary": "Responsabilidade: entregar provas determinísticas versionadas dos controles da candidata exata."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProvider.java",
+      "sha256": "461e8ed41863a2429b39a6bf14de55ff804f3a73b1a08513a557b02051d289c8",
+      "reviewSummary": "Responsabilidade: orientar o retrabalho de rejeições funcionais e falhas de homologação do PDE."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleConstructionContext.java",
+      "sha256": "cfe5adeb7112724fbb478667355ca10ece2b9daa04f99b0600a0679dad9eaf24",
+      "reviewSummary": "Responsabilidade: compor o contrato multiagente do sucessor com aprovações do próprio ciclo."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisLearningCycleContext.java",
+      "sha256": "2659d837aed3cba29128bca080f392307a45249701526315f1df2e77059d612e",
+      "reviewSummary": "Responsabilidade: entregar a Íris os contratos e as provas aprovadas do próprio ciclo privado."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionService.java",
+      "sha256": "bb8e7bcaf14f46e20ed16d0eb2accb8d0bc599ae6fd3a0a9f8f961a7e408b09f",
+      "reviewSummary": "Compatibilidade da leitura compacta por ciclo na navegação administrativa; preserva contexto, recuperação, gates e autorizações."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/productProcessExecutions/ProductProcessConditionalActivityResolver.java",
+      "sha256": "038cb8c627792399b27442c353ef66b193be5e5671338b919c56e3ee2be1c378",
+      "reviewSummary": "Responsabilidade: distinguir tentativas condicionais históricas de recuperações ainda exigidas."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumer.java",
+      "sha256": "c18fef20d0b4c92634e0adf929aaed7f278fdcf85cde2a921416f1be787dec2b",
+      "reviewSummary": "Responsabilidade: executar os gates comerciais BPM atribuídos à Têmis."
+    },
+    {
+      "promptMode": "FULL",
+      "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-agent-validation-review-v5.md",
+      "sha256": "3c5a69918da87cdf3cd4eb15c9b7a3328b34781a9a666f3a1f9cdfd2b51b12a7"
+    },
+    {
+      "promptMode": "FULL",
+      "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-agent-validation-review-v4-schema.json",
+      "sha256": "7623e72717dd58bc771d189f9fdda87f126183d801afc30821d53da33001ca13"
+    },
+    {
+      "path": "pde-platform/frontend/src/PrivateCycleVideo.tsx",
+      "sha256": "44fe01a3ee522e70cec293e73e5d12d1227f76285e19ae6ecac4763645e1b16b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoBinding.java",
+      "sha256": "5768227b932b901edcd3effb18588c02789c872f0be76866f72227251be8fe4b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/learning-cycle-video-checks.mjs",
+      "sha256": "70f9f5b9a810b6795b82fec3d9a2c70c5c5da82beb2284ac0a3af90003bc5452",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValueFlowProjection.java",
+      "sha256": "8f9cea9f10bd37b203d1a0c2dccf57a48485483cbf1d958d95eec67ea654f1ac",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValueFlowProjectionTest.java",
+      "sha256": "8da92ceeabf3711b6f931a4e62e64ca199f7b96335cb7c4688534ff16842ab86",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleDelegatedWorkTest.java",
+      "sha256": "344c43c62028e8a999312a283e474f1faddc46b326a34f27d0915d1cae157c24",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/LearningCyclesPage.test.tsx",
+      "sha256": "a946e6d2a39cab70ec8c68e0881c92836cb1518776112f71d68f3dc8c7869565",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleImplementedInputContext.java",
+      "sha256": "13547b3638859aa05bc79bb161b63695766b421eb22022f47a9bd63b6a95077e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/pde-implemented-inputs-v1.json",
+      "sha256": "93e36eef045f1f5ad1e5b47872f75b48e252c3829d13b5e6906b0c897893faa0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleImplementedInputContextTest.java",
+      "sha256": "fd538969a8b1a3046a17abb9fbf2a14634dbe4039d718f597bc744ccd1a18a49",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeImplementedInputPlanningReadinessProvider.java",
+      "sha256": "0a1bbe2be6d7e755dfcea39e746a2eef991c245de8449fb21d8c53f53519093b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeImplementedInputPlanningReadinessProviderTest.java",
+      "sha256": "5d52b62fb3c48dbe8205e5772e353d5cb26587a701fe3381a407b926c3595c00",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeImplementedInputPlanningHandoffTest.java",
+      "sha256": "28f29d201355244bef5886f684f1d1d121d16233404fa6ef567547f0842c5741",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/communication/v1/PrivateCommunicationJourneyReplayTest.java",
+      "sha256": "a2288a390db98ef7751fdef406dafa5bcf860d5db3152c96864cc77456b6d4d3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoEvidence.java",
+      "sha256": "7c2cca26a434a3853aec411611701e858ea49682adf540e8c5b3f8d56c48d847",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Confere as candidatas corrigidas e o aceite humano antes da integração."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/service/LowTicketCheckoutContract.java",
+      "sha256": "7d1aa7c07fd252f4d2da211615142a59bf1cbbcfe4f80d25fa9592e41709bc76",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v29.json",
+      "sha256": "e67e968d79595e9a03c7d9f553347ccdfb17e4e145941a867043945ec12207e6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a atestação v29 imutável e revalida somente o catálogo de modelos."
+    },
+    {
+      "path": "docs/homologacao/mira-compatibilidade-modelo-estrategico-2026-10-19.md",
+      "sha256": "eb08bec0456ce0f227533e053095bf1590712bc2ab929398920707a14a122c1f",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Registra compatibilidade e limites da política híbrida sem publicar o produto ou iniciar inferência."
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v30.json",
+      "sha256": "b0a1e42915c9531e86c771399fb3434668dd7cb500c9c47d089c638f1914bcb9",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a atestação v30; a sucessora revalida somente a dependência adicionada ao teste de contexto, com regressão executada."
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v31.json",
+      "sha256": "0b9c7174bc5e216b13daf63e44bfc039f3b6340741a266442f06e284d92a6dac",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a atestação v31 imutável e as provas anteriores; a sucessora confere somente os locks compartilhados."
+    },
+    {
+      "path": "docs/homologacao/mira-compatibilidade-locks-ciclo-2026-10-20.md",
+      "sha256": "e93cdd19725f38bc945d55bcf5b55fb23f8f87e96bc6704d9f913b774b57803d",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Registra validação local, limites e compatibilidade dos ciclos sem publicar ou aprovar Mira."
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v32.json",
+      "sha256": "6b8896548e45a096421580b9fe25356e1c09c007b1f6c2f51a08a1226eaf8886",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a atestação v32 imutável; revalida somente leitura da prova sem autorizar nova comunicação, mídia ou publicação."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleOptionalAudiovisual.java",
+      "sha256": "b032ee644307a0447a9ebb3753cbec64fb0ca070737ebd16eaf14f52ecd07d54",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Formato explícito da mesma versão; preserva os gates e o percurso audiovisual quando há briefing."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoContinuation.java",
+      "sha256": "eea4f9c73665c5b2158b9a93dcbce692c5de59001688ee2a974a6d22d2c80e8e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Formato explícito da mesma versão; preserva os gates e o percurso audiovisual quando há briefing."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleWorkResolver.java",
+      "sha256": "3fa97e9f82450ee954702c5532433c321847c203d24d5e9fc78230826730a11c",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade técnica do predecessor obrigatório; testes locais preservam gates, contexto, histórico e limites. Sem renovação comercial."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContext.java",
+      "sha256": "0df0f447b9baf262b9148c05f2213dcd3132926b5148682f02461ad6ba0445b1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialMaterialization.java",
+      "sha256": "a0a9e34e9a050f56babe9c8748fcb915ec7708662518f22a07b73da9928bffd6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-10-21-opala-static-creative-v2.sql",
+      "sha256": "8eda7eacb12b72eb522e4c225981f6ab4edf72d3bd58ba6544cfb85c45cc91d3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaPrivateCreativeMaterialization.java",
+      "sha256": "6cca2ad37ad85142987b09f35581f6e795d43bb9c78d71f0b28a9252c342d621",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/ReferenceModelingContract.java",
+      "sha256": "bd164e59571fba52659f8a825f2b6d1b85dd36e2f86d216191898947e26531a7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v50.json",
+      "sha256": "88ae72481627f9565810a6bac8a5d0da3afad630d9e5e7b00b78273b984ecfa3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável: a v51 revalida somente o escopo de homologação e a passagem do planejamento, sem renovar aceites comerciais."
+    },
+    {
+      "path": "docs/homologacao/vega-planejamento-protocolo-especifico-v1.md",
+      "sha256": "a2729e5128cb512a366782a7ea335f39b47c70cc4442b3b7e2210a04c1d83158",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValidationProtocol.java",
+      "sha256": "517e990a06633eaf01c37325148bf635bfad8c4f759007e95f20020a65e82168",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/pde-documented-input-comparison-v3.json",
+      "sha256": "a73a98cf6e60293a04217e5770d8c0b425542a63d6a9d277ec9b6fe0fcecaa9b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleValidationProtocolTest.java",
+      "sha256": "78d5c7740668fdddff8406be59a43a939fb5e75f04f8d2ca84b3d76913d230ff",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/PdeValidationScope.java",
+      "sha256": "ecc623db4e8bc556156136161b3da02a4a4c835d4c19a01acb11ab5330a1cbc3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/test/java/com/marketinghub/experimentstrategistworker/PdeValidationScopeTest.java",
+      "sha256": "d844e5ae8af457a76fbb27a95c950b27cdc0f561d78da623fd950cd24cb4a346",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v12/market-strategy.md",
+      "sha256": "445191a0ff25ad87ce31567f486f18c3c08fad3192ce67bfd76cc368d318708d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/modeling/v1/service/ModelingHistoricalResearch.java",
+      "sha256": "7e307f2e3e0c7dedf75a1d6823b2c01410eb3e413e5ce5167e7f93a981b213a0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeScopedSafetyRevalidation.java",
+      "sha256": "d640bc1359dcecdfd46866738a3779abe703eb489ddf41ba790a5e368476d799",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v63.json",
+      "sha256": "82ebeb349f88a1481b2862b1e4844d219c471709fab4f597a77ebf6b6899da07",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação anterior preservada integralmente; extensão administrativa sem nova aprovação comercial."
+    },
+    {
+      "path": "docs/homologacao/criativo-antes-do-aceite-v1.md",
+      "sha256": "3e3795bed7f923e807dec8a5a8358ac872c8129ec5b2764dd54f9b26295db4a8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/PrivateCreativeSelection.java",
+      "sha256": "1db8ef05c91dae755c611cb1214d0265ca68cb79c759f965ef8687debcc04d44",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/communication/v1/PrivateCreativeSelectionTest.java",
+      "sha256": "5e6251720cb59f942d27912af4ea782d9219f9d00ef0e7c79f816db95be0133a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/product/ProductProcessReviewAssets.tsx",
+      "sha256": "89a6e2035c8f0d6d5c2b70abab7dd9dd684a780ec9de954d7ccac47d5688e1d5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/product/ProductProcessActivityExecutionPanel.test.tsx",
+      "sha256": "bacbbc5fe2c735b270cc11e55fad3786535dfa43b6c631907313a0a3611b610c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v68.json",
+      "sha256": "03ba6dca102f641efb113d96577aa9c00ff5842c73c9f5dc6f9f0f94a03668e6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado; sem renovação de parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/financial-approved-ceilings-v1.md",
+      "sha256": "8682c96a6a602cbafca2a08b4056e3f0c50b0377b22a013f39d51b9c62da95a8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationCorrectionPolicy.java",
+      "sha256": "87b678bd9eee3b71eb73412408b67d877fa5c12a2ab401007c7ce2626a486827",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v75.json",
+      "sha256": "ef54d6ef0321bbebdae33418006e78d695013f3fd361e73270ab4f6b404e0d14",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Prova vigente anterior preservada imutável; não renova homologação ou autorização."
+    },
+    {
+      "path": "shared/pde-validation-scope/src/main/java/com/marketinghub/pde/validationscope/v1/PdeValidationScopePolicy.java",
+      "sha256": "e1baaaf41f5c3854f23ad102cf01aa45bafd9608e35e31c6b08a0849977125e1",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Política única de escopo, capacidade e contradições usada pelo backend e executor; regressão Java local comprovada."
+    },
+    {
+      "path": "shared/pde-validation-scope/src/test/java/com/marketinghub/pde/validationscope/v1/PdeValidationScopePolicyTest.java",
+      "sha256": "2624d008929871686cd05dd949ddbc20c6dfade06ad83e7e573439d3d75d1f29",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "45 casos comuns executados nos dois módulos; comparação legítima preservada e escopo incompatível recusado."
+    },
+    {
+      "path": "docs/homologacao/mira-compatibilidade-escopo-atena-2026-11-06.md",
+      "sha256": "345bee0fadca48389719948da2c6f67101cc70d832f38dcf14a054dd95b500db",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade local com testes reais, sem nova revisão paga ou publicação de Mira."
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v80.json",
+      "sha256": "6417e7e5613e8acddba9524dd84df27c7e7d6b32c52e83b96fed65aa073e483e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação anterior imutável; não renova parecer ou publicação."
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mira-manufacturer-fixture.mjs",
+      "sha256": "d208cd411c33984dbe713eb16bab65713a24edbe900495fe81711b3c8f87bbc0",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Validador existente no PR 5793: prazo de 30 dias, integridade e datas válidas; bytes reutilizados sem alteração."
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/fixtures/mira-manufacturer-20261105.json",
+      "sha256": "08569b4755affe277b882fb89d855cd6675105d63bed3e7c7ad291e18c0b32dd",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Snapshot existente no PR 5793, reconsultado em 06/11 sem redatar sua observação ou renovar homologação."
+    },
+    {
+      "path": "customer-agent-worker/src/test/js/mira-manufacturer-fixture.test.mjs",
+      "sha256": "40a3ee16006bd58bcfade20d11c67005b86ce30bfaf8daf80d4ec8d220273ad0",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Cinco regressões do PR 5793 reutilizadas com os mesmos bytes: prazo, datas e integridade."
+    },
+    {
+      "path": "docs/homologacao/mira-compatibilidade-fontes-documentais-2026-11-06.md",
+      "sha256": "a26bd95f4087a5d85ea92dd1939293b38bd755979591f577d38e395cacec7069",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Prova local: 18 percursos, histórico, cenários isolados e suítes sem provedor, sem nova aprovação comercial."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleConstructionPrerequisite.java",
+      "sha256": "890813da97d2da45d0aa39369a1a2b57bf7bb73943817b6d13e9dc9bd3d991c0",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunContext.java",
+      "sha256": "6840c16a448b9da04fde089b51dc106176579623d16c849420c64d40a18d49e4",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunService.java",
+      "sha256": "9141b52fc31d58826a08ab79d6154ba53992439a0f97d635eb500283688eef6b",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunConstructionContinuationPersistenceTest.java",
+      "sha256": "459f93843833abf276657528b1eee5a3d269b2a13c260f07a2b64dbf0009339e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunConstructionPrerequisiteTest.java",
+      "sha256": "5fa5b9692c3ee3dc1bf93264d116d788dc28b670ad06a25960b854acac5ce41f",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
+    },
+    {
+      "path": "infra/testing/process-automation/construction-prerequisite-browser.mjs",
+      "sha256": "1062579109ecc7c61ec37ecf06d09dae979876b7b494a526fe6559f66f34cf25",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Proteção compartilhada e regressão local do encadeamento, sem autorização comercial implícita."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePlanningAlignment.java",
+      "sha256": "8b524c76029705ad85a3c00e662b91a5ebec001199cc78b6e2993851a8d92e39"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePlanningDefinition.java",
+      "sha256": "2a92ebbc29a6ce62954ec7ce4903d9a335023b3f6329bb2856e0b2dacfb8221e"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/planningAlignment/PlanningAlignmentRequest.java",
+      "sha256": "5c8d238432a876f28a8edac381222f00db51f096e4f18ca99f4d36c5aa17973d"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/planningAlignment/PlanningAlignmentView.java",
+      "sha256": "4970572c7498d6e34ed4377b6cb9b76f17e2140bd3ef159d05222d2565c682bd"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePlanningAlignment.tsx",
+      "sha256": "cef1cddd58ae437ed39abec75c3c4a09bf57e5cb9fd4fae2f1a2ac288e1c3eac"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/hypothesis/service/HypothesisService.java",
+      "sha256": "08a76cae3614c259451b570a978d427c6324778e3aee3724c1025e08c4fabd24",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/hypothesis/HypothesisServiceTest.java",
+      "sha256": "187559fb879f99377c9cafe39f495c83ed2c8e24d7bcfa8ea8aed568451b931c",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/scripts/test-product-build-artifacts.mjs",
+      "sha256": "e550e660fb0ad8516ede597d3174b388b0f0a01ff0c837419f2386f4e76362a8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeRegistrationTest.java",
+      "sha256": "e16acf8b697afb239a6979dd75d974af15cd79c43f8adc6ac0f3a829e04eda7a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/controller/LearningCyclePrototypeControllerTest.java",
+      "sha256": "bb671f3d59711762333b6719105fcb049692b3a8fe1c01feb60ec0c0ba4f1df5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.test.tsx",
+      "sha256": "45256f168f755ce35d9a100fb4d5a0bd35a0c04e2b1c5d7637c2c7c615a681d7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1Test.java",
+      "sha256": "b57b73ec4c35cb5c73534c1bda47f630f4bd6bb8154385fc3a07698e419f37a9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java",
+      "sha256": "548019b8cf69d46f6cfd37ba376378e720ac01293cc19ae55b6d7e23c6b0ae0a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/history-browser-test.mjs",
+      "sha256": "5fc50ffef72418dbe3c971d3cc4d0713739051afcf766e8b591d3c08f84cafe6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/run-local.sh",
+      "sha256": "2e2fa487b45ac4efbd7778b81c99f3750efb03d70240130778caee693d06cbfe",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateServiceTest.java",
+      "sha256": "5304dccdf3e15bd3cef0d010a2830c75956caef06402acecee497cf12109a8b8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControllerTest.java",
+      "sha256": "b68fd81b407658ba4781ccd5fe493bdb369d074c2db72a1cfe559107e658cc4f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+      "sha256": "88e0c29ffb1c8351b634418a7a5c8e770441279bbd9344563bd445dd54a9de21",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/MiraScenarioEvidenceBindingTest.java",
+      "sha256": "670d8017fede0a5aa75768995958f939a1d182aeee5adecffb504fe2339d422d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/js/mira-candidate-metrics.test.mjs",
+      "sha256": "d8639b804ab23934581d59a03c59a0122384450b96d06f2884b83cc1f4ded17a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleSuccessorPreparationTest.java",
+      "sha256": "57031154ba7ca28b2e23d19facbadd9fc31663f80de1cec80eadc2b7aa37a3e6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleDecisionControllerTest.java",
+      "sha256": "fa3bd4604c9f45549d737dd42b985dd60a298e5e44fbcb63bed4a2cc252db085",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CycleAdjustmentPreparationForm.test.tsx",
+      "sha256": "266e3571f6a2982ea6d94cd3ad26ec70fe905863ed4d485edd1d23f60fc16d0f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContextTest.java",
+      "sha256": "bbcd958077c0ac1fece2b912ec9f899a90df0480ae800ca6060cfcb8e27593e7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/test/java/com/marketinghub/experimentstrategistworker/PdeMarketStrategyBpmTaskConsumerTest.java",
+      "sha256": "591e8f80125c91452cf795ae9d9f3072dce376c783b0c6f143c4f6f1b55005cd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/Dockerfile.proxy-fixture",
+      "sha256": "8a27eb812b184cf06ce7c1591a9cec0a3c4714deadacd1976472ce9a8e5711f0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.test.mjs",
+      "sha256": "33cc7a289de5ca2703b85cc8b2e4e315a4cf9f5c08c74dabd2dff523e2d305e7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoaderTest.java",
+      "sha256": "b219d807809cb73dc11e11c40ebcfc1d7c8988f5bccfd585648227b4f4f249c9",
+      "promptMode": "FULL"
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControlsMysql57Test.java",
+      "sha256": "c844807b47c123b94da67fba63adc6ed0fc8f1b1fcedd3db2b4cacc54d7b81a8",
+      "reviewSummary": "Responsabilidade: comprovar os controles privados por HTTP e transações MySQL 5.7 isoladas.\nCadastros de ciclo são doubles locais; sessões, validação HTTP e transações são reais."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/agentdetail/service/AgentHarnessCatalogTest.java",
+      "sha256": "045a50b31c1b0bc7899047be629a78fdcba854e7b4b1fa4d763c07710127348f",
+      "reviewSummary": "Responsabilidade: proteger a cobertura e as referências versionadas do catálogo de harness."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
+      "sha256": "e2af3f76b3d4722586276ebbd735fdba74f75bd0377fbf7f476293413fc88c0a",
+      "reviewSummary": "Responsabilidade: impedir uso de prova adulterada, incompleta ou pertencente a outra candidata."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationReworkReadinessProviderTest.java",
+      "sha256": "7df2091d4071b02f02189c6716dfdf66237be300c99a3183f241b26f19c44732",
+      "reviewSummary": "Responsabilidade: comprovar correção, reavaliação com prova nova e preservação das revisões\nválidas."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleConstructionContextTest.java",
+      "sha256": "4ce23d3eff8a95e55167a91f9468cd6f87fc313017cbbc1174ebf42efcb615aa",
+      "reviewSummary": "Responsabilidade: reproduzir sucessor sobre produto legado sem perder contratos ou isolamento."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/communication/v1/IrisLearningCycleContextTest.java",
+      "sha256": "87736b0d182cdbf15de662168bf7c839d9f9a069bd56dd456b8ad6455f9311e5",
+      "reviewSummary": "Compatibilidade técnica do predecessor obrigatório; testes locais preservam gates, contexto, histórico e limites. Sem renovação comercial."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "communication-agent-worker/src/test/java/com/marketinghub/communicationagentworker/IrisCycleInputIntegrationTest.java",
+      "sha256": "56261bc54eed8e9c4fba29bc69fc962734992dfb2f7e529d5182f2ba8a846f9d",
+      "reviewSummary": "Responsabilidade: verificar no executor real a entrada privada produzida pelo backend local."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeRevalidationActivityExecutionTest.java",
+      "sha256": "88c94dbd446f2bded6b414a0bc1f23bbef4ebae1325d73b8dd1172a1dad626f4",
+      "reviewSummary": "Comprova leitura e comando da revalidação sem reaproveitar conclusão histórica ou duplicar\ntrabalho ativo."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/productProcessExecutions/ProductProcessConditionalActivityResolverTest.java",
+      "sha256": "63edf3fa2b32950c7e445ab612a360f5132a89af1c6915f76e544172c27b07dd",
+      "reviewSummary": "Responsabilidade: proteger a projeção de retornos condicionais encerrados ou ainda exigidos."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/CommercialBpmCycleIntegrationTest.java",
+      "sha256": "54564c82fad5f73108904fa15cc57b0b2d38b96f9a45b6b22d580917565ef160",
+      "reviewSummary": "Responsabilidade: percorrer a fila e o callback real de Têmis com provas locais de Psique."
+    },
+    {
+      "promptMode": "FULL",
+      "path": "infra/testing/mira-candidate/emit-controls-evidence.py",
+      "sha256": "9181afb46ca1a1d7b95117489d2be084df7f12e0e41bbf6c87f40a160ef9e5b1"
+    },
+    {
+      "promptMode": "FULL",
+      "path": "infra/testing/mira-candidate/test-emit-controls-evidence.py",
+      "sha256": "c23972d96194974f3813dedd6cd7c9395d6398ea355f1aa257fa41b1883c92d4"
+    },
+    {
+      "promptMode": "FULL",
+      "path": ".github/workflows/backend-ci.yml",
+      "sha256": "493b0383e3427b8db1b313cec9662faf69109cb70f34683833b404558f144c3f"
+    },
+    {
+      "path": "backend/ads-service/src/test/resources/fixtures/agent-validation/documented-input-v3-recorded-validation.json",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Fixture local dos contratos persistidos 627–633: matriz V3 de dezoito casos, três pareceres de Psique, histórico bloqueado e nova aprovação independente. Teste substitui identidades para validar gate e Íris; não fabrica aprovação de produção, pessoa, compra ou gasto.",
+      "sha256": "1b5b7276e21b0d35845f38b329002cf04f8a0d9636b269214995a703f4e0be7b"
+    },
+    {
+      "path": "scripts/download-run-artifact.py",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Responsabilidade: promover apenas um pacote íntegro do mesmo run/revisão, com digest, ZIP, arquivos obrigatórios e recuperação finita.",
+      "sha256": "26882a93b2fa25a2f1e11d7c2b66405b2d94561e07d0f9aa9c4e44a96abc394b"
+    },
+    {
+      "path": "scripts/test-download-run-artifact.py",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Responsabilidade: reproduzir download incompleto, outra identidade e regressões de integridade sem rede, publicação ou consumo de IA.",
+      "sha256": "4fa366617b2980b80babc0d348d652dd19b30d985a9b8dcd966c4f472873b3f2"
+    },
+    {
+      "path": "scripts/test-backend-ci-workflow.py",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Responsabilidade: exigir o contrato de artefatos e a conferência de provas antes dos testes locais do backend.",
+      "sha256": "6eea6fd23a4542f41d5b3c595c8b75c8f327991ab3539e8288d827b335a44fe6"
+    },
+    {
+      "path": "infra/testing/mira-communication/run-round.sh",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Responsabilidade: antecipar a conferência única das provas e do transporte antes da homologação privada, sem serviços produtivos.",
+      "sha256": "6566ef79c4983d4a1ced24c7f8ccc0cc3b75166cf2cdcdfd15fa2787956606da"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoReplacementTest.java",
+      "sha256": "30c57471faf20a699c40af5d496f78c1a5650864b6a49d3b568b963e05d834f2",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Regressão da correção após rejeição, duas identidades, aceite humano, isolamento e recibo estável."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContextTest.java",
+      "sha256": "da4e2cb83189adad4ce11560078730045999f589eb9602b76dcb485098b0a3ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialMaterializationTest.java",
+      "sha256": "c643f718686fa762c9feed1faca4136a781aab671d0241a7ab8e98ba0611a618",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleOptionalAudiovisualTest.java",
+      "sha256": "edfd21f47ac01da7cee18df3c520fe3207e69343a99f682883e731dfcb34e52b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleWithoutAudiovisualTest.java",
+      "sha256": "d6af31c037731d30f07219860e977d91d223cccadddad71557926b901d86f728",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/cycle-commercial/static-route.py",
+      "sha256": "6a768d0a63049e3ebd74f60ef6ac8b103461409c99f93fc2c9e9f210a7efd88e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaPrivateCreativeMaterializationTest.java",
+      "sha256": "69158bcbb841fbf91c122f71b68fa6431afda23882bb432dde9509b36b0e1b24",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaPrivateCreativeProofFlowTest.java",
+      "sha256": "adfe5cb5c6aedd119071f130b01d95e862330e60bab53e94a864b38d1f7546ff",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v41.json",
+      "sha256": "dbaa933ec7c70c50a14cb67d268f273331df8b45997a314214411d9f4a5031c1",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação anterior preservada integralmente; não substitui parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/product-big-idea-atena-v1.md",
+      "sha256": "6cc07bd23998ffa934ba75702ad930fa542b61cbb18c839ebbd3e128e538b48e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Matriz e resultado local da pesquisa isolada de Big Idea; sem chamadas a modelos ou alteração de campanhas."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePublicationRecoveryTest.java",
+      "sha256": "914161d7981bcdca45b5e74d28422901cde85dbf05eb8824e974591ecac95a8f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePublishedChainContextTest.java",
+      "sha256": "f62b1684aca5d890b6a1d1e75d57bf493c7ece2b12c31c0ca04188b6bf364bfd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/cycle-commercial/client.py",
+      "sha256": "8f04bbf473048db14ac5ebe19b5873ab35f2d9336c481b1d4d14d831bc094a78",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/cycle-commercial/publication-recovery.cjs",
+      "sha256": "14c5ae97e710d54563215949e746812fab7a881f155a2079af221a264b01e316",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/test/java/com/marketinghub/experimentstrategistworker/ReferenceModelingContractTest.java",
+      "sha256": "2021b3b2f5cd83dc7c9ba20b497fbb64b1e6495642b18c1ed47d6411a66b6852",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/market-reference-modeling-v1.md",
+      "sha256": "c81e2171d5024e36f75e0edef5927b779963460a9c3198f535f11a8db8ac560c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v45.json",
+      "sha256": "088aebf555acd809f1b9fdbd5921831fbdfea4181275a6c675048dc74ad84aee",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado. A compatibilidade não renova parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/capella-ampliacao-beleza-v1.md",
+      "sha256": "63f6c5510dd3b40173b7c1faa8fa5688f90179ac655cfbea0ed1fdc3188dcc41",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade do preparo de sucessores com público explícito opcional e hipótese vigente. 50 testes locais preservam preparo privado de Mira, recuperação, histórico e limites; 13 testes de tela preservam o contrato anterior. Não altera experiência, publicação ou aceites de Mira."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/modeling/v1/service/ModelingHistoricalResearchTest.java",
+      "sha256": "3205cd90e8fd93060f1ac6e9877d24550a18d755a40fdb167271dbb64a20efd7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleWorkResolverTest.java",
+      "sha256": "58f1b9ce98ed86a09d4e9c0feaedaf1627d54522e374faea7bb434464f3b4cc3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade técnica do predecessor obrigatório; testes locais preservam gates, contexto, histórico e limites. Sem renovação comercial."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeTechnicalHomologationActivityExecutionTest.java",
+      "sha256": "424821027ddfe0d9c6e957594338249a935e9e9bf5b29aa7c39084811a35053d",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade técnica do predecessor obrigatório; testes locais preservam gates, contexto, histórico e limites. Sem renovação comercial."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunProjectedActivityPersistenceTest.java",
+      "sha256": "c4db831f170484ade908e87263cff1cdcadbd728829ca01f39ae061e4985afb6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade técnica do predecessor obrigatório; testes locais preservam gates, contexto, histórico e limites. Sem renovação comercial."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationCorrectionPolicyTest.java",
+      "sha256": "42b7f8ad8b01a51cce6bfd4b6885360883ec6f63965c37c42ff4494ad56fd6bf",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePlanningAlignmentTest.java",
+      "sha256": "9e36e8adfeae309f38379231840745b27f718ab425308ac102b8a912fbd583af"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePlanningAlignment.test.tsx",
+      "sha256": "385d09cf5d797fe94aeaf5dc6e31304016ff55a4f085ddd3369a8576f20faed8"
+    },
+    {
+      "path": "frontend/e2e/planning-alignment-responsive.cjs",
+      "sha256": "0d11dd8957f21b2ca11bb5f0b153fe11c6931ae18a24364223e73c7684ab0b2c"
+    }
+  ],
+  "validationReport": "docs/homologacao/musa-planejamento-oferta-2026-11-11.md",
+  "limitations": [
+    "Somente organização determinística; não comprova integração ou custo de modelo de IA.",
+    "Emulação mobile usa Chromium; não comprova Safari nativo.",
+    "Candidata precisa de Psique e Têmis independentes; não autoriza oferta ou aquisição."
+  ],
+  "changeScope": "Compatibilidade da reconciliação auditável de oferta no planejamento privado e retomada de Atena após mudança comprovada de entrada; experiência Mira e seus pareceres preservados.",
+  "homologationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/operational-evidence/vega-contextual-controls-v2.json",
+      "sha256": "69789426acd3c615b3aac39fa4baf52c60731d7e42c91ee37fb3c1b4f97217d2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v61.json",
+      "sha256": "2b7bdea63cd25eb05784ad603ae3c44cbac7ca9aadb8657d4862ce4a0cced044",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação anterior preservada integralmente."
+    },
+    {
+      "path": "docs/homologacao/vega-revalidacao-seguranca-v1.md",
+      "sha256": "46269e08f13015ed880d1b347efdf7939e3d005ae982f61592f9ee9ace240b7d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v62.json",
+      "sha256": "6242d15eff7c4f3a9b7134906e2f749a9c3bee429ed74e272a0883bf440c5802",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação anterior preservada integralmente."
+    },
+    {
+      "path": "docs/homologacao/capella-revisao-visual-premium-v1.md",
+      "sha256": "f18ec91797f4fa5e24df931bc7c3626a78c53004f20f4d9fab9f195624bce02b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v67.json",
+      "sha256": "c154f66bdab5e798b43ef33b5a7f5ead24bf32e4f7071ac3d23fd9a47417775a",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico imutável preservado. Não renova parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/financial-cost-worksheet-v1.md",
+      "sha256": "2518574770d8c210abaa48c4afd734c56ad43a5bd1dfe1837273e90bf9f8d88c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v69.json",
+      "sha256": "9bd37d1a664f81b16a033c0d5356623bf7fe658b92dc2b743ada3b585bf55119",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação anterior imutável; sem renovação de parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/financial-decisions-centralization-v1.md",
+      "sha256": "665eaf421f3d77d541b80ebd7ed3352ef0a6caf5bbe14ad5abcbbac5e09aa788",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v70.json",
+      "sha256": "547762e88865c2ab77113ccf72dce75ca56ea87f4b73b6a681bf4adfd33c3ef2",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v70 preservada integralmente; compatibilidade não renova parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/capella-recuperacao-homologacao-v1.md",
+      "sha256": "5a8541978064397dbf107c922128102b81f49f052c0400a0606b88f5620c0541",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/capella-passagem-recuperacao-executor-v1.md",
+      "sha256": "9af69d1514f6d2051f8eb1f8fb4e4ff25a138a6977a5a21e04ae28aa444dd45d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v73.json",
+      "sha256": "f6cfdccf4e1d2561e484e7ee24b0c68f7f28f6eecf4c98f08e19b1c657a663ef",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v73 preservada integralmente; esta compatibilidade não renova parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/vega-video-estudio-2026-11-04.md",
+      "sha256": "e5952392fa24f45d18b67d7a4a5c79fda0082b1004da8a6bfd66bac988920521",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-private-candidate-v74.json",
+      "sha256": "f6c399f0b4166f910ca7d93ef00bc7d7338bccadb991a8da5d369a43fc17c9ba",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico v74 imutável; sem renovação de parecer comercial."
+    },
+    {
+      "path": "docs/homologacao/mira-compatibilidade-video-incremental-2026-11-05.md",
+      "sha256": "dd5a87d94cd562a82fe5058129411ca62759388c7059a154cbf8a500822c5513",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/musa-planejamento-oferta-2026-11-11.md",
+      "sha256": "50fa0e6348c6bfc7b89df95840a2de2d4b0dace7c5c4cf88bc1c445ca9def037",
+      "promptMode": "FULL"
+    }
+  ],
+  "compatibilityAttestation": {
+    "previousManifest": "pde-platform/contracts/mira-private-candidate-v82.json",
+    "previousManifestSha256": "45396af4137bc8d6dbeb67c74c94bcf33a519be1d48fd1e78aed081231ffec3b",
+    "validatedAt": "2026-11-11T14:34:34.084732+00:00",
+    "scope": "Compatibilidade da reconciliação auditável de oferta no planejamento privado e retomada de Atena após mudança comprovada de entrada; experiência Mira e seus pareceres preservados.",
+    "changedEvidence": [
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
+        "previousSha256": "cc3faefed3023a33a9033c15b83ac2b36ad60ed3614b1d3bbce8899a75f46e0e",
+        "sha256": "0cba7071a2c05800ccb8f3f990f2848fe26ee2492a7687465d8139e48a670e23"
+      },
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/LearningCycleSuccessorPreparation.java",
+        "previousSha256": "64034fcd9287f01134ca36548f1e67ac855d510e26f68258a19aeab293fc9844",
+        "sha256": "dff3c937fae8f4e08d590f5510944c2746242d818ea2867095f3753a71983d2d"
+      },
+      {
+        "path": "frontend/src/pages/learningCycle/LearningCyclesPage.tsx",
+        "previousSha256": "4e75d1a59b3c4e12b9d21430fdc27b7ace48409c5f004697a7760569f39a47f6",
+        "sha256": "e1f7a2e0c3bf1477179ab4d7c63d08b232ba920221e444510405653373fe3899"
+      },
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeImplementedInputPlanningReadinessProvider.java",
+        "previousSha256": "b4e79b566c9690e04e76cf175e8bbd8387acef6f0a3bf8aca96ce9231bb4b44e",
+        "sha256": "0a1bbe2be6d7e755dfcea39e746a2eef991c245de8449fb21d8c53f53519093b"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeImplementedInputPlanningReadinessProviderTest.java",
+        "previousSha256": "4520981c9aaae0aed4221a356d0cd04e308c49315f9565ad7a26e42792eef7a1",
+        "sha256": "5d52b62fb3c48dbe8205e5772e353d5cb26587a701fe3381a407b926c3595c00"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeImplementedInputPlanningHandoffTest.java",
+        "previousSha256": "98012a19b39330f08b39363e182d2db9ea5b4b8cecc3cbf604a9befc6031a92f",
+        "sha256": "28f29d201355244bef5886f684f1d1d121d16233404fa6ef567547f0842c5741"
+      },
+      {
+        "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunContext.java",
+        "previousSha256": "9cce49e12f7182e98b9fefbcda634915c50daa10beab93b40c84419a1c024232",
+        "sha256": "6840c16a448b9da04fde089b51dc106176579623d16c849420c64d40a18d49e4"
+      },
+      {
+        "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleSuccessorPreparationTest.java",
+        "previousSha256": "c8b7b8f98f992727b9e799bd3488f654f983b8f441d805dcb31534870b9de53e",
+        "sha256": "57031154ba7ca28b2e23d19facbadd9fc31663f80de1cec80eadc2b7aa37a3e6"
+      }
+    ],
+    "removedMutableEvidence": [],
+    "validationReport": "docs/homologacao/musa-planejamento-oferta-2026-11-11.md"
+  },
+  "sharedHarnessCompatibility": {
+    "scope": "Compatibilidade da reconciliação auditável de oferta no planejamento privado e retomada de Atena após mudança comprovada de entrada; experiência Mira e seus pareceres preservados.",
+    "modelCalls": 0,
+    "commercialApprovalRenewed": false,
+    "validation": "docs/homologacao/musa-planejamento-oferta-2026-11-11.md"
+  }
+}

@@ -111,6 +111,18 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleController.class
 })
 public class LearningCycleLocalApplication {
+  /** Isola a edição de ofertas, homologada pelo contrato HTTP específico sem fonte produtiva. */
+  @Bean
+  LearningCyclePlanningAlignment planningAlignment() {
+    return mock(LearningCyclePlanningAlignment.class);
+  }
+
+  /** Preserva a oferta das fixtures antigas, sem inventar uma mudança de direção. */
+  @Bean
+  LearningCyclePlanningDefinition planningDefinition() {
+    return mock(LearningCyclePlanningDefinition.class);
+  }
+
   /**
    * Isola a prova de construção, coberta pela regressão integrada com o verificador real de Íris.
    */

@@ -24,6 +24,40 @@ import org.springframework.web.bind.annotation.*;
 public class LearningCycleController {
   private final LearningCycleService service;
 
+  /** Apresenta a oferta registrada e a elegibilidade real para corrigir o planejamento privado. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Conferir reconciliação da oferta antes de retomar Atena")
+  @GetMapping("/products/{productId}/{cycleId}/planning-alignment")
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .service
+          .planningAlignment
+          .PlanningAlignmentView
+      planningAlignment(@PathVariable Long productId, @PathVariable Long cycleId) {
+    return service.planningAlignment(productId, cycleId);
+  }
+
+  /** Registra a correção das entradas sem executar agentes nem alterar os limites financeiros. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Alinhar planejamento com a definição já registrada do produto")
+  @PostMapping("/products/{productId}/{cycleId}/planning-alignment")
+  public LearningCycleResponse reconcilePlanning(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody
+          com.marketinghub
+                  .businessprocesschain
+                  .learningcycle
+                  .v1
+                  .service
+                  .planningAlignment
+                  .PlanningAlignmentRequest
+              request) {
+    return service.reconcilePlanning(productId, cycleId, request);
+  }
+
   /** Expõe o grafo e o retorno oficiais, preservando a ocorrência selecionada quando informada. */
   @io.swagger.v3.oas.annotations.Operation(
       summary =

@@ -19,6 +19,7 @@ import CycleWindowRevalidationForm from "./CycleWindowRevalidationForm";
 import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
 import LearningCycleCurrentWork from "./LearningCycleCurrentWork";
+import CyclePlanningAlignment from "./CyclePlanningAlignment";
 import "./LearningCyclesPage.css";
 
 const money = new Intl.NumberFormat("pt-BR", {
@@ -399,6 +400,11 @@ export default function LearningCyclesPage() {
               </p>
             ) : null}
             <LearningCycleCurrentWork cycle={cycle} onUpdated={updated} />
+            <CyclePlanningAlignment
+              key={`${cycle.id}-${cycle.revision}`}
+              cycle={cycle}
+              onUpdated={updated}
+            />
             <CycleAdjustmentPreparationForm
               key={`${cycle.id}-${cycle.revision}`}
               cycle={cycle}

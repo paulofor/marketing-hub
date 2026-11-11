@@ -9,6 +9,7 @@ on:
       - ".github/workflows/meta-ad-approver-worker-ci.yml"
       - "scripts/validate-canonical-image-model.sh"
       - "scripts/test-canonical-image-model.py"
+      - "scripts/prepare-image-contract-tools.py"
       - "ai-worker/**"
       - "backend/ads-service/src/main/**"
       - "deploy/**"
@@ -27,6 +28,7 @@ on:
       - ".github/workflows/meta-ad-approver-worker-ci.yml"
       - "scripts/validate-canonical-image-model.sh"
       - "scripts/test-canonical-image-model.py"
+      - "scripts/prepare-image-contract-tools.py"
       - "ai-worker/**"
       - "backend/ads-service/src/main/**"
       - "deploy/**"
@@ -57,15 +59,8 @@ jobs:
         uses: actions/checkout@v7
       - name: Instalar dependências do verificador e dos testes
         run: |
-          if ! command -v rg >/dev/null || ! command -v python3 >/dev/null; then
-            apt_network=(-o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15)
-            if ! timeout --kill-after=5s 60s sudo apt-get "${apt_network[@]}" install --yes --no-install-recommends ripgrep python3; then
-              timeout --kill-after=5s 60s sudo apt-get "${apt_network[@]}" update
-              timeout --kill-after=5s 60s sudo apt-get "${apt_network[@]}" install --yes --no-install-recommends ripgrep python3
-            fi
-          fi
-          command -v rg
           command -v python3
+          python3 scripts/prepare-image-contract-tools.py
       - name: Testar proteção e diagnóstico do contrato de imagens
         run: python3 scripts/test-canonical-image-model.py -v
       - name: Impedir regressão para modelos visuais aposentados

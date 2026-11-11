@@ -6,7 +6,6 @@ import shlex
 import shutil
 import subprocess
 import tempfile
-import textwrap
 import unittest
 from pathlib import Path
 
@@ -196,127 +195,84 @@ class CanonicalImageModelTest(unittest.TestCase):
 
     def test_workflow_installs_dependencies_before_tests_and_validation(self):
         workflow = (ROOT / ".github/workflows/image-model-contract.yml").read_text()
-        installation = workflow.index('sudo apt-get "${apt_network[@]}" install')
+        installation = workflow.index("python3 scripts/prepare-image-contract-tools.py")
         tests = workflow.index("python3 scripts/test-canonical-image-model.py -v")
         validation = workflow.index("bash scripts/validate-canonical-image-model.sh")
-        self.assertLess(workflow.index("command -v rg"), installation)
-        self.assertLess(installation, workflow.index('sudo apt-get "${apt_network[@]}" update'))
+        self.assertLess(workflow.index("command -v python3"), installation)
+        self.assertNotIn("apt-get", workflow)
         self.assertLess(installation, tests)
         self.assertLess(tests, validation)
         for event in ("push", "pull_request"):
             section = re.search(rf"^  {event}:\n(.*?)(?=^  \w|\Z)", workflow, re.M | re.S).group(1)
-            for path in ("scripts/test-canonical-image-model.py", "scripts/validate-canonical-image-model.sh"):
+            for path in ("scripts/test-canonical-image-model.py", "scripts/validate-canonical-image-model.sh", "scripts/prepare-image-contract-tools.py"):
                 self.assertIn(f'- "{path}"', section)
         self.assertIn("contents: read", workflow)
         self.assertNotRegex(workflow, r"continue-on-error|\|\| true|secrets\.|contents: write")
 
 
 class WorkflowDependenciesTest(unittest.TestCase):
-    """Executa a preparação real da CI sem rede e preserva falhas de dependências."""
+    """Comprova reutilização, integridade e falhas fechadas sem depender de mirror APT."""
 
     def setUp(self):
-        self.bash = shutil.which("bash")
-        temporary = tempfile.TemporaryDirectory(prefix="image-workflow-dependencies-")
-        self.addCleanup(temporary.cleanup)
-        self.root = Path(temporary.name)
-        self.bin = self.root / "bin"
-        self.bin.mkdir()
-        workflow = (ROOT / ".github/workflows/image-model-contract.yml").read_text()
-        match = re.search(
-            r"      - name: Instalar dependências do verificador e dos testes\n"
-            r"        run: \|\n(.*?)(?=      - name:)", workflow, re.S
-        )
-        self.assertIsNotNone(match, "A preparação precisa permanecer antes dos testes.")
-        self.preparation = textwrap.dedent(match.group(1))
-        self.log = self.root / "calls"
-        self.tool("timeout", '''printf 'timeout %s\\n' "$*" >> "$DEPENDENCY_CALLS"
-[[ "$1" == --kill-after=5s && "$2" == 60s ]] || exit 41
-shift 2
-exec "$@"
-''')
-        self.tool("sudo", '''[[ "$1" == apt-get ]] || exit 40
-shift
-operation=
-for argument in "$@"; do
-  case "$argument" in install|update) operation="$argument" ;; esac
-done
-printf '%s\\n' "$operation" >> "$DEPENDENCY_CALLS"
-case "$operation" in
-  update)
-    [[ "$DEPENDENCY_UPDATE_FAIL" != 1 ]] || exit 42
-    printf 'updated' > "$DEPENDENCY_STATE"
-    ;;
-  install)
-    if [[ "$DEPENDENCY_CACHE_FAIL" == 1 && ! -f "$DEPENDENCY_STATE" ]]; then exit 43; fi
-    if [[ "$DEPENDENCY_INSTALL_TOOLS" == 1 ]]; then
-      for tool in rg python3; do
-        printf '#!/bin/bash\\nexit 0\\n' > "$DEPENDENCY_BIN/$tool"
-        /bin/chmod +x "$DEPENDENCY_BIN/$tool"
-      done
-    fi
-    ;;
-  *) exit 44 ;;
-esac
-''')
+        import importlib.util
+        import io
+        import tarfile
+        import hashlib
+        spec = importlib.util.spec_from_file_location("scanner_setup", ROOT / "scripts/prepare-image-contract-tools.py")
+        self.setup = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.setup)
+        self.temp = tempfile.TemporaryDirectory(prefix="scanner-setup-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        payload = io.BytesIO()
+        with tarfile.open(fileobj=payload, mode="w:gz") as archive:
+            body = b"#!/bin/sh\necho ripgrep-14.1.1\n"
+            entry = tarfile.TarInfo(self.setup.ARCHIVE + "/rg")
+            entry.size = len(body)
+            archive.addfile(entry, io.BytesIO(body))
+        self.payload = payload.getvalue()
+        self.setup.SHA256 = hashlib.sha256(self.payload).hexdigest()
 
-    def tool(self, name, content="exit 0\n"):
-        destination = self.bin / name
-        destination.write_text(f"#!{self.bash}\n{content}")
-        destination.chmod(0o755)
+    def download(self, url, timeout):
+        import io
+        self.assertEqual(url, self.setup.URL)
+        self.assertEqual(timeout, 60)
+        return io.BytesIO(self.payload)
 
-    def run_preparation(self, *, cache_failure=False, update_failure=False, install_tools=True):
-        result = subprocess.run(
-            [self.bash, "-e", "-o", "pipefail", "-c", self.preparation],
-            env={
-                "PATH": str(self.bin), "DEPENDENCY_BIN": str(self.bin),
-                "DEPENDENCY_CALLS": str(self.log), "DEPENDENCY_STATE": str(self.root / "updated"),
-                "DEPENDENCY_CACHE_FAIL": str(int(cache_failure)),
-                "DEPENDENCY_UPDATE_FAIL": str(int(update_failure)),
-                "DEPENDENCY_INSTALL_TOOLS": str(int(install_tools)),
-            }, capture_output=True, text=True, timeout=10,
-        )
-        calls = self.log.read_text().splitlines() if self.log.exists() else []
-        operations = [line for line in calls if not line.startswith("timeout ")]
-        return result, calls, operations
+    def test_preinstalled_scanner_does_not_download_or_change_path(self):
+        def unexpected(destination):
+            self.fail("Não deve instalar uma ferramenta já disponível")
+        result = self.setup.prepare(self.root / "bin", self.root / "path", which=lambda name: "/usr/bin/rg", installer=unexpected)
+        self.assertEqual(result, Path("/usr/bin/rg"))
+        self.assertFalse((self.root / "path").exists())
 
-    def test_preinstalled_tools_do_not_contact_package_mirrors(self):
-        self.tool("rg")
-        self.tool("python3")
-        result, calls, _ = self.run_preparation()
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(calls, [])
+    def test_verified_scanner_is_installed_only_inside_job(self):
+        target = self.setup.prepare(self.root / "bin", self.root / "path", which=lambda name: None,
+                                    installer=lambda dest: self.setup.install(dest, self.download))
+        self.assertTrue(target.is_file())
+        self.assertEqual((self.root / "path").read_text().strip(), str(target.parent))
+        self.assertEqual(subprocess.run([str(target), "--version"], capture_output=True).returncode, 0)
 
-    def test_missing_tool_is_installed_from_cache_with_bounded_network(self):
-        for present in ("rg", "python3"):
-            with self.subTest(present=present):
-                for tool in ("rg", "python3"):
-                    (self.bin / tool).unlink(missing_ok=True)
-                self.log.unlink(missing_ok=True)
-                self.tool(present)
-                result, calls, operations = self.run_preparation()
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(operations, ["install"])
-                self.assertEqual(len(calls), 2)
-                self.assertIn("Acquire::Retries=1", calls[0])
-                self.assertIn("Acquire::http::Timeout=15", calls[0])
-                self.assertIn("Acquire::https::Timeout=15", calls[0])
+    def test_bad_hash_never_extracts_or_runs_binary(self):
+        self.setup.SHA256 = "0" * 64
+        with self.assertRaisesRegex(RuntimeError, "SHA-256"):
+            self.setup.install(self.root / "bin", self.download)
+        self.assertFalse((self.root / "bin").exists())
 
-    def test_stale_cache_is_refreshed_once_then_installed(self):
-        result, calls, operations = self.run_preparation(cache_failure=True)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(operations, ["install", "update", "install"])
-        self.assertEqual(len(calls), 6)
+    def test_network_failure_does_not_enable_validation(self):
+        def unavailable(url, timeout):
+            raise OSError("Rede indisponível")
+        with self.assertRaises(OSError):
+            self.setup.install(self.root / "bin", unavailable)
+        self.assertFalse((self.root / "bin").exists())
 
-    def test_permanent_mirror_failure_stops_before_validation(self):
-        result, _, operations = self.run_preparation(cache_failure=True, update_failure=True)
-        self.assertEqual(result.returncode, 42, result.stdout + result.stderr)
-        self.assertEqual(operations, ["install", "update"])
-        self.assertFalse((self.bin / "rg").exists())
-
-    def test_successful_installer_without_required_tools_is_still_failure(self):
-        result, _, operations = self.run_preparation(install_tools=False)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(operations, ["install"])
+    def test_invalid_archive_does_not_extract_other_paths(self):
+        import hashlib
+        self.payload = b"invalid archive"
+        self.setup.SHA256 = hashlib.sha256(self.payload).hexdigest()
+        with self.assertRaises(Exception):
+            self.setup.install(self.root / "bin", self.download)
+        self.assertFalse((self.root / "bin").exists())
 
 
 if __name__ == "__main__":

@@ -16,6 +16,8 @@ on:
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/check-musa-pde-public-consistency.sh"
       - "scripts/test-musa-pde-public-consistency.py"
+      - "scripts/prepare-ci-video-tools.sh"
+      - "scripts/test-prepare-ci-video-tools.py"
       - "scripts/build-commercial-review-evidence.mjs"
       - "scripts/build-commercial-review-evidence.test.mjs"
       - "scripts/resolve-pde-frontend-deploy-target.mjs"
@@ -239,7 +241,9 @@ jobs:
       - name: Validate public consistency with local HTTP and runtime contract
         run: python3 ../../scripts/test-musa-pde-public-consistency.py
       - name: Install video tooling
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        run: |
+          python3 ../../scripts/test-prepare-ci-video-tools.py -v
+          bash ../../scripts/prepare-ci-video-tools.sh
       - name: Validate PDE API boundary
         run: npm run check:api-boundary
       - name: Build
@@ -251,7 +255,7 @@ jobs:
       - name: Build private Alcyone surface and deterministic fixtures
         run: npm run build:alcyone
       - name: Install Chromium for isolated Mira contract
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Validate Vega private continuity and predecessor in desktop and mobile
         run: npx playwright test tests/vega-continuity-clarity.spec.ts --config=playwright.public.config.ts --workers=1
       - name: Validate Mira correction in desktop and mobile
@@ -1169,7 +1173,7 @@ jobs:
         working-directory: pde-platform/frontend
         run: |
           npm ci --include=dev
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
           TARGETED_FRONTEND_VERSION="${PDE_DEPLOY_FRONTEND_VERSION}"
           if [ "${TARGETED_FRONTEND_VERSION}" = "mira" ] \
             && [ "${PDE_MIRA_PROXY_MODE}" = "bootstrap-legacy-route" ]; then

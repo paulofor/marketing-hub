@@ -49,8 +49,16 @@ class WorkerArchitectureContractTest {
             ":/workspace/marketing-hub:ro")
         .doesNotContain("network_mode: host", "privileged: true", "/var/run/docker.sock");
     assertThat(dockerfile)
-        .contains("@openai/codex@${CODEX_VERSION}", "USER operator")
-        .doesNotContain("COPY .env", "auth.json");
+        .contains(
+            "@openai/codex@${CODEX_VERSION}",
+            "USER operator",
+            "mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8",
+            "COPY --from=java-runtime /opt/java/openjdk",
+            "git --version",
+            "fc-match sans",
+            "ADD --checksum=sha256:7576310b219e04159d35ff61dd4a4ec4cdba4f35c00e002a136f00e96a908b0a",
+            "fc-match 'DejaVu Sans' | grep -F 'DejaVuSans.ttf'")
+        .doesNotContain("COPY .env", "auth.json", "apt-get");
   }
 
   /** Confirma que o MCP usa identidade fixa, APIs do backend e nenhuma conexão de banco. */

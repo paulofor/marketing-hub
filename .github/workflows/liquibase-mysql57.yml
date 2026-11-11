@@ -337,7 +337,7 @@ jobs:
         run: |
           npm --prefix frontend ci --no-audit --no-fund
           npm --prefix frontend run build
-          cd frontend && npx playwright install --with-deps chromium
+          cd frontend && npx playwright install chromium
       - name: Homologar sem publicação ou credenciais externas
         env:
           PROCESS_COMPOSE_PROJECT: aihub-process-${{ github.run_id }}

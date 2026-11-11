@@ -1,0 +1,18 @@
+{
+  "cardKey": "atributos-audiovisuais-predicao-preferencia",
+  "collection": "prazer-audio-visual",
+  "title": "Predição multimodal de preferência por vídeos curtos",
+  "finding": "Com 165 participantes avaliando 100 anúncios de cerca de 6 s, modelos com características visuais e auditivas previram agrado (R²=0,39) e disposição a pagar incentivada (R²=0,66) melhor do que modelos só visuais ou auditivos; associação, não causalidade.",
+  "mechanism": "Características sensoriais básicas de vídeo e áudio oferecem informação complementar aos modelos estatísticos de preferência; não foi isolado mecanismo neural de recompensa nem efeito de edição.",
+  "commercialApplication": "Adicionar um benchmark audiovisual versus visual-only e audio-only ao QA preditivo de criativos do Marketing Hub; usar as estimativas apenas como sinais auxiliares antes de testes de pessoas e métricas reais.",
+  "evidenceStrength": "Moderada para previsão em validação cruzada do conjunto estudado; baixa para causalidade, extrapolação a produtos digitais e conversão real.",
+  "publishedOn": "2026-11-11",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "Em campanhas e produtos retidos fora do treino, um modelo audiovisual terá menor erro preditivo de agrado humano do que os unimodais; testar intervenções A/B separadamente e acompanhar compreensão, conforto e pagamentos reais.",
+  "risks": "Superajustar a 100 vídeos; confundir mudança de cena com causa do gosto; otimizar contra acessibilidade ou transformar WTP de laboratório e métricas do YouTube em prova de vendas.",
+  "limits": "165 analisados de 186 recrutados; 100 anúncios curtos de 26 produtos físicos; validação interna, possíveis confundidores de marca/conteúdo, audiência e distribuição; ausência de compra comercial reconciliada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-11-atributos-audiovisuais-predicao-preferencia-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Atributos audiovisuais e predição de preferência por anúncios",
+  "sourceSha256": "c35479ac491fa50adc99dc4dad544ed0b9b41400ff297a28a2421a840fed72ee"
+}

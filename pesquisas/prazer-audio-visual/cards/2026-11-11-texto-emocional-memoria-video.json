@@ -1,0 +1,18 @@
+{
+  "cardKey": "texto-emocional-interferencia-memoria-video",
+  "collection": "prazer-audio-visual",
+  "title": "Enquadramento verbal emocional pode prejudicar memória do vídeo",
+  "finding": "Em experimentos com 649 participantes, adicionar antes ou depois de vídeos ambíguos interpretações verbais emocionalmente negativas reduziu o reconhecimento posterior de aspectos do vídeo, em comparação com enquadramentos neutros.",
+  "mechanism": "A interpretação verbal emocional pode interferir na representação episódica do que foi visto, fenômeno de verbal overshadowing; efeito restrito ao paradigma e sem prova de alteração na recompensa.",
+  "commercialApplication": "Revisar mensagens que adicionam narrativas emocionais aos vídeos explicativos, verificando se o espectador recorda corretamente demonstrações e limitações da oferta.",
+  "evidenceStrength": "Moderada para interferência de memória no experimento, baixa para tutoriais e anúncios comerciais; não há demonstração de ganho de vendas.",
+  "publishedOn": "2026-11-11",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "Uma interpretação emocional verdadeira porém dispensável, apresentada antes/depois da mesma demonstração, poderá aumentar erros factuais em relação a um texto neutro de mesmo comprimento; testar em amostra randomizada com memória imediata e 48 h, sem enganar participantes.",
+  "risks": "Usar emoção negativa artificial para manipular, criar falsas lembranças, exagerar efeitos universais, confundir lembrança subjetiva com acertos ou ignorar a compreensão de espectadores com acessibilidade.",
+  "limits": "649 participantes, vídeos ambíguos de 2 min, descrições sobre desfechos fictícios, não pré-registrado; resultados não equivalem a legendas sincronizadas nem a provas de comportamento comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-11-texto-emocional-memoria-video-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Interpretação verbal emocional e memória de vídeo",
+  "sourceSha256": "9366a29666b7e95d990e5f6b0c345b87d6fec57a432221b14423c05d5d986542"
+}

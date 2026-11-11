@@ -1,0 +1,18 @@
+{
+  "cardKey": "revisao-multimodal-defeitos-produto-video-ia",
+  "collection": "video",
+  "title": "Revisão de vídeos de produto por cena: juízes multimodais sinalizam e humanos decidem",
+  "finding": "Em 120 anúncios de vídeo gerados por um pipeline de e-commerce (562 cenas), revisores marcaram problemas de fidelidade do produto em 60% das cenas com alertas visíveis. Na comparação não randomizada de 60 anúncios, marcaram 58% com achados de IA visíveis versus 26% com eles ocultos. Um detector alcançou AUC 0,84, mas só 26/56 alertas em conjunto cego eram corretos.",
+  "mechanism": "Hipótese: alertas multimodais ancorados em cena e referências reais ajudam a direcionar a atenção humana para defeitos verificáveis; porém também podem produzir viés de ancoragem e aceitação indevida de falsos positivos.",
+  "commercialApplication": "No Apolo/Têmis, checar fidelidade visual do produto contra catálogo, alegações, pronúncia, som e legendas por cena; permitir que revisores aceitem ou rejeitem achados e encaminhem apenas defeitos confirmados à edição localizada.",
+  "evidenceStrength": "Estudo aplicado de pipeline próprio; 120 anúncios, 562 cenas, revisores internos e subconjunto cego de 120 cenas; comparação de modalidades de revisão não randomizada. Não é ensaio de conversão ou prova comercial.",
+  "publishedOn": "2026-11-11",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "Uma revisão por cena com alertas de IA e confirmação humana identificará mais divergências reais de produto que revisão humana sem alertas, sem elevar excessivamente falsos positivos nem custo por vídeo aprovado.",
+  "risks": "Excesso de marcações e viés de automação podem induzir rejeições erradas; um produto sintético adulterado ou promessa não suportada pode chegar ao consumidor se o juiz for tratado como autoridade.",
+  "limits": "Dados de único pipeline de anúncios; comparação não randomizada, revisores internos, precisão limitada; não foram medidos CTA, pagamentos, retenção ou eficácia de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-11-revisao-multimodal-anuncios-video.md",
+  "sourceTitle": "Agarwaal et al. — revisão multimodal por cena de vídeos publicitários (fonte revisada)",
+  "sourceSha256": "64764c481cac5dbb50ad0dbc2e1f062f0f7551af70d4102d308eeb9e4e0fbd1b"
+}

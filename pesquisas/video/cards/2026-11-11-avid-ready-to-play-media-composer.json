@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-avid-ready-to-play-google-media-composer-2026-11",
+  "collection": "video",
+  "title": "Avid Ready to Play: geração, edição e compreensão de acervos no Media Composer",
+  "finding": "Em 10/11/2026, Avid lançou extensão ativa para Media Composer Ultimate/Enterprise com três fluxos de IA Google: Create Video, Modify Video e Analyze Video.",
+  "mechanism": "Modelos Gemini/Veo ligados aos bins e metadados do Media Composer; gera novos takes, cria versões editadas sem alterar originais e indexa cenas por descrições customizadas.",
+  "commercialApplication": "Inspirar pipeline de Marketing Hub com metadados semânticos de acervo, edição não destrutiva, geração de takes ausentes e revisão/versionamento de anúncios.",
+  "evidenceStrength": "Alta para anúncio e disponibilidade no site Avid; sem benchmark independente da qualidade nem garantia de custo Cloud reduzido.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2027-02-11",
+  "experimentHypothesis": "Combinar busca semântica, variantes por prompt e preservação do clipe original reduzirá tempo para montar e revisar dez anúncios de vídeo.",
+  "risks": "Custos Google Cloud e licença Avid Ultimate/Enterprise, direitos de pessoas e imagens, falhas de edição e falta de API autônoma do plugin.",
+  "limits": "Extensão ativa Windows/macOS para Ultimate/Enterprise, sem adicional cobrado pela Avid; API Google Cloud faturada separadamente. Ready to Edit apenas anunciado, não disponível.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-11-avid-ready-to-play-google-ai.md",
+  "sourceTitle": "Avid Ready to Play: lançamento, custos, acesso e limites",
+  "sourceSha256": "0178ea9e3825ef11fc2581ee016919124dcd8999e3df824bf74ff2b68ba46a60"
+}

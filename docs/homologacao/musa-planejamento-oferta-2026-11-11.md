@@ -70,3 +70,13 @@ exercitam o guard real nos dois produtos e rejeitam recibo de outro experimento.
 
 Rodada final após integrar o guard e a chave operacional: 485 testes relacionados,
 zero falhas/erros e zero dispensas, incluindo arquitetura, reconciliação e continuação.
+
+## Compatibilidade das atestações compartilhadas
+
+O CI inicial recusou a atestação vigente Mira v82 porque oito fontes compartilhadas
+mudaram. A solução conserva v82 e registra v83 como `EVIDENCE_COMPATIBILITY_ONLY`:
+mesma experiência e provas visuais, sem renovar pareceres independentes ou aprovação
+comercial. Os 105 testes locais de Mira, planejamento, reconciliação e passagem
+passaram; os 17 testes de integridade do bundle também. O empacotador validou
+808 arquivos e 209 manifestos. Esta compatibilidade não é nova homologação premium,
+nem evidência de uso, satisfação ou venda.

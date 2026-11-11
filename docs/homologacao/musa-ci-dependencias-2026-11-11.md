@@ -43,3 +43,10 @@ já usada em Têmis. O container de extração nunca é iniciado e é removido a
 Quatro testes cobrem reúso, extração, falha fechada e ausência de APT nos browsers.
 A extração oficial e execução dos binários também passaram localmente. Nenhum
 vídeo foi gerado por essa validação.
+
+A validação final do bundle detectou também a referência ao workflow PDE em três
+atestações históricas vigentes. Um lote de publicação não interrompeu após essa
+recusa local como deveria; nenhum merge ou deploy ocorreu. O lote seguinte usa
+falha imediata, revalida o bundle antes de commit e preserva cada manifesto anterior.
+As sucessoras de compatibilidade alteram apenas a prova do workflow e acrescentam
+os testes determinísticos do preparo; não alteram experiências ou autorizações.

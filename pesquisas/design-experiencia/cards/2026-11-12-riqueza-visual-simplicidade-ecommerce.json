@@ -1,0 +1,18 @@
+{
+  "cardKey": "riqueza-visual-simplicidade-qualidade-percebida-ecommerce",
+  "collection": "neuromarketing",
+  "title": "Riqueza visual com simplicidade estrutural na experiência de compra",
+  "finding": "Em dois experimentos fatoriais 2x2 com 192 participantes cada, interfaces visuais/interativas e interfaces de menor complexidade receberam avaliações superiores de qualidade percebida em compras simuladas de roupas e cosméticos. Não foram medidas vendas.",
+  "mechanism": "Hipótese interpretativa: estímulos visuais podem tornar a oferta mais concreta, enquanto navegação simples reduz esforço; o estudo não mediu nem isolou esses mecanismos psicológicos.",
+  "commercialApplication": "Comparar landing pages de produtos digitais com elementos visuais ricos e navegação simples versus versão mais textual, preservando oferta, preço, condições e veracidade. Medir compreensão, CTA, checkout e pagamentos reconciliados.",
+  "evidenceStrength": "Dois experimentos entre grupos revisados por pares, n=192 cada, com medida autorrelatada de qualidade percebida. Evidência experimental para percepção em comércio de moda, não para conversão comercial nem produtos digitais.",
+  "publishedOn": "2026-11-12",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "A versão visualmente rica e estruturalmente simples elevará compreensão e qualidade percebida sem ampliar erros, e poderá melhorar CTA e checkout; esta última parte permanece hipótese a testar.",
+  "risks": "Excesso de estímulos, perda de acessibilidade, imagens que não representam o produto, simplificação que oculte preço ou condições, confusão entre satisfação e compra real.",
+  "limits": "Testes de lojas simuladas de roupas e cosméticos; sem transações reais. Checagem de complexidade não significativa no primeiro estudo; não houve checagem direta de riqueza visual. Moderação por frequência de compras foi fraca e deve ser tratada com cautela.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-12-riqueza-visual-simplicidade-ecommerce.md",
+  "sourceTitle": "Fonte revisada — Riqueza visual e simplicidade em interfaces de compra",
+  "sourceSha256": "223ddeadf6bc27e348aa5b3d94cea7f6f885cf4b9471442247b27361cfc6d062"
+}

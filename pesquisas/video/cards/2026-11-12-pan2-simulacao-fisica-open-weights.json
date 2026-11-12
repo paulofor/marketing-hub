@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-pan2-open-world-simulation-2026-11",
+  "collection": "video",
+  "title": "PAN 2: world model de 29B com pesos abertos e simulação temporal de ações",
+  "finding": "Em 10/11/2026 o IFM/MBZUAI abriu os pesos e o treinamento do PAN 2 (Apache-2.0): converte imagem opcional e planos de ação descritos em texto em vídeos simulados de até 20 segundos, com controle de eventos e câmera.",
+  "mechanism": "LLM de planejamento produz descrição estruturada e temporal de estados; backbone MMDiT 29B gera vídeo condicionado em ações, cronologia e posição de câmera. Usa Qwen3.5-9B e Wan2.2 VAE de terceiros.",
+  "commercialApplication": "Prototipar cenas de demonstração de produtos e movimento físico com imagens de referência; gerar B-roll e storyboards de ações antes de gravar, com revisão humana e rotulagem de simulações.",
+  "evidenceStrength": "Alta para abertura, licença e especificações por documentação primária; resultados de avaliação divulgados pelo próprio IFM, sem validação independente nem demonstração de vantagem estética.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2027-02-12",
+  "experimentHypothesis": "Uma biblioteca de prompts com tempos explícitos permitirá gerar cenas físicas simples com menor taxa de refação, mas só terá vantagem econômica se o custo completo de GPU e aprovação for menor que nas APIs atuais.",
+  "risks": "Dois terços dos planos multietapas não terminam integralmente; física e continuidade podem falhar; custo de GPU/LLM, pesos grandes, ausência de áudio; direitos de terceiros e transparência de simulações sintéticas.",
+  "limits": "Execução própria ativa, sem API hospedada oficial confirmada e sem tabela de preços; 704×1248, 24 fps, até 20s; pesos do PAN 2 em Apache-2.0, componentes externos sob licenças próprias.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-12-pan2-world-model-aberto-ifm.md",
+  "sourceTitle": "PAN 2: modelo de mundo aberto para simulação audiovisual de ações",
+  "sourceSha256": "be33192e7002cbd0ba3e76916c94bc594f31c1f45947c35654de8dbaa0b68a98"
+}

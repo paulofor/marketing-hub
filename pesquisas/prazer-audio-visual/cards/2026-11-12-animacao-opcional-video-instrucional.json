@@ -1,0 +1,18 @@
+{
+  "cardKey": "animacao-opcional-video-instrucional",
+  "collection": "prazer-audio-visual",
+  "title": "Testar movimento funcional sem assumir ganho de aprendizagem",
+  "finding": "Em um experimento com 40 universitários, versões de vídeo com imagens geradas por IA animadas manualmente não apresentaram efeito principal estatisticamente significativo sobre acurácia frente a imagens estáticas (p=0,488); não equivale a prova de ausência de efeito.",
+  "mechanism": "Movimento pode apoiar a explicação espacial ou competir por atenção, conforme a relevância para a tarefa; carga cognitiva é interpretação teórica, não mecanismo neural diretamente testado.",
+  "commercialApplication": "Em Apolo, criar demonstrações comparáveis com gráfico estático e animação funcional; em Psique, avaliar acertos, esforço e conforto, sem prescrever variantes por gênero.",
+  "evidenceStrength": "Baixa a moderada para comparação exploratória de um conteúdo específico, baixa para generalização e qualquer resultado comercial.",
+  "publishedOn": "2026-11-12",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "Uma animação funcional de montagem pode melhorar acurácia e compreensão versus imagem estática; testar versões randomizadas com mesma narração, informações e duração, medindo erros, carga subjetiva e retenção após 48 horas.",
+  "risks": "Efeitos meramente decorativos, distração, flash desconfortável e segmentação estereotipada por gênero; não confundir ausência de significância com equivalência.",
+  "limits": "40 estudantes (10 por célula), vídeo de 140 s sobre encaixes de madeira, movimento manual no CapCut, vários resultados exploratórios; sem prazer, memória tardia ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-12-animacao-opcional-video-instrucional-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Movimento em imagens de IA e compreensão de vídeo instrucional",
+  "sourceSha256": "91b5de120e7aad610f669e9f7c26250cb230ce9fc5a051d0f018973dac012a65"
+}

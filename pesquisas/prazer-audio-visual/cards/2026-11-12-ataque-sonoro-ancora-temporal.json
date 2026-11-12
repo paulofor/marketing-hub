@@ -1,0 +1,18 @@
+{
+  "cardKey": "ataque-sonoro-ancora-temporal",
+  "collection": "prazer-audio-visual",
+  "title": "Âncoras de ataque sonoro e percepção de sincronização",
+  "finding": "Dois experimentos de alinhamento de cliques mostraram que instrumentos de ataque rápido influenciam o centro temporal percebido de sons combinados; assincronia suficientemente grande entre dois ataques rápidos pode fazê-los parecer dois eventos.",
+  "mechanism": "O P-center corresponde ao instante percebido do acontecimento sonoro, dependente do ataque e da integração das camadas, não idêntico ao início físico de cada gravação.",
+  "commercialApplication": "No QA de áudio do Apolo, comparar arranjos com camadas rápidas/lentas e seu alinhamento percebido com a imagem; no Psique, testar unidade perceptiva, conforto e sincronização subjetiva.",
+  "evidenceStrength": "Moderada para percepção temporal em pares instrumentais controlados; baixa para sincronização audiovisual geral, prazer e performance comercial.",
+  "publishedOn": "2026-11-12",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "Com mesmo vídeo e mesma música original, pequenas diferenças controladas no ataque de camadas percussivas alterarão avaliações humanas de unidade do som e sincronização com ação visual; medir também conforto e preferência, sem assumir aumento de groove.",
+  "risks": "Tratar 40 ms como limite audiovisual universal, introduzir dessincronia incômoda, associar alteração de P-center a dopamina, prazer ou compra sem teste.",
+  "limits": "Dois experimentos com pares instrumentais e assincronias de 0 a ±80 ms; número de participantes não confirmado no resumo público; sem anúncio, música completa ou medidas comerciais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-12-ataque-sonoro-ancora-temporal-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Ataque sonoro como âncora do tempo percebido",
+  "sourceSha256": "a3a497140ebf8cf3d1915e711562ea18a9a59775ad5309afbf181a3438df18fa"
+}

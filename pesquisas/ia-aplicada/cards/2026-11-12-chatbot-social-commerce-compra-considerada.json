@@ -1,0 +1,18 @@
+{
+  "cardKey": "links-chatbot-social-commerce-compra-considerada",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Links de chatbots como caminho de compra em social commerce",
+  "finding": "WPIC, citada pela Reuters em 11/11/2026, estimou cerca de 5% das compras no Douyin em outubro de 2026 por links de chatbots; em categorias de compra mais deliberada, como suplementos, a participação indicada superou 20%. A metodologia de atribuição não foi publicada integralmente.",
+  "mechanism": "Hipótese: uma conversa pode esclarecer critérios e reduzir incerteza antes do encaminhamento para compra. Atribuição por link não demonstra incremento de vendas nem causalidade.",
+  "commercialApplication": "Comparar uma página direta de oferta digital com uma experiência de respostas curtas verificáveis e links rastreáveis, mantendo preço e tráfego equivalentes. Medir pagamentos conciliados, CAC, reclamações e reembolsos.",
+  "evidenceStrength": "Observacional, indireta e limitada: estimativa de consultoria WPIC reproduzida pela Reuters, sem amostra detalhada, contrafactual, teste causal ou auditoria pública por origem.",
+  "publishedOn": "2026-11-12",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "Entre visitantes qualificados de uma mesma oferta digital, perguntas contextualizadas e links verificáveis elevarão pagamentos reconciliados por visitante sem elevar CAC, reclamações ou reembolsos versus landing direta.",
+  "risks": "Confundir atribuição com vendas incrementais; promessas sem prova; exposição de dados pessoais; alegações de saúde ou produtos sensíveis; ocultação de patrocínio ou relação comercial.",
+  "limits": "Plataforma chinesa e recorte de outubro de 2026; não corresponde a compra autônoma por agente, não generaliza ao Brasil e não demonstra resultado do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-12-douyin-chatbot-links-compras.md",
+  "sourceTitle": "Douyin — compras por links de chatbots (WPIC/Reuters, revisão 12/11/2026)",
+  "sourceSha256": "8cd0dd79b7f7784891dbcd6c46c8da2ec5c78e7aef8c5ca95574ca022da0f234"
+}

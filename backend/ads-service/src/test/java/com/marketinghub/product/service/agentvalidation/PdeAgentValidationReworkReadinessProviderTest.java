@@ -103,7 +103,8 @@ class PdeAgentValidationReworkReadinessProviderTest {
   @CsvSource({
     "EXECUTOR_FAILURE,Falha no catálogo instalado do executor.",
     "TECHNICAL_FAILURE,O harness instalado não possui cenários próprios para este produto. Implemente-os antes da homologação; não reutilize outro PDE.",
-    "TECHNICAL_FAILURE,com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: Timeout ao homologar o PDE nos dispositivos suportados."
+    "TECHNICAL_FAILURE,com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: Timeout ao homologar o PDE nos dispositivos suportados.",
+    "TECHNICAL_FAILURE,A referência da homologação não corresponde ao produto alvo."
   })
   void retriesTechnicalHomologationWithoutOpeningProductCorrection(
       String category, String executionError) {
@@ -126,10 +127,11 @@ class PdeAgentValidationReworkReadinessProviderTest {
     assertThat(provider.requiresFreshExecution(process, technical, product, SOURCE)).isTrue();
   }
 
-  /** Recupera Capella e outro contexto mesmo após o corretor recusar o retrabalho indevido. */
+  /** Recupera Capella, MUSA e outra identidade após o corretor recusar retrabalho indevido. */
   @ParameterizedTest
-  @CsvSource({"7,112,894", "903,2112,9894"})
-  void retriesLegacyTimeoutAfterUnnecessaryCorrection(long productId, long experimentId, long taskId) {
+  @CsvSource({"7,112,894,timeout", "4,115,915,identity", "903,2112,9894,identity"})
+  void retriesLegacyFailureAfterUnnecessaryCorrection(
+      long productId, long experimentId, long taskId, String kind) {
     String source = "experiment:" + experimentId;
     product.setId(productId);
     when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
@@ -137,11 +139,15 @@ class PdeAgentValidationReworkReadinessProviderTest {
     var failure = task(taskId, process, "technicalHomologation", "BLOCKED");
     failure.setSourceReference(source);
     failure.setBlockerCategory("TECHNICAL_FAILURE");
-    failure.setExecutionError("Timeout ao homologar o PDE nos dispositivos suportados.");
+    failure.setExecutionError(
+        kind.equals("identity")
+            ? "A referência da homologação não corresponde ao produto alvo."
+            : "Timeout ao homologar o PDE nos dispositivos suportados.");
     history.add(failure);
     var unnecessary = task(taskId + 1, process, "prototypeCorrection", "BLOCKED");
     unnecessary.setSourceReference(source);
-    unnecessary.setBlockerCategory("MISSING_INPUT");
+    unnecessary.setBlockerCategory(
+        kind.equals("identity") ? "FUNCTIONAL_ADJUSTMENT" : "MISSING_INPUT");
     unnecessary.setExecutionError("O timeout não constitui reprovação funcional do produto.");
     history.add(unnecessary);
     var technical = activity("technicalHomologation");
@@ -149,7 +155,8 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Acesso concluído."));
 
     assertThat(provider.readiness(process, technical, product, source).ready()).isTrue();
-    assertThat(provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
         .isFalse();
     assertThat(provider.requiresFreshExecution(process, technical, product, source)).isTrue();
     assertThat(failure.getBlockerCategory()).isEqualTo("TECHNICAL_FAILURE");

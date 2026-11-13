@@ -24,6 +24,7 @@ public final class PdeAgentValidationCorrectionPolicy {
   private static final Set<String> LEGACY_EXECUTOR_ERRORS =
       Set.of(
           "O harness instalado não possui cenários próprios para este produto.",
+          "A referência da homologação não corresponde ao produto alvo.",
           "Timeout ao homologar o PDE nos dispositivos suportados.");
 
   private final ObjectMapper json;
@@ -75,8 +76,9 @@ public final class PdeAgentValidationCorrectionPolicy {
   }
 
   /**
-   * Reconhece falhas do executor e seus dois diagnósticos legados sem alterar a classificação
-   * salva.
+   * Reconhece falhas do executor e diagnósticos legados sem alterar a classificação salva. A
+   * divergência antiga permite apenas nova verificação determinística de identidade e jornada;
+   * nunca constitui aprovação ou dispensa de prova funcional.
    */
   public static boolean retryableExecutorFailure(PdeValidationTaskSnapshot task) {
     if (task == null || !"BLOCKED".equals(task.status())) return false;

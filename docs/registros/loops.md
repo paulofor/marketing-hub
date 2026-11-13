@@ -1,3 +1,24 @@
+## LOOP-PDE-CATALOGO-CONTINUO-RETRABALHO-PAGO — 13/11/2026
+
+- **Evidência:** MUSA ciclo 22/experimento 115, prova de implementação aceita no
+  evento 139. Psique #915 parou antes do navegador; sua referência coerente foi
+  tratada como divergência de produto. A automação abriu Dédalo #916 (BLOCKED,
+  US$ 0,5260976 estimados), embora o aplicativo publicado já funcionasse.
+- **Causa:** seleção do executor restrita à família antiga e distinção de identidade
+  antes do catálogo de capacidades; roteiro anterior exigia sete dias, incompatível
+  com orientação contínua. O backend não recebia uma matriz própria da nova versão.
+- **Correção:** adaptador contínuo no executor existente e validador explícito no
+  gate. Falta de adaptador com linhagem coerente vira EXECUTOR_FAILURE. O diagnóstico
+  legado permite apenas retestar identidade e jornada; não reescreve #915 nem aprova
+  automaticamente a experiência ou a correção. Aprovação exige prova posterior completa.
+- **Prevenção:** nove combinações reais, três cenários individuais em outra linhagem,
+  replay sem operação duplicada, duas escolhas relacionadas, rejeição entre sessões,
+  provas adulteradas recusadas e testes de recuperação com outra identidade/produto.
+  Cenários contextuais anteriores continuam com seu contrato de sete dias.
+- **Limites:** teste técnico não comprova qualidade premium, preferência humana ou venda.
+  Pausa preservada para impedir novas revisões pagas antes de conciliar custos históricos.
+  [Matriz e resultados](../homologacao/musa-consultor-private-v1.md).
+
 ## LOOP-TETO-ACUMULADO-REAPROVACAO-POR-CICLO — 10/11/2026
 
 - **Evidência:** Capella 19→20 e Vega 21→22 mantêm consumo por produto, mas os

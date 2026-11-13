@@ -82,7 +82,8 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Valida identidade e executa o harness próprio da jornada; timeout preserva diagnóstico do
-   * executor sem atribuir uma reprovação funcional ao produto.
+   * executor sem atribuir uma reprovação funcional ao produto. Ciclo coerente sem adaptador
+   * instalado é falha de capacidade do executor, nunca solicitação de reconstrução paga.
    */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
@@ -170,6 +171,17 @@ public class PdeAgentValidationHarnessRunner {
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
             && lineage.path("productId").asLong() == productId;
+    boolean cycleIdentity =
+        identityReference.equals("experiment:" + target.path("experimentId").asLong())
+            && lineage.path("learningCycleId").asLong() > 0
+            && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
+            && lineage.path("productId").asLong() == productId;
+    boolean musaContinuous =
+        "metodo-musa-7-dias".equals(productSlug)
+            && "musa-consultor-pwa-v1".equals(prototypeVersion)
+            && ("/experiences/" + prototypeVersion + "/agent-validation")
+                .equals(URI.create(sourceUrl).getPath())
+            && cycleIdentity;
     boolean mira =
         "orientacao-digital-rotina-pele-madura".equals(productSlug)
             && prototypeVersion.startsWith("mira-private-v")
@@ -196,12 +208,20 @@ public class PdeAgentValidationHarnessRunner {
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)
         && !vega
         && !vegaContextual
+        && !musaContinuous
+        && !cycleIdentity
         && !miraCandidate
         && !privateKit
         && !supplementalProduct) {
-      throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
+      throw new HarnessException("Identidade da tarefa divergente da linhagem canônica.");
     }
-    if (!vega && !vegaContextual && !mira && !alcyone && !miraCandidate && !privateKit) {
+    if (!vega
+        && !vegaContextual
+        && !musaContinuous
+        && !mira
+        && !alcyone
+        && !miraCandidate
+        && !privateKit) {
       throw HarnessException.executor(
           "O harness instalado não possui cenários próprios para este produto. "
               + "Implemente-os antes da homologação; não reutilize outro PDE.");
@@ -230,7 +250,7 @@ public class PdeAgentValidationHarnessRunner {
                 productSlug,
                 "prototypeVersion",
                 prototypeVersion));
-    if (vega || vegaContextual || miraCandidate || privateKit) {
+    if (vega || vegaContextual || musaContinuous || miraCandidate || privateKit) {
       input.put("cycleId", lineage.path("learningCycleId").asLong());
       if (privateKit) {
         input.put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
@@ -244,6 +264,9 @@ public class PdeAgentValidationHarnessRunner {
       executionScript = Path.of(scriptPath).resolveSibling("private-kit-harness.mjs").toString();
     } else if (miraCandidate) {
       executionScript = Path.of(scriptPath).resolveSibling("mira-candidate-harness.mjs").toString();
+    } else if (musaContinuous) {
+      executionScript =
+          Path.of(scriptPath).resolveSibling("musa-continuous-harness.mjs").toString();
     } else if (vegaContextual) {
       executionScript =
           Path.of(scriptPath).resolveSibling("vega-contextual-style-harness.mjs").toString();
@@ -365,6 +388,16 @@ public class PdeAgentValidationHarnessRunner {
             || (approved && !checks.path("sevenDayJourney").asBoolean(false))))
       throw new HarnessException(
           "Vega contextual exige regras reais, jornada, matriz própria e ausência de provedor.");
+    boolean musaContinuous = "musa-consultor-pwa-v1".equals(expected.get("prototypeVersion"));
+    if (musaContinuous
+        && (!"MUSA_CONTINUOUS_STYLE_EXECUTION_V1".equals(result.path("runtimeContract").asText())
+            || !"DETERMINISTIC_CONTEXTUAL_RULES".equals(result.path("generationMode").asText())
+            || result.path("providerCalls").asInt(-1) != 0
+            || result.path("inputComparisonApplicable").asBoolean(true)
+            || result.path("modelFunctionalBehaviorClaimed").asBoolean(true)
+            || (approved && !checks.path("continuousJourney").asBoolean(false))))
+      throw new HarnessException(
+          "MUSA contínuo exige regras reais, retomada e adaptação sem provedor.");
     boolean privateKit = "DETERMINISTIC_PRIVATE_KIT_V1".equals(expected.get("runtimeKind"));
     if (privateKit) {
       if (!"PDE_PRIVATE_KIT_PACKAGE_V2".equals(result.path("packageContractVersion").asText())
@@ -422,7 +455,7 @@ public class PdeAgentValidationHarnessRunner {
       int extraKitCaptures = privateKit || alcyone ? validateKitCaptureMoments(result) : 0;
       int terminalCaptures = validateTerminalResultEvidence(result, expected);
       int expectedScenarioDeviceGates =
-          miraCandidate ? 18 : (alcyone || privateKit || vegaContextual ? 9 : 5);
+          miraCandidate ? 18 : (alcyone || privateKit || vegaContextual || musaContinuous ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
           || result.path("artifacts").size()
@@ -440,7 +473,7 @@ public class PdeAgentValidationHarnessRunner {
                   .anyMatch(row -> !"PASS".equals(row.path("status").asText())))) {
         throw new HarnessException("O harness aprovou uma cobertura com percurso reprovado.");
       }
-      if (vegaContextual) {
+      if (vegaContextual || musaContinuous) {
         var observed = new java.util.HashSet<String>();
         result
             .path("scenarios")

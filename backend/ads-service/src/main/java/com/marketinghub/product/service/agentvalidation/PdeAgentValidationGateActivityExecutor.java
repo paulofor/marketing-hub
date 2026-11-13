@@ -512,10 +512,14 @@ public class PdeAgentValidationGateActivityExecutor
 
   /**
    * Preserva as matrizes históricas de cinco e nove provas e aceita a comparação documental de
-   * dezoito combinações, kits privados e jornadas contextuais com nove combinações, recusando
-   * contratos desconhecidos.
+   * dezoito combinações, kits privados e jornadas contextuais ou contínuas com nove combinações,
+   * recusando contratos desconhecidos.
    */
   private boolean validTechnicalScenarioMatrix(JsonNode result) {
+    if ("musa-consultor-pwa-v1".equals(result.path("prototypeVersion").asText())
+        || MusaContinuousScenarioMatrixV1.supports(result)) {
+      return MusaContinuousScenarioMatrixV1.valid(result);
+    }
     if (PdeContextualStyleScenarioMatrixV1.supports(result)) {
       return PdeContextualStyleScenarioMatrixV1.valid(result);
     }

@@ -18,16 +18,21 @@ class PdeAgentValidationCorrectionPolicyTest {
   private static final String VERSION = "capella-beleza-v3";
   private static final Instant NOW = Instant.parse("2026-11-04T08:00:00Z");
 
-  /** Preserva o contrato explícito e os dois diagnósticos históricos conhecidos. */
+  /**
+   * Preserva o contrato explícito e os diagnósticos históricos, exigindo nova prova da mesma
+   * identidade.
+   */
   @ParameterizedTest
-  @ValueSource(strings = {"explicit", "timeout", "catalog"})
+  @ValueSource(strings = {"explicit", "timeout", "catalog", "legacyIdentityCatalog"})
   void acceptsKnownExecutorFailureWithFreshProof(String kind) throws Exception {
     var failed =
         failed(
             kind.equals("explicit") ? "EXECUTOR_FAILURE" : "TECHNICAL_FAILURE",
-            kind.equals("catalog")
-                ? "O harness instalado não possui cenários próprios para este produto."
-                : "Timeout ao homologar o PDE nos dispositivos suportados.");
+            kind.equals("legacyIdentityCatalog")
+                ? "A referência da homologação não corresponde ao produto alvo."
+                : kind.equals("catalog")
+                    ? "O harness instalado não possui cenários próprios para este produto."
+                    : "Timeout ao homologar o PDE nos dispositivos suportados.");
     var result =
         policy
             .executorCorrectionResolution(
@@ -46,6 +51,7 @@ class PdeAgentValidationCorrectionPolicyTest {
       strings = {
         "functional",
         "unknownTechnical",
+        "currentIdentityDivergence",
         "activeFailure",
         "otherActivity",
         "missingFailure",
@@ -83,6 +89,9 @@ class PdeAgentValidationCorrectionPolicyTest {
       case "functional" -> failed = failed("FUNCTIONAL_ADJUSTMENT", failed.executionError());
       case "unknownTechnical" ->
           failed = failed("TECHNICAL_FAILURE", "Arquivo inválido no produto.");
+      case "currentIdentityDivergence" ->
+          failed =
+              failed("TECHNICAL_FAILURE", "Identidade da tarefa divergente da linhagem canônica.");
       case "activeFailure" ->
           failed =
               snapshot(

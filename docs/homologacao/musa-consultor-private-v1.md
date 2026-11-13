@@ -100,3 +100,70 @@ a uma revogação concorrente. O mesmo teste passou nas duas identidades após a
 correção, junto às regressões unitárias e da versão histórica. A configuração
 segue as variáveis MySQL sintéticas do Backend CI, que executa essa regressão.
 Não foram repetidas as nove combinações de UI, cujos critérios não mudaram.
+
+
+## Compatibilidade real do executor — retomada de #3957
+
+Depois do PR #5824 (main c092b9972867007e9c92d4a8f42703914ff49aa4),
+a versão privada foi testada no endereço publicado, com salvamento, retomada mobile
+e isolamento. A prova de implementação foi aceita no evento 139 do ciclo 22.
+A automação iniciou Psique #915, que parou antes de abrir o navegador: o catálogo
+do executor não reconhecia `musa-consultor-pwa-v1` e classificou uma linhagem válida
+como divergência de produto. O encaminhamento incorreto iniciou Dédalo #916,
+encerrado BLOCKED, custo estimado US$ 0,5260976. Processo 102 pausado, preservando
+saídas, custos, oferta, ciclo e experimento. Não há nova autorização comercial.
+
+Foram comparadas três alternativas: reutilizar o harness de sete dias (menor esforço,
+mas contrato funcional incorreto); apenas admitir o nome da versão (não comprova
+novos endpoints, cookie e repertório); adaptador próprio no catálogo existente
+(esforço delimitado e evidência real da experiência contínua). Adotada a terceira.
+
+O adaptador `musa-continuous-harness.mjs` usa o aplicativo, gateway e backend reais.
+A matriz é ADHERENT/RECOVERY/SAFETY × desktop/iPhone 15 Pro/Pixel 7. Confere duas
+orientações relacionadas, escolha original preservada, recuperação da resposta perdida
+por operação, replay idempotente, bloqueio funcional e acesso de outro proprietário
+recusado. A validação do backend exige operações, escolhas e sinais persistidos;
+nenhum gate exige concluir sete dias. Os sinais de preferência e checkout são apenas
+transporte técnico, sem evidência humana, cobrança, anúncio ou produção audiovisual.
+
+A prevenção reutilizável classifica uma versão sem adaptador, com referência e
+linhagem coerentes, como EXECUTOR_FAILURE. Identidades divergentes continuam recusadas.
+A correção do executor não solicita reconstrução paga nem mudança de versão.
+Regressões incluem outra identidade/produto e versões contextuais históricas válidas.
+Métrica técnica de adoção: nove combinações aceitas, operações sem duplicação e
+classificação correta. Impacto em vendas ainda desconhecido; não houve experimento
+comercial. Manter a pausa financeira até conciliar custos desconhecidos, sem confundir
+a diferença aritmética do teto US$ 200 com saldo conciliado disponível.
+
+
+Resultado local da compatibilidade: nove combinações APPROVED no contrato
+MUSA_CONTINUOUS_STYLE_EXECUTION_V1 e três execuções SCENARIO APPROVED no ciclo
+sintético 91023/experimento 91116. Matriz real sanitizada versionada em
+`backend/ads-service/src/test/resources/musa-continuous/real-local-matrix-v1.json`;
+backend recusa adulteração de identidade de sessão, salvamento, continuidade,
+recuperação, custo e segregação. O gate recusa a matriz antiga para a versão nova.
+Relatórios e capturas recuperáveis em `artifacts/musa-private-20261113`.
+
+O diagnóstico legado de divergência de referência permite apenas nova homologação
+canônica determinística, preservando sua classificação histórica. O runner continua
+recusando uma identidade realmente divergente; o gate exige prova nova da mesma
+versão antes de superar a correção indevida. Regressões incluem MUSA e outro produto.
+Não se renomeia a versão para contornar falha de catálogo.
+
+Financeiro observado após #916: teto cumulativo US$ 200 mantido pelo recibo 129
+com origem no ciclo 21; estimativas acumuladas US$ 111,8513392 e dez tarefas históricas
+sem custo informado na planilha oficial. A diferença aritmética US$ 88,1486608
+não é saldo conciliado. Processo 102 PAUSED, nenhuma tarefa equivalente em andamento.
+Nenhum novo modelo foi chamado para os testes locais ou para usar o aplicativo.
+
+Validação da correção do executor: 221 testes backend (incluindo 92 de arquitetura),
+30 casos ativos do runner consumindo a prova real, 75 testes JavaScript de navegador,
+30 contratos de publicação e 17 testes do empacotador imutável aprovados. As duas
+opções históricas de evidência local não fornecidas continuam condicionais e não são
+critérios desta candidata. A fixture real do MUSA é obrigatória no CI do backend.
+A primeira rodada ampliada simultânea atingiu o limite local de threads; repetir
+somente as verificações afetadas, com execução sequencial e processos locais encerrados,
+eliminou EAGAIN sem alteração de contrato. Topologia temporária encerrada com volumes.
+
+O erro atual de identidade tem diagnóstico distinto do legado: não é elegível para
+retentativa de catálogo e continua bloqueando referências divergentes.

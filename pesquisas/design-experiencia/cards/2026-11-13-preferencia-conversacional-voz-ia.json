@@ -1,0 +1,18 @@
+{
+  "cardKey": "preferencia-conversacional-vs-realismo-voz-ia",
+  "collection": "neuromarketing",
+  "title": "Vozes de IA: preferência para conversar não é igual a realismo humano",
+  "finding": "Dois estudos de escolha pareada com 654 ouvintes e 120 turnos de atendimento: fala sintética foi escolhida sobre voz de ator em 19% dos julgamentos de semelhança humana, mas em 36% dos julgamentos sobre preferência para conversar; o sistema mais preferido atingiu 49% neste segundo desfecho.",
+  "mechanism": "Interpretação: adequação da prosódia ao atendimento pode importar mais para preferência declarada que semelhança humana isolada. Associações com ritmo, pausas e entonação não estabelecem causalidade.",
+  "commercialApplication": "No atendimento por voz de produtos digitais, comparar vozes sintéticas pelas preferências de usuários e compreensão correta, não só por naturalidade acústica; identificar o agente como IA.",
+  "evidenceStrength": "Dois testes controlados de escolha pareada (455 e 199 ouvintes, 19.517 julgamentos no total); preprint submetido em 11/11/2026; avalia percepção, não comportamento comercial.",
+  "publishedOn": "2026-11-13",
+  "validUntil": "2026-12-28",
+  "experimentHypothesis": "Em atendimento simulado ou consentido, uma voz escolhida por preferência conversacional elevará conclusão de tarefas e satisfação sem reduzir compreensão nem acessibilidade, frente a uma voz escolhida somente por naturalidade.",
+  "risks": "Voz excessivamente humana pode gerar confusão sobre ser IA; alterações de velocidade podem prejudicar compreensão e acessibilidade; evitar manipulação emocional e representação enganosa.",
+  "limits": "Falas roteirizadas de atendimento e canal telefônico simulado, não chamadas comerciais reais. Não houve teste em português brasileiro, nem medida de resolução, retenção, CTA ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-13-preferencia-conversacional-voz-ia.md",
+  "sourceTitle": "Fonte revisada — Preferência conversacional versus semelhança humana na voz de IA",
+  "sourceSha256": "af21016541ba37bb72971dd3f94470be6fdbf6364577b7fac1113614e7762086"
+}

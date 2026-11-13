@@ -1,0 +1,18 @@
+{
+  "cardKey": "verificacao-dominio-oficial-em-recomendacoes-ia",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Validar domínio oficial quando IA indica onde comprar",
+  "finding": "Em teste da Podqi/Gauge com 6.795 respostas sintéticas sobre 151 marcas (set/2026), cerca de 9% exibiram domínio classificado como arriscado. Entre essas respostas, 57% recomendaram o domínio como local de compra, 34% mencionaram sem comentário e 9% alertaram. Perguntas sobre sites regionais tiveram 16% de exposição; domínios inativos também foram classificados como arriscados.",
+  "mechanism": "Hipótese: a aparência de autoridade de uma resposta de IA pode facilitar encaminhamentos a endereços imitadores ou incorretos. Verificar vínculo entre marca, domínio e checkout antes do pagamento pode diminuir exposição ao risco; o estudo não testou esse efeito.",
+  "commercialApplication": "Ao comunicar produtos digitais, apresentar claramente o endereço oficial, o checkout autorizado e informações verificáveis; monitorar variantes de domínio citadas por agentes e sinalizar discrepâncias para revisão humana. Não afirmar segurança absoluta nem aumentar fricção desnecessária.",
+  "evidenceStrength": "Moderada para exposição a URLs problemáticas nos prompts sintéticos testados; baixa para generalizar a compras reais, incidentes de fraude ou qualquer efeito causal em confiança e conversão. Pesquisa primária de fornecedor comercial de proteção de marca, com revisão jornalística.",
+  "publishedOn": "2026-11-13",
+  "validUntil": "2026-12-28",
+  "experimentHypothesis": "Em teste controlado de oferta, destacar domínio canônico, checkout autorizado e verificação simples reduzirá dúvidas e cliques em URLs incorretas, sem diminuir pagamentos reconciliados por visitante ou elevar abandono. Auditar links e reclamações separadamente.",
+  "risks": "Confundir domínio inativo com fraude confirmada; rotular incorretamente lojistas legítimos; expor dados pessoais; criar sensação enganosa de segurança; atribuir queda de golpes ou aumento de vendas sem mensuração.",
+  "limits": "As respostas vieram de cinco perguntas escolhidas pelos pesquisadores em setembro de 2026, não de sessões reais; o conjunto de 151 marcas não é amostra representativa de todo o comércio. Os modelos mudam. A Podqi vende proteção de marca. Nenhum resultado de vendas ou segurança foi observado no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-13-podqi-risco-dominio-ia-compras.md",
+  "sourceTitle": "Podqi/Gauge — riscos de domínios em respostas de IA para compras (revisão 13/11/2026)",
+  "sourceSha256": "58a3771fbd6db93cdd890e004b76c4fd4ed886cd98230f371778062a2269fcf3"
+}

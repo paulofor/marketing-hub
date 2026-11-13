@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-verificavel-calibracao-confianca-agente-ia",
+  "collection": "neuromarketing",
+  "title": "Feedback verificável ajuda a calibrar confiança em conselhos da IA",
+  "finding": "Quatro experimentos com aconselhamento repetido encontraram, com feedback da resposta correta, persuasão de 67% para assistentes historicamente corretos versus 21% para os incorretos; sem feedback, assistentes sistematicamente errados ainda persuadiram em 48% das situações (contra 38% para os corretos).",
+  "mechanism": "Interpretação: feedback independente e imediato sobre acertos e erros favorece ajuste da confiança; sem verificação, a fluência conversacional pode sustentar dependência de recomendações incorretas. Não há prova do mecanismo por avaliação de neurociência.",
+  "commercialApplication": "Em agentes de atendimento e recomendação, mostrar evidências verificáveis de preços, prazos e características, registrar correções e oferecer revisão humana; não criar placares de precisão sem dados reais.",
+  "evidenceStrength": "Quatro experimentos de laboratório, preprint não revisado por pares de 10/11/2026. Evidência experimental para dependência de aconselhamento em problemas de raciocínio, sem prova em consumo ou conversão.",
+  "publishedOn": "2026-11-13",
+  "validUntil": "2026-12-28",
+  "experimentHypothesis": "Disponibilizar verificação independente e feedback claro sobre erros reduzirá a aceitação de respostas incorretas em tarefas avaliáveis de atendimento, sem diminuir conclusão correta de demandas.",
+  "risks": "Confiança exagerada em indicadores autoavaliados, falsa sensação de precisão, pressão persuasiva, confusão entre persuadir e orientar; não usar feedback para manipular decisões de compra.",
+  "limits": "Tarefas curtas com respostas objetivamente verificáveis e aconselhamento induzido; não houve pedidos reais, consumidor brasileiro, histórico de suporte, receita, CTA ou pagamento.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-13-feedback-acuracia-confianca-agente.md",
+  "sourceTitle": "Fonte revisada — Feedback de acurácia e calibração da confiança em assistentes de IA",
+  "sourceSha256": "e5fb4aaa2f91129a66984459362ea5d62b30678d32eec0e59d21dcf0a36ffb3a"
+}

@@ -146,6 +146,27 @@ class PdeReleaseContractTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "comentário opcional"):
                 MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: ready)
 
+    def test_continuous_private_candidate_waits_for_its_own_contract(self):
+        surface = MODULE.select_surface(self.inventory, "v10")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-style-v15-preparation-v2.json")
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        version = "musa-consultor-pwa-v1"
+        contract["privateExperience"] = {
+            "prototypeVersion": version, "pagePath": f"/experiences/{version}/agent-validation",
+            "contractPath": "/api/pde/vega/consultor/v1/contract",
+            "backendContractUrl": "http://191.252.181.168/api/pde/vega/consultor/v1/contract",
+            "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES", "providerCalls": 0,
+            "commercialLaunchClaimed": False,
+        }
+        capability = {"prototypeVersion": version, "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+                      "providerCalls": 0, "trafficClass": "AGENT_VALIDATION", "sessionLimit": 18}
+        fetch = mock.Mock(return_value=capability)
+        self.assertTrue(MODULE.wait_private_capability(surface, contract, source, 0, fetch=fetch))
+        fetch.assert_called_once_with(contract["privateExperience"]["backendContractUrl"])
+        wrong = dict(capability, prototypeVersion="musa-pde-entry-v17-continuidade-clara")
+        with self.assertRaisesRegex(ValueError, "não pode ser promovida"):
+            MODULE.wait_private_capability(surface, contract, source, 0, fetch=lambda _: wrong)
+
     def test_commercial_mira_has_its_own_runtime_identity(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         self.assertEqual(

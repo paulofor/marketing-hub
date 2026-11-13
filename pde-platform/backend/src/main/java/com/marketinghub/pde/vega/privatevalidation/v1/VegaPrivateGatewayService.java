@@ -70,9 +70,19 @@ public class VegaPrivateGatewayService {
         method, "/api/pde/vega/style/v1" + path, body, "X-Vega-Style-Session", session, internal);
   }
 
+  /** Transporta o MUSA contínuo somente por caminhos oficiais, sem conceder credenciais. */
+  public ResponseEntity<String> forwardConsultor(
+      String method, String path, String body, String session, String internal) {
+    if (!path.matches(
+        "/(contract|login|logout|workspace|commands|operations/[A-Za-z0-9-]{16,80}|internal/(report|events|cycles/[1-9][0-9]*/(access|close)|access/[a-f0-9-]{36}/renew))"))
+      throw new IllegalArgumentException("Operação fora do contrato MUSA contínuo.");
+    return transport(
+        method, "/api/pde/vega/consultor/v1" + path, body, "X-Musa-Session", session, internal);
+  }
+
   /**
    * Negocia o formato tipado e mantém status e conteúdo da resposta oficial sem expor credenciais
-   * nos logs ou no navegador.
+   * nos logs ou no JavaScript; preserva o cookie HttpOnly emitido pelo backend.
    */
   private ResponseEntity<String> transport(
       String method, String path, String body, String header, String token, String internal) {
@@ -110,6 +120,13 @@ public class VegaPrivateGatewayService {
               response.headers().firstValue("Content-Type").orElse("application/json"))
           .header("Cache-Control", "private, no-store")
           .header("Referrer-Policy", "no-referrer")
+          .header("X-Robots-Tag", "noindex, nofollow, noarchive")
+          .headers(
+              headers ->
+                  response
+                      .headers()
+                      .firstValue("Set-Cookie")
+                      .ifPresent(value -> headers.add("Set-Cookie", value)))
           .body(response.body());
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();

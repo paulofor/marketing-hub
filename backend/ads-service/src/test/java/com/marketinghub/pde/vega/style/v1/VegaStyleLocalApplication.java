@@ -41,7 +41,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
   VegaPrivateService.class,
   VegaPrivateController.class,
   VegaStyleService.class,
-  VegaStyleController.class
+  VegaStyleController.class,
+  com.marketinghub.pde.vega.consultor.v1.service.MusaConsultorService.class,
+  com.marketinghub.pde.vega.consultor.v1.controller.MusaConsultorController.class
 })
 public class VegaStyleLocalApplication {
   /** Inicia as duas versões isoladas com banco MySQL local e credencial sintética. */

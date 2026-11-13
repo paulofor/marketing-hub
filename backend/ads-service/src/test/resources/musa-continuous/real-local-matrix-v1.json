@@ -1,0 +1,1468 @@
+{
+  "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+  "mode": "TECHNICAL",
+  "decision": "APPROVED",
+  "prototypeVersion": "musa-consultor-pwa-v1",
+  "runtimeContract": "MUSA_CONTINUOUS_STYLE_EXECUTION_V1",
+  "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+  "providerCalls": 0,
+  "modelFunctionalBehaviorClaimed": false,
+  "trafficClass": "AGENT_VALIDATION",
+  "internalMarker": "mh_internal_test",
+  "inputComparisonApplicable": false,
+  "startedAt": "2026-11-13T06:05:05.593Z",
+  "finishedAt": "2026-11-13T06:05:17.118Z",
+  "durationSeconds": 12,
+  "devices": [
+    {
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-97f30180-b4f7-4633-a49d-87b211de0fec",
+        "musa-continuous-fa0b8a10-bb4c-4fc4-b546-dc2198f2f42b",
+        "musa-continuous-2ee4ad9d-beee-414b-8c64-b598e5e97277"
+      ]
+    },
+    {
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-b41d956c-52bf-4fe1-9cf8-a9e448bcac79",
+        "musa-continuous-b64dcf77-3457-4588-a645-baf2cc872bb8",
+        "musa-continuous-11f292af-808b-4e46-86ba-c2828db8de62"
+      ]
+    },
+    {
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-bf9dbacb-e6d8-4deb-8138-4fe810700f0f",
+        "musa-continuous-966136bd-5be6-4824-8cde-36a52d9ed35f",
+        "musa-continuous-22bbf3bd-f0ec-443a-94ed-655012f14fd1"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "97f30180-b4f7-4633-a49d-87b211de0fec",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-97f30180-b4f7-4633-a49d-87b211de0fec"
+      ],
+      "operations": {
+        "ccc01ceb-a105-4b11-a886-3e892ff29d27": {
+          "request": {
+            "operationKey": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+          "startedAt": "2026-11-13T06:04:30.972860705Z",
+          "inputsCompletedAt": "2026-11-13T06:04:31.237258575Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:04:31.237318746Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "0cc44630-5700-4343-a105-36571cde9704": {
+          "request": {
+            "operationKey": "0cc44630-5700-4343-a105-36571cde9704",
+            "revision": 6,
+            "answers": {
+              "occasion": "videochamada de trabalho",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": "ccc01ceb-a105-4b11-a886-3e892ff29d27"
+          },
+          "operationId": "0cc44630-5700-4343-a105-36571cde9704",
+          "startedAt": "2026-11-13T06:04:30.972860705Z",
+          "inputsCompletedAt": "2026-11-13T06:04:31.917272374Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+          "ruleId": "SCARF_VIDEO_NECK",
+          "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+          "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+          "limitation": "",
+          "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+          "finishedAt": "2026-11-13T06:04:31.917355635Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {
+        "ccc01ceb-a105-4b11-a886-3e892ff29d27": {
+          "request": {
+            "operationKey": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+          "startedAt": "2026-11-13T06:04:30.972860705Z",
+          "inputsCompletedAt": "2026-11-13T06:04:31.237258575Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:04:31.237318746Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:04:31.339756419Z"
+        },
+        "0cc44630-5700-4343-a105-36571cde9704": {
+          "request": {
+            "operationKey": "0cc44630-5700-4343-a105-36571cde9704",
+            "revision": 6,
+            "answers": {
+              "occasion": "videochamada de trabalho",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": "ccc01ceb-a105-4b11-a886-3e892ff29d27"
+          },
+          "operationId": "0cc44630-5700-4343-a105-36571cde9704",
+          "startedAt": "2026-11-13T06:04:30.972860705Z",
+          "inputsCompletedAt": "2026-11-13T06:04:31.917272374Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+          "ruleId": "SCARF_VIDEO_NECK",
+          "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+          "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+          "limitation": "",
+          "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+          "finishedAt": "2026-11-13T06:04:31.917355635Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:04:32.037065660Z"
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "ccc01ceb-a105-4b11-a886-3e892ff29d27": "2026-11-13T06:04:30.972860705Z",
+          "0cc44630-5700-4343-a105-36571cde9704": "2026-11-13T06:04:30.972860705Z"
+        },
+        "VALUE_MOMENT": {
+          "ccc01ceb-a105-4b11-a886-3e892ff29d27": "2026-11-13T06:04:31.299233766Z",
+          "0cc44630-5700-4343-a105-36571cde9704": "2026-11-13T06:04:31.985911414Z"
+        },
+        "READY_RESULT_USED": {
+          "0cc44630-5700-4343-a105-36571cde9704": "2026-11-13T06:04:32.171284043Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "0cc44630-5700-4343-a105-36571cde9704": "2026-11-13T06:04:32.275717859Z"
+        },
+        "CHECKOUT_STARTED": {
+          "0cc44630-5700-4343-a105-36571cde9704": "2026-11-13T06:04:32.298921207Z"
+        }
+      },
+      "card": {
+        "request": {
+          "operationKey": "0cc44630-5700-4343-a105-36571cde9704",
+          "revision": 6,
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "ccc01ceb-a105-4b11-a886-3e892ff29d27"
+        },
+        "operationId": "0cc44630-5700-4343-a105-36571cde9704",
+        "startedAt": "2026-11-13T06:04:30.972860705Z",
+        "inputsCompletedAt": "2026-11-13T06:04:31.917272374Z",
+        "status": "COMPLETED",
+        "answers": {
+          "occasion": "videochamada de trabalho",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "parentChoiceId": "ccc01ceb-a105-4b11-a886-3e892ff29d27",
+        "ruleId": "SCARF_VIDEO_NECK",
+        "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+        "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+        "limitation": "",
+        "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+        "finishedAt": "2026-11-13T06:04:31.917355635Z",
+        "providerCalls": 0,
+        "incrementalInferenceCostUsd": 0
+      },
+      "replayOperationId": null,
+      "repeatedWithoutDuplicate": false,
+      "responseLost": false,
+      "crossOwnerDenied": false,
+      "crossOwnerStatus": null,
+      "resumed": true,
+      "recovered": false,
+      "continuousJourney": true,
+      "safetyBlocked": false,
+      "resultReadySeconds": 2,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "b41d956c-52bf-4fe1-9cf8-a9e448bcac79",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-b41d956c-52bf-4fe1-9cf8-a9e448bcac79"
+      ],
+      "operations": {
+        "de918918-7088-49d4-a52a-69b3ff8ae939": {
+          "request": {
+            "operationKey": "de918918-7088-49d4-a52a-69b3ff8ae939",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "de918918-7088-49d4-a52a-69b3ff8ae939",
+          "startedAt": "2026-11-13T06:04:33.176543737Z",
+          "inputsCompletedAt": "2026-11-13T06:04:33.436797374Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:04:33.436833805Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "730d6b6c-ce22-4d3e-aa17-768f4b056480": {
+          "request": {
+            "operationKey": "730d6b6c-ce22-4d3e-aa17-768f4b056480",
+            "revision": 6,
+            "answers": {
+              "occasion": "videochamada de trabalho",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": "de918918-7088-49d4-a52a-69b3ff8ae939"
+          },
+          "operationId": "730d6b6c-ce22-4d3e-aa17-768f4b056480",
+          "startedAt": "2026-11-13T06:04:33.176543737Z",
+          "inputsCompletedAt": "2026-11-13T06:04:34.189450117Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "de918918-7088-49d4-a52a-69b3ff8ae939",
+          "ruleId": "SCARF_VIDEO_NECK",
+          "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+          "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+          "limitation": "",
+          "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+          "finishedAt": "2026-11-13T06:04:34.189514978Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {
+        "de918918-7088-49d4-a52a-69b3ff8ae939": {
+          "request": {
+            "operationKey": "de918918-7088-49d4-a52a-69b3ff8ae939",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "de918918-7088-49d4-a52a-69b3ff8ae939",
+          "startedAt": "2026-11-13T06:04:33.176543737Z",
+          "inputsCompletedAt": "2026-11-13T06:04:33.436797374Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:04:33.436833805Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:04:33.555427044Z"
+        },
+        "730d6b6c-ce22-4d3e-aa17-768f4b056480": {
+          "request": {
+            "operationKey": "730d6b6c-ce22-4d3e-aa17-768f4b056480",
+            "revision": 6,
+            "answers": {
+              "occasion": "videochamada de trabalho",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": "de918918-7088-49d4-a52a-69b3ff8ae939"
+          },
+          "operationId": "730d6b6c-ce22-4d3e-aa17-768f4b056480",
+          "startedAt": "2026-11-13T06:04:33.176543737Z",
+          "inputsCompletedAt": "2026-11-13T06:04:34.189450117Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "de918918-7088-49d4-a52a-69b3ff8ae939",
+          "ruleId": "SCARF_VIDEO_NECK",
+          "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+          "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+          "limitation": "",
+          "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+          "finishedAt": "2026-11-13T06:04:34.189514978Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:04:34.308284459Z"
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "de918918-7088-49d4-a52a-69b3ff8ae939": "2026-11-13T06:04:33.176543737Z",
+          "730d6b6c-ce22-4d3e-aa17-768f4b056480": "2026-11-13T06:04:33.176543737Z"
+        },
+        "VALUE_MOMENT": {
+          "de918918-7088-49d4-a52a-69b3ff8ae939": "2026-11-13T06:04:33.515159323Z",
+          "730d6b6c-ce22-4d3e-aa17-768f4b056480": "2026-11-13T06:04:34.264427406Z"
+        },
+        "READY_RESULT_USED": {
+          "730d6b6c-ce22-4d3e-aa17-768f4b056480": "2026-11-13T06:04:34.441774577Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "730d6b6c-ce22-4d3e-aa17-768f4b056480": "2026-11-13T06:04:34.490273956Z"
+        },
+        "CHECKOUT_STARTED": {
+          "730d6b6c-ce22-4d3e-aa17-768f4b056480": "2026-11-13T06:04:34.517344509Z"
+        }
+      },
+      "card": {
+        "request": {
+          "operationKey": "730d6b6c-ce22-4d3e-aa17-768f4b056480",
+          "revision": 6,
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "de918918-7088-49d4-a52a-69b3ff8ae939"
+        },
+        "operationId": "730d6b6c-ce22-4d3e-aa17-768f4b056480",
+        "startedAt": "2026-11-13T06:04:33.176543737Z",
+        "inputsCompletedAt": "2026-11-13T06:04:34.189450117Z",
+        "status": "COMPLETED",
+        "answers": {
+          "occasion": "videochamada de trabalho",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "parentChoiceId": "de918918-7088-49d4-a52a-69b3ff8ae939",
+        "ruleId": "SCARF_VIDEO_NECK",
+        "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+        "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+        "limitation": "",
+        "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+        "finishedAt": "2026-11-13T06:04:34.189514978Z",
+        "providerCalls": 0,
+        "incrementalInferenceCostUsd": 0
+      },
+      "replayOperationId": null,
+      "repeatedWithoutDuplicate": false,
+      "responseLost": false,
+      "crossOwnerDenied": false,
+      "crossOwnerStatus": null,
+      "resumed": true,
+      "recovered": false,
+      "continuousJourney": true,
+      "safetyBlocked": false,
+      "resultReadySeconds": 2,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "bf9dbacb-e6d8-4deb-8138-4fe810700f0f",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-bf9dbacb-e6d8-4deb-8138-4fe810700f0f"
+      ],
+      "operations": {
+        "5ad9238c-0842-4495-b034-25794372d499": {
+          "request": {
+            "operationKey": "5ad9238c-0842-4495-b034-25794372d499",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "5ad9238c-0842-4495-b034-25794372d499",
+          "startedAt": "2026-11-13T06:04:35.685283646Z",
+          "inputsCompletedAt": "2026-11-13T06:04:35.955146310Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:04:35.955178310Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "c5f7d8ae-9990-4313-9ad0-2fdc14480682": {
+          "request": {
+            "operationKey": "c5f7d8ae-9990-4313-9ad0-2fdc14480682",
+            "revision": 6,
+            "answers": {
+              "occasion": "videochamada de trabalho",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": "5ad9238c-0842-4495-b034-25794372d499"
+          },
+          "operationId": "c5f7d8ae-9990-4313-9ad0-2fdc14480682",
+          "startedAt": "2026-11-13T06:04:35.685283646Z",
+          "inputsCompletedAt": "2026-11-13T06:04:36.643001365Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "5ad9238c-0842-4495-b034-25794372d499",
+          "ruleId": "SCARF_VIDEO_NECK",
+          "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+          "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+          "limitation": "",
+          "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+          "finishedAt": "2026-11-13T06:04:36.643096835Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {
+        "5ad9238c-0842-4495-b034-25794372d499": {
+          "request": {
+            "operationKey": "5ad9238c-0842-4495-b034-25794372d499",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "5ad9238c-0842-4495-b034-25794372d499",
+          "startedAt": "2026-11-13T06:04:35.685283646Z",
+          "inputsCompletedAt": "2026-11-13T06:04:35.955146310Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:04:35.955178310Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:04:36.084870406Z"
+        },
+        "c5f7d8ae-9990-4313-9ad0-2fdc14480682": {
+          "request": {
+            "operationKey": "c5f7d8ae-9990-4313-9ad0-2fdc14480682",
+            "revision": 6,
+            "answers": {
+              "occasion": "videochamada de trabalho",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": "5ad9238c-0842-4495-b034-25794372d499"
+          },
+          "operationId": "c5f7d8ae-9990-4313-9ad0-2fdc14480682",
+          "startedAt": "2026-11-13T06:04:35.685283646Z",
+          "inputsCompletedAt": "2026-11-13T06:04:36.643001365Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "5ad9238c-0842-4495-b034-25794372d499",
+          "ruleId": "SCARF_VIDEO_NECK",
+          "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+          "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+          "limitation": "",
+          "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+          "finishedAt": "2026-11-13T06:04:36.643096835Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:04:36.788530145Z"
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "5ad9238c-0842-4495-b034-25794372d499": "2026-11-13T06:04:35.685283646Z",
+          "c5f7d8ae-9990-4313-9ad0-2fdc14480682": "2026-11-13T06:04:35.685283646Z"
+        },
+        "VALUE_MOMENT": {
+          "5ad9238c-0842-4495-b034-25794372d499": "2026-11-13T06:04:36.014590345Z",
+          "c5f7d8ae-9990-4313-9ad0-2fdc14480682": "2026-11-13T06:04:36.714049600Z"
+        },
+        "READY_RESULT_USED": {
+          "c5f7d8ae-9990-4313-9ad0-2fdc14480682": "2026-11-13T06:04:36.920474645Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "c5f7d8ae-9990-4313-9ad0-2fdc14480682": "2026-11-13T06:04:36.976406760Z"
+        },
+        "CHECKOUT_STARTED": {
+          "c5f7d8ae-9990-4313-9ad0-2fdc14480682": "2026-11-13T06:04:37.000150771Z"
+        }
+      },
+      "card": {
+        "request": {
+          "operationKey": "c5f7d8ae-9990-4313-9ad0-2fdc14480682",
+          "revision": 6,
+          "answers": {
+            "occasion": "videochamada de trabalho",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "5ad9238c-0842-4495-b034-25794372d499"
+        },
+        "operationId": "c5f7d8ae-9990-4313-9ad0-2fdc14480682",
+        "startedAt": "2026-11-13T06:04:35.685283646Z",
+        "inputsCompletedAt": "2026-11-13T06:04:36.643001365Z",
+        "status": "COMPLETED",
+        "answers": {
+          "occasion": "videochamada de trabalho",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "parentChoiceId": "5ad9238c-0842-4495-b034-25794372d499",
+        "ruleId": "SCARF_VIDEO_NECK",
+        "action": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+        "reason": "Na videochamada, você pode conferir esse detalhe no enquadramento antes de começar. O lenço e essa forma de usar já fazem parte das suas opções.",
+        "limitation": "",
+        "continuity": "Escolha anterior preservada: almoço. Peças recuperadas e preferência vigente aplicadas à nova ocasião.",
+        "finishedAt": "2026-11-13T06:04:36.643096835Z",
+        "providerCalls": 0,
+        "incrementalInferenceCostUsd": 0
+      },
+      "replayOperationId": null,
+      "repeatedWithoutDuplicate": false,
+      "responseLost": false,
+      "crossOwnerDenied": false,
+      "crossOwnerStatus": null,
+      "resumed": true,
+      "recovered": false,
+      "continuousJourney": true,
+      "safetyBlocked": false,
+      "resultReadySeconds": 2,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "fa0b8a10-bb4c-4fc4-b546-dc2198f2f42b",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-fa0b8a10-bb4c-4fc4-b546-dc2198f2f42b"
+      ],
+      "operations": {
+        "06680941-1526-401c-842f-6c8461fcd0dc": {
+          "request": {
+            "operationKey": "06680941-1526-401c-842f-6c8461fcd0dc",
+            "revision": 2,
+            "answers": {
+              "occasion": "passeio",
+              "existingSelection": "camisa e calça",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "06680941-1526-401c-842f-6c8461fcd0dc",
+          "startedAt": "2026-11-13T06:05:06.622059429Z",
+          "inputsCompletedAt": "2026-11-13T06:05:06.887117624Z",
+          "status": "BLOCKED",
+          "answers": {
+            "occasion": "passeio",
+            "existingSelection": "camisa e calça",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "INPUT_UNSUPPORTED",
+          "action": "",
+          "reason": "",
+          "limitation": "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada.",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:06.887168884Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "dccdec70-a085-4b5b-81b9-b8f2a521695c": {
+          "request": {
+            "operationKey": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+            "revision": 5,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+          "startedAt": "2026-11-13T06:05:06.622059429Z",
+          "inputsCompletedAt": "2026-11-13T06:05:07.288777616Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:07.288798736Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {
+        "dccdec70-a085-4b5b-81b9-b8f2a521695c": {
+          "request": {
+            "operationKey": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+            "revision": 5,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+          "startedAt": "2026-11-13T06:05:06.622059429Z",
+          "inputsCompletedAt": "2026-11-13T06:05:07.288777616Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:07.288798736Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:05:07.403191911Z"
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "06680941-1526-401c-842f-6c8461fcd0dc": "2026-11-13T06:05:06.622059429Z",
+          "dccdec70-a085-4b5b-81b9-b8f2a521695c": "2026-11-13T06:05:06.622059429Z"
+        },
+        "VALUE_MOMENT": {
+          "dccdec70-a085-4b5b-81b9-b8f2a521695c": "2026-11-13T06:05:07.364550849Z"
+        },
+        "READY_RESULT_USED": {
+          "dccdec70-a085-4b5b-81b9-b8f2a521695c": "2026-11-13T06:05:07.560249270Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "dccdec70-a085-4b5b-81b9-b8f2a521695c": "2026-11-13T06:05:07.897873260Z"
+        },
+        "CHECKOUT_STARTED": {
+          "dccdec70-a085-4b5b-81b9-b8f2a521695c": "2026-11-13T06:05:07.916092168Z"
+        }
+      },
+      "card": {
+        "request": {
+          "operationKey": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+          "revision": 5,
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": ""
+        },
+        "operationId": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+        "startedAt": "2026-11-13T06:05:06.622059429Z",
+        "inputsCompletedAt": "2026-11-13T06:05:07.288777616Z",
+        "status": "COMPLETED",
+        "answers": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "parentChoiceId": "",
+        "ruleId": "SCARF_MEAL_STRAP",
+        "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+        "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "limitation": "",
+        "continuity": "",
+        "finishedAt": "2026-11-13T06:05:07.288798736Z",
+        "providerCalls": 0,
+        "incrementalInferenceCostUsd": 0
+      },
+      "replayOperationId": "dccdec70-a085-4b5b-81b9-b8f2a521695c",
+      "repeatedWithoutDuplicate": true,
+      "responseLost": true,
+      "crossOwnerDenied": false,
+      "crossOwnerStatus": null,
+      "resumed": true,
+      "recovered": true,
+      "continuousJourney": false,
+      "safetyBlocked": false,
+      "resultReadySeconds": 2,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "b64dcf77-3457-4588-a645-baf2cc872bb8",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-b64dcf77-3457-4588-a645-baf2cc872bb8"
+      ],
+      "operations": {
+        "d8ad6be7-0f24-4dba-b91c-93bc404ac636": {
+          "request": {
+            "operationKey": "d8ad6be7-0f24-4dba-b91c-93bc404ac636",
+            "revision": 2,
+            "answers": {
+              "occasion": "passeio",
+              "existingSelection": "camisa e calça",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "d8ad6be7-0f24-4dba-b91c-93bc404ac636",
+          "startedAt": "2026-11-13T06:05:08.821573215Z",
+          "inputsCompletedAt": "2026-11-13T06:05:09.083670022Z",
+          "status": "BLOCKED",
+          "answers": {
+            "occasion": "passeio",
+            "existingSelection": "camisa e calça",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "INPUT_UNSUPPORTED",
+          "action": "",
+          "reason": "",
+          "limitation": "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada.",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:09.083682692Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": {
+          "request": {
+            "operationKey": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+            "revision": 5,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+          "startedAt": "2026-11-13T06:05:08.821573215Z",
+          "inputsCompletedAt": "2026-11-13T06:05:09.503092401Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:09.503124262Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {
+        "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": {
+          "request": {
+            "operationKey": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+            "revision": 5,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+          "startedAt": "2026-11-13T06:05:08.821573215Z",
+          "inputsCompletedAt": "2026-11-13T06:05:09.503092401Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:09.503124262Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:05:09.657007842Z"
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "d8ad6be7-0f24-4dba-b91c-93bc404ac636": "2026-11-13T06:05:08.821573215Z",
+          "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": "2026-11-13T06:05:08.821573215Z"
+        },
+        "VALUE_MOMENT": {
+          "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": "2026-11-13T06:05:09.584045276Z"
+        },
+        "READY_RESULT_USED": {
+          "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": "2026-11-13T06:05:09.820449470Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": "2026-11-13T06:05:10.180020901Z"
+        },
+        "CHECKOUT_STARTED": {
+          "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2": "2026-11-13T06:05:10.198558032Z"
+        }
+      },
+      "card": {
+        "request": {
+          "operationKey": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+          "revision": 5,
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": ""
+        },
+        "operationId": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+        "startedAt": "2026-11-13T06:05:08.821573215Z",
+        "inputsCompletedAt": "2026-11-13T06:05:09.503092401Z",
+        "status": "COMPLETED",
+        "answers": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "parentChoiceId": "",
+        "ruleId": "SCARF_MEAL_STRAP",
+        "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+        "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "limitation": "",
+        "continuity": "",
+        "finishedAt": "2026-11-13T06:05:09.503124262Z",
+        "providerCalls": 0,
+        "incrementalInferenceCostUsd": 0
+      },
+      "replayOperationId": "657a7ded-d6c8-4e0e-8e75-f5fcdbf537d2",
+      "repeatedWithoutDuplicate": true,
+      "responseLost": true,
+      "crossOwnerDenied": false,
+      "crossOwnerStatus": null,
+      "resumed": true,
+      "recovered": true,
+      "continuousJourney": false,
+      "safetyBlocked": false,
+      "resultReadySeconds": 2,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "966136bd-5be6-4824-8cde-36a52d9ed35f",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-966136bd-5be6-4824-8cde-36a52d9ed35f"
+      ],
+      "operations": {
+        "3a742114-08ca-4456-8809-f58739ea7875": {
+          "request": {
+            "operationKey": "3a742114-08ca-4456-8809-f58739ea7875",
+            "revision": 2,
+            "answers": {
+              "occasion": "passeio",
+              "existingSelection": "camisa e calça",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "3a742114-08ca-4456-8809-f58739ea7875",
+          "startedAt": "2026-11-13T06:05:11.270704575Z",
+          "inputsCompletedAt": "2026-11-13T06:05:11.542386321Z",
+          "status": "BLOCKED",
+          "answers": {
+            "occasion": "passeio",
+            "existingSelection": "camisa e calça",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "INPUT_UNSUPPORTED",
+          "action": "",
+          "reason": "",
+          "limitation": "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada.",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:11.542401441Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        },
+        "c2bff76e-69a6-4306-814a-ef4bf8ed2443": {
+          "request": {
+            "operationKey": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+            "revision": 5,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+          "startedAt": "2026-11-13T06:05:11.270704575Z",
+          "inputsCompletedAt": "2026-11-13T06:05:11.977410643Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:11.977441565Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {
+        "c2bff76e-69a6-4306-814a-ef4bf8ed2443": {
+          "request": {
+            "operationKey": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+            "revision": 5,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+          "startedAt": "2026-11-13T06:05:11.270704575Z",
+          "inputsCompletedAt": "2026-11-13T06:05:11.977410643Z",
+          "status": "COMPLETED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "SCARF_MEAL_STRAP",
+          "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+          "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+          "limitation": "",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:11.977441565Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0,
+          "savedAt": "2026-11-13T06:05:12.136669097Z"
+        }
+      },
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "3a742114-08ca-4456-8809-f58739ea7875": "2026-11-13T06:05:11.270704575Z",
+          "c2bff76e-69a6-4306-814a-ef4bf8ed2443": "2026-11-13T06:05:11.270704575Z"
+        },
+        "VALUE_MOMENT": {
+          "c2bff76e-69a6-4306-814a-ef4bf8ed2443": "2026-11-13T06:05:12.068859621Z"
+        },
+        "READY_RESULT_USED": {
+          "c2bff76e-69a6-4306-814a-ef4bf8ed2443": "2026-11-13T06:05:12.298994947Z"
+        },
+        "PREFERRED_OVER_FREE": {
+          "c2bff76e-69a6-4306-814a-ef4bf8ed2443": "2026-11-13T06:05:12.708211016Z"
+        },
+        "CHECKOUT_STARTED": {
+          "c2bff76e-69a6-4306-814a-ef4bf8ed2443": "2026-11-13T06:05:12.724997127Z"
+        }
+      },
+      "card": {
+        "request": {
+          "operationKey": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+          "revision": 5,
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": ""
+        },
+        "operationId": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+        "startedAt": "2026-11-13T06:05:11.270704575Z",
+        "inputsCompletedAt": "2026-11-13T06:05:11.977410643Z",
+        "status": "COMPLETED",
+        "answers": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça da bolsa.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "parentChoiceId": "",
+        "ruleId": "SCARF_MEAL_STRAP",
+        "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+        "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+        "limitation": "",
+        "continuity": "",
+        "finishedAt": "2026-11-13T06:05:11.977441565Z",
+        "providerCalls": 0,
+        "incrementalInferenceCostUsd": 0
+      },
+      "replayOperationId": "c2bff76e-69a6-4306-814a-ef4bf8ed2443",
+      "repeatedWithoutDuplicate": true,
+      "responseLost": true,
+      "crossOwnerDenied": false,
+      "crossOwnerStatus": null,
+      "resumed": true,
+      "recovered": true,
+      "continuousJourney": false,
+      "safetyBlocked": false,
+      "resultReadySeconds": 2,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "2ee4ad9d-beee-414b-8c64-b598e5e97277",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-2ee4ad9d-beee-414b-8c64-b598e5e97277"
+      ],
+      "operations": {
+        "123324f5-6fc3-454d-b2c4-3917154faa80": {
+          "request": {
+            "operationKey": "123324f5-6fc3-454d-b2c4-3917154faa80",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "quero comprar roupa nova",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "123324f5-6fc3-454d-b2c4-3917154faa80",
+          "startedAt": "2026-11-13T06:05:13.717199142Z",
+          "inputsCompletedAt": "2026-11-13T06:05:13.973165783Z",
+          "status": "BLOCKED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "quero comprar roupa nova",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "INPUT_UNSUPPORTED",
+          "action": "",
+          "reason": "",
+          "limitation": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo.",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:13.973203083Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {},
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "123324f5-6fc3-454d-b2c4-3917154faa80": "2026-11-13T06:05:13.717199142Z"
+        }
+      },
+      "card": null,
+      "replayOperationId": null,
+      "repeatedWithoutDuplicate": false,
+      "responseLost": false,
+      "crossOwnerDenied": true,
+      "crossOwnerStatus": 409,
+      "resumed": false,
+      "recovered": false,
+      "continuousJourney": false,
+      "safetyBlocked": true,
+      "resultReadySeconds": 1,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "11f292af-808b-4e46-86ba-c2828db8de62",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-11f292af-808b-4e46-86ba-c2828db8de62"
+      ],
+      "operations": {
+        "7b0130c9-e8d3-4221-a6f4-b80841783616": {
+          "request": {
+            "operationKey": "7b0130c9-e8d3-4221-a6f4-b80841783616",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "quero comprar roupa nova",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "7b0130c9-e8d3-4221-a6f4-b80841783616",
+          "startedAt": "2026-11-13T06:05:14.990322658Z",
+          "inputsCompletedAt": "2026-11-13T06:05:15.250841426Z",
+          "status": "BLOCKED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "quero comprar roupa nova",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "INPUT_UNSUPPORTED",
+          "action": "",
+          "reason": "",
+          "limitation": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo.",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:15.250871917Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {},
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "7b0130c9-e8d3-4221-a6f4-b80841783616": "2026-11-13T06:05:14.990322658Z"
+        }
+      },
+      "card": null,
+      "replayOperationId": null,
+      "repeatedWithoutDuplicate": false,
+      "responseLost": false,
+      "crossOwnerDenied": true,
+      "crossOwnerStatus": 409,
+      "resumed": false,
+      "recovered": false,
+      "continuousJourney": false,
+      "safetyBlocked": true,
+      "resultReadySeconds": 1,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "evidenceId": "22bbf3bd-f0ec-443a-94ed-655012f14fd1",
+      "screenshotEvidenceKeys": [
+        "musa-continuous-22bbf3bd-f0ec-443a-94ed-655012f14fd1"
+      ],
+      "operations": {
+        "9f971629-5c00-41f5-88c5-cdc418310d61": {
+          "request": {
+            "operationKey": "9f971629-5c00-41f5-88c5-cdc418310d61",
+            "revision": 2,
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "quero comprar roupa nova",
+              "stylePreference": "Cor e criatividade"
+            },
+            "parentChoiceId": ""
+          },
+          "operationId": "9f971629-5c00-41f5-88c5-cdc418310d61",
+          "startedAt": "2026-11-13T06:05:16.386783201Z",
+          "inputsCompletedAt": "2026-11-13T06:05:16.634083411Z",
+          "status": "BLOCKED",
+          "answers": {
+            "occasion": "almoço",
+            "existingSelection": "quero comprar roupa nova",
+            "stylePreference": "Cor e criatividade"
+          },
+          "parentChoiceId": "",
+          "ruleId": "INPUT_UNSUPPORTED",
+          "action": "",
+          "reason": "",
+          "limitation": "Esta orientação usa apenas as peças disponíveis. Não recomenda compras nem avalia saúde ou corpo.",
+          "continuity": "",
+          "finishedAt": "2026-11-13T06:05:16.634118801Z",
+          "providerCalls": 0,
+          "incrementalInferenceCostUsd": 0
+        }
+      },
+      "choices": {},
+      "events": {
+        "EXPERIENCE_STARTED": {
+          "9f971629-5c00-41f5-88c5-cdc418310d61": "2026-11-13T06:05:16.386783201Z"
+        }
+      },
+      "card": null,
+      "replayOperationId": null,
+      "repeatedWithoutDuplicate": false,
+      "responseLost": false,
+      "crossOwnerDenied": true,
+      "crossOwnerStatus": 409,
+      "resumed": false,
+      "recovered": false,
+      "continuousJourney": false,
+      "safetyBlocked": true,
+      "resultReadySeconds": 1,
+      "accessibilityBasic": true,
+      "noHorizontalOverflow": true,
+      "zoom200": true,
+      "privacyPreserved": true,
+      "trafficClass": "AGENT_VALIDATION",
+      "mhInternalTest": true,
+      "providerCalls": 0,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      }
+    }
+  ],
+  "checks": {
+    "sameVersion": true,
+    "desktopAndMobile": true,
+    "happyResultWithinTenMinutes": true,
+    "recoveryPreserved": true,
+    "safetyBlocked": true,
+    "accessibilityBasic": true,
+    "responsiveLayout": true,
+    "privacyPreserved": true,
+    "internalTrafficSegregated": true,
+    "paymentDisabled": true,
+    "publicationDisabled": true,
+    "campaignDisabled": true,
+    "zeroMediaSpend": true,
+    "continuousJourney": true
+  },
+  "sideEffects": {
+    "paymentEnabled": false,
+    "published": false,
+    "campaignCreated": false,
+    "mediaSpendBrl": 0
+  },
+  "humanEvidenceClaimed": false,
+  "commercialEvidenceClaimed": false,
+  "evidence": [
+    "97f30180-b4f7-4633-a49d-87b211de0fec",
+    "b41d956c-52bf-4fe1-9cf8-a9e448bcac79",
+    "bf9dbacb-e6d8-4deb-8138-4fe810700f0f",
+    "fa0b8a10-bb4c-4fc4-b546-dc2198f2f42b",
+    "b64dcf77-3457-4588-a645-baf2cc872bb8",
+    "966136bd-5be6-4824-8cde-36a52d9ed35f",
+    "2ee4ad9d-beee-414b-8c64-b598e5e97277",
+    "11f292af-808b-4e46-86ba-c2828db8de62",
+    "22bbf3bd-f0ec-443a-94ed-655012f14fd1"
+  ]
+}

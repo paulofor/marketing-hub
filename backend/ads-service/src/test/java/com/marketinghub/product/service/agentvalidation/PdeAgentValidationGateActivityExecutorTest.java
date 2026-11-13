@@ -142,6 +142,21 @@ class PdeAgentValidationGateActivityExecutorTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
+  /** Impede que o consultor contínuo seja aprovado com a matriz histórica ou runtime ausente. */
+  @Test
+  void continuousVersionRequiresOwnRuntimeMatrix() throws Exception {
+    var proof = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(technicalResult());
+    proof.put("prototypeVersion", "musa-consultor-pwa-v1");
+    Boolean accepted =
+        ReflectionTestUtils.invokeMethod(executor, "validTechnicalScenarioMatrix", proof);
+    assertThat(accepted).isFalse();
+    proof.put("runtimeContract", "UNKNOWN_RUNTIME");
+    assertThat(
+            (Boolean)
+                ReflectionTestUtils.invokeMethod(executor, "validTechnicalScenarioMatrix", proof))
+        .isFalse();
+  }
+
   /** Nem o comando direto do gate pode substituir a revisão de segurança por um aceite antigo. */
   @Test
   void directGateRequiresScopedSafetyReviewAndItsEvidence() throws Exception {

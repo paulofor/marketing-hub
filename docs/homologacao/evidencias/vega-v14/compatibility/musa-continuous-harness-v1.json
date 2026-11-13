@@ -1,0 +1,34 @@
+{
+  "contractVersion": "PDE_SHARED_HARNESS_COMPATIBILITY_V1",
+  "status": "PASS",
+  "previousCompatibilityResource": "contracts/operational-evidence/vega-operational-controls-v9.json",
+  "previousCompatibilitySha256": "a0502762984bbe7fb7ba95328f053d191244e12ce70ea2ded3c6d046d7996efd",
+  "changedSources": [
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "previousSha256": "e583a549043a3330ad70642dc4ac9fc43aaeadae30406620246550e8bdfc80e2",
+      "sha256": "9f3e6a5b507627787905bce1428b35573647429893949182ad5b493ef64ce3aa"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+      "previousSha256": "4ecccabe6ccd9120574463fe6d26eaaeac46f8df014a2e5d17affbd6d35f0bbe",
+      "sha256": "de2edcb1f41975eed82e93f53f28d8f99bedb181a28f48a9f613f7d56e180a12"
+    }
+  ],
+  "checks": {
+    "historicalBranchAndScriptPreserved": true,
+    "historicalTerminalValidatorPreserved": true,
+    "contextualV16V17StillRequireSevenDays": true,
+    "continuousVersionUsesOwnScript": true,
+    "identityDivergenceStillRejected": true,
+    "providerCalls": 0,
+    "commercialApprovalRenewed": false
+  },
+  "validation": [
+    "PdeAgentValidationHarnessRunnerTest: casos históricos e contínuos passaram; matriz MUSA real reutilizada pelo runner.",
+    "Suíte completa customer-agent-worker: 261 testes, zero falhas, 13 evidências históricas opcionais ausentes.",
+    "Matriz MUSA real com nove combinações e três cenários em outra linhagem, sem provedor.",
+    "Recibos anteriores de Vega preservados byte a byte. Nova atestação corrige somente vínculo de fonte compartilhada."
+  ],
+  "limits": "Não declara nova execução dos controles históricos nem nova homologação comercial; experiências, critérios e recibos funcionais permanecem os originais."
+}

@@ -41,13 +41,15 @@ class PdeAgentValidationHarnessRunnerTest {
   }
 
   /**
-   * V16 e sucessora exigem nove combinações próprias e recusam recibos genéricos ou incompletos.
+   * Versões contextuais e contínua exigem nove combinações próprias e recusam recibos genéricos ou
+   * incompletos.
    */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
       strings = {
         "musa-pde-entry-v16-modelagem-internacional",
-        "musa-pde-entry-v17-continuidade-clara"
+        "musa-pde-entry-v17-continuidade-clara",
+        "musa-consultor-pwa-v1"
       })
   void contextualVersionRequiresOwnRulesAndNineDistinctCombinations(String version)
       throws Exception {
@@ -65,12 +67,18 @@ class PdeAgentValidationHarnessRunnerTest {
         .put("productSlug", "metodo-musa-7-dias")
         .put("publicUrl", url)
         .put("prototypeVersion", version)
-        .put("runtimeContract", "PDE_CONTEXTUAL_STYLE_EXECUTION_V1")
+        .put(
+            "runtimeContract",
+            version.equals("musa-consultor-pwa-v1")
+                ? "MUSA_CONTINUOUS_STYLE_EXECUTION_V1"
+                : "PDE_CONTEXTUAL_STYLE_EXECUTION_V1")
+        .put("modelFunctionalBehaviorClaimed", false)
         .put("generationMode", "DETERMINISTIC_CONTEXTUAL_RULES")
         .put("providerCalls", 0)
         .put("inputComparisonApplicable", false);
     ((com.fasterxml.jackson.databind.node.ObjectNode) proof.path("checks"))
-        .put("sevenDayJourney", true);
+        .put("sevenDayJourney", true)
+        .put("continuousJourney", true);
     var scenario =
         (com.fasterxml.jackson.databind.node.ObjectNode) proof.path("scenarios").get(0).deepCopy();
     var capture =
@@ -91,7 +99,11 @@ class PdeAgentValidationHarnessRunnerTest {
             .put("finalUrl", url);
         captures.add(artifact);
       }
-    Path targetScript = template.resolveSibling("vega-contextual-style-harness.mjs");
+    Path targetScript =
+        template.resolveSibling(
+            version.equals("musa-consultor-pwa-v1")
+                ? "musa-continuous-harness.mjs"
+                : "vega-contextual-style-harness.mjs");
     Files.writeString(
         targetScript,
         script.substring(0, start) + json.writeValueAsString(proof) + script.substring(end));
@@ -142,6 +154,97 @@ class PdeAgentValidationHarnessRunnerTest {
         .hasMessageContaining("regras reais");
   }
 
+  /**
+   * Versão futura de qualquer produto com linhagem coerente exige adaptação do executor, não
+   * reconstrução.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {4, 91044})
+  void unsupportedCycleVersionIsExecutorFailure(long productId) {
+    var target =
+        Map.<String, Object>of(
+            "productId",
+            productId,
+            "experimentId",
+            91115L,
+            "productSlug",
+            "another-private-product",
+            "experienceVersion",
+            "future-private-v2",
+            "publicUrl",
+            "http://127.0.0.1:5176/future-private",
+            "pdeContext",
+            Map.of(
+                "lineage",
+                Map.of("productId", productId, "experimentId", 91115L, "learningCycleId", 91022L)));
+    var task = Map.<String, Object>of("sourceReference", "experiment:91115", "taskTarget", target);
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "synthetic", true);
+    assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
+        .isInstanceOfSatisfying(
+            PdeAgentValidationHarnessRunner.HarnessException.class,
+            error -> {
+              assertThat(error.isExecutorFailure()).isTrue();
+              assertThat(PdeAgentValidationHarnessConsumer.failureGuidance(error).get("category"))
+                  .isEqualTo("EXECUTOR_FAILURE");
+            });
+    var wrong = new HashMap<String, Object>(task);
+    wrong.put("sourceReference", "experiment:99999");
+    assertThatThrownBy(() -> runner.run(wrong, "TECHNICAL", null, temporaryDirectory))
+        .isInstanceOfSatisfying(
+            PdeAgentValidationHarnessRunner.HarnessException.class,
+            error -> assertThat(error.isExecutorFailure()).isFalse());
+  }
+
+  /** Confere a matriz contínua real e seus screenshots sem repetir navegação ou chamar modelo. */
+  @Test
+  void validatesExistingContinuousEvidenceWhenProvided() throws Exception {
+    String path = System.getenv("MUSA_CONTINUOUS_LOCAL_REPORT");
+    org.junit.jupiter.api.Assumptions.assumeTrue(path != null && !path.isBlank());
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "synthetic", true);
+    var method =
+        PdeAgentValidationHarnessRunner.class.getDeclaredMethod(
+            "validateOutput",
+            com.fasterxml.jackson.databind.JsonNode.class,
+            String.class,
+            Path.class,
+            String.class,
+            String.class,
+            Map.class);
+    method.setAccessible(true);
+    var input = json.readTree(Path.of(path).resolveSibling("harness-input.json").toFile());
+    var expected =
+        json.convertValue(
+            input, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+    var proof =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(Path.of(path).toFile());
+    assertThat(
+            (java.util.List<?>)
+                method.invoke(
+                    runner,
+                    proof,
+                    input.path("captureSessionId").asText(),
+                    Path.of(path).resolveSibling("harness-captures"),
+                    "TECHNICAL",
+                    null,
+                    expected))
+        .hasSize(9);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) proof.path("checks"))
+        .put("continuousJourney", false);
+    assertThatThrownBy(
+            () ->
+                method.invoke(
+                    runner,
+                    proof,
+                    input.path("captureSessionId").asText(),
+                    Path.of(path).resolveSibling("harness-captures"),
+                    "TECHNICAL",
+                    null,
+                    expected))
+        .hasCauseInstanceOf(PdeAgentValidationHarnessRunner.HarnessException.class);
+  }
+
   /** Reproduz #377 e explica ausência de implementação antes de iniciar navegador ou integração. */
   @Test
   void rejectsPlannedCycleWithoutExecutableUrl() {
@@ -185,7 +288,7 @@ class PdeAgentValidationHarnessRunnerTest {
         new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
 
     assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
-        .hasMessageContaining("não corresponde ao produto alvo");
+        .hasMessageContaining("Identidade da tarefa divergente");
   }
 
   /** Recusa a superfície Alcyone v1 que não possuía continuidade autenticada. */
@@ -413,7 +516,10 @@ class PdeAgentValidationHarnessRunnerTest {
                     "TECHNICAL",
                     null,
                     temporaryDirectory))
-        .hasMessageContaining("não corresponde ao produto alvo");
+        .isInstanceOfSatisfying(
+            PdeAgentValidationHarnessRunner.HarnessException.class,
+            error -> assertThat(error.isExecutorFailure()).isTrue())
+        .hasMessageContaining("não possui cenários próprios");
   }
 
   /** Recusa metadado que o backend não aceita, antes de enviar screenshots ao callback. */
@@ -495,7 +601,7 @@ class PdeAgentValidationHarnessRunnerTest {
     var runner =
         new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "synthetic", true);
     assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
-        .hasMessageContaining("não corresponde ao produto alvo");
+        .hasMessageContaining("Identidade da tarefa divergente");
   }
 
   /** Valida as capturas da rodada local real sem executar outra inferência ou repetir a matriz. */

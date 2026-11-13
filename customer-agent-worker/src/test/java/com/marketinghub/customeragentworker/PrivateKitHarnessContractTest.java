@@ -154,7 +154,7 @@ class PrivateKitHarnessContractTest {
     }
   }
 
-  /** Não permite que o runtime de kit contorne o vínculo entre produto, ciclo e experimento. */
+  /** Recusa linhagem divergente como erro de identidade, sem classificá-la como falta de executor. */
   @Test
   void refusesMismatchedLineageBeforeBrowser() {
     var target =
@@ -190,6 +190,9 @@ class PrivateKitHarnessContractTest {
                     "TECHNICAL",
                     null,
                     work))
-        .hasMessageContaining("não corresponde");
+        .isInstanceOfSatisfying(
+            PdeAgentValidationHarnessRunner.HarnessException.class,
+            error -> assertThat(error.isExecutorFailure()).isFalse())
+        .hasMessageContaining("Identidade da tarefa divergente");
   }
 }

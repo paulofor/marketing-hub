@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-gemini-decision1-qa-multimodal-2026-11",
+  "collection": "video",
+  "title": "Gemini Decision 1: triagem barata e estruturada de vídeos gerados por IA",
+  "finding": "Em 11/11/2026 o Google abriu a Decisions API com Gemini Decision 1 para avaliar até 1.000 questões fechadas sobre uma entrada multimodal que inclui vídeo, a US$0,10 por milhão de tokens de entrada e sem cobrança de saída.",
+  "mechanism": "Modelo multimodal classificador com única passagem e opções fechadas (sim/não, escolha múltipla, rubrica ordenada) retorna probabilidades e níveis de confiança em vez de gerar narrativas token a token. A mesma entrada pode servir a muitas avaliações.",
+  "commercialApplication": "Revisar lotes de variantes publicitárias, classificar takes, conferir briefings e identidade da marca, priorizar aprovação e encaminhar apenas casos incertos a análise detalhada/humana.",
+  "evidenceStrength": "Alta para anúncio, disponibilidade, esquema e preço segundo fonte primária Google; latência e economia são resultados publicados pelo fornecedor sem validação independente e não específicos de vídeos longos.",
+  "publishedOn": "2026-11-11",
+  "validUntil": "2027-02-13",
+  "experimentHypothesis": "Uma camada de triagem por rubricas pré-definidas reduzirá o tempo e o custo de revisão de 30 vídeos sem aumentar a taxa de vídeos ruins aprovados em relação ao processo atual.",
+  "risks": "Erros de classificação, confiança não calibrada, falsos negativos em marca/direitos autorais, necessidade de revisão humana, possível limitação no processamento de vídeos longos e políticas de uso de material de pessoas.",
+  "limits": "Ativo via Gemini API no AI Studio; suporte Google Cloud futuro; até 256K tokens e 1.000 perguntas por requisição, preços por tokens, e latência divulgada apenas para contextos menores; não gera vídeo ou transcrição livre, pesos proprietários.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-13-gemini-decisions-video-avaliacao.md",
+  "sourceTitle": "Gemini Decision 1: API multimodal para decisões estruturadas sobre vídeo",
+  "sourceSha256": "5a3d44719436af4c01237a08a89311e87f843f6483ffc933adca57c3157d4619"
+}

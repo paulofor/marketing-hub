@@ -210,16 +210,12 @@ public class MusaConsultorService {
     return result;
   }
 
-  /** Renova explicitamente a mesma identidade, inclusive vencida, apenas com homologação aberta. */
+  /** Renova a identidade sob lock do ciclo e leitura atual, somente com homologação aberta. */
   public JsonNode renew(String id) {
-    var candidate = sessions.findById(id).orElseThrow(() -> fail(404, "Acesso não encontrado."));
-    cycles
-        .findLockedById(candidate.getCycleId())
-        .orElseThrow(() -> fail(404, "Ciclo não encontrado."));
-    var row =
-        sessions
-            .findByGrantHash(candidate.getGrantHash())
-            .orElseThrow(() -> fail(404, "Acesso não encontrado."));
+    var cycleId =
+        sessions.findCycleIdById(id).orElseThrow(() -> fail(404, "Acesso não encontrado."));
+    cycles.findLockedById(cycleId).orElseThrow(() -> fail(404, "Ciclo não encontrado."));
+    var row = sessions.findLockedById(id).orElseThrow(() -> fail(404, "Acesso não encontrado."));
     boolean expired = !row.getExpiresAt().isAfter(Instant.now());
     if (expired) {
       require(!row.isRevoked(), "Acesso revogado.");
@@ -238,13 +234,11 @@ public class MusaConsultorService {
     return identity(row);
   }
 
-  /** Encerra a homologação privada e revoga todos os acessos desta versão, mantendo a história. */
+  /** Revoga acessos após obter seu estado bloqueado, preservando salvamentos concorrentes. */
   public JsonNode close(Long cycleId) {
     cycles.findLockedById(cycleId).orElseThrow(() -> fail(404, "Ciclo não encontrado."));
     int count = 0;
-    for (var candidate : sessions.findByCycleIdOrderByCreatedAtAsc(cycleId)) {
-      if (!VERSION.equals(candidate.getPrototypeVersion())) continue;
-      var row = sessions.findByGrantHash(candidate.getGrantHash()).orElseThrow();
+    for (var row : sessions.findLockedByCycleAndVersion(cycleId, VERSION)) {
       row.setRevoked(true);
       var data = data(row);
       data.put("homologationClosed", true);

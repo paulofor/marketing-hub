@@ -61,6 +61,25 @@ class MusaConsultorServiceTest {
                 rows.stream()
                     .filter(r -> Objects.equals(r.getGrantHash(), call.getArgument(0)))
                     .findFirst());
+    when(sessions.findCycleIdById(anyString()))
+        .thenAnswer(
+            call ->
+                rows.stream()
+                    .filter(r -> r.getId().equals(call.getArgument(0)))
+                    .map(VegaPrivateSession::getCycleId)
+                    .findFirst());
+    when(sessions.findLockedById(anyString()))
+        .thenAnswer(
+            call -> rows.stream().filter(r -> r.getId().equals(call.getArgument(0))).findFirst());
+    when(sessions.findLockedByCycleAndVersion(anyLong(), anyString()))
+        .thenAnswer(
+            call ->
+                rows.stream()
+                    .filter(
+                        r ->
+                            r.getCycleId().equals(call.getArgument(0))
+                                && r.getPrototypeVersion().equals(call.getArgument(1)))
+                    .toList());
     when(sessions.findById(anyString()))
         .thenAnswer(
             call -> rows.stream().filter(r -> r.getId().equals(call.getArgument(0))).findFirst());

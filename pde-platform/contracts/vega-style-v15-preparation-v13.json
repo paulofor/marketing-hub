@@ -54,7 +54,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/musa-consultor-private-v1.md",
-      "sha256": "2e0823cb576806bc299b1d6c338194f0d3631bc21730e4ee6639c456cebb544d",
+      "sha256": "7cb5e4ae8b8a9953b685b75f13766c7cfd7ef973d44661d11ba41d438bb7b256",
       "promptMode": "FULL"
     },
     {
@@ -66,7 +66,12 @@
   "implementationEvidence": [
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/consultor/v1/service/MusaConsultorService.java",
-      "sha256": "e8054fcea0603b15d7183926562102803c520cb0667f17a0a0b99a13eb8fd65d",
+      "sha256": "1a37d51f6e9f589a04db600b961783cd16ee15554b227e97dffa4c1ab10bfe2d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/vega/VegaPrivateSessionRepository.java",
+      "sha256": "6071ae68e3bef3ac053f818c289de6e0881b4cadb7b2313df7a25ffce4a8cab2",
       "promptMode": "FULL"
     },
     {
@@ -88,7 +93,12 @@
   "executableEvidence": [
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/consultor/v1/MusaConsultorServiceTest.java",
-      "sha256": "5684f9f402b63600d6159ada6f45a46400f773a270145b7bd3aae8c0da761b59",
+      "sha256": "8ff1ee9b45b26f412853ad95e3c8dc746ebafb44025af25668213d1dba928003",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/consultor/v1/MusaConsultorMysql57Test.java",
+      "sha256": "567eb7df3253da51249184488eb7a46ac67ad0f513607b139c7848a05f386c26",
       "promptMode": "FULL"
     },
     {

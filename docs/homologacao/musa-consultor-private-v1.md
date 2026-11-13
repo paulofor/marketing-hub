@@ -84,3 +84,19 @@ merge; essa conferência não retoma inferência paga automaticamente.
 A regressão adicional de troca de proprietário na mesma aba também passou: o cartão,
 rascunho e seleção da identidade anterior são removidos antes de autenticar outra
 chave. Uma identidade sintética diferente não herda o repertório nem o cartão anterior.
+
+## Preservação na disputa com encerramento
+
+Antes do merge, uma regressão com MySQL 5.7 reproduziu perda de escolha em duas
+identidades: o encerramento lia a entidade antes de bloquear a sessão; ao esperar
+o salvamento concorrente terminar, o cache de persistência conservava a fotografia
+anterior e a revogação sobrescrevia a escolha confirmada. Teste anterior: duas
+falhas funcionais, sem erro de infraestrutura. O caminho sequencial já passava.
+
+A revogação agora lê as sessões sob bloqueio desde a primeira materialização;
+a renovação obtém somente o ID do ciclo antes do lock, carregando o estado atual
+da sessão depois. Isso preserva a escolha e evita reabrir uma fotografia anterior
+a uma revogação concorrente. O mesmo teste passou nas duas identidades após a
+correção, junto às regressões unitárias e da versão histórica. A configuração
+segue as variáveis MySQL sintéticas do Backend CI, que executa essa regressão.
+Não foram repetidas as nove combinações de UI, cujos critérios não mudaram.

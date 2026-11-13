@@ -19,6 +19,21 @@ public interface VegaPrivateSessionRepository extends JpaRepository<VegaPrivateS
   /** Lista as leituras do ciclo no banco, sem misturar a experiência comercial. */
   List<VegaPrivateSession> findByCycleIdOrderByCreatedAtAsc(Long cycleId);
 
+  /** Localiza o ciclo sem carregar uma sessão potencialmente anterior ao lock do ciclo. */
+  @Query("select s.cycleId from VegaPrivateSession s where s.id = :id")
+  Optional<Long> findCycleIdById(String id);
+
+  /** Carrega o estado atual da sessão somente depois de reservar seu ciclo. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select s from VegaPrivateSession s where s.id = :id")
+  Optional<VegaPrivateSession> findLockedById(String id);
+
+  /** Lê e bloqueia as sessões antes de materializar o estado que será revogado. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      "select s from VegaPrivateSession s where s.cycleId = :cycleId and s.prototypeVersion = :version order by s.id")
+  List<VegaPrivateSession> findLockedByCycleAndVersion(Long cycleId, String version);
+
   /** Conta todas as sessões sintéticas da versão, inclusive revogadas, sem reiniciar o teto. */
   long countByCycleIdAndPrototypeVersionAndOriginIn(
       Long cycleId, String version, List<String> origins);

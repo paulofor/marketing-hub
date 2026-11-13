@@ -56,7 +56,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/musa-consultor-private-v1.md",
-      "sha256": "aeb77f6cf92be8b02d61c6af9916a121eb6c0786e5dcb3b29f5171af725b8a31",
+      "sha256": "3e679dfa1a33ca6d120f70f4032574a3d220e58dadb6348cb53bdaca55de51ed",
       "promptMode": "FULL"
     },
     {
@@ -169,6 +169,12 @@
       "sha256": "e7a95b64b80ce5df29909e0c6137a5fd01958ec61ef921809dedddbd1b1895c6",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "67 casos de prontidão passaram, incluindo falha legada MUSA #915 e outro produto com IDs distintos após correção indevida. Nenhum teste fabrica aprovação, nova versão ou autorização de gasto."
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14/compatibility/musa-continuous-harness-v1.json",
+      "sha256": "37593a1a8af6b928511d3500b70c71d3d8e23b20d03e4b2167206a942b85192c",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Compatibilidade do runner compartilhado com o recibo histórico de Vega v14. Preserva critérios, jornada e provas funcionais; atualiza só o despacho da nova família contínua. Não renova parecer comercial."
     }
   ],
   "historicalReference": {

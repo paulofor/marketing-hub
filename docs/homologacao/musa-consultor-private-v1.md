@@ -167,3 +167,12 @@ eliminou EAGAIN sem alteração de contrato. Topologia temporária encerrada com
 
 O erro atual de identidade tem diagnóstico distinto do legado: não é elegível para
 retentativa de catálogo e continua bloqueando referências divergentes.
+
+
+O CI histórico de Mira executou seus 18 percursos e detectou depois um recibo
+operacional antigo de Vega ainda vinculado ao hash anterior do runner compartilhado.
+Falha reproduzida localmente em PdeOperationalControlEvidenceTest, sem mudar o teste.
+A nova atestação v10 preserva a v9 em historicalReports, os critérios e o recibo
+funcional original. Atualiza apenas o vínculo de compatibilidade com o novo despacho.
+Os 28 testes de prova operacional e comparação documental passaram após o ajuste.
+A atestação declara explicitamente que não repete nem renova o parecer histórico.

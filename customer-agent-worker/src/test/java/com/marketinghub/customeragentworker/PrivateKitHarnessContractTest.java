@@ -154,7 +154,9 @@ class PrivateKitHarnessContractTest {
     }
   }
 
-  /** Recusa linhagem divergente como erro de identidade, sem classificá-la como falta de executor. */
+  /**
+   * Recusa linhagem divergente como erro de identidade, sem classificá-la como falta de executor.
+   */
   @Test
   void refusesMismatchedLineageBeforeBrowser() {
     var target =

@@ -238,13 +238,14 @@ def validate_contextual_dependency(surface: dict[str, Any], contract: dict[str, 
     if private is None:
         return False
     version = private.get("prototypeVersion")
-    if version not in ("musa-pde-entry-v16-modelagem-internacional", "musa-pde-entry-v17-continuidade-clara"):
+    if version not in ("musa-pde-entry-v16-modelagem-internacional", "musa-pde-entry-v17-continuidade-clara", "musa-consultor-pwa-v1"):
         raise ValueError("Versão contextual não suportada")
+    contract_path = "/api/pde/vega/consultor/v1/contract" if version == "musa-consultor-pwa-v1" else "/api/pde/vega/style/v1/contract"
     expected = {
         "prototypeVersion": version,
         "pagePath": f"/experiences/{version}/agent-validation",
-        "contractPath": "/api/pde/vega/style/v1/contract",
-        "backendContractUrl": "http://191.252.181.168/api/pde/vega/style/v1/contract",
+        "contractPath": contract_path,
+        "backendContractUrl": "http://191.252.181.168" + contract_path,
         "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
         "providerCalls": 0,
         "commercialLaunchClaimed": False,

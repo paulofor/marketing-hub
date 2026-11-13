@@ -91,3 +91,14 @@ test("a retencao usa a mesma topologia local-e2e do backend PDE", async () => {
   assert.match(script, /docker-compose\.local-validation\.yml/);
   assert.match(script, /--profile local-e2e/);
 });
+
+test("o runner JVM local autentica operacoes internas somente com credenciais sinteticas", async () => {
+  const config = await readFile(
+    new URL("../frontend/playwright.local-integration.config.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(config, /PDE_INTERNAL_API_TOKEN=pde-local-internal-test/);
+  assert.match(config, /PDE_INTERNAL_QA_ENABLED=true/);
+  assert.match(config, /PDE_SMTP_HOST.*sandbox-mail/);
+  assert.doesNotMatch(config, /process\.env\.(?:OPENAI_API_KEY|PDE_INTERNAL_API_TOKEN)/);
+});

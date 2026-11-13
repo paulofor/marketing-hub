@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: MUSA consultor privado v1
+  version: 1.0.0
+  description: Jornada contínua segregada. Não concede assinatura, cobrança ou autorização comercial.
+servers:
+  - url: /api/pde/vega/consultor/v1
+security:
+  - privateSession: []
+paths:
+  /contract:
+    get:
+      security: []
+      responses:
+        '200': {description: Capacidade implementada, campos e limites privados}
+  /login:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessKey]
+              properties:
+                accessKey: {type: string, pattern: '^[a-f0-9]{64}$'}
+      responses:
+        '200': {description: Identidade e Set-Cookie HttpOnly Secure SameSite Strict; não altera expiresAt}
+        '401': {description: Acesso inválido ou vencido}
+  /logout:
+    post:
+      responses:
+        '204': {description: Cookie removido; dados preservados}
+  /workspace:
+    get:
+      responses:
+        '200': {description: Rascunho, escolhas e preferência do proprietário; Cache-Control no-store}
+        '401': {description: Acesso vencido ou revogado}
+        '409': {description: Homologação encerrada ou contexto incompatível}
+  /commands:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, payload]
+              properties:
+                action: {type: string, enum: [consent, draft, generate, save, event]}
+                payload:
+                  type: object
+                  description: 'consent: accepted=true. draft: revision, answers. generate: operationKey (16–80 alfanuméricos/hífen), revision, answers, parentChoiceId opcional. save: operationId, revision. event: operationId, eventType. occasion<=160; existingSelection/stylePreference/reflection<=300. Reflection opcional.'
+      responses:
+        '200': {description: Operação persistida, inclusive bloqueio funcional sem cartão; replay devolve resultado existente}
+        '409': {description: Revisão antiga, chave com outra entrada, recurso alheio ou limite técnico}
+  /operations/{id}:
+    get:
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Operação própria já persistida, sem reexecução}
+        '409': {description: Indisponível neste acesso, sem revelar outro proprietário}
+  /internal/cycles/{cycleId}/access:
+    post:
+      security: [{operator: []}]
+      parameters:
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200': {description: Emissão sintética com chave entregue uma vez, hash persistido e expiração em 90 dias; máximo 18 acessos por ciclo/versão}
+        '401': {description: Operador não autenticado}
+        '409': {description: Ciclo fechado, versão incompatível, encerramento privado ou limite atingido}
+  /internal/access/{id}/renew:
+    post:
+      security: [{operator: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Mesma identidade e dados com validade renovada por 90 dias e auditoria; somente homologação aberta}
+        '409': {description: Homologação fechada ou acesso revogado}
+  /internal/cycles/{cycleId}/close:
+    post:
+      security: [{operator: []}]
+      parameters:
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200': {description: Revogação de todos os acessos da versão no ciclo; dados preservados; reemissão bloqueada}
+  /internal/report:
+    get:
+      security: [{operator: [], privateSession: []}]
+      responses:
+        '200': {description: Operações, entradas protegidas, regras, horários, auditoria e sinais segregados AGENT_VALIDATION/mh_internal_test; zero chamadas externas}
+  /internal/events:
+    post:
+      security: [{operator: [], privateSession: []}]
+      responses:
+        '200': {description: Transporte sintético dos cinco sinais; CHECKOUT_STARTED permanece SIMULATED_NO_CHARGE}
+components:
+  securitySchemes:
+    privateSession: {type: apiKey, in: cookie, name: musa-consultor-session}
+    operator: {type: apiKey, in: header, name: X-PDE-Internal-Token}

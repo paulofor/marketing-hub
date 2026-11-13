@@ -1,0 +1,125 @@
+{
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+    "publicUrl": "https://v10.clubemusa.com.br"
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v10",
+    "publicUrl": "https://v10.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "cd1b0ea07ae991c7096d08ecf556c18045547e1a63378549d21c8f4a38e10825"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v10",
+      "experienceVersion": "musa-pde-entry-v15-estilo-pessoal",
+      "frontendSourceSha256": "cd1b0ea07ae991c7096d08ecf556c18045547e1a63378549d21c8f4a38e10825"
+    }
+  },
+  "deploymentValidation": {
+    "mode": "COMMERCIAL_CANDIDATE_READ_ONLY",
+    "readOnly": true,
+    "checkoutRequiresRunning": true,
+    "commercialLaunchClaimed": false
+  },
+  "externalAuthorization": {
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false,
+    "source": "Correção local e publicação técnica autorizadas na solicitação de continuidade de Vega. Nenhum limite, campanha, cobrança ou autorização de sucessor é criado por este manifesto."
+  },
+  "processVersion": 1,
+  "contractVersion": "vega-style-v15-preparation.v13",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Publicação técnica do aplicativo contínuo privado musa-consultor-pwa-v1. Raiz v15, versões anteriores, oferta, custos e aprovações preservados. Nenhum lançamento comercial ou gasto novo.",
+  "privateExperience": {
+    "prototypeVersion": "musa-consultor-pwa-v1",
+    "pagePath": "/experiences/musa-consultor-pwa-v1/agent-validation",
+    "contractPath": "/api/pde/vega/consultor/v1/contract",
+    "backendContractUrl": "http://191.252.181.168/api/pde/vega/consultor/v1/contract",
+    "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
+    "providerCalls": 0,
+    "commercialLaunchClaimed": false
+  },
+  "validationReport": "docs/homologacao/musa-consultor-private-v1.md",
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/musa-consultor-private-v1.md",
+      "sha256": "7cb5e4ae8b8a9953b685b75f13766c7cfd7ef973d44661d11ba41d438bb7b256",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/canonical/musa-private-access-canon.v1.md",
+      "sha256": "e9c0c626df230b1b3e12cdee54d294292011f070d732efb9dc31930cb028d47a",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/consultor/v1/service/MusaConsultorService.java",
+      "sha256": "1a37d51f6e9f589a04db600b961783cd16ee15554b227e97dffa4c1ab10bfe2d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/vega/VegaPrivateSessionRepository.java",
+      "sha256": "6071ae68e3bef3ac053f818c289de6e0881b4cadb7b2313df7a25ffce4a8cab2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/consultor/v1/controller/MusaConsultorController.java",
+      "sha256": "795a0bb1611446f20cbdc86a833af4c5159359ce6aa522de29e33c9219fcf1ca",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MusaContinuousApp.tsx",
+      "sha256": "06dec1c0405df0c57472393c28d8faf68b453a14b1de2a340476582f51dc3a36",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/MusaConsultorGatewayController.java",
+      "sha256": "8a6b97049b5aa4200ea02513710375ae9fdc6ffaef3cb45a08e740609db20018",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/consultor/v1/MusaConsultorServiceTest.java",
+      "sha256": "8ff1ee9b45b26f412853ad95e3c8dc746ebafb44025af25668213d1dba928003",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/consultor/v1/MusaConsultorMysql57Test.java",
+      "sha256": "567eb7df3253da51249184488eb7a46ac67ad0f513607b139c7848a05f386c26",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/musa-consultor/browser.cjs",
+      "sha256": "bd2243e569186bb0062881ce8ae66a591efb5b2914437dd43fb8a34314ae5963",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/musa-consultor/verify-http.cjs",
+      "sha256": "aff220e5a7c4f0432e5ebdc0f63597df68399452f1a94febd9f35381a9c0813f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/musa-consultor/identity-switch.cjs",
+      "sha256": "a3423d24fdedf854fab5bf7eda2945d5d80933990cf4e72cbfb65beae093ecd8",
+      "promptMode": "FULL"
+    }
+  ],
+  "historicalReference": {
+    "path": "pde-platform/contracts/vega-style-v15-preparation-v12.json",
+    "sha256": "f0aa8048f1994d86a977af5a0ba8a21996c4dd99d760ac158d6433caa4b2af05",
+    "scope": "Provas históricas preservadas; não transferem aceite à candidata contínua."
+  }
+}

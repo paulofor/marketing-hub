@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-contexto-paisagem-sonora",
+  "collection": "prazer-audio-visual",
+  "title": "Combinações de cor e som ambiental: efeito depende da cena",
+  "finding": "Estudo de campo com 3.365 respostas (não pessoas únicas) observou diferenças nas avaliações afetivas para combinações particulares de cores e paisagens sonoras naturais, sem uma regra cromática universal.",
+  "mechanism": "Congruência percebida, memória afetiva e associações culturais podem mudar a valência atribuída ao ambiente; mecanismos foram propostos, não demonstrados causalmente.",
+  "commercialApplication": "Experimentar em vídeos/experiências interativas paletas diferentes com a mesma paisagem sonora, equilibrando luminosidade, legibilidade, áudio e duração.",
+  "evidenceStrength": "Moderada-baixa para os contrastes de autorrelato em instalação real; baixa para efeito causal isolado em experiência digital, prazer duradouro ou vendas.",
+  "publishedOn": "2026-11-13",
+  "validUntil": "2026-12-28",
+  "experimentHypothesis": "Em uma mesma cena com trilha ambiental idêntica, mudar a paleta visual poderá alterar coerência percebida, valência e conforto; verificar interações por contexto/cultura, não impor cor vencedora.",
+  "risks": "Prescrever associações universais de cores; ignorar cultura, acessibilidade cromática, volume, fotossensibilidade e leitura; atribuir emoção a liberação de dopamina ou vendas.",
+  "limits": "25 dias em único túnel de Okinawa, 3.365 respostas voluntárias sem contagem de pessoas únicas, contexto público não controlado, sem pareamento pré/pós individual nem desfecho comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-13-cor-contexto-paisagem-sonora-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Interação entre cores e paisagens sonoras",
+  "sourceSha256": "74d4f0dbb6a99bd159b7e7f4bb85d7d483652469b41d61dd233db8145ff89d30"
+}

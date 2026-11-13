@@ -1,0 +1,18 @@
+{
+  "cardKey": "paisagens-sonoras-naturais-bem-estar",
+  "collection": "prazer-audio-visual",
+  "title": "Paisagens sonoras naturais: contexto, conforto e avaliação humana",
+  "finding": "Meta-análise de 66 estudos (1.658 efeitos) encontrou associações e efeitos médios positivos de sons naturais em medidas de bem-estar ambiental/saúde, com variação por fonte, domínio e contexto.",
+  "mechanism": "Interpretação semântica dos sons, familiaridade, contexto e associações afetivas são mecanismos plausíveis; a meta-análise não demonstra uma via neural única nem dopamina.",
+  "commercialApplication": "Testar ambiência natural coerente versus silêncio ou fundo neutro em vídeos e experiências digitais opcionais, mantendo narração clara e áudio controlável.",
+  "evidenceStrength": "Moderada para efeitos médios agregados em contextos ambientais pesquisados; baixa para prazer audiovisual em anúncios, causalidade específica e conversão.",
+  "publishedOn": "2026-11-13",
+  "validUntil": "2026-12-28",
+  "experimentHypothesis": "Em cena audiovisual adequada, ambiência natural coerente aumentará conforto/agrado relatados versus condição neutra, sem reduzir compreensão; medir também preferência e lembrança, sem presumir CTR/vendas.",
+  "risks": "Generalizar sons naturais como relaxantes universais; ruído excessivo, distração da narração, sensibilidades individuais ou alegações médicas e de vendas.",
+  "limits": "194 estudos na revisão e 66 na meta-análise; heterogeneidade de desfechos, medidas e ambientes; fontes sonoras e contextos específicos com efeitos distintos; não foi testado em anúncios.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-13-paisagens-sonoras-naturais-bem-estar-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Paisagens sonoras e bem-estar humano",
+  "sourceSha256": "8d51210a379665328917852191c42461937e4e48e20112d7bdce3c47ffb91103"
+}

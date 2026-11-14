@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-firefly-desconto-criacao-2026-11",
+  "collection": "video",
+  "title": "Firefly Pro Plus: 60% de desconto temporario para producao audiovisual",
+  "finding": "Desde 10/11/2026 a Adobe oferece 50% no Firefly Pro e 60% no Pro Plus para novas assinaturas elegiveis, apenas nos primeiros 6 meses e ate 06/12/2026.",
+  "mechanism": "Modelo de assinatura SaaS com 4.000 ou 10.000 creditos mensais e geracoes de video ilimitadas em alguns modelos e resolucoes no primeiro ano do Pro Plus, nao em todos os modelos nem por API.",
+  "commercialApplication": "Testar em escala controlada campanhas, videos curtos, anuncios e clipes, comparando custo de assinatura, tentativas e aprovacao humana com provedores API.",
+  "evidenceStrength": "Alta para valores, periodo, limites e elegibilidade da oferta em fontes oficiais Adobe Brasil; nao houve avaliacao pratica.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "A promocao pode reduzir o custo por video final aprovado em um lote de 20 pecas, desde que o modelo selecionado e a necessidade de refacoes estejam incluidos no beneficio.",
+  "risks": "Desconto de seis meses, nao anual; novos clientes, contratacao e renovacao exigem verificacao; 'ilimitado' limitado a modelos e resolucoes escolhidos; licencas e direitos de terceiros; nao cobre APIs.",
+  "limits": "ATIVO web/SaaS; Pro anunciado R$52,25/mes vs R$104,50 na modalidade mensal; Pro Plus R$107,60/mes vs R$269,00 nos primeiros seis meses; 4.000/10.000 creditos, respectivamente; Firefly Graph beta.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-14-adobe-firefly-desconto-video.md",
+  "sourceTitle": "Adobe Firefly: desconto temporario em producao audiovisual",
+  "sourceSha256": "ece37ad4d6c1702db6b8831268d65e187003aa9097250d01ccb4d9bd4ca62dc6"
+}

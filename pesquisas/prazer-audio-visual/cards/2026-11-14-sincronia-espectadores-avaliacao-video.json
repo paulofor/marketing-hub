@@ -1,0 +1,18 @@
+{
+  "cardKey": "sincronia-espectadores-avaliacao-video",
+  "collection": "prazer-audio-visual",
+  "title": "Sincronia entre espectadores: indício de atenção, não prova de agrado",
+  "finding": "Mini revisão indica associação recorrente entre correlação intersujeitos de sinais neurais e processamento/atenção compartilhados. Associação de sincronia periférica de olhar com preferências e comportamento comercial é menos consistente.",
+  "mechanism": "Estímulos dinâmicos podem alinhar temporalmente percepção e atenção de pessoas distintas; sincronia não identifica por si só prazer ou valor atribuído.",
+  "commercialApplication": "Em painel voluntário, validar se correlação temporal de olhar agrega previsão de atenção/compreensão a avaliações humanas independentes, sem usá-la isoladamente como indicador de sucesso comercial.",
+  "evidenceStrength": "Moderada para síntese de ISC neural e atenção compartilhada; baixa para previsão comercial a partir de sinais periféricos.",
+  "publishedOn": "2026-11-14",
+  "validUntil": "2026-12-29",
+  "experimentHypothesis": "Sincronia do olhar poderá predizer medidas objetivas de compreensão em vídeos novos acima de baselines simples, mas pode não predizer preferência; validar fora da amostra.",
+  "risks": "Coleta biométrica sem consentimento, vigilância indevida, inferência de emoções/compra a partir de olhar, enviesamento por edição do vídeo.",
+  "limits": "Revisão narrativa sem novo experimento; evidência heterogênea, pequenas amostras históricas e necessidade de validação prospectiva, controles de privacidade e consentimento explícito.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-14-sincronia-espectadores-avaliacao-video-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Sincronia de respostas entre espectadores",
+  "sourceSha256": "c4c795376b70c90bb9961b0b873da868b69b707ab796dd8e1613e130ea7dd543"
+}

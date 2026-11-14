@@ -1,0 +1,18 @@
+{
+  "cardKey": "estilo-visual-voz-ambiencia-aprendizagem",
+  "collection": "prazer-audio-visual",
+  "title": "Som de fundo: presença pode aumentar enquanto aprendizagem diminui",
+  "finding": "Experimento cruzado com 72 universitários em VR: ambiência elevou envolvimento, presença e ativação relatados, mas reduziu em média a pontuação no teste imediato de conhecimentos; estilo visual e prosódia tiveram efeitos diferentes e interações.",
+  "mechanism": "Som de fundo pode elevar imersão e competir com recursos atencionais de compreensão; mediação por carga cognitiva não foi demonstrada.",
+  "commercialApplication": "Comparar o mesmo vídeo explicativo com e sem som ambiente, preservando voz, conteúdo e imagens; medir presença e aprendizagem separadamente.",
+  "evidenceStrength": "Moderada-baixa para o experimento específico em VR, baixa para memória longa, audiência geral e vendas.",
+  "publishedOn": "2026-11-14",
+  "validUntil": "2026-12-29",
+  "experimentHypothesis": "Ambiência sonora poderá elevar presença relatada e simultaneamente reduzir acertos factuais; randomizar a condição sonora e avaliar compreensão imediata, memória diferida e conforto.",
+  "risks": "Mascarar narração, induzir sobrecarga e confundir engajamento autorrelatado com conhecimento, prazer universal ou conversão.",
+  "limits": "72 universitários chineses, artefatos históricos em VR, testes imediatos, contrabalanceamento conjunto incompleto e padrão fixo das respostas corretas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-14-estilo-visual-voz-ambiencia-aprendizagem-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Estilo visual, voz e ambiência em VR",
+  "sourceSha256": "709a2c61c28237e4f5f3d9fbe3ddda8c28804ee1e0c13d02cce47bd0d2ce1790"
+}

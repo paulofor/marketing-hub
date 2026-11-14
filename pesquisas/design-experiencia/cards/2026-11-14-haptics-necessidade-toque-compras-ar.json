@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-haptico-necessidade-toque-compras-ar",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Vibração no comércio em AR deve considerar necessidade individual de toque",
+  "finding": "Dois experimentos laboratoriais (N=617 universitários) em compras móveis com realidade aumentada indicaram efeitos dependentes da necessidade de toque: caminhos positivos de confiança, utilidade e intenção declarada de compra entre participantes com maior necessidade de toque e alguns caminhos negativos no perfil oposto. O artigo foi publicado em 04/02/2026.",
+  "mechanism": "Hipótese interpretativa: vibrações ao manipular móveis virtuais podem reforçar concretude e utilidade percebida para quem valoriza toque, mas acrescentar distração para outros. Mediação estatística via confiança e utilidade não demonstra isoladamente causalidade psicológica.",
+  "commercialApplication": "Testar feedback háptico opcional e reversível na etapa de exploração de produto com visualização 3D/AR; oferecer controle de intensidade e desativação acessível. Não aplicar vibração indiscriminada em landing pages ou checkout convencional.",
+  "evidenceStrength": "Artigo revisado por pares; dois experimentos randomizados em laboratório (184 e 433 estudantes). Indícios condicionais e indiretos sobre avaliações e intenção declarada; nenhum pagamento ou conversão real medido. Evidência externa complementar de fevereiro, não novidade publicada em novembro.",
+  "publishedOn": "2026-11-14",
+  "validUntil": "2026-12-29",
+  "experimentHypothesis": "Em uma experiência AR real, permitir vibração ao manipular produtos poderá elevar satisfação e conclusão de tarefa entre consumidores que optarem por feedback tátil, sem aumentar desconforto. Verificar por A/B fatorial, segmentação consentida e pagamentos reconciliados.",
+  "risks": "Estímulo indesejado, sobrecarga sensorial, pouca acessibilidade, coleta invasiva de preferências, extrapolar intenção de compra para receita ou confundir interação indireta com efeito universal.",
+  "limits": "Amostra universitária nos EUA, mobiliário em AR por cerca de dois minutos, dispositivo específico e intenção de compra autorrelatada. Mecanismos mediados não são prova neural ou de aumento de vendas; ausência de testes em produtos digitais comuns.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-14-haptics-necessidade-toque-compras-ar.md",
+  "sourceTitle": "Fonte revisada: Racat, Reynolds e Obal (2026) — Feedback háptico e necessidade de toque em compras AR",
+  "sourceSha256": "7787da603e2c96e5e472678ff4e4a40eb6efeb12b9de77f6818e3a7434df7957"
+}

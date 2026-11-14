@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-scribe-v3-video-transcricao-2026-11",
+  "collection": "video",
+  "title": "ElevenLabs Scribe v3: transcricao e diarizacao mais precisas para video",
+  "finding": "ElevenLabs lancou em 10/11/2026 Scribe v3 e Live, com reducoes alegadas de 27% no WER batch e 43% no WER semantico realtime comparados aos v2.",
+  "mechanism": "Reconhecimento de fala com identificacao de locutores, tempos por palavra, adaptacao a terminologia e deteccao de turno no modo Live; modelos acessiveis em API separadas.",
+  "commercialApplication": "Gerar legendas, preparar dublagens e edicao baseada em transcricao de podcasts filmados, documentarios, anuncios e entrevistas.",
+  "evidenceStrength": "Alta para lancamento, preco e acesso, que estao em paginas oficiais da ElevenLabs; ganhos de WER sao estudos internos, sem reproducao em PT-BR.",
+  "publishedOn": "2026-11-10",
+  "validUntil": "2027-02-14",
+  "experimentHypothesis": "Um lote de 10 videos em PT-BR tera menos erros de transcricao/locutor e exigira menos correcoes manuais com v3 do que com v2 sem aumento no preco base.",
+  "risks": "Comparacao de WER semantico nao equivale a WER comum; variacao por idioma, ruído e conversas sobrepostas; taxas adicionais para termos-chave e edicao; direitos sobre audio e dados pessoais.",
+  "limits": "ATIVO ElevenAPI; scribe_v3 batch US$0,20/h e scribe_v3_live US$0,22/h; pesos proprietarios; nao gera videos nem audio sintetico.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-14-elevenlabs-scribe-v3-video.md",
+  "sourceTitle": "ElevenLabs Scribe v3 e Live: transcricao para audiovisual",
+  "sourceSha256": "870ef1bdc6e4b712b7a877b04b2139d9e968df3fd25f76e83ce8a45b286ab0da"
+}

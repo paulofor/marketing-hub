@@ -1,0 +1,18 @@
+{
+  "cardKey": "personalizacao-musical-controle-ativo",
+  "collection": "prazer-audio-visual",
+  "title": "Música personalizada por IA: validar contra controle musical ativo",
+  "finding": "Revisão de 21 estudos sobre música algorítmica, com somente três estudos de geração por ML, encontrou evidência GRADE muito baixa e concluiu que ouvir música versus silêncio não isola benefício da personalização.",
+  "mechanism": "Seleção/adaptação/feedback contingente podem alterar a estimulação auditiva; evidência não estabelece mecanismo neural único, superioridade geral do algoritmo nem benefício clínico.",
+  "commercialApplication": "Validar trilhas algorítmicas em experiências musicais opcionais comparando com trilhas fixas bem pareadas e escolhas explícitas do usuário.",
+  "evidenceStrength": "Revisão crítica com 21 estudos; certeza muito baixa em todos os domínios segundo GRADE e sem replicação independente de achado específico.",
+  "publishedOn": "2026-11-15",
+  "validUntil": "2026-12-30",
+  "experimentHypothesis": "A seleção musical algorítmica poderá aumentar agrado e intenção de continuar a escuta em relação a música fixa ou escolhida pelo usuário, sob mesmas condições de exposição; validar com randomização e medidas de preferência, conforto e abandono.",
+  "risks": "Confundir efeito de música com efeito da IA, usar biometria sem consentimento, inferir dopamina, alegar terapia ou vender suposto benefício como comprovado.",
+  "limits": "Comparadores heterogêneos, maioria das intervenções não generativas, amostras pequenas, revisão por um revisor, sem meta-análise e com GRADE muito baixo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-15-personalizacao-musical-controle-ativo-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Personalização musical com IA requer comparação ativa",
+  "sourceSha256": "761698d254f36af8a12bb8858c6e946f4c6c8948d699b0923e4e7c42d307247c"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "atencao-supressao-distratores-visuais",
+  "collection": "prazer-audio-visual",
+  "title": "Atenção visual: testar redução de distratores concorrentes",
+  "finding": "Neuroimagem com marcação por frequência distinguiu amplificação do alvo e supressão do entorno; a modulação da supressão concorrente, e não a amplificação do alvo, esteve associada ao desempenho no paradigma.",
+  "mechanism": "Populações corticais com organização alvo-entorno exibiram dinâmicas separáveis de realce e supressão; esse mecanismo neural não demonstra que um layout específico melhore UX.",
+  "commercialApplication": "Comparar criativos e telas com distrações periféricas controladas, mantendo informação essencial, contraste e acessibilidade, para avaliar identificação de elementos-chave.",
+  "evidenceStrength": "Moderada para a dissociação neurofuncional no estudo controlado; baixa para intervenções em interfaces e inexistente para efeito em vendas.",
+  "publishedOn": "2026-11-15",
+  "validUntil": "2026-12-30",
+  "experimentHypothesis": "Reduzir elementos visuais periféricos desnecessários poderá reduzir erros e tempo de identificação da ação principal; randomizar A/B e medir acertos, tempo, esforço e abandono.",
+  "risks": "Remover conteúdo necessário, confundir atenção com agrado, inferir causalidade ou atribuir aumento de receita a um correlato de fMRI.",
+  "limits": "Paradigma laboratorial de seleção visual, sem teste de layout comercial, música, prazer, memória diferida ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-15-atencao-supressao-distratores-visuais-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Atenção seletiva e supressão de distrações visuais",
+  "sourceSha256": "a1eb9f225567d4fdad15406d54a93ea4b3eab46328b7e47e8b3701ad39afd330"
+}

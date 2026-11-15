@@ -1,0 +1,18 @@
+{
+  "cardKey": "consistencia-restricoes-recomendacao-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Verificar restrições declaradas antes de recomendar em conversas de compra",
+  "finding": "Artigo de design science publicado em 23/10/2026 propõe recomendador conversacional com aprendizado retrospectivo e reflexão isolada para corrigir inconsistências com preferências anteriores. Em três datasets de filmes e e-commerce, autores reportaram melhor efetividade com equilíbrio entre turnos de interação e desempenho nos desfechos avaliados.",
+  "mechanism": "Mecanismo técnico proposto: separar geração de candidatos e checagem de restrições do usuário reduz recomendações contraditórias quando preferências são vagas ou surgem aos poucos. Não é mecanismo psicológico experimentalmente isolado.",
+  "commercialApplication": "Implementar no agente de compra uma memória revisável das restrições atuais de orçamento, objetivo, acessibilidade e compatibilidade, com conferência antes de exibir produtos e correção transparente pelo consumidor.",
+  "evidenceStrength": "Artigo de periódico (Production and Operations Management), disponibilizado em 23/10/2026. Validação reportada em três datasets com métricas de recomendação, custo e avaliação humana; resumo acessível não fornece valores numéricos reproduzíveis. Sem comprovação independente de pagamento real.",
+  "publishedOn": "2026-11-15",
+  "validUntil": "2026-12-30",
+  "experimentHypothesis": "Checar preferências e restrições em uma etapa separada reduzirá produtos incompatíveis e turnos de correção sem aumentar abandono. Testar A/B com restrições respeitadas, correções, custo/latência, checkout e pagamentos reconciliados.",
+  "risks": "Otimizar taxas de conversão em vez de bem-estar, reproduzir vieses de trajetórias anteriores, guardar dados desnecessários, interpretações falsas de preferências e latência adicional pela revisão.",
+  "limits": "Avaliações dependem dos datasets e método do artigo; texto integral com acesso restrito nesta rodada, impedindo validar números internos. Desempenho em benchmark não é evidência de incremento causal de vendas em produção.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-15-consistencia-recomendacao-conversacional.md",
+  "sourceTitle": "Fonte revisada — Wang et al. (2026): recomendação conversacional com verificação isolada",
+  "sourceSha256": "ae1fa7fee70356c40d607e816d169b3ebd85b2ef8afa4be6cdb2684f1ac2e7b2"
+}

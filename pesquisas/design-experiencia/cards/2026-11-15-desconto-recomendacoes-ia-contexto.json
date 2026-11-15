@@ -1,0 +1,18 @@
+{
+  "cardKey": "desconto-recomendacoes-ia-contexto-consumo",
+  "collection": "neuromarketing",
+  "title": "Formato do recomendador e finalidade da compra influenciam aceitação da IA",
+  "finding": "Três experimentos laboratoriais (N=219) publicados em agosto de 2026 encontraram avaliações de intenção de compra mais favoráveis para recomendações humanas que de IA; no contexto de presentes hedônicos, robôs produziram um padrão N2 diferente de assistentes virtuais. Efeito contextual, não prova de vendas.",
+  "mechanism": "Hipótese interpretativa: a adequação percebida entre forma do agente e demanda socioemocional modula expectativas. N2/P3 são sinais compatíveis com conflito/atenção, não leituras diretas de emoção, desejo ou intenção real de compra.",
+  "commercialApplication": "Testar recomendação de presentes com assistentes virtuais explicitamente identificados como IA, justificativas verificáveis e alternativas editáveis. Comparar forma de apresentação conforme finalidade da compra, preservando agência do consumidor.",
+  "evidenceStrength": "Artigo revisado por pares em Psychology & Marketing, publicado em 04/08/2026; três estudos experimentais (N=57, 133 e 29), incluindo potenciais relacionados a eventos no último. Evidência de percepção e intenção declarada em laboratório, não de vendas reais.",
+  "publishedOn": "2026-11-15",
+  "validUntil": "2026-12-30",
+  "experimentHypothesis": "Para recomendações de presentes, um assistente virtual transparente e contextualizado poderá produzir melhor compreensão e maior confiança calibrada do que uma apresentação robótica genérica. Testar por A/B com satisfação, aceitação crítica, checkout e pagamento reconciliado como métricas separadas.",
+  "risks": "Manipulação afetiva, antropomorfização enganosa, ocultação de que é IA, estereótipos sobre preferências e uso indevido de medidas neurofisiológicas como leitura mental.",
+  "limits": "Amostras universitárias jovens na China, compras simuladas, efeitos neurais sujeitos a inferência reversa e falta de dados comerciais. Evidência de agosto selecionada como complemento, não novidade publicada em novembro.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-15-desconto-recomendacoes-ia-contexto.md",
+  "sourceTitle": "Fonte revisada — Huang et al. (2026): recomendações por IA, forma do agente e finalidade de compra",
+  "sourceSha256": "bc0b587ac897bdcc847e0d2b1d7f8e52941e1b7272c154287e7e1f9083181da8"
+}

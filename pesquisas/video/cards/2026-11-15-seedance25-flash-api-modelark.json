@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-seedance25-flash-api-oficial-2026-11",
+  "collection": "video",
+  "title": "Seedance 2.5 Flash: API oficial e 34% menos custo em 720p",
+  "finding": "BytePlus abriu e documentou em 15/11/2026 a API oficial de Seedance 2.5 Flash, após anúncio em 12/11. Em exemplo de 5 s e 720p, o custo é US$0,76 versus US$1,156 no Seedance 2.5 completo (aprox. -34%).",
+  "mechanism": "Geração multimodal de vídeos 4-30 s a 480p/720p, com texto, imagens, quadros inicial/final, vídeos, áudios, edição e saída com som. API assíncrona ModelArk; modelo proprietário identificado por dreamina-seedance-2-5-flash-261115.",
+  "commercialApplication": "Produzir prévias e variações de anúncios, vídeos explicativos, conteúdo para redes sociais e cenas curtas, usando referências de produto ou personagem; manter versão completa para finais quando necessário.",
+  "evidenceStrength": "Alta para abertura documentada, modelo, limites e preços pela BytePlus; velocidade ~2x e qualidade semelhante ao completo são alegações do fornecedor não testadas independentemente.",
+  "publishedOn": "2026-11-15",
+  "validUntil": "2027-02-15",
+  "experimentHypothesis": "Em 20 briefs de vídeos de 5-10 s, Seedance 2.5 Flash produzirá redução significativa no custo por vídeo aprovado em relação ao modelo completo, sem queda inaceitável de aderência ao produto/roteiro.",
+  "risks": "Custos de referências por vídeo de entrada elevam a fatura; não há pesos abertos; restrições de região, conteúdo e licenças comerciais; limites menores de referências e teto de 720p; não confundir métricas divulgadas pelo fornecedor com testes independentes.",
+  "limits": "ATIVO/documentado na API oficial BytePlus ModelArk desde 15/11; 4-30 s, 480p/720p; até 10 imagens, 5 vídeos e 5 áudios de referência; sem 1080p; valor de exemplo sem vídeo de entrada US$0,152/s em 720p (US$0,76/5s). Nenhuma chamada autenticada foi efetuada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-15-seedance25-flash-api-modelark.md",
+  "sourceTitle": "Dreamina Seedance 2.5 Flash: API oficial e custo menor no ModelArk",
+  "sourceSha256": "c307c27c5bc2d2d5d8c5d5a947ac994135cc26a0ec1474d473c03febbdb17e52"
+}

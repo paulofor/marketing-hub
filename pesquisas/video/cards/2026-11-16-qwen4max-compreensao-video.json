@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-qwen4max-qa-multimodal-2026-11",
+  "title": "Qwen4-Max: compreensão de vídeo e agentes audiovisuais",
+  "finding": "Alibaba lançou em 16/11/2026 a API de produção Qwen4-Max, com entrada de vídeo e saída textual estruturada, até 1M tokens de contexto e preço de US$1,50/US$4,50 por 1M tokens in/out.",
+  "mechanism": "LLM multimodal de raciocínio recebe texto, imagem e vídeo e devolve classificação, descrição e JSON; integra function calling e ferramentas para fluxos de revisão e catalogação.",
+  "commercialApplication": "Avaliar automaticamente clipes gerados, localizar problemas de continuidade e elementos de marca, classificar takes e orientar agentes de edição de vídeo.",
+  "evidenceStrength": "Alta para lançamento, modalidade vídeo→texto, regiões, preços e ID pelos documentos oficiais; qualidade específica em vídeo não avaliada.",
+  "experimentHypothesis": "O Qwen4-Max permitirá identificar, em uma amostra de 30 anúncios, a maioria dos erros de aderência ao briefing com custo de avaliação competitivo frente aos revisores humanos e outros modelos.",
+  "risks": "Modelo proprietário; custos de frames/tokens variam; saída pode errar, exigir auditoria humana e proteção de dados de imagem; o ID de prévia termina em 25/11.",
+  "limits": "`qwen4-max` ATIVO por API; `qwen4-max-preview` EM TRANSIÇÃO com fim programado 25/11; entrada texto/imagem/vídeo, saída texto; não gera vídeo; 1M tokens de contexto.",
+  "collection": "video",
+  "publishedOn": "2026-11-16",
+  "validUntil": "2027-02-16",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-16-qwen4max-compreensao-video.md",
+  "sourceTitle": "Qwen4-Max: API de compreensão de vídeo e raciocínio com 1M de contexto",
+  "sourceSha256": "78f553b22babffcd6697f5a39bd5bde272fd91633da8a41ecb1e1da1ce17f15c"
+}

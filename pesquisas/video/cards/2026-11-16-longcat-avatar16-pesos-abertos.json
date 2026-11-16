@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-longcat-avatar16-open-weights-2026-11",
+  "title": "LongCat-Video-Avatar 1.6: avatares longos com pesos MIT",
+  "finding": "Meituan lançou em 15/11/2026 o LongCat-Video-Avatar 1.6, com pesos e código abertos sob MIT, melhorias declaradas de lipsync e coerência e continuação acima de 10 minutos.",
+  "mechanism": "Geração de vídeos de um ou vários personagens guiada por áudio, imagem e texto; continuação autorregressiva; LoRAs de inferência e opções INT8/FP8.",
+  "commercialApplication": "Experimentar vídeos explicativos, apresentadores, treinamentos e personagens recorrentes em infraestrutura própria, mantendo controle sobre dados e custo computacional.",
+  "evidenceStrength": "Alta para lançamento, downloads, licença e funcionalidades documentadas; desempenho e avaliação comparativa de preferência são alegações da equipe, sem reprodução independente.",
+  "experimentHypothesis": "Em 20 trechos em português brasileiro e três durações, o modelo preservará identidade e lipsync suficiente para vídeos explicativos com custo total inferior ao SaaS, se houver GPUs viáveis.",
+  "risks": "Consumo de GPU e tempo de processamento ainda não medidos; não há API hospedada oficial ou preço por minuto confirmado; direitos de imagem/voz e marcas continuam exigindo autorização; possível instabilidade em durações longas.",
+  "limits": "ATIVO, pesos MIT no Hugging Face e código no GitHub; sem API hospedada verificada; exemplos de inferência com CUDA/múltiplas GPUs e suporte a vídeos acima de 10 minutos alegado pela equipe.",
+  "collection": "video",
+  "publishedOn": "2026-11-16",
+  "validUntil": "2027-02-16",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-16-longcat-avatar16-pesos-abertos.md",
+  "sourceTitle": "LongCat-Video-Avatar 1.6: pesos MIT e avatares de longa duração",
+  "sourceSha256": "c7f6282db697e3e85d2efe209b8029d9455a59ca228db1db7a30cb6d2ffd2038"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "ugc-valor-de-uso-vs-haul-patrocinado",
+  "collection": "video",
+  "title": "Testar vídeo demonstrando utilidade real em vez de apenas exibir produtos",
+  "finding": "Dados setoriais indicam perda de participação relativa de hauls patrocinados (2,4% para 1,2% dos posts em períodos equivalentes de 2025 e 2026) e menor média de interações por post de haul (2.633 em 2025; 1.780 em jan–out/2026). Entrevistas relatam mudança de briefings em direção a histórias de uso.",
+  "mechanism": "Hipótese: explicitar uma tarefa e um resultado real pode tornar a utilidade percebida mais concreta e responder a dúvidas de compra. A evidência observacional não isola esse mecanismo nem demonstra causalidade.",
+  "commercialApplication": "Comparar vídeo A de apresentação de funcionalidades com vídeo B mostrando o uso real de um produto digital, mantendo oferta, mídia, público, janela e criadores comparáveis; aferir custo total, retenção, checkout e pagamentos reais.",
+  "evidenceStrength": "Observacional setorial: levantamentos Traackr/CreatorIQ e entrevistas publicados no Business Insider em 13/11/2026; sem teste experimental nem conversão medida.",
+  "publishedOn": "2026-11-16",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "Vídeo de demonstração concreta elevará a proporção de compradores pagantes por visita qualificada, sem aumentar o custo por venda, em comparação com uma peça de mera apresentação do produto.",
+  "risks": "Escolha enviesada de criadores, confusão por categoria ou algoritmo, alegações não comprovadas, conteúdo sintético enganoso, produção mais cara e divulgação insuficiente de patrocínio.",
+  "limits": "Menor participação relativa não significa menos posts absolutos. Engajamento não é receita. Não há ensaio causal, amostragem integral disponível ou demonstração de validade para produtos digitais brasileiros.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-16-hauls-patrocinados-demonstracao-utilidade.md",
+  "sourceTitle": "Fonte revisada — formatos patrocinados de criadores: haul versus demonstração de utilidade",
+  "sourceSha256": "802057b21bfb67a28499e35fdd3642d49f0f71f1931b1fd220c05d18ae49c4a8"
+}

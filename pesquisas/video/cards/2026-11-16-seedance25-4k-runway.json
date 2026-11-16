@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-seedance25-4k-runway-2026-11",
+  "title": "Seedance 2.5: saída 4K ativa na Runway Dev",
+  "finding": "Runway Dev habilitou em 11/11/2026 geração Seedance 2.5 com dimensões 4K por texto, imagem e vídeo de referência, a US$1,10 por segundo de saída e US$0,57 por segundo de referência em vídeo.",
+  "mechanism": "API comercial seedance2_5 aceita dimensões 3840x2160 e 2160x3840, em clips de até 30 segundos, com áudio e referências; preço escalonado pela resolução.",
+  "commercialApplication": "Produção e pós-produção de cenas publicitárias de maior resolução, apresentações premium e VFX em formato horizontal ou vertical.",
+  "evidenceStrength": "Alta para suporte de dimensões 4K, modalidades e preço no changelog e guia oficiais Runway; detalhe nativo ou upscale e qualidade em produção não foram validados.",
+  "experimentHypothesis": "O custo 62% maior por segundo frente ao 1080p só será compensado em entregas que preservem nitidez mensurável após edição e compressão.",
+  "risks": "Custo elevado, cobrança extra por vídeo de entrada, qualidade 4K nativa não verificada; draft aprimorado não chega a 4K; conteúdo e licenças sujeitos aos termos do fornecedor.",
+  "limits": "ATIVO na Runway Dev, Seedance 2.5 4K em T2V/I2V/V2V reference; 110 créditos/s output e 57 créditos/s vídeo de entrada; 80 créditos mínimo; proprietário.",
+  "collection": "video",
+  "publishedOn": "2026-11-16",
+  "validUntil": "2027-02-16",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-16-seedance25-4k-runway.md",
+  "sourceTitle": "Seedance 2.5 chega a 4K na Runway Dev",
+  "sourceSha256": "a24ebfc48a5541a72f5304f6c3070a035f9b25791e1321b62d084d219602fe5e"
+}

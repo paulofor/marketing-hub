@@ -1,0 +1,18 @@
+{
+  "cardKey": "olhar-realismo-percebido-videos-ia",
+  "collection": "video",
+  "title": "Atenção ocular como sinal complementar de realismo de vídeos gerados por IA",
+  "finding": "Preprint de 28/10/2026: dois experimentos com 90 pessoas, 438 vídeos e 4.286 observações de olhar. No protocolo de duas visualizações, GazeEval previu realismo percebido com 71,3% de acurácia, versus 61,4% para comparador automático baseado somente no estímulo.",
+  "mechanism": "Hipótese perceptiva compatível com os resultados: a primeira visão tende a seguir saliência visual; na segunda, a exploração muda ao buscar anomalias. É sinal de avaliação visual, não leitura de emoção, desejo ou intenção de compra.",
+  "commercialApplication": "Em pesquisa amostral e consentida para controle de qualidade de vídeos IA, testar avaliação de realismo com duas visualizações, nota humana e inspeção de anomalias; usar sinais oculares agregados somente como complemento opcional de revisão.",
+  "evidenceStrength": "Preprint experimental (28/10/2026), duas amostras, 90 participantes, 438 vídeos de seis geradores, 4.286 observações; acurácia 71,3% em validação do protocolo. Sem teste de anúncio ou conversão.",
+  "publishedOn": "2026-11-16",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "A revisão humana em duas passagens auxiliará a identificar cenas julgadas pouco realistas sem elevar excessivamente o tempo de edição. Comparar defeitos confirmados, concordância entre revisores, tempo/custo por ativo aprovado e, separadamente, métricas reais da campanha.",
+  "risks": "Coleta intrusiva de rastreamento ocular, inferências individuais indevidas, confiança excessiva em classificador imperfeito e confusão entre realismo, fidelidade do produto, eficácia emocional e vendas.",
+  "limits": "Vídeos de cinco segundos com fenômenos físicos, sem pessoas ou narrativa; tarefa explícita de distinguir vídeo real de gerado; cenário diferente de exposição a anúncios. Não prova melhora de criativos, CTR, checkout ou pagamentos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-16-realismo-video-rastreamento-ocular.md",
+  "sourceTitle": "Fonte revisada — Shi et al. (2026): rastreamento ocular e realismo percebido em vídeo IA",
+  "sourceSha256": "3e5a862e83cb42ce4f1895a7ee947010646576a0c60cf6773ee2f825bc148c25"
+}

@@ -51,7 +51,7 @@ independente: 43 GiB livres, 50% de uso. Não foram removidos dados nem alterado
 
 ## Resultados
 
-1.288 casos Java conferidos nos sete módulos: 356 no backend, 143 em Têmis,
+1.298 casos Java conferidos nos sete módulos: 366 no backend, 143 em Têmis,
 261 em Psique, 90 em Plutus, 168 em Atena, 113 em Dédalo e 157 em Íris.
 Sem falhas ou erros após os ajustes. Os 22 casos opcionais condicionados a flags de integração
 e arquivos externos permanecem fora do aceite; os transportes, o diário, a leitura curta e a
@@ -129,3 +129,7 @@ Uma tentativa inicial de fixture usou o nome padrão por variável de ambiente i
 Ela foi interrompida e sua topologia removida; as rodadas finais usaram o projeto
 exclusivo autorizado. A conferência final preservou somente os serviços auxiliares
 preexistentes da sandbox; nenhuma publicação ou recurso produtivo foi alterado.
+
+O contrato Java do runner de Íris também foi atualizado para exigir preservação
+das dependências. Os dez testes de Íris/tipos de produto passaram localmente; os
+demais testes que leem os três scripts foram pesquisados antes de atualizar o PR.

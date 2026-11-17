@@ -2,6 +2,7 @@
 """Homologa renovação, isolamento e consultas TLS usando certificados e servidores locais."""
 
 import importlib.util
+from datetime import datetime, timedelta, timezone
 import io
 import json
 import os
@@ -63,17 +64,36 @@ class Certificates(unittest.TestCase):
         cls.certs = Path(cls.certificates.name)
         cls.key = cls.certs / "key.pem"
         cls.ca = cls.certs / "ca.pem"
+        ca_config = cls.certs / "ca.cnf"
+        ca_config.write_text("[req]\ndistinguished_name=dn\nx509_extensions=ca_extensions\n"
+                             "[dn]\n[ca_extensions]\nbasicConstraints=critical,CA:TRUE\n"
+                             "keyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\n")
         run("openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "30",
+            "-config", str(ca_config),
             "-subj", "/CN=MCP local test CA", "-keyout", str(cls.certs / "ca.key"), "-out", str(cls.ca))
         run("openssl", "req", "-new", "-newkey", "rsa:2048", "-nodes", "-subj", "/CN=mcpserverdigi.shop",
             "-keyout", str(cls.key), "-out", str(cls.certs / "request.pem"))
-        for name, days, domains in (("valid", "30", "mcpserverdigi.shop,DNS:www.mcpserverdigi.shop"),
-                                    ("expired", "-1", "mcpserverdigi.shop,DNS:www.mcpserverdigi.shop"),
-                                    ("other", "30", "outro-produto.test")):
+        (cls.certs / "index.txt").touch()
+        (cls.certs / "serial").write_text("1000\n")
+        issuer = cls.certs / "issuer.cnf"
+        issuer.write_text(f"[ca]\ndefault_ca=local\n[local]\ndatabase={cls.certs}/index.txt\n"
+                          f"serial={cls.certs}/serial\nnew_certs_dir={cls.certs}\n"
+                          f"certificate={cls.ca}\nprivate_key={cls.certs}/ca.key\n"
+                          "default_md=sha256\npolicy=subject\nunique_subject=no\n"
+                          "[subject]\ncommonName=supplied\n")
+        now = datetime.now(timezone.utc)
+        for name, days, domains in (("valid", 28, "mcpserverdigi.shop,DNS:www.mcpserverdigi.shop"),
+                                    ("expired", -1, "mcpserverdigi.shop,DNS:www.mcpserverdigi.shop"),
+                                    ("other", 28, "outro-produto.test")):
             ext = cls.certs / f"{name}.ext"
-            ext.write_text(f"subjectAltName=DNS:{domains}\n")
-            run("openssl", "x509", "-req", "-in", str(cls.certs / "request.pem"), "-CA", str(cls.ca),
-                "-CAkey", str(cls.certs / "ca.key"), "-CAcreateserial", "-days", days,
+            ext.write_text(f"[leaf]\nsubjectAltName=DNS:{domains}\nbasicConstraints=critical,CA:FALSE\n"
+                           "keyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n"
+                           "subjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid,issuer\n")
+            # Datas explícitas funcionam também quando o OpenSSL recusa duração negativa.
+            run("openssl", "ca", "-batch", "-notext", "-config", str(issuer),
+                "-in", str(cls.certs / "request.pem"), "-extensions", "leaf",
+                "-startdate", (now - timedelta(days=2)).strftime("%Y%m%d%H%M%SZ"),
+                "-enddate", (now + timedelta(days=days)).strftime("%Y%m%d%H%M%SZ"),
                 "-extfile", str(ext), "-out", str(cls.certs / f"{name}.pem"))
 
     @classmethod
@@ -227,8 +247,9 @@ class RealTlsTest(Certificates):
         self.assertGreater(self.probe("valid")["remainingDays"], 14)
 
     def test_expired_certificate_is_rejected_by_tls(self):
-        with self.assertRaises(ssl.SSLCertVerificationError):
+        with self.assertRaises(ssl.SSLCertVerificationError) as failure:
             self.probe("expired")
+        self.assertIn("expired", failure.exception.verify_message.lower())
 
     def test_other_product_identity_is_rejected_by_tls(self):
         with self.assertRaises(ssl.SSLCertVerificationError):

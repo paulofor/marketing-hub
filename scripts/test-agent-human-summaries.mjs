@@ -1,18 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 // Confere contratos sem chamar modelo, mudar parecer ou consumir orçamento.
 const schemas = [
   "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-agent-validation-review-v4-schema.json",
   "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-private-validation-review-v2-schema.json",
-  "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review-schema.json",
   "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review-schema.json",
   "meta-ad-approver-worker/src/main/resources/prompts/bpm/landing-commercial-review-schema.json",
   "customer-agent-worker/src/main/resources/prompts/bpm/v5/pde-agent-validation-scenario-review-schema.json",
   "customer-agent-worker/src/main/resources/prompts/bpm/v7/pde-kit-agent-validation-scenario-review-schema.json",
   "customer-agent-worker/src/main/resources/prompts/bpm/v4/pde-private-validation-experience-review-schema.json",
-  "customer-agent-worker/src/main/resources/prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json",
   "customer-agent-worker/src/main/resources/prompts/bpm/v3/creative-customer-review-schema.json",
   "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v13/market-strategy-schema.json",
   "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v10/market-strategy-schema.json",
@@ -48,5 +47,18 @@ for (const file of cores) {
   test(`orientação humana carregada pelo agente: ${file}`, async () => {
     const prompt = await readFile(new URL('../' + file, import.meta.url), 'utf8');
     for (const phrase of ['humanSummary', '20 a 420', 'até três frases', 'não diga que o produto falhou', 'vêm do backend']) assert.ok(prompt.includes(phrase));
+  });
+}
+
+// O Catálogo Vivo fixa estes contratos por hash; a síntese usa os campos existentes.
+for (const [file, expected] of [
+  ["customer-agent-worker/src/main/resources/prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json", "9925d5739180644d289db1d38fe41d305aa29f3a8c3b3cdd8fde9fcd7b687e03"],
+  ["meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review-schema.json", "7cbd2cc0b35aeb286280b76a77da87ecf7ba16431df54ecb53c4cdfb05b4073d"]
+]) {
+  test(`schema do catálogo permanece compatível: ${file}`, async () => {
+    const source = await readFile(new URL('../' + file, import.meta.url));
+    assert.equal(createHash('sha256').update(source).digest('hex'), expected);
+    const schema = JSON.parse(source);
+    assert.equal((schema.properties.commercialRationale ?? schema.properties.customerPerspective).type, 'string');
   });
 }

@@ -60,6 +60,24 @@ class AgentTaskHumanSummaryTest {
     assertThat(summary.decision()).isEqualTo("APPROVED");
   }
 
+  /** Contratos fixados no catálogo usam a síntese existente sem alterar schema nem parecer. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"customerPerspective", "commercialRationale"})
+  void readsCatalogSummaryWithoutContractMigration(String field) {
+    var task =
+        task(
+            "{\"decision\":\"ADJUST\",\""
+                + field
+                + "\":\"Falta demonstrar a recuperação. O responsável deve completar a prova.\"}");
+    String original = task.getResultJson();
+    var summary = AgentTaskResultView.humanSummary(task);
+    assertThat(summary.text()).contains("Falta demonstrar a recuperação");
+    assertThat(summary.source()).isEqualTo("LEGACY_EXCERPT");
+    assertThat(summary.decision()).isEqualTo("ADJUST");
+    assertThat(task.getResultJson()).isEqualTo(original);
+  }
+
   /** Dados ausentes ou inválidos mantêm ausência de síntese, sem inventar conclusão. */
   @Test
   void invalidOrMissingResultHasNoSummary() {

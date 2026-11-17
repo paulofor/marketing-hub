@@ -137,3 +137,6 @@ Separe falta de prova, defeito comprovado e decisão necessária. Se houver falt
 não diga que o produto falhou. Não invente ação ou aprovação do usuário, saldo, prazo, resultado
 comercial nem atividade em execução. A pausa e a próxima ação operacionais vêm do backend.
 O resumo descreve este parecer; uma prova complementar posterior não reescreve sua decisão.
+
+Quando o contrato antigo do catálogo não tiver `humanSummary`, escreva a síntese simples em
+`customerPerspective`, se esse campo existir. Preserve evidências, limites e correções nos campos próprios.

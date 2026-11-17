@@ -41,16 +41,16 @@ product_type_v1_cleanup
 
 docker version >/dev/null
 docker compose version >/dev/null
-product_type_v1_compose up -d --build mysql57-product-type-consultants-v1
-product_type_v1_compose run --rm --build liquibase-product-type-consultants-v1
-product_type_v1_compose run --rm --build liquibase-product-type-consultants-v2
+product_type_v1_compose up -d --build --wait mysql57-product-type-consultants-v1
+product_type_v1_compose run --rm --no-deps --build liquibase-product-type-consultants-v1
+product_type_v1_compose run --rm --no-deps --build liquibase-product-type-consultants-v2
 
 product_type_v1_db_execute "DELETE FROM DATABASECHANGELOG
   WHERE ID IN ('2026-08-29-product-type-consultant-blueprints-v1-structure',
                '2026-08-29-product-type-consultant-blueprints-v1-seed',
                '2026-08-29-product-type-consultant-research-enrichment-v2');"
-product_type_v1_compose run --rm liquibase-product-type-consultants-v1
-product_type_v1_compose run --rm liquibase-product-type-consultants-v2
+product_type_v1_compose run --rm --no-deps liquibase-product-type-consultants-v1
+product_type_v1_compose run --rm --no-deps liquibase-product-type-consultants-v2
 
 product_type_v1_assert_equal \
   "colunas da base de construção" \

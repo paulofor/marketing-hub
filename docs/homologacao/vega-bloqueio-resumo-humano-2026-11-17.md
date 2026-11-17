@@ -51,7 +51,7 @@ independente: 43 GiB livres, 50% de uso. Não foram removidos dados nem alterado
 
 ## Resultados
 
-1.265 casos Java conferidos nos sete módulos: 333 no backend, 143 em Têmis,
+1.288 casos Java conferidos nos sete módulos: 356 no backend, 143 em Têmis,
 261 em Psique, 90 em Plutus, 168 em Atena, 113 em Dédalo e 157 em Íris.
 Sem falhas ou erros após os ajustes. Os 22 casos opcionais condicionados a flags de integração
 e arquivos externos permanecem fora do aceite; os transportes, o diário, a leitura curta e a
@@ -79,7 +79,53 @@ real para provar diário, segregação e consulta sem hidratar prompts; não há
 
 O verificador de capacidade respondeu 401 e o recibo automático de dependências não
 pôde ser registrado; dependências e fontes foram preservadas. Node/npm/npx continuam
-na instalação persistente, com saúde conferida. Não houve uso de Docker nem limpeza global.
+na instalação persistente, com saúde conferida. As correções adicionais do CI usam Docker local em topologias descartáveis e segregadas;
+não houve limpeza global nem intervenção nos serviços produtivos.
 
 Nenhuma nova revisão paga foi autorizada ou iniciada. A execução produtiva continua
 pausada; a entrega técnica ainda depende do PR, integração, workflows e conferência da tela.
+
+## Falhas reais do primeiro CI e correções locais
+
+O primeiro HEAD passou Backend CI, Frontend CI e as suítes dos oito executores.
+O run MySQL 44177983235 revelou recriação do banco entre migrações nas fixtures
+de tipos de produto, auditoria acionável e fronteiras dos agentes. A execução
+anterior 43050699671 passara; comparar os logs confirmou perda do estado aplicado
+no segundo rebuild, e não defeito no SQL de produção. Os três runners passam a
+esperar o banco saudável e executar migradores sem reiniciar suas dependências.
+O contrato existente do CI verifica essa preservação. A fixture Mira falhou por
+HTTP 429 do Maven Central; isso é falha externa transitória identificada, não SQL inválido.
+
+O job de TLS do run 44177983313 usou Ubuntu 26.04, depois de sucesso em Ubuntu 24.04
+no run 43370693143. A criação da fixture vencida com duração negativa deixou de
+funcionar. A fixture agora emite datas explícitas e extensões completas de CA/servidor,
+com handshake real e conferência de que a recusa decorre especificamente de expiração.
+Fontes: [OpenSSL CA](https://docs.openssl.org/3.0/man1/openssl-ca/),
+[Docker Compose run](https://docs.docker.com/reference/cli/docker/compose/run/).
+
+Foram comparadas repetição sem mudança, fixação do runner antigo e correção das
+fixtures. Escolhida a correção: fecha a dependência implícita sem esconder falha nem
+exigir infraestrutura adicional. Não troca o ambiente nem os serviços de produção.
+
+A conferência do Catálogo Vivo via MCP mostrou dois schemas de parecer fixados por
+hash. Uma extensão obrigatória nesses arquivos quebraria o uso do catálogo. Foram
+comparadas migração dos vínculos ativos, criação de outro catálogo e preservação dos
+contratos com síntese nos campos existentes. A terceira preserva os contratos: Psique
+usa `customerPerspective` e Têmis `commercialRationale`; os outros 16 schemas
+recebem `humanSummary`. O preflight de 26 testes protege também os dois hashes
+fixados. A consulta de resumo reconhece ambos os campos existentes.
+O job Opala passa a preservar o log completo para não perder a causa em um corte
+do fim da saída do Maven. Não há migração Liquibase nesta entrega.
+
+Resultados complementares locais: as três suítes físicas corrigidas passaram no
+MySQL 5.7; 21 casos do catálogo passaram dentro da rede isolada da engine, reutilizando
+as classes compiladas localmente (a porta da engine não é o localhost da sandbox).
+Os 16 testes TLS passaram tanto no OpenSSL 3.0.22 local como no OpenSSL 3.5.7 com
+Python 3.14 em container. As duas regressões de síntese do catálogo passaram; o
+contrato do CI tem 15 casos aprovados. Bash/ShellCheck, YAML e pacote de provas
+foram reconferidos. As topologias temporárias foram removidas pelo próprio job.
+
+Uma tentativa inicial de fixture usou o nome padrão por variável de ambiente incorreta.
+Ela foi interrompida e sua topologia removida; as rodadas finais usaram o projeto
+exclusivo autorizado. A conferência final preservou somente os serviços auxiliares
+preexistentes da sandbox; nenhuma publicação ou recurso produtivo foi alterado.

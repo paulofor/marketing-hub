@@ -865,7 +865,7 @@
       "path": "scripts/test-backend-ci-workflow.py",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Responsabilidade: exigir o contrato de artefatos e a conferência de provas antes dos testes locais do backend.",
-      "sha256": "6eea6fd23a4542f41d5b3c595c8b75c8f327991ab3539e8288d827b335a44fe6"
+      "sha256": "71fc0f560fea9542fd760a8ddd744fa1536d4ad1134e9a5c903dea2ecff7cc4f"
     },
     {
       "path": "infra/testing/mira-communication/run-round.sh",
@@ -1115,7 +1115,7 @@
     "baseManifestSha256": "fb0eee1bece1139f6d0dcc8929be09da3ececbbf1f977ab633d0aead1b73c897",
     "implementationChanged": false,
     "executorChanged": true,
-    "validatedAt": "2026-11-17T20:58:58.636648+00:00",
+    "validatedAt": "2026-11-17T21:41:32.155529+00:00",
     "changedEvidence": [
       {
         "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v10/market-strategy-schema.json",
@@ -1151,6 +1151,11 @@
         "path": ".github/workflows/backend-ci.yml",
         "previousSha256": "493b0383e3427b8db1b313cec9662faf69109cb70f34683833b404558f144c3f",
         "sha256": "e0eec82024a666c6d7e2e7d3d640e9e70c5616f4afa89cf5654ae513b729fc28"
+      },
+      {
+        "path": "scripts/test-backend-ci-workflow.py",
+        "previousSha256": "6eea6fd23a4542f41d5b3c595c8b75c8f327991ab3539e8288d827b335a44fe6",
+        "sha256": "71fc0f560fea9542fd760a8ddd744fa1536d4ad1134e9a5c903dea2ecff7cc4f"
       },
       {
         "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunProjectedActivityPersistenceTest.java",

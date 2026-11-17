@@ -41,15 +41,15 @@ audit_v2_cleanup
 
 docker version >/dev/null
 docker compose version >/dev/null
-audit_v2_compose up -d --build mysql57-agent-task-actionable-audit-v2
-audit_v2_compose run --rm --build liquibase-agent-task-actionable-audit-v2
-audit_v2_compose run --rm --build liquibase-psique-visual-evidence
-audit_v2_compose run --rm --build liquibase-agent-task-prompt-parts-v1
-audit_v2_compose run --rm --build liquibase-agent-task-history-source-index
+audit_v2_compose up -d --build --wait mysql57-agent-task-actionable-audit-v2
+audit_v2_compose run --rm --no-deps --build liquibase-agent-task-actionable-audit-v2
+audit_v2_compose run --rm --no-deps --build liquibase-psique-visual-evidence
+audit_v2_compose run --rm --no-deps --build liquibase-agent-task-prompt-parts-v1
+audit_v2_compose run --rm --no-deps --build liquibase-agent-task-history-source-index
 
-audit_v2_compose run --rm --build liquibase-geralanding-queue-index
+audit_v2_compose run --rm --no-deps --build liquibase-geralanding-queue-index
 # Reaplicar deve preservar o índice e o controle de execução do Liquibase.
-audit_v2_compose run --rm liquibase-geralanding-queue-index
+audit_v2_compose run --rm --no-deps liquibase-geralanding-queue-index
 
 audit_v2_assert_equal \
   "índice da fila GeraLanding" \
@@ -281,10 +281,10 @@ VALUES
   exit 1
 fi
 
-audit_v2_compose run --rm liquibase-agent-task-actionable-audit-v2
-audit_v2_compose run --rm liquibase-psique-visual-evidence
-audit_v2_compose run --rm liquibase-agent-task-prompt-parts-v1
-audit_v2_compose run --rm liquibase-agent-task-history-source-index
+audit_v2_compose run --rm --no-deps liquibase-agent-task-actionable-audit-v2
+audit_v2_compose run --rm --no-deps liquibase-psique-visual-evidence
+audit_v2_compose run --rm --no-deps liquibase-agent-task-prompt-parts-v1
+audit_v2_compose run --rm --no-deps liquibase-agent-task-history-source-index
 
 audit_v2_assert_equal \
   "reaplicação sem duplicar schema, links ou provas" \

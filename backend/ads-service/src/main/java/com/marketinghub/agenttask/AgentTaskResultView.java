@@ -37,7 +37,8 @@ public final class AgentTaskResultView {
             "DETERMINISTIC",
             decision);
       for (String field :
-          java.util.List.of("summary", "commercialRationale", "rootCause", "rationale")) {
+          java.util.List.of(
+              "summary", "commercialRationale", "customerPerspective", "rootCause", "rationale")) {
         String text = result.path(field).asText("").replaceAll("\\s+", " ").trim();
         if (!text.isBlank()) {
           if (text.length() > 420) {

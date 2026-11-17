@@ -255,6 +255,16 @@ jobs:
           CATALOGO_VIVO_DB_HOST: 127.0.0.1
         run: python3 infra/testing/catalogo-vivo/run-local.py --persistence-only
 
+      - name: Preservar diagnóstico completo do catálogo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogo-vivo-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/catalogo-vivo-opala/
+            backend/ads-service/target/surefire-reports/*CatalogoVivo*
+          if-no-files-found: warn
+
   validate-opala-commercial-preparation:
     name: Validar Opala, Quartzo e leitura de preflight
     runs-on: ubuntu-latest

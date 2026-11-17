@@ -1326,6 +1326,14 @@
   de Mira executa o mesmo contrato do CI antes da suíte. O gate permanece obrigatório.
 - Evidências e matriz: `docs/homologacao/actions-mira-ciclos-2026-09-13.md`.
 
+- **Recorrência de ambiente em 17/11/2026:** o run MySQL 44177983235 recriou
+  bancos de fixtures entre migradores e perdeu alterações já aplicadas. Três
+  runners agora esperam saúde e usam `--no-deps` nos migradores; contrato do CI
+  previne a regressão. O teste TLS em Ubuntu 26.04 deixou de aceitar duração
+  negativa: datas explícitas e extensões válidas preservam os handshakes reais.
+  O job Opala preserva logs completos; não se deduz causa apenas do fim da stack.
+  Evidências: [homologação Vega](../homologacao/vega-bloqueio-resumo-humano-2026-11-17.md).
+
 ## LOOP-ACTIONS-RETOMADA-SEM-GATILHO — workflow ativo não recupera merge perdido
 
 - **Data:** 2026-09-08.
@@ -1509,6 +1517,12 @@ Evidências: `docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`
   parâmetro que recebe regex, selecionando zero arquivos; agora monta uma expressão
   escapada e possui teste para arquivos alterados/novos sem incluir arquivos alheios.
   Evidências: `docs/homologacao/catalogo-vivo-opala-v1.md`.
+
+- **Prevenção complementar em 17/11/2026:** o Catálogo Vivo fixa dois schemas de
+  parecer por hash. A síntese humana usa os campos existentes nesses contratos,
+  preservando os bytes; os contratos extensíveis recebem `humanSummary`. O preflight
+  confere os hashes antes do banco e a leitura da síntese cobre a perspectiva de
+  Psique e a justificativa de Têmis sem reescrever o parecer.
 
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 

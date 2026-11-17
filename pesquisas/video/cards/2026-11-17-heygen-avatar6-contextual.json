@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-heygen-avatar6-contextual-2026-11",
+  "title": "HeyGen Avatar 6: apresentadores com gestos guiados pelo roteiro em 2K",
+  "finding": "Em 17/11/2026, HeyGen liberou publicamente o Avatar 6 por web e API, após acesso antecipado Enterprise. Modelo proprietário de avatares áudio-guiados que adapta gestos ao conteúdo falado, eleva o contexto de movimento e permite 2K.",
+  "mechanism": "Animação de apresentador a partir de imagem ou vídeo de referência com áudio/roteiro; prompts de movimento, orientação por fala e edição localizada de palavras. APIs v3/models/avatars e v3/videos, este último restrito a um avatar.",
+  "commercialApplication": "Vídeos explicativos, vendedores virtuais, localização, treinamentos, conteúdo social e vídeos de marketing com apresentador recorrente.",
+  "evidenceStrength": "Alta para disponibilidade, endpoints, datas e limites documentados. Avaliações de realismo e de preferência sobre concorrentes são da própria HeyGen, não independentes. 42,2% do teste lado a lado confundiram o avatar com o real; 84,4% é métrica derivada e não taxa de acerto real.",
+  "experimentHypothesis": "Em 20 vídeos em PT-BR de 20–60s, gestos contextuais e correção local reduzirão a necessidade de refações versus Avatar V sem elevar o custo por vídeo aprovado.",
+  "risks": "Custo por minuto específico de Avatar 6 não publicado na tabela de API consultada; preços e quotas variam por plano; autorização de rosto e voz obrigatória; vídeo de referência real Enterprise; qualidade em PT-BR e duração longa ainda não verificadas independentemente.",
+  "limits": "ATIVO web/API/MCP, pesos fechados; 1080p ou 2K (4K não), API v3/videos de um avatar; primeira geração web grátis; Creator US$29/600 créditos sem tarifa específica comprovada de Avatar 6.",
+  "collection": "video",
+  "publishedOn": "2026-11-17",
+  "validUntil": "2027-02-17",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-17-heygen-avatar6-contextual.md",
+  "sourceTitle": "HeyGen Avatar 6: análise de disponibilidade, contexto, lipsync e limites",
+  "sourceSha256": "83f940ed8afbcdeb2d03747363b09f293afc42f98bf9076339e70f7380520d7a"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "timbre-heterogeneo-ancora-pulso",
+  "collection": "prazer-audio-visual",
+  "title": "Contrastes discretos de timbre podem ajudar alguns ouvintes a perceber pulso em texturas rítmicas",
+  "finding": "Em texturas geradas por 40 osciladores acoplados, pequenas diferenças de timbre favoreceram batidas mais regulares apenas em parte dos ouvintes e sobretudo quando a sincronização dos sons era fraca.",
+  "mechanism": "Contrastes tímbricos podem servir de âncoras perceptivas para organizar eventos sonoros sobrepostos; a medida de tapping não separa completamente percepção, seleção atencional e estratégia motora.",
+  "commercialApplication": "Testar clareza rítmica de sonoplastias densas em vídeos e experiências musicais opcionais usando timbre homogêneo versus contrastes discretos, com controle do arranjo e volume.",
+  "evidenceStrength": "Experimento comportamental revisado por pares, publicado em 16/11/2026; força moderada-baixa no paradigma e baixa para prazer/marketing, com efeitos dependentes do ouvinte.",
+  "publishedOn": "2026-11-17",
+  "validUntil": "2027-01-01",
+  "experimentHypothesis": "Em áudio com pulsações simultâneas e sincronização fraca, pequenos contrastes de timbre poderão aumentar detecção do pulso e regularidade de batidas em um subgrupo, sem aumento obrigatório de agrado.",
+  "risks": "Interpretação indevida de tapping como prazer, excesso de estímulos, ganho de volume, generalização para todos os ouvintes e atribuição de efeitos comerciais não testados.",
+  "limits": "Texturas sintéticas de metrônomos, resultados heterogêneos, mecanismo de ancoragem não isolado e ausência de estudos de preferência, dopamina ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-17-timbre-heterogeneo-ancora-pulso-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Timbre heterogêneo e percepção de pulso",
+  "sourceSha256": "17fc5262dd3dca6962349be9d15e6c6c0dcd7dc0bb20c76b15e64aaf94064d05"
+}

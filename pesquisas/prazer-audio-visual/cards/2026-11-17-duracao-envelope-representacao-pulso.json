@@ -1,0 +1,18 @@
+{
+  "cardKey": "duracao-envelope-representacao-pulso",
+  "collection": "prazer-audio-visual",
+  "title": "Duração das notas pode alterar a representação neural do pulso mesmo com ritmo igual",
+  "finding": "Em sequências de ritmo idêntico, aumentar a duração dos sons elevou a periodicidade do pulso nas respostas de EEG, mesmo sem aumento comparável em propriedades acústicas básicas modeladas.",
+  "mechanism": "Características do envelope temporal além dos onsets podem participar da formação de representações internas do pulso musical; a inferência é sobre processamento rítmico, não recompensa.",
+  "commercialApplication": "Avaliar variações discretas de sustentação/envelope de notas em trilhas originais de experiências audiovisuais, medindo clareza de pulso e conforto com pessoas reais.",
+  "evidenceStrength": "Experimento com EEG revisado por pares, publicado em 12/11/2026; evidência moderada no paradigma, baixa para prazer, memória ou resultado comercial.",
+  "publishedOn": "2026-11-17",
+  "validUntil": "2027-01-01",
+  "experimentHypothesis": "Com mesmo padrão rítmico, tempo e intensidade, durações de nota diferentes poderão mudar o reconhecimento do pulso e a experiência subjetiva; direção e magnitude precisam de teste humano.",
+  "risks": "Tratar EEG como leitura de prazer, maximizar duração indiscriminadamente, causar mascaramento da voz ou sugerir melhora garantida de atenção e conversão.",
+  "limits": "Estímulos controlados e medida eletrofisiológica, sem demonstração de prazer, memória posterior, dopamina nem melhora de desempenho em vídeos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-17-duracao-envelope-representacao-pulso-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Duração do som e representação neural do pulso",
+  "sourceSha256": "0bd7942fb4312073115833d07f0248c73572cbb9a612d4a4e195552f74a6e20f"
+}

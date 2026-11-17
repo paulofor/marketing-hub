@@ -1,0 +1,18 @@
+{
+  "cardKey": "controles-hibridos-edicao-vfx-pose-video",
+  "collection": "video",
+  "title": "Controles espaciais, temporais e em camadas para editar efeitos de movimento em vídeo IA",
+  "finding": "Em preprint submetido em 16/11/2026, estudo intraindivíduo com 12 criadores comparou interface híbrida PromptPoseFX e interface só textual com mesmo pipeline. Todos concluíram as tarefas com a interface híbrida; 9/12 concluíram com a textual. Precisão espacial percebida média 4,58 vs 2,33; precisão temporal 4,67 vs 3,25.",
+  "mechanism": "Interpretação plausível: indicar visualmente posição, tempo e parâmetros reduz ambiguidades dos prompts; efeitos em camadas permitem ajustes reversíveis. A pesquisa demonstra avaliações superiores e tarefas concluídas, mas não isola mecanismo psicológico causal nem comprova efeito no público de vídeos.",
+  "commercialApplication": "Testar no agente Apolo uma interface opcional para VFX simples em vídeo real que associe prompts a marcadores de espaço e tempo, parâmetros editáveis e camadas reversíveis. Auditar fidelidade de movimento, continuidade e custo por ativo aprovado.",
+  "evidenceStrength": "Preprint arXiv:2611.20485v1 (16/11/2026); estudo comparativo intraindivíduo com N=12, tarefas curtas e avaliação perceptiva; comparação com backend de geração preservado. Evidência inicial de usabilidade, não de resultado comercial.",
+  "publishedOn": "2026-11-17",
+  "validUntil": "2027-01-01",
+  "experimentHypothesis": "Para vídeos UGC de mesma complexidade, edição híbrida produzirá mais efeitos visualmente corretos, menos regressões e menor retrabalho que prompts apenas textuais. Medir acerto por revisão cega, tempo e custo por ativo validado; avaliar retenção, CTA e pagamentos de campanhas reais separadamente.",
+  "risks": "Rastreamento incorreto de pose, efeitos desalinhados, falhas em camadas, perda de continuidade, excesso de controles e tratamento inadequado de imagens pessoais. Manter original, edições reversíveis e revisão humana.",
+  "limits": "12 participantes de redes pessoais/universitárias, efeitos 2D e duas tarefas guiadas; limitações p5.js/MediaPipe e contexto visual. Não houve métricas de audiência, campanhas reais, vendas ou ROI. Não generalizar para todo vídeo gerado por IA.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-17-controles-hibridos-vfx-movimento.md",
+  "sourceTitle": "Fonte revisada — Zheng, Ye e Fu (2026): PromptPoseFX e edição reversível de VFX vinculados a pose",
+  "sourceSha256": "b4607a2dd276cbc91fc8f1d38d089f838fe3f2dfc5028c58ccd3024e95c3535c"
+}

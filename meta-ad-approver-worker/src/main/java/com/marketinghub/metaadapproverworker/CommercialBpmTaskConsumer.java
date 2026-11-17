@@ -660,6 +660,7 @@ public class CommercialBpmTaskConsumer {
 
   /** Exige revisão integral da técnica e dos três cenários, sem alegação de mercado. */
   static void validateAgentValidation(JsonNode result, Map<String, Object> task) {
+    validateHumanSummary(result);
     @SuppressWarnings("unchecked")
     Map<String, Object> target =
         task.get("taskTarget") instanceof Map<?, ?> value ? (Map<String, Object>) value : Map.of();
@@ -726,6 +727,16 @@ public class CommercialBpmTaskConsumer {
         throw new IllegalArgumentException(
             "O destino de correção contradiz o parecer de integridade.");
     }
+  }
+
+  /** Valida a síntese nova sem invalidar replay dos pareceres históricos sem esse campo. */
+  static void validateHumanSummary(JsonNode result) {
+    if (!result.has("humanSummary")) return;
+    JsonNode summary = result.path("humanSummary");
+    if (!summary.isTextual()
+        || summary.asText().trim().length() < 20
+        || summary.asText().length() > 420)
+      throw new IllegalArgumentException("O resumo humano deve ter entre 20 e 420 caracteres.");
   }
 
   /** Detecta qualquer efeito externo declarado na revisão multiagente. */

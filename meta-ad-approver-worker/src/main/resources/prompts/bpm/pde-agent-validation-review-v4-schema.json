@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": [
+  "required": ["humanSummary",
     "contractVersion",
     "decision",
     "remediationKind",
@@ -21,6 +21,7 @@
     "requiredChanges"
   ],
   "properties": {
+    "humanSummary": {"type": "string", "minLength": 20, "maxLength": 420, "description": "Resumo em português simples: conclusão, motivo principal e próximo passo, em até três frases. Sem siglas, códigos ou detalhes técnicos; não inventar decisão do usuário."},
     "contractVersion": {"type": "string", "const": "PDE_TEMIS_AGENT_VALIDATION_V1"},
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
     "remediationKind": {"type": "string", "enum": ["NONE", "EVIDENCE_SUPPLEMENT", "FUNCTIONAL_CHANGE", "RISK_BLOCK"]},

@@ -622,7 +622,10 @@ class CommunicationAgentCodexRunnerTest {
         .contains("landingInstrumentationContract", "Não inclua `<script>`", "runtime publicador")
         .doesNotContain("JavaScript estritamente necessários");
     assertThat(schema.path("additionalProperties").asBoolean()).isFalse();
-    assertThat(schema.path("required")).hasSize(16);
+    assertThat(schema.path("required")).hasSize(17);
+    assertThat(schema.path("properties").path("humanSummary").path("maxLength").asInt())
+        .isEqualTo(420);
+    assertThat(schema.toString()).contains("humanSummary");
     assertThat(schema.toString())
         .contains("IRIS_COMMUNICATION_V1", "noFabricatedProof", "landingHtml");
   }
@@ -765,6 +768,7 @@ class CommunicationAgentCodexRunnerTest {
         """
         {
           "contractVersion":"IRIS_COMMUNICATION_V1",
+          "humanSummary":"O pacote de comunicação foi preparado para conferência. As provas e autorizações ainda precisam ser verificadas pelo fluxo.",
           "executionStatus":"%s",
           "sourceReference":"commercial-plan:1@v2:journey",
           "activityId":"%s",

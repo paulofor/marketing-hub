@@ -1,0 +1,85 @@
+# Vega — motivo da pausa e pareceres compreensíveis
+
+## Estado confirmado e aceite
+
+Consulta da tela, API e MySQL via MCP em 17/11/2026: produto 4, cadeia 27,
+ciclo 22, experimento 115, processo 117, execução 102 PAUSED, Têmis #921 BLOCKED.
+O suplemento do PR #5840 já está publicado. A pausa genérica perdeu a justificativa
+da solicitação #3958: conferir dez custos ausentes antes de nova revisão paga.
+A atividade exibia prontidão técnica, confundida com execução em andamento.
+
+## Alternativas
+
+1. Trocar somente o texto da tela: barato, mas o frontend inventaria o motivo.
+2. Bloquear toda cobertura financeira parcial: simples, mas contradiz contratos
+   anteriores que aceitam envelopes e não registra a decisão específica do operador.
+3. Registrar a razão da pausa no diário existente e apresentar orientação do backend:
+   preserva decisões, identidade e contratos; escolhida. Somente uma pausa explicitamente
+   financeira exige conciliação para retomar. Consultar não registra decisão nem gasta.
+
+Para pareceres, foram comparados nova inferência de tradução (custo e risco de alterar
+história), resumo arbitrário no frontend (perde autoridade) e síntese curta no contrato
+do agente com projeção determinística para legados. Escolhida a terceira: mantém o
+parecer integral e não repete chamadas pagas para traduzir resultados antigos.
+
+## Matriz definida antes dos testes
+
+| Área | Critério |
+| --- | --- |
+| Caso original | Atividade mostra pausa, motivo financeiro, responsável e link do mesmo produto/ciclo; parecer histórico permanece bloqueado e suplemento aguarda revisão |
+| Decisão | Leitura não autoriza nem retoma; pausa financeira explícita impede resume enquanto houver custos ausentes; pausa comum preserva comportamento anterior |
+| Isolamento | Outra identidade de produto/execução e caminho antes válido; nenhum custo ou decisão transferido |
+| Resumos | Síntese curta em português, causa e próximo passo; detalhes preservados; legado identificado; JSON inválido não fabrica parecer |
+| Falhas | Erro de consulta mostra erro recuperável; request inválida recusada; gravação assíncrona impede duplo envio |
+| Integração | Controller → serviço → diário persistido → consulta → UI; resume protegido também no backend |
+| Navegador | Chromium desktop, iPhone 15 Pro e Pixel 7 emulados; Safari físico não disponível |
+| Observabilidade | Evento auditável com razão, contexto e data; testes isolados sem provedores, gastos ou métricas comerciais |
+| Entrega | Diff revisado, testes locais, PR/revisão/main, workflows, saúde e tela publicada |
+
+## Aprendizado reutilizável
+
+Lacunas: pausa sem motivo persistido e parecer técnico usado como resumo humano.
+Mudança: razão estruturada no diário existente, orientação oficial junto à atividade,
+síntese curta antes da auditoria. Medir recorrência de dúvidas e intervenções; impacto
+comercial desconhecido. Não cria atividade, agente, aprovação nem infraestrutura nova.
+Critério de adoção: regressões acima aprovadas, sem alteração de custos ou decisões.
+
+## Ambiente
+
+O helper de capacidade retornou acesso não autorizado (HTTP 401). Conferência local
+independente: 43 GiB livres, 50% de uso. Não foram removidos dados nem alterados runtimes.
+
+## Resultados
+
+1.265 casos Java conferidos nos sete módulos: 333 no backend, 143 em Têmis,
+261 em Psique, 90 em Plutus, 168 em Atena, 113 em Dédalo e 157 em Íris.
+Sem falhas ou erros após os ajustes. Os 22 casos opcionais condicionados a flags de integração
+e arquivos externos permanecem fora do aceite; os transportes, o diário, a leitura curta e a
+proteção da pausa foram executados localmente. As últimas alterações foram repetidas
+somente nas suítes afetadas.
+
+Frontend: 62 testes relevantes e rodada final das páginas afetadas aprovados;
+TypeScript conferido. Bundle gerado com a configuração produtiva do repositório,
+separando a verificação TypeScript do empacotamento para evitar dois processos grandes
+simultâneos na sandbox de 2,75 GiB. O checker foi retirado apenas do wrapper local,
+após o mesmo `tsc --noEmit` passar. O último bundle local desativa somente sourcemaps
+no wrapper após falta real de memória; código, minificação e configuração versionada
+permanecem os do projeto. O CI executa o build integral com sourcemaps.
+
+26 testes de prompts/schemas, 17 do pacote de provas e 14 do workflow passaram.
+O trecho shell alterado no workflow passou em `bash -n` e ShellCheck. A atestação
+sucessora Mira v86 preserva v85 e somente atualiza compatibilidade; o seletor PDE
+retorna `frontend-version=none`, sem nova publicação comercial de produto.
+
+A matriz Chromium cobre duas identidades, desktop/iPhone/Pixel, consulta curta fora
+da lista leve, gravação da pausa sem retomada, parecer completo, erro e recuperação
+da síntese, indisponibilidade do estado e ausência de escrita adicional ou chamada paga.
+Os dados e chamadas são doubles locais, identificados como testes. O backend usa JPA/H2
+real para provar diário, segregação e consulta sem hidratar prompts; não há mudança de schema.
+
+O verificador de capacidade respondeu 401 e o recibo automático de dependências não
+pôde ser registrado; dependências e fontes foram preservadas. Node/npm/npx continuam
+na instalação persistente, com saúde conferida. Não houve uso de Docker nem limpeza global.
+
+Nenhuma nova revisão paga foi autorizada ou iniciada. A execução produtiva continua
+pausada; a entrega técnica ainda depende do PR, integração, workflows e conferência da tela.

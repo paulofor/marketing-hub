@@ -139,6 +139,9 @@ class CodexTransportIntegrationTest {
     var result =
         json.createObjectNode()
             .put("decision", "APPROVED")
+            .put(
+                "humanSummary",
+                "As provas examinadas estão coerentes. O backend deve conferir os demais requisitos da etapa.")
             .put("commercialRationale", "Parecer simulado localmente, sem publicação.");
     result.putArray("evidence").add("Fixture técnica de transporte");
     result.putArray("requiredChanges");

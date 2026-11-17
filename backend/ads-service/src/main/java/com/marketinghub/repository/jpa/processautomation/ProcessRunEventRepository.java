@@ -9,6 +9,10 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: consultar o diário imutável e deduplicar disparos por entrada funcional. */
 public interface ProcessRunEventRepository extends JpaRepository<ProcessRunEvent, Long> {
+  /** Recupera a explicação mais recente da pausa sem confundir execuções do mesmo produto. */
+  java.util.Optional<ProcessRunEvent> findFirstByRunIdAndEventTypeOrderByIdDesc(
+      Long runId, String eventType);
+
   /** Impede repetir a mesma entrada sem progresso ou retomada explícita. */
   boolean existsByRunIdAndActionKey(Long runId, String actionKey);
 

@@ -44,6 +44,11 @@ export default function ProductProcessAutomationPanel({
     sourceReference,
   );
   const [showEvents, setShowEvents] = useState(false);
+  const [showPauseReason, setShowPauseReason] = useState(false);
+  const [pauseReasonCode, setPauseReasonCode] = useState<
+    "OPERATOR" | "COST_RECONCILIATION"
+  >("OPERATOR");
+  const [pauseReason, setPauseReason] = useState("");
   const [beforeId, setBeforeId] = useState<number>();
   const events = useProcessAutomationEvents(
     root,
@@ -363,6 +368,24 @@ export default function ProductProcessAutomationPanel({
             </nav>
           )}
           <div className="product-process-automation__buttons">
+            {data.status === "PAUSED" && (
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={command.isPending || status.isError}
+                onClick={() => {
+                  if (!showPauseReason)
+                    setPauseReasonCode(
+                      data.userAction?.code === "RECONCILE_COSTS_BEFORE_RESUME"
+                        ? "COST_RECONCILIATION"
+                        : "OPERATOR",
+                    );
+                  setShowPauseReason(!showPauseReason);
+                }}
+              >
+                Registrar motivo da pausa
+              </button>
+            )}
             {data.canStart && (
               <button
                 type="button"
@@ -441,6 +464,67 @@ export default function ProductProcessAutomationPanel({
                 </Link>
               )}
           </div>
+          {showPauseReason && data.status === "PAUSED" && (
+            <form
+              className="border rounded p-3 mt-3"
+              aria-label="Motivo da pausa"
+              onSubmit={(event) => {
+                event.preventDefault();
+                command.mutate(
+                  {
+                    action: "pause",
+                    reasonCode: pauseReasonCode,
+                    reason: pauseReason,
+                  },
+                  {
+                    onSuccess: () => setShowPauseReason(false),
+                  },
+                );
+              }}
+            >
+              <label className="form-label" htmlFor="pause-reason-code">
+                Por que o processo deve continuar pausado? *
+              </label>
+              <select
+                id="pause-reason-code"
+                className="form-select mb-2"
+                required
+                value={pauseReasonCode}
+                onChange={(event) =>
+                  setPauseReasonCode(
+                    event.target.value as typeof pauseReasonCode,
+                  )
+                }
+              >
+                <option value="OPERATOR">Pausa por decisão do operador</option>
+                <option value="COST_RECONCILIATION">
+                  Conferir custos antes de novos gastos
+                </option>
+              </select>
+              <label className="form-label" htmlFor="pause-reason">
+                Explicação da pausa
+              </label>
+              <textarea
+                id="pause-reason"
+                className="form-control mb-2"
+                maxLength={1000}
+                value={pauseReason}
+                onChange={(event) => setPauseReason(event.target.value)}
+              />
+              <p className="small">
+                Registrar o motivo mantém o processo pausado. A opção financeira
+                impede retomar enquanto houver tarefas antigas sem custo
+                informado; não aumenta o orçamento.
+              </p>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={command.isPending || status.isError}
+              >
+                {command.isPending ? "Salvando..." : "Salvar motivo da pausa"}
+              </button>
+            </form>
+          )}
           {data.id && (
             <small className="text-body-secondary">
               Execução #{data.id} · O progresso e o histórico ficam salvos mesmo

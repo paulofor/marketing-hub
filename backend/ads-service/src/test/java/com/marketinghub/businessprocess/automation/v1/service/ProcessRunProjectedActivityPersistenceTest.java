@@ -723,6 +723,106 @@ class ProcessRunProjectedActivityPersistenceTest {
     verifyNoInteractions(activities);
   }
 
+  /** Registra a pausa financeira, relê o diário e protege resume sem disparar outra inferência. */
+  @Test
+  void recordsFinancialPauseAndGuardsResumeFromPersistedReason() throws Exception {
+    authorized = true;
+    var costs =
+        mock(com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository.class);
+    var pause = new ProcessRunPauseGuidance(events, costs, json);
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "pauseGuidance", pause);
+    when(costs.summarize(parent.getProductId()))
+        .thenReturn(
+            List.of(
+                new com.marketinghub
+                    .businessprocesschain
+                    .learningcycle
+                    .v1
+                    .service
+                    .financialReview
+                    .CycleFinancialReview
+                    .CostSlice(96021L, new BigDecimal("113.33"), 10)));
+    var mvc =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController(
+                    service, "qa-only", ""))
+            .build();
+    String endpoint =
+        "/api/business-processes/"
+            + parent.getProcessDefinitionId()
+            + "/products/"
+            + parent.getProductId()
+            + "/automation/v1/"
+            + parent.getId();
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                    endpoint + "/pause")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"reasonCode\":\"INVALID\"}"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                .isBadRequest());
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                    endpoint + "/pause")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"reasonCode\":\"COST_RECONCILIATION\",\"reason\":\"Conferir custos antes de gastar.\"}"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    service.reconcile(parent.getId());
+    entityManager.flush();
+    entityManager.clear();
+    var response =
+        service.status(
+            parent.getProductId(),
+            parent.getProcessDefinitionId(),
+            new com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand(
+                parent.getChainDefinitionId(),
+                parent.getLearningCycleId(),
+                parent.getSourceReference()));
+    assertThat(response.status()).isEqualTo("PAUSED");
+    assertThat(response.userAction().reason()).contains("10 tarefas antigas");
+    assertThat(response.canResume()).isFalse();
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                    endpoint + "/pause")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                .isConflict());
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                    endpoint + "/pause")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"reasonCode\":\"OPERATOR\",\"reason\":\"Alterar a explicação.\"}"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                .isConflict());
+    service.pause(parent.getProductId(), parent.getProcessDefinitionId(), parent.getId());
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                endpoint + "/resume"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                .isConflict());
+    String output = System.getProperty("process-pause.fixture-output");
+    if (output != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output), json.writeValueAsString(response));
+
+    assertThatThrownBy(
+            () ->
+                service.resume(
+                    parent.getProductId(), parent.getProcessDefinitionId(), parent.getId()))
+        .hasMessageContaining("10 tarefas antigas");
+    assertThat(events.findFirstByRunIdAndEventTypeOrderByIdDesc(parent.getId(), "PAUSE_CONTEXT"))
+        .hasValueSatisfying(
+            event -> assertThat(event.getDetailsJson()).contains("COST_RECONCILIATION"));
+    verifyNoInteractions(activities);
+  }
+
   /** Encerra a landing substituída pelo destino comprovado somente depois da tarefa em curso. */
   @Test
   void closesUnneededLandingPreservingInflightWorkAndHistory() throws Exception {

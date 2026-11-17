@@ -27,6 +27,20 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 /** Responsabilidade: comprovar o contrato HTTP do histórico recente das atividades BPM. */
 class BusinessProcessActivityExecutionControllerTest {
 
+  /** A consulta curta encaminha somente a tarefa e a referência exatas, sem pedir auditoria. */
+  @Test
+  void getsOnlyCurrentTaskHumanSummary() throws Exception {
+    var service = mock(BusinessProcessActivityExecutionService.class);
+    var http =
+        MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(service))
+            .build();
+    http.perform(
+            get("/api/business-processes/117/products/4/tasks/921/human-summary")
+                .param("sourceReference", "experiment:115"))
+        .andExpect(status().isOk());
+    verify(service).taskHumanSummary(117L, 4L, 921L, "experiment:115");
+  }
+
   /** Transporta a referência explícita da leitura ao comando sem selecionar uma execução atual. */
   @Test
   void preservesExplicitReferenceInReadAndCommand() throws Exception {
@@ -101,6 +115,7 @@ class BusinessProcessActivityExecutionControllerTest {
             List.of(),
             List.of(),
             null,
+            null,
             null);
     when(service.recentExecutions(37L, "evidence"))
         .thenReturn(
@@ -167,6 +182,7 @@ class BusinessProcessActivityExecutionControllerTest {
             null,
             List.of(),
             List.of(),
+            null,
             null,
             null);
     var activity =

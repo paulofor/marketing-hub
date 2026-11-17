@@ -65,6 +65,24 @@ export function useProductProcessTaskAudit(url?: string, enabled = false) {
   });
 }
 
+/** Lê apenas a síntese da tarefa corrente, mantendo prompts e provas fora da consulta inicial. */
+export function useProductProcessTaskHumanSummary(
+  url?: string,
+  revision?: string,
+) {
+  return useQuery({
+    queryKey: ["product-process-task-human-summary", url, revision],
+    enabled: Boolean(url),
+    retry: 1,
+    queryFn: async ({ signal }) =>
+      (
+        await axios.get<{
+          humanSummary: BusinessProcessActivityExecution["humanSummary"];
+        }>(url!, { signal, timeout: 15000 })
+      ).data,
+  });
+}
+
 /** Consulta o contexto exato e acompanha revisões das tarefas do processo selecionado. */
 export function useProductProcessActivityExecutions(
   productId?: number,

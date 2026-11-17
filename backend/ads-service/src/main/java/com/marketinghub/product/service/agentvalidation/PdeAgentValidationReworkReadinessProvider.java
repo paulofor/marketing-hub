@@ -80,7 +80,7 @@ public class PdeAgentValidationReworkReadinessProvider
             || CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId()));
   }
 
-  /** Oferece correção ou reavaliação com nova prova, mantendo as aprovações da versão corrente. */
+  /** Explica a nova revisão com prova complementar e preserva aprovações da versão corrente. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -122,6 +122,12 @@ public class PdeAgentValidationReworkReadinessProvider
               + expectedVersion
               + ".");
     }
+    if (latestCurrentProcessTask(history, process, activityDefinition.getActivityId())
+        .filter(task -> "BLOCKED".equals(task.status()))
+        .filter(task -> freshReviewEvidence(task, product, expectedVersion, sourceReference))
+        .isPresent())
+      return ready(
+          "As provas adicionais estão disponíveis. Falta uma nova revisão do responsável; o parecer anterior continua no histórico. A execução depende da retomada e dos limites do processo.");
     return ready(
         activityLabel(requiredActivity)
             + " aprovou a mesma versão; esta atividade pode ser executada.");

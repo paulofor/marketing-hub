@@ -218,6 +218,9 @@ class CodexTransportIntegrationTest {
         json.createObjectNode()
             .put("contractVersion", "PDE_PSIQUE_AGENT_SCENARIO_V1")
             .put("decision", "APPROVED")
+            .put(
+                "humanSummary",
+                "O percurso examinado está claro e os testes foram preservados. O backend deve conferir os próximos requisitos.")
             .put("scenarioCode", scenario)
             .put("sourceReference", String.valueOf(task.get("sourceReference")))
             .put("productId", target.path("productId").asLong())

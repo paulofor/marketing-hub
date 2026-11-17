@@ -11776,3 +11776,22 @@ MISSING_EVIDENCE conserva a ação requerida sem disparar construção paga.
 Regressões preservam outro produto, o caminho funcional e o histórico. Provas reais
 MySQL 5.7 em duas identidades e doze casos terminais Chromium complementam somente os
 critérios faltantes. Registro: `docs/homologacao/vega-cadeia-prova-retomada-2026-11-17.md`.
+
+### Recorrência de comunicação do LOOP-BPM-DECISAO-HUMANA-COMO-EXECUCAO — 17/11/2026
+
+Vega, processo 117/execução 102, atividade 3.10: a tarefa #921 permanecia BLOCKED,
+o suplemento do PR #5840 já estava disponível e o processo PAUSED. A tela mostrava
+prontidão técnica e um motivo genérico de pausa, sem a decisão financeira #3958.
+O histórico confirma dez tarefas sem custo; isso não autoriza inventar saldo nem
+alterar o contrato de outras preparações que aceitam envelopes com cobertura parcial.
+
+Correção compartilhada: registrar motivo explícito no diário existente, orientar na
+própria atividade e proteger a retomada financeira no servidor. Resumos curtos nos
+contratos dos agentes; projeção fiel dos pareceres legados, sem inferência adicional.
+A consulta resumida do histórico não contém resultados: endpoint curto da tarefa exata
+supre essa passagem sem voltar a carregar todos os prompts ou provas na abertura.
+
+Regressões: ProcessRunPauseGuidanceTest, ProcessRunProjectedActivityPersistenceTest,
+AgentTaskHumanSummaryTest, consultas JPA sem hidratação, contrato HTTP, testes frontend,
+26 contratos de prompt/schema e navegador em duas identidades e três dispositivos.
+Matriz e limites: docs/homologacao/vega-bloqueio-resumo-humano-2026-11-17.md.

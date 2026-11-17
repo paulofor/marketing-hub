@@ -18,6 +18,26 @@ import org.springframework.core.io.ClassPathResource;
 class CommercialBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Síntese curta acompanha parecer novo; replay antigo continua válido sem nova chamada paga. */
+  @Test
+  void boundsHumanSummaryAndPreservesLegacyReplay() {
+    var result = integrityResult(4);
+    result.put(
+        "humanSummary",
+        "Faltam provas de recuperação. Têmis deve revisar o complemento antes de liberar a etapa.");
+    CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4));
+    result.put("humanSummary", "x".repeat(421));
+    assertThatThrownBy(
+            () -> CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4)))
+        .hasMessageContaining("resumo humano");
+    result.put("humanSummary", "curto");
+    assertThatThrownBy(
+            () -> CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4)))
+        .hasMessageContaining("resumo humano");
+    result.remove("humanSummary");
+    CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4));
+  }
+
   /** Classifica falta de prova sem impor alteração funcional em produtos diferentes. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {4, 97004})

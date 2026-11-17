@@ -342,6 +342,11 @@ export type BusinessProcessActivityDocument = {
 };
 
 export type BusinessProcessActivityExecution = {
+  humanSummary?: {
+    text: string;
+    source: "AGENT" | "DETERMINISTIC" | "LEGACY_EXCERPT";
+    decision: string;
+  } | null;
   taskId: number;
   processDefinitionId: number;
   processVersionNumber: number;
@@ -439,6 +444,7 @@ export type ProductProcessActivityExecutionGroup = {
 };
 
 export type ProductProcessRecoveryTask = {
+  humanSummary?: string;
   taskId: number;
   status: string;
   agentName: string;

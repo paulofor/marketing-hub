@@ -1,8 +1,9 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "commercialRationale", "evidence", "requiredChanges"],
+  "required": ["humanSummary", "decision", "commercialRationale", "evidence", "requiredChanges"],
   "properties": {
+    "humanSummary": {"type": "string", "minLength": 20, "maxLength": 420, "description": "Resumo em português simples: conclusão, motivo principal e próximo passo, em até três frases. Sem siglas, códigos ou detalhes técnicos; não inventar decisão do usuário."},
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
     "commercialRationale": {"type": "string", "minLength": 1},
     "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},

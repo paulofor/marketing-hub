@@ -2,6 +2,7 @@ package com.marketinghub.businessprocess.automation.v1.controller;
 
 import com.marketinghub.businessprocess.automation.v1.service.ProcessRunService;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
+import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunPauseRequest;
 import com.marketinghub.businessprocess.automation.v1.service.status.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -68,12 +69,15 @@ public class ProcessRunController {
     return service.start(productId, processId, command);
   }
 
-  /** Pausa novos disparos sem cancelar tarefas já iniciadas. */
+  /** Pausa novos disparos e registra a justificativa opcional, sem cancelar tarefas iniciadas. */
   @Operation(summary = "Pausa a execução automática do processo")
   @PostMapping(ROOT + "/{runId}/pause")
   public ProcessRunResponse pause(
-      @PathVariable Long productId, @PathVariable Long processId, @PathVariable Long runId) {
-    return service.pause(productId, processId, runId);
+      @PathVariable Long productId,
+      @PathVariable Long processId,
+      @PathVariable Long runId,
+      @Valid @RequestBody(required = false) ProcessRunPauseRequest request) {
+    return service.pause(productId, processId, runId, request);
   }
 
   /** Retoma o processo preservando tarefas e decisões anteriores. */

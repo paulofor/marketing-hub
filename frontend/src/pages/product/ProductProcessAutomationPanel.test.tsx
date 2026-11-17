@@ -101,6 +101,55 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("registra motivo financeiro na pausa existente sem retomar ou iniciar outra tarefa", async () => {
+    const paused = {
+      ...running,
+      status: "PAUSED",
+      canPause: false,
+      canResume: true,
+    };
+    vi.mocked(axios.get).mockResolvedValue({ data: paused });
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        ...paused,
+        canResume: false,
+        userAction: {
+          ...financeAction,
+          title: "Confira os custos antes de retomar",
+          code: "RECONCILE_COSTS_BEFORE_RESUME",
+        },
+      },
+    });
+    setup();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Registrar motivo da pausa" }),
+    );
+    fireEvent.change(screen.getByLabelText(/Por que o processo/), {
+      target: { value: "COST_RECONCILIATION" },
+    });
+    fireEvent.change(screen.getByLabelText("Explicação da pausa"), {
+      target: { value: "Conferir custos antes de gastar." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salvar motivo da pausa" }),
+    );
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        expect.stringContaining("/21/pause"),
+        {
+          reasonCode: "COST_RECONCILIATION",
+          reason: "Conferir custos antes de gastar.",
+        },
+        { timeout: 45000 },
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Retomar processo" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(axios.post).toHaveBeenCalledTimes(1);
+  });
   it("exibe o retrato oficial e o atualiza junto com o responsável", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

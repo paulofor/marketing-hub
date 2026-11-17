@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": [
+  "required": ["humanSummary",
     "activity",
     "decision",
     "selectedDossierId",
@@ -20,6 +20,7 @@
     "internationalAssessment"
   ],
   "properties": {
+    "humanSummary": {"type": "string", "minLength": 20, "maxLength": 420, "description": "Resumo em português simples: conclusão, motivo principal e próximo passo, em até três frases. Sem siglas, códigos ou detalhes técnicos; não inventar decisão do usuário."},
     "activity": {
       "type": "string",
       "enum": [

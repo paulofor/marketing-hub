@@ -22,6 +22,7 @@ import {
 import {
   useProductProcessActivityExecutions,
   useRequestProductProcessActivityExecution,
+  useProductProcessTaskHumanSummary,
 } from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
 import { useProductValueChainPosition } from "../../api/product/useProductValueChainPositions";
@@ -40,6 +41,8 @@ import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessC
 import ProductLearningCycleContext from "./ProductLearningCycleContext";
 import ProductActivityContextCopyButton from "./ProductActivityContextCopyButton";
 import ProductProcessAutomationPanel from "./ProductProcessAutomationPanel";
+import ProductProcessPauseNotice from "./ProductProcessPauseNotice";
+import { useProcessAutomation } from "../../api/businessProcess/useProcessAutomation";
 import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
@@ -139,6 +142,32 @@ export default function ProductProcessActivityExecutionsPage() {
     requestExecution.reset();
   }, [productId, processDefinitionId, effectiveCycleId, requestedReference]);
   const data = cycleContextUnavailable ? undefined : history.data;
+  const summaryTask = data?.activities
+    .find((activity) => activity.activityId === data.currentActivityId)
+    ?.tasks.find(
+      (task) =>
+        task.sourceReference === data.currentExecutionReference &&
+        task.processDefinitionId === data.selectedProcessDefinitionId,
+    );
+  const humanSummary = useProductProcessTaskHumanSummary(
+    summaryTask?.sourceReference
+      ? `/api/business-processes/${summaryTask.processDefinitionId}/products/${productId}/tasks/${summaryTask.taskId}/human-summary?sourceReference=${encodeURIComponent(summaryTask.sourceReference)}`
+      : undefined,
+    summaryTask
+      ? `${summaryTask.status}/${summaryTask.finishedAt ?? summaryTask.createdAt}`
+      : undefined,
+  );
+  const automation = useProcessAutomation(
+    productId,
+    processDefinitionId,
+    data
+      ? (effectiveChainId ??
+          valueChainPosition.data?.chainDefinitionId ??
+          undefined)
+      : undefined,
+    effectiveCycleId,
+    data?.currentExecutionReference,
+  );
   const historical = data?.operationalState === "CLOSED";
   const continuationCandidate =
     valueChainPosition.data?.learningCycleNavigation;
@@ -652,6 +681,30 @@ export default function ProductProcessActivityExecutionsPage() {
                   </div>
                 </header>
 
+                {activity.activityId === data.currentActivityId ? (
+                  <ProductProcessPauseNotice
+                    execution={automation.status.data}
+                    unavailable={automation.status.isError}
+                  />
+                ) : null}
+                {activity.activityId === data.currentActivityId &&
+                humanSummary.isError ? (
+                  <div className="alert alert-warning" role="alert">
+                    Não foi possível carregar o resumo simples. O parecer
+                    completo continua disponível abaixo.
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm"
+                      disabled={humanSummary.isFetching}
+                      onClick={() => void humanSummary.refetch()}
+                    >
+                      {humanSummary.isFetching
+                        ? "Atualizando..."
+                        : "Atualizar resumo"}
+                    </button>
+                  </div>
+                ) : null}
+
                 {activity.activityObjective ? (
                   <p className="product-process-activity-executions__objective">
                     <strong>Objetivo:</strong> {activity.activityObjective}
@@ -724,6 +777,10 @@ export default function ProductProcessActivityExecutionsPage() {
                           startedAt: task.startedAt,
                           finishedAt: task.finishedAt,
                           executionError: task.executionError,
+                          humanSummary: (task.taskId === summaryTask?.taskId
+                            ? humanSummary.data?.humanSummary
+                            : task.humanSummary
+                          )?.text,
                           recommendedAction:
                             task.blockerGuidance?.recommendedAction,
                         }
@@ -759,7 +816,15 @@ export default function ProductProcessActivityExecutionsPage() {
                     {activity.tasks.map((execution) => (
                       <BusinessProcessExecutionCard
                         key={`${activity.activityId}-${execution.taskId}`}
-                        execution={execution}
+                        execution={
+                          execution.taskId === summaryTask?.taskId &&
+                          humanSummary.data
+                            ? {
+                                ...execution,
+                                humanSummary: humanSummary.data.humanSummary,
+                              }
+                            : execution
+                        }
                         contentHeadingLevel="h3"
                         contextNotice={
                           execution.processDefinitionId !==

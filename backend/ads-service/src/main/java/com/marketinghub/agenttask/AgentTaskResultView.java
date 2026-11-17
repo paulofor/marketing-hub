@@ -13,6 +13,48 @@ public final class AgentTaskResultView {
   /** Impede instanciação do conversor sem estado. */
   private AgentTaskResultView() {}
 
+  /** Apresenta a síntese do agente e identifica recortes legados sem reescrever o resultado. */
+  public static AgentTaskHumanSummary humanSummary(AgentTask task) {
+    if (task == null || task.getResultJson() == null || task.getResultJson().isBlank()) return null;
+    try {
+      JsonNode result = JSON.readTree(task.getResultJson());
+      String decision = result.path("decision").asText("");
+      String generated = result.path("humanSummary").asText("").trim();
+      if (generated.length() >= 20 && generated.length() <= 420)
+        return new AgentTaskHumanSummary(generated, "AGENT", decision);
+      JsonNode checks = result.path("agentValidationChecks");
+      if ("PDE_TEMIS_AGENT_VALIDATION_V1".equals(result.path("contractVersion").asText())
+          && java.util.Set.of("BLOCKED", "ADJUST").contains(decision)
+          && checks.size() == 13
+          && checks.path("technicalHarnessPassed").isBoolean()
+          && !checks.path("technicalHarnessPassed").asBoolean()
+          && java.util.stream.StreamSupport.stream(
+                  java.util.Spliterators.spliteratorUnknownSize(checks.fields(), 0), false)
+              .filter(entry -> !"technicalHarnessPassed".equals(entry.getKey()))
+              .allMatch(entry -> entry.getValue().isBoolean() && entry.getValue().asBoolean()))
+        return new AgentTaskHumanSummary(
+            "Têmis pediu provas adicionais dos testes do aplicativo. Esse parecer ainda não aprova a etapa; o complemento precisa passar por uma nova revisão.",
+            "DETERMINISTIC",
+            decision);
+      for (String field :
+          java.util.List.of(
+              "summary", "commercialRationale", "customerPerspective", "rootCause", "rationale")) {
+        String text = result.path(field).asText("").replaceAll("\\s+", " ").trim();
+        if (!text.isBlank()) {
+          if (text.length() > 420) {
+            int stop = text.lastIndexOf(' ', 417);
+            text = text.substring(0, stop > 0 ? stop : 417) + "…";
+          }
+          return new AgentTaskHumanSummary(text, "LEGACY_EXCERPT", decision);
+        }
+      }
+      return null;
+    } catch (Exception ex) {
+      log.warn("Resultado inválido ao consultar síntese humana. taskId={}", task.getId(), ex);
+      return null;
+    }
+  }
+
   /** Devolve uma seção objetiva do resultado sem inferir conteúdo ausente ou inválido. */
   public static JsonNode section(AgentTask task, String fieldName) {
     if (task == null

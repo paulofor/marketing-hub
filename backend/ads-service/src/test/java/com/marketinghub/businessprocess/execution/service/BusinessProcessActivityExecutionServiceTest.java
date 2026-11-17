@@ -63,6 +63,32 @@ class BusinessProcessActivityExecutionServiceTest {
   private final BusinessProcessActivityExecutionService service =
       new BusinessProcessActivityExecutionService(processes, tasks, new ObjectMapper());
 
+  /** A síntese corrente não hidrata tarefa, prompts ou resultados de outros produtos. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {4, 99004})
+  void readsOnlyExactTaskSummaryWithoutAudit(long productId) {
+    var products = mock(ProductRepository.class);
+    var experiments = mock(ExperimentRepository.class);
+    ReflectionTestUtils.setField(service, "productRepository", products);
+    ReflectionTestUtils.setField(service, "experimentRepository", experiments);
+    when(products.existsById(productId)).thenReturn(true);
+    when(experiments.existsByIdAndProductId(115L, productId)).thenReturn(true);
+    when(tasks.findHumanSummaryInput(921L, 117L, "experiment:115"))
+        .thenReturn(
+            Optional.of(
+                new com.marketinghub.agenttask.AgentTaskHumanSummaryInputSnapshot(
+                    921L,
+                    "{\"decision\":\"BLOCKED\",\"humanSummary\":\"Faltam provas de segurança. Têmis deve revisar o complemento.\"}")));
+    var response = service.taskHumanSummary(117L, productId, 921L, "experiment:115");
+    assertThat(response.humanSummary().text()).contains("Faltam provas de segurança");
+    verify(tasks, never()).findById(anyLong());
+    when(experiments.existsByIdAndProductId(115L, productId)).thenReturn(false);
+    clearInvocations(tasks);
+    assertThatThrownBy(() -> service.taskHumanSummary(117L, productId, 921L, "experiment:115"))
+        .isInstanceOf(ResponseStatusException.class);
+    verifyNoInteractions(tasks);
+  }
+
   /** A associação a Atena não pode criar uma tarefa genérica sem consumidor nem aprovação. */
   @Test
   void routesLearningCycleDecisionThroughItsCanonicalContract() {

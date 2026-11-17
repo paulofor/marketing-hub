@@ -1180,3 +1180,16 @@ automação em `/api/business-processes/{processId}/products/{productId}/automat
 e filas/callbacks em `/api/internal/agent-tasks/{agentKey}/stage-executions`
 (`pending`, `{taskId}/result`, `{taskId}/failure`). Nenhum novo acesso direto entre
 workers ou ao banco foi introduzido.
+
+## Motivo de pausa compreensível — decisão de 17/11/2026
+
+A pausa deve distinguir prontidão técnica, parecer anterior e condição operacional atual.
+O comando existente de pausa aceita motivo opcional (`OPERATOR` ou `COST_RECONCILIATION`)
+e explicação, persistidos no diário da própria execução como `PAUSE_CONTEXT`.
+Registrar explicação em processo já pausado não retoma tarefas nem concede orçamento.
+Editar uma explicação ou escolher pausa comum não remove uma condição financeira pendente.
+Somente a decisão explícita de aguardar conciliação impede `resume` por custos ausentes;
+não inferir esse limite de uma cobertura parcial histórica. A restrição é conferida também
+no backend e retirada da projeção quando as fontes já cobrem os custos, mantendo a pausa
+até retomada explícita. A atividade apresenta a orientação oficial, responsável, destino
+da ação e condição de continuação junto ao parecer, sem apagar histórico nem criar gate.

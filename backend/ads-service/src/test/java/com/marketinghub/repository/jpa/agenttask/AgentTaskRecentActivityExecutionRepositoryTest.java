@@ -353,6 +353,14 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
         .isEqualTo("Retomar a revisão com a referência preservada.");
     assertThat(statistics.getEntityLoadCount()).isZero();
     assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    var summary =
+        repository.findHumanSummaryInput(current.getId(), process.getId(), "experiment:92");
+    assertThat(summary)
+        .hasValueSatisfying(value -> assertThat(value.resultJson()).contains("APPROVE"));
+    assertThat(statistics.getEntityLoadCount()).isZero();
+    assertThat(repository.findHumanSummaryInput(current.getId(), process.getId(), "experiment:91"))
+        .isEmpty();
+    assertThat(statistics.getPrepareStatementCount()).isEqualTo(3);
     statistics.setStatisticsEnabled(false);
   }
 

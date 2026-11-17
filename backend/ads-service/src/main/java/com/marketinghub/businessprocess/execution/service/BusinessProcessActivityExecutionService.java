@@ -33,6 +33,7 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessTaskHumanSummaryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessTaskPromptAuditResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
@@ -661,6 +662,27 @@ public class BusinessProcessActivityExecutionService {
                         HttpStatus.NOT_FOUND,
                         "Auditoria não encontrada neste processo e referência."));
     return response(task, product.getInternalName(), true);
+  }
+
+  /** Entrega a síntese da tarefa corrente sem carregar prompts, provas ou resultados dos demais. */
+  @Transactional(readOnly = true)
+  public BusinessProcessTaskHumanSummaryResponse taskHumanSummary(
+      Long processDefinitionId, Long productId, Long taskId, String sourceReference) {
+    if (!productRepository.existsById(productId)
+        || !progressReferenceBelongsToProduct(productId, sourceReference))
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Resumo não encontrado neste produto.");
+    var input =
+        taskRepository
+            .findHumanSummaryInput(taskId, processDefinitionId, sourceReference)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Resumo não encontrado neste contexto."));
+    var task = new AgentTask();
+    task.setId(input.taskId());
+    task.setResultJson(input.resultJson());
+    return new BusinessProcessTaskHumanSummaryResponse(AgentTaskResultView.humanSummary(task));
   }
 
   /** Valida a propriedade da referência exata sem ler auditorias de tarefas ou outro produto. */
@@ -2365,7 +2387,7 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Projeta os dados operacionais sem retransmitir prompts quando a lista solicita leitura leve.
+   * Projeta a síntese humana também na leitura leve, sem retransmitir prompts ou provas extensas.
    */
   private BusinessProcessActivityExecutionResponse response(
       AgentTask task, String knownProductInternalName, boolean includePromptAudit) {
@@ -2418,7 +2440,8 @@ public class BusinessProcessActivityExecutionService {
         includePromptAudit ? AgentTaskAuditView.accessedUrls(task) : List.of(),
         includePromptAudit ? AgentTaskAuditView.visualEvidence(task) : List.of(),
         includePromptAudit ? AgentTaskResultView.section(task, "visualAudit") : null,
-        includePromptAudit ? AgentTaskResultView.section(task, "purchaseEmotion") : null);
+        includePromptAudit ? AgentTaskResultView.section(task, "purchaseEmotion") : null,
+        AgentTaskResultView.humanSummary(task));
   }
 
   /** Mantém a ação de desbloqueio visível na lista sem carregar links ou provas extensas. */

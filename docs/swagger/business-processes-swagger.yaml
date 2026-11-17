@@ -153,6 +153,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProductProcessActivityExecutionHistory"
         "404": { description: Processo ou produto não encontrado }
+  /api/business-processes/{processDefinitionId}/products/{productId}/tasks/{taskId}/human-summary:
+    get:
+      summary: Consulta somente o resumo humano da tarefa atual
+      description: Valida produto, processo, tarefa e referência. Lê somente o resultado da tarefa exata, sem carregar prompts, evidências ou resultados das demais. Não executa inferência, retoma processo nem reescreve pareceres históricos.
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+        - name: productId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+        - name: taskId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+        - name: sourceReference
+          in: query
+          required: true
+          schema: {type: string, maxLength: 200}
+      responses:
+        "200":
+          description: Síntese curta e sua origem; humanSummary nulo quando não houver resultado legível.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  humanSummary:
+                    type: object
+                    nullable: true
+                    properties:
+                      text: {type: string, maxLength: 420}
+                      source: {type: string, enum: [AGENT, DETERMINISTIC, LEGACY_EXCERPT]}
+                      decision: {type: string}
+        "404": {description: Produto, tarefa, processo ou referência divergentes}
   /api/business-processes/{processDefinitionId}/products/{productId}/tasks/{taskId}/prompt-audit:
     get:
       summary: Consulta os prompts integrais persistidos de uma tarefa BPM
@@ -599,6 +633,14 @@ components:
         assignedAgentKey: { type: string }
         assignedAgentNickname: { type: string }
         comments: { type: string, nullable: true }
+        humanSummary:
+          type: object
+          nullable: true
+          description: Síntese disponível também na lista leve, sem nova inferência ou reescrita do parecer original.
+          properties:
+            text: {type: string, maxLength: 420}
+            source: {type: string, enum: [AGENT, DETERMINISTIC, LEGACY_EXCERPT]}
+            decision: {type: string, description: Decisão original do agente; não comprova prontidão operacional nem autorização.}
         evidenceJson: { type: string, nullable: true }
         executionError: { type: string, nullable: true }
         inputTokens: { type: integer, format: int64, nullable: true }

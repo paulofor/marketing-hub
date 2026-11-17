@@ -183,6 +183,17 @@ class BackendCiWorkflowTest(unittest.TestCase):
         self.assertGreater(limit, 0)
         self.assertLessEqual(limit, 8)
 
+    def test_sequential_liquibase_fixtures_preserve_the_started_database(self):
+        """Impede que um rebuild de dependências descarte a migração já aplicada no MySQL."""
+        for name in ("product-type-consultants-v1", "agent-task-actionable-audit-v2",
+                     "agent-responsibility-boundaries"):
+            source = (REPO / f"backend/ads-service/scripts/validate-{name}-mysql57.sh").read_text()
+            self.assertRegex(source, r"up -d --build --wait mysql57-")
+            commands = [line for line in source.splitlines() if "compose run --rm " in line]
+            self.assertTrue(commands, name)
+            for command in commands:
+                self.assertIn("run --rm --no-deps ", command, f"{name}: {command}")
+
 
 if __name__ == "__main__":
     unittest.main()

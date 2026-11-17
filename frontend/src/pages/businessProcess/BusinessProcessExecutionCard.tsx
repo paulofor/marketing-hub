@@ -63,6 +63,19 @@ export default function BusinessProcessExecutionCard({
               {contextNotice}
             </small>
           ) : null}
+          {execution.humanSummary ? (
+            <span
+              className="d-block mt-2 text-body"
+              aria-label="Resumo do parecer"
+            >
+              {execution.humanSummary.text}
+              {execution.humanSummary.source === "LEGACY_EXCERPT" ? (
+                <small className="d-block text-body-secondary">
+                  Trecho do parecer original.
+                </small>
+              ) : null}
+            </span>
+          ) : null}
         </span>
       </summary>
       <div className="card-body">
@@ -91,13 +104,15 @@ export default function BusinessProcessExecutionCard({
               promptAudit={promptAudit}
             />
 
-            <ContentHeading className="h6 mt-3">
-              Comentários de {execution.assignedAgentNickname}
-            </ContentHeading>
-            <StructuredExecutionContent
-              value={execution.comments}
-              emptyText="Nenhum comentário registrado."
-            />
+            <details className="mt-3">
+              <summary>
+                Parecer completo de {execution.assignedAgentNickname}
+              </summary>
+              <StructuredExecutionContent
+                value={execution.comments}
+                emptyText="Nenhum comentário registrado."
+              />
+            </details>
             {expanded ? (
               <PreservedMaterializationRetry
                 execution={execution}

@@ -99,7 +99,7 @@ describe("BusinessProcessActivityExecutionsPage", () => {
     expect(
       screen.getAllByText("Comprove a dor desta oportunidade."),
     ).toHaveLength(10);
-    expect(screen.getAllByText("Comentários de Argos")).toHaveLength(10);
+    expect(screen.getAllByText("Parecer completo de Argos")).toHaveLength(10);
     expect(screen.getAllByText("Visualizar JSON em árvore")).toHaveLength(20);
     expect(screen.getByRole("link", { name: "Voltar ao BPM" })).toHaveAttribute(
       "href",

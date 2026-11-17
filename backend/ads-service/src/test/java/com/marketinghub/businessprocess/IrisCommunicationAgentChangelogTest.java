@@ -102,7 +102,7 @@ class IrisCommunicationAgentChangelogTest {
             "version_number = 9");
   }
 
-  /** Exige migrações históricas idempotentes e presença de Íris no manifesto técnico vigente. */
+  /** Exige migrações idempotentes sem recriar dependências e Íris no manifesto vigente. */
   @Test
   void shouldKeepDedicatedMysql57PhysicalValidation() throws Exception {
     Path moduleRoot = Path.of("").toAbsolutePath();
@@ -145,9 +145,9 @@ class IrisCommunicationAgentChangelogTest {
             "2026-09-24-argos-agent-version-v6-strict-contracts.yaml");
     assertThat(runner)
         .contains(
-            "compose run --rm --build liquibase-iris-communication-agent",
-            "compose run --rm --build liquibase-argos-agent-version-v4-audit",
-            "compose run --rm --build liquibase-argos-agent-version-v6-strict-contracts",
+            "compose run --rm --no-deps --build liquibase-iris-communication-agent",
+            "compose run --rm --no-deps --build liquibase-argos-agent-version-v4-audit",
+            "compose run --rm --no-deps --build liquibase-argos-agent-version-v6-strict-contracts",
             "a versão autônoma v4 do Argos não possui histórico auditável",
             "Argos não avançou para a versão v6 com contratos estritos por atividade",
             "communication-director:1",

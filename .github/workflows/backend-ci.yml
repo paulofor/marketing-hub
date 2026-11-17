@@ -15,6 +15,7 @@ on:
       - "scripts/test-download-run-artifact.py"
       - "scripts/test-backend-ci-workflow.py"
       - "scripts/build-commercial-review-evidence*"
+      - "scripts/test-agent-human-summaries.mjs"
       - "pde-platform/contracts/**"
       - "infra/testing/commercial-evidence/**"
       - "scripts/test-backend-packaged-resources.py"
@@ -70,6 +71,7 @@ jobs:
           python3 scripts/test-pde-validation-shared-contract.py
       - name: Validar atestações vigentes contra as fontes do backend
         run: |
+          node --test scripts/test-agent-human-summaries.mjs
           node --test scripts/build-commercial-review-evidence.test.mjs
           node scripts/build-commercial-review-evidence.mjs . backend/ads-service/target/commercial-review-evidence
       - name: Preparar banco isolado para controles privados

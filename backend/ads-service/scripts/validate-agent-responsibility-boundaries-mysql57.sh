@@ -41,8 +41,8 @@ assert_equals() {
 cd "${REPOSITORY_DIR}"
 docker version >/dev/null
 docker compose version >/dev/null
-compose up -d --build mysql57-agent-responsibility-boundaries
-compose run --rm --build liquibase-agent-responsibility-boundaries
+compose up -d --build --wait mysql57-agent-responsibility-boundaries
+compose run --rm --no-deps --build liquibase-agent-responsibility-boundaries
 
 assert_equals \
   $'customer-agent:3\nexperiment-strategist:4\nfinancial-agent:3\ngrowth-operator:5\nlanding-generator:2\nmarket-radar:2\nmeta-ad-approver:3\nvideomaker:2' \
@@ -69,7 +69,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.chain_code='pde-value-creation-delivery' AND c.version_number=7")" \
   "a cadeia v7 não contém os seis processos esperados"
 
-compose run --rm liquibase-agent-responsibility-boundaries
+compose run --rm --no-deps liquibase-agent-responsibility-boundaries
 
 assert_equals \
   "6" \
@@ -80,7 +80,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.chain_code='pde-value-creation-delivery' AND c.version_number=7")" \
   "a reaplicação duplicou itens da cadeia"
 
-compose run --rm --build liquibase-agent-responsibility-matrix
+compose run --rm --no-deps --build liquibase-agent-responsibility-matrix
 
 assert_equals \
   $'customer-agent:4\nexperiment-strategist:5\nfinancial-agent:4\ngrowth-operator:6\nlanding-generator:3\nmarket-radar:3\nmeta-ad-approver:4\nvideomaker:3' \
@@ -139,7 +139,7 @@ assert_equals \
   "$(query "SELECT status FROM opportunity_dossier WHERE id=1")" \
   "a estratégia concluída de Atena não liberou o dossiê histórico"
 
-compose run --rm liquibase-agent-responsibility-matrix
+compose run --rm --no-deps liquibase-agent-responsibility-matrix
 
 assert_equals \
   "19" \
@@ -154,7 +154,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM opportunity_agent_review WHERE error_message LIKE 'SUPERSEDED_BY_AGENT_RESPONSIBILITY_MATRIX_V1:%'")" \
   "a reaplicação alterou o encerramento auditável dos pareceres legados"
 
-compose run --rm --build liquibase-iris-communication-agent
+compose run --rm --no-deps --build liquibase-iris-communication-agent
 
 assert_equals \
   "21" \
@@ -197,7 +197,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=9")" \
   "a cadeia v9 não contém os seis processos esperados"
 
-compose run --rm liquibase-iris-communication-agent
+compose run --rm --no-deps liquibase-iris-communication-agent
 
 assert_equals \
   "21" \
@@ -212,7 +212,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=9")" \
   "a reaplicação da Íris duplicou itens da cadeia"
 
-compose run --rm --build liquibase-argos-agent-version-v4-audit
+compose run --rm --no-deps --build liquibase-argos-agent-version-v4-audit
 
 assert_equals \
   "4" \
@@ -223,7 +223,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=4")" \
   "a versão autônoma v4 do Argos não possui histórico auditável"
 
-compose run --rm liquibase-argos-agent-version-v4-audit
+compose run --rm --no-deps liquibase-argos-agent-version-v4-audit
 
 assert_equals \
   "1" \
@@ -231,7 +231,7 @@ assert_equals \
   "a reaplicação do Argos v4 duplicou a versão auditável"
 
 # shellcheck disable=SC2016 # A expansão pertence ao shell dentro do container Liquibase.
-compose run --rm liquibase-argos-agent-version-v4-audit sh -lc \
+compose run --rm --no-deps liquibase-argos-agent-version-v4-audit sh -lc \
   'ADS_LIQUIBASE_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "${ADS_LIQUIBASE_CP}" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="${ADS_LIQUIBASE_URL}" --username="${ADS_LIQUIBASE_USERNAME}" --password="${ADS_LIQUIBASE_PASSWORD}" --changeLogFile="${ADS_LIQUIBASE_CHANGELOG_FILE}" rollbackCount 1'
 
 assert_equals \
@@ -243,7 +243,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=4")" \
   "o rollback do histórico v4 preservou a linha criada pelo próprio changeset"
 
-compose run --rm liquibase-argos-agent-version-v4-audit
+compose run --rm --no-deps liquibase-argos-agent-version-v4-audit
 
 assert_equals \
   "4" \
@@ -263,7 +263,7 @@ assert_equals \
   "$(query "SELECT CONCAT(a.current_version, ':', JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.source'))) FROM agent a JOIN agent_version av ON av.agent_id=a.id AND av.version_number=5 WHERE a.agent_key='market-radar'")" \
   "a fixture não reproduziu a versão v5 preexistente de Argos"
 
-compose run --rm --build liquibase-argos-agent-version-v6-strict-contracts
+compose run --rm --no-deps --build liquibase-argos-agent-version-v6-strict-contracts
 
 assert_equals \
   "6" \
@@ -274,7 +274,7 @@ assert_equals \
   "$(query "SELECT CONCAT(JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.schemaPolicy')), ':', JSON_EXTRACT(av.contract_snapshot, '$.startupContractValidation'), ':', JSON_EXTRACT(av.contract_snapshot, '$.structuredFailurePreservation')) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=6")" \
   "a versão v6 do Argos não preservou seus contratos estritos e diagnósticos"
 
-compose run --rm liquibase-argos-agent-version-v6-strict-contracts
+compose run --rm --no-deps liquibase-argos-agent-version-v6-strict-contracts
 
 assert_equals \
   "1" \
@@ -282,7 +282,7 @@ assert_equals \
   "a reaplicação do Argos v6 duplicou a versão auditável"
 
 # shellcheck disable=SC2016 # A expansão pertence ao shell dentro do container Liquibase.
-compose run --rm liquibase-argos-agent-version-v6-strict-contracts sh -lc \
+compose run --rm --no-deps liquibase-argos-agent-version-v6-strict-contracts sh -lc \
   'ADS_LIQUIBASE_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "${ADS_LIQUIBASE_CP}" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="${ADS_LIQUIBASE_URL}" --username="${ADS_LIQUIBASE_USERNAME}" --password="${ADS_LIQUIBASE_PASSWORD}" --changeLogFile="${ADS_LIQUIBASE_CHANGELOG_FILE}" rollbackCount 1'
 
 assert_equals \
@@ -298,7 +298,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=5 AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.source'))='CATALOGO_VIVO'")" \
   "o rollback do Argos v6 alterou a versão v5 preexistente"
 
-compose run --rm liquibase-argos-agent-version-v6-strict-contracts
+compose run --rm --no-deps liquibase-argos-agent-version-v6-strict-contracts
 
 assert_equals \
   "6" \
@@ -309,14 +309,14 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=6")" \
   "a reaplicação após rollback não recriou o histórico v6"
 
-compose run --rm --build liquibase-argos-agent-version-v7-public-evidence
+compose run --rm --no-deps --build liquibase-argos-agent-version-v7-public-evidence
 
 assert_equals \
   "7:PUBLIC_SOURCES_V1" \
   "$(query "SELECT CONCAT(a.current_version, ':', JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.evidencePolicy'))) FROM agent a JOIN agent_version av ON av.agent_id=a.id AND av.version_number=7 WHERE a.agent_key='market-radar'")" \
   "Argos não publicou o contrato auditável de fontes públicas"
 
-compose run --rm liquibase-argos-agent-version-v7-public-evidence
+compose run --rm --no-deps liquibase-argos-agent-version-v7-public-evidence
 
 assert_equals \
   "1" \
@@ -324,7 +324,7 @@ assert_equals \
   "a reaplicação do Argos v7 duplicou o histórico"
 
 # shellcheck disable=SC2016 # A expansão pertence ao shell dentro do container Liquibase.
-compose run --rm liquibase-argos-agent-version-v7-public-evidence sh -lc \
+compose run --rm --no-deps liquibase-argos-agent-version-v7-public-evidence sh -lc \
   'ADS_LIQUIBASE_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "${ADS_LIQUIBASE_CP}" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="${ADS_LIQUIBASE_URL}" --username="${ADS_LIQUIBASE_USERNAME}" --password="${ADS_LIQUIBASE_PASSWORD}" --changeLogFile="${ADS_LIQUIBASE_CHANGELOG_FILE}" rollbackCount 1'
 
 assert_equals \
@@ -332,14 +332,14 @@ assert_equals \
   "$(query "SELECT CONCAT(a.current_version, ':', COUNT(av.id)) FROM agent a JOIN agent_version av ON av.agent_id=a.id AND av.version_number=7 WHERE a.agent_key='market-radar' GROUP BY a.current_version")" \
   "o rollback do Argos v7 não restaurou a v6 preservando o histórico público"
 
-compose run --rm liquibase-argos-agent-version-v7-public-evidence
+compose run --rm --no-deps liquibase-argos-agent-version-v7-public-evidence
 
 assert_equals \
   "7:1" \
   "$(query "SELECT CONCAT(a.current_version, ':', COUNT(av.id)) FROM agent a JOIN agent_version av ON av.agent_id=a.id AND av.version_number=7 WHERE a.agent_key='market-radar' GROUP BY a.current_version")" \
   "a retomada do Argos v7 não reutilizou o histórico público"
 
-compose run --rm --build liquibase-customer-agent-visual-composition
+compose run --rm --no-deps --build liquibase-customer-agent-visual-composition
 
 # O changelog histórico deve conservar suas versões, independentemente do runtime atual.
 assert_equals \
@@ -359,7 +359,7 @@ assert_equals \
   "$(query "SELECT JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.visualCompositionVersion')) FROM agent_version av JOIN agent ON agent.id=av.agent_id WHERE agent.agent_key='customer-agent' AND av.version_number=agent.current_version")" \
   "a versão auditável de Psique não registra a composição visual v4"
 
-compose run --rm liquibase-customer-agent-visual-composition
+compose run --rm --no-deps liquibase-customer-agent-visual-composition
 
 assert_equals \
   "26" \
@@ -370,7 +370,7 @@ assert_equals \
   "$(query "SELECT current_version FROM agent WHERE agent_key='customer-agent'")" \
   "a reaplicação da Psique v4 alterou a versão vigente"
 
-compose run --rm --build liquibase-customer-agent-max-reasoning
+compose run --rm --no-deps --build liquibase-customer-agent-max-reasoning
 
 assert_equals \
   $'communication-director:1\ncustomer-agent:6\nexperiment-strategist:5\nfinancial-agent:4\ngrowth-operator:6\nlanding-generator:4\nmarket-radar:7\nmeta-ad-approver:4\nvideomaker:3' \
@@ -385,7 +385,7 @@ assert_equals \
   "$(query "SELECT CONCAT(JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.reasoningPolicy')), ':', JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.reasoningEffort'))) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='customer-agent' AND av.version_number=6")" \
   "a versão auditável de Psique não registra o raciocínio máximo"
 
-compose run --rm liquibase-customer-agent-max-reasoning
+compose run --rm --no-deps liquibase-customer-agent-max-reasoning
 
 assert_equals \
   "27" \
@@ -397,7 +397,7 @@ assert_equals \
   "a reaplicação alterou a versão máxima vigente de Psique"
 
 # shellcheck disable=SC2016 # A expansão pertence ao shell dentro do container Liquibase.
-compose run --rm liquibase-customer-agent-max-reasoning sh -lc \
+compose run --rm --no-deps liquibase-customer-agent-max-reasoning sh -lc \
   'ADS_LIQUIBASE_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "${ADS_LIQUIBASE_CP}" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="${ADS_LIQUIBASE_URL}" --username="${ADS_LIQUIBASE_USERNAME}" --password="${ADS_LIQUIBASE_PASSWORD}" --changeLogFile="${ADS_LIQUIBASE_CHANGELOG_FILE}" rollbackCount 1'
 
 assert_equals \
@@ -409,7 +409,7 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='customer-agent' AND av.version_number=6")" \
   "o rollback da política máxima preservou sua versão auditável"
 
-compose run --rm liquibase-customer-agent-max-reasoning
+compose run --rm --no-deps liquibase-customer-agent-max-reasoning
 
 assert_equals \
   "6" \

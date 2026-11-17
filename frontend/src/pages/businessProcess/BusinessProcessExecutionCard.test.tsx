@@ -13,6 +13,35 @@ import BusinessProcessExecutionCard from "./BusinessProcessExecutionCard";
 
 vi.mock("axios");
 
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+});
+
+it("mostra resumo curto com o cartão fechado e preserva o parecer completo sob demanda", () => {
+  const client = new QueryClient();
+  render(
+    <QueryClientProvider client={client}>
+      <BusinessProcessExecutionCard
+        execution={{
+          ...execution,
+          humanSummary: {
+            text: "Faltam provas de recuperação. Têmis deve revisar o complemento.",
+            source: "DETERMINISTIC",
+            decision: "BLOCKED",
+          },
+          comments: "Parecer técnico integral preservado.",
+        }}
+      />
+    </QueryClientProvider>,
+  );
+  expect(screen.getByLabelText("Resumo do parecer")).toBeVisible();
+  expect(
+    screen.getByText("Parecer técnico integral preservado."),
+  ).not.toBeVisible();
+  client.clear();
+});
+
 const execution: BusinessProcessActivityExecution = {
   taskId: 450,
   processDefinitionId: 77,
@@ -45,11 +74,6 @@ function view() {
 }
 
 describe("BusinessProcessExecutionCard", () => {
-  afterEach(() => {
-    cleanup();
-    vi.resetAllMocks();
-  });
-
   /** Reaplica a saída auditada pelo cartão do produto sem carregar a caixa completa do agente. */
   it("offers deterministic materialization recovery after loading the scoped audit", async () => {
     const ready = {

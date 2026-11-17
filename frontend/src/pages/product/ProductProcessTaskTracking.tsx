@@ -106,7 +106,15 @@ export default function ProductProcessTaskTracking({
           {task.executionError || task.recommendedAction ? (
             <div className="alert alert-warning mt-2 mb-0">
               <strong>A atividade ainda não foi concluída.</strong>
-              {task.recommendedAction ? (
+              {task.humanSummary ? (
+                <p className="mb-1">{task.humanSummary}</p>
+              ) : null}
+              {task.recommendedAction && task.humanSummary ? (
+                <details>
+                  <summary>Orientação técnica da tarefa</summary>
+                  <p className="mb-1">{task.recommendedAction}</p>
+                </details>
+              ) : task.recommendedAction ? (
                 <p className="mb-1">{task.recommendedAction}</p>
               ) : null}
               {task.executionError ? (

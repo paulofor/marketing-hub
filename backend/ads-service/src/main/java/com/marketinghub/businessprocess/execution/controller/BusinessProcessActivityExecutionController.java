@@ -128,4 +128,21 @@ public class BusinessProcessActivityExecutionController {
         : service.requestProductActivityExecution(
             processDefinitionId, productId, activityId, request);
   }
+
+  /** Entrega somente a síntese curta da tarefa exata sem carregar sua auditoria completa. */
+  @Operation(summary = "Consulta o resumo humano do parecer no contexto exato")
+  @GetMapping("/{processDefinitionId}/products/{productId}/tasks/{taskId}/human-summary")
+  public com.marketinghub
+          .businessprocess
+          .execution
+          .service
+          .recentExecutions
+          .BusinessProcessTaskHumanSummaryResponse
+      taskHumanSummary(
+          @PathVariable Long processDefinitionId,
+          @PathVariable Long productId,
+          @PathVariable Long taskId,
+          @RequestParam String sourceReference) {
+    return service.taskHumanSummary(processDefinitionId, productId, taskId, sourceReference);
+  }
 }

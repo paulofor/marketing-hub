@@ -132,3 +132,17 @@ por efeito dessa projeção. Validação e limites em
 A Big Idea versionada do produto orienta oferta, construção, comunicação, revisão e aprendizado.
 Atena cria na estratégia; o operador pode evoluir com motivo e histórico. Cada experimento preserva
 sua versão, sem reescrever aprovações ou herdar autorizações. Seguir [Big Idea v1](product-big-idea-canon.v1.md).
+
+## Resumos dos pareceres para pessoas — decisão de 17/11/2026
+
+Todo agente deve sintetizar sua conclusão em português simples: resultado, principal motivo
+e próximo passo com responsável quando conhecido. Nos contratos atuais de parecer/construção
+com `humanSummary`, usar 20–420 caracteres e até três frases, sem códigos, siglas ou detalhes
+de implementação. Nos contratos anteriores, aplicar a mesma linguagem aos campos de síntese
+previstos, preservando o schema. Evidências e diagnóstico completos permanecem separados.
+Ausência de prova não é defeito comprovado; resumo não autoriza gasto nem atesta venda.
+A ação humana e a pausa são decisões do backend, não inferências do agente ou frontend.
+Parecer legado não deve gerar nova inferência apenas para tradução: projetar resumo
+determinístico limitado quando o contrato permitir ou identificar o trecho original.
+A tarefa corrente usa `/human-summary` do mesmo produto/processo/referência; o histórico leve
+continua sem prompts e evidências, e a auditoria integral permanece sob demanda.

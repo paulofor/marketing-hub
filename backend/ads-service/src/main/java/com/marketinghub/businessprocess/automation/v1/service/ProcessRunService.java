@@ -3,6 +3,7 @@ package com.marketinghub.businessprocess.automation.v1.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.automation.v1.*;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
+import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunPauseRequest;
 import com.marketinghub.businessprocess.automation.v1.service.status.*;
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.*;
@@ -40,6 +41,9 @@ public class ProcessRunService {
   private final ObjectMapper json;
   private final TransactionTemplate transaction;
   private final ProcessRunOwnerPortrait ownerPortrait;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private ProcessRunPauseGuidance pauseGuidance;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.businessprocesschain.learningcycle.v1.service
@@ -185,11 +189,43 @@ public class ProcessRunService {
 
   /** Pausa novos disparos preservando a execução e o resultado de tarefas já reservadas. */
   public ProcessRunResponse pause(Long productId, Long processId, Long runId) {
+    return pause(productId, processId, runId, null);
+  }
+
+  /** Registra o motivo sem remover uma condição financeira pendente nem decisões anteriores. */
+  public ProcessRunResponse pause(
+      Long productId, Long processId, Long runId, ProcessRunPauseRequest request) {
     return locked(
         productId,
         processId,
         runId,
         run -> {
+          if (!Set.of("COMPLETED", "CLOSED").contains(run.getStatus())
+              && (request != null || !Set.of("PAUSED", "PAUSING").contains(run.getStatus()))) {
+            if (request != null
+                && !"COST_RECONCILIATION".equals(request.reasonCode())
+                && pauseGuidance != null
+                && pauseGuidance.resolve(run) != null)
+              throw new ResponseStatusException(
+                  HttpStatus.CONFLICT,
+                  "A conferência dos custos continua pendente. Editar o motivo não remove essa condição financeira.");
+            String code =
+                request == null || request.reasonCode() == null ? "OPERATOR" : request.reasonCode();
+            if (!Set.of("OPERATOR", "COST_RECONCILIATION").contains(code))
+              throw new ResponseStatusException(
+                  HttpStatus.BAD_REQUEST, "Motivo de pausa inválido.");
+            String reason =
+                request == null || request.reason() == null ? "" : request.reason().trim();
+            if (reason.length() > 1000)
+              throw new ResponseStatusException(
+                  HttpStatus.BAD_REQUEST, "O motivo da pausa deve ter até 1000 caracteres.");
+            event(
+                run,
+                "PAUSE_CONTEXT",
+                reason.isBlank() ? "Pausa solicitada pelo operador." : reason,
+                null,
+                Map.of("reasonCode", code, "reason", reason));
+          }
           if (!Set.of("PAUSING", "PAUSED", "COMPLETED", "CLOSED").contains(run.getStatus()))
             transition(
                 run,
@@ -210,6 +246,9 @@ public class ProcessRunService {
         processId,
         runId,
         run -> {
+          var pauseAction = pauseGuidance == null ? null : pauseGuidance.resolve(run);
+          if (pauseAction != null)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, pauseAction.reason());
           if ("CLOSED".equals(run.getStatus()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, run.getReason());
           boolean revalidation = "COMPLETED".equals(run.getStatus());
@@ -1305,7 +1344,9 @@ public class ProcessRunService {
                         .contains(run.getStatus()))
             ? prerequisite == null ? dispatchBlockReason(run) : prerequisite.reason()
             : null;
-    var userAction = closed ? null : guidance.resolve(run);
+    var pauseAction = closed || pauseGuidance == null ? null : pauseGuidance.resolve(run);
+    String pauseReason = closed || pauseGuidance == null ? null : pauseGuidance.reason(run);
+    var userAction = closed ? null : pauseAction != null ? pauseAction : guidance.resolve(run);
     boolean redirected =
         readiness != null
             && !closed
@@ -1341,7 +1382,9 @@ public class ProcessRunService {
             ? "CLOSED"
             : revalidation
                 ? "REVALIDATION_REQUIRED"
-                : userAction != null ? userAction.waitingStatus() : run.getStatus(),
+                : userAction != null && pauseAction == null
+                    ? userAction.waitingStatus()
+                    : run.getStatus(),
         closed
             ? readiness.currentActivityStateReason()
             : prerequisite != null
@@ -1357,7 +1400,7 @@ public class ProcessRunService {
                                     + readiness.currentActivityName()
                                     + ". "
                                     + Objects.toString(readiness.currentActivityStateReason(), "")
-                                : run.getReason(),
+                                : pauseReason != null ? pauseReason : run.getReason(),
         closed
             ? null
             : readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),
@@ -1384,6 +1427,7 @@ public class ProcessRunService {
             && !Set.of("PAUSING", "PAUSED", "COMPLETED", "CLOSED").contains(run.getStatus()),
         !closed
             && persisted
+            && pauseAction == null
             && prerequisite == null
             && resumeBlocker == null
             && (revalidation

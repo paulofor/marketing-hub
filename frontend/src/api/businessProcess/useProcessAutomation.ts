@@ -112,13 +112,28 @@ export function useProcessAutomation(
     retry: 1,
   });
   const command = useMutation({
-    mutationFn: async (action: "start" | "pause" | "resume") => {
+    mutationFn: async (
+      request:
+        | "start"
+        | "pause"
+        | "resume"
+        | {
+            action: "pause";
+            reasonCode: "OPERATOR" | "COST_RECONCILIATION";
+            reason: string;
+          },
+    ) => {
+      const action = typeof request === "string" ? request : request.action;
       if (action !== "start" && !status.data?.id)
         throw new Error("Execução não identificada.");
       return (
         await axios.post<ProcessAutomation>(
           action === "start" ? root : `${root}/${status.data!.id}/${action}`,
-          action === "start" ? context : undefined,
+          action === "start"
+            ? context
+            : typeof request === "string"
+              ? undefined
+              : { reasonCode: request.reasonCode, reason: request.reason },
           { timeout: 45000 },
         )
       ).data;

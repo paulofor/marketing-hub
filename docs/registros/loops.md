@@ -1326,6 +1326,19 @@
   de Mira executa o mesmo contrato do CI antes da suíte. O gate permanece obrigatório.
 - Evidências e matriz: `docs/homologacao/actions-mira-ciclos-2026-09-13.md`.
 
+- **Recorrência de ambiente em 17/11/2026:** o run MySQL 44177983235 recriou
+  bancos de fixtures entre migradores e perdeu alterações já aplicadas. Três
+  runners agora esperam saúde e usam `--no-deps` nos migradores; contrato do CI
+  previne a regressão. O teste TLS em Ubuntu 26.04 deixou de aceitar duração
+  negativa: datas explícitas e extensões válidas preservam os handshakes reais.
+  O job Opala preserva logs completos; não se deduz causa apenas do fim da stack.
+  Evidências: [homologação Vega](../homologacao/vega-bloqueio-resumo-humano-2026-11-17.md).
+
+- **Cobertura de UI em 17/11/2026:** a suíte integral no job de processos encontrou
+  um rótulo antigo de parecer que não era exercitado pelo Frontend CI seletivo.
+  Após os 1.055 testes locais passarem, a etapa existente passou a executar os
+  relatórios de processos e o aviso de pausa, antecipando essa validação.
+
 ## LOOP-ACTIONS-RETOMADA-SEM-GATILHO — workflow ativo não recupera merge perdido
 
 - **Data:** 2026-09-08.
@@ -1509,6 +1522,12 @@ Evidências: `docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`
   parâmetro que recebe regex, selecionando zero arquivos; agora monta uma expressão
   escapada e possui teste para arquivos alterados/novos sem incluir arquivos alheios.
   Evidências: `docs/homologacao/catalogo-vivo-opala-v1.md`.
+
+- **Prevenção complementar em 17/11/2026:** o Catálogo Vivo fixa dois schemas de
+  parecer por hash. A síntese humana usa os campos existentes nesses contratos,
+  preservando os bytes; os contratos extensíveis recebem `humanSummary`. O preflight
+  confere os hashes antes do banco e a leitura da síntese cobre a perspectiva de
+  Psique e a justificativa de Têmis sem reescrever o parecer.
 
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 
@@ -11776,3 +11795,22 @@ MISSING_EVIDENCE conserva a ação requerida sem disparar construção paga.
 Regressões preservam outro produto, o caminho funcional e o histórico. Provas reais
 MySQL 5.7 em duas identidades e doze casos terminais Chromium complementam somente os
 critérios faltantes. Registro: `docs/homologacao/vega-cadeia-prova-retomada-2026-11-17.md`.
+
+### Recorrência de comunicação do LOOP-BPM-DECISAO-HUMANA-COMO-EXECUCAO — 17/11/2026
+
+Vega, processo 117/execução 102, atividade 3.10: a tarefa #921 permanecia BLOCKED,
+o suplemento do PR #5840 já estava disponível e o processo PAUSED. A tela mostrava
+prontidão técnica e um motivo genérico de pausa, sem a decisão financeira #3958.
+O histórico confirma dez tarefas sem custo; isso não autoriza inventar saldo nem
+alterar o contrato de outras preparações que aceitam envelopes com cobertura parcial.
+
+Correção compartilhada: registrar motivo explícito no diário existente, orientar na
+própria atividade e proteger a retomada financeira no servidor. Resumos curtos nos
+contratos dos agentes; projeção fiel dos pareceres legados, sem inferência adicional.
+A consulta resumida do histórico não contém resultados: endpoint curto da tarefa exata
+supre essa passagem sem voltar a carregar todos os prompts ou provas na abertura.
+
+Regressões: ProcessRunPauseGuidanceTest, ProcessRunProjectedActivityPersistenceTest,
+AgentTaskHumanSummaryTest, consultas JPA sem hidratação, contrato HTTP, testes frontend,
+26 contratos de prompt/schema e navegador em duas identidades e três dispositivos.
+Matriz e limites: docs/homologacao/vega-bloqueio-resumo-humano-2026-11-17.md.

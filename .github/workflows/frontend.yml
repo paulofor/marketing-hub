@@ -40,8 +40,8 @@ jobs:
       - name: Testar acompanhamento dos produtos em PLAY
         # A visão consultiva não pode transformar PLAY ou espera de decisão em execução.
         run: cd frontend && npm test -- --run src/pages/product/ProductsInPlayPage.test.tsx src/components/MainNavigation.test.tsx
-      - name: Testar responsável e retrato do quadro de execução
-        run: cd frontend && npm test -- --run src/pages/product/ProductProcessAutomationPanel.test.tsx
+      - name: Testar relatórios, resumos e pausa do processo
+        run: cd frontend && npm test -- --run src/pages/businessProcess src/pages/product/ProductProcessAutomationPanel.test.tsx src/pages/product/ProductProcessPauseNotice.test.tsx --maxWorkers=1 --minWorkers=1
       - name: Testar demonstração financeira e aprovação recuperável
         run: cd frontend && npm test -- --run src/pages/financial/ExecutionFinancePage.test.tsx src/pages/financial/ExecutionCostWorksheet.test.tsx src/pages/product/ProductProcessFinanceLink.test.tsx
       - name: Testar visualização da peça antes do aceite

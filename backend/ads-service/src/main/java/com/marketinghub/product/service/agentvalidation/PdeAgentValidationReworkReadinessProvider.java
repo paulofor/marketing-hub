@@ -310,12 +310,12 @@ public class PdeAgentValidationReworkReadinessProvider
           "Nenhuma rejeição funcional ou falha de homologação pendente exige correção do protótipo.");
     }
     PdeValidationTaskSnapshot task = rejection.orElseThrow();
+    if ("MISSING_EVIDENCE".equals(task.blockerCategory()))
+      return blocked(correctionRequiredReason(task));
     return ready(correctionRequiredReason(task));
   }
 
-  /**
-   * Distingue falha técnica de rejeição funcional e preserva causa, origem e retorno aos testes.
-   */
+  /** Preserva causa e ação do parecer sem impor mudança de versão a uma lacuna de evidência. */
   private String correctionRequiredReason(PdeValidationTaskSnapshot rejection) {
     String rootCause = rootCause(rejection);
     String action = text(rejection.blockerAction());
@@ -325,13 +325,17 @@ public class PdeAgentValidationReworkReadinessProvider
             + rejection.id()
             + " ("
             + activityLabel(rejection.processActivityId())
-            + ("TECHNICAL_FAILURE".equals(rejection.blockerCategory())
-                ? ") não conseguiu homologar o protótipo. Causa registrada: "
-                : ") rejeitou a versão. Causa-raiz: ")
+            + ("MISSING_EVIDENCE".equals(rejection.blockerCategory())
+                ? ") aguarda complemento de prova. Lacuna registrada: "
+                : "TECHNICAL_FAILURE".equals(rejection.blockerCategory())
+                    ? ") não conseguiu homologar o protótipo. Causa registrada: "
+                    : ") rejeitou a versão. Causa-raiz: ")
             + rootCause
             + " Próxima ação: "
             + action
-            + " Depois da correção, publique uma nova versão e execute novamente a homologação técnica.",
+            + ("FUNCTIONAL_ADJUSTMENT".equals(rejection.blockerCategory())
+                ? " Depois da correção funcional, publique uma nova versão e execute novamente a homologação técnica."
+                : ""),
         1800);
   }
 
@@ -365,7 +369,10 @@ public class PdeAgentValidationReworkReadinessProvider
         history.stream()
             .filter(task -> REVIEW_ACTIVITIES.contains(task.processActivityId()))
             .filter(task -> "BLOCKED".equals(task.status()))
-            .filter(task -> "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory()))
+            .filter(
+                task ->
+                    "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory())
+                        || "MISSING_EVIDENCE".equals(task.blockerCategory()))
             .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
     if (rejection.isEmpty()) return Optional.empty();
     var rejected = rejection.orElseThrow();
@@ -395,7 +402,8 @@ public class PdeAgentValidationReworkReadinessProvider
     if (operationalEvidence == null
         || product == null
         || version == null
-        || !"FUNCTIONAL_ADJUSTMENT".equals(rejected.blockerCategory())) return false;
+        || !("FUNCTIONAL_ADJUSTMENT".equals(rejected.blockerCategory())
+            || "MISSING_EVIDENCE".equals(rejected.blockerCategory()))) return false;
     var evidence = operationalEvidence.resolve(product.getSlug(), version);
     if (evidence.isEmpty()) return false;
     var scope = evidence.get().path("scopedRevalidation");
@@ -408,9 +416,12 @@ public class PdeAgentValidationReworkReadinessProvider
         || !java.util.Objects.equals(reference, task.getSourceReference())) return false;
     try {
       boolean eligible =
-          "commercialIntegrityReview".equals(rejected.processActivityId())
-              || PdeReviewEvidenceReevaluation.matches(
-                  evidence.get(), task, product.getId(), reference);
+          evidence.get().has("reviewReevaluation")
+              ? PdeReviewEvidenceReevaluation.matches(
+                  evidence.get(), task, product.getId(), reference)
+              : "commercialIntegrityReview".equals(rejected.processActivityId())
+                  || PdeReviewEvidenceReevaluation.matches(
+                      evidence.get(), task, product.getId(), reference);
       return eligible
           && !approvedForVersion(rejected, rejected.processActivityId(), version)
           && version.equals(json.readTree(rejected.resultJson()).path("prototypeVersion").asText())

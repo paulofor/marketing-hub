@@ -1,0 +1,37 @@
+{
+  "observedAt": "2026-11-17",
+  "productId": 4,
+  "cycleId": 22,
+  "experimentId": 115,
+  "knownEstimatedUsd": 113.3324472,
+  "unreportedTasks": 10,
+  "authorizationTotalUsd": 200,
+  "accountingChanged": false,
+  "findings": [
+    {
+      "taskId": 709,
+      "sourceSha256": "2b1b36d2ef0ecf1fbf4ddce82ca852745bfbc073825b0d6dbb755f5fb2e42333",
+      "exactTaskAndModelMatched": true,
+      "model": "gpt-6.1-sol",
+      "usage": {
+        "inputTokens": 427860,
+        "cachedInputTokens": 335488,
+        "outputTokens": 2535
+      },
+      "status": "RECOVERED_NOT_POSTED_TO_LEDGER"
+    },
+    {
+      "taskId": 454,
+      "sourceSha256": "f394f684d38dd636206a42bfda10a0d18331352b7783314447ed5c3a68951441",
+      "usage": null,
+      "status": "NO_USAGE_RECEIPT_AVAILABLE"
+    },
+    {
+      "taskId": 455,
+      "sourceSha256": "1496ee23d1028c454c405013bf0136163083cbe0189291d7cad357cc1a01513c",
+      "usage": null,
+      "status": "NO_USAGE_RECEIPT_AVAILABLE"
+    }
+  ],
+  "boundary": "Somente leitura de recibos existentes; não estimar custo ausente como zero nem repetir inferência."
+}

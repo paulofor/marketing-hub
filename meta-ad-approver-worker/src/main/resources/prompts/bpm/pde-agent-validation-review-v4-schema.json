@@ -4,6 +4,7 @@
   "required": [
     "contractVersion",
     "decision",
+    "remediationKind",
     "commercialRationale",
     "rootCause",
     "sourceReference",
@@ -22,6 +23,7 @@
   "properties": {
     "contractVersion": {"type": "string", "const": "PDE_TEMIS_AGENT_VALIDATION_V1"},
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "remediationKind": {"type": "string", "enum": ["NONE", "EVIDENCE_SUPPLEMENT", "FUNCTIONAL_CHANGE", "RISK_BLOCK"]},
     "commercialRationale": {"type": "string", "minLength": 20, "maxLength": 1800},
     "rootCause": {"type": "string", "minLength": 10, "maxLength": 1200},
     "sourceReference": {"type": "string", "pattern": "^(product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*)$"},

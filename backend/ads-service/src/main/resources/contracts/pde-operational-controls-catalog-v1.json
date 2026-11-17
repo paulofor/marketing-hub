@@ -18,6 +18,12 @@
       "prototypeVersion": "musa-pde-entry-v17-continuidade-clara",
       "resource": "contracts/operational-evidence/vega-contextual-controls-v2.json",
       "sha256": "69789426acd3c615b3aac39fa4baf52c60731d7e42c91ee37fb3c1b4f97217d2"
+    },
+    {
+      "productSlug": "metodo-musa-7-dias",
+      "prototypeVersion": "musa-consultor-pwa-v1",
+      "resource": "contracts/operational-evidence/musa-continuous-controls-v1.json",
+      "sha256": "084693f1d4aa069fcfb6274864ae61fa4058888633e52f02ee0038afbc53e657"
     }
   ],
   "historicalReports": [

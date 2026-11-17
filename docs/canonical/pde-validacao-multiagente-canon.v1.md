@@ -643,3 +643,25 @@ apagar tarefas, custos ou auditoria. Pendência em execução não é duplicada;
 rejeição atual não provoca retentativa automática. Ciclos encerrados e etapas
 posteriores conservam a história. O serviço real de prontidão deve demonstrar
 essa passagem com o caso original, outro produto e um caminho antes válido.
+
+### Retomada coerente por suplemento — 17/11/2026
+
+`remediationKind=EVIDENCE_SUPPLEMENT` no parecer de Têmis registra `MISSING_EVIDENCE`:
+complementar prova da implementação vigente não exige sucessor, nova versão funcional
+ou tarefa de construção. Risco, identidade ou privacidade reprovados não admitem essa
+classificação. `FUNCTIONAL_CHANGE` mantém a proteção de sucessor quando aplicável.
+O schema estrito exige o campo nas novas respostas; a leitura de pareceres históricos
+continua compatível e não reclassifica sua categoria persistida.
+
+Para um parecer histórico classificado como `FUNCTIONAL_ADJUSTMENT`, o suplemento
+`PDE_REVIEW_EVIDENCE_SUPPLEMENT_V1` vincula produto, referência, atividade, tarefa e
+SHA-256 do resultado bloqueado, declara `implementationChanged=false` e exige nova
+revisão independente. Sua data deve ser posterior ao bloqueio. Esse vínculo governa
+tanto a prontidão da revisão quanto a regra de sucessor, sem alterar a tarefa antiga.
+Outro parecer, prova anterior ou mudança funcional mantém o bloqueio. A orientação
+não deve acrescentar mudança de versão a uma pendência explícita de prova.
+
+A passagem continua sob o backend: prova complementar → nova revisão de Têmis → gate
+→ Processo 4 no mesmo contexto. Pareceres e trabalho aceitos compatíveis são mantidos;
+retomada não concede autorização financeira ou comercial. Matriz e evidências:
+[recuperação da Vega](../homologacao/vega-cadeia-prova-retomada-2026-11-17.md).

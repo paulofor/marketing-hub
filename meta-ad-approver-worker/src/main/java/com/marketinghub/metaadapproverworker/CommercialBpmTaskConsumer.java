@@ -715,6 +715,17 @@ public class CommercialBpmTaskConsumer {
       throw new IllegalArgumentException(
           "Têmis aprovou a validação multiagente com check reprovado.");
     }
+    if (result.has("remediationKind")) {
+      String kind = result.path("remediationKind").asText();
+      if (!List.of("NONE", "EVIDENCE_SUPPLEMENT", "FUNCTIONAL_CHANGE", "RISK_BLOCK").contains(kind)
+          || "APPROVED".equals(result.path("decision").asText()) != "NONE".equals(kind)
+          || "EVIDENCE_SUPPLEMENT".equals(kind)
+              && requiredChecks.stream()
+                  .filter(check -> !"technicalHarnessPassed".equals(check))
+                  .anyMatch(check -> !checks.path(check).asBoolean(false)))
+        throw new IllegalArgumentException(
+            "O destino de correção contradiz o parecer de integridade.");
+    }
   }
 
   /** Detecta qualquer efeito externo declarado na revisão multiagente. */
@@ -819,7 +830,7 @@ public class CommercialBpmTaskConsumer {
         .toBodilessEntity();
   }
 
-  /** Converte a reprovação funcional em uma mudança objetiva e navegável. */
+  /** Distingue prova faltante de mudança funcional e conserva a ação declarada no parecer. */
   private Map<String, Object> functionalGuidance(Map<String, Object> task, JsonNode result) {
     String action =
         "Corrija os itens obrigatórios descritos no parecer de Têmis e reinicie a tarefa.";
@@ -838,7 +849,11 @@ public class CommercialBpmTaskConsumer {
     }
     return Map.of(
         "category",
-        "FUNCTIONAL_ADJUSTMENT",
+        switch (result.path("remediationKind").asText()) {
+          case "EVIDENCE_SUPPLEMENT" -> "MISSING_EVIDENCE";
+          case "RISK_BLOCK" -> "COMMERCIAL_RISK";
+          default -> "FUNCTIONAL_ADJUSTMENT";
+        },
         "recommendedAction",
         action,
         "helpLinks",

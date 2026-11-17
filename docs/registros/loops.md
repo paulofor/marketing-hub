@@ -11764,3 +11764,15 @@ futuras, produtos diferentes, adoção própria e linhagem inválida. Evidência
 - **Limites:** reaproveitamento exige rastreabilidade e homologação independente atual.
   Sem mudança dos tetos, mídia, cobrança ou inferência para repetir planejamento pago.
   Matriz: `docs/homologacao/ciclo-predecessor-construcao-2026-11-07.md`.
+
+### Recorrência de LOOP-PDE-CONTROLES-SEM-PROVA-CONCILIADA — 17/11/2026
+
+Vega/MUSA, ciclo 22, experimento 115: #921 declarou lacuna de evidência na mesma
+implementação, mas a categoria genérica FUNCTIONAL_ADJUSTMENT exigia sucessor e o
+texto acrescentava nova versão. O catálogo não continha suplemento para o consultor
+contínuo. A prontidão passa a reconhecer o vínculo exato do suplemento também na regra
+de sucessor. Novos pareceres distinguem EVIDENCE_SUPPLEMENT de FUNCTIONAL_CHANGE;
+MISSING_EVIDENCE conserva a ação requerida sem disparar construção paga.
+Regressões preservam outro produto, o caminho funcional e o histórico. Provas reais
+MySQL 5.7 em duas identidades e doze casos terminais Chromium complementam somente os
+critérios faltantes. Registro: `docs/homologacao/vega-cadeia-prova-retomada-2026-11-17.md`.

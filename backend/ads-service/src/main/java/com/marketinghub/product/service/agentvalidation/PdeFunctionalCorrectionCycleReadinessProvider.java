@@ -8,11 +8,14 @@ import com.marketinghub.businessprocess.execution.service.agentactivity.AgentPro
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** Responsabilidade: exigir sucessor antes de corrigir uma rejeição funcional do ciclo por IA. */
+/** Responsabilidade: exigir sucessor para mudança funcional, preservando suplementos de prova. */
 @Service
+@Slf4j
 public class PdeFunctionalCorrectionCycleReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
   private static final Set<String> REVIEW_ACTIVITIES =
@@ -24,6 +27,9 @@ public class PdeFunctionalCorrectionCycleReadinessProvider
           "commercialIntegrityReview");
   private final AgentTaskRepository tasks;
   private final ObjectMapper json;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private PdeOperationalControlEvidence operationalEvidence;
 
   /** Recebe a projeção das provas existentes sem executar modelo ou alterar o histórico. */
   public PdeFunctionalCorrectionCycleReadinessProvider(
@@ -42,7 +48,7 @@ public class PdeFunctionalCorrectionCycleReadinessProvider
         && PdeAgentValidationProcessContract.supports(process, json);
   }
 
-  /** Bloqueia mudança funcional no experimento imutável e mantém os demais gates independentes. */
+  /** Bloqueia mudança funcional; prova nova vinculada libera somente a revisão independente. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -55,17 +61,31 @@ public class PdeFunctionalCorrectionCycleReadinessProvider
       return new AgentProductProcessActivityReadiness(
           true, "A regra de sucessor não altera este contexto.");
     }
+    var history =
+        tasks.findPdeValidationTaskSnapshots(
+            sourceReference, PdeAgentValidationGateActivityExecutor.PROCESS_CODE);
     var latest =
-        tasks
-            .findPdeValidationTaskSnapshots(
-                sourceReference, PdeAgentValidationGateActivityExecutor.PROCESS_CODE)
-            .stream()
+        history.stream()
             .filter(
                 task ->
                     "BLOCKED".equals(task.status())
                         && REVIEW_ACTIVITIES.contains(task.processActivityId()))
             .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
-    if (latest.filter(task -> "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory())).isPresent()) {
+    if (latest
+        .filter(
+            task ->
+                "BLOCKED".equals(task.status())
+                    && "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory()))
+        .isPresent()) {
+      if (supersededByApproval(history, latest.orElseThrow(), product, sourceReference))
+        return new AgentProductProcessActivityReadiness(
+            true,
+            "O novo parecer independente da mesma atividade resolveu o bloqueio; preserve o histórico.");
+      if (hasBoundEvidenceSupplement(latest.orElseThrow(), product, sourceReference)) {
+        return new AgentProductProcessActivityReadiness(
+            true,
+            "A prova complementar preserva a implementação deste ciclo. Submeta o conjunto à revisão independente afetada, sem criar sucessor ou tarefa de construção.");
+      }
       return new AgentProductProcessActivityReadiness(
           false,
           "Este ciclo preserva a versão rejeitada no parecer #"
@@ -75,5 +95,77 @@ public class PdeFunctionalCorrectionCycleReadinessProvider
     return new AgentProductProcessActivityReadiness(
         true,
         "A ausência de rejeição funcional atual não dispensa os demais pré-requisitos da correção.");
+  }
+
+  /** Somente aprovação posterior da mesma atividade, processo e identidade supera a rejeição. */
+  private boolean supersededByApproval(
+      List<PdeValidationTaskSnapshot> history,
+      PdeValidationTaskSnapshot rejected,
+      Product product,
+      String reference) {
+    var approved =
+        history.stream()
+            .filter(task -> "COMPLETED".equals(task.status()))
+            .filter(
+                task ->
+                    task.id() > rejected.id()
+                        && java.util.Objects.equals(
+                            task.processDefinitionId(), rejected.processDefinitionId())
+                        && java.util.Objects.equals(
+                            task.processActivityId(), rejected.processActivityId()))
+            .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
+    if (approved.isEmpty()
+        || rejected.resultJson() == null
+        || approved.get().resultJson() == null
+        || product == null) return false;
+    try {
+      var before = json.readTree(rejected.resultJson());
+      var after = json.readTree(approved.get().resultJson());
+      return "APPROVED".equals(after.path("decision").asText())
+          && !before.path("prototypeVersion").asText().isBlank()
+          && before.path("prototypeVersion").equals(after.path("prototypeVersion"))
+          && product.getId() == after.path("productId").asLong(-1)
+          && product.getId() == before.path("productId").asLong(-1)
+          && reference.equals(after.path("sourceReference").asText())
+          && reference.equals(before.path("sourceReference").asText());
+    } catch (Exception ex) {
+      log.warn(
+          "Parecer posterior incompatível productId={} sourceReference={} taskId={}",
+          product.getId(),
+          reference,
+          approved.get().id(),
+          ex);
+      return false;
+    }
+  }
+
+  /** Confere o suplemento executado, posterior e vinculado aos bytes do parecer exato. */
+  private boolean hasBoundEvidenceSupplement(
+      PdeValidationTaskSnapshot rejected, Product product, String sourceReference) {
+    if (operationalEvidence == null
+        || product == null
+        || rejected.updatedAt() == null
+        || rejected.resultJson() == null) return false;
+    try {
+      var result = json.readTree(rejected.resultJson());
+      String version = result.path("prototypeVersion").asText();
+      if (version.isBlank()
+          || product.getId() != result.path("productId").asLong(-1)
+          || !sourceReference.equals(result.path("sourceReference").asText())) return false;
+      var report = operationalEvidence.resolve(product.getSlug(), version);
+      return report.isPresent()
+          && PdeReviewEvidenceReevaluation.matches(
+              report.get(), rejected.reviewProof(sourceReference), product.getId(), sourceReference)
+          && java.time.Instant.parse(report.get().path("generatedAt").asText())
+              .isAfter(rejected.updatedAt());
+    } catch (Exception ex) {
+      log.warn(
+          "Suplemento de correção indisponível productId={} sourceReference={} taskId={}",
+          product.getId(),
+          sourceReference,
+          rejected.id(),
+          ex);
+      return false;
+    }
   }
 }

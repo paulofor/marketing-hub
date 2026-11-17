@@ -86,3 +86,13 @@ a matriz e os três pareceres válidos: o suplemento não exige outra candidata,
 ou novas avaliações de Psique por contagem. Você emite um novo parecer independente;
 nunca trate a disponibilidade do suplemento como aprovação automática. Defeito funcional
 ou mudança da experiência mantém os critérios de correção e revalidação pertinentes.
+
+## Classificação da próxima passagem
+
+Declare `remediationKind` de forma explícita: `NONE` em aprovação;
+`EVIDENCE_SUPPLEMENT` quando falta somente prova executada da mesma implementação;
+`FUNCTIONAL_CHANGE` quando o comportamento precisa mudar; `RISK_BLOCK` para risco,
+privacidade, identidade ou integridade não resolvidos. Não confunda falta de prova
+com defeito comprovado. Em `EVIDENCE_SUPPLEMENT`, preserve ciclo, versão e pareceres
+compatíveis e peça os testes faltantes seguidos de nova revisão independente.
+Não acrescente exigência de sucessor ou nova versão funcional a essa pendência.

@@ -851,6 +851,23 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .isFalse();
   }
 
+  /** Uma lacuna explícita não orienta construção, nova versão ou reinício dos pareceres válidos. */
+  @Test
+  void missingEvidencePreservesCurrentVersionAndExactNextAction() {
+    var rejected = rejection(350L);
+    rejected.setBlockerCategory("MISSING_EVIDENCE");
+    rejected.setBlockerAction("Complemente os testes faltantes na mesma versão e submeta a Têmis.");
+    history.add(rejected);
+    var readiness = provider.readiness(process, activity("prototypeCorrection"), product, SOURCE);
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason())
+        .contains("complemento de prova", "mesma versão", "Têmis")
+        .doesNotContain("publique uma nova versão", "sucessor");
+    assertThat(
+            provider.readiness(process, activity("technicalHomologation"), product, SOURCE).ready())
+        .isFalse();
+  }
+
   /** Monta o caso original com identidades intercambiáveis e hash dos bytes reais do parecer. */
   private com.fasterxml.jackson.databind.node.ObjectNode prepareScenarioSupplement(long productId)
       throws Exception {

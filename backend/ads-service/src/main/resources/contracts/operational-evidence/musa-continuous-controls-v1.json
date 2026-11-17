@@ -1,0 +1,1546 @@
+{
+  "contractVersion": "PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1",
+  "productSlug": "metodo-musa-7-dias",
+  "prototypeVersion": "musa-consultor-pwa-v1",
+  "status": "PASS",
+  "origin": "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "generatedAt": "2026-11-17T15:15:33.730342+00:00",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "agentApprovalClaimed": false,
+  "operationalControlsContract": "PDE_CONTEXTUAL_EXECUTION_CONTROLS_V1",
+  "frontendSourceFingerprint": "cd1b0ea07ae991c7096d08ecf556c18045547e1a63378549d21c8f4a38e10825",
+  "testReceiptSha256": "b0b4aebe565414a6e762db47b65b40c3c2a3c61fa26c03e8f3558c1082adad28",
+  "implementationBaselineCommit": "ca05a770e1c26d28451789d2b40b90c9135f1b11",
+  "sourceFiles": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/consultor/v1/service/MusaConsultorService.java",
+      "sha256": "1a37d51f6e9f589a04db600b961783cd16ee15554b227e97dffa4c1ab10bfe2d"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/consultor/v1/controller/MusaConsultorController.java",
+      "sha256": "795a0bb1611446f20cbdc86a833af4c5159359ce6aa522de29e33c9219fcf1ca"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/style/v1/service/VegaContextualStyleRules.java",
+      "sha256": "81cda8b299c08d0c368cd54939738c57cfb701cf00126588e47b2ea639302303"
+    },
+    {
+      "path": "pde-platform/frontend/src/MusaContinuousApp.tsx",
+      "sha256": "06dec1c0405df0c57472393c28d8faf68b453a14b1de2a340476582f51dc3a36"
+    },
+    {
+      "path": "pde-platform/frontend/src/musaContinuous.css",
+      "sha256": "d38c725bff7a6d7a5ab5bfaabf8e52ef5cbcf8c0e1a10be0795c926c39a0ec25"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/MusaConsultorGatewayController.java",
+      "sha256": "8a6b97049b5aa4200ea02513710375ae9fdc6ffaef3cb45a08e740609db20018"
+    },
+    {
+      "path": "infra/testing/musa-consultor/terminal-supplement.cjs",
+      "sha256": "f5e82fc6ff67b06c9ff1bdae493ef0cdb0fff91fda61b00353a4682802928ee0"
+    },
+    {
+      "path": "infra/testing/musa-consultor/emit-supplement.py",
+      "sha256": "52dcd196c293d370e022d84e76ca5e084ab6ff1ddb22a801c7e1e46147071808"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/consultor/v1/MusaConsultorOperationalControlsMysql57Test.java",
+      "sha256": "e2307b2dfbc0d10a31819b0fca828e53d28a063b154765312af1b4a770896b3e"
+    }
+  ],
+  "requiredCriteria": [
+    "ATTEMPT_LIMIT",
+    "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+    "CONCURRENT_SINGLE_CONSUMPTION",
+    "CROSS_SESSION_ISOLATION",
+    "EXPIRED_ACCESS_REJECTED",
+    "IDEMPOTENCY_CONFLICT",
+    "IDEMPOTENT_COMPLETION",
+    "IDEMPOTENT_REQUEST",
+    "INCOMPATIBLE_CONTEXT_REJECTED",
+    "INVALID_ACCESS_REJECTED",
+    "PREFERENCE_REVISION_EFFECT",
+    "REVISION_CONFLICT",
+    "REVOKED_ACCESS_REJECTED",
+    "SESSION_LIMIT",
+    "TERMINAL_DESKTOP_1440_NOT_STARTED",
+    "TERMINAL_DESKTOP_1440_COMPLETED",
+    "TERMINAL_DESKTOP_1440_BLOCKED",
+    "TERMINAL_DESKTOP_1440_RECOVERABLE_TRANSPORT_FAILURE",
+    "TERMINAL_IPHONE_15_PRO_NOT_STARTED",
+    "TERMINAL_IPHONE_15_PRO_COMPLETED",
+    "TERMINAL_IPHONE_15_PRO_BLOCKED",
+    "TERMINAL_IPHONE_15_PRO_RECOVERABLE_TRANSPORT_FAILURE",
+    "TERMINAL_PIXEL_7_NOT_STARTED",
+    "TERMINAL_PIXEL_7_COMPLETED",
+    "TERMINAL_PIXEL_7_BLOCKED",
+    "TERMINAL_PIXEL_7_RECOVERABLE_TRANSPORT_FAILURE"
+  ],
+  "criteria": [
+    {
+      "code": "ATTEMPT_LIMIT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "globalOperationLimit",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "persisted": 24,
+              "httpStatus": 409,
+              "rejectedAttempt": 25,
+              "recoveryAvailable": true,
+              "message": "Limite técnico atingido. Consulte as orientações preservadas."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "persisted": 24,
+              "httpStatus": 409,
+              "rejectedAttempt": 25,
+              "recoveryAvailable": true,
+              "message": "Limite técnico atingido. Consulte as orientações preservadas."
+            }
+          }
+        ]
+      },
+      "resultSha256": "598fcfb83b865076fe09b730e573c19303ab2a7350b9cfc8a77b28d98169e1da"
+    },
+    {
+      "code": "CLOSED_CONTEXT_MUTATIONS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "closedAndIncompatibleContext",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "savedChoices": 1,
+              "httpStatus": 401,
+              "message": "Acesso expirado ou revogado. Os dados foram preservados.",
+              "homologationClosed": true
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "savedChoices": 1,
+              "httpStatus": 401,
+              "message": "Acesso expirado ou revogado. Os dados foram preservados.",
+              "homologationClosed": true
+            }
+          }
+        ]
+      },
+      "resultSha256": "f3189d60b4ae0885f4a076917fc229c52bcf10b256d9eaeee2c26a649ecec182"
+    },
+    {
+      "code": "CONCURRENT_SINGLE_CONSUMPTION",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentSingleConsumption",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "revision": 2,
+              "operations": 1,
+              "identicalResponses": true,
+              "requests": 6,
+              "choices": 1
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "revision": 2,
+              "operations": 1,
+              "identicalResponses": true,
+              "requests": 6,
+              "choices": 1
+            }
+          }
+        ]
+      },
+      "resultSha256": "00028b37b1cdc1f3933c4c65e96cb73e847b7d98eb31a86b1761fd4666736cc1"
+    },
+    {
+      "code": "CROSS_SESSION_ISOLATION",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "crossSessionIsolation",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "strangerChoices": 0,
+              "httpStatus": 409,
+              "ownerChoices": 1,
+              "message": "Orientação indisponível neste acesso."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "strangerChoices": 0,
+              "httpStatus": 409,
+              "ownerChoices": 1,
+              "message": "Orientação indisponível neste acesso."
+            }
+          }
+        ]
+      },
+      "resultSha256": "8a0cd26031ed91e821d666469498ec51284a46fa0ec5459cba3e7a04ce75cbbe"
+    },
+    {
+      "code": "EXPIRED_ACCESS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "accessBoundaries",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 401,
+              "message": "Acesso expirado ou revogado. Os dados foram preservados."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 401,
+              "message": "Acesso expirado ou revogado. Os dados foram preservados."
+            }
+          }
+        ]
+      },
+      "resultSha256": "9afc0f1fafc06892c0f33f97d5dc25071fea87197d5d576d1f5b724fdb93c6fd"
+    },
+    {
+      "code": "IDEMPOTENCY_CONFLICT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "preservesConflictsAndRevisedPreference",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 409,
+              "message": "Esta chave já possui outra entrada. Consulte a orientação preservada."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 409,
+              "message": "Esta chave já possui outra entrada. Consulte a orientação preservada."
+            }
+          }
+        ]
+      },
+      "resultSha256": "3966ab11525ef3fa593844afe4a8bec881c2361ba0003ef2f0891483b83ab78b"
+    },
+    {
+      "code": "IDEMPOTENT_COMPLETION",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentSingleConsumption",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "revision": 2,
+              "operations": 1,
+              "identicalResponses": true,
+              "requests": 6,
+              "choices": 1
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "revision": 2,
+              "operations": 1,
+              "identicalResponses": true,
+              "requests": 6,
+              "choices": 1
+            }
+          }
+        ]
+      },
+      "resultSha256": "00028b37b1cdc1f3933c4c65e96cb73e847b7d98eb31a86b1761fd4666736cc1"
+    },
+    {
+      "code": "IDEMPOTENT_REQUEST",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentSingleConsumption",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "revision": 2,
+              "operations": 1,
+              "identicalResponses": true,
+              "requests": 6,
+              "choices": 1
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "revision": 2,
+              "operations": 1,
+              "identicalResponses": true,
+              "requests": 6,
+              "choices": 1
+            }
+          }
+        ]
+      },
+      "resultSha256": "00028b37b1cdc1f3933c4c65e96cb73e847b7d98eb31a86b1761fd4666736cc1"
+    },
+    {
+      "code": "INCOMPATIBLE_CONTEXT_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "closedAndIncompatibleContext",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 409,
+              "message": "Homologação encerrada ou contexto alterado. Acesso revogado para operações."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 409,
+              "message": "Homologação encerrada ou contexto alterado. Acesso revogado para operações."
+            }
+          }
+        ]
+      },
+      "resultSha256": "c1866a667578a194c65e66ae9e15f72df4ef2fb709c92e45ce6ef485e0f724b3"
+    },
+    {
+      "code": "INVALID_ACCESS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "accessBoundaries",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 401,
+              "message": "Acesso inválido."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 401,
+              "message": "Acesso inválido."
+            }
+          }
+        ]
+      },
+      "resultSha256": "33b22822e1129c165fd4d10d8927936d5ceabb75715aec2bcec459f572f924af"
+    },
+    {
+      "code": "PREFERENCE_REVISION_EFFECT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "preservesConflictsAndRevisedPreference",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "originalPreserved": true,
+              "currentAction": "Use o lenço na alça da bolsa e mantenha o pescoço livre na videochamada.",
+              "currentPreference": "Conforto e praticidade",
+              "previousAction": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+              "previousPreference": "Cor e criatividade"
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "originalPreserved": true,
+              "currentAction": "Use o lenço na alça da bolsa e mantenha o pescoço livre na videochamada.",
+              "currentPreference": "Conforto e praticidade",
+              "previousAction": "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+              "previousPreference": "Cor e criatividade"
+            }
+          }
+        ]
+      },
+      "resultSha256": "8a70e8451bd3d6a099a3c815f8f01edf447ba99541339266fea173439818503e"
+    },
+    {
+      "code": "REVISION_CONFLICT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "preservesConflictsAndRevisedPreference",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 409,
+              "message": "Outra aba atualizou suas escolhas. Recarregue o repertório antes de conciliar."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 409,
+              "message": "Outra aba atualizou suas escolhas. Recarregue o repertório antes de conciliar."
+            }
+          }
+        ]
+      },
+      "resultSha256": "3674eccc38d91005f0aac9866fefae3889ee9d4567464bdebb56749694cbb445"
+    },
+    {
+      "code": "REVOKED_ACCESS_REJECTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "accessBoundaries",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 401,
+              "message": "Acesso expirado ou revogado. Os dados foram preservados."
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "httpStatus": 401,
+              "message": "Acesso expirado ou revogado. Os dados foram preservados."
+            }
+          }
+        ]
+      },
+      "resultSha256": "9afc0f1fafc06892c0f33f97d5dc25071fea87197d5d576d1f5b724fdb93c6fd"
+    },
+    {
+      "code": "SESSION_LIMIT",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "concurrentSessionLimit",
+      "result": {
+        "status": "PASS",
+        "contexts": [
+          {
+            "productId": 98123,
+            "cycleId": 98122,
+            "experimentId": 98124,
+            "status": "PASS",
+            "observed": {
+              "requests": 20,
+              "persisted": 18,
+              "created": 18,
+              "rejected": 2
+            }
+          },
+          {
+            "productId": 98223,
+            "cycleId": 98222,
+            "experimentId": 98224,
+            "status": "PASS",
+            "observed": {
+              "requests": 20,
+              "persisted": 18,
+              "created": 18,
+              "rejected": 2
+            }
+          }
+        ]
+      },
+      "resultSha256": "5f5a93be91fcb74fb73e11cbbec66a09825bb21ab5f89c83feb174670b690900"
+    },
+    {
+      "code": "TERMINAL_DESKTOP_1440_NOT_STARTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "DESKTOP_1440",
+        "state": "NOT_STARTED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "82d2d26b-9ccd-4e7c-a398-ca5546ec0a5e",
+          "cycleId": 98300,
+          "productId": 99300,
+          "experimentId": 100300,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 0,
+          "draft": {},
+          "operations": [],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "literalMessageBeforeClose": [],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "DESKTOP_1440-NOT_STARTED-before.png",
+            "sha256": "dd6b7837dbf28950802cf76b775dc89cd28ceef2759c2fe47ae19bb9a725b2b2"
+          },
+          {
+            "path": "DESKTOP_1440-NOT_STARTED-after.png",
+            "sha256": "fbffeb6c7772e8f701f8b33514a59fb8771ddc71fb751f4d2c98192eba94afa7"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:10:25.686Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 0,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "991df73b082f8b92cd62fe690bb77700f80d47e0cff3ae5b201222b23918ffac"
+    },
+    {
+      "code": "TERMINAL_DESKTOP_1440_COMPLETED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "DESKTOP_1440",
+        "state": "COMPLETED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "69a92180-738e-42a7-9185-4d7adda00cd6",
+          "cycleId": 98301,
+          "productId": 99301,
+          "experimentId": 100301,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 4,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "operations": [
+            {
+              "operationId": "5c27ffe2-29e7-426e-bab7-9711de96c56d",
+              "status": "COMPLETED",
+              "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+                "stylePreference": "Cor e criatividade"
+              }
+            }
+          ],
+          "choices": [
+            "5c27ffe2-29e7-426e-bab7-9711de96c56d"
+          ],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": true,
+        "literalMessageBeforeClose": [
+          "Escolha salva. Retome pelo seu repertório para outra ocasião."
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "DESKTOP_1440-COMPLETED-before.png",
+            "sha256": "0668fb421fb9b80d8ff8589095ba26d71907ecd2cc612b526c1cdb7fc8a75755"
+          },
+          {
+            "path": "DESKTOP_1440-COMPLETED-after.png",
+            "sha256": "fbffeb6c7772e8f701f8b33514a59fb8771ddc71fb751f4d2c98192eba94afa7"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:10:31.146Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 1,
+          "operations": 1,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "64e8e3c3dad1fb000a95d5af0ac1dca3f5d214aae380adf8b36638ca9385281a"
+    },
+    {
+      "code": "TERMINAL_DESKTOP_1440_BLOCKED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "DESKTOP_1440",
+        "state": "BLOCKED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "faa16ce2-c43a-4ba5-aa28-43fdcacfc2e8",
+          "cycleId": 98302,
+          "productId": 99302,
+          "experimentId": 100302,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 3,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "camisa e calça",
+            "stylePreference": "Cor e criatividade"
+          },
+          "operations": [
+            {
+              "operationId": "3c20503a-8352-4b65-bd7b-0ae2f88e69e7",
+              "status": "BLOCKED",
+              "action": "",
+              "reason": "",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa e calça",
+                "stylePreference": "Cor e criatividade"
+              }
+            }
+          ],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": true,
+        "literalMessageBeforeClose": [
+          "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada."
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 2
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "DESKTOP_1440-BLOCKED-before.png",
+            "sha256": "b21bea497b8e59d0355f0ba679a67b227dc74db64f4d18a5820549b3df319264"
+          },
+          {
+            "path": "DESKTOP_1440-BLOCKED-after.png",
+            "sha256": "fbffeb6c7772e8f701f8b33514a59fb8771ddc71fb751f4d2c98192eba94afa7"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:11:38.409Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 1,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "9bf522228b1c1a4823e07ae1964f86245d133b04969524821eabb3107012a370"
+    },
+    {
+      "code": "TERMINAL_DESKTOP_1440_RECOVERABLE_TRANSPORT_FAILURE",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "DESKTOP_1440",
+        "state": "RECOVERABLE_TRANSPORT_FAILURE",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "f6c82965-7180-4e06-95d7-acaf0ca2a164",
+          "cycleId": 98303,
+          "productId": 99303,
+          "experimentId": 100303,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 2,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+            "stylePreference": ""
+          },
+          "operations": [],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": false,
+        "literalMessageBeforeClose": [
+          "Failed to fetch"
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "DESKTOP_1440-RECOVERABLE_TRANSPORT_FAILURE-before.png",
+            "sha256": "8c5dfc7776cfdbd11f1fb5b759fe4aa8be228a71a290e6c273fe681510ebd5ab"
+          },
+          {
+            "path": "DESKTOP_1440-RECOVERABLE_TRANSPORT_FAILURE-after.png",
+            "sha256": "fbffeb6c7772e8f701f8b33514a59fb8771ddc71fb751f4d2c98192eba94afa7"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:11:45.260Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 0,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "9deb4bb1208b84bb7352bd862ed5000b5b0b9fc6040af7f6cb34f0897dae5a3d"
+    },
+    {
+      "code": "TERMINAL_IPHONE_15_PRO_NOT_STARTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "IPHONE_15_PRO",
+        "state": "NOT_STARTED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "e26a43e1-876c-4fdc-946d-621f9dd82de9",
+          "cycleId": 98304,
+          "productId": 99304,
+          "experimentId": 100304,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 0,
+          "draft": {},
+          "operations": [],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": false,
+        "literalMessageBeforeClose": [],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "IPHONE_15_PRO-NOT_STARTED-before.png",
+            "sha256": "70a55b0f713577ca63fcdcc3655bf7fdc9c20c40159456cdb8e9503bd0653112"
+          },
+          {
+            "path": "IPHONE_15_PRO-NOT_STARTED-after.png",
+            "sha256": "186fc61d3c6515ff1caf28817b92304d2ebbeed17be2205dda05dc3b48680134"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:11:49.310Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 0,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "cc63a83dc6bba4134218a07aac2e5d99c5e05d82f7046aed1225f0aa1f514433"
+    },
+    {
+      "code": "TERMINAL_IPHONE_15_PRO_COMPLETED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "IPHONE_15_PRO",
+        "state": "COMPLETED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "a5ce9d42-d8e9-49b7-a4a3-2b550e8723b1",
+          "cycleId": 98305,
+          "productId": 99305,
+          "experimentId": 100305,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 4,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "operations": [
+            {
+              "operationId": "af37b889-d4cd-48c3-a6a4-e37855528308",
+              "status": "COMPLETED",
+              "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+                "stylePreference": "Cor e criatividade"
+              }
+            }
+          ],
+          "choices": [
+            "af37b889-d4cd-48c3-a6a4-e37855528308"
+          ],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": true,
+        "diagnosticPanelVisible": true,
+        "literalMessageBeforeClose": [
+          "Escolha salva. Retome pelo seu repertório para outra ocasião."
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "IPHONE_15_PRO-COMPLETED-before.png",
+            "sha256": "7561dddc6ad914249d0318a2adf04636d95f05e81c283afd3fa3a2b0767b497c"
+          },
+          {
+            "path": "IPHONE_15_PRO-COMPLETED-after.png",
+            "sha256": "186fc61d3c6515ff1caf28817b92304d2ebbeed17be2205dda05dc3b48680134"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:11:54.386Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 1,
+          "operations": 1,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "5dd1ffb02bc20d550819be01c9d78e2b98f1a921c7f58f8c1fb09f143e379c61"
+    },
+    {
+      "code": "TERMINAL_IPHONE_15_PRO_BLOCKED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "IPHONE_15_PRO",
+        "state": "BLOCKED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "a39879ef-cd36-4c1d-bc78-346b78efe85a",
+          "cycleId": 98306,
+          "productId": 99306,
+          "experimentId": 100306,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 3,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "camisa e calça",
+            "stylePreference": "Cor e criatividade"
+          },
+          "operations": [
+            {
+              "operationId": "3a0e45be-4e39-476c-a4b5-ba1c8f481487",
+              "status": "BLOCKED",
+              "action": "",
+              "reason": "",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa e calça",
+                "stylePreference": "Cor e criatividade"
+              }
+            }
+          ],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": true,
+        "literalMessageBeforeClose": [
+          "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada."
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "IPHONE_15_PRO-BLOCKED-before.png",
+            "sha256": "cc51fa19bf946a1d4a6e0540fd99c23d960f02c14b1a1e455e021f54af43cc3f"
+          },
+          {
+            "path": "IPHONE_15_PRO-BLOCKED-after.png",
+            "sha256": "186fc61d3c6515ff1caf28817b92304d2ebbeed17be2205dda05dc3b48680134"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:11:58.970Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 1,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "27e65bcd18919cf3d34103edac2519253218b6efe5f7d345786eb02c83ca9344"
+    },
+    {
+      "code": "TERMINAL_IPHONE_15_PRO_RECOVERABLE_TRANSPORT_FAILURE",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "IPHONE_15_PRO",
+        "state": "RECOVERABLE_TRANSPORT_FAILURE",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "3c51a006-1173-47c5-a8d4-9bc03be58aad",
+          "cycleId": 98307,
+          "productId": 99307,
+          "experimentId": 100307,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 2,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+            "stylePreference": ""
+          },
+          "operations": [],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": false,
+        "literalMessageBeforeClose": [
+          "Failed to fetch"
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "IPHONE_15_PRO-RECOVERABLE_TRANSPORT_FAILURE-before.png",
+            "sha256": "8eb139f175177d1cfb517126f829cd119abc63d6a949820a2711d46ea79ca47d"
+          },
+          {
+            "path": "IPHONE_15_PRO-RECOVERABLE_TRANSPORT_FAILURE-after.png",
+            "sha256": "186fc61d3c6515ff1caf28817b92304d2ebbeed17be2205dda05dc3b48680134"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:12:03.590Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 0,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "01c6563056b121d0cdfc9052e639b06757c40a9ef8a7d40efb48f731016181cb"
+    },
+    {
+      "code": "TERMINAL_PIXEL_7_NOT_STARTED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "PIXEL_7",
+        "state": "NOT_STARTED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "f86e23b7-eadc-41c1-bf05-13bedb6b2abb",
+          "cycleId": 99308,
+          "productId": 100308,
+          "experimentId": 101308,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 0,
+          "draft": {},
+          "operations": [],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": false,
+        "literalMessageBeforeClose": [],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "PIXEL_7-NOT_STARTED-before.png",
+            "sha256": "0b621f36e2b612aeed5d079e387e27a0c04f3eacc0952c2ec44a3c96fc40555b"
+          },
+          {
+            "path": "PIXEL_7-NOT_STARTED-after.png",
+            "sha256": "f90474be50ffbc546ec6d005b3eb9b13adedcd0440c55cc5fa8917cad9293f4f"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:13:51.264Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 0,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "74e4e48f552945d0d44044835154ac982cd29ed25396663ab697473c55f603a1"
+    },
+    {
+      "code": "TERMINAL_PIXEL_7_COMPLETED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "PIXEL_7",
+        "state": "COMPLETED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "f90d1a90-81f3-4a58-b060-6af767e6967d",
+          "cycleId": 99309,
+          "productId": 100309,
+          "experimentId": 101309,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 4,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+            "stylePreference": "Cor e criatividade"
+          },
+          "operations": [
+            {
+              "operationId": "f87003f9-dc4d-45ce-9d13-fd80a0c61c5e",
+              "status": "COMPLETED",
+              "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+              "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+                "stylePreference": "Cor e criatividade"
+              }
+            }
+          ],
+          "choices": [
+            "f87003f9-dc4d-45ce-9d13-fd80a0c61c5e"
+          ],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": true,
+        "diagnosticPanelVisible": true,
+        "literalMessageBeforeClose": [
+          "Escolha salva. Retome pelo seu repertório para outra ocasião."
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "PIXEL_7-COMPLETED-before.png",
+            "sha256": "a53f298cb2898f61b6fb242e338bd59171339eee82c75a61c8e19b28d9723143"
+          },
+          {
+            "path": "PIXEL_7-COMPLETED-after.png",
+            "sha256": "f90474be50ffbc546ec6d005b3eb9b13adedcd0440c55cc5fa8917cad9293f4f"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:13:56.659Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 1,
+          "operations": 1,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "4c2f66a3cea6e378e0b7ecdf6a801518eb43c3e94b2b4bbb83c029a939b979e2"
+    },
+    {
+      "code": "TERMINAL_PIXEL_7_BLOCKED",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "PIXEL_7",
+        "state": "BLOCKED",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "8cfb0ae5-7ced-4e29-a27c-39119408f84d",
+          "cycleId": 99310,
+          "productId": 100310,
+          "experimentId": 101310,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 3,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "camisa e calça",
+            "stylePreference": "Cor e criatividade"
+          },
+          "operations": [
+            {
+              "operationId": "0eb92b19-d900-47ff-9167-0d1f111f1e24",
+              "status": "BLOCKED",
+              "action": "",
+              "reason": "",
+              "answers": {
+                "occasion": "almoço",
+                "existingSelection": "camisa e calça",
+                "stylePreference": "Cor e criatividade"
+              }
+            }
+          ],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": true,
+        "literalMessageBeforeClose": [
+          "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada."
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "PIXEL_7-BLOCKED-before.png",
+            "sha256": "c494578db150273205ccbb10a48a2ee0c9beeffc6b94377148dd067f67847408"
+          },
+          {
+            "path": "PIXEL_7-BLOCKED-after.png",
+            "sha256": "f90474be50ffbc546ec6d005b3eb9b13adedcd0440c55cc5fa8917cad9293f4f"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:14:01.448Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 1,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "a37951631ca3d507cd8261c5dc61301e580d92449971e334299f2c0d506488de"
+    },
+    {
+      "code": "TERMINAL_PIXEL_7_RECOVERABLE_TRANSPORT_FAILURE",
+      "status": "PASS",
+      "verificationType": "EXECUTION",
+      "testMethod": "terminal-supplement.cjs",
+      "result": {
+        "device": "PIXEL_7",
+        "state": "RECOVERABLE_TRANSPORT_FAILURE",
+        "status": "PASS",
+        "persistedBeforeClose": {
+          "sessionId": "68f3f357-098b-4d2a-b65b-1026a9206a69",
+          "cycleId": 99311,
+          "productId": 100311,
+          "experimentId": 101311,
+          "prototypeVersion": "musa-consultor-pwa-v1",
+          "revision": 2,
+          "draft": {
+            "occasion": "almoço",
+            "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+            "stylePreference": ""
+          },
+          "operations": [],
+          "choices": [],
+          "providerCalls": 0,
+          "trafficClass": "AGENT_VALIDATION",
+          "internalMarker": "mh_internal_test"
+        },
+        "resultVisibleBeforeClose": false,
+        "diagnosticPanelVisible": false,
+        "literalMessageBeforeClose": [
+          "Failed to fetch"
+        ],
+        "close": {
+          "preserved": true,
+          "revoked": 1
+        },
+        "deniedAfterClose": {
+          "status": 401,
+          "body": {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+            "instance": "/api/pde/vega/consultor/v1/workspace"
+          }
+        },
+        "afterReload": {
+          "resultVisible": false,
+          "loginVisible": true,
+          "literalMessage": [
+            "Acesso expirado ou revogado. Os dados foram preservados."
+          ]
+        },
+        "screenshots": [
+          {
+            "path": "PIXEL_7-RECOVERABLE_TRANSPORT_FAILURE-before.png",
+            "sha256": "ce64fa869c448dc9bfb7cfe87555712e8c8a05f67e7c7ef891d24fa0272e9c34"
+          },
+          {
+            "path": "PIXEL_7-RECOVERABLE_TRANSPORT_FAILURE-after.png",
+            "sha256": "f90474be50ffbc546ec6d005b3eb9b13adedcd0440c55cc5fa8917cad9293f4f"
+          }
+        ],
+        "evidencePersistedAt": "2026-11-17T15:14:06.124Z",
+        "persistedAfterClose": {
+          "homologationClosed": true,
+          "savedChoices": 0,
+          "operations": 0,
+          "revoked": true,
+          "sessionState": "INPUT"
+        }
+      },
+      "resultSha256": "f620c628336acefc740f81e3dd105b19842a26ec81d5d9c11fbe7b51af232c37"
+    }
+  ],
+  "reviewReevaluation": {
+    "contractVersion": "PDE_REVIEW_EVIDENCE_SUPPLEMENT_V1",
+    "reasonCode": "MISSING_EXECUTION_EVIDENCE",
+    "implementationChanged": false,
+    "independentReviewRequired": true,
+    "productId": 4,
+    "sourceReference": "experiment:115",
+    "blockedTaskId": 921,
+    "activityId": "commercialIntegrityReview",
+    "blockedResultSha256": "760419559b344924755dde684db916a347648c4d0ca87340d8b03da5c7b5a9c5"
+  },
+  "reusedEvidence": {
+    "technicalTaskId": 917,
+    "scenarioTaskIds": [
+      918,
+      919,
+      920
+    ],
+    "policy": "Preservar horários, custos e pareceres compatíveis; exigir novo aceite independente de Têmis."
+  },
+  "boundaries": [
+    "Backend, gateway, navegador e MySQL 5.7 reais na sandbox; ciclos e produtos sintéticos.",
+    "Falha de transporte induzida no navegador, sem inventar estado FAILED persistido no contrato síncrono.",
+    "Chromium com emulação mobile; não comprova Safari ou aparelhos físicos.",
+    "Mesma implementação funcional; não houve execução de mutações nos ciclos publicados.",
+    "Zero provedor, cobrança, campanha, mídia, vídeo, evidência humana ou comercial."
+  ]
+}

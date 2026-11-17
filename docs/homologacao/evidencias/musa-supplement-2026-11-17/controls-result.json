@@ -1,0 +1,385 @@
+{
+  "providerCalls" : 0,
+  "generatedAt" : "2026-11-17T15:08:31.602359677Z",
+  "results" : [ {
+    "productId" : 98123,
+    "observed" : {
+      "httpStatus" : 409,
+      "message" : "Homologação encerrada ou contexto alterado. Acesso revogado para operações."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "closedAndIncompatibleContext",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "INCOMPATIBLE_CONTEXT_REJECTED"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "savedChoices" : 1,
+      "httpStatus" : 401,
+      "message" : "Acesso expirado ou revogado. Os dados foram preservados.",
+      "homologationClosed" : true
+    },
+    "experimentId" : 98124,
+    "testMethod" : "closedAndIncompatibleContext",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "CLOSED_CONTEXT_MUTATIONS_REJECTED"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "httpStatus" : 409,
+      "message" : "Homologação encerrada ou contexto alterado. Acesso revogado para operações."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "closedAndIncompatibleContext",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "INCOMPATIBLE_CONTEXT_REJECTED"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "savedChoices" : 1,
+      "httpStatus" : 401,
+      "message" : "Acesso expirado ou revogado. Os dados foram preservados.",
+      "homologationClosed" : true
+    },
+    "experimentId" : 98224,
+    "testMethod" : "closedAndIncompatibleContext",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "CLOSED_CONTEXT_MUTATIONS_REJECTED"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "persisted" : 24,
+      "httpStatus" : 409,
+      "rejectedAttempt" : 25,
+      "recoveryAvailable" : true,
+      "message" : "Limite técnico atingido. Consulte as orientações preservadas."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "globalOperationLimit",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "ATTEMPT_LIMIT"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "persisted" : 24,
+      "httpStatus" : 409,
+      "rejectedAttempt" : 25,
+      "recoveryAvailable" : true,
+      "message" : "Limite técnico atingido. Consulte as orientações preservadas."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "globalOperationLimit",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "ATTEMPT_LIMIT"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "httpStatus" : 401,
+      "message" : "Acesso inválido."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "accessBoundaries",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "INVALID_ACCESS_REJECTED"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "httpStatus" : 401,
+      "message" : "Acesso expirado ou revogado. Os dados foram preservados."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "accessBoundaries",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "EXPIRED_ACCESS_REJECTED"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "httpStatus" : 401,
+      "message" : "Acesso expirado ou revogado. Os dados foram preservados."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "accessBoundaries",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "REVOKED_ACCESS_REJECTED"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "httpStatus" : 401,
+      "message" : "Acesso inválido."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "accessBoundaries",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "INVALID_ACCESS_REJECTED"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "httpStatus" : 401,
+      "message" : "Acesso expirado ou revogado. Os dados foram preservados."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "accessBoundaries",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "EXPIRED_ACCESS_REJECTED"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "httpStatus" : 401,
+      "message" : "Acesso expirado ou revogado. Os dados foram preservados."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "accessBoundaries",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "REVOKED_ACCESS_REJECTED"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "requests" : 20,
+      "persisted" : 18,
+      "created" : 18,
+      "rejected" : 2
+    },
+    "experimentId" : 98124,
+    "testMethod" : "concurrentSessionLimit",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "SESSION_LIMIT"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "requests" : 20,
+      "persisted" : 18,
+      "created" : 18,
+      "rejected" : 2
+    },
+    "experimentId" : 98224,
+    "testMethod" : "concurrentSessionLimit",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "SESSION_LIMIT"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "strangerChoices" : 0,
+      "httpStatus" : 409,
+      "ownerChoices" : 1,
+      "message" : "Orientação indisponível neste acesso."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "crossSessionIsolation",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "CROSS_SESSION_ISOLATION"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "strangerChoices" : 0,
+      "httpStatus" : 409,
+      "ownerChoices" : 1,
+      "message" : "Orientação indisponível neste acesso."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "crossSessionIsolation",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "CROSS_SESSION_ISOLATION"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "httpStatus" : 409,
+      "message" : "Esta chave já possui outra entrada. Consulte a orientação preservada."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "preservesConflictsAndRevisedPreference",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "IDEMPOTENCY_CONFLICT"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "httpStatus" : 409,
+      "message" : "Outra aba atualizou suas escolhas. Recarregue o repertório antes de conciliar."
+    },
+    "experimentId" : 98124,
+    "testMethod" : "preservesConflictsAndRevisedPreference",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "REVISION_CONFLICT"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "originalPreserved" : true,
+      "currentAction" : "Use o lenço na alça da bolsa e mantenha o pescoço livre na videochamada.",
+      "currentPreference" : "Conforto e praticidade",
+      "previousAction" : "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+      "previousPreference" : "Cor e criatividade"
+    },
+    "experimentId" : 98124,
+    "testMethod" : "preservesConflictsAndRevisedPreference",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "PREFERENCE_REVISION_EFFECT"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "httpStatus" : 409,
+      "message" : "Esta chave já possui outra entrada. Consulte a orientação preservada."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "preservesConflictsAndRevisedPreference",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "IDEMPOTENCY_CONFLICT"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "httpStatus" : 409,
+      "message" : "Outra aba atualizou suas escolhas. Recarregue o repertório antes de conciliar."
+    },
+    "experimentId" : 98224,
+    "testMethod" : "preservesConflictsAndRevisedPreference",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "REVISION_CONFLICT"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "originalPreserved" : true,
+      "currentAction" : "Use o lenço na alça da bolsa e mantenha o pescoço livre na videochamada.",
+      "currentPreference" : "Conforto e praticidade",
+      "previousAction" : "Experimente o lenço no pescoço, como você informou que pode usar, antes de entrar na videochamada.",
+      "previousPreference" : "Cor e criatividade"
+    },
+    "experimentId" : 98224,
+    "testMethod" : "preservesConflictsAndRevisedPreference",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "PREFERENCE_REVISION_EFFECT"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "revision" : 2,
+      "operations" : 1,
+      "identicalResponses" : true,
+      "requests" : 6,
+      "choices" : 1
+    },
+    "experimentId" : 98124,
+    "testMethod" : "concurrentSingleConsumption",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "CONCURRENT_SINGLE_CONSUMPTION"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "revision" : 2,
+      "operations" : 1,
+      "identicalResponses" : true,
+      "requests" : 6,
+      "choices" : 1
+    },
+    "experimentId" : 98124,
+    "testMethod" : "concurrentSingleConsumption",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "IDEMPOTENT_REQUEST"
+  }, {
+    "productId" : 98123,
+    "observed" : {
+      "revision" : 2,
+      "operations" : 1,
+      "identicalResponses" : true,
+      "requests" : 6,
+      "choices" : 1
+    },
+    "experimentId" : 98124,
+    "testMethod" : "concurrentSingleConsumption",
+    "status" : "PASS",
+    "cycleId" : 98122,
+    "databaseVersion" : "5.7.44",
+    "code" : "IDEMPOTENT_COMPLETION"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "revision" : 2,
+      "operations" : 1,
+      "identicalResponses" : true,
+      "requests" : 6,
+      "choices" : 1
+    },
+    "experimentId" : 98224,
+    "testMethod" : "concurrentSingleConsumption",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "CONCURRENT_SINGLE_CONSUMPTION"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "revision" : 2,
+      "operations" : 1,
+      "identicalResponses" : true,
+      "requests" : 6,
+      "choices" : 1
+    },
+    "experimentId" : 98224,
+    "testMethod" : "concurrentSingleConsumption",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "IDEMPOTENT_REQUEST"
+  }, {
+    "productId" : 98223,
+    "observed" : {
+      "revision" : 2,
+      "operations" : 1,
+      "identicalResponses" : true,
+      "requests" : 6,
+      "choices" : 1
+    },
+    "experimentId" : 98224,
+    "testMethod" : "concurrentSingleConsumption",
+    "status" : "PASS",
+    "cycleId" : 98222,
+    "databaseVersion" : "5.7.44",
+    "code" : "IDEMPOTENT_COMPLETION"
+  } ],
+  "origin" : "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "contractVersion" : "MUSA_CONTINUOUS_CONTROLS_RECEIPT_V1"
+}

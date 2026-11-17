@@ -645,3 +645,19 @@ produzido, reúso de prova e operação determinística conservam seus contratos
 financeira não apaga a resposta nem autoriza herdar limites. Sem histórico de chamadas,
 o consumo deste escopo é inexistente; estimativa ausente de chamada realizada permanece
 desconhecida. [Regressão e limites](../homologacao/capella898-validacao-e-teto-v1.md).
+
+### Prova complementar não é mudança funcional — 17/11/2026
+
+Vega/MUSA #921 demonstrou uma recorrência: Têmis pediu complementar a mesma implementação,
+mas o callback classificou todo bloqueio como FUNCTIONAL_ADJUSTMENT e a regra de sucessor
+impediu a retomada. A classificação executável passou a separar EVIDENCE_SUPPLEMENT,
+FUNCTIONAL_CHANGE e RISK_BLOCK. Somente a primeira usa MISSING_EVIDENCE, com controles de
+risco preservados. O suplemento exato também governa o diagnóstico de sucessor histórico.
+
+Testes percorrem classificação/callback com duas identidades, transporte sem inferência,
+prontidão, gate com os resultados originais e consumo por Íris; a transição entre processos
+é verificada com persistência real e sem repetir o planejamento aceito. Os controles MUSA
+complementados usam MySQL 5.7 e navegador, com fonte e hash. A hipótese de melhoria é reduzir
+repetição paga e tempo bloqueado por prova ausente; o ganho comercial ainda não foi medido.
+A adoção exige identidade/hash/data coerentes e novo aceite independente. Divergência de
+experiência ou risco funcional volta ao contrato de correção aplicável, sem liberar gasto.

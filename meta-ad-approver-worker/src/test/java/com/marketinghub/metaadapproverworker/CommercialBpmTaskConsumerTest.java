@@ -18,6 +18,147 @@ import org.springframework.core.io.ClassPathResource;
 class CommercialBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Classifica falta de prova sem impor alteração funcional em produtos diferentes. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {4, 97004})
+  void evidenceSupplementReportsItsOwnBlocker(long productId) throws Exception {
+    var result = integrityResult(productId);
+    var task = integrityTask(productId);
+    CommercialBpmTaskConsumer.validateAgentValidation(result, task);
+    var properties = new MetaAdApproverProperties();
+    properties.setReasoningEffort("max");
+    var consumer =
+        new CommercialBpmTaskConsumer(properties, "codex", "fixture-model", "/tmp", "", json);
+    Map<String, Object> guidance =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            consumer, "functionalGuidance", task, result);
+    org.assertj.core.api.Assertions.assertThat(guidance.get("category"))
+        .isEqualTo("MISSING_EVIDENCE");
+    org.assertj.core.api.Assertions.assertThat(guidance.get("recommendedAction"))
+        .isEqualTo("Complemente somente a prova faltante na mesma implementação.");
+    result.put("remediationKind", "FUNCTIONAL_CHANGE");
+    guidance =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            consumer, "functionalGuidance", task, result);
+    org.assertj.core.api.Assertions.assertThat(guidance.get("category"))
+        .isEqualTo("FUNCTIONAL_ADJUSTMENT");
+    result.put("remediationKind", "RISK_BLOCK");
+    guidance =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            consumer, "functionalGuidance", task, result);
+    org.assertj.core.api.Assertions.assertThat(guidance.get("category"))
+        .isEqualTo("COMMERCIAL_RISK");
+    result.remove("remediationKind");
+    CommercialBpmTaskConsumer.validateAgentValidation(result, task);
+  }
+
+  /**
+   * Risco de privacidade ou aprovação contraditória não se transforma em simples lacuna de prova.
+   */
+  @Test
+  void inconsistentRemediationRemainsBlocked() {
+    var result = integrityResult(4);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("agentValidationChecks"))
+        .put("privacyPreserved", false);
+    assertThatThrownBy(
+            () -> CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4)))
+        .hasMessageContaining("destino de correção contradiz");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("agentValidationChecks"))
+        .put("privacyPreserved", true);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("agentValidationChecks"))
+        .put("technicalHarnessPassed", true);
+    result.put("decision", "APPROVED");
+    assertThatThrownBy(
+            () -> CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4)))
+        .hasMessageContaining("destino de correção contradiz");
+    result.put("remediationKind", "NONE");
+    CommercialBpmTaskConsumer.validateAgentValidation(result, integrityTask(4));
+  }
+
+  /** O schema estrito declara todas as propriedades obrigatórias antes de qualquer inferência. */
+  @Test
+  void integritySchemaRemainsValidForStructuredOutputs() throws Exception {
+    assertStrictObjects(
+        json.readTree(read("prompts/bpm/pde-agent-validation-review-v4-schema.json")));
+  }
+
+  /** Percorre objetos aninhados e recusa o mesmo contrato incompleto observado no histórico. */
+  private void assertStrictObjects(com.fasterxml.jackson.databind.JsonNode node) {
+    if (node.has("properties")) {
+      var names = new java.util.HashSet<String>();
+      node.path("properties").fieldNames().forEachRemaining(names::add);
+      var required = new java.util.HashSet<String>();
+      node.path("required").forEach(value -> required.add(value.asText()));
+      org.assertj.core.api.Assertions.assertThat(required).isEqualTo(names);
+      org.assertj.core.api.Assertions.assertThat(node.path("additionalProperties").asBoolean(true))
+          .isFalse();
+    }
+    node.elements().forEachRemaining(this::assertStrictObjects);
+  }
+
+  /** Monta o contexto de auditoria com identidade intercambiável e versão própria. */
+  private Map<String, Object> integrityTask(long productId) {
+    return Map.of(
+        "sourceReference",
+        "experiment:" + (9000 + productId),
+        "taskTarget",
+        Map.of(
+            "productId",
+            productId,
+            "productSlug",
+            "fixture-product",
+            "experienceVersion",
+            "candidate-v1"));
+  }
+
+  /** Entrega um parecer de prova faltante com todos os controles de risco preservados. */
+  private com.fasterxml.jackson.databind.node.ObjectNode integrityResult(long productId) {
+    var value =
+        json.createObjectNode()
+            .put("contractVersion", "PDE_TEMIS_AGENT_VALIDATION_V1")
+            .put("decision", "BLOCKED")
+            .put("remediationKind", "EVIDENCE_SUPPLEMENT")
+            .put(
+                "commercialRationale",
+                "A prova técnica está incompleta, sem defeito funcional demonstrado.")
+            .put("rootCause", "Falta execução rastreável dos controles contratados.")
+            .put("sourceReference", "experiment:" + (9000 + productId))
+            .put("productId", productId)
+            .put("productSlug", "fixture-product")
+            .put("prototypeVersion", "candidate-v1")
+            .put("trafficClass", "AGENT_VALIDATION")
+            .put("internalMarker", "mh_internal_test")
+            .put("humanEvidenceClaimed", false)
+            .put("commercialEvidenceClaimed", false);
+    value
+        .putObject("sideEffects")
+        .put("paymentEnabled", false)
+        .put("published", false)
+        .put("campaignCreated", false)
+        .put("mediaSpendBrl", 0);
+    var checks = value.putObject("agentValidationChecks");
+    for (String name :
+        java.util.List.of(
+            "sameProductAndVersion",
+            "criteriaPredeclared",
+            "technicalHarnessPassed",
+            "threeScenarioReviewsApproved",
+            "syntheticEvidenceLabeled",
+            "internalTrafficSegregated",
+            "privacyPreserved",
+            "paymentDisabled",
+            "publicationDisabled",
+            "campaignDisabled",
+            "zeroMediaSpend",
+            "noHumanOrCommercialClaim",
+            "strategyFidelity")) checks.put(name, !name.equals("technicalHarnessPassed"));
+    value.putArray("evidence").add("Matriz e pareceres compatíveis preservados.");
+    value
+        .putArray("requiredChanges")
+        .add("Complemente somente a prova faltante na mesma implementação.");
+    return value;
+  }
+
   /** Bloqueia Têmis antes de reservar tarefas quando o raciocínio não está configurado. */
   @Test
   void rejectsMissingReasoningEffortBeforeModel() {

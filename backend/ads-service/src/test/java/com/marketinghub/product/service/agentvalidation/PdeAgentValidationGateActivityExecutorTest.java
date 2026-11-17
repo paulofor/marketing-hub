@@ -142,6 +142,113 @@ class PdeAgentValidationGateActivityExecutorTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
+  /** Reproduz #921 com provas persistidas, exige nova revisão e libera o consumo por Íris. */
+  @Test
+  void recordedVegaEvidenceGapResumesWithoutRebuildingAcceptedWork() throws Exception {
+    var fixture =
+        json.readTree(
+            getClass().getResourceAsStream("/musa-continuous/cycle-integrity-block-v1.json"));
+    String reference = "experiment:115";
+    var report =
+        new PdeOperationalControlEvidence(
+                json, new org.springframework.core.io.DefaultResourceLoader())
+            .resolve("metodo-musa-7-dias", "musa-consultor-pwa-v1")
+            .orElseThrow();
+    Instant reviewAt = Instant.parse(report.path("generatedAt").asText()).plusSeconds(30);
+    executor =
+        new PdeAgentValidationGateActivityExecutor(
+            tasks,
+            instances,
+            products,
+            periods,
+            json,
+            Clock.fixed(reviewAt.plusSeconds(30), ZoneOffset.UTC));
+    ReflectionTestUtils.setField(
+        executor,
+        "operationalEvidence",
+        new PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader()));
+    process.setId(117L);
+    process.setVersionNumber(11);
+    process.setDiagramJson(fixture.path("diagram").toString());
+    product.setId(4L);
+    product.setSlug("metodo-musa-7-dias");
+    product.setCommercialStatus("EXPERIMENTING");
+    product.setValidationDefinitionJson(fixture.path("context").toString());
+    var contracts = mock(PdeAgentValidationCycleContract.class);
+    when(contracts.resolve(product, process, reference)).thenReturn(fixture.path("context"));
+    ReflectionTestUtils.setField(executor, "cycleContracts", contracts);
+    completedTasks.clear();
+    for (var record : fixture.path("tasks")) {
+      var current = new AgentTask();
+      current.setId(record.path("id").asLong());
+      current.setProcessDefinition(process);
+      current.setProcessActivityId(record.path("activityId").asText());
+      current.setSourceReference(reference);
+      current.setAssignedAgent(Agent.builder().agentKey(record.path("agentKey").asText()).build());
+      current.setStatus(record.path("status").asText());
+      current.setExecutionMode(record.path("executionMode").asText());
+      current.setExecutionModelCode(
+          "DETERMINISTIC".equals(current.getExecutionMode())
+              ? "pde-agent-validation-harness-v1"
+              : "fixture-original-executor");
+      current.setBlockerCategory(record.path("blockerCategory").asText(null));
+      current.setBlockerAction(record.path("blockerAction").asText(null));
+      current.setResultJson(record.path("resultJson").asText(null));
+      current.setExecutionError(record.path("executionError").asText(null));
+      current.setCreatedAt(Instant.parse(record.path("createdAt").asText()));
+      current.setUpdatedAt(Instant.parse(record.path("updatedAt").asText()));
+      if ("COMPLETED".equals(current.getStatus())) current.setDeliveredAt(current.getUpdatedAt());
+      completedTasks.add(current);
+    }
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(117L, reference))
+        .thenReturn(completedTasks);
+    var pending = executor.readiness(process, gate, product, reference);
+    assertThat(pending.ready()).isFalse();
+    assertThat(pending.reason()).contains("Têmis");
+    var rejected = completedTasks.getLast();
+    String original = rejected.getResultJson();
+    // Somente este double local representa a futura revisão; nenhum parecer produtivo é criado.
+    var approved = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(original);
+    approved.put("decision", "APPROVED").put("remediationKind", "NONE");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) approved.path("agentValidationChecks"))
+        .put("technicalHarnessPassed", true);
+    approved
+        .withArray("evidence")
+        .add("DOUBLE LOCAL: suplemento " + report.path("reportSha256").asText());
+    var reviewer =
+        task(
+            922,
+            "commercialIntegrityReview",
+            "meta-ad-approver",
+            "MODEL",
+            "test-double",
+            approved.toString(),
+            reviewAt);
+    reviewer.setSourceReference(reference);
+    reviewer.setUpdatedAt(reviewAt);
+    completedTasks.add(reviewer);
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            710L, reference))
+        .thenReturn(Optional.empty());
+    var readiness = executor.readiness(process, gate, product, reference);
+    assertThat(readiness.ready()).as(readiness.reason()).isTrue();
+    assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
+    var saved = ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).saveAndFlush(saved.capture());
+    assertThat(product.getCommercialStatus()).isEqualTo("EXPERIMENTING");
+    assertThat(product.getAutomaticExecutionEnabled()).isTrue();
+    assertThat(rejected.getStatus()).isEqualTo("BLOCKED");
+    assertThat(rejected.getResultJson()).isEqualTo(original);
+    assertThat(
+            json.readTree(saved.getValue().getObjectiveEvidenceJson())
+                .path("executorCorrectionResolution")
+                .path("failedTaskId")
+                .asLong())
+        .isEqualTo(915);
+    assertCommunicationReadyAfterRealGate(4, reference, report, saved.getValue());
+  }
+
   /** Impede que o consultor contínuo seja aprovado com a matriz histórica ou runtime ausente. */
   @Test
   void continuousVersionRequiresOwnRuntimeMatrix() throws Exception {

@@ -143,6 +143,7 @@ class CodexTransportIntegrationTest {
     result.putArray("evidence").add("Fixture técnica de transporte");
     result.putArray("requiredChanges");
     if (legacy) return result;
+    result.put("remediationKind", "NONE");
     result
         .withArray("evidence")
         .add("Fixture técnica")

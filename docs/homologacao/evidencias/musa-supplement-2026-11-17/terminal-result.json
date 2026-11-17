@@ -1,0 +1,800 @@
+{
+  "contractVersion": "MUSA_CONTINUOUS_TERMINAL_EVIDENCE_V1",
+  "generatedAt": "2026-11-17T15:14:06.146Z",
+  "origin": "LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES",
+  "browser": "Chromium; iPhone/Pixel emulados",
+  "providerCalls": 0,
+  "commercialSideEffects": false,
+  "results": [
+    {
+      "device": "DESKTOP_1440",
+      "state": "NOT_STARTED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "82d2d26b-9ccd-4e7c-a398-ca5546ec0a5e",
+        "cycleId": 98300,
+        "productId": 99300,
+        "experimentId": 100300,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 0,
+        "draft": {},
+        "operations": [],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "literalMessageBeforeClose": [],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "DESKTOP_1440-NOT_STARTED-before.png",
+        "DESKTOP_1440-NOT_STARTED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:10:25.686Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 0,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "DESKTOP_1440",
+      "state": "COMPLETED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "69a92180-738e-42a7-9185-4d7adda00cd6",
+        "cycleId": 98301,
+        "productId": 99301,
+        "experimentId": 100301,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 4,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "operations": [
+          {
+            "operationId": "5c27ffe2-29e7-426e-bab7-9711de96c56d",
+            "status": "COMPLETED",
+            "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+            "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+              "stylePreference": "Cor e criatividade"
+            }
+          }
+        ],
+        "choices": [
+          "5c27ffe2-29e7-426e-bab7-9711de96c56d"
+        ],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": true,
+      "literalMessageBeforeClose": [
+        "Escolha salva. Retome pelo seu repertório para outra ocasião."
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "DESKTOP_1440-COMPLETED-before.png",
+        "DESKTOP_1440-COMPLETED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:10:31.146Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 1,
+        "operations": 1,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "DESKTOP_1440",
+      "state": "BLOCKED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "faa16ce2-c43a-4ba5-aa28-43fdcacfc2e8",
+        "cycleId": 98302,
+        "productId": 99302,
+        "experimentId": 100302,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 3,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "camisa e calça",
+          "stylePreference": "Cor e criatividade"
+        },
+        "operations": [
+          {
+            "operationId": "3c20503a-8352-4b65-bd7b-0ae2f88e69e7",
+            "status": "BLOCKED",
+            "action": "",
+            "reason": "",
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "camisa e calça",
+              "stylePreference": "Cor e criatividade"
+            }
+          }
+        ],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": true,
+      "literalMessageBeforeClose": [
+        "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada."
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 2
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "DESKTOP_1440-BLOCKED-before.png",
+        "DESKTOP_1440-BLOCKED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:11:38.409Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 1,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "DESKTOP_1440",
+      "state": "RECOVERABLE_TRANSPORT_FAILURE",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "f6c82965-7180-4e06-95d7-acaf0ca2a164",
+        "cycleId": 98303,
+        "productId": 99303,
+        "experimentId": 100303,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 2,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+          "stylePreference": ""
+        },
+        "operations": [],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": false,
+      "literalMessageBeforeClose": [
+        "Failed to fetch"
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "DESKTOP_1440-RECOVERABLE_TRANSPORT_FAILURE-before.png",
+        "DESKTOP_1440-RECOVERABLE_TRANSPORT_FAILURE-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:11:45.260Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 0,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "IPHONE_15_PRO",
+      "state": "NOT_STARTED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "e26a43e1-876c-4fdc-946d-621f9dd82de9",
+        "cycleId": 98304,
+        "productId": 99304,
+        "experimentId": 100304,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 0,
+        "draft": {},
+        "operations": [],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": false,
+      "literalMessageBeforeClose": [],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "IPHONE_15_PRO-NOT_STARTED-before.png",
+        "IPHONE_15_PRO-NOT_STARTED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:11:49.310Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 0,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "IPHONE_15_PRO",
+      "state": "COMPLETED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "a5ce9d42-d8e9-49b7-a4a3-2b550e8723b1",
+        "cycleId": 98305,
+        "productId": 99305,
+        "experimentId": 100305,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 4,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "operations": [
+          {
+            "operationId": "af37b889-d4cd-48c3-a6a4-e37855528308",
+            "status": "COMPLETED",
+            "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+            "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+              "stylePreference": "Cor e criatividade"
+            }
+          }
+        ],
+        "choices": [
+          "af37b889-d4cd-48c3-a6a4-e37855528308"
+        ],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": true,
+      "diagnosticPanelVisible": true,
+      "literalMessageBeforeClose": [
+        "Escolha salva. Retome pelo seu repertório para outra ocasião."
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "IPHONE_15_PRO-COMPLETED-before.png",
+        "IPHONE_15_PRO-COMPLETED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:11:54.386Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 1,
+        "operations": 1,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "IPHONE_15_PRO",
+      "state": "BLOCKED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "a39879ef-cd36-4c1d-bc78-346b78efe85a",
+        "cycleId": 98306,
+        "productId": 99306,
+        "experimentId": 100306,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 3,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "camisa e calça",
+          "stylePreference": "Cor e criatividade"
+        },
+        "operations": [
+          {
+            "operationId": "3a0e45be-4e39-476c-a4b5-ba1c8f481487",
+            "status": "BLOCKED",
+            "action": "",
+            "reason": "",
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "camisa e calça",
+              "stylePreference": "Cor e criatividade"
+            }
+          }
+        ],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": true,
+      "literalMessageBeforeClose": [
+        "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada."
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "IPHONE_15_PRO-BLOCKED-before.png",
+        "IPHONE_15_PRO-BLOCKED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:11:58.970Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 1,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "IPHONE_15_PRO",
+      "state": "RECOVERABLE_TRANSPORT_FAILURE",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "3c51a006-1173-47c5-a8d4-9bc03be58aad",
+        "cycleId": 98307,
+        "productId": 99307,
+        "experimentId": 100307,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 2,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+          "stylePreference": ""
+        },
+        "operations": [],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": false,
+      "literalMessageBeforeClose": [
+        "Failed to fetch"
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "IPHONE_15_PRO-RECOVERABLE_TRANSPORT_FAILURE-before.png",
+        "IPHONE_15_PRO-RECOVERABLE_TRANSPORT_FAILURE-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:12:03.590Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 0,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "PIXEL_7",
+      "state": "NOT_STARTED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "f86e23b7-eadc-41c1-bf05-13bedb6b2abb",
+        "cycleId": 99308,
+        "productId": 100308,
+        "experimentId": 101308,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 0,
+        "draft": {},
+        "operations": [],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": false,
+      "literalMessageBeforeClose": [],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "PIXEL_7-NOT_STARTED-before.png",
+        "PIXEL_7-NOT_STARTED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:13:51.264Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 0,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "PIXEL_7",
+      "state": "COMPLETED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "f90d1a90-81f3-4a58-b060-6af767e6967d",
+        "cycleId": 99309,
+        "productId": 100309,
+        "experimentId": 101309,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 4,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+          "stylePreference": "Cor e criatividade"
+        },
+        "operations": [
+          {
+            "operationId": "f87003f9-dc4d-45ce-9d13-fd80a0c61c5e",
+            "status": "COMPLETED",
+            "action": "Use o lenço na alça da bolsa, uma das formas que você informou, e mantenha o pescoço livre durante a refeição.",
+            "reason": "Você tem o lenço e a bolsa, declarou as duas formas de uso e vai fazer uma refeição. Essa escolha mantém o detalhe sem deixá-lo junto ao prato.",
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+              "stylePreference": "Cor e criatividade"
+            }
+          }
+        ],
+        "choices": [
+          "f87003f9-dc4d-45ce-9d13-fd80a0c61c5e"
+        ],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": true,
+      "diagnosticPanelVisible": true,
+      "literalMessageBeforeClose": [
+        "Escolha salva. Retome pelo seu repertório para outra ocasião."
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "PIXEL_7-COMPLETED-before.png",
+        "PIXEL_7-COMPLETED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:13:56.659Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 1,
+        "operations": 1,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "PIXEL_7",
+      "state": "BLOCKED",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "8cfb0ae5-7ced-4e29-a27c-39119408f84d",
+        "cycleId": 99310,
+        "productId": 100310,
+        "experimentId": 101310,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 3,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "camisa e calça",
+          "stylePreference": "Cor e criatividade"
+        },
+        "operations": [
+          {
+            "operationId": "0eb92b19-d900-47ff-9167-0d1f111f1e24",
+            "status": "BLOCKED",
+            "action": "",
+            "reason": "",
+            "answers": {
+              "occasion": "almoço",
+              "existingSelection": "camisa e calça",
+              "stylePreference": "Cor e criatividade"
+            }
+          }
+        ],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": true,
+      "literalMessageBeforeClose": [
+        "Ainda não consigo escolher uma ação útil para esta combinação. Conte, nos mesmos campos, uma forma de usar que suas peças permitem e o que você fará na ocasião. Não é preciso comprar nada."
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "PIXEL_7-BLOCKED-before.png",
+        "PIXEL_7-BLOCKED-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:14:01.448Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 1,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    },
+    {
+      "device": "PIXEL_7",
+      "state": "RECOVERABLE_TRANSPORT_FAILURE",
+      "status": "PASS",
+      "persistedBeforeClose": {
+        "sessionId": "68f3f357-098b-4d2a-b65b-1026a9206a69",
+        "cycleId": 99311,
+        "productId": 100311,
+        "experimentId": 101311,
+        "prototypeVersion": "musa-consultor-pwa-v1",
+        "revision": 2,
+        "draft": {
+          "occasion": "almoço",
+          "existingSelection": "Camisa, calça, lenço e bolsa. Posso usar o lenço no pescoço ou na alça.",
+          "stylePreference": ""
+        },
+        "operations": [],
+        "choices": [],
+        "providerCalls": 0,
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test"
+      },
+      "resultVisibleBeforeClose": false,
+      "diagnosticPanelVisible": false,
+      "literalMessageBeforeClose": [
+        "Failed to fetch"
+      ],
+      "close": {
+        "preserved": true,
+        "revoked": 1
+      },
+      "deniedAfterClose": {
+        "status": 401,
+        "body": {
+          "type": "about:blank",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "Acesso expirado ou revogado. Os dados foram preservados.",
+          "instance": "/api/pde/vega/consultor/v1/workspace"
+        }
+      },
+      "afterReload": {
+        "resultVisible": false,
+        "loginVisible": true,
+        "literalMessage": [
+          "Acesso expirado ou revogado. Os dados foram preservados."
+        ]
+      },
+      "screenshots": [
+        "PIXEL_7-RECOVERABLE_TRANSPORT_FAILURE-before.png",
+        "PIXEL_7-RECOVERABLE_TRANSPORT_FAILURE-after.png"
+      ],
+      "evidencePersistedAt": "2026-11-17T15:14:06.124Z",
+      "persistedAfterClose": {
+        "homologationClosed": true,
+        "savedChoices": 0,
+        "operations": 0,
+        "revoked": true,
+        "sessionState": "INPUT"
+      }
+    }
+  ]
+}

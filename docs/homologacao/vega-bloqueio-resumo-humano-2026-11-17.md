@@ -58,7 +58,8 @@ e arquivos externos permanecem fora do aceite; os transportes, o diário, a leit
 proteção da pausa foram executados localmente. As últimas alterações foram repetidas
 somente nas suítes afetadas.
 
-Frontend: 62 testes relevantes e rodada final das páginas afetadas aprovados;
+Frontend: suíte integral com 1.055 testes em 212 arquivos aprovada, além das
+validações anteriores das páginas afetadas;
 TypeScript conferido. Bundle gerado com a configuração produtiva do repositório,
 separando a verificação TypeScript do empacotamento para evitar dois processos grandes
 simultâneos na sandbox de 2,75 GiB. O checker foi retirado apenas do wrapper local,
@@ -133,3 +134,13 @@ preexistentes da sandbox; nenhuma publicação ou recurso produtivo foi alterado
 O contrato Java do runner de Íris também foi atualizado para exigir preservação
 das dependências. Os dez testes de Íris/tipos de produto passaram localmente; os
 demais testes que leem os três scripts foram pesquisados antes de atualizar o PR.
+
+A suíte integral também revelou uma expectativa antiga do rótulo de parecer de Argos.
+O teste foi alinhado à apresentação nova, mantendo as asserções sobre prompts, custo
+e acesso ao JSON completo. Todos os 1.055 testes do frontend passaram localmente.
+Para encurtar o feedback, a etapa existente do Frontend CI agora inclui relatórios
+de processos e o aviso de pausa, além do painel de execução. Foram comparadas
+correção isolada do rótulo, ampliação dessa etapa e duplicação da suíte integral
+no CI principal; escolhida a ampliação da etapa, suficiente para esta classe de
+regressão sem repetir toda a matriz. YAML, Bash/ShellCheck e contrato de eficiência
+do workflow passaram. Não houve mudança adicional no comportamento do produto.

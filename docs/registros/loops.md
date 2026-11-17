@@ -1334,6 +1334,11 @@
   O job Opala preserva logs completos; não se deduz causa apenas do fim da stack.
   Evidências: [homologação Vega](../homologacao/vega-bloqueio-resumo-humano-2026-11-17.md).
 
+- **Cobertura de UI em 17/11/2026:** a suíte integral no job de processos encontrou
+  um rótulo antigo de parecer que não era exercitado pelo Frontend CI seletivo.
+  Após os 1.055 testes locais passarem, a etapa existente passou a executar os
+  relatórios de processos e o aviso de pausa, antecipando essa validação.
+
 ## LOOP-ACTIONS-RETOMADA-SEM-GATILHO — workflow ativo não recupera merge perdido
 
 - **Data:** 2026-09-08.

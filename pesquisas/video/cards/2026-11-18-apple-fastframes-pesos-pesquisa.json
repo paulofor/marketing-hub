@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-apple-fastframes-pesquisa-latencia-2026-11",
+  "title": "Apple FastFrames: modelos de vídeo baixáveis, mas só para pesquisa",
+  "finding": "Apple publicou FastFrames-S 1,3B e FastFrames-L 14B com pesos e código para vídeo interativo a 480p; relata 36ms/frame em B200 (S) e 45ms/frame em 8x B200 (L).",
+  "mechanism": "Vídeo autorregressivo com difusão em duas etapas, decoder de pixels e cache KV otimizados.",
+  "commercialApplication": "Pesquisa sobre geração interativa e latência; pesos não podem ser utilizados em produto comercial conforme licença.",
+  "evidenceStrength": "Alta para pesos, termos e parâmetros; benchmarks de desempenho publicados pelos próprios autores sem reprodução independente.",
+  "experimentHypothesis": "Decodificação/cache mais enxutos reduzem custo de latência por quadro de vídeo em hardware equivalente.",
+  "risks": "Licença apple-amlr não comercial; múltiplas B200 nos benchmarks, CUDA 12.8, resolução 480p e sem áudio nativo; nenhuma API comercial.",
+  "limits": "PESQUISA ATIVA, pesos disponíveis para uso não comercial; não produto nem API Apple; 81 quadros a 16fps no exemplo.",
+  "sourceTitle": "FastFrames: abertura de pesos de pesquisa com licença restrita",
+  "collection": "video",
+  "publishedOn": "2026-11-18",
+  "validUntil": "2027-02-18",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-18-apple-fastframes-pesos-pesquisa.md",
+  "sourceSha256": "27f2441ebbc4ebb9835082ab4a6f2cc07bc9c2d6905dbf93a9040b571db0f631"
+}

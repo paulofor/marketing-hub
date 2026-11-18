@@ -1,0 +1,18 @@
+{
+  "cardKey": "controle-ocular-eeg-memoria",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-11-18",
+  "validUntil": "2027-01-02",
+  "sourceKind": "MARKDOWN",
+  "title": "Controlar sacadas antes de interpretar EEG alfa/beta como medida de memória",
+  "finding": "Quatro experimentos demonstraram que a exploração ocular e as sacadas modulam potência posterior alfa/beta; manipulações da movimentação dissociaram esse sinal de memória posterior.",
+  "mechanism": "Movimentos oculares contribuem para dinâmicas de EEG que podem ser confundidas com marcas neurais de codificação; não indicam diretamente prazer ou aprendizagem.",
+  "commercialApplication": "Em painéis voluntários com EEG e eye-tracking, controlar sacadas no modelo e confirmar compreensão e memória com testes objetivos, sem inferir emoção de biometria.",
+  "evidenceStrength": "Moderada-alta para vínculo oculomotor-EEG nos paradigmas; baixa para aplicação comercial ou efeitos de edição.",
+  "experimentHypothesis": "Ajustar características de sacadas reduzirá associações espúrias entre alfa/beta e lembrança; métricas objetivas independentes terão maior validade.",
+  "risks": "Confundir EEG com prova de memória/emoção, vigilância biométrica, incentivos a estímulos intrusivos e uso sem consentimento.",
+  "limits": "Inclui registros clínicos e tarefas laboratoriais, sem vídeos publicitários, prazer, dopamina ou vendas.",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-18-controle-ocular-eeg-memoria-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Controle ocular de EEG e memória",
+  "sourceSha256": "ff165e1a0b7b0f91043559bf7a1294719a682c2b0c7167a3c959edd6ca926215"
+}

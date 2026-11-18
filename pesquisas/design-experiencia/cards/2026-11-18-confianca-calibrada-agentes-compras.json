@@ -1,0 +1,18 @@
+{
+  "cardKey": "calibracao-confianca-agentes-compra-llm",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Em recomendações de compra, mais raciocínio do agente não garante escolha correta",
+  "finding": "Em preprint de 17/11/2026, dez modelos foram avaliados em WebShop (496 tarefas), Amazon SQID (500) e Wayfair WANDS (330), escolhendo um produto correto entre dez candidatos. Aumentar esforço de raciocínio em geral não melhorou significativamente acurácia, mas elevou a confiança declarada em vários modelos. Erros entre modelos foram fortemente correlacionados e muitos recaíram sobre o mesmo substituto incorreto.",
+  "mechanism": "Hipótese interpretativa, não mecanismo psicológico demonstrado: deliberar mais pode ampliar certeza verbalizada sem corrigir falhas de leitura de preço, compatibilidade e atributos secundários. Confiança autorrelatada e concordância entre modelos não substituem verificação independente da ficha de produto.",
+  "commercialApplication": "Em agente B2C, conferir requisitos obrigatórios do comprador contra especificações e preços verificáveis antes de recomendar ou solicitar autorização de compra. Exibir divergências e bases da escolha; preferir checklist auditável à mera intensificação do raciocínio.",
+  "evidenceStrength": "Preprint arXiv:2611.22033v1 (17/11/2026), comparação pareada de dez modelos em três benchmarks, com exceções pontuais de melhora; evidência técnica controlada, sem compras reais ou teste de conversão. Dependente de modelos, listas fechadas e rótulos de produtos.",
+  "publishedOn": "2026-11-18",
+  "validUntil": "2027-01-02",
+  "experimentHypothesis": "Com catálogos e consultas idênticos, checklist determinístico de atributos + fonte reduzirá escolhas incompatíveis e confiança indevida em comparação a agente apenas com esforço alto. Medir acerto por auditoria cega, violações, latência, custo; em piloto consentido, correções, cancelamentos e pagamentos reconciliados.",
+  "risks": "Automação que recomenda produto incompatível, preço antigo ou confiança não calibrada; uso de consenso entre modelos como falsa confirmação; indução comercial por respostas persuasivas. Preservar autorização humana para compra e rastrear proveniência.",
+  "limits": "Benchmark de decisão isolada, dez opções pré-selecionadas, SQID/WANDS com rótulos humanos potencialmente ambíguos. Ausência de busca real, pagamento, satisfação ou ROI. Não afirmar que mais raciocínio nunca ajuda nem extrapolar taxas de acerto para conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-18-calibracao-confianca-agentes-compras.md",
+  "sourceTitle": "Fonte revisada — Krishnamoorthy e Han (2026): raciocínio, confiança e escolhas de agentes de compra",
+  "sourceSha256": "f8f69213e9bfb4c10ecb4ac268f3f57f952292c0a3bcf837e16973b0c65c9367"
+}

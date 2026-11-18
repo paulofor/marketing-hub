@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-suno-visuals-musica-2026-11",
+  "title": "Suno Visuals: videoclipe por música com edição, letra e lipsync",
+  "finding": "Suno lançou em 17/11/2026 Visuals, com clipes de 5–15 segundos, vídeo de letras, edição por prompt e lip sync guiado por música; o modelo H3 Move é baseado em MiniMax H3.",
+  "mechanism": "Música ou áudio importado + prompts e referências, geração Fast 480p/Standard 720p, lip sync e extensão por timeline.",
+  "commercialApplication": "Clipes musicais curtos, Reels, anúncios com música, lyric videos e teasers.",
+  "evidenceStrength": "Alta para lançamento e documentação Suno; sincronismo e superioridade sobre concorrentes não reproduzidos independentemente.",
+  "experimentHypothesis": "Para refrão PT-BR de 15s, fluxo dentro da Suno reduz etapas de preparação e pós-produção versus edição áudio/vídeo separada.",
+  "risks": "Preço por vídeo exigiu login e não foi confirmado; licenças comerciais de visuais/músicas exigem checagem; filtros de IP/identidade; documentação móvel conflitante.",
+  "limits": "ATIVO web; móvel com documentos divergentes; 5–15s por geração, até 720p; API Visuals e pesos H3 Move não comprovados.",
+  "sourceTitle": "Suno Visuals: criação audiovisual sincronizada à música",
+  "collection": "video",
+  "publishedOn": "2026-11-18",
+  "validUntil": "2027-02-18",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-18-suno-visuals-musica-video.md",
+  "sourceSha256": "68897bb40073dd167ceb4ab109a9b8639c330ce817dcc8f53ca95c1c74e4c918"
+}

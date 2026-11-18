@@ -1,0 +1,18 @@
+{
+  "cardKey": "fusao-multimodal-emocao-validacao-humana",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-11-18",
+  "validUntil": "2027-01-02",
+  "sourceKind": "MARKDOWN",
+  "title": "Validar fusão audiovisual sem confundir classificação emocional com leitura mental",
+  "finding": "Modelo com fusão audiovisual, prosódia e rosto alcançou 87,9% e 87,2% de acurácia em duas bases e 86,2% de concordância com rótulos sobretudo subjetivos em painel de 96 participantes.",
+  "mechanism": "Alinhamento temporal e ponderação variável de sinais são mecanismos computacionais que podem melhorar a classificação; não provam mecanismo neural nem causalidade sobre emoções.",
+  "commercialApplication": "Testar valor incremental de predições audiovisuais para revisão de vídeos com painel voluntário e consentido, comparando com modelos unimodais e questionários simples.",
+  "evidenceStrength": "Moderada para classificação em benchmarks e protótipo; baixa para novos públicos, prazer e conversão.",
+  "experimentHypothesis": "Predições multimodais terão erro menor que modelos de uma modalidade em pessoas e vídeos inteiramente fora do treinamento, sem reduzir calibração ou equidade.",
+  "risks": "Privacidade de rosto/voz, uso sem consentimento, viés demográfico e cultural, sobreinterpretação de rótulos subjetivos, leakage e falso diagnóstico emocional.",
+  "limits": "96 participantes integravam conjunto de 300 pesquisados; rótulos predominantemente subjetivos; não há medida direta de prazer, dopamina, comportamento de compra ou venda.",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-18-fusao-multimodal-emocao-validacao-humana-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Fusão audiovisual e avaliação emocional",
+  "sourceSha256": "d8bd2e7646345f82188aa84bc09b3af662dfd014f1a009b2c58c0a6b3de11590"
+}

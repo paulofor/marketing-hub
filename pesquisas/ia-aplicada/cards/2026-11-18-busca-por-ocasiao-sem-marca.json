@@ -1,0 +1,18 @@
+{
+  "cardKey": "busca-b2c-ocasiao-preferencia-sem-marca",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Descoberta B2C por ocasião e preferência antes da marca",
+  "finding": "Em 17/11/2026, a fundadora da Daydream declarou que cerca de 97% das buscas internas de moda não mencionam marcas. O dado é autodeclarado, sem amostragem e auditoria divulgadas; não demonstra conversão.",
+  "mechanism": "Hipótese: formular uma necessidade situada (ocasião, estilo, restrições) antes da marca ajuda a revelar critérios de escolha que a navegação apenas por categoria e produto pode omitir.",
+  "commercialApplication": "Testar uma entrada curta por ocasião e preferência, seguida de opções com explicação e preço verificável, contra filtros convencionais para um nicho B2C; preservar checkout aprovado pelo usuário.",
+  "evidenceStrength": "Baixa para generalização: estatística interna relatada por fundador em imprensa, sem metodologia pública ou experimento causal; evidência de uso da plataforma, não de aumento de vendas.",
+  "publishedOn": "2026-11-18",
+  "validUntil": "2027-01-02",
+  "experimentHypothesis": "No mesmo público e catálogo, a entrada por ocasião terá maior proporção de decisões qualificadas e pagamentos reconciliados que a busca convencional, sem piorar reembolso ou margem.",
+  "risks": "Viés de recomendação por afiliação ou catálogo; coleta excessiva de dados de estilo/fotos; indução a compra inadequada; falsa generalização dos 97% para o Brasil.",
+  "limits": "2 milhões de usuários são acumulados da plataforma desde 2025, não clientes do agente lançado em 17/11; faltam conversão, retenção, receita, controle experimental, tamanho da amostra e dados por canal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-18-daydream-busca-por-ocasiao-sem-marca.md",
+  "sourceTitle": "Daydream: busca de moda por ocasião e preferência sem marca — revisão 18/11/2026",
+  "sourceSha256": "c532534dfa0e54343cd2a6dc2197a7617a6b0bb6f61da802df7e6bb24638806c"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "escuta-imersiva-perspectiva-natureza",
+  "collection": "prazer-audio-visual",
+  "title": "Testar escuta imersiva com mudança de perspectiva",
+  "finding": "Após caminhada sonora guiada e apresentação imersiva, 116 estudantes relataram aumento pré/pós de conexão e empatia com a natureza; a importância atribuída ao som não mediou significativamente as relações.",
+  "mechanism": "A atenção deliberada à paisagem sonora e a adoção de perspectiva sobre outra espécie são mecanismos psicológicos possíveis, mas não isolados causalmente no estudo.",
+  "commercialApplication": "Testar em narrativas audiovisuais uma introdução que convida a assumir uma perspectiva específica versus uma introdução informativa neutra, sem prometer aumento de vendas.",
+  "evidenceStrength": "Baixa-moderada para mudança pré/pós; baixa para causalidade de pistas sonoras e transferência comercial.",
+  "publishedOn": "2026-11-19",
+  "validUntil": "2027-01-03",
+  "experimentHypothesis": "Com áudio e visual iguais, um convite de perspectiva poderá mudar empatia e atenção autorrelatadas versus narração neutra, mantendo compreensão e conforto.",
+  "risks": "Desejabilidade social, manipulação afetiva, desconforto auditivo, vieses culturais/etários e alegações excessivas de empatia.",
+  "limits": "Amostra de 116 adolescentes na Finlândia; combinação de domo, caminhada, grupo e narração; sem isolamento dos fatores; sem medição de prazer, dopamina ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-19-escuta-imersiva-perspectiva-natureza-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Escuta imersiva e perspectiva sobre a natureza",
+  "sourceSha256": "8f458f07e560334a23a166a9b725a61ae3973fa6a540651f751cbcdd9d4f0568"
+}

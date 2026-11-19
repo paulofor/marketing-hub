@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-google-genie4-api-mundos-interativos-2026-11",
+  "title": "Google Genie 4: API paga para mundos audiovisuais dirigidos ao vivo",
+  "finding": "Em 19/11/2026 o Google abriu Genie 4 na Gemini Interactions API e AI Studio; cria ambientes 720p/24fps com audio nativo e controle por teclado e prompt durante o streaming, apos abertura restrita no Project Genie em 18/11.",
+  "mechanism": "World model multimodal baseado em Gemini Omni e raciocinio Gemini, com streaming WebRTC/WebSocket, mudancas de cena orientadas por texto e navegacao de camera em tempo real.",
+  "commercialApplication": "Previsualizacao e cenografia interativa, prototipos de experiencias audiovisuais, simulacao de eventos, testes de agentes e conceitos de video; nao substituir geradores de clips acabados.",
+  "evidenceStrength": "Alta para disponibilizacao e especificacoes oficiais; desempenho, continuidade e latencia no Brasil ainda sem testes independentes.",
+  "experimentHypothesis": "Um prototipo de mundo interativo de 30 a 60 segundos permite avaliar mudancas de camera e cenario com menos regeneracoes do que pipeline de clips offline.",
+  "risks": "API paga sem tier gratis, 120 s por sessao, US-only, persistencia espacial imperfeita, bloqueios de pessoa/marca, formato apenas 16:9, licenca proprietaria; encerrar sessao com complete() para evitar cobranca.",
+  "limits": "ATIVO na API paga v1beta com ID models/genie-4; 2 sessoes simultaneas e 50 requests/dia no Tier 1; estimativa US$ 0,1008/s com audio. Project Genie restrito AI Ultra; pesos fechados.",
+  "sourceTitle": "Genie 4: abertura de API paga de simulacao audiovisual interativa",
+  "collection": "video",
+  "publishedOn": "2026-11-19",
+  "validUntil": "2027-02-19",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-19-genie4-api-mundos-interativos.md",
+  "sourceSha256": "8bd0de62e4a1a52cd24058d077b54ed20f650d70f99006d43b821730f787976a"
+}

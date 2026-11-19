@@ -1,0 +1,18 @@
+{
+  "cardKey": "preferencia-estetica-visual-fewshot",
+  "collection": "prazer-audio-visual",
+  "title": "Validar preferência estética personalizada com poucas avaliações",
+  "finding": "CABRIA obteve SROCC 0,694 com 10 exemplos e 0,760 com 100 no FLICKR-AES (37 usuários); ganho estritamente avaliado com 10 exemplos, sem vantagem confirmada do pipeline completo em 100 após correção.",
+  "mechanism": "Prior global de estética com ajuste residual por usuário e memória contrastiva positiva/negativa; mecanismo computacional, não prova neurobiológica de prazer.",
+  "commercialApplication": "Avaliar se 10 notas estéticas voluntárias melhoram a ordenação de alternativas visuais para revisão criativa, comparando contra modelo geral e regra simples.",
+  "evidenceStrength": "Moderada para o benchmark de predição estética em imagens; baixa para vídeos, experiências emocionais e conversão.",
+  "publishedOn": "2026-11-19",
+  "validUntil": "2027-01-03",
+  "experimentHypothesis": "Com 10 imagens avaliadas por pessoa, modelo personalizado terá correlação de preferência maior que modelo global em imagens inéditas e usuários externos sem custo ou viés excessivo.",
+  "risks": "Consentimento e privacidade de preferências, homogeneização criativa, bolha estética, viés cultural, superajuste e alegações de leitura emocional.",
+  "limits": "Somente 37 usuários no protocolo FLICKR-AES, imagens estáticas, resultado dependente da arquitetura; não mediu prazer fisiológico, vídeos, dopamina ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-19-preferencia-estetica-visual-fewshot-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Predição personalizada de preferência estética visual",
+  "sourceSha256": "2f429c0890722b4aca8181cac923e11eebce1c4b2c75f4d04f13989ad32280d0"
+}

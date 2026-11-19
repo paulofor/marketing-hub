@@ -1,0 +1,18 @@
+{
+  "cardKey": "transparencia-privacidade-confianca-compras-ia-genz",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Transparência em compras com IA precisa de controle real de privacidade",
+  "finding": "Estudo transversal com 979 universitários chineses da Geração Z, publicado em Scientific Reports em 10/11/2026, encontrou associação positiva de transparência percebida, facilidade de uso e boca a boca com confiança em compras assistidas por IA. Preocupação com privacidade moderou negativamente a relação entre transparência e confiança. Sem testes causais ou aferição de pagamentos.",
+  "mechanism": "Hipótese interpretativa: motivos claros para recomendações podem reduzir incerteza, mas o receio de coleta de dados enfraquece o benefício percebido. A moderação estatística não identifica mecanismo causal.",
+  "commercialApplication": "No atendimento B2C da Íris, explicar por que uma oferta atende critérios verificáveis, revelar dados utilizados e oferecer modo sem perfil comportamental, controle e revogação de personalização.",
+  "evidenceStrength": "Artigo aceito e publicado online em 10/11/2026, survey transversal N=979; coleta nov-dez/2024. Associação/modelagem estatística em jovens chineses; não experimento de interface, venda ou conversão.",
+  "publishedOn": "2026-11-19",
+  "validUntil": "2027-01-03",
+  "experimentHypothesis": "Com oferta e critérios iguais, adicionar controles efetivos de privacidade à explicação verificável da recomendação pode reduzir abandono por privacidade e melhorar compreensão sem reduzir pagamentos. A/B com consentimento; medir confiança calibrada, checkout e pagamentos reconciliados.",
+  "risks": "Transparência cosmética, consentimento manipulado, coleta de dados excessiva, falsa precisão e uso persuasivo de vulnerabilidades; garantir escolha real.",
+  "limits": "Autorrelato, público universitário na China, dados de 2024, desenho não causal e possível viés de método comum. Sem ROI ou vendas medidas por intervenção; requer validação no Brasil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-19-transparencia-privacidade-confianca-compras-ia.md",
+  "sourceTitle": "Fonte revisada — Ma e Zheng (2026): transparência, privacidade e confiança em compras por IA",
+  "sourceSha256": "f6cf699badea1a27be4618634e556ff88180c5bdd2710070e9f9fe9c368f4a41"
+}

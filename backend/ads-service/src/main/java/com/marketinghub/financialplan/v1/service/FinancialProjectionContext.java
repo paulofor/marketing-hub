@@ -306,14 +306,14 @@ final class FinancialProjectionContext {
             "rule",
             aggregate
                 ? "Conservador testa uma venda abaixo do equilíbrio operacional; BASE usa a meta"
-                      + " comercial explícita; otimista mede a recuperação dos custos históricos"
-                      + " conhecidos."
+                    + " comercial explícita; otimista mede a recuperação dos custos históricos"
+                    + " conhecidos."
                 : monthly
                     ? "Um mês: assinantes pagantes incluem adesões e renovações; CAC apenas nas"
-                          + " adesões. A base gratuita só gera custo. Não extrapolar renovações,"
-                          + " receita ou valor vitalício."
+                        + " adesões. A base gratuita só gera custo. Não extrapolar renovações,"
+                        + " receita ou valor vitalício."
                     : "Os três volumes, limites de uso, CAC e investimento pertencem à revisão"
-                          + " financeira detalhada."));
+                        + " financeira detalhada."));
     context.put(
         "revalidationTriggers",
         List.of(

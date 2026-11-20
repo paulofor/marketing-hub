@@ -258,7 +258,7 @@ public class FinancialPlanService {
                     ? "Registre a versão do produto na edição avançada."
                     : source != null && source.stale() && !rebaseReferences
                         ? "A revisão anterior venceu ou mudou de contexto. Confira suas fontes na"
-                              + " edição avançada."
+                            + " edição avançada."
                         : null;
     var preview =
         new PlanPreparation(

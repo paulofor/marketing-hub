@@ -52,6 +52,13 @@ do frontend passaram nos 43 testes selecionados. TypeScript e build passaram.
 O pacote de evidências comerciais foi validado. As capturas declaradas no
 manifesto local usam somente os produtos sintéticos.
 
+A primeira execução remota encontrou indentação divergente no texto do ciclo.
+A versão corrigida passou localmente no mesmo perfil Spotless aplicado a 161
+arquivos do ciclo, no perfil dos 26 arquivos Java da entrega e em 44 testes
+do resumo e da revisão financeira. O registro do
+MySQL apontou também HTTP 429 ao baixar o POM do Spring no runner da migração,
+antes de executar o SQL.
+
 ## Memória reutilizável de Plutus
 
 Quando a unidade do plano mudar, usar o preço e os limites da revisão compatível

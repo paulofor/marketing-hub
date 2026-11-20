@@ -41,8 +41,7 @@ public class LearningCycleFinancialAdvice {
         pastPrice ? "STALE" : original.status(),
         pastPrice ? "Assinatura premium em estudo" : original.title(),
         pastPrice
-            ? "Consulte o plano de assinatura para projetar a mensalidade, as adesões e as"
-                  + " renovações."
+            ? "Consulte o plano mensal para projetar a mensalidade, as adesões e as renovações."
             : original.recommendation(),
         original.basis(),
         original.sourceId(),

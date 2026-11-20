@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-coletiva-sintonia-percebida",
+  "collection": "prazer-audio-visual",
+  "title": "Testar música coletiva e sintonia emocional percebida",
+  "finding": "Em diários com 166 universitários e 1.912 dias, participação musical de grupo acima do habitual se associou a maior sintonia emocional percebida (a=0,298), associada a comportamento pró-social autorrelatado (b=0,341). A associação indireta ab=0,101 não comprova mediação causal.",
+  "mechanism": "Participar de música em grupo pode acompanhar percepção de emoções compartilhadas e vínculo social; não se demonstrou direção causal nem sincronia neural ou fisiológica objetiva.",
+  "commercialApplication": "Testar experiências audiovisuais digitais cooperativas voluntárias contra escuta equivalente sem atividade cooperativa, medindo sintonia percebida e colaboração real separadamente.",
+  "evidenceStrength": "Moderada-baixa para associação intraindividual em diários; baixa para causalidade, vídeo passivo ou conversão.",
+  "publishedOn": "2026-11-20",
+  "validUntil": "2027-01-04",
+  "experimentHypothesis": "Em randomização com material musical igual, uma tarefa cooperativa digital elevará sincronia emocional declarada e colaboração observada em comparação com escuta sem tarefa cooperativa.",
+  "risks": "Pressão de grupo; exclusão; privacidade; biometria ou inferências emocionais sem consentimento; alegações de venda sem teste.",
+  "limits": "166 integrantes de clubes musicais; engajamento e sincronia percebida medidos retrospectivamente juntos; pró-social apenas relatado, sem observação direta, sem dopamina ou experiência de vídeo passivo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-20-musica-coletiva-sintonia-percebida-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Música coletiva e sintonia emocional percebida",
+  "sourceSha256": "85b98ae5d4b1441aa126b7dcd30a152cd721f5f4fcca29947a96b4da056c5e52"
+}

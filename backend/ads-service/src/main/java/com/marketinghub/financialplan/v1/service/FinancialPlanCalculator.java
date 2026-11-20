@@ -2,6 +2,7 @@ package com.marketinghub.financialplan.v1.service;
 
 import com.marketinghub.financialplan.v1.service.getplan.PlanEvaluation;
 import com.marketinghub.financialplan.v1.service.getplan.PlanEvaluation.ScenarioResult;
+import com.marketinghub.financialplan.v1.service.getplan.SubscriptionMonth;
 import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions;
 import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions.*;
 import java.math.BigDecimal;
@@ -20,9 +21,11 @@ public final class FinancialPlanCalculator {
    */
   public static PlanEvaluation evaluate(PlanAssumptions p) {
     if (p.variableCostEnvelope() != null) return evaluateAggregate(p);
+    var month = SubscriptionMonth.project(p);
     List<String> missing = missing(p);
     if (!missing.isEmpty())
-      return new PlanEvaluation("MISSING_INPUTS", "Premissas incompletas", missing, List.of());
+      return new PlanEvaluation(
+          "MISSING_INPUTS", "Premissas incompletas", missing, List.of(), month);
     List<String> blockers = new ArrayList<>();
     var ai = p.ai();
     if (p.preparation() != null
@@ -70,7 +73,8 @@ public final class FinancialPlanCalculator {
         blockers.isEmpty() ? "PROJECTED_VIABLE" : "REVIEW_REQUIRED",
         blockers.isEmpty() ? "Viável em projeção · requer parecer e gates" : "Revisar viabilidade",
         List.copyOf(blockers),
-        List.copyOf(results));
+        List.copyOf(results),
+        month);
   }
 
   /** Aceita perda de aquisição limitada sem tolerar entrega inviável ou contrato de IA inválido. */
@@ -176,7 +180,19 @@ public final class FinancialPlanCalculator {
   private static List<String> missing(PlanAssumptions p) {
     List<String> issues = new ArrayList<>();
     need(issues, p.periodDays(), "período contratado");
-    need(issues, p.priceBrl(), "preço por cliente/pacote");
+    need(
+        issues,
+        p.priceBrl(),
+        p.subscription() == null ? "preço por cliente/pacote" : "mensalidade premium proposta");
+    if (p.subscription() != null) {
+      need(issues, p.subscription().renewals(), "renovações previstas no mês");
+      need(issues, p.subscription().freeUsers(), "pessoas ativas na base gratuita");
+      if (!Objects.equals(p.subscription().freeUsers(), 0))
+        need(
+            issues,
+            p.subscription().costPerFreeUserBrl(),
+            "custo mensal por pessoa na base gratuita");
+    }
     need(issues, p.minimumMarginPercent(), "margem mínima proposta");
     need(issues, p.maximumCacBrl(), "CAC máximo proposto");
     var ai = p.ai();
@@ -241,23 +257,47 @@ public final class FinancialPlanCalculator {
     var ai = attemptBrl(p.ai()).multiply(BigDecimal.valueOf(s.attemptsPerCustomer()));
     var delivery =
         ai.add(c.supportBrl()).add(c.storageBrl()).add(c.deliveryBrl()).add(c.otherVariableBrl());
-    var before = net.subtract(delivery);
-    var after = before.subtract(s.cacBrl());
+    var unitBefore = net.subtract(delivery);
+    var unitAfterAcquisition = unitBefore.subtract(s.cacBrl());
+    var additions = BigDecimal.valueOf(s.customers());
+    var terms = p.subscription();
+    var renewals = terms == null ? BigDecimal.ZERO : BigDecimal.valueOf(terms.renewals());
+    var count = additions.add(renewals);
+    var freeCost = terms == null ? BigDecimal.ZERO : terms.freeTierCost();
+    var beforeTotal = unitBefore.multiply(count).subtract(freeCost);
+    var afterTotal = beforeTotal.subtract(s.cacBrl().multiply(additions));
+    var netTotal = net.multiply(count);
     var initial = c.initialAiBrl().add(c.initialOtherBrl());
-    var count = BigDecimal.valueOf(s.customers());
-    var operating = after.multiply(count).subtract(c.fixedPerPeriodBrl());
-    var margin = ratio(after, net);
+    var operating = afterTotal.subtract(c.fixedPerPeriodBrl());
+    var before = terms == null ? unitBefore : perCustomer(beforeTotal, count);
+    var after = terms == null ? unitAfterAcquisition : perCustomer(afterTotal, count);
+    var margin = terms == null ? ratio(after, net) : ratio(afterTotal, netTotal);
+    var headroom = unitBefore.subtract(net.multiply(p.minimumMarginPercent()).divide(HUNDRED));
     var affordable =
-        net.signum() > 0
-            ? before
-                .subtract(net.multiply(p.minimumMarginPercent()).divide(HUNDRED))
-                .max(BigDecimal.ZERO)
-            : null;
+        net.signum() <= 0
+            ? null
+            : terms == null
+                ? headroom.max(BigDecimal.ZERO)
+                : perCustomer(
+                    headroom.multiply(count).subtract(freeCost).max(BigDecimal.ZERO), additions);
+    var recovery =
+        c.fixedPerPeriodBrl().add(initial).add(freeCost).subtract(unitBefore.multiply(renewals));
+    BigDecimal breakEven =
+        recovery.signum() <= 0 && terms != null
+            ? BigDecimal.ZERO
+            : unitAfterAcquisition.signum() > 0
+                ? recovery.divide(unitAfterAcquisition, 0, RoundingMode.CEILING)
+                : null;
     if (net.signum() <= 0) issues.add("Plutus: receita líquida por cliente não positiva.");
-    if (after.signum() <= 0) issues.add("Plutus: contribuição após aquisição não positiva.");
-    if (net.signum() > 0
-        && after.multiply(HUNDRED).compareTo(net.multiply(p.minimumMarginPercent())) < 0)
-      issues.add("Plutus: margem abaixo da política proposta.");
+    if ((terms == null ? unitAfterAcquisition : afterTotal).signum() <= 0)
+      issues.add("Plutus: contribuição após aquisição não positiva.");
+    var marginBase = terms == null ? net : netTotal;
+    var marginContribution = terms == null ? unitAfterAcquisition : afterTotal;
+    if (marginBase.signum() > 0
+        && marginContribution
+                .multiply(HUNDRED)
+                .compareTo(marginBase.multiply(p.minimumMarginPercent()))
+            < 0) issues.add("Plutus: margem abaixo da política proposta.");
     if (s.cacBrl().compareTo(p.maximumCacBrl()) > 0)
       issues.add("Hermes / Plutus: CAC excede o teto proposto.");
     if (s.attemptsPerCustomer() > p.ai().maximumAttempts())
@@ -273,7 +313,7 @@ public final class FinancialPlanCalculator {
     return new ScenarioResult(
         code,
         label,
-        s.customers(),
+        count.intValueExact(),
         s.attemptsPerCustomer(),
         money(p.priceBrl().multiply(count)),
         money(net.multiply(count)),
@@ -286,12 +326,15 @@ public final class FinancialPlanCalculator {
         money(affordable),
         money(operating),
         money(operating.subtract(initial)),
-        after.signum() > 0
-            ? c.fixedPerPeriodBrl().add(initial).divide(after, 0, RoundingMode.CEILING)
-            : null,
+        breakEven,
         ratio(ai.multiply(count), net.multiply(count)),
         issues.isEmpty(),
         List.copyOf(issues));
+  }
+
+  /** Rateia custos e aquisição só quando existe cliente na base correspondente. */
+  private static BigDecimal perCustomer(BigDecimal amount, BigDecimal customers) {
+    return customers.signum() == 0 ? null : amount.divide(customers, 12, RoundingMode.HALF_UP);
   }
 
   /** Formata precisão de apresentação sem alterar a decisão calculada. */

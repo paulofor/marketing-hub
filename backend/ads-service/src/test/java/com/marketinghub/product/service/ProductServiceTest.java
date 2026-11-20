@@ -133,8 +133,12 @@ class ProductServiceTest {
         objectMapper,
         mock(JdbcTemplate.class),
         null,
-        events);
+        events,
+        event -> {});
   }
+
+  private final org.springframework.context.ApplicationEventPublisher typeEvents =
+      mock(org.springframework.context.ApplicationEventPublisher.class);
 
   /** Cria o serviço com catálogos de tipo e nicho controlados pelo cenário. */
   private ProductService newService(
@@ -152,7 +156,10 @@ class ProductServiceTest {
         mock(ImageGeneratorService.class),
         mock(AssetStorageService.class),
         objectMapper,
-        mock(JdbcTemplate.class));
+        mock(JdbcTemplate.class),
+        null,
+        null,
+        typeEvents);
   }
 
   /** Cria o serviço com dependências auxiliares mockadas para testes focados em produto. */
@@ -307,7 +314,7 @@ class ProductServiceTest {
          "prohibitedAssociations":["renda garantida"],"measurementPlan":{"funnel":["clique","venda"]}}
         """);
 
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(1L)).thenReturn(Optional.of(product));
     when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
     when(productRepository.save(product)).thenReturn(product);
 
@@ -339,7 +346,7 @@ class ProductServiceTest {
     assertThat(updated.getMarketNiche()).isSameAs(niche);
   }
 
-  /** Deve vincular o produto à identidade estável do tipo selecionado na tela. */
+  /** Publica a troca confirmada uma vez e ignora uma gravação sem mudança de tipo. */
   @Test
   void updateProductAssignsCatalogType() {
     ProductRepository productRepository = mock(ProductRepository.class);
@@ -360,7 +367,7 @@ class ProductServiceTest {
     request.setProductTypeId(5L);
     request.setMarketNicheId(10L);
     MarketNiche niche = new MarketNiche();
-    when(productRepository.findById(9L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(9L)).thenReturn(Optional.of(product));
     when(typeRepository.findById(5L)).thenReturn(Optional.of(type));
     when(nicheRepository.findById(10L)).thenReturn(Optional.of(niche));
     when(productRepository.save(product)).thenReturn(product);
@@ -369,6 +376,8 @@ class ProductServiceTest {
 
     assertThat(updated.getProductTypeDefinition()).isSameAs(type);
     assertThat(updated.getProductType()).isEqualTo("PDE - Produto Digital Experiencial");
+    service.updateProduct(9L, request);
+    verify(typeEvents).publishEvent(new com.marketinghub.product.ProductTypeChanged(9L, 5L));
   }
 
   /** Deve aceitar um apelido cadastrado enviado por uma integração legada. */
@@ -392,7 +401,7 @@ class ProductServiceTest {
     request.setProductType("consultor por whatsapp");
     request.setMarketNicheId(10L);
     MarketNiche niche = new MarketNiche();
-    when(productRepository.findById(8L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(8L)).thenReturn(Optional.of(product));
     when(typeRepository.findAllByOrderByNameAsc()).thenReturn(List.of(type));
     when(nicheRepository.findById(10L)).thenReturn(Optional.of(niche));
     when(productRepository.save(product)).thenReturn(product);
@@ -418,7 +427,7 @@ class ProductServiceTest {
     CreateProductRequest request = new CreateProductRequest();
     request.setName(product.getName());
     request.setProductTypeId(7L);
-    when(productRepository.findById(7L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(7L)).thenReturn(Optional.of(product));
     when(typeRepository.findById(7L)).thenReturn(Optional.of(retired));
 
     assertThatThrownBy(() -> service.updateProduct(7L, request))
@@ -466,7 +475,7 @@ class ProductServiceTest {
     request.setMarketNicheId(10L);
     MarketNiche niche = new MarketNiche();
 
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(1L)).thenReturn(Optional.of(product));
     when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
     when(productRepository.save(product)).thenReturn(product);
 
@@ -543,7 +552,7 @@ class ProductServiceTest {
     request.setInternalName("Implantação WhatsApp 48h");
     request.setAliases(List.of("MUSA v7"));
 
-    when(productRepository.findById(9L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(9L)).thenReturn(Optional.of(product));
     when(productRepository.countIdentityOnAnotherProduct(9L, "MUSA v7")).thenReturn(1L);
 
     assertThatThrownBy(() -> service.updateProduct(9L, request))
@@ -568,7 +577,7 @@ class ProductServiceTest {
     request.setInternalName("Implantação WhatsApp 48h");
     request.setAliases(List.of());
 
-    when(productRepository.findById(9L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(9L)).thenReturn(Optional.of(product));
     when(productRepository.countIdentityOnAnotherProduct(9L, "musa-v7")).thenReturn(1L);
 
     assertThatThrownBy(() -> service.updateProduct(9L, request))
@@ -610,7 +619,7 @@ class ProductServiceTest {
           {"code":"PRIDE","name":"Orgulho","idea":"Ser valorizada","symbols":[]}],
          "causalChain":[],"evidence":{},"prohibitedAssociations":[],"measurementPlan":{}}
         """);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(1L)).thenReturn(Optional.of(product));
 
     assertThatThrownBy(() -> service.updateProduct(1L, request))
         .isInstanceOf(ResponseStatusException.class)
@@ -630,7 +639,7 @@ class ProductServiceTest {
     Product product = Product.builder().id(1L).build();
     CreateProductRequest request = new CreateProductRequest();
     request.setValidationDefinitionJson("{\"problem\":{}}");
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(1L)).thenReturn(Optional.of(product));
 
     assertThatThrownBy(() -> service.updateProduct(1L, request))
         .isInstanceOf(ResponseStatusException.class)
@@ -650,7 +659,7 @@ class ProductServiceTest {
     Product product = Product.builder().id(1L).build();
     CreateProductRequest request = new CreateProductRequest();
     request.setValidationDefinitionJson("não é JSON");
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(1L)).thenReturn(Optional.of(product));
 
     assertThatThrownBy(() -> service.updateProduct(1L, request))
         .isInstanceOf(ResponseStatusException.class)
@@ -1045,7 +1054,7 @@ class ProductServiceTest {
     request.setMarketNicheId(10L);
     request.setPdeExperienceJson("{json inválido");
 
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findLockedById(1L)).thenReturn(Optional.of(product));
     when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
 
     assertThatThrownBy(() -> service.updateProduct(1L, request))

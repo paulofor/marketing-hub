@@ -1,4 +1,7 @@
 import { type FormEvent } from "react";
+import FinancialSubscriptionFields, {
+  subscriptionInputs,
+} from "./FinancialSubscriptionFields";
 import {
   useFinancialPlanPreparation,
   type PlanEnvironment,
@@ -23,10 +26,15 @@ export default function FinancialPlanPreparationEditor({
   return (
     <section className="card">
       <div className="card-body d-grid gap-3">
-        <h2 className="h5">Prepare o plano em duas escolhas</h2>
+        <h2 className="h5">
+          {context.data?.structure === "MONTHLY_SUBSCRIPTION"
+            ? "Preparar o mês de assinatura"
+            : "Prepare o plano em duas escolhas"}
+        </h2>
         <p className="mb-0">
-          As referências financeiras já cadastradas serão reaproveitadas. Custos
-          ainda desconhecidos ficam pendentes de revisão.
+          {context.data?.structure === "MONTHLY_SUBSCRIPTION"
+            ? "Preencha o que já souber. Pode salvar a hipótese com preço e volumes em aberto."
+            : "As referências compatíveis serão reaproveitadas. Custos ainda desconhecidos ficam pendentes de revisão."}
         </p>
         {context.isLoading && <p role="status">Carregando sugestões...</p>}
         {context.isError && (
@@ -37,7 +45,7 @@ export default function FinancialPlanPreparationEditor({
         )}
         {context.data && (
           <PreparationForm
-            key={`${context.data.expectedRevision}:${context.data.commercialPlanVersion}:${context.data.productVersion}`}
+            key={`${context.data.expectedProductTypeId}:${context.data.expectedRevision}:${context.data.commercialPlanVersion}:${context.data.productVersion}`}
             context={context.data}
             busy={busy || context.isFetching}
             onSubmit={onSubmit}
@@ -82,6 +90,7 @@ function PreparationForm({
   busy: boolean;
   onSubmit: (request: PrepareFinancialPlan) => Promise<void>;
 }) {
+  const monthly = context.structure === "MONTHLY_SUBSCRIPTION";
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -90,6 +99,18 @@ function PreparationForm({
       commercialPlanId: context.commercialPlanId,
       commercialPlanVersion: context.commercialPlanVersion,
       productVersion: context.productVersion,
+      expectedProductTypeId: context.expectedProductTypeId,
+      ...(monthly
+        ? {
+            subscription: subscriptionInputs(data),
+            monthlyPriceBrl: data.get("monthlyPriceBrl")
+              ? Number(data.get("monthlyPriceBrl"))
+              : null,
+            newSubscribers: data.get("newSubscribers")
+              ? Number(data.get("newSubscribers"))
+              : null,
+          }
+        : {}),
       supportDays: Number(data.get("supportDays")),
       personalizedAi: data.get("personalizedAi") === "true",
     });
@@ -102,6 +123,36 @@ function PreparationForm({
         </p>
       )}
       <fieldset disabled={busy || !context.canPrepare} className="d-grid gap-3">
+        {monthly && (
+          <>
+            <div className="row g-3">
+              <label className="col-md-6">
+                Mensalidade premium proposta (R$)
+                <input
+                  className="form-control"
+                  name="monthlyPriceBrl"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  defaultValue={context.priceBrl ?? ""}
+                  placeholder="A definir"
+                />
+              </label>
+              <label className="col-md-6">
+                Novas assinaturas previstas no mês
+                <input
+                  className="form-control"
+                  name="newSubscribers"
+                  type="number"
+                  min="0"
+                  step="1"
+                  defaultValue={context.newSubscribers ?? ""}
+                />
+              </label>
+            </div>
+            <FinancialSubscriptionFields terms={context.subscription} />
+          </>
+        )}
         <label>
           Período de suporte (dias) *
           <input

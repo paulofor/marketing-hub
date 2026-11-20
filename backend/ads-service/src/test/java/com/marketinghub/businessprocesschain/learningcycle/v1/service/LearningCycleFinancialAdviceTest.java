@@ -74,6 +74,24 @@ class LearningCycleFinancialAdviceTest {
     verify(tasks, never()).save(any());
   }
 
+  /** Preserva o parecer por venda na origem, sem converter seu preço em mensalidade. */
+  @Test
+  void recurringPlanKeepsPastPriceAndRejectionInTheirOriginalContext() {
+    var cycle = cycle(7);
+    cycle.setStatus("OPEN");
+    var type = new com.marketinghub.producttype.ProductTypeDefinition();
+    type.setCode("AI_PWA_CONSULTANT_PRODUCT");
+    latest("COMPLETED", true, result());
+    var view = advice.readForType(cycle, type, null, "/plan");
+    assertThat(view.title()).isEqualTo("Assinatura premium em estudo");
+    assertThat(view.figures()).isEmpty();
+    assertThat(view.sourceId()).isEqualTo(883);
+    latest("BLOCKED", false, result().replace("APPROVE", "REJECT"));
+    assertThat(advice.readForType(cycle, type, null, "/plan").status()).isEqualTo("REJECT");
+    cycle.setStatus("CLOSED");
+    assertThat(advice.readForType(cycle, type, null, "/plan").figures()).hasSize(3);
+  }
+
   /** Um parecer válido de preparação permanece útil sem virar autorização comercial. */
   @Test
   void preservesValidPreparationWithoutCommercialApproval() {

@@ -33,6 +33,11 @@ escala preservam a margem original e exigem sua própria análise, mesmo após d
 Quando `projectionBasis` estiver presente e coerente com a identidade da revisão, trate-a como o
 preflight determinístico desta projeção:
 
+- Se `analysisScope.code=MONTHLY_SUBSCRIPTION`, a unidade é um assinante pagante por mês.
+  Use `projectionBasis.subscriptionMonth` e os cenários da revisão. O preço do pacote antigo
+  no snapshot não é mensalidade. CAC incide só nas novas adesões; a base gratuita gera custo
+  e nenhuma receita. Renovações são hipóteses explícitas do mês. Não projete meses adicionais.
+  O limite de uso e de custo por assinante pertence ao período mensal.
 - `variableEnvelope` cobre o custo variável total do pacote por cliente, exceto CAC. Não deduza
   novamente taxas, tributos, comissão, reembolso, suporte, entrega, armazenamento ou IA.
 - `fixedEnvelope` cobre os custos operacionais fixos do período. A ausência de atribuição de

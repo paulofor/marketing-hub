@@ -461,7 +461,7 @@ class LearningCycleFinancialReviewTest {
     var plan =
         new com.marketinghub.financialplan.v1.service.getplan.PlanView(
             300L,
-            "products",
+            "PRODUCT",
             7L,
             com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
             "Plano local",
@@ -489,7 +489,7 @@ class LearningCycleFinancialReviewTest {
                 now));
     when(commercial.findByExperimentReference(112L)).thenReturn(List.of(commercialPlan));
     when(plans.latestForPlan(
-            "products",
+            "PRODUCT",
             7L,
             com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE,
             800L))

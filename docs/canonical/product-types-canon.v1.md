@@ -63,6 +63,15 @@ O modelo compartilhado do botão **Prompt para AIHUB** deve incluir esta orienta
 todos os produtos e processos, mantendo as definições do tipo como referência ao longo do
 trabalho. A instrução no prompt não comprova implementação automática desses controles.
 
+### Estrutura financeira por tipo — 20/11/2026
+
+O tipo oficial Turmalina propõe a estrutura de assinatura mensal para planejar
+adesão, renovação e custo da base gratuita. Os demais tipos conservam a estrutura
+por venda. Reclassificar o produto muda a estrutura do plano de trabalho e
+preserva as revisões da oferta anterior. Preço, periodicidade de cobrança efetiva
+e limites continuam sujeitos à oferta do produto. As regras e fórmulas estão no
+[plano financeiro de produto](product-financial-plan-canon.v1.md).
+
 ## Preparação comercial Opala — decisão de 15/09/2026
 
 O tipo `PDE` (Opala) possui o subprocesso versionado **Preparar operação comercial

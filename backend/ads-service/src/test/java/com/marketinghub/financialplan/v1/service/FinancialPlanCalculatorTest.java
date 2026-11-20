@@ -27,6 +27,46 @@ class FinancialPlanCalculatorTest {
     return FinancialPlanCalculator.evaluate(json.treeToValue(p, PlanAssumptions.class));
   }
 
+  /** Deduz aquisição só nas adesões e conta cada custo da base gratuita uma vez no mês. */
+  @Test
+  void projectsOneMonthWithoutChargingAcquisitionOnRenewals() throws Exception {
+    var input = input();
+    input
+        .putObject("subscription")
+        .put("renewals", 10)
+        .put("freeUsers", 100)
+        .put("costPerFreeUserBrl", 2);
+    var result = evaluate(input);
+    assertThat(result.subscriptionMonth().payingSubscribers()).isEqualTo(30);
+    assertThat(result.subscriptionMonth().recurringRevenueBrl()).isEqualByComparingTo("3000");
+    assertThat(result.subscriptionMonth().freeTierCostBrl()).isEqualByComparingTo("200");
+    var base =
+        result.scenarios().stream().filter(s -> s.code().equals("BASE")).findFirst().orElseThrow();
+    assertThat(base.netRevenueBrl()).isEqualByComparingTo("2400");
+    // 2400 líquidos - 270 de entrega - 300 de aquisição - 200 da base gratuita - 100 fixos.
+    assertThat(base.operatingResultBrl()).isEqualByComparingTo("1530");
+    assertThat(base.resultAfterInvestmentBrl()).isEqualByComparingTo("1430");
+    assertThat(base.marginPercent()).isEqualByComparingTo("67.916667");
+    assertThat(base.breakEvenCustomers()).isEqualByComparingTo("0");
+  }
+
+  /** Preserva lacunas, admite base gratuita vazia e não fabrica preço, adesão ou renovação. */
+  @Test
+  void unknownSubscriptionInputsRemainUnknown() throws Exception {
+    var input = input();
+    input.putNull("priceBrl");
+    var terms = input.putObject("subscription");
+    var incomplete = evaluate(input);
+    assertThat(incomplete.status()).isEqualTo("MISSING_INPUTS");
+    assertThat(incomplete.subscriptionMonth().payingSubscribers()).isNull();
+    assertThat(incomplete.subscriptionMonth().freeTierCostBrl()).isNull();
+    terms.put("renewals", 0).put("freeUsers", 0);
+    var month = evaluate(input).subscriptionMonth();
+    assertThat(month.payingSubscribers()).isEqualTo(20);
+    assertThat(month.recurringRevenueBrl()).isNull();
+    assertThat(month.freeTierCostBrl()).isEqualByComparingTo("0");
+  }
+
   /** Converte a fixture detalhada em envelope agregado sem declarar componentes como zero. */
   private ObjectNode aggregateInput() throws IOException {
     var p = input();

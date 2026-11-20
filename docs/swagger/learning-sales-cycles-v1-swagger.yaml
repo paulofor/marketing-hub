@@ -460,7 +460,7 @@ paths:
         - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
       responses:
         '200':
-          description: Custos estimados por experimento, cobertura, limites por moeda, saldo após reserva, recibos, revisão financeira LIVE do plano único associado e advice (status, title, recommendation, basis, sourceId, producedAt, sourceUrl, figures com label/value/unit, caution e fullRationale). Advice reutiliza o planejamento de Plutus do experimento quando não há plano; STALE exige reavaliação após mudança de estratégia ou versão e PREPARATION_ONLY não autoriza comercialização; parecer ausente ou desatualizado não é aprovação.
+          description: Custos estimados por experimento, cobertura, limites por moeda, saldo após reserva, recibos, revisão financeira LIVE do plano único associado e advice (status, title, recommendation, basis, sourceId, producedAt, sourceUrl, figures com label/value/unit, caution e fullRationale). Advice reutiliza o planejamento de Plutus do experimento quando não há plano; STALE exige reavaliação após mudança de estratégia ou versão e PREPARATION_ONLY não autoriza comercialização; parecer ausente ou desatualizado não é aprovação. Em ciclo aberto de assinatura, um parecer por venda permanece acessível na origem, sem ser apresentado como mensalidade.
         '409': {description: Contexto divergente}
         '404': {description: Ciclo não pertence ao produto}
   /products/{productId}/{cycleId}/cost-ceilings:

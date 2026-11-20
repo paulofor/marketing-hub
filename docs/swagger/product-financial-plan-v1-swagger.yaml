@@ -32,7 +32,14 @@ paths:
                         id: {type: integer, format: int64}
                         name: {type: string}
                         productTypeId: {type: integer, format: int64, nullable: true}
-                  productTypes: {$ref: '#/components/schemas/Options'}
+                  productTypes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: integer, format: int64}
+                        name: {type: string}
+                        structure: {$ref: '#/components/schemas/PlanStructure'}
                   commercialPlans: {$ref: '#/components/schemas/Options'}
   /api/financial-plans/v1/products/{id}:
     parameters:
@@ -55,10 +62,10 @@ paths:
       - {$ref: '#/components/parameters/Owner'}
       - {$ref: '#/components/parameters/Environment'}
     get:
-      summary: Sugere suporte e personalização a partir do contexto do produto
+      summary: Apresenta a estrutura do tipo atual e as premissas compatíveis
       description: >-
         Fontes de outro ambiente e versões vencidas não são adotadas; seleção comercial ambígua
-        exige edição avançada. Quando apenas a versão comercial ou o contrato do produto mudou,
+        exige edição avançada. Uma troca de tipo inicia premissas limpas inclusive em produtos legados. Quando apenas a versão comercial ou o contrato do produto mudou,
         a preparação oferece um rebase explícito que descarta os custos anteriores e recompõe os
         envelopes exclusivamente com as fontes oficiais da versão atual.
       responses:
@@ -69,7 +76,7 @@ paths:
               schema: {$ref: '#/components/schemas/Preparation'}
         '404': {$ref: '#/components/responses/Missing'}
     post:
-      summary: Salva nova revisão a partir de duas escolhas operacionais
+      summary: Salva preparação por venda ou hipótese de assinatura mensal
       description: >-
         O restante do payload identifica o contexto mostrado na tela para controle de concorrência.
         Preço e CAC reaproveitam referências existentes; ausência de custos continua pendente.
@@ -168,10 +175,25 @@ components:
     Conflict:
       description: Revisão concorrente, plano de outro produto, modelo incompatível ou premissas vencidas/incompletas
   schemas:
+    PlanStructure:
+      type: string
+      enum: [PER_SALE, MONTHLY_SUBSCRIPTION]
+    MonthlySubscription:
+      type: object
+      nullable: true
+      description: Hipótese de um mês. Valores ausentes ficam em aberto; zero exige uma premissa explícita.
+      properties:
+        renewals: {type: integer, minimum: 0, maximum: 10000000, nullable: true}
+        freeUsers: {type: integer, minimum: 0, maximum: 10000000, nullable: true}
+        costPerFreeUserBrl: {$ref: '#/components/schemas/Amount'}
     Preparation:
       type: object
       properties:
         expectedRevision: {type: integer}
+        expectedProductTypeId: {type: integer, format: int64, nullable: true}
+        structure: {$ref: '#/components/schemas/PlanStructure'}
+        subscription: {$ref: '#/components/schemas/MonthlySubscription'}
+        newSubscribers: {type: integer, nullable: true}
         sourceRevisionId: {type: integer, format: int64, nullable: true}
         commercialPlanId: {type: integer, format: int64, nullable: true}
         commercialPlanVersion: {type: integer, nullable: true}
@@ -186,6 +208,10 @@ components:
       type: object
       required: [expectedRevision, commercialPlanId, commercialPlanVersion, productVersion, supportDays]
       properties:
+        expectedProductTypeId: {type: integer, format: int64, nullable: true, description: Obrigatório na troca de tipo e na preparação mensal}
+        subscription: {$ref: '#/components/schemas/MonthlySubscription'}
+        monthlyPriceBrl: {type: number, minimum: 0.01, nullable: true}
+        newSubscribers: {type: integer, minimum: 0, maximum: 10000000, nullable: true}
         expectedRevision: {type: integer, minimum: 0}
         commercialPlanId: {type: integer, format: int64}
         commercialPlanVersion: {type: integer}
@@ -212,6 +238,7 @@ components:
         createdBy: {type: string, minLength: 1, maxLength: 100}
         expectedRevision: {type: integer, minimum: 0}
         commercialPlanId: {type: integer, format: int64, nullable: true, description: Obrigatório no produto; nulo no modelo}
+        expectedProductTypeId: {type: integer, format: int64, nullable: true}
         templateId: {type: integer, format: int64, nullable: true, description: Modelo imutável do mesmo tipo e ambiente}
         assumptions: {$ref: '#/components/schemas/Assumptions'}
     DiscoveryInvestment:
@@ -230,6 +257,7 @@ components:
       type: object
       required: [validUntil, evidence, ai, costs, scenarios]
       properties:
+        subscription: {$ref: '#/components/schemas/MonthlySubscription'}
         preparation:
           type: object
           nullable: true
@@ -327,10 +355,21 @@ components:
           properties:
             status: {type: string, enum: [MISSING_INPUTS, REVIEW_REQUIRED, READY_FOR_ANALYSIS, PROJECTED_VIABLE]}
             label: {type: string}
+            subscriptionMonth:
+              type: object
+              nullable: true
+              properties:
+                newSubscribers: {type: integer, nullable: true}
+                renewals: {type: integer, nullable: true}
+                freeUsers: {type: integer, nullable: true}
+                payingSubscribers: {type: integer, nullable: true}
+                recurringRevenueBrl: {$ref: '#/components/schemas/Amount'}
+                freeTierCostBrl: {$ref: '#/components/schemas/Amount'}
             blockers: {type: array, items: {type: string}}
             scenarios:
               type: array
               items: {$ref: '#/components/schemas/ScenarioResult'}
+        historicalType: {type: boolean, description: Revisão consultável do tipo ou estrutura anterior}
         stale: {type: boolean}
         pendingActions: {type: array, items: {type: string}}
         canRequestAnalysis: {type: boolean}

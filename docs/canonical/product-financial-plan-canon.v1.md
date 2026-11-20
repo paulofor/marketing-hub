@@ -1,5 +1,31 @@
 # Plano financeiro de produto — v1
 
+## Estrutura do plano acompanha o tipo do produto — 20/11/2026
+
+O tipo cadastrado define a estrutura de planejamento. Turmalina
+(`AI_PWA_CONSULTANT_PRODUCT`) propõe um mês de assinatura, com base gratuita e
+premium opcional. Os demais tipos conservam a estrutura por venda. Essa associação
+vale para produtos e modelos do catálogo. O preço e a contratação continuam decisões
+da oferta específica.
+
+- A mudança de tipo apresenta a nova estrutura imediatamente. Um produto com histórico
+  LIVE recebe uma revisão limpa na transação do cadastro. Sem vínculo comercial único
+  ou versão disponível, o rascunho guarda a mudança sem escolher um plano. O histórico
+  anterior continua consultável e um retorno ao tipo anterior preserva os pareceres como histórico.
+- Produtos reclassificados antes desta regra abrem a preparação atual diretamente.
+  Preço, CAC, custos, metas, decisões de descoberta e modelos do tipo anterior não
+  entram no rascunho. O contrato atual do produto fornece a versão. Ler a tela é gratuito.
+- No cenário mensal, pagantes são novas assinaturas mais renovações previstas no mês.
+  O período mensal usa 30 dias como convenção da projeção, sem definir o vencimento de uma cobrança.
+  Receita recorrente projetada é a mensalidade multiplicada por esses pagantes. Aquisição
+  incide apenas nas novas adesões. Uso da base gratuita consome recursos sem gerar receita.
+  Na edição detalhada, a entrega paga e os limites de IA são por assinante no mês, a
+  margem usa a contribuição do período sobre receita líquida positiva e o ponto de equilíbrio
+  indica novas adesões necessárias, mantidas as renovações e a base gratuita declaradas.
+- É possível salvar com mensalidade ou volumes em aberto. As lacunas ficam explícitas até
+  haver fontes. Os tetos, a fila de agentes, o checkout e o histórico de contratos vendidos
+  seguem seus fluxos próprios. Nenhuma renovação futura é presumida.
+
 ## Continuidade dos tetos acumulados — decisão de 10/11/2026
 
 Os tetos acumulados aprovados continuam válidos nos ciclos sucessores do mesmo produto e
@@ -138,7 +164,7 @@ Essa distinção permite encontrar o parecer existente; não cria aprovação ou
 
 ### Preparação simplificada — decisão de 20/09/2026
 
-O formulário padrão do produto solicita somente **período de suporte em dias**, com
+O formulário padrão por venda solicita somente **período de suporte em dias**, com
 sugestão editável, e **geração personalizada com IA**, inicialmente **Sim**. Para Quartzo,
 a sugestão inicial é sete dias; para outros tipos, trinta dias. São propostas operacionais,
 nunca alteração automática da oferta ou do acesso já vendido. Escolhas já registradas
@@ -174,8 +200,9 @@ Decisão complementar de 29/09/2026: quando a revisão mais recente ainda está 
 mantém o mesmo tipo e plano do produto, uma mudança da versão comercial ou do contrato do produto
 deve habilitar a ação explícita de atualizar referências. O rebase cria outra revisão imutável,
 usa a versão atual do produto e recompõe preço, CAC e envelopes apenas a partir do plano comercial
-vigente; custos, fontes e cenários da revisão anterior não são carregados silenciosamente. Revisão
-vencida, mudança de tipo, plano ausente ou seleção ambígua continuam exigindo edição avançada. O
+vigente; custos, fontes e cenários da revisão anterior não são carregados silenciosamente. Na estrutura por venda, revisão
+vencida do mesmo tipo exige edição avançada. Na troca de tipo vale a preparação limpa definida
+em 20/11/2026. Plano ausente ou seleção ambígua exigem resolver o vínculo comercial. O
 rebase não solicita Plutus, não aprova a projeção e não autoriza gasto.
 
 Decisão complementar de 29/09/2026: cada revisão de produto passa a congelar uma baseline dos

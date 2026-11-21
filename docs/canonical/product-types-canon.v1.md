@@ -251,6 +251,9 @@ Mapa inicial aprovado em 2026-08-23:
 - `EXTERNAL_MEMBERS_AREA_PRODUCT`: Ágata;
 - `AI_INTERACTIVE_EDUCATIONAL_EXPERIENCE`: Labradorita.
 
+Adição em avaliação de 21/11/2026: `AI_DESIGNED_MANUFACTURED_PRODUCT`: **Jaspe**
+(`PROPOSED`; fabricação ainda não homologada).
+
 Formato de entrega, canal, ativo comercial, mecanismo técnico e nome de trabalho do produto não
 devem virar novos tipos quando puderem ser representados pelo tipo vigente, modo comercial,
 subtipo, formato ou apelido. A exceção é quando a interface com o cliente muda conjuntamente a
@@ -898,3 +901,51 @@ Big Idea do produto no contexto, exige histórias/estados de tela, critérios ex
 por critério. Reutilização requer origem; adiamento torna a entrega um recorte, sem afirmar produto
 completo. O contrato detalhado está em `cadeia-produtos-pde-canon.v1.md`. Histórico, outros tipos,
 ofertas, direitos e autorizações não são alterados retroativamente.
+
+## Produto físico concebido por IA e fabricado sob demanda — Jaspe v1
+
+Solicitação de 21/11/2026: pesquisar concepção por IA e fabricação terceirizada, comparar ao menos
+10 ideias, reduzir a três e selecionar uma aplicação. A pesquisa e as alternativas estão em
+[`ia-concepcao-fabricacao-2026-11-21.md`](../pesquisas/ia-concepcao-fabricacao-2026-11-21.md).
+
+Código novo: `AI_DESIGNED_MANUFACTURED_PRODUCT`; mineral exclusivo **Jaspe**. O cadastro inicial é
+`PROPOSED`, sem reclassificar produtos existentes, abrir ciclo, vincular experimentos ou mudar a cadeia.
+A base reproduzível está em `config/product-types/ai-designed-manufactured-product-v1.json` e deve
+ser cadastrada pelo formulário existente `/product-types`. Não usar seed que ative fabricação.
+
+A fronteira é a **entrega física personalizada**: concepção, arquivo fabricável, fornecedor, prova,
+cotação, pagamento, fabricação, rastreio, perdas e suporte. Trata-se de uma extensão explícita do
+catálogo para entrega híbrida; os tipos digitais existentes mantêm seus contratos. Uma venda apenas
+de arquivo/estampa continua Safira ou Quartzo conforme o mecanismo, sem criar categoria por tecnologia.
+
+Primeira aplicação proposta: coleções de identidade local para pequenas hospedagens. Começar por
+impressão plana coordenada (três artes e cartão); tecidos, embalagem, CAD e bens regulados não estão
+incluídos na homologação v1. Viabilidade do fornecedor e exemplos estrangeiros não comprovam demanda,
+baixa saturação ou contribuição do novo produto. Preços/custos de cenários permanecem hipóteses.
+
+A base `pde-platform/pde-harness-sdk`, pacote `harness.v1.manufacturing`, oferece prompt/schema de
+concepção e preflight de bytes PNG/JPEG. Reutiliza segregação e validador do harness central, não
+acessa banco, não chama fornecedores, não cria pedidos e não decide avanço. O resultado técnico
+inclui escopo, hash, ficha/SKU, dimensões, resolução e motivos; `productionAuthorized()` é sempre
+falso. O worker que adotar a biblioteca deverá persistir resultados/auditoria pelos contratos do
+backend. O catálogo completo não demonstra que esse executor existe ou que a produção foi homologada.
+
+O backend recebe ficha real/versionada do fabricante; o modelo não escolhe resolução universal,
+material imaginário ou custo zero. Brief, artefato e revisão pertencem ao mesmo tenant, produto,
+cliente e versão. Somente catálogo confiável limita os SKUs. Concepção é `CONCEPT_ONLY`; não pode
+conter aprovação, preço inventado, arquivo inexistente ou pedido como se fossem fatos.
+
+Antes de ativar comercialmente um produto, comprovar integração de catálogo/cotação/pedido/status,
+idempotência/reconciliação, prova física, direitos, oferta, custos integrais, revisões independentes,
+compra/entrega e autorizações. Antes do mercado, fontes públicas, agentes e testes determinísticos;
+no mercado, comportamento voluntário com compras líquidas e contribuição. Nenhum recrutamento.
+Não estabelecer nova margem mínima pelo usuário nem usar exemplos como orçamento aprovado.
+
+A aquisição segue a política vigente da cadeia; não criar exceção de mídia ou contato direto.
+Argos pesquisa; Atena define oferta; Plutus avalia economia; Dédalo constrói; Íris comunica a prova;
+Psique e Têmis revisam separadamente; Hermes opera somente aquisição autorizada.
+
+Melhoria reutilizável: concepção e mockup não equivalem a arquivo fabricável. O preflight verifica
+bytes e contexto antes de permitir seguir à revisão técnica; sua suíte cobre falhas e outro
+produto/cliente, mantendo consultores anteriores. Resultado técnico não prova fidelidade da cor
+impressa, estética, acabamento ou vendas. O registro de homologação descreve testes e limitações.

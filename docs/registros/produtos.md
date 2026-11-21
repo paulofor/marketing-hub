@@ -265,3 +265,14 @@ estados de tela, testes executados e revisões dos mesmos bytes; distingue prot�
 Métrica de adoção local: impedir redução silenciosa em dois contextos e preservar caminho legado.
 Retenção, contribuição e vendas dependem de medição posterior, sem resultados financeiros inventados.
 Fonte, limites, alternativas e validação: `docs/homologacao/turmalina-value-delivery-v1.md`.
+
+## 2026-11-21 — Jaspe: concepção por IA e fabricação sob demanda
+
+Pesquisa de 12 ideias, seleção de três (hospedagens, embalagens e treinamento) e escolha de
+coleções de identidade local para pequenas hospedagens. Fontes e comparação em
+`docs/pesquisas/ia-concepcao-fabricacao-2026-11-21.md`. Mercado e preço ainda são hipóteses.
+Tipo #8 cadastrado pelo frontend como `PROPOSED`; nenhum produto/ciclo/pedido criado.
+Base Java de concepção e preflight local impede confundir mockup com arquivo fabricável;
+regressões verificam contexto, bytes, hash, DPI e falhas, preservando consultores existentes.
+Detalhes e limites em `docs/homologacao/ai-manufactured-product-v1.md`. Código preparado para PR;
+merge/deploy dependem da comprovação da recuperação de credenciais. Nenhum resultado comercial.

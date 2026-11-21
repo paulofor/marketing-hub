@@ -1,0 +1,26 @@
+{
+  "code": "AI_DESIGNED_MANUFACTURED_PRODUCT",
+  "name": "Produto físico concebido por IA e fabricado sob demanda",
+  "internalName": "Jaspe",
+  "description": "Use quando a IA concebe uma solução personalizada e o contrato inclui fabricação e entrega física por fornecedor externo, com especificação, prova, cotação, rastreio e suporte. Hipótese inicial: coleções coordenadas de identidade local para pequenas hospedagens. Apenas vender estampas/arquivos permanece no tipo digital adequado. Base v1 de concepção e preflight; integração de produção ainda não homologada.",
+  "aliases": [
+    "Concepção e fabricação com IA",
+    "Coleções físicas sob demanda"
+  ],
+  "status": "PROPOSED",
+  "blueprint": {
+    "version": "manufacturing-v1",
+    "primaryChannel": "WEB",
+    "customerJob": "Obter um conjunto físico personalizado, coerente com seu contexto, sem coordenar manualmente concepção, arquivos e fabricantes. Primeira hipótese: coleções de identidade local para pequenas hospedagens.",
+    "valueMechanism": "Contexto autorizado → concepção coordenada por IA → arquivo real validado → cotação integral → aprovação da prova e fabricação → entrega rastreada. Imagem bonita não comprova item fabricável. O novo tipo assume entrega física; download isolado continua no tipo digital adequado.",
+    "experienceFlow": "Brief com medidas e restrições; selecionar SKUs reais; conceber coleção; gerar arquivos; preflight; revisão independente; cotar; homologar prova física; confirmar oferta e limites; conciliar pagamento; autorizar fabricação; acompanhar entrega e suporte; aprender com contribuição. Cadastro do tipo não executa essas etapas.",
+    "requiredInputs": "Tenant, produto, cliente e versão; brief autorizado; medidas; direitos das referências; país/CEP; fornecedor/SKU/material; ficha versionada com área de impressão, sangria e resolução; hashes dos arquivos. Antes de produzir: cotação vigente, custos completos, prova aprovada e autorização específica. Nunca aceitar aprovação escrita pelo modelo como evidência.",
+    "expectedOutputs": "Concepção estruturada CONCEPT_ONLY; arquivos PNG/JPEG reais e respectivos hashes; resultado técnico manufacturing-print-preflight-v1; especificação e orçamento auditáveis; quando implementada e autorizada, fabricação física com pedido, rastreio, entrega, suporte e custo conciliados. MVP plano: três artes coordenadas e cartão. Nenhum conector produtivo está homologado nesta versão.",
+    "memoryStrategy": "Reutilizar PdeConversationScope com tenant/produto/cliente/versão/conversa. Guardar evidência, ficha e hash por pedido no backend; nunca cruzar contexto. Preservar histórico e artes aceitas para reposição autorizada. Prazo de retenção e exclusão será definido na oferta antes da coleta comercial.",
+    "integrationRequirements": "Catálogo existente /api/product-types e formulário /product-types. Base Java pde-harness-sdk/manufacturing; prompts/schema no classpath. Prodigi v5 e Gelato são candidatos para impressão; Contrado para expansão têxtil. API documentada não significa integração homologada. Backend central coordena e persiste; executor consome pending canônico e reporta fatos, sem banco direto. Contas, SKUs, cotação, pedido, webhooks e reconciliação ainda exigem implementação por produto. Replay de callback não gera nova inferência nem pedido.",
+    "safetyGuardrails": "PROPOSED: não vincular produto vendável até homologar publicação e integração. Preflight nunca autoriza fabricação: productionAuthorized=false. Bloquear hash/escopo divergente, arquivo inválido, proporção/resolução inadequada e ficha ausente. Prova física, direitos e revisão independente continuam obrigatórios. Sem pedido pago, mídia ou alteração de produto existente nesta solicitação. Sem entrevistas/recrutamento. Resultado desconhecido após timeout exige reconciliação antes de retentar. PNG/JPEG plano não cobre CAD, moldes, faca de embalagem ou material regulado.",
+    "successMetrics": "Compras líquidas conciliadas, entrega útil, contribuição após produção/frete/IA/taxas/aquisição/suporte/perdas, reimpressões, prazo, recompra e custo por entrega aceita. Testes segregados não são vendas. Hipótese do harness: reduzir arquivos inválidos enviados e retrabalho; testes locais não demonstram impacto comercial.",
+    "backendSdkModule": "pde-platform/pde-harness-sdk (manufacturing v1; base local, publicação pendente)",
+    "frontendSdkModule": ""
+  }
+}

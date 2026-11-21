@@ -1,0 +1,18 @@
+{
+  "cardKey": "paletas-cromaticas-dinamicas-alinhamento-musical",
+  "collection": "prazer-audio-visual",
+  "title": "Paletas cromáticas dinâmicas alinhadas à evolução da música",
+  "finding": "Preprint de 19/11/2026: modelo Sonic Palette treinado com 265 videoclipes teve menor erro de paleta (ACBD 3,5161 versus 3,8853 e 4,6757) e de variação temporal (ATBD 0,8671 versus 1,0068 e 0,9959). Avaliação com 26 pessoas favoreceu naturalidade e alinhamento música–cor.",
+  "mechanism": "Congruência temporal entre estímulos visuais e música pode facilitar a percepção de uma atmosfera audiovisual coerente. Mediação emocional é plausível pela literatura, mas não foi isolada experimentalmente nesse estudo.",
+  "commercialApplication": "Experimentar variações cromáticas suavizadas e guiadas por música em vídeos digitais, sem comprometer identidade da marca, contraste, conforto, consentimento e licenciamento da trilha.",
+  "evidenceStrength": "Preprint técnico com teste em 20 vídeos e avaliação subjetiva com 26 pessoas; evidência preliminar de qualidade de cor e correspondência percebida, não prova de prazer nem conversão.",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-01-05",
+  "experimentHypothesis": "Transições cromáticas sincronizadas com a música serão percebidas como mais coerentes que paletas fixas e aleatórias, sem perda de legibilidade ou identificação da marca; medir retenção/CTA em estudo separado.",
+  "risks": "Flicker, desconforto visual, perda de identidade visual, vieses estéticos e direitos de conteúdo audiovisual.",
+  "limits": "Amostra audiovisual selecionada, 26 avaliadores, sem métricas de vendas, prazer fisiológico, retenção publicitária ou ROI.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-21-paletas-dinamicas-musica-cor.md",
+  "sourceTitle": "Sonic Palette — evidência revisada sobre paletas cromáticas temporais guiadas por música",
+  "sourceSha256": "0183fbb3b48823047c76f381ba17984010c0b4072f1c22842c627416b3bf4043"
+}

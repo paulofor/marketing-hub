@@ -1,0 +1,18 @@
+{
+  "cardKey": "assistente-varejista-confianca-compra-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Assistente identificado com a loja pode inspirar mais confiança na compra",
+  "finding": "Bain Consumer Lab divulgou 21% de confiança declarada em assistentes do varejista versus 12% nos de terceiros; 55% dos usuários de IA não confiam plenamente na conclusão autônoma da compra. Em estudo de caso da Bain, a Lu no WhatsApp da Magalu teve conversão 3 vezes a do aplicativo, sem controle causal publicado.",
+  "mechanism": "Hipótese: identidade de marca, acesso a dados próprios e continuidade da conversa até o pagamento podem reduzir incerteza e esforço. A pesquisa mede preferência declarada e o caso comercial não isola a causa da conversão.",
+  "commercialApplication": "Testar assistente da própria loja, claramente identificado, com catálogo confiável, preço transparente e aprovação humana; comparar com a jornada existente ou assistente genérico sob condições equivalentes.",
+  "evidenceStrength": "Média e contextual: pesquisa declaratória da Bain e relato operacional de caso no qual a Bain participou. Não é experimento causal independente.",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-01-05",
+  "experimentHypothesis": "Em tráfego comparável, um assistente identificado com a loja elevará pagamentos confirmados e satisfação, sem aumento desproporcional de erros, desistências ou reclamações.",
+  "risks": "Viés de seleção de usuários, dados promocionais, coleta indevida de informações, falsa confiança em respostas erradas, incentivos opacos e conclusões causais indevidas.",
+  "limits": "Percentuais de confiança não equivalem a conversão; 3x é comparação observacional de canais distintos; nenhum resultado foi medido no Marketing Hub nem há garantia de replicação.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-21-bain-confianca-assistente-proprio-loja.md",
+  "sourceTitle": "Bain 2026: confiança em assistentes de lojas e caso Magalu no WhatsApp",
+  "sourceSha256": "2366392dbdea2882211a242365cee1a0adfb7ea463b724d2eb1c739cf69b69f9"
+}

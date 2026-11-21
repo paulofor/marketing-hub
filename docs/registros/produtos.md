@@ -256,3 +256,14 @@
   campos comerciais e permitir governar rascunhos sem inventar classificação.
 - Prevenção adicional: o tipo passa a ter `internal_name` próprio; minerais deixam de depender de
   apelidos, aparecem como família interna nos produtos e continuam vedados nas superfícies públicas.
+
+## 2026-11-21 — Jaspe: concepção por IA e fabricação sob demanda
+
+Pesquisa de 12 ideias, seleção de três (hospedagens, embalagens e treinamento) e escolha de
+coleções de identidade local para pequenas hospedagens. Fontes e comparação em
+`docs/pesquisas/ia-concepcao-fabricacao-2026-11-21.md`. Mercado e preço ainda são hipóteses.
+Tipo #8 cadastrado pelo frontend como `PROPOSED`; nenhum produto/ciclo/pedido criado.
+Base Java de concepção e preflight local impede confundir mockup com arquivo fabricável;
+regressões verificam contexto, bytes, hash, DPI e falhas, preservando consultores existentes.
+Detalhes e limites em `docs/homologacao/ai-manufactured-product-v1.md`. Código preparado para PR;
+merge/deploy dependem da comprovação da recuperação de credenciais. Nenhum resultado comercial.

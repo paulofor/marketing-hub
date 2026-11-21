@@ -69,3 +69,36 @@ modelo e não gera conteúdo. O contrato fixado é o Codex CLI `0.149.0`.
 Antes de atualizar o Codex, gere o bundle com a nova versão, substitua o recurso versionado, atualize
 o SHA-256 do manifesto e execute novamente todos os testes de contrato e o handshake real. Uma
 incompatibilidade deve bloquear o SDK; nunca autoriza chamada direta à OpenAI API.
+
+## Concepção e impressão plana — Jaspe v1
+
+`harness.v1.manufacturing` adiciona uma base para o tipo
+`AI_DESIGNED_MANUFACTURED_PRODUCT`, inicialmente **PROPOSED**. Não implementa um
+executor de fabricação, integração comercial ou produto pronto para venda.
+
+- `ManufacturingConceptionProfile` carrega prompt/schema do classpath; compõe o brief
+  persistido e valida a saída contra escopo e SKUs. O worker usa o `PdeHarnessSdk` existente
+  para inferência, com sua auditoria e custo; a biblioteca nova não abre chamada paga.
+- `ManufacturingPrintPreflight.inspect` recebe bytes e hash do artefato, escopo esperado
+  e escopo do artefato e uma `PrintSpecification` proveniente do backend. Mede pixels
+  reais, proporção incluindo sangria, DPI efetivo, transparência e cor decodificada sRGB.
+- `technicalCheckPassed()` permite seguir à **revisão técnica**. Não comprova impressão,
+  direitos, autoria, aprovação visual, fidelidade de cor física, margem ou entrega.
+  `productionAuthorized()` sempre retorna `false`.
+
+O worker deve consumir contratos `pending` oficiais e reportar os resultados para persistência
+no backend. A biblioteca não aceita URL nem faz download (o transporte autenticado fica no
+executor), não cria diretórios de clientes, não grava banco, não envia pedido e não decide a
+próxima etapa. PNG/JPEG são o recorte v1; PDF, CAD, faca, bordado e moldes exigem outro validador.
+Arquivos acima de 25 MiB ou 40 milhões de pixels são rejeitados antes da decodificação completa.
+A ficha precisa vir de uma fonte confiável: passar texto de um modelo como ficha não é homologação.
+
+O perfil não detecta conteúdo ilícito, upscale artificial, qualidade estética, texto errado ou
+marcas. Esses critérios continuam em revisão independente. O decoder pode normalizar perfis de
+cor; a checagem é do espaço decodificado e não certifica ICC/PDF/X ou reprodução impressa.
+Retentativa do mesmo arquivo é determinística e não gera nova inferência nem fabricação.
+
+Execute `mvn -f pde-platform/pde-harness-sdk/pom.xml spotless:check test` na raiz. A suíte usa
+imagens sintéticas e transporte falso nos testes do harness; não registra dados comerciais.
+Veja a [pesquisa](../../docs/pesquisas/ia-concepcao-fabricacao-2026-11-21.md) e a
+[matriz de homologação](../../docs/homologacao/ai-manufactured-product-v1.md).

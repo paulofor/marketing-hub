@@ -1,0 +1,18 @@
+{
+  "cardKey": "navegacao-hierarquica-semantica-video-informativo",
+  "collection": "video",
+  "title": "Mapas semânticos ajudam usuários a localizar informações em vídeos",
+  "finding": "Em estudo experimental com 16 pessoas, VideoTrail apresentou ganho estimado de 11,61 pontos no acerto global (p<0,001) e redução estimada de 49,75 s no tempo total (p=0,035) versus interface habitual do YouTube para busca em vídeos informativos.",
+  "mechanism": "Capítulos hierárquicos, miniaturas e pistas visuais/textuais oferecem caminhos de navegação acionáveis e diminuem a exploração linear necessária para encontrar um trecho relevante.",
+  "commercialApplication": "Em tutoriais e demonstrações longas de produto digital, testar índice de cenas, miniaturas e saltos para benefícios, funcionalidades ou instruções reais, preservando playback completo e controle do usuário.",
+  "evidenceStrength": "Preprint de 19/11/2026 com comparação experimental N=16 e medidas de acerto/tempo. Evidência inicial de UX para vídeo informativo, sem validação comercial.",
+  "publishedOn": "2026-11-20",
+  "validUntil": "2027-01-04",
+  "experimentHypothesis": "Um mapa navegável por tópicos reduzirá tempo para encontrar uma função demonstrada e elevará compreensão correta, sem diminuir a conclusão de explicações essenciais.",
+  "risks": "Segmentação incorreta, pistas enganosas, sobrecarga visual, spoilers e perda de contexto narrativo; conferir manualmente segmentos e acessibilidade.",
+  "limits": "Pesquisa com vídeos informativos, não anúncios breves nem contexto B2C de compra; não houve medição de CTA, retenção, satisfação comercial ou pagamentos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-20-mapa-semantico-navegacao-video.md",
+  "sourceTitle": "VideoTrail — evidência revisada de navegação hierárquica em vídeos",
+  "sourceSha256": "73d4fc19c8c83913971ccbe3d55821f1030468bea657d0c2278641a6fd8c7b1f"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "nudges-interface-desvio-agentes-compra-ia",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Proteger agentes de compra contra nudges e dark patterns",
+  "finding": "Em 21.600 simulações de compras com 3.600 agentes e seis modelos, a suscetibilidade a padrões de escolha variou: raciocínio mais extenso reduziu efeito de defaults automáticos, mas aumentou o de influência social. Estudo CHI 2026 com 16 dark patterns também evidenciou limitações da supervisão.",
+  "mechanism": "Interfaces podem redirecionar a escolha de agentes que priorizam concluir a tarefa, tratando opções pré-selecionadas, prova social ou urgência como sinais legítimos. Mais raciocínio não garante autonomia fiel aos critérios do consumidor.",
+  "commercialApplication": "Em jornadas B2C assistidas por agentes, conferir preço total, renovação, consentimento e especificações contra os requisitos do comprador; destacar riscos e pedir confirmação humana antes de ações sensíveis.",
+  "evidenceStrength": "Experimento controlado de agentes (preprint de setembro/2026, 21.600 simulações) e estudo revisado por pares CHI 2026 com seis agentes, 16 padrões e etapa humana de 22 pessoas. Evidência comportamental em ambientes controlados.",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-01-05",
+  "experimentHypothesis": "Uma validação externa de atributos e custos com confirmação focada reduzirá escolhas contrárias aos requisitos em lojas simuladas com nudges, comparada a agentes com raciocínio longo sem checklist.",
+  "risks": "Falsos alertas, atrito indevido e ocultação de informações relevantes; nunca aplicar como técnica para induzir decisões manipulativas.",
+  "limits": "Não mede conversão nem prejuízo em compras reais; varia conforme modelos, páginas simuladas e tipos de manipulação; supervisão humana também pode gerar sobrecarga.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-21-nudges-agentes-compras.md",
+  "sourceTitle": "Nudges e dark patterns em agentes compradores — duas evidências revisadas",
+  "sourceSha256": "9668cb44f30e12f892d7cd588f2582759926a255792ef33eb6d7e764995c575a"
+}

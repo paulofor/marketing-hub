@@ -1,0 +1,18 @@
+{
+  "cardKey": "simuladores-compradores-triagem-testes-ab-conversao",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Simular compradores para priorizar testes A/B, sem substituir vendas reais",
+  "finding": "Em comparação retrospectiva de 318 testes A/B históricos, UX-1 classificou corretamente 267 conclusões (84,0%) e o comparador Qwen3 Next 80B 196 (61,6%). Entre 126 variantes priorizadas, 118 haviam vencido nos testes reais. São dados dos próprios desenvolvedores.",
+  "mechanism": "Simulações condicionadas a padrões de navegação humana podem estimar abandono, exploração e conversão, ajudando a ordenar hipóteses; não representam observações de compradores futuros.",
+  "commercialApplication": "Usar simulações somente como triagem de mudanças em páginas de produto, comparação ou checkout; registrar previsões antes da exposição de tráfego e manter testes A/B reais, inclusive em alguns candidatos descartados.",
+  "evidenceStrength": "Preprint técnico de 18/11/2026, avaliação retrospectiva de 318 experimentos privados pela empresa responsável; sem validação externa ou prospectiva. Evidência técnica preliminar, não prova comercial.",
+  "publishedOn": "2026-11-20",
+  "validUntil": "2027-01-04",
+  "experimentHypothesis": "Uma priorização baseada em simulação elevará a proporção de testes A/B vencedores por rodada sem aumentar a taxa de variantes boas descartadas, comparada à priorização editorial cega.",
+  "risks": "Viés de treino, seleção de sites, alegações comerciais indevidas e abandono de variantes úteis; não usar predições como prova de conversão.",
+  "limits": "Os testes têm fontes privadas e possível sobreposição desconhecida com treino, dependências entre testes e exclusão de experiências de até 21 dias. Sem uplift causado pelo método nem ROI medido.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-20-simulacao-compradores-testes-ab.md",
+  "sourceTitle": "Squoosh Bench — evidência revisada sobre previsão retrospectiva de testes A/B",
+  "sourceSha256": "b73f975c38fa720340248955859ff9a6c91dcc9721111e5bf58c65fc419bbbee"
+}

@@ -40,3 +40,13 @@ tela financeira, R$ 67 e 90 dias ainda vinham de Opala. A homologação local
 separou esse histórico da projeção mensal de Turmalina, distinguindo adesões,
 renovações e custo da base gratuita. Cobrança, vendas e contribuição realizadas
 não fizeram parte do teste. [Memória e critérios de aceite](../homologacao/plano-financeiro-tipo-assinatura-v1.md).
+
+## 2026-11-21 — Nova hipótese de produto com fabricação terceirizada
+
+- Comparadas 12 oportunidades; coleções para hospedagens superaram embalagens e treinamento na
+  avaliação de valor, diferenciação por IA e facilidade inicial de produção. Notas são hipóteses.
+- Jaspe cadastrado no catálogo em avaliação, sem produto vendável, gasto ou campanha.
+- Aprendizado reutilizável: arquivo precisa passar por dimensões, resolução, integridade e escopo;
+  uma prévia bonita não comprova fabricação nem demanda. A base foi testada localmente.
+- Publicação da base aguarda recuperação comprovada de acessos; fornecedores e oferta ainda
+  precisam de homologação antes de qualquer venda. Pesquisa e limites registrados no tema de produtos.

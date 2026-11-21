@@ -1,0 +1,50 @@
+{
+  "observedAt": "2026-11-21T04:50:32.522Z",
+  "catalog": {
+    "id": 8,
+    "code": "AI_DESIGNED_MANUFACTURED_PRODUCT",
+    "internalName": "Jaspe",
+    "status": "PROPOSED",
+    "productCount": 0,
+    "constructionReady": true
+  },
+  "databaseConfirmed": true,
+  "existingSevenTypesPreserved": true,
+  "localSdk": {
+    "tests": 89,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "method": "Full suite: 88 passed; after catalog guard: 30 manufacturing tests passed (21 + 9). Cumulative suite: 89 cases.",
+    "externalInference": false,
+    "factoryOrders": 0
+  },
+  "catalogContractTests": 3,
+  "ui": [
+    {
+      "profile": "desktop",
+      "passed": true,
+      "requests": 2,
+      "persistedInTestDouble": 1,
+      "productionCalls": 0
+    },
+    {
+      "profile": "iphone",
+      "passed": true,
+      "requests": 2,
+      "persistedInTestDouble": 1,
+      "productionCalls": 0
+    },
+    {
+      "profile": "pixel",
+      "passed": true,
+      "requests": 2,
+      "persistedInTestDouble": 1,
+      "productionCalls": 0
+    }
+  ],
+  "liveFactoryRequests": 0,
+  "paidModelCalls": 0,
+  "commercialEvidence": null,
+  "publication": "PENDING_CREDENTIAL_RECOVERY"
+}

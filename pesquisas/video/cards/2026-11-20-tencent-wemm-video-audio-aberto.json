@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-tencent-wemm-omnimodal-aberto-2026-11",
+  "title": "Tencent WeMM-Video: modelos abertos analisam vídeo e áudio em conjunto",
+  "finding": "Em 20/11/2026, a Tencent disponibilizou efetivamente pesos BF16 e quantizados (2B, 4B, 9B e 35B-A3B) de WeMM-Video, cujo artigo técnico é de 19/11. Entrada: vídeo com trilha original, áudio, imagens e texto; saída: texto em chinês/inglês. Não gera vídeo.",
+  "mechanism": "Arquitetura com encoders de visão e áudio que transformam cenas e som em tokens temporalmente alinhados para raciocínio de um modelo linguístico; modos Instruct e Thinking. Inclui runtime Docker e opções Transformers, vLLM/SGLang com patch e GGUF.",
+  "commercialApplication": "Controle de qualidade de anúncios gerados, comparação de roteiro com vídeo/áudio final, indexação de acervos audiovisuais, transcrição contextual e apoio a agentes de seleção/edição; hospedagem própria possível.",
+  "evidenceStrength": "Alta para abertura e licença, pois pesos, modelo e código estão disponíveis. Melhor desempenho que concorrentes foi alegado em >120 benchmarks pelo próprio fornecedor, sem reprodução independente nesta rodada.",
+  "experimentHypothesis": "Ao analisar 30 clipes pt-BR de produtos com música e diálogos, um WeMM-Video quantizado poderá reduzir o trabalho de revisão inicial se detectar erros de roteiro e áudio com precisão suficiente e custo operacional aceitável.",
+  "risks": "Treinado e documentado para respostas em chinês/inglês, sem desempenho pt-BR validado. Benchmarks não auditados. Exige hardware, patches de runtimes e conferência de avisos/termos de componentes de terceiros. Revisão humana obrigatória.",
+  "limits": "ATIVO para download e auto-hospedagem; nenhuma API pública oficial nem tarifa comercial por vídeo confirmadas. Modelo 35B-A3B tem 67,39 GiB apenas de pesos BF16. Exemplo de serving em 8192 tokens e 4–16 quadros por clipe não implica duração máxima fixa. Apache 2.0 em código e pesos listados, com terceiros sujeitos a termos próprios.",
+  "sourceTitle": "Tencent WeMM-Video: compreensão audiovisual conjunta com modelos abertos em 20/11/2026",
+  "collection": "video",
+  "publishedOn": "2026-11-20",
+  "validUntil": "2027-02-20",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-20-tencent-wemm-video-omnimodal-aberto.md",
+  "sourceSha256": "1ed4df4a525dcbf6f8b4bf1a2309c4639f74b0ea8f241798d3cbe49fc5ee0436"
+}

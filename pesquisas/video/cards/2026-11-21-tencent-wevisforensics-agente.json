@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-tencent-wevisforensics-agent-2026-11",
+  "title": "WeVisForensics: agentes de inspeção detectam artefatos de vídeos sintéticos",
+  "finding": "A Tencent publicou código e adapters LoRA WeVisForensics-4B em novembro (artefatos confirmados em 19/11), após artigo de 16/11. Relata 95,2% de acurácia média e +9,0 pontos frente ao detector anterior.",
+  "mechanism": "Agente investigador escolhe inspetores especializados para janelas de textura, física, OCR, causalidade e áudio; treinamento DTPO atualiza política e peritos.",
+  "commercialApplication": "Auditoria de vídeos publicitários e documentais gerados, extração de trechos suspeitos e trilhas de revisão humana, com implantação própria.",
+  "evidenceStrength": "Alta para disponibilidade de código e LoRA Apache 2.0; resultados de desempenho são da equipe, sem verificação independente.",
+  "experimentHypothesis": "O modelo poderá identificar mais falhas visuais e sonoras em vídeos sintéticos do Marketing Hub do que uma checagem genérica, mantendo uma taxa de falsos positivos aceitável.",
+  "risks": "Falsos positivos e confusão entre origem sintética e qualidade; padrões de benchmarks diferentes de vídeos pt-BR; dependência da base Qwen3.5 e seus termos.",
+  "limits": "ATIVO self-host, GPU 24 GB segundo documentação; pesos fornecidos são LoRA, não checkpoint completo. Sem API pública ou tarifa comercial confirmada. Não cria nem edita vídeos.",
+  "sourceTitle": "Tencent WeVisForensics: investigação audiovisual por agentes",
+  "collection": "video",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-02-21",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-21-tencent-wevisforensics-video.md",
+  "sourceSha256": "241f8bd4dc4be0fdcdfd9dc738f200d4f6cb5695989269a24c486787bbb65116"
+}

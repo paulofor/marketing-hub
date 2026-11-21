@@ -256,3 +256,12 @@
   campos comerciais e permitir governar rascunhos sem inventar classificação.
 - Prevenção adicional: o tipo passa a ter `internal_name` próprio; minerais deixam de depender de
   apelidos, aparecem como família interna nos produtos e continuam vedados nas superfícies públicas.
+
+## 21/11/2026 — Aprendizado de construção de Turmalina
+
+Vega demonstrou que Big Idea recebida não significa experiência integralmente materializada.
+A base do tipo já estava completa. O contrato reutilizável proposto liga cada requisito a histórias,
+estados de tela, testes executados e revisões dos mesmos bytes; distingue protótipo de produto.
+Métrica de adoção local: impedir redução silenciosa em dois contextos e preservar caminho legado.
+Retenção, contribuição e vendas dependem de medição posterior, sem resultados financeiros inventados.
+Fonte, limites, alternativas e validação: `docs/homologacao/turmalina-value-delivery-v1.md`.

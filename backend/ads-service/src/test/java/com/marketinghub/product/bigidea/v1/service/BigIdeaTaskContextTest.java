@@ -12,6 +12,57 @@ import org.junit.jupiter.api.Test;
 
 /** Comprova fotografia imutável, contexto de executores e ausência histórica explícita. */
 class BigIdeaTaskContextTest {
+  /** Confere que o contexto real fixa a base antes de persistir e a projeta ao executor. */
+  @Test
+  void transportsValueBaselineAndSpecificationThroughExistingTarget() {
+    var service = mock(BigIdeaService.class);
+    var targets = mock(AgentTaskTargetContextProvider.class);
+    var json = new ObjectMapper();
+    var context = new BigIdeaTaskContext(service, targets, json);
+    var delivery =
+        mock(com.marketinghub.product.valuedelivery.v1.service.ProductValueDeliveryService.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(context, "valueDelivery", delivery);
+    var task = new AgentTask();
+    task.setSourceReference("experiment:903");
+    var target =
+        new AgentTaskTargetResponse(
+            "experiment:903",
+            903L,
+            703L,
+            "fixture",
+            "Produto",
+            "Teste",
+            "v1",
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(targets.resolve("experiment:903", null)).thenReturn(Optional.of(target));
+    doAnswer(
+            invocation -> {
+              com.fasterxml.jackson.databind.node.ObjectNode snapshot = invocation.getArgument(1);
+              snapshot.putObject("valueDeliveryBaseline").put("applicable", true);
+              return null;
+            })
+        .when(delivery)
+        .pin(eq(task), any(), eq(target));
+    when(delivery.context(task, target))
+        .thenReturn(
+            json.createObjectNode().put("specificationReference", "VALUE_SPECIFICATION:fixture"));
+    context.pin(task);
+    assertThat(context.snapshot(task).path("valueDeliveryBaseline").path("applicable").asBoolean())
+        .isTrue();
+    assertThat(
+            context
+                .project(task, target)
+                .pdeContext()
+                .path("productValueDelivery")
+                .path("specificationReference")
+                .asText())
+        .isEqualTo("VALUE_SPECIFICATION:fixture");
+  }
+
   /** Confere que atualização posterior não modifica alvo, contexto ou recuperação da tarefa. */
   @Test
   void pinsBeforeClaimAndProjectsTheSameSnapshot() {

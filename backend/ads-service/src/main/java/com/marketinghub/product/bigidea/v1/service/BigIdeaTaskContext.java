@@ -13,11 +13,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class BigIdeaTaskContext {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.valuedelivery.v1.service.ProductValueDeliveryService
+      valueDelivery;
+
   private final BigIdeaService service;
   private final AgentTaskTargetContextProvider targets;
   private final ObjectMapper json;
 
-  /** Fixa a versão no contexto do processo, inclusive antes da implementação da candidata. */
+  /** Fixa a direção e, no processo tipado, a base de construção antes da candidata existir. */
   public void pin(AgentTask task) {
     var target =
         targets
@@ -52,6 +56,7 @@ public class BigIdeaTaskContext {
     } else {
       snapshot.put("status", "PRODUCT_NOT_CREATED");
     }
+    if (valueDelivery != null) valueDelivery.pin(task, snapshot, target);
     task.setProductBigIdeaJson(snapshot.toString());
   }
 
@@ -71,7 +76,7 @@ public class BigIdeaTaskContext {
     }
   }
 
-  /** Leva a mesma fotografia ao alvo de executores determinísticos e consumidores de contexto. */
+  /** Projeta a fotografia imutável e as referências da especificação/prova para os executores. */
   public AgentTaskTargetResponse project(AgentTask task, AgentTaskTargetResponse target) {
     if (target == null) return null;
     ObjectNode context =
@@ -79,6 +84,8 @@ public class BigIdeaTaskContext {
             ? object.deepCopy()
             : json.createObjectNode();
     context.set("productBigIdea", snapshot(task));
+    if (valueDelivery != null)
+      context.set("productValueDelivery", valueDelivery.context(task, target));
     return new AgentTaskTargetResponse(
         target.sourceReference(),
         target.experimentId(),

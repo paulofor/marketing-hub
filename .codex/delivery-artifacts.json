@@ -1,5 +1,15 @@
 {
   "paths": [
-    "artifacts/vega-human-summary-20261117"
+    "artifacts/vega-human-summary-20261117",
+    "backend/ads-service/target/turmalina",
+    ".codex/turmalina-value-flow/validation-summary.json",
+    ".codex/turmalina-value-flow/browser",
+    ".codex/turmalina-value-flow/flow-final-tests.log",
+    ".codex/turmalina-value-flow/canonical-proof-tests.log",
+    ".codex/turmalina-value-flow/backend-architecture.log",
+    ".codex/turmalina-value-flow/dedalo-final-tests.log",
+    ".codex/turmalina-value-flow/psique-tests.log",
+    ".codex/turmalina-value-flow/temis-final-tests.log",
+    ".codex/turmalina-value-flow/liquibase-static.log"
   ]
 }

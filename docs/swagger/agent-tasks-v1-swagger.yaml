@@ -1,8 +1,17 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.6.2
+  version: 1.6.3
   description: >-
+    TURMALINA_VALUE_DELIVERY_V1 acrescenta productValueDelivery ao pdeContext das
+    novas execuções do Processo 3: baseline imutável (Big Idea e blueprint), baselineSha256,
+    specification, specificationTaskId, specificationReference, implementationEvidence e
+    reviewReference quando disponíveis. Journey retorna valueSpecification; deliverables/access
+    citam specificationReference em acceptanceCriteria; Psique/Têmis citam reviewReference em
+    evidence. O backend recusa ausência/cobertura divergente. PROTOTYPE_SLICE não libera produto
+    completo; referências não são aprovações. Hashes da base, especificação e resultado usam JSON
+    UTF-8 compacto, chaves ordenadas recursivamente, arrays na ordem original e sem quebra final.
+    Contratos antigos não recebem a exigência.
     Comunicação pré-comercial aceita product:<id>@agent-validation-v1 após o gate
     multiagente do produto. O contexto IRIS_INPUT_V1 usa mode PRODUCT_PRIVATE,
     estratégia V3 da descoberta e URL/versão privada aceita, sem experimento ou

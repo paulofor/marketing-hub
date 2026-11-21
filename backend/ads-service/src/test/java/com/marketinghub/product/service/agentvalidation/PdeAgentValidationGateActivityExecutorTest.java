@@ -60,6 +60,22 @@ class PdeAgentValidationGateActivityExecutorTest {
   private Product product;
   private List<AgentTask> completedTasks;
 
+  /** Recusa o gate direto sem cobertura de valor e conserva a aprovação do contrato histórico. */
+  @Test
+  void newProcessCannotBypassValueCoverageWhileLegacyStillPasses() {
+    process.setDiagramJson("{\"productValueDeliveryContract\":\"TURMALINA_VALUE_DELIVERY_V1\"}");
+    var delivery =
+        new com.marketinghub.product.valuedelivery.v1.service.ProductValueDeliveryService(
+            products, tasks, mock(PdeOperationalControlEvidence.class), json);
+    ReflectionTestUtils.setField(executor, "valueDelivery", delivery);
+    var blocked = executor.readiness(process, gate, product, SOURCE);
+    assertThat(blocked.ready()).isFalse();
+    assertThat(blocked.reason()).contains("histórias");
+    verify(instances, never()).saveAndFlush(any());
+    process.setDiagramJson("{}");
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+  }
+
   /** Monta uma ocorrência completa e cronologicamente válida da mesma versão de Mira. */
   @BeforeEach
   void setUp() {

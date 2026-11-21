@@ -32,3 +32,15 @@ Nao usar este diario como changelog tecnico de sistema. Detalhes tecnicos devem 
 - A tela de Planejamento foi estabilizada para nao quebrar quando a API retornar nenhum plano ou dados incompletos, permitindo retomar a visao operacional sem depender de estado perfeito.
 - Aprendizado principal do dia: Produto IA personalizado so deve receber trafego quando a cadeia inteira estiver rastreavel e operavel pelo sistema: coleta do lead, pagina clara, criativo aprovado, compra, entrega personalizada, custo de IA e auditoria.
 - Proximo passo recomendado: apos deploy da normalizacao de CTA, reprocessar os criativos do experimento 55, revisar imagem/copy comercialmente e liberar campanha somente se criativo, publico e prontidao de entrega estiverem aprovados.
+
+## 21/11/2026 — Continuidade da proposta Turmalina
+
+Investigação por UI, banco MCP e código: a Big Idea da Vega chegou aos agentes; a perda ocorreu na
+redução a uma candidata local sem contrato de cobertura integral. Implementação candidata da cadeia
+v28/Processo 3 v12 preserva a base Turmalina, histórias, estados de tela, provas e revisões exatas.
+Não migrada a execução 102/ciclo 22 nem iniciada inferência paga. Registros e matriz em
+`docs/homologacao/turmalina-value-delivery-v1.md`; situação de testes/publicação registrada ali.
+
+Validação Turmalina: 176 verificações selecionadas no backend e suítes dos três workers sem falhas,
+com migração MySQL 5.7 e telas desktop/mobile. Bloqueio externo de publicação: comprovação de
+revogação/substituição do incidente de credenciais anterior; preparação local concluída sem gasto.

@@ -13,6 +13,8 @@ on:
       - "infra/testing/mira-report/**"
       - "infra/testing/pde-commercial-principles/**"
       - "infra/testing/pde-satisfaction-continuity/**"
+      - "infra/testing/turmalina-value-delivery/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/product/valuedelivery/**"
       - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/PdeCommercialPrinciplesMysql57Test.java"
       - "infra/testing/catalogo-vivo/**"
       - "backend/ads-service/src/main/java/com/marketinghub/catalogovivo/**"
@@ -236,6 +238,8 @@ jobs:
             backend/ads-service/target/surefire-reports/*PdeCommercialPrinciples*
             backend/ads-service/target/principles/
             backend/ads-service/target/satisfaction/
+            backend/ads-service/target/surefire-reports/*ProductValueDeliveryMysql57*
+            backend/ads-service/target/turmalina/
           if-no-files-found: warn
 
   validate-catalogo-vivo-opala:

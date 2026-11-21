@@ -16,6 +16,41 @@ import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: proteger o contrato funcional do gate BPM de Têmis. */
 class CommercialBpmTaskConsumerTest {
+  /** Confere que o contrato tipado chega ao prompt e não altera a tarefa histórica. */
+  @org.junit.jupiter.api.Test
+  void preservesTypedValueContractInActualPrompt() throws Exception {
+    var json = new com.fasterxml.jackson.databind.ObjectMapper();
+    var task = new java.util.HashMap<String, Object>();
+    task.put("taskId", 9001L);
+    task.put("processCode", "pde-construction-approval");
+    task.put("activityId", "commercialIntegrityReview");
+    task.put("sourceReference", "product:903@agent-validation-v1");
+    task.put(
+        "taskTarget",
+        java.util.Map.of(
+            "productId",
+            903L,
+            "productSlug",
+            "fixture",
+            "pdeContext",
+            java.util.Map.of(
+                "productValueDelivery",
+                java.util.Map.of(
+                    "baseline",
+                    java.util.Map.of("applicable", true),
+                    "baselineSha256",
+                    "a".repeat(64)))));
+    var properties = new MetaAdApproverProperties();
+    properties.setReasoningEffort("max");
+    var consumer = new CommercialBpmTaskConsumer(properties, "codex", "fixture", "/tmp", "", json);
+    String prompt = consumer.prompt(task);
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("Revisão da continuidade de valor Turmalina");
+    task.put("taskTarget", java.util.Map.of("productId", 903L, "productSlug", "fixture"));
+    org.assertj.core.api.Assertions.assertThat((String) consumer.prompt(task))
+        .doesNotContain("Revisão da continuidade de valor Turmalina");
+  }
+
   private final ObjectMapper json = new ObjectMapper();
 
   /** Síntese curta acompanha parecer novo; replay antigo continua válido sem nova chamada paga. */

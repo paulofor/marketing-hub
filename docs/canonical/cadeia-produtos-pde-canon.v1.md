@@ -1305,3 +1305,34 @@ Prova histórica, de outro produto, ciclo ou versão não autoriza o avanço. Qu
 homologação, apresentar a pendência real e o acesso ao Processo 3, preservando tarefas
 concluídas, custos, limites financeiros, segregação e aprovações. Essa passagem não autoriza
 mídia, cobrança ou publicação comercial.
+
+## Continuidade da proposta por tipo — Turmalina (21/11/2026)
+
+A cadeia v28 especializa o Processo 3 v12 com `TURMALINA_VALUE_DELIVERY_V1`, preservando
+os seis processos, agentes e filas. O gatilho é o código `AI_PWA_CONSULTANT_PRODUCT`,
+nunca nome ou ID do produto. As definições anteriores e execuções vinculadas não são migradas.
+
+1. **Jornada/especificação — Dédalo:** fixar a Big Idea do contexto e os nove campos da base
+   cadastrada do tipo; transformá-los em histórias, resultados para a cliente, estados de tela
+   (entrada, resultado, retomada, vazio, erro) e critérios dado/quando/então com teste identificável.
+2. **Entregáveis e acesso — Dédalo:** planejar incrementos úteis, integração e reutilização
+   compatível referenciando a mesma especificação. Declarar o que construir, reutilizar ou adiar.
+   READY destas atividades significa especificação aceita, não software pronto.
+3. **Construção e homologação:** materializar as histórias no código versionado e registrar provas
+   executadas da mesma versão no catálogo operacional existente. Uma interface de formulário ou
+   regras limitadas pode ser um recorte legítimo, mas não substitui consultoria contextual, memória
+   e experiência visual prometidas. Ausência de implementação é pendência de construção, não uma
+   nova obrigação de aprovação da cliente nem motivo para contratar sucessivas revisões.
+4. **Psique:** confrontar histórias com telas reais, esforço, utilidade, controle e retomada.
+   **Têmis:** confrontar promessa, mecanismo, cobertura, limites e integridade da mesma prova.
+   Os pareceres referenciam os bytes da especificação e do relatório; o julgamento semântico
+   continua independente. Ids, hashes e testes sintéticos não demonstram satisfação ou vendas.
+5. **Gate backend:** impedir a passagem de `PROTOTYPE_SLICE` como produto completo. Exigir cobertura
+   de todos os critérios, provas executadas, contexto e revisões compatíveis. Antes de novas
+   revisões, explicar a lacuna comprovada. Retentativa e callback preservam saída e custo.
+
+Esta evolução não cria um gestor de sprints paralelo nem um novo executor autônomo de código.
+Dédalo mantém a especificação; a materialização precisa do fluxo versionado de implementação e
+provas. Mudanças no catálogo ou na Big Idea só orientam novas execuções, sem reescrever o passado.
+Preço, assinatura, publicação e mídia conservam seus contratos e autorizações específicos.
+[Matriz, causa e limites](../homologacao/turmalina-value-delivery-v1.md).

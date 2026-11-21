@@ -15,6 +15,41 @@ import org.springframework.web.client.HttpClientErrorException;
 
 /** Responsabilidade: proteger o contrato funcional da revisão BPM de Psique. */
 class CustomerBpmTaskConsumerTest {
+  /** Confere que o contrato tipado chega ao prompt e não altera a tarefa histórica. */
+  @org.junit.jupiter.api.Test
+  void preservesTypedValueContractInActualPrompt() throws Exception {
+    var json = new com.fasterxml.jackson.databind.ObjectMapper();
+    var task = new java.util.HashMap<String, Object>();
+    task.put("taskId", 9001L);
+    task.put("processCode", "pde-construction-approval");
+    task.put("activityId", "psiqueAdherent");
+    task.put("sourceReference", "product:903@agent-validation-v1");
+    task.put(
+        "taskTarget",
+        java.util.Map.of(
+            "productId",
+            903L,
+            "productSlug",
+            "fixture",
+            "pdeContext",
+            java.util.Map.of(
+                "productValueDelivery",
+                java.util.Map.of(
+                    "baseline",
+                    java.util.Map.of("applicable", true),
+                    "baselineSha256",
+                    "a".repeat(64)))));
+    var consumer =
+        new CustomerBpmTaskConsumer(
+            "http://localhost:1", "codex", "fixture", "max", "/tmp", "/tmp", json);
+    String prompt = consumer.prompt(task, java.util.List.of());
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("Revisão da continuidade de valor Turmalina");
+    task.put("taskTarget", java.util.Map.of("productId", 903L, "productSlug", "fixture"));
+    org.assertj.core.api.Assertions.assertThat((String) consumer.prompt(task, java.util.List.of()))
+        .doesNotContain("Revisão da continuidade de valor Turmalina");
+  }
+
   private final ObjectMapper json = new ObjectMapper();
 
   /** Bloqueia Psique antes de reservar tarefas quando o raciocínio não está configurado. */

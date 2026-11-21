@@ -14,9 +14,9 @@ for command in (["docker", "version"], ["docker", "buildx", "version"], ["docker
 try:
     subprocess.run(compose + ["up", "-d", "--wait"], check=True)
     subprocess.run(
-        ["mvn", "-B", "-Dtest=PdeCommercialPrinciplesMysql57Test", "test"],
+        ["mvn", "-B", "-Dtest=PdeCommercialPrinciplesMysql57Test,ProductValueDeliveryMysql57Test", "test"],
         cwd=root / "backend/ads-service",
-        env={**os.environ, "PDE_PRINCIPLES_MYSQL": "true"},
+        env={**os.environ, "PDE_PRINCIPLES_MYSQL": "true", "TURMALINA_MYSQL": "true"},
         check=True,
     )
 finally:

@@ -1147,7 +1147,8 @@ public class CustomerBpmTaskConsumer {
   }
 
   /**
-   * Compõe o núcleo de Psique, texto fixado pelo catálogo no Opala e provas da própria atividade.
+   * Compõe o núcleo de Psique, catálogo Opala, provas da atividade e continuidade de valor
+   * Turmalina.
    */
   private PromptComposition promptComposition(
       Map<String, Object> task,
@@ -1166,6 +1167,15 @@ public class CustomerBpmTaskConsumer {
           pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
     String agentPromptPart = behavioralCore(task);
+    if (json.valueToTree(task)
+        .path("taskTarget")
+        .path("pdeContext")
+        .path("productValueDelivery")
+        .path("baseline")
+        .path("applicable")
+        .asBoolean(false)) {
+      agentPromptPart += "\n\n" + read("prompts/bpm/turmalina-value-review-v1.md");
+    }
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
                 ? CatalogPromptInput.text(task, schemaResourceFor(task))

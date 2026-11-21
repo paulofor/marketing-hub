@@ -1120,6 +1120,13 @@
           "version": "bpm-v7",
           "path": "customer-agent-worker/src/main/resources/prompts/bpm/v7/pde-kit-agent-validation-scenario-review-schema.json",
           "description": "Notas e evidências por screenshot; não permite aprovação com placeholder ou déficit crítico."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Revisão da experiência Turmalina",
+          "version": "v1",
+          "path": "customer-agent-worker/src/main/resources/prompts/bpm/turmalina-value-review-v1.md",
+          "description": "Confronta histórias, telas e utilidade real com a proposta fixada e registra a prova exata revisada."
         }
       ]
     },
@@ -2401,6 +2408,13 @@
           "version": "v1",
           "path": ".github/workflows/meta-ad-approver-worker-ci.yml",
           "description": "Testes, build e publicação versionados."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Integridade da entrega Turmalina",
+          "version": "v1",
+          "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/turmalina-value-review-v1.md",
+          "description": "Confronta promessa, cobertura e limites com as histórias e provas da mesma implementação, sem promover recorte a produto completo."
         }
       ]
     },
@@ -2849,6 +2863,20 @@
           "version": "v6-historical",
           "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture-schema.json",
           "description": "Preservado para auditoria e compatibilidade das provas anteriores ao retorno estruturado v7."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Construção orientada ao valor Turmalina",
+          "version": "v4",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v4/turmalina-value-delivery.md",
+          "description": "Preserva Big Idea e blueprint em histórias, estados de tela, incrementos, reutilização e critérios executáveis."
+        },
+        {
+          "artifactType": "OUTPUT_SCHEMA",
+          "name": "Schema da especificação de valor Turmalina",
+          "version": "v4",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v4/turmalina-journey-schema.json",
+          "description": "Contrato estruturado da proposta fixada, escopo e histórias com critérios e referências de origem."
         }
       ]
     },

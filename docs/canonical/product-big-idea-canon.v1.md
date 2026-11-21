@@ -58,3 +58,12 @@ original de Atena e suas fontes ficam disponíveis em consulta recolhida; não d
 ocupar o destaque acima da decisão atual. Sem Big Idea definida, a criação com Atena
 continua diretamente acessível. A apresentação usa a revisão retornada pelo backend,
 sem inferir aprovação, atualidade comercial ou reescrever o resultado da pesquisa.
+
+## Rastreabilidade até a experiência — 21/11/2026
+
+Transportar a Big Idea não comprova que ela foi construída. O Processo 3 v12 para Turmalina fixa
+proposta e blueprint na primeira tarefa, especifica histórias e exige cobertura demonstrável até a
+entrega. A base do contexto é imutável mesmo após edição do catálogo. Recorte de protótipo permanece
+identificado e não recebe aceite de produto completo. Psique e Têmis avaliam o significado e a
+experiência real; verificadores estruturais asseguram contexto, cobertura e identidade das provas.
+Não aplicar a regra retroativamente à Vega/ciclo 22 ou a outro experimento histórico.

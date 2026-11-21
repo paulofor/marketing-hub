@@ -63,7 +63,7 @@ async function main() {
         const text = await diagram.innerText();
         for (const value of Object.values(contract.objectives)) assert.ok(text.includes(value), `${name}: objetivo incompleto em ${code}`);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: transbordamento horizontal`);
-        if (code === 'pde-communication-sales-journey') await page.screenshot({ path: path.join(output, `${name}.png`), fullPage: true });
+        await page.screenshot({ path: path.join(output, `${code}-${name}.png`), fullPage: true, scale: 'css' });
         results.push({ device: name, processCode: code, version: contract.targetVersion, checked: Object.keys(contract.objectives).length });
       }
       if (chain) {

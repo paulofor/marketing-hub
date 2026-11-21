@@ -1,0 +1,248 @@
+{
+  "flows": [
+    {
+      "to": "journey",
+      "from": "start"
+    },
+    {
+      "to": "deliverables",
+      "from": "journey"
+    },
+    {
+      "to": "audiovisual",
+      "from": "deliverables"
+    },
+    {
+      "to": "access",
+      "from": "audiovisual"
+    },
+    {
+      "to": "technicalHomologation",
+      "from": "access"
+    },
+    {
+      "to": "psiqueAdherent",
+      "from": "technicalHomologation"
+    },
+    {
+      "to": "psiqueRecovery",
+      "from": "psiqueAdherent"
+    },
+    {
+      "to": "psiqueSafety",
+      "from": "psiqueRecovery"
+    },
+    {
+      "to": "commercialIntegrityReview",
+      "from": "psiqueSafety"
+    },
+    {
+      "to": "agentValidationGate",
+      "from": "commercialIntegrityReview"
+    },
+    {
+      "to": "gate",
+      "from": "agentValidationGate"
+    },
+    {
+      "to": "end",
+      "from": "gate"
+    },
+    {
+      "to": "prototypeCorrection",
+      "from": "technicalHomologation",
+      "kind": "REWORK",
+      "label": "Ajustar"
+    },
+    {
+      "to": "prototypeCorrection",
+      "from": "psiqueAdherent",
+      "kind": "REWORK",
+      "label": "Ajustar"
+    },
+    {
+      "to": "prototypeCorrection",
+      "from": "psiqueRecovery",
+      "kind": "REWORK",
+      "label": "Ajustar"
+    },
+    {
+      "to": "prototypeCorrection",
+      "from": "psiqueSafety",
+      "kind": "REWORK",
+      "label": "Ajustar"
+    },
+    {
+      "to": "prototypeCorrection",
+      "from": "commercialIntegrityReview",
+      "kind": "REWORK",
+      "label": "Ajustar"
+    },
+    {
+      "to": "technicalHomologation",
+      "from": "prototypeCorrection",
+      "kind": "REWORK",
+      "label": "Nova versão"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "type": "START",
+      "label": "Produto planejado liberado",
+      "owner": "Backend",
+      "description": "O backend inicia uma ocorrência versionada sem reescrever evidências históricas."
+    },
+    {
+      "id": "journey",
+      "type": "TASK",
+      "label": "Construir jornada privada de valor",
+      "owner": "Dédalo",
+      "description": "Entregar: jornada privada do formato aprovado com primeira ação evidente, apenas entradas necessárias e benefício aplicável. Aceite: justificar cada pergunta, manter próximo botão e botão final alcançáveis no celular sem rolagem inesperada ou conteúdo bloqueante; cumprir a promessa inicial e explicar o próximo passo. Medir: início, conclusão das entradas e resultado recebido separadamente, abandono por etapa e tempo até o benefício. A quantidade de escolhas depende do benefício e do formato, sem padrão universal. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Caminho mínimo da situação reconhecível até a ação e o resultado que tornam plausível a satisfação proposta. Aceite: Contexto fiel, entradas justificadas, aplicação compreensível e primeira ação mobile; não exigir cadastro, questionário ou amostra universais. Medir: Conclusão, abandono por etapa e tempo até benefício na mesma versão. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "responsibilityDomain": "PDE_CONSTRUCTION",
+      "responsibleAgentKeys": [
+        "landing-generator"
+      ]
+    },
+    {
+      "id": "deliverables",
+      "type": "TASK",
+      "label": "Produzir componentes do protótipo PDE",
+      "owner": "Dédalo",
+      "description": "Produz os componentes funcionais da mesma versão do produto sem reutilizar artefato de outro PDE. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Resultado e referências fiéis às informações da cliente, com identidade coerente e orientação para uso. Aceite: Comprovar personalização e correspondência entre apresentação e saída funcional; demonstração sintética identificada não representa cliente real. Medir: Utilidade funcional, erros de contexto e correspondência entre promessa e entregável. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "responsibilityDomain": "PDE_CONSTRUCTION",
+      "responsibleAgentKeys": [
+        "landing-generator"
+      ]
+    },
+    {
+      "id": "audiovisual",
+      "type": "TASK",
+      "label": "Produzir audiovisual quando previsto",
+      "owner": "Apolo",
+      "description": "Produz somente o audiovisual exigido; a ausência de necessidade deve permanecer explícita. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Audiovisual funcional previsto, com contexto e prova coerentes com a mesma versão real. Aceite: Preservar peças, corpo e contexto da representação quando houver transformação ilustrativa; não inventar resultados, depoimentos ou necessidade de vídeo. Medir: Compreensão, legibilidade mobile, continuidade e integridade técnica; revisão não comprova emoção humana. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "responsibilityDomain": "AUDIOVISUAL_PRODUCTION",
+      "responsibleAgentKeys": [
+        "videomaker"
+      ],
+      "executionResourceCode": "video-management-service"
+    },
+    {
+      "id": "access",
+      "type": "TASK",
+      "label": "Implementar acesso, continuidade e instrumentação",
+      "owner": "Dédalo",
+      "description": "Entregar: acesso de teste, salvamento/retomada quando previstos, tratamento de erro, privacidade e eventos correlacionados à versão. Aceite: cadastro não equivale a login; resultado exibido não equivale a uso; registrar consentimento e excluir testes da amostra comercial. Medir: resultado → interesse em salvar → cadastro → acesso concluído → retorno, sem inferir etapas ausentes. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Identidade identificável, resultado salvo e reencontro simples quando acesso/retomada fizerem parte da oferta. Aceite: Preservar contexto e privacidade, recuperação sem duplicar geração/cobrança; nenhuma recorrência ou recompra obrigatória inventada. Medir: Acesso, retomada e retorno voluntário em eventos próprios; retorno não comprova memória ou satisfação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "responsibilityDomain": "PDE_CONSTRUCTION",
+      "responsibleAgentKeys": [
+        "landing-generator"
+      ]
+    },
+    {
+      "id": "technicalHomologation",
+      "type": "TASK",
+      "label": "Homologar tecnicamente a versão real",
+      "owner": "Psique",
+      "description": "Entregar: evidências da mesma versão em desktop, iPhone e Android, com caminho feliz, falha e retomada. Aceite: primeira ação, próximo botão e botão final visíveis/acessíveis após cada passo, inclusive teclado aberto; resultado legível e compreensível; oferta fora da tela não gera exposição. Registrar URL, versão, capturas e resultado por cenário. Medir: conclusão funcional, erros e tempo até o benefício em tráfego de QA segregado. Correções retornam aqui; teste aprovado não prova vendas. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Manifesto, hashes, capturas e testes da mesma versão para ação, resultado, aplicação e recuperação em desktop/iPhone/Android. Aceite: Correspondência da promessa com o comportamento servido; dados sintéticos segregados e bloqueio técnico antes de revisão paga se a prova não corresponder. Medir: Conclusão funcional, erros, tempo até resultado e custo conhecido por homologação concluída. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "executionMode": "DETERMINISTIC",
+      "controlDescription": "Psique executa testes automáticos com o harness, a estrutura de ferramentas, cenários e evidências. Esta etapa técnica não usa parecer de IA; os cenários de experiência vêm depois.",
+      "responsibilityDomain": "PDE_TECHNICAL_HOMOLOGATION",
+      "responsibleAgentKeys": [
+        "customer-agent"
+      ]
+    },
+    {
+      "id": "prototypeCorrection",
+      "type": "TASK",
+      "label": "Corrigir o protótipo a partir do parecer",
+      "owner": "Dédalo",
+      "actionLabel": "Criar tarefa de correção",
+      "description": "Transforma a rejeição funcional vigente em instruções executáveis, corrige a causa-raiz, cria nova versão e devolve o fluxo à homologação técnica. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Correção na camada da causa comprovada da promessa, personalização, utilidade, acesso ou recuperação. Aceite: Preservar entradas e resultados válidos; nova versão retorna à homologação técnica, sem contornar gate ou repetir consumo por impedimento idêntico. Medir: Recorrência do defeito e conclusão funcional comparadas à versão anterior; nenhuma venda presumida. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "activationMode": "ON_FUNCTIONAL_REJECTION",
+      "controlDescription": "Dédalo receberá o parecer rejeitado, a causa-raiz e a ação recomendada; a conclusão exige uma nova versão e retorno à homologação técnica.",
+      "remediatesActivities": [
+        "technicalHomologation",
+        "psiqueAdherent",
+        "psiqueRecovery",
+        "psiqueSafety",
+        "commercialIntegrityReview"
+      ],
+      "responsibilityDomain": "PDE_FUNCTIONAL_REWORK",
+      "responsibleAgentKeys": [
+        "landing-generator"
+      ]
+    },
+    {
+      "id": "psiqueAdherent",
+      "type": "TASK",
+      "label": "Psique · cenário aderente",
+      "owner": "Psique",
+      "description": "Entregar: avaliação independente de compreensão, desejo, esforço, utilidade e próximo passo na versão real. Aceite: localizar primeira ação sem ajuda, concluir entradas, compreender como aplicar o resultado e explicar o valor adicional da continuidade paga. Registrar evidência observada e lacunas; resultado exibido não comprova aplicação ou satisfação. Medir: conclusão e tempo por cenário. Identificar a leitura como simulação de agente, sem contá-la como cliente ou venda. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de clareza, esforço, aplicação do resultado e plausibilidade da satisfação pretendida na experiência real. Aceite: Identificar a simulação; verificar próximo passo e benefício adicional sem afirmar satisfação, preferência humana ou cliente inexistente. Medir: Conclusão, esforço e tempo por cenário; resultado exibido não comprova aplicação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "scenarioCode": "ADHERENT",
+      "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+      "responsibleAgentKeys": [
+        "customer-agent"
+      ]
+    },
+    {
+      "id": "psiqueRecovery",
+      "type": "TASK",
+      "label": "Psique · fricção e recuperação",
+      "owner": "Psique",
+      "description": "Entregar: avaliação da versão real com entrada incompleta, erro recuperável e retomada. Aceite: orientação suficiente sem conhecimento de IA, respostas preservadas quando permitido, próximo botão e botão final alcançáveis no celular e nenhuma promessa de resultado inventado. Medir: recuperação, abandono por etapa e esforço observado; separar hipótese de causa, defeito reproduzido e preferência humana. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de contexto preservado e retomada após entrada incompleta ou falha. Aceite: Orientação suficiente no celular, limites honestos e recuperação sem esforço redundante; não recrutar pessoas nem solicitar opinião. Medir: Recuperação, perda de contexto e erros reproduzidos, separados de preferência estética. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "scenarioCode": "RECOVERY",
+      "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+      "responsibleAgentKeys": [
+        "customer-agent"
+      ]
+    },
+    {
+      "id": "psiqueSafety",
+      "type": "TASK",
+      "label": "Psique · limite e segurança",
+      "owner": "Psique",
+      "description": "Com raciocínio máximo, avalia pedido fora do escopo e exige bloqueio seguro sem resultado inventado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de limites e segurança da promessa funcional e emocional. Aceite: Bloquear pedidos fora do escopo, diagnóstico psicológico, satisfação garantida e resultado inventado; respeitar autonomia e preferências. Medir: Falhas de segurança e bloqueios corretos no cenário segregado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "scenarioCode": "SAFETY",
+      "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+      "responsibleAgentKeys": [
+        "customer-agent"
+      ]
+    },
+    {
+      "id": "commercialIntegrityReview",
+      "type": "TASK",
+      "label": "Revisar integridade da validação multiagente",
+      "owner": "Têmis",
+      "description": "Confirma fidelidade, segurança, verdade, privacidade, segregação interna e ausência de alegação humana ou efeito comercial. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer independente que liga promessa, prova funcional, identidade, versão e limites da transformação representada. Aceite: Personagem não parece depoimento real; nenhuma compra, agendamento, satisfação ou emoção fictícia como prova; fonte/prova ausente retorna à origem. Medir: Divergências confirmadas, correções e evidências; aprovação não comprova vendas. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+      "responsibleAgentKeys": [
+        "meta-ad-approver"
+      ]
+    },
+    {
+      "id": "agentValidationGate",
+      "type": "TASK",
+      "label": "Calcular gate multiagente",
+      "owner": "Backend",
+      "description": "Valida somente evidências persistidas, sequenciais e da mesma versão; libera comunicação em STOP sem publicar, cobrar, criar campanha ou autorizar gasto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Referências persistidas das avaliações sequenciais da mesma versão, com fatos e hipóteses separados. Aceite: Preservar o gate determinístico e os resultados válidos; liberar somente comunicação em STOP, sem afirmar satisfação ou demanda nem autorizar gasto. Medir: Cobertura de evidências e bloqueios técnicos claros, com responsável e ação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+      "executionMode": "DETERMINISTIC",
+      "responsibilityDomain": "PDE_AGENT_VALIDATION_GATE"
+    },
+    {
+      "id": "gate",
+      "type": "GATEWAY",
+      "label": "Produto apto à comunicação?",
+      "owner": "Backend",
+      "description": "Exige homologação técnica, três cenários aprovados em sequência e revisão independente de Têmis."
+    },
+    {
+      "id": "end",
+      "type": "END",
+      "label": "Decisão multiagente registrada",
+      "owner": "Backend",
+      "description": "O mercado continuará sendo a única fonte de preferência, compra, entrega, satisfação e receita."
+    }
+  ],
+  "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+  "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+}

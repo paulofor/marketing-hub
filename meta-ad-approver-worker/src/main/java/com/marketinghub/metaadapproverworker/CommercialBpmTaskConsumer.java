@@ -488,7 +488,7 @@ public class CommercialBpmTaskConsumer {
     return promptComposition(task).fullPrompt();
   }
 
-  /** Compõe o núcleo de Têmis com texto fixado pelo catálogo no Opala e contexto do gate. */
+  /** Compõe Têmis com catálogo Opala, contexto do gate e revisão da proposta Turmalina. */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task)) && !isPrivateValidationTask(task)) {
@@ -500,6 +500,15 @@ public class CommercialBpmTaskConsumer {
           pdeArtifactLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
     String agentPromptPart = commercialCore(task);
+    if (json.valueToTree(task)
+        .path("taskTarget")
+        .path("pdeContext")
+        .path("productValueDelivery")
+        .path("baseline")
+        .path("applicable")
+        .asBoolean(false)) {
+      agentPromptPart += "\n\n" + read("prompts/bpm/turmalina-value-review-v1.md");
+    }
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
                 ? CatalogPromptInput.text(task, schemaResourceFor(task))

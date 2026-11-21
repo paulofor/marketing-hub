@@ -50,3 +50,19 @@ não fizeram parte do teste. [Memória e critérios de aceite](../homologacao/pl
   uma prévia bonita não comprova fabricação nem demanda. A base foi testada localmente.
 - Publicação da base aguarda recuperação comprovada de acessos; fornecedores e oferta ainda
   precisam de homologação antes de qualquer venda. Pesquisa e limites registrados no tema de produtos.
+
+## 21/11/2026 — Continuidade da proposta Turmalina
+
+Investigação por UI, banco MCP e código: a Big Idea da Vega chegou aos agentes; a perda ocorreu na
+redução a uma candidata local sem contrato de cobertura integral. Implementação candidata da cadeia
+v28/Processo 3 v12 preserva a base Turmalina, histórias, estados de tela, provas e revisões exatas.
+Não migrada a execução 102/ciclo 22 nem iniciada inferência paga. Registros e matriz em
+`docs/homologacao/turmalina-value-delivery-v1.md`; situação de testes/publicação registrada ali.
+
+Validação Turmalina: 176 verificações selecionadas no backend e suítes dos três workers sem falhas,
+com migração MySQL 5.7 e telas desktop/mobile. Bloqueio externo de publicação: comprovação de
+revogação/substituição do incidente de credenciais anterior; preparação local concluída sem gasto.
+
+O CI completo identificou ausência dos prompts Turmalina no inventário administrativo dos agentes.
+A falha foi reproduzida localmente e os quatro artefatos foram registrados no catálogo existente;
+o ajuste permanece no PR #5854, sem alterar o teste que detectou a omissão.

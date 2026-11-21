@@ -364,7 +364,7 @@ public class PdeConstructionBpmTaskConsumer {
     PromptComposition prompt = promptComposition(task);
     Path output = outbox.output();
     Path processLog = outbox.events();
-    Path schema = materialize(contract.schemaResource(), ".json");
+    Path schema = materialize(specificationSchema(task, contract), ".json");
     var audit =
         executionAudit(
             task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
@@ -490,14 +490,15 @@ public class PdeConstructionBpmTaskConsumer {
     return promptComposition(task).fullPrompt();
   }
 
-  /**
-   * Compõe núcleo, limite da atividade e contexto, preservando o texto fixado pelo catálogo Opala.
-   */
+  /** Compõe núcleo, limite da atividade e contexto, preservando catálogo Opala e base Turmalina. */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     BpmContract contract = contractFor(task);
     String agentPromptPart = read("prompts/pde-construction/v1/agent-core.md");
     if (specificationActivity(contract)) {
       agentPromptPart += "\n\n" + read("prompts/pde-construction/v2/specification-boundary.md");
+    }
+    if (turmalina(task)) {
+      agentPromptPart += "\n\n" + read("prompts/pde-construction/v4/turmalina-value-delivery.md");
     }
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
@@ -506,6 +507,24 @@ public class PdeConstructionBpmTaskConsumer {
             .replace("{{TASK_CONTEXT}}", json.writeValueAsString(CatalogPromptInput.context(task)));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
+  }
+
+  /** Seleciona o schema tipado somente para a nova especificação Turmalina. */
+  String specificationSchema(Map<String, Object> task, BpmContract contract) {
+    return turmalina(task) && "journey".equals(contract.activityId())
+        ? "prompts/pde-construction/v4/turmalina-journey-schema.json"
+        : contract.schemaResource();
+  }
+
+  /** Reconhece a base fixada pelo backend sem inferir tipo pelo nome do produto. */
+  boolean turmalina(Map<String, Object> task) {
+    return json.valueToTree(task)
+        .path("taskTarget")
+        .path("pdeContext")
+        .path("productValueDelivery")
+        .path("baseline")
+        .path("applicable")
+        .asBoolean(false);
   }
 
   /** Identifica os contratos prévios à implementação sem afrouxar correção ou homologação. */
@@ -824,6 +843,21 @@ public class PdeConstructionBpmTaskConsumer {
     if (!"pde-construction-approval".equals(contract.processCode())) return;
     JsonNode target = json.valueToTree(task).path("taskTarget");
     JsonNode context = target.path("pdeContext");
+    JsonNode typedBaseline = context.path("productValueDelivery").path("baseline");
+    if (typedBaseline.path("applicable").asBoolean(false)) {
+      if (typedBaseline.path("bigIdea").path("id").asLong() <= 0
+          || typedBaseline.path("blueprintVersion").asText().isBlank()
+          || typedBaseline.path("requirements").size() != 12) {
+        throw new IllegalArgumentException(
+            "Base Turmalina ou Big Idea incompleta; inferência recusada.");
+      }
+      for (JsonNode requirement : typedBaseline.path("requirements")) {
+        if (!requirement.isTextual() || requirement.asText().isBlank()) {
+          throw new IllegalArgumentException(
+              "Requisito Turmalina ausente; corrigir a fonte antes do modelo.");
+        }
+      }
+    }
     JsonNode identity = context.path("product");
     if (identity.isObject()
         && (identity.path("id").asLong(0) < 1

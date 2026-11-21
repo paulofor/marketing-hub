@@ -11814,3 +11814,17 @@ Regressões: ProcessRunPauseGuidanceTest, ProcessRunProjectedActivityPersistence
 AgentTaskHumanSummaryTest, consultas JPA sem hidratação, contrato HTTP, testes frontend,
 26 contratos de prompt/schema e navegador em duas identidades e três dispositivos.
 Matriz e limites: docs/homologacao/vega-bloqueio-resumo-humano-2026-11-17.md.
+
+## LOOP-TURMALINA-RECORTE-PROMOVIDO-A-PRODUTO — 21/11/2026
+
+- Evidência: Vega 4, Big Idea 8/v3 e base consultant-pwa-v2; tarefas 907–921 receberam a proposta,
+  mas a especificação e a implementação se limitaram a regras locais. Homologação 917 declarou
+  providerCalls=0/modelFunctionalBehaviorClaimed=false; o gate não exigia cobertura por promessa.
+- Causa: transportar a direção e aprovar uma candidata não assegurava construir todas as capacidades.
+  A hipótese de contexto ausente foi descartada pelos snapshots persistidos.
+- Candidata de correção: Processo 3 v12/cadeia v28, snapshot do tipo e da ideia, histórias/estados,
+  critérios, prova executada por critério e revisão independente da mesma especificação/relatório.
+  Protótipo parcial não é promovido a produto completo; ausência de prova evita revisão paga inútil.
+- Preservação: histórico, STOP, limites e callbacks existentes; sem migração automática nem exceção
+  por nome/ID. Testar caso Vega, outra identidade e tipo legado. Hash não valida significado.
+- [Homologação e estado de adoção](../homologacao/turmalina-value-delivery-v1.md).

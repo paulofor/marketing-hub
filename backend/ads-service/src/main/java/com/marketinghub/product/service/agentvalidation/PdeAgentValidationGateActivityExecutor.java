@@ -107,6 +107,11 @@ public class PdeAgentValidationGateActivityExecutor
   private final ProductRepository products;
   private final ProductProcessPeriodService periods;
   private final ObjectMapper json;
+
+  @Autowired(required = false)
+  private com.marketinghub.product.valuedelivery.v1.service.ProductValueDeliveryService
+      valueDelivery;
+
   private final Clock clock;
   private final PdeAgentValidationCorrectionPolicy correctionPolicy;
 
@@ -280,13 +285,27 @@ public class PdeAgentValidationGateActivityExecutor
             : "Validação multiagente aprovada. O PDE foi liberado para preparar comunicação e continua em STOP, sem campanha ou gasto.");
   }
 
-  /** Avalia separadamente contrato, harness, Psique, Têmis, ordem e efeitos externos. */
+  /** Avalia cobertura da proposta, contrato, harness, revisões, ordem e efeitos externos. */
   private GateEvaluation evaluate(
       BusinessProcessDefinition process,
       Product product,
       String sourceReference,
       boolean enforceOperationalStage) {
     List<String> issues = new ArrayList<>();
+    if (valueDelivery != null) {
+      try {
+        valueDelivery.verify(process, sourceReference, true);
+      } catch (RuntimeException ex) {
+        log.warn("Gate de valor bloqueado sourceReference={}", sourceReference, ex);
+        issues.add(ex.getMessage());
+      }
+    }
+    if (valueDelivery == null
+        && process != null
+        && process.getDiagramJson() != null
+        && process.getDiagramJson().contains("TURMALINA_VALUE_DELIVERY_V1"))
+      issues.add(
+          "O verificador de continuidade de valor está indisponível; não liberar esta versão.");
     AgentValidationContract contract =
         contract(process, product, sourceReference, enforceOperationalStage, issues);
     List<AgentTask> processTasks =

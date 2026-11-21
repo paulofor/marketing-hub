@@ -902,6 +902,15 @@ O backend principal persiste o pedido e os vínculos das duas tentativas. A clie
 
 A superfície `paid-visual.html?experiment=<id>` preserva a raiz privada e não exibe checkout antes das liberações. Esta capacidade técnica não equivale a publicação comercial ou parecer independente. [Contrato HTTP](../swagger/pde-paid-visual-v1-swagger.yaml) e [matriz local](../homologacao/alcyone-entrega-paga-v1.md).
 
+## Turmalina na cadeia — decisão de 21/11/2026
+
+A base `consultant-pwa-v2` já cadastrada é a fonte de requisitos do Processo 3 tipado;
+não duplicar seus textos em uma categoria nova. `TURMALINA_VALUE_DELIVERY_V1` fixa essa base e a
+Big Idea do produto no contexto, exige histórias/estados de tela, critérios executáveis e provas
+por critério. Reutilização requer origem; adiamento torna a entrega um recorte, sem afirmar produto
+completo. O contrato detalhado está em `cadeia-produtos-pde-canon.v1.md`. Histórico, outros tipos,
+ofertas, direitos e autorizações não são alterados retroativamente.
+
 ## Produto físico concebido por IA e fabricado sob demanda — Jaspe v1
 
 Solicitação de 21/11/2026: pesquisar concepção por IA e fabricação terceirizada, comparar ao menos

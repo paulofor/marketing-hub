@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-21-turmalina-value-delivery-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: "1"
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-construction-approval' AND version_number=11 AND status='PUBLISHED' AND JSON_VALID(diagram_json)=1
+        - sqlCheck:
+            expectedResult: "11"
+            sql: SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-construction-approval' AND p.version_number=11
+        - sqlCheck:
+            expectedResult: "1"
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=27 AND status='PUBLISHED'
+        - sqlCheck:
+            expectedResult: "6"
+            sql: SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.chain_code='pde-value-creation-delivery' AND c.version_number=27
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-construction-approval' AND version_number=12
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=28
+      changes:
+        - sqlFile:
+            path: 2026-11-21-turmalina-value-delivery-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Preserve execucoes; selecione a versao anterior pelo fluxo governado.';

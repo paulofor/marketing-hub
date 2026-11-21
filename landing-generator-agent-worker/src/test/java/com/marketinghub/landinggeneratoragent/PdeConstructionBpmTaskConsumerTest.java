@@ -27,6 +27,59 @@ import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: proteger os contratos BPM de construção do PDE executados por Dédalo. */
 class PdeConstructionBpmTaskConsumerTest {
+  /** Confere que o contrato tipado chega ao prompt e não altera a tarefa histórica. */
+  @org.junit.jupiter.api.Test
+  void preservesTypedValueContractInActualPrompt() throws Exception {
+    var json = new com.fasterxml.jackson.databind.ObjectMapper();
+    var task = new java.util.HashMap<String, Object>();
+    task.put("taskId", 9001L);
+    task.put("processCode", "pde-construction-approval");
+    task.put("activityId", "journey");
+    task.put("sourceReference", "product:903@agent-validation-v1");
+    task.put(
+        "taskTarget",
+        java.util.Map.of(
+            "productId",
+            903L,
+            "productSlug",
+            "fixture",
+            "pdeContext",
+            java.util.Map.of(
+                "productValueDelivery",
+                java.util.Map.of(
+                    "baseline",
+                    java.util.Map.of("applicable", true),
+                    "baselineSha256",
+                    "a".repeat(64)))));
+    var properties = new LandingGeneratorAgentProperties();
+    properties.setBackendUrl("http://localhost:1");
+    var consumer =
+        new PdeConstructionBpmTaskConsumer(
+            properties,
+            json,
+            org.mockito.Mockito.mock(AutomaticExecutionControl.class),
+            org.mockito.Mockito.mock(CodexTelemetryReporter.class));
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval", "journey", "", "legacy-schema", "v2", "READY");
+    String schemaPath = consumer.specificationSchema(task, contract);
+    var schema =
+        json.readTree(
+            new org.springframework.core.io.ClassPathResource(schemaPath).getInputStream());
+    org.assertj.core.api.Assertions.assertThat(schema.path("required").toString())
+        .contains("valueSpecification");
+    String prompt =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(consumer, "prompt", task);
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("Turmalina — preservar a proposta até a entrega");
+    task.put("taskTarget", java.util.Map.of("productId", 903L, "productSlug", "fixture"));
+    org.assertj.core.api.Assertions.assertThat(
+            (String)
+                org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                    consumer, "prompt", task))
+        .doesNotContain("Turmalina — preservar a proposta até a entrega");
+  }
+
   private final ObjectMapper json = new ObjectMapper();
 
   /** Persiste a auditoria integral antes de iniciar a chamada faturável do modelo. */

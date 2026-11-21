@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-kyutai-aura-streaming-avatar-2026-11",
+  "title": "Kyutai AURA: geração aberta de avatares por fala em streaming",
+  "finding": "Em 20/11/2026, Kyutai publicou código, demo e pesos AURA-1.3B/5B de geração causal de avatares a partir de áudio corrente. A versão 1.3B foi medida a 20,7 fps em 576p/16fps numa H100; 5B a 9,7fps em 720p.",
+  "mechanism": "Difusão destilada de 50 para 4 passos com cache KV móvel e quadros causais, sem precisar antecipar áudio futuro; referência de retrato ancora identidade.",
+  "commercialApplication": "Pesquisa de atendentes audiovisuais, apresentadores interativos e interfaces conversacionais; aplicação comercial direta bloqueada pelas licenças atuais dos pesos.",
+  "evidenceStrength": "Alta para disponibilidade dos pesos, código, demo e termos; desempenho de H100 é resultado dos autores, sem reprodução independente.",
+  "experimentHypothesis": "Uma futura implementação permitida para uso comercial poderá reduzir a latência de apresentadores digitais, se for validado sincronismo em português brasileiro e estabilidade após 60 s.",
+  "risks": "Licenças não comerciais impedem pressupor uso em publicidade paga; custo H100, drift facial, consentimento da imagem e latência ponta a ponta. Pesos 1.3B CC BY-NC 4.0; 5B Snap Non-Commercial.",
+  "limits": "ATIVO somente pesquisa e execução própria. Sem API hospedada comercial confirmada; 1.3B 576p, 5B 720p não é real time nos testes citados. Áudio de entrada obrigatório.",
+  "sourceTitle": "Kyutai AURA: avatares de voz gerados em streaming",
+  "collection": "video",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-02-21",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-21-kyutai-aura-avatar-streaming.md",
+  "sourceSha256": "4c02ff37e54e3066c5e58b6d577710e9a8ea0141b36328d448cbb75bfcc6e095"
+}

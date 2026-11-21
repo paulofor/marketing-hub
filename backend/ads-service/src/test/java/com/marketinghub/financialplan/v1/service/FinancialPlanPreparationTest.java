@@ -564,9 +564,9 @@ class FinancialPlanPreparationTest {
     assertThat(rebased.assumptions().evidence()).doesNotContain(saved.assumptions().evidence());
   }
 
-  /** Validade encerrada ou tipo alterado continuam exigindo revisão avançada das fontes. */
+  /** Exige fontes novas para revisão vencida e oferece estrutura limpa após mudança de tipo. */
   @Test
-  void expiredOrTypeChangedRevisionCannotRebaseAutomatically() throws Exception {
+  void expiryRequiresReviewButTypeChangeStartsClean() throws Exception {
     var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
     var expiredNode =
         (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(saved.assumptions());
@@ -578,7 +578,100 @@ class FinancialPlanPreparationTest {
     var current = prior(saved.assumptions());
     current.setCommercialPlanVersion(3);
     product.getProductTypeDefinition().setId(952L);
-    assertThat(service.preparation(product.getId(), Environment.LIVE).canPrepare()).isFalse();
+    var preview = service.preparation(product.getId(), Environment.LIVE);
+    assertThat(preview.canPrepare()).isTrue();
+    assertThat(preview.sourceRevisionId()).isNull();
+    assertThat(preview.priceBrl()).isNull();
+    assertThat(preview.expectedProductTypeId()).isEqualTo(952L);
+  }
+
+  /** Repara retroativamente o modelo do caso Vega sem copiar R$ 67 ou uma decisão vencida. */
+  @Test
+  void startsLegacyProductOnCurrentTypeWithoutOldEconomics() throws Exception {
+    var old = prior(complete());
+    product.setCurrentPriceBrl(null);
+    product.setValidationDefinitionVersion("consultor-continuo");
+    product.getProductTypeDefinition().setId(953L);
+    product.getProductTypeDefinition().setCode("AI_PWA_CONSULTANT_PRODUCT");
+    var preview = service.preparation(product.getId(), Environment.LIVE);
+    assertThat(preview.structure().name()).isEqualTo("MONTHLY_SUBSCRIPTION");
+    assertThat(preview.productVersion()).isEqualTo("consultor-continuo");
+    assertThat(preview.sourceRevisionId()).isNull();
+    assertThat(preview.priceBrl()).isNull();
+    assertThat(preview.canPrepare()).isTrue();
+    var request =
+        new PreparePlanRequest(
+            1,
+            plan.getId(),
+            4,
+            preview.productVersion(),
+            30,
+            true,
+            953L,
+            new PlanAssumptions.MonthlySubscription(null, null, null),
+            null,
+            null);
+    var saved = service.prepare(product.getId(), Environment.LIVE, request, "Homologação");
+    assertThat(saved.assumptions().priceBrl()).isNull();
+    assertThat(saved.assumptions().maximumCacBrl()).isNull();
+    assertThat(saved.assumptions().variableCostEnvelope()).isNull();
+    assertThat(saved.assumptions().minimumMarginPercent()).isNull();
+    assertThat(saved.canRequestAnalysis()).isFalse();
+    assertThat(old.getProductTypeId()).isEqualTo(951L);
+    assertThat(
+            service.list("PRODUCT", product.getId(), Environment.LIVE).getFirst().historicalType())
+        .isTrue();
+    verifyNoInteractions(plutus);
+  }
+
+  /** Guarda o novo tipo sem escolher um plano comercial arbitrário ou reativar o anterior. */
+  @Test
+  void keepsUnlinkedDraftForAmbiguousTypeChange() throws Exception {
+    prior(complete());
+    product.getProductTypeDefinition().setId(953L);
+    product.getProductTypeDefinition().setCode("AI_PWA_CONSULTANT_PRODUCT");
+    when(plans.findIdsByProductId(product.getId())).thenReturn(List.of(95102L, 95103L));
+    service.onProductTypeChanged(
+        new com.marketinghub.product.ProductTypeChanged(product.getId(), 953L));
+    var captured = org.mockito.ArgumentCaptor.forClass(FinancialPlanRevision.class);
+    verify(revisions).saveAndFlush(captured.capture());
+    var draft = captured.getValue();
+    assertThat(draft.getRevisionNumber()).isEqualTo(2);
+    assertThat(draft.getProductTypeId()).isEqualTo(953L);
+    assertThat(draft.getCommercialPlanId()).isNull();
+    assertThat(json.readTree(draft.getAssumptionsJson()).path("priceBrl").isNull()).isTrue();
+    verifyNoInteractions(plutus, executionSyncService);
+  }
+
+  /** Entrega ao Plutus simulado a base mensal sem preço ou meta do pacote antigo. */
+  @Test
+  void monthlyProjectionCarriesTheCorrectEconomicsIntoTheQueue() throws Exception {
+    product.getProductTypeDefinition().setCode("AI_PWA_CONSULTANT_PRODUCT");
+    var a = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(complete());
+    a.put("validUntil", LocalDate.now(ZoneOffset.UTC).plusDays(7).toString());
+    a.put("productVersion", product.getValidationDefinitionVersion());
+    a.putObject("subscription")
+        .put("renewals", 10)
+        .put("freeUsers", 100)
+        .put("costPerFreeUserBrl", 2);
+    var row = prior(json.treeToValue(a, PlanAssumptions.class));
+    when(revisions.findLockedById(row.getId())).thenReturn(Optional.of(row));
+    var accepted = mock(FinancialAgentExecutionResponse.class);
+    when(accepted.id()).thenReturn(777L);
+    when(accepted.commercialPlanVersion()).thenReturn(4);
+    var job = new FinancialAgentExecution();
+    job.setId(777L);
+    job.setStatus(FinancialAgentExecutionStatus.PENDING);
+    when(executions.findById(777L)).thenReturn(Optional.of(job));
+    when(plutus.startRevenueProjection(eq(plan.getId()), any())).thenReturn(accepted);
+    service.requestAnalysis(product.getId(), Environment.LIVE, row.getId());
+    var capture = org.mockito.ArgumentCaptor.forClass(StartRevenueProjectionRequest.class);
+    verify(plutus).startRevenueProjection(eq(plan.getId()), capture.capture());
+    var basis = json.readTree(capture.getValue().decisionContext()).path("projectionBasis");
+    assertThat(basis.at("/analysisScope/code").asText()).isEqualTo("MONTHLY_SUBSCRIPTION");
+    assertThat(basis.at("/subscriptionMonth/recurringRevenueBrl").decimalValue())
+        .isEqualByComparingTo("3000");
+    assertThat(basis.at("/commercialPlanningBasis/targetRevenueBrl").isNull()).isTrue();
   }
 
   /** Seleção ambígua sem histórico continua bloqueada para evitar escolher outro plano. */

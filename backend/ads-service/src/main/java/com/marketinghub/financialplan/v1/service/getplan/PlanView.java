@@ -25,7 +25,48 @@ public record PlanView(
     boolean stale,
     List<String> pendingActions,
     boolean canRequestAnalysis,
-    Analysis analysis) {
+    Analysis analysis,
+    boolean historicalType) {
+  /** Preserva o contrato de leitura de revisões sem divergência do tipo. */
+  public PlanView(
+      Long id,
+      String scope,
+      Long scopeId,
+      Environment environment,
+      String name,
+      int revision,
+      Long templateId,
+      Long commercialPlanId,
+      Integer commercialPlanVersion,
+      String createdBy,
+      Instant createdAt,
+      PlanAssumptions assumptions,
+      PlanEvaluation evaluation,
+      boolean stale,
+      List<String> pendingActions,
+      boolean canRequestAnalysis,
+      Analysis analysis) {
+    this(
+        id,
+        scope,
+        scopeId,
+        environment,
+        name,
+        revision,
+        templateId,
+        commercialPlanId,
+        commercialPlanVersion,
+        createdBy,
+        createdAt,
+        assumptions,
+        evaluation,
+        stale,
+        pendingActions,
+        canRequestAnalysis,
+        analysis,
+        false);
+  }
+
   /** Apresenta as pendências do mesmo preflight usado no comando, sem alterar a revisão. */
   public PlanView withPreflightBlockers(List<String> blockers) {
     return new PlanView(
@@ -45,7 +86,8 @@ public record PlanView(
         stale,
         blockers,
         canRequestAnalysis && blockers.isEmpty(),
-        analysis);
+        analysis,
+        historicalType);
   }
 
   /** Parecer de Plutus e cobertura do custo; não constitui autorização comercial. */

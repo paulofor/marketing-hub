@@ -6,12 +6,15 @@ import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.StartRevenueProjectionRequest;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
+import com.marketinghub.financialplan.v1.FinancialPlanStructure;
 import com.marketinghub.financialplan.v1.service.catalog.PlanCatalog;
 import com.marketinghub.financialplan.v1.service.getplan.*;
 import com.marketinghub.financialplan.v1.service.prepareplan.*;
 import com.marketinghub.financialplan.v1.service.saveplan.*;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanExecutionSyncService;
+import com.marketinghub.product.ProductTypeChanged;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.financialplan.FinancialPlanRevisionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanMilestoneRepository;
@@ -24,6 +27,7 @@ import java.time.*;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +69,12 @@ public class FinancialPlanService {
                             : p.getProductTypeDefinition().getId()))
             .toList(),
         types.findAllByOrderByNameAsc().stream()
-            .map(t -> new PlanCatalog.Option(t.getId(), t.getInternalName() + " · " + t.getName()))
+            .map(
+                t ->
+                    new PlanCatalog.TypeOption(
+                        t.getId(),
+                        t.getInternalName() + " · " + t.getName(),
+                        FinancialPlanStructure.forType(t)))
             .toList(),
         productId == null
             ? List.of()
@@ -104,7 +113,7 @@ public class FinancialPlanService {
         .map(this::view);
   }
 
-  /** Propõe somente suporte e personalização, preservando contexto comercial e lacunas. */
+  /** Apresenta a estrutura vigente do tipo e as premissas compatíveis para a próxima revisão. */
   @Transactional(readOnly = true)
   public PlanPreparation preparation(Long productId, Environment environment) {
     return preparationContext(productId, environment).preview();
@@ -115,12 +124,21 @@ public class FinancialPlanService {
   public PlanView prepare(
       Long productId, Environment environment, PreparePlanRequest request, String actor) {
     if (!validator.validate(request).isEmpty())
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Revise o período de suporte.");
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Revise as premissas e o período de suporte.");
     requireOwner("PRODUCT", productId, true);
     var context = preparationContext(productId, environment);
     var preview = context.preview();
     if (!preview.canPrepare()) throw conflict(preview.blocker());
-    if (preview.expectedRevision() != request.expectedRevision()
+    if ((request.expectedProductTypeId() != null
+                || context.typeReset()
+                || preview.structure() == FinancialPlanStructure.MONTHLY_SUBSCRIPTION)
+            && !Objects.equals(preview.expectedProductTypeId(), request.expectedProductTypeId())
+        || (request.subscription() != null)
+            != (preview.structure() == FinancialPlanStructure.MONTHLY_SUBSCRIPTION)
+        || request.subscription() == null
+            && (request.monthlyPriceBrl() != null || request.newSubscribers() != null)
+        || preview.expectedRevision() != request.expectedRevision()
         || !Objects.equals(preview.commercialPlanId(), request.commercialPlanId())
         || !Objects.equals(preview.commercialPlanVersion(), request.commercialPlanVersion())
         || !Objects.equals(preview.productVersion(), request.productVersion()))
@@ -131,19 +149,27 @@ public class FinancialPlanService {
             source == null || context.rebaseReferences() ? null : source.assumptions(),
             request,
             context.plan(),
-            preview.priceBrl());
+            preview.priceBrl(),
+            context.useSaleSources());
     var saved =
         create(
             "PRODUCT",
             productId,
             environment,
             new SavePlanRequest(
-                source == null ? "Plano financeiro do produto #" + productId : source.name(),
+                source == null
+                    ? (request.subscription() == null
+                            ? "Plano financeiro"
+                            : "Plano de assinatura mensal")
+                        + " do produto #"
+                        + productId
+                    : source.name(),
                 actor == null || actor.isBlank() ? "Operador via preparação simplificada" : actor,
                 request.expectedRevision(),
                 request.commercialPlanId(),
                 source == null ? null : source.templateId(),
-                assumptions));
+                assumptions,
+                preview.expectedProductTypeId()));
     if (!Objects.equals(saved.commercialPlanVersion(), request.commercialPlanVersion())
         || saved.stale())
       throw conflict("O contexto comercial mudou durante a gravação. Recarregue a preparação.");
@@ -152,7 +178,12 @@ public class FinancialPlanService {
 
   /** Mantém juntos as referências já verificadas e o resumo que o formulário pode apresentar. */
   private record PreparationContext(
-      PlanPreparation preview, PlanView source, CommercialPlan plan, boolean rebaseReferences) {}
+      PlanPreparation preview,
+      PlanView source,
+      CommercialPlan plan,
+      boolean rebaseReferences,
+      boolean typeReset,
+      boolean useSaleSources) {}
 
   /** Resolve fontes e permite rebase controlado sem reutilizar custos vencidos ou incompatíveis. */
   private PreparationContext preparationContext(Long productId, Environment environment) {
@@ -161,23 +192,36 @@ public class FinancialPlanService {
         revisions.findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
             "PRODUCT", productId, environment);
     var sourceRevision = history.isEmpty() ? null : history.getFirst();
-    var source = sourceRevision == null ? null : view(sourceRevision);
+    var latest = sourceRevision == null ? null : view(sourceRevision);
+    boolean typeReset = latest != null && latest.historicalType();
+    var source = typeReset ? null : latest;
+    var structure = FinancialPlanStructure.forType(product.getProductTypeDefinition());
+    boolean monthly = structure == FinancialPlanStructure.MONTHLY_SUBSCRIPTION;
     var candidates = plans.findByProductId(productId);
     var plan =
-        source == null
+        source == null || source.commercialPlanId() == null
             ? candidates.size() == 1 ? candidates.getFirst() : null
             : candidates.stream()
                 .filter(p -> p.getId().equals(source.commercialPlanId()))
                 .findFirst()
                 .orElse(null);
-    Integer commercialPlanVersion = plan == null ? null : currentVersion(plan.getId());
+    Integer commercialPlanVersion = plan == null ? null : availableVersion(plan.getId());
     Long currentTypeId =
         product.getProductTypeDefinition() == null
             ? null
             : product.getProductTypeDefinition().getId();
     boolean expired = source != null && source.assumptions().validUntil().isBefore(today());
-    boolean typeChanged =
-        sourceRevision != null && !Objects.equals(sourceRevision.getProductTypeId(), currentTypeId);
+    boolean useSaleSources =
+        !monthly
+            && !typeReset
+            && history.stream()
+                .noneMatch(
+                    old ->
+                        !Objects.equals(old.getProductTypeId(), currentTypeId)
+                            && plan != null
+                            && Objects.equals(old.getCommercialPlanId(), plan.getId())
+                            && Objects.equals(
+                                old.getCommercialPlanVersion(), commercialPlanVersion));
     boolean commercialPlanChanged =
         source != null && !Objects.equals(source.commercialPlanVersion(), commercialPlanVersion);
     boolean productVersionChanged =
@@ -186,9 +230,8 @@ public class FinancialPlanService {
                 source.assumptions().productVersion(), product.getValidationDefinitionVersion());
     boolean rebaseReferences =
         source != null
-            && !expired
-            && !typeChanged
-            && (commercialPlanChanged || productVersionChanged);
+            && (!expired || monthly)
+            && (expired || commercialPlanChanged || productVersionChanged);
     String version =
         source == null || rebaseReferences
             ? product.getValidationDefinitionVersion()
@@ -201,54 +244,145 @@ public class FinancialPlanService {
     var price =
         source != null && !rebaseReferences && source.assumptions().priceBrl() != null
             ? source.assumptions().priceBrl()
-            : product.getCurrentPriceBrl() != null
-                ? product.getCurrentPriceBrl()
-                : plan == null ? null : plan.getOfferPriceBrl();
+            : !useSaleSources
+                ? null
+                : product.getCurrentPriceBrl() != null
+                    ? product.getCurrentPriceBrl()
+                    : plan == null ? null : plan.getOfferPriceBrl();
     String blocker =
         plan == null
             ? "Defina o plano comercial do produto na edição avançada."
-            : version == null || version.isBlank()
-                ? "Registre a versão do produto na edição avançada."
-                : source != null && source.stale() && !rebaseReferences
-                    ? "A revisão anterior venceu ou mudou de contexto. Confira suas fontes na edição avançada."
-                    : null;
+            : commercialPlanVersion == null
+                ? "Registre a versão do plano comercial antes de salvar as premissas."
+                : version == null || version.isBlank()
+                    ? "Registre a versão do produto na edição avançada."
+                    : source != null && source.stale() && !rebaseReferences
+                        ? "A revisão anterior venceu ou mudou de contexto. Confira suas fontes na"
+                            + " edição avançada."
+                        : null;
     var preview =
         new PlanPreparation(
-            source == null ? 0 : source.revision(),
+            latest == null ? 0 : latest.revision(),
             source == null ? null : source.id(),
             plan == null ? null : plan.getId(),
             commercialPlanVersion,
             version,
             days,
             choices == null || choices.personalizedAi(),
-            choices == null
-                ? "Sugestão inicial: "
-                    + days
-                    + " dias de suporte. Ajuste conforme a entrega do produto."
-                : rebaseReferences
-                    ? "As referências comerciais mudaram. A nova revisão descarta custos anteriores e adota somente as fontes da versão atual."
-                    : "Período de suporte da última revisão; ajuste se necessário.",
+            typeReset
+                ? "O tipo mudou. Esta preparação usa a estrutura atual, com premissas financeiras"
+                    + " em aberto. A revisão anterior fica no histórico."
+                : choices == null
+                    ? "Sugestão inicial: "
+                        + days
+                        + " dias de suporte. Ajuste conforme a entrega do produto."
+                    : rebaseReferences
+                        ? "As referências comerciais mudaram. A nova revisão descarta custos"
+                            + " anteriores e adota somente as fontes da versão atual."
+                        : "Período de suporte da última revisão; ajuste se necessário.",
             price,
             blocker == null,
-            blocker);
-    return new PreparationContext(preview, source, plan, rebaseReferences);
+            blocker,
+            currentTypeId,
+            structure,
+            monthly && source != null && !rebaseReferences
+                ? source.assumptions().subscription()
+                : null,
+            monthly && source != null && !rebaseReferences
+                ? source.assumptions().scenarios().stream()
+                    .filter(sc -> sc.code() == PlanAssumptions.ScenarioCode.BASE)
+                    .findFirst()
+                    .map(PlanAssumptions.Scenario::customers)
+                    .orElse(null)
+                : null);
+    return new PreparationContext(
+        preview, source, plan, rebaseReferences, typeReset, useSaleSources);
+  }
+
+  /** Substitui somente a estrutura vigente quando um produto com plano muda de tipo no cadastro. */
+  @EventListener
+  @Transactional
+  public void onProductTypeChanged(ProductTypeChanged change) {
+    var product = products.findLockedById(change.productId()).orElseThrow(() -> missing("Produto"));
+    var type = product.getProductTypeDefinition();
+    if (type == null || !Objects.equals(type.getId(), change.productTypeId())) return;
+    var history =
+        revisions.findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
+            "PRODUCT", product.getId(), Environment.LIVE);
+    if (history.isEmpty()) return;
+    var latest = history.getFirst();
+    var version = product.getValidationDefinitionVersion();
+    if (Objects.equals(latest.getProductTypeId(), type.getId())) return;
+    var planIds = plans.findIdsByProductId(product.getId());
+    Long planId =
+        version != null
+                && !version.isBlank()
+                && planIds.size() == 1
+                && availableVersion(planIds.getFirst()) != null
+            ? planIds.getFirst()
+            : null;
+    boolean monthly =
+        FinancialPlanStructure.forType(type) == FinancialPlanStructure.MONTHLY_SUBSCRIPTION;
+    saveRevision(
+        "PRODUCT",
+        product.getId(),
+        Environment.LIVE,
+        new SavePlanRequest(
+            monthly ? "Plano de assinatura mensal" : "Plano por venda",
+            "Marketing Hub · mudança de tipo",
+            latest.getRevisionNumber(),
+            planId,
+            null,
+            FinancialPlanPreparation.typeDraft(version, monthly),
+            type.getId()),
+        planId == null);
   }
 
   /** Salva revisão imutável; reutiliza somente a vigente e preserva a ordem das decisões. */
   @Transactional
   public PlanView create(
       String scope, Long scopeId, Environment environment, SavePlanRequest request) {
+    return saveRevision(scope, scopeId, environment, request, false);
+  }
+
+  /** Persiste o rascunho estrutural mesmo sem plano único, sem liberar essa exceção para a API. */
+  private PlanView saveRevision(
+      String scope,
+      Long scopeId,
+      Environment environment,
+      SavePlanRequest request,
+      boolean unlinkedTypeDraft) {
     var violations = validator.validate(request);
     if (!violations.isEmpty())
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "Revise os campos do plano: " + violations.iterator().next().getPropertyPath());
+    var type = requireOwner(scope, scopeId, true);
     discoveryPolicy.validate(scope, scopeId, request.commercialPlanId(), request.assumptions());
-    Long typeId = requireOwner(scope, scopeId, true);
+    Long typeId = type == null ? null : type.getId();
+    boolean monthly =
+        FinancialPlanStructure.forType(type) == FinancialPlanStructure.MONTHLY_SUBSCRIPTION;
+    if (monthly != (request.assumptions().subscription() != null)
+        || request.expectedProductTypeId() != null
+            && !Objects.equals(typeId, request.expectedProductTypeId()))
+      throw conflict("O tipo ou a estrutura do plano mudou. Recarregue antes de salvar.");
+    if (monthly
+        && (request.assumptions().variableCostEnvelope() != null
+            || request.assumptions().fixedCostEnvelope() != null
+            || request.assumptions().discoveryInvestment() != null
+            || !Objects.equals(request.assumptions().periodDays(), 30)))
+      throw conflict(
+          "Planeje um mês de assinatura com custos próprios, sem copiar envelopes ou mídia de uma"
+              + " venda.");
     var history =
         revisions.findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
             scope, scopeId, environment);
     int current = history.isEmpty() ? 0 : history.getFirst().getRevisionNumber();
+    if (!history.isEmpty()
+        && request.expectedProductTypeId() == null
+        && !Objects.equals(history.getFirst().getProductTypeId(), typeId))
+      throw conflict(
+          "O tipo do produto mudou. Recarregue o plano para conferir a estrutura atual.");
     if (current != request.expectedRevision())
       throw conflict("Outra revisão foi salva. Recarregue o histórico antes de gravar.");
     var p = new FinancialPlanRevision();
@@ -262,7 +396,7 @@ public class FinancialPlanService {
     p.setCreatedBy(request.createdBy().trim());
     p.setCreatedAt(Instant.now());
     PlanAssumptions persistedAssumptions = request.assumptions();
-    if ("PRODUCT".equals(scope)) {
+    if ("PRODUCT".equals(scope) && !unlinkedTypeDraft) {
       if (request.assumptions().productVersion() == null
           || request.assumptions().productVersion().isBlank())
         throw conflict("Informe a versão específica do produto.");
@@ -286,9 +420,11 @@ public class FinancialPlanService {
             || !Objects.equals(template.getScopeId(), typeId)
             || template.getEnvironment() != environment)
           throw conflict("O modelo precisa pertencer ao tipo e ambiente deste produto.");
-        if (read(template.getAssumptionsJson(), PlanAssumptions.class, template.getId())
-            .validUntil()
-            .isBefore(today()))
+        var templateAssumptions =
+            read(template.getAssumptionsJson(), PlanAssumptions.class, template.getId());
+        if ((templateAssumptions.subscription() != null) != monthly)
+          throw conflict("O modelo pertence a uma estrutura financeira anterior.");
+        if (templateAssumptions.validUntil().isBefore(today()))
           throw conflict("O modelo venceu. Revise suas premissas antes de adotá-lo.");
         p.setTemplateId(template.getId());
       }
@@ -334,6 +470,7 @@ public class FinancialPlanService {
   /** Confere o escopo e enfileira no máximo um parecer por revisão, reutilizando a execução. */
   @Transactional
   public PlanView requestAnalysis(Long productId, Environment environment, Long id) {
+    requireOwner("PRODUCT", productId, true);
     var p = required("PRODUCT", productId, environment, id, true);
     if (p.getFinancialExecutionId() != null) return view(p);
     var current = view(p);
@@ -396,6 +533,7 @@ public class FinancialPlanService {
     var assumptions = read(p.getAssumptionsJson(), PlanAssumptions.class, p.getId());
     var evaluation = read(p.getEvaluationJson(), PlanEvaluation.class, p.getId());
     List<String> pending = new ArrayList<>();
+    boolean historicalType = false;
     boolean stale = assumptions.validUntil().isBefore(today());
     if (stale) pending.add("Plutus: validade encerrada; crie uma revisão com fontes conferidas.");
     if (p.getCommercialPlanId() != null
@@ -409,15 +547,33 @@ public class FinancialPlanService {
           product.getProductTypeDefinition() == null
               ? null
               : product.getProductTypeDefinition().getId();
-      if (!Objects.equals(p.getProductTypeId(), currentType)) {
+      historicalType =
+          !Objects.equals(p.getProductTypeId(), currentType)
+              || (FinancialPlanStructure.forType(product.getProductTypeDefinition())
+                      == FinancialPlanStructure.MONTHLY_SUBSCRIPTION)
+                  != (assumptions.subscription() != null);
+      historicalType |=
+          currentType != null
+              && !historicalType
+              && revisions.hasSubsequentTypeChange(
+                  p.getScopeId(), p.getEnvironment(), p.getRevisionNumber(), currentType);
+      if (historicalType) {
         stale = true;
-        pending.add("Responsável pelo produto: o tipo mudou; revise a aplicabilidade do modelo.");
+        pending.add(
+            "Histórico do tipo anterior. O plano atual usa a estrutura do tipo cadastrado.");
       }
       if (!Objects.equals(assumptions.productVersion(), product.getValidationDefinitionVersion())) {
         stale = true;
         pending.add(
             "Responsável pelo produto: a versão do contrato mudou; atualize as referências financeiras.");
       }
+    }
+    if ("TYPE".equals(p.getScopeKind())) {
+      var type = types.findById(p.getScopeId()).orElseThrow(() -> missing("Tipo"));
+      historicalType =
+          (FinancialPlanStructure.forType(type) == FinancialPlanStructure.MONTHLY_SUBSCRIPTION)
+              != (assumptions.subscription() != null);
+      stale |= historicalType;
     }
     if (List.of("MISSING_INPUTS", "REVIEW_REQUIRED").contains(evaluation.status()))
       pending.addAll(evaluation.blockers());
@@ -466,7 +622,8 @@ public class FinancialPlanService {
             stale,
             List.copyOf(pending),
             p.getFinancialExecutionId() == null && pending.isEmpty(),
-            analysis);
+            analysis,
+            historicalType);
     if (current.canRequestAnalysis()) {
       var product = products.findById(p.getScopeId()).orElseThrow(() -> missing("Produto"));
       var plan =
@@ -492,27 +649,34 @@ public class FinancialPlanService {
   }
 
   /** Confirma proprietário real e serializa revisões no registro de produto ou tipo. */
-  private Long requireOwner(String scope, Long id, boolean lock) {
+  private ProductTypeDefinition requireOwner(String scope, Long id, boolean lock) {
     if ("PRODUCT".equals(scope)) {
       var p =
           (lock ? products.findLockedById(id) : products.findById(id))
               .orElseThrow(() -> missing("Produto"));
-      return p.getProductTypeDefinition() == null ? null : p.getProductTypeDefinition().getId();
+      return p.getProductTypeDefinition();
     }
     if ("TYPE".equals(scope)) {
       var type =
           (lock ? types.findLockedById(id) : types.findById(id)).orElseThrow(() -> missing("Tipo"));
-      return type.getId();
+      return type;
     }
     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escopo inválido.");
   }
 
   /** Recupera a versão comercial persistida sem criar ou inferir uma versão inexistente. */
   private Integer currentVersion(Long planId) {
+    var version = availableVersion(planId);
+    if (version == null) throw conflict("O plano comercial precisa ter uma versão registrada.");
+    return version;
+  }
+
+  /** Consulta a versão disponível sem bloquear a troca de tipo quando o plano está incompleto. */
+  private Integer availableVersion(Long planId) {
     return versions
         .findTopByPlanIdOrderByVersionNumberDesc(planId)
-        .orElseThrow(() -> conflict("O plano comercial precisa ter uma versão registrada."))
-        .getVersionNumber();
+        .map(v -> v.getVersionNumber())
+        .orElse(null);
   }
 
   /** Atualiza custos e receita do plano antes de congelar ou comparar uma revisão financeira. */
@@ -549,7 +713,8 @@ public class FinancialPlanService {
         assumptions.variableCostEnvelope(),
         assumptions.fixedCostEnvelope(),
         baseline,
-        assumptions.discoveryInvestment());
+        assumptions.discoveryInvestment(),
+        assumptions.subscription());
   }
 
   /** Normaliza ausência de custo realizado como zero calculado, sem inferir custo futuro. */

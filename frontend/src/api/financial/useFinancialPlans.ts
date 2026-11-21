@@ -27,7 +27,14 @@ export interface DiscoveryInvestment {
   acceptBelowMinimumMargin: boolean;
   decisionReference: string;
 }
+export type PlanStructure = "PER_SALE" | "MONTHLY_SUBSCRIPTION";
+export interface MonthlySubscription {
+  renewals: number | null;
+  freeUsers: number | null;
+  costPerFreeUserBrl: number | null;
+}
 export interface PlanAssumptions {
+  subscription?: MonthlySubscription | null;
   discoveryInvestment?: DiscoveryInvestment | null;
   preparation?: { supportDays: number; personalizedAi: boolean } | null;
   variableCostEnvelope?: {
@@ -103,7 +110,16 @@ export interface FinancialPlan {
   createdBy: string;
   createdAt: string;
   assumptions: PlanAssumptions;
+  historicalType?: boolean;
   evaluation: {
+    subscriptionMonth?: {
+      newSubscribers: number | null;
+      renewals: number | null;
+      freeUsers: number | null;
+      payingSubscribers: number | null;
+      recurringRevenueBrl: number | null;
+      freeTierCostBrl: number | null;
+    } | null;
     status: string;
     label: string;
     blockers: string[];
@@ -152,6 +168,7 @@ export interface FinancialProjection {
   }>;
 }
 export interface SaveFinancialPlan {
+  expectedProductTypeId?: number | null;
   name: string;
   createdBy: string;
   expectedRevision: number;
@@ -161,11 +178,15 @@ export interface SaveFinancialPlan {
 }
 export interface PlanCatalog {
   products: Array<{ id: number; name: string; productTypeId: number | null }>;
-  productTypes: Array<{ id: number; name: string }>;
+  productTypes: Array<{ id: number; name: string; structure: PlanStructure }>;
   commercialPlans: Array<{ id: number; name: string }>;
 }
 const base = "/api/financial-plans/v1";
 export interface PlanPreparation {
+  expectedProductTypeId: number | null;
+  structure: PlanStructure;
+  subscription: MonthlySubscription | null;
+  newSubscribers: number | null;
   expectedRevision: number;
   sourceRevisionId: number | null;
   commercialPlanId: number | null;
@@ -186,7 +207,12 @@ export type PrepareFinancialPlan = Pick<
   | "productVersion"
   | "supportDays"
   | "personalizedAi"
->;
+  | "expectedProductTypeId"
+> & {
+  subscription?: MonthlySubscription;
+  monthlyPriceBrl?: number | null;
+  newSubscribers?: number | null;
+};
 export function useFinancialPlanPreparation(
   ownerId: number,
   environment: PlanEnvironment,

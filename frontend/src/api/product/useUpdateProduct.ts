@@ -16,6 +16,16 @@ export function useUpdateProduct() {
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["financial-plan-catalog"] });
+      queryClient.invalidateQueries({
+        queryKey: ["financial-plans", "products", product.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["financial-plan-preparation", product.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["execution-finance", product.id],
+      });
     },
   });
 }

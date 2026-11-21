@@ -5,7 +5,17 @@ import java.util.List;
 
 /** Responsabilidade: expor projeções calculadas e causas que impedem recomendar viabilidade. */
 public record PlanEvaluation(
-    String status, String label, List<String> blockers, List<ScenarioResult> scenarios) {
+    String status,
+    String label,
+    List<String> blockers,
+    List<ScenarioResult> scenarios,
+    SubscriptionMonth subscriptionMonth) {
+  /** Mantém a leitura dos cálculos por venda e das revisões anteriores. */
+  public PlanEvaluation(
+      String status, String label, List<String> blockers, List<ScenarioResult> scenarios) {
+    this(status, label, blockers, scenarios, null);
+  }
+
   /** Resultado econômico projetado; campos incalculáveis permanecem nulos. */
   public record ScenarioResult(
       String code,

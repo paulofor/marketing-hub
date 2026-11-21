@@ -23,7 +23,64 @@ public record PlanAssumptions(
     @Valid VariableCostEnvelope variableCostEnvelope,
     @Valid FixedCostEnvelope fixedCostEnvelope,
     @Valid RealizedCostBaseline realizedCostBaseline,
-    @Valid DiscoveryInvestment discoveryInvestment) {
+    @Valid DiscoveryInvestment discoveryInvestment,
+    @Valid MonthlySubscription subscription) {
+  /** Reconstrói premissas anteriores ao planejamento por assinatura como revisões por venda. */
+  public PlanAssumptions(
+      String productVersion,
+      Integer periodDays,
+      LocalDate validUntil,
+      String evidence,
+      AiCost ai,
+      Costs costs,
+      BigDecimal priceBrl,
+      BigDecimal minimumMarginPercent,
+      BigDecimal maximumCacBrl,
+      List<Scenario> scenarios,
+      Preparation preparation,
+      VariableCostEnvelope variableCostEnvelope,
+      FixedCostEnvelope fixedCostEnvelope,
+      RealizedCostBaseline realizedCostBaseline,
+      DiscoveryInvestment discoveryInvestment) {
+    this(
+        productVersion,
+        periodDays,
+        validUntil,
+        evidence,
+        ai,
+        costs,
+        priceBrl,
+        minimumMarginPercent,
+        maximumCacBrl,
+        scenarios,
+        preparation,
+        variableCostEnvelope,
+        fixedCostEnvelope,
+        realizedCostBaseline,
+        discoveryInvestment,
+        null);
+  }
+
+  /** Premissas mensais comuns aos cenários; o volume de cada cenário conta novos assinantes. */
+  public record MonthlySubscription(
+      @Min(0) @Max(10000000) @JsonDeserialize(using = WholeNumberDeserializer.class)
+          Integer renewals,
+      @Min(0) @Max(10000000) @JsonDeserialize(using = WholeNumberDeserializer.class)
+          Integer freeUsers,
+      @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal costPerFreeUserBrl) {
+    /**
+     * Calcula o custo da base gratuita sem exigir tarifa quando a oferta não tem usuários
+     * gratuitos.
+     */
+    public BigDecimal freeTierCost() {
+      if (freeUsers == null) return null;
+      if (freeUsers == 0) return BigDecimal.ZERO;
+      return costPerFreeUserBrl == null
+          ? null
+          : costPerFreeUserBrl.multiply(BigDecimal.valueOf(freeUsers));
+    }
+  }
+
   /** Preserva a construção legada sem herdar autorização de descoberta. */
   public PlanAssumptions(
       String productVersion,

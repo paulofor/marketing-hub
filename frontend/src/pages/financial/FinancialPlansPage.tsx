@@ -5,6 +5,9 @@ import ReactMarkdown from "react-markdown";
 import PageTitle from "../../components/PageTitle";
 import FinancialPlanPlutusDetails from "./FinancialPlanPlutusDetails";
 import FinancialPlanPreparationEditor from "./FinancialPlanPreparationEditor";
+import FinancialSubscriptionFields, {
+  subscriptionInputs,
+} from "./FinancialSubscriptionFields";
 import FinancialContributionTargetEditor from "./FinancialContributionTargetEditor";
 import {
   costLabels,
@@ -64,8 +67,7 @@ export default function FinancialPlansPage() {
       <div>
         <PageTitle>Plano financeiro</PageTitle>
         <p className="text-muted">
-          Defina o suporte e a personalização. O sistema reaproveita as
-          referências financeiras para preparar a revisão do produto.
+          Planeje a receita e os custos do produto conforme o tipo cadastrado.
         </p>
       </div>
       {catalog.isError && (
@@ -179,6 +181,10 @@ function PlanWorkspace({
     scope === "products"
       ? catalog.products.find((p) => p.id === ownerId)?.productTypeId
       : undefined;
+  const currentType = catalog.productTypes.find(
+    (t) => t.id === (scope === "products" ? typeId : ownerId),
+  );
+  const monthly = currentType?.structure === "MONTHLY_SUBSCRIPTION";
   const templates = useFinancialPlans(
     "product-types",
     typeId ?? undefined,
@@ -198,14 +204,16 @@ function PlanWorkspace({
   const [notice, setNotice] = useState("");
   const selected = selectedId
     ? history.data?.find((p) => p.id === selectedId)
-    : history.data?.[0];
+    : history.data?.[0]?.historicalType
+      ? undefined
+      : history.data?.[0];
   const busy =
     save.isPending ||
     analyze.isPending ||
     prepare.isPending ||
     contribution.isPending;
   const startEdit = (source?: FinancialPlan, detailed = false) => {
-    setCopy(source);
+    setCopy(source?.historicalType ? undefined : source);
     setAdvanced(detailed || scope === "product-types");
     setEditing(true);
     setTargetEditing(false);
@@ -262,6 +270,28 @@ function PlanWorkspace({
     );
   return (
     <>
+      {currentType && (
+        <section
+          aria-label="Estrutura atual do plano"
+          className="card card-body"
+        >
+          <h2 className="h5">
+            {monthly ? "Hipótese de assinatura mensal" : "Plano por venda"}
+          </h2>
+          <p className="mb-0">
+            {currentType.name}.{" "}
+            {monthly
+              ? "Planeje o custo da base gratuita e a receita do premium opcional. O cálculo considera apenas um mês e cobra aquisição somente nas novas assinaturas."
+              : "A projeção considera o preço e o custo de cada venda."}
+          </p>
+          {history.data?.[0]?.historicalType && (
+            <p className="mb-0 mt-2">
+              O tipo mudou. A revisão anterior está no histórico. As premissas
+              do novo tipo estão em aberto.
+            </p>
+          )}
+        </section>
+      )}
       <div className="d-flex flex-wrap gap-2 align-items-center">
         <button
           className="btn btn-primary"
@@ -276,7 +306,7 @@ function PlanWorkspace({
         </button>
         {scope === "products" && (
           <>
-            {selected && (
+            {selected && !selected.historicalType && (
               <button
                 className="btn btn-outline-primary"
                 disabled={busy || editing || targetEditing}
@@ -330,16 +360,18 @@ function PlanWorkspace({
               fontes para este produto.
             </p>
             <div className="d-flex gap-2 flex-wrap">
-              {templates.data.map((t) => (
-                <button
-                  key={t.id}
-                  className="btn btn-outline-primary"
-                  disabled={busy || editing || targetEditing || t.stale}
-                  onClick={() => startEdit(t, true)}
-                >
-                  Usar modelo: {t.name} · revisão {t.revision}
-                </button>
-              ))}
+              {templates.data
+                .filter((t) => !t.historicalType)
+                .map((t) => (
+                  <button
+                    key={t.id}
+                    className="btn btn-outline-primary"
+                    disabled={busy || editing || targetEditing || t.stale}
+                    onClick={() => startEdit(t, true)}
+                  >
+                    Usar modelo: {t.name} · revisão {t.revision}
+                  </button>
+                ))}
             </div>
           </div>
         </section>
@@ -353,11 +385,14 @@ function PlanWorkspace({
             value={selected?.id ?? selectedId ?? ""}
             disabled={busy || editing || targetEditing}
             onChange={(e) => {
-              setSelectedId(Number(e.target.value));
+              setSelectedId(Number(e.target.value) || undefined);
               setNotice("");
               analyze.reset();
             }}
           >
+            {history.data[0]?.historicalType && (
+              <option value="">Estrutura atual · sem revisão salva</option>
+            )}
             {history.data.map((p) => (
               <option key={p.id} value={p.id}>
                 Revisão {p.revision} · {p.name} ·{" "}
@@ -367,22 +402,26 @@ function PlanWorkspace({
           </select>
         </label>
       )}
-      {selectedId && !selected && !editing && (
-        <div className="alert alert-warning">
-          A revisão solicitada não pertence a este histórico.
-          {targetEditing && (
-            <button
-              className="btn btn-outline-primary ms-2"
-              onClick={() => {
-                setTargetEditing(false);
-                setSelectedId(undefined);
-              }}
-            >
-              Consultar revisão atual
-            </button>
-          )}
-        </div>
-      )}
+      {selectedId &&
+        (!selected || (targetEditing && selected.historicalType)) &&
+        !editing && (
+          <div className="alert alert-warning">
+            {selected?.historicalType
+              ? "A meta desta revisão é histórica. Use a estrutura atual para registrar uma nova decisão."
+              : "A revisão solicitada não pertence a este histórico."}
+            {targetEditing && (
+              <button
+                className="btn btn-outline-primary ms-2"
+                onClick={() => {
+                  setTargetEditing(false);
+                  setSelectedId(undefined);
+                }}
+              >
+                Consultar revisão atual
+              </button>
+            )}
+          </div>
+        )}
       {notice && (
         <div className="alert alert-success" role="status">
           {notice}
@@ -407,19 +446,24 @@ function PlanWorkspace({
           onCancel={() => setEditing(false)}
         />
       )}
-      {targetEditing && scope === "products" && selected && (
-        <FinancialContributionTargetEditor
-          key={selected.id}
-          source={selected}
-          busy={busy}
-          onSubmit={submitTarget}
-          onCancel={() => setTargetEditing(false)}
-        />
-      )}
+      {targetEditing &&
+        scope === "products" &&
+        selected &&
+        !selected.historicalType && (
+          <FinancialContributionTargetEditor
+            key={selected.id}
+            source={selected}
+            busy={busy}
+            onSubmit={submitTarget}
+            onCancel={() => setTargetEditing(false)}
+          />
+        )}
       {editing && advanced && (
         <PlanEditor
           key={copy?.id ?? "new"}
           source={copy}
+          monthly={monthly}
+          expectedProductTypeId={currentType?.id}
           scope={scope}
           plans={catalog.commercialPlans}
           expectedRevision={history.data?.[0]?.revision ?? 0}
@@ -433,6 +477,11 @@ function PlanWorkspace({
           <section className="card">
             <div className="card-body">
               <h2 className="h4">{selected.name}</h2>
+              {selected.historicalType && (
+                <p className="alert alert-secondary">
+                  Revisão histórica do tipo anterior.
+                </p>
+              )}
               <p>
                 Revisão {selected.revision} ·{" "}
                 {selected.assumptions.productVersion || "Modelo por tipo"} ·{" "}
@@ -463,9 +512,12 @@ function PlanWorkspace({
               </p>
               <p>
                 Período: {selected.assumptions.periodDays ?? "não informado"}{" "}
-                dias · preço: {money(selected.assumptions.priceBrl)} · margem
-                mínima proposta:{" "}
-                {percent(selected.assumptions.minimumMarginPercent)}.
+                dias ·{" "}
+                {selected.assumptions.subscription
+                  ? "mensalidade proposta"
+                  : "preço"}
+                : {money(selected.assumptions.priceBrl)} · margem mínima
+                proposta: {percent(selected.assumptions.minimumMarginPercent)}.
               </p>
               <p>
                 Incluído:{" "}
@@ -475,6 +527,39 @@ function PlanWorkspace({
                 tentativas · teto de IA por cliente:{" "}
                 {money(selected.assumptions.ai.maximumCostPerCustomerBrl)}.
               </p>
+              {selected.evaluation.subscriptionMonth && (
+                <div className="mb-3">
+                  <h3 className="h6">Projeção de um mês</h3>
+                  <p className="mb-1">
+                    Receita recorrente projetada:{" "}
+                    <strong>
+                      {money(
+                        selected.evaluation.subscriptionMonth
+                          .recurringRevenueBrl,
+                      )}
+                    </strong>
+                  </p>
+                  <p className="mb-1">
+                    Novas assinaturas:{" "}
+                    {selected.evaluation.subscriptionMonth.newSubscribers ??
+                      "a definir"}{" "}
+                    · renovações:{" "}
+                    {selected.evaluation.subscriptionMonth.renewals ??
+                      "a definir"}
+                    .
+                  </p>
+                  <p className="mb-0">
+                    Base gratuita ativa:{" "}
+                    {selected.evaluation.subscriptionMonth.freeUsers ??
+                      "a definir"}{" "}
+                    · custo mensal dessa base:{" "}
+                    {money(
+                      selected.evaluation.subscriptionMonth.freeTierCostBrl,
+                    )}
+                    .
+                  </p>
+                </div>
+              )}
               {selected.assumptions.variableCostEnvelope && (
                 <p>
                   Custo variável agregado por cliente:{" "}
@@ -596,7 +681,10 @@ function PlanWorkspace({
             </div>
           )}
           {!!selected.evaluation.scenarios.length && (
-            <ScenarioTable rows={selected.evaluation.scenarios} />
+            <ScenarioTable
+              rows={selected.evaluation.scenarios}
+              monthly={!!selected.assumptions.subscription}
+            />
           )}
           <section className="card">
             <div className="card-body">
@@ -675,9 +763,18 @@ function PlanWorkspace({
   );
 }
 
-function ScenarioTable({ rows }: { rows: ScenarioResult[] }) {
+function ScenarioTable({
+  rows,
+  monthly,
+}: {
+  rows: ScenarioResult[];
+  monthly: boolean;
+}) {
   const metrics: Array<[string, (r: ScenarioResult) => string | number]> = [
-    ["Clientes projetados", (r) => r.customers],
+    [
+      monthly ? "Assinantes pagantes no mês" : "Clientes projetados",
+      (r) => r.customers,
+    ],
     ["Tentativas por cliente", (r) => r.attemptsPerCustomer],
     ["Receita bruta no período", (r) => money(r.grossRevenueBrl)],
     ["Receita líquida no período", (r) => money(r.netRevenueBrl)],
@@ -706,7 +803,9 @@ function ScenarioTable({ rows }: { rows: ScenarioResult[] }) {
       (r) => money(r.resultAfterInvestmentBrl),
     ],
     [
-      "Clientes para recuperar fixos + investimento",
+      monthly
+        ? "Novas assinaturas para recuperar fixos + investimento"
+        : "Clientes para recuperar fixos + investimento",
       (r) => r.breakEvenCustomers ?? "Indisponível",
     ],
     [
@@ -763,6 +862,8 @@ function ScenarioTable({ rows }: { rows: ScenarioResult[] }) {
 
 function PlanEditor({
   source,
+  monthly,
+  expectedProductTypeId,
   scope,
   plans,
   expectedRevision,
@@ -771,6 +872,8 @@ function PlanEditor({
   onCancel,
 }: {
   source?: FinancialPlan;
+  monthly: boolean;
+  expectedProductTypeId?: number;
   scope: PlanScope;
   plans: PlanCatalog["commercialPlans"];
   expectedRevision: number;
@@ -791,10 +894,12 @@ function PlanEditor({
       name: text("name"),
       createdBy: text("createdBy"),
       expectedRevision,
+      expectedProductTypeId,
       commercialPlanId:
         scope === "products" ? number("commercialPlanId") : null,
       templateId: copyingType ? source!.id : (source?.templateId ?? null),
       assumptions: {
+        subscription: monthly ? subscriptionInputs(data) : null,
         discoveryInvestment:
           discovery && scope === "products" && !copyingType
             ? {
@@ -814,7 +919,7 @@ function PlanEditor({
               }
             : null,
         productVersion: text("productVersion") || null,
-        periodDays: number("periodDays"),
+        periodDays: monthly ? 30 : number("periodDays"),
         validUntil: text("validUntil"),
         evidence: text("evidence"),
         priceBrl: number("priceBrl"),
@@ -928,7 +1033,8 @@ function PlanEditor({
               </select>
             </label>
           )}
-          {field("periodDays", "Período contratado (dias)", a?.periodDays)}
+          {!monthly &&
+            field("periodDays", "Período contratado (dias)", a?.periodDays)}
           {field(
             "validUntil",
             "Validade das premissas",
@@ -936,7 +1042,14 @@ function PlanEditor({
             "date",
             true,
           )}
-          {field("priceBrl", "Preço por cliente/pacote (R$)", a?.priceBrl)}
+          {field(
+            "priceBrl",
+            monthly
+              ? "Mensalidade premium proposta (R$)"
+              : "Preço por cliente/pacote (R$)",
+            a?.priceBrl,
+          )}
+          {monthly && <FinancialSubscriptionFields terms={a?.subscription} />}
           {field(
             "minimumMarginPercent",
             "Margem mínima proposta (%)",
@@ -1119,7 +1232,7 @@ function PlanEditor({
                   <div className="row g-3">
                     {field(
                       `${code}-customers`,
-                      `${label}: clientes projetados`,
+                      `${label}: ${monthly ? "novas assinaturas no mês" : "clientes projetados"}`,
                       s?.customers,
                     )}
                     {field(
@@ -1134,7 +1247,7 @@ function PlanEditor({
             },
           )}
         </section>
-        {scope === "products" && !copyingType && (
+        {scope === "products" && !copyingType && !monthly && (
           <section className="border rounded p-3 d-grid gap-3">
             <h3 className="h6">
               Teste de descoberta com investimento limitado

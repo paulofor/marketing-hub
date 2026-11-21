@@ -11,6 +11,7 @@ import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.*;
 import com.marketinghub.planning.service.CommercialPlanExecutionSyncService;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductTypeChanged;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.financialplan.FinancialPlanRevisionRepository;
@@ -28,6 +29,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.*;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -98,17 +100,23 @@ public class FinancialPlanLocalApplication {
             "product", "product_type_definition", "commercial_plan", "financial_agent_execution"))
       jdbc.execute(
           "CREATE TABLE IF NOT EXISTS " + table + " (id BIGINT PRIMARY KEY) ENGINE=InnoDB");
-    for (long id = 95101; id <= 95123; id++) {
+    for (long id = 95101; id <= 95126; id++) {
       jdbc.update("INSERT IGNORE INTO product VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO commercial_plan VALUES (?)", id);
     }
-    jdbc.update("INSERT IGNORE INTO product_type_definition VALUES (951),(952)");
+    jdbc.update("INSERT IGNORE INTO product_type_definition VALUES (951),(952),(953)");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS fixture_plan_version (id BIGINT PRIMARY KEY, version_number INT NOT NULL) ENGINE=InnoDB");
-    for (long id = 95101; id <= 95123; id++)
+        "CREATE TABLE IF NOT EXISTS fixture_plan_version (id BIGINT PRIMARY KEY, version_number INT"
+            + " NOT NULL) ENGINE=InnoDB");
+    for (long id = 95101; id <= 95126; id++)
       jdbc.update("INSERT IGNORE INTO fixture_plan_version VALUES (?,1)", id);
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS fixture_review (id BIGINT AUTO_INCREMENT PRIMARY KEY, plan_id BIGINT, version_number INT, status VARCHAR(30), context_json LONGTEXT, cost DECIMAL(12,6)) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS fixture_review (id BIGINT AUTO_INCREMENT PRIMARY KEY, plan_id"
+            + " BIGINT, version_number INT, status VARCHAR(30), context_json LONGTEXT, cost"
+            + " DECIMAL(12,6)) ENGINE=InnoDB");
+    jdbc.execute(
+        "CREATE TABLE IF NOT EXISTS fixture_product_kind (product_id BIGINT PRIMARY KEY, type_id"
+            + " BIGINT NOT NULL)");
     var lb = new liquibase.integration.spring.SpringLiquibase();
     lb.setDataSource(dataSource);
     lb.setChangeLog("classpath:" + CHANGELOG);
@@ -184,8 +192,19 @@ public class FinancialPlanLocalApplication {
     t.setId(id);
     t.setName("Tipo local " + id);
     t.setInternalName("Mineral sintético " + id);
-    t.setCode(id == 951 ? "LOW_TICKET_DIGITAL_PRODUCT" : "PDE");
+    t.setCode(
+        id == 953 ? "AI_PWA_CONSULTANT_PRODUCT" : id == 951 ? "LOW_TICKET_DIGITAL_PRODUCT" : "PDE");
     return t;
+  }
+
+  /** Recupera o vínculo sintético persistido, inclusive após reiniciar a aplicação da fixture. */
+  private Product fixtureProduct(JdbcTemplate jdbc, long id) {
+    var p = product(id);
+    var kinds =
+        jdbc.queryForList(
+            "SELECT type_id FROM fixture_product_kind WHERE product_id=?", Long.class, id);
+    if (!kinds.isEmpty()) p.setProductTypeDefinition(type(kinds.getFirst()));
+    return p;
   }
 
   /** Simula catálogo, mas mantém lock de produto real para testar concorrência. */
@@ -196,14 +215,16 @@ public class FinancialPlanLocalApplication {
     when(repo.findAll())
         .thenAnswer(
             i ->
-                java.util.stream.LongStream.rangeClosed(95101, 95123)
-                    .mapToObj(this::product)
+                java.util.stream.LongStream.rangeClosed(95101, 95126)
+                    .mapToObj(id -> fixtureProduct(jdbc, id))
                     .toList());
     when(repo.findById(anyLong()))
         .thenAnswer(
             i -> {
               long id = i.getArgument(0);
-              return id >= 95101 && id <= 95123 ? Optional.of(product(id)) : Optional.empty();
+              return id >= 95101 && id <= 95126
+                  ? Optional.of(fixtureProduct(jdbc, id))
+                  : Optional.empty();
             });
     when(repo.findLockedById(anyLong()))
         .thenAnswer(
@@ -220,12 +241,12 @@ public class FinancialPlanLocalApplication {
   ProductTypeDefinitionRepository types(DataSource source) {
     var repo = mock(ProductTypeDefinitionRepository.class);
     var jdbc = new JdbcTemplate(source);
-    when(repo.findAllByOrderByNameAsc()).thenReturn(List.of(type(951), type(952)));
+    when(repo.findAllByOrderByNameAsc()).thenReturn(List.of(type(951), type(952), type(953)));
     when(repo.findById(anyLong()))
         .thenAnswer(
             i -> {
               long id = i.getArgument(0);
-              return id == 951 || id == 952 ? Optional.of(type(id)) : Optional.empty();
+              return id == 951 || id == 952 || id == 953 ? Optional.of(type(id)) : Optional.empty();
             });
     when(repo.findLockedById(anyLong()))
         .thenAnswer(
@@ -441,8 +462,11 @@ public class FinancialPlanLocalApplication {
   static class FixtureController {
     private final JdbcTemplate jdbc;
 
-    /** Recebe banco isolado para controlar respostas sintéticas. */
-    FixtureController(DataSource source) {
+    private final ApplicationEventPublisher events;
+
+    /** Recebe banco e publicador locais para exercitar a transição real do financeiro. */
+    FixtureController(DataSource source, ApplicationEventPublisher events) {
+      this.events = events;
       jdbc = new JdbcTemplate(source);
     }
 
@@ -450,6 +474,20 @@ public class FinancialPlanLocalApplication {
     @GetMapping("/health")
     public Map<String, String> health() {
       return Map.of("status", "local-only");
+    }
+
+    /** Troca o tipo na fixture e entrega o mesmo evento transacional do cadastro de produto. */
+    @PostMapping("/products/{id}/type/{type}")
+    @Transactional
+    public void reclassify(@PathVariable Long id, @PathVariable Long type) {
+      if (id < 95124 || id > 95126 || !Set.of(951L, 952L, 953L).contains(type))
+        throw new IllegalArgumentException("Identidade fora da fixture de reclassificação");
+      jdbc.update(
+          "INSERT INTO fixture_product_kind VALUES (?,?) ON DUPLICATE KEY UPDATE"
+              + " type_id=VALUES(type_id)",
+          id,
+          type);
+      events.publishEvent(new ProductTypeChanged(id, type));
     }
 
     /** Simula conclusão ou falha da avaliação que o worker reportaria. */

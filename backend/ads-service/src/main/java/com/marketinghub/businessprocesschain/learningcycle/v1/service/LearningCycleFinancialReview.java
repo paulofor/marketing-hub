@@ -48,7 +48,7 @@ public class LearningCycleFinancialReview {
         linked.size() == 1
             ? plans
                 .latestForPlan(
-                    "products", cycle.getProductId(), Environment.LIVE, linked.getFirst().getId())
+                    "PRODUCT", cycle.getProductId(), Environment.LIVE, linked.getFirst().getId())
                 .orElse(null)
             : null;
     String cycleUrl =
@@ -79,7 +79,9 @@ public class LearningCycleFinancialReview {
         cycleUrl,
         cycleUrl + "#cycle-decision",
         video.financeUrl(cycle),
-        planUrl,
+        plan != null && plan.historicalType() && "OPEN".equals(cycle.getStatus())
+            ? "/financial/plans?productId=" + cycle.getProductId()
+            : planUrl,
         "/products/" + cycle.getProductId() + "/edit",
         "Estimativas de tarefas vinculadas aos experimentos deste produto, incluindo tentativas com custo informado. Não são fatura conciliada. Custos externos e referências sem vínculo ao experimento não entram neste subtotal. Confira reservas e autorizações anteriores antes de decidir. Aprovar este teto não inicia tarefas nem autoriza mídia ou audiovisual.",
         cycle.getBudgetLimitBrl(),
@@ -94,7 +96,7 @@ public class LearningCycleFinancialReview {
         auth,
         history,
         plan,
-        advice.read(cycle, plan, planUrl),
+        advice.readForType(cycle, product.getProductTypeDefinition(), plan, planUrl),
         budgetSections(cycle, auth, videoAuth == null ? null : videoAuth.budgetLimitUsd()),
         mediaDecision(cycle),
         preparationBalance(cycle, auth, known));

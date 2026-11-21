@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   preparation: {
     data: {
       expectedRevision: 0,
+      expectedProductTypeId: 1,
+      structure: "PER_SALE",
       sourceRevisionId: null,
       commercialPlanId: 7,
       commercialPlanVersion: 1,
@@ -55,7 +57,7 @@ vi.mock("../../api/financial/useFinancialPlans", async (importOriginal) => ({
   useFinancialPlanCatalog: () => ({
     data: {
       products: [{ id: 51, name: "Produto local", productTypeId: 1 }],
-      productTypes: [{ id: 1, name: "Tipo local" }],
+      productTypes: [{ id: 1, name: "Tipo local", structure: "PER_SALE" }],
       commercialPlans: [{ id: 7, name: "Plano sintético" }],
     },
   }),
@@ -399,6 +401,7 @@ describe("Plano financeiro", () => {
     await waitFor(() =>
       expect(mocks.mutation.mutateAsync).toHaveBeenCalledWith({
         expectedRevision: 0,
+        expectedProductTypeId: 1,
         commercialPlanId: 7,
         commercialPlanVersion: 1,
         productVersion: "v1",

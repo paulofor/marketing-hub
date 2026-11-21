@@ -64,8 +64,10 @@ final class FinancialProjectionContext {
 
     Integer milestoneCustomers =
         positiveInteger(validation.at("/successEvidence/firstMilestoneSales"));
-    Integer targetCustomers = exactCustomers(plan.getTargetRevenue(), price);
-    Integer operationalCustomers = exactCustomers(plan.getOperationalRevenueTarget(), price);
+    boolean monthly = assumptions.subscription() != null;
+    Integer targetCustomers = monthly ? null : exactCustomers(plan.getTargetRevenue(), price);
+    Integer operationalCustomers =
+        monthly ? null : exactCustomers(plan.getOperationalRevenueTarget(), price);
     ScenarioResult baseScenario = scenario(financialPlan, "BASE");
     if (aggregate) {
       if (plan.getTargetRevenue() != null && targetCustomers == null)
@@ -170,6 +172,7 @@ final class FinancialProjectionContext {
             : add(assumptions.costs().initialAiBrl(), assumptions.costs().initialOtherBrl());
 
     var context = new LinkedHashMap<String, Object>();
+    if (monthly) context.put("subscriptionMonth", financialPlan.evaluation().subscriptionMonth());
     if (discovery) context.put("discoveryInvestment", assumptions.discoveryInvestment());
     context.put(
         "analysisScope",
@@ -177,7 +180,7 @@ final class FinancialProjectionContext {
             "code",
             aggregate
                 ? "EXISTING_PRODUCT_VERSION_INCREMENTAL_SALE"
-                : "DECLARED_FINANCIAL_PLAN_SCENARIOS",
+                : monthly ? "MONTHLY_SUBSCRIPTION" : "DECLARED_FINANCIAL_PLAN_SCENARIOS",
             "productVersion",
             assumptions.productVersion(),
             "incrementalInitialInvestmentBrl",
@@ -202,13 +205,15 @@ final class FinancialProjectionContext {
         "commercialPlanningBasis",
         map(
             "sourceReference",
-            "commercial-plan:" + plan.getId() + "@v" + commercialPlanVersion,
+            monthly
+                ? "financial-plan:" + financialPlan.id()
+                : "commercial-plan:" + plan.getId() + "@v" + commercialPlanVersion,
             "targetRevenueBrl",
-            plan.getTargetRevenue(),
+            monthly ? null : plan.getTargetRevenue(),
             "operationalRevenueTargetBrl",
-            plan.getOperationalRevenueTarget(),
+            monthly ? null : plan.getOperationalRevenueTarget(),
             "firstMilestoneSales",
-            milestoneCustomers,
+            monthly ? null : milestoneCustomers,
             "baseCustomers",
             baseCustomers,
             "interpretation",
@@ -283,7 +288,9 @@ final class FinancialProjectionContext {
             "contributionAfterCacPerCustomerBrl",
             contribution,
             "operatingBreakEvenCustomers",
-            operatingBreakEven,
+            monthly ? null : operatingBreakEven,
+            "newSubscribersForFixedCostsAndInvestment",
+            monthly && baseScenario != null ? baseScenario.breakEvenCustomers() : null,
             "conservativeCustomers",
             conservativeCustomers,
             "baseCustomers",
@@ -298,8 +305,15 @@ final class FinancialProjectionContext {
                 : price.multiply(BigDecimal.valueOf(baseCustomers)),
             "rule",
             aggregate
-                ? "Conservador testa uma venda abaixo do equilíbrio operacional; BASE usa a meta comercial explícita; otimista mede a recuperação dos custos históricos conhecidos."
-                : "Os três volumes, limites de uso, CAC e investimento pertencem à revisão financeira detalhada."));
+                ? "Conservador testa uma venda abaixo do equilíbrio operacional; BASE usa a meta"
+                    + " comercial explícita; otimista mede a recuperação dos custos históricos"
+                    + " conhecidos."
+                : monthly
+                    ? "Um mês: assinantes pagantes incluem adesões e renovações; CAC apenas nas"
+                        + " adesões. A base gratuita só gera custo. Não extrapolar renovações,"
+                        + " receita ou valor vitalício."
+                    : "Os três volumes, limites de uso, CAC e investimento pertencem à revisão"
+                        + " financeira detalhada."));
     context.put(
         "revalidationTriggers",
         List.of(

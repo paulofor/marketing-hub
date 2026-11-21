@@ -42,6 +42,9 @@ public class FinancialContributionTargetService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "A revisão financeira mudou. Recarregue o contexto antes de registrar a meta.");
+    if (source.historicalType())
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Registre a meta no plano do tipo atual.");
     var a = source.assumptions();
     if (a.minimumMarginPercent() != null
         && a.minimumMarginPercent().compareTo(request.minimumMarginPercent()) == 0) return source;
@@ -60,7 +63,9 @@ public class FinancialContributionTargetService {
             a.preparation(),
             a.variableCostEnvelope(),
             a.fixedCostEnvelope(),
-            a.realizedCostBaseline());
+            a.realizedCostBaseline(),
+            null,
+            a.subscription());
     return plans.create(
         "PRODUCT",
         productId,

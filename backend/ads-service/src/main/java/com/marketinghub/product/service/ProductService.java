@@ -16,6 +16,7 @@ import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductAutomaticExecutionControlEvent;
+import com.marketinghub.product.ProductTypeChanged;
 import com.marketinghub.product.ProductVideoImage;
 import com.marketinghub.product.ProductVideoProviderAvatar;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
@@ -73,11 +74,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -107,6 +110,7 @@ public class ProductService {
   private final JdbcTemplate jdbcTemplate;
   private final ProductProcessPeriodService processPeriodService;
   private final ProductAutomaticExecutionControlEventRepository automaticExecutionEvents;
+  private final ApplicationEventPublisher events;
   private static final BigDecimal BRL_PER_USD = new BigDecimal("5.00");
 
   /** Inicializa o serviço com os repositórios necessários para cadastro de produtos. */
@@ -135,7 +139,8 @@ public class ProductService {
         objectMapper,
         jdbcTemplate,
         null,
-        null);
+        null,
+        event -> {});
   }
 
   /** Inicializa o serviço produtivo com o rastreamento auditável de macroprocessos. */
@@ -153,7 +158,8 @@ public class ProductService {
       ObjectMapper objectMapper,
       JdbcTemplate jdbcTemplate,
       ProductProcessPeriodService processPeriodService,
-      ProductAutomaticExecutionControlEventRepository automaticExecutionEvents) {
+      ProductAutomaticExecutionControlEventRepository automaticExecutionEvents,
+      ApplicationEventPublisher events) {
     this.repository = repository;
     this.accountRepository = accountRepository;
     this.marketNicheRepository = marketNicheRepository;
@@ -167,6 +173,7 @@ public class ProductService {
     this.jdbcTemplate = jdbcTemplate;
     this.processPeriodService = processPeriodService;
     this.automaticExecutionEvents = automaticExecutionEvents;
+    this.events = events;
   }
 
   /** Lista personagens de vídeo cadastrados por provider para um produto. */
@@ -236,13 +243,17 @@ public class ProductService {
     return saved;
   }
 
-  /** Atualiza o produto e registra qualquer transição real de macroprocesso. */
+  /** Atualiza o cadastro e comunica transições reais de macroprocesso ou de tipo do produto. */
   @Transactional
   public Product updateProduct(Long id, CreateProductRequest request) {
-    Product product = getProduct(id);
+    Product product = repository.findLockedById(id).orElseThrow();
     String previousCommercialStatus = product.getCommercialStatus();
+    var oldType = product.getProductTypeDefinition();
     applyRequest(product, request);
     Product saved = repository.save(product);
+    var type = saved.getProductTypeDefinition();
+    if (type != null && (oldType == null || !Objects.equals(oldType.getId(), type.getId())))
+      events.publishEvent(new ProductTypeChanged(id, type.getId()));
     if (processPeriodService != null) {
       processPeriodService.recordTransition(saved, previousCommercialStatus);
     }

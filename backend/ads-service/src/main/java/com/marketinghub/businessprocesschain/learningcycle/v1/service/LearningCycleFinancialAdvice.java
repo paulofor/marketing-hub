@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.FinancialAdvice;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.FinancialAdvice.Figure;
+import com.marketinghub.financialplan.v1.FinancialPlanStructure;
 import com.marketinghub.financialplan.v1.service.getplan.PlanView;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -23,6 +25,32 @@ import org.springframework.stereotype.Component;
 public class LearningCycleFinancialAdvice {
   private final AgentTaskRepository tasks;
   private final LearningCycleJson json;
+
+  /** Conserva a fonte histórica sem apresentar um preço por venda como mensalidade da oferta. */
+  public FinancialAdvice readForType(
+      LearningSalesCycle cycle, ProductTypeDefinition type, PlanView plan, String url) {
+    var original = read(cycle, plan, url);
+    if (!"OPEN".equals(cycle.getStatus())
+        || FinancialPlanStructure.forType(type) != FinancialPlanStructure.MONTHLY_SUBSCRIPTION
+        || plan != null && !plan.historicalType() && plan.assumptions().subscription() != null)
+      return original;
+    if (original.figures().isEmpty() && plan == null) return original;
+    boolean pastPrice =
+        List.of("PREPARATION_ONLY", "APPROVE", "UNAVAILABLE", "STALE").contains(original.status());
+    return new FinancialAdvice(
+        pastPrice ? "STALE" : original.status(),
+        pastPrice ? "Assinatura premium em estudo" : original.title(),
+        pastPrice
+            ? "Consulte o plano mensal para projetar a mensalidade, as adesões e as renovações."
+            : original.recommendation(),
+        original.basis(),
+        original.sourceId(),
+        original.producedAt(),
+        original.sourceUrl(),
+        List.of(),
+        "Valores por venda do parecer anterior não definem o preço da assinatura.",
+        original.fullRationale());
+  }
 
   /**
    * Prioriza a revisão comercial vinculada e usa o planejamento exato como referência explícita.
@@ -162,7 +190,11 @@ public class LearningCycleFinancialAdvice {
     var figures = new ArrayList<Figure>();
     var assumptions = plan.assumptions();
     if (assumptions != null)
-      figures.add(new Figure("Preço por venda", assumptions.priceBrl(), "BRL"));
+      figures.add(
+          new Figure(
+              assumptions.subscription() == null ? "Preço por venda" : "Mensalidade proposta",
+              assumptions.priceBrl(),
+              "BRL"));
     var base =
         plan.evaluation() == null
             ? null
@@ -172,12 +204,19 @@ public class LearningCycleFinancialAdvice {
                 .orElse(null);
     if (base != null) {
       figures.add(
-          new Figure("Sobra por venda, após anúncios", base.contributionAfterCacBrl(), "BRL"));
+          new Figure(
+              assumptions != null && assumptions.subscription() != null
+                  ? "Sobra média por assinante no mês, após aquisição"
+                  : "Sobra por venda, após anúncios",
+              base.contributionAfterCacBrl(),
+              "BRL"));
       figures.add(
           new Figure("Máximo para conquistar uma compra", base.maximumAffordableCacBrl(), "BRL"));
       figures.add(
           new Figure(
-              "Vendas para cobrir investimento e custos fixos do período",
+              assumptions != null && assumptions.subscription() != null
+                  ? "Novas assinaturas para cobrir investimento e custos fixos do mês"
+                  : "Vendas para cobrir investimento e custos fixos do período",
               base.breakEvenCustomers(),
               "COUNT"));
     }

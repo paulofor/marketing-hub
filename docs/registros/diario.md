@@ -33,6 +33,14 @@ Nao usar este diario como changelog tecnico de sistema. Detalhes tecnicos devem 
 - Aprendizado principal do dia: Produto IA personalizado so deve receber trafego quando a cadeia inteira estiver rastreavel e operavel pelo sistema: coleta do lead, pagina clara, criativo aprovado, compra, entrega personalizada, custo de IA e auditoria.
 - Proximo passo recomendado: apos deploy da normalizacao de CTA, reprocessar os criativos do experimento 55, revisar imagem/copy comercialmente e liberar campanha somente se criativo, publico e prontidao de entrega estiverem aprovados.
 
+## 20/11/2026 — Hipótese de assinatura do MUSA/Vega
+
+O cadastro de Vega indica Consultor PWA com IA e deixa o premium sem preço. Na
+tela financeira, R$ 67 e 90 dias ainda vinham de Opala. A homologação local
+separou esse histórico da projeção mensal de Turmalina, distinguindo adesões,
+renovações e custo da base gratuita. Cobrança, vendas e contribuição realizadas
+não fizeram parte do teste. [Memória e critérios de aceite](../homologacao/plano-financeiro-tipo-assinatura-v1.md).
+
 ## 2026-11-21 — Nova hipótese de produto com fabricação terceirizada
 
 - Comparadas 12 oportunidades; coleções para hospedagens superaram embalagens e treinamento na

@@ -10,4 +10,16 @@ public record SavePlanRequest(
     @NotNull @Min(0) Integer expectedRevision,
     Long commercialPlanId,
     Long templateId,
-    @NotNull @Valid PlanAssumptions assumptions) {}
+    @NotNull @Valid PlanAssumptions assumptions,
+    Long expectedProductTypeId) {
+  /** Mantém compatibilidade com o cadastro de revisões anteriores ao vínculo explícito do tipo. */
+  public SavePlanRequest(
+      String name,
+      String createdBy,
+      Integer expectedRevision,
+      Long commercialPlanId,
+      Long templateId,
+      PlanAssumptions assumptions) {
+    this(name, createdBy, expectedRevision, commercialPlanId, templateId, assumptions, null);
+  }
+}

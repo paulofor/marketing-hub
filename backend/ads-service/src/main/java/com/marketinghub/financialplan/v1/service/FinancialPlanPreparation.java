@@ -17,10 +17,21 @@ final class FinancialPlanPreparation {
   /** Reaproveita fontes compatíveis e invalida custos cuja base operacional foi modificada. */
   static PlanAssumptions prepare(
       PlanAssumptions source, PreparePlanRequest request, CommercialPlan plan, BigDecimal price) {
+    return prepare(source, request, plan, price, request.subscription() == null);
+  }
+
+  /** Usa valores comerciais por venda somente quando a sua unidade e o tipo continuam válidos. */
+  static PlanAssumptions prepare(
+      PlanAssumptions source,
+      PreparePlanRequest request,
+      CommercialPlan plan,
+      BigDecimal price,
+      boolean useSaleSources) {
+    boolean monthly = request.subscription() != null;
     var today = LocalDate.now(ZoneOffset.UTC);
     var previous = source == null ? null : source.preparation();
     boolean detailed = hasDetailedVariableSources(source, request.personalizedAi());
-    boolean aggregate = !detailed && plan.getVariableCostPerSaleBrl() != null;
+    boolean aggregate = useSaleSources && !detailed && plan.getVariableCostPerSaleBrl() != null;
     var variableCostEnvelope =
         aggregate
             ? new VariableCostEnvelope(
@@ -116,10 +127,12 @@ final class FinancialPlanPreparation {
                     attempts = old.attemptsPerCustomer();
                   return new Scenario(
                       code,
-                      old == null ? null : old.customers(),
+                      monthly && code == ScenarioCode.BASE
+                          ? request.newSubscribers()
+                          : old == null ? null : old.customers(),
                       attempts,
                       old == null || old.cacBrl() == null
-                          ? plan.getExpectedCacBrl()
+                          ? (useSaleSources ? plan.getExpectedCacBrl() : null)
                           : old.cacBrl());
                 })
             .toList();
@@ -132,9 +145,15 @@ final class FinancialPlanPreparation {
             + plan.getId()
             + ", versão "
             + request.commercialPlanVersion()
-            + ". Preço e CAC obtidos das referências cadastradas; custos sem fonte permanecem pendentes."
-            + " O suporte não altera prazo de acesso nem contratos vendidos."
-            + " O período econômico é distinto do suporte; quando ausente, a proposta inicial é 30 dias."
+            + (useSaleSources
+                ? ". Preço e CAC obtidos das referências cadastradas."
+                : ". Premissas por venda do plano comercial não foram importadas.")
+            + (monthly
+                ? " Assinatura mensal em estudo: preço, adesões e renovações são hipóteses."
+                : "")
+            + " Custos sem fonte permanecem pendentes. O suporte não altera prazo de acesso nem"
+            + " contratos vendidos. O período econômico é distinto do suporte; quando ausente, a"
+            + " proposta inicial é 30 dias."
             + (aggregate
                 ? " O custo variável por venda do plano comercial foi preservado como envelope agregado;"
                     + (fixedCostEnvelope == null
@@ -152,16 +171,42 @@ final class FinancialPlanPreparation {
         evidence(source, note),
         ai,
         c,
-        price,
+        monthly ? request.monthlyPriceBrl() : price,
         source == null ? null : source.minimumMarginPercent(),
         source != null && source.maximumCacBrl() != null
             ? source.maximumCacBrl()
-            : plan.getExpectedCacBrl(),
+            : useSaleSources ? plan.getExpectedCacBrl() : null,
         scenarios,
         new Preparation(request.supportDays(), request.personalizedAi()),
         variableCostEnvelope,
         fixedCostEnvelope,
-        null);
+        null,
+        null,
+        request.subscription());
+  }
+
+  /** Inicia uma revisão estrutural sem atribuir ao operador valores, escolhas ou autorizações. */
+  static PlanAssumptions typeDraft(String version, boolean monthly) {
+    return new PlanAssumptions(
+        version,
+        30,
+        LocalDate.now(ZoneOffset.UTC).plusDays(7),
+        "Estrutura atualizada pelo tipo cadastrado. Preço, custos e volumes aguardam fontes desta"
+            + " oferta.",
+        emptyAi(null),
+        new Costs(null, null, null, null, null, null, null, null, null, null, null, null),
+        null,
+        null,
+        null,
+        Arrays.stream(ScenarioCode.values())
+            .map(code -> new Scenario(code, null, null, null))
+            .toList(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        monthly ? new MonthlySubscription(null, null, null) : null);
   }
 
   /**

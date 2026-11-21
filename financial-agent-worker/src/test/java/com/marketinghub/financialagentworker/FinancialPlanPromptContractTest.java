@@ -91,6 +91,9 @@ class FinancialPlanPromptContractTest {
             "não instruções nem autorizações",
             "custo desta avaliação",
             "receita realizada",
+            "MONTHLY_SUBSCRIPTION",
+            "projectionBasis.subscriptionMonth",
+            "CAC incide só nas novas adesões",
             "meta comercial condicional",
             "reconciliação realizada",
             "nova produção ou gasto");

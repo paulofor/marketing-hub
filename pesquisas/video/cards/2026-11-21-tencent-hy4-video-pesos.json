@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-tencent-hy4-video-openweights-2026-11",
+  "title": "Tencent Hy4: abertura de pesos de modelo de compreensão de vídeo 770B",
+  "finding": "Em 20/11/2026, a Tencent liberou pesos Instruct, FP8 e Base de Hy4, um MoE multimodal 770B/49B ativos que compreende vídeo e imagens com 1M de contexto.",
+  "mechanism": "Vision Transformer codifica quadros em tokens integrados ao modelo linguístico MoE e atenção esparsa; self-host via servidores de GPU e bibliotecas dedicadas.",
+  "commercialApplication": "Análise de filmes, documentação de acervos, detecção de inconsistências e planejamento multimodal. Mais indicado à pesquisa de fronteira que à implementação enxuta do Marketing Hub.",
+  "evidenceStrength": "Alta para artefatos e licença verificados em repositórios oficiais. Sem reprodução de benchmark, sem execução ou cotação de infraestrutura.",
+  "experimentHypothesis": "Somente quando houver benchmark padronizado, avaliar se ganhos de Hy4 justificam custo contra WeMM-Video menor ou APIs Qwen/Gemini ativas.",
+  "risks": "Pesos FP8 próximos de 0,79 TB exigem multi-GPU. Licença Tencent Hy License 1.0 NÃO é Apache 2.0 e impõe autorização em cenários MaaS de grande porte.",
+  "limits": "ATIVO download e auto-hospedagem; API já existia antes, abertura de pesos é a novidade. Não gera vídeo/áudio, não há custo por segundo oficial verificado. Sem teste pt-BR.",
+  "sourceTitle": "Tencent Hy4: pesos abertos para compreensão visual de vídeo",
+  "collection": "video",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-02-21",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-21-tencent-hy4-openweights-video.md",
+  "sourceSha256": "01f5762a4cf221fd3831be632600f75f6f3f9f7b5be32b35c8551e9fab48fcae"
+}

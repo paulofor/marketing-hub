@@ -1,0 +1,18 @@
+{
+  "cardKey": "imaginacao-auditiva-recompensa-musical",
+  "collection": "prazer-audio-visual",
+  "title": "Considerar diferenças individuais no prazer musical",
+  "finding": "Cinco experimentos encontraram associação entre imaginação mental e sensibilidade à recompensa musical. Entre 25 pessoas com afantasia, 44% atingiram critério de anedonia musical; ligação com ausência de imagética auditiva foi replicada em outra amostra.",
+  "mechanism": "A imaginação auditiva pode ajudar memória de trabalho e antecipação de sequências musicais; essa mediação não foi testada causalmente nem foi medida dopamina.",
+  "commercialApplication": "Oferecer controle de som e comparar escolha pessoal, trilha genérica e recomendação por IA em vídeos/experiências, medindo preferências declaradas sem diagnosticar usuários.",
+  "evidenceStrength": "Moderada para associação em amostras estudadas com replicação parcial; baixa para causalidade e eficácia de personalização comercial.",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-01-05",
+  "experimentHypothesis": "Em teste consentido com trilhas equivalentes em volume e duração, opção de escolha pessoal reduzirá rejeição e aumentará agrado para parte dos usuários frente a trilha fixa; benefício de IA deverá superar controle de escolha.",
+  "risks": "Não inferir ou rotular afantasia, anauralia ou anedonia musical; evitar perfilamento sensível, exclusão e falsa promessa de prazer universal.",
+  "limits": "Estudos correlacionais e grupos pequenos selecionados; não testaram a intervenção proposta, dopamina, vídeo comercial, memória factual ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-21-imaginacao-auditiva-recompensa-musical-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Imagética mental e recompensa musical",
+  "sourceSha256": "3150f7ceac6ba700b94c0f256c209a66714de1ff931c7337d936a3d8b564ef76"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "autossemelhanca-facial-avaliacao-video",
+  "collection": "prazer-audio-visual",
+  "title": "Não presumir que rostos semelhantes ao espectador elevam agrado",
+  "finding": "Experimento online pré-registrado (60 pessoas, 480 avaliações de vídeos) não encontrou aumento consistente de avaliações positivas quando o rosto do interlocutor foi editado para se parecer com o espectador.",
+  "mechanism": "Sinais visuais autorreferentes podem interagir com contexto e autoconceito; associação exploratória com autoestima não demonstra mediação nem efeito universal.",
+  "commercialApplication": "Em vídeos com avatares sintéticos, validar personagens com espectadores consentidos; não usar automaticamente a face do usuário como estratégia de simpatia.",
+  "evidenceStrength": "Moderada-baixa para ausência de efeito médio consistente no experimento; baixa para moderadores exploratórios ou efeitos comerciais.",
+  "publishedOn": "2026-11-21",
+  "validUntil": "2027-01-05",
+  "experimentHypothesis": "Avatares com aparências diversas não apresentarão vantagem uniforme de agrado ou credibilidade só por similaridade com o espectador; medir rejeição, conforto e confiança antes de adoção.",
+  "risks": "Uso indevido de rostos, manipulação de identidade, coleta biométrica não consentida, efeito de estranheza e discriminação.",
+  "limits": "Amostra pequena; oito vídeos por participante; variação de autoestima exploratória; não testou anúncios, receita, retenção ou prazer neurofisiológico.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-21-autossemelhanca-facial-avaliacao-video-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Autossemelhança facial e vídeos",
+  "sourceSha256": "d66f31b730d34c6fbf64fd62127da2c85f51d3e67bbf1cf8cd357e82ea3c6b62"
+}

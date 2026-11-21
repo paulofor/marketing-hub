@@ -661,3 +661,14 @@ complementados usam MySQL 5.7 e navegador, com fonte e hash. A hipótese de melh
 repetição paga e tempo bloqueado por prova ausente; o ganho comercial ainda não foi medido.
 A adoção exige identidade/hash/data coerentes e novo aceite independente. Divergência de
 experiência ou risco funcional volta ao contrato de correção aplicável, sem liberar gasto.
+
+### Cobertura local do catálogo comportamental — 21/11/2026
+
+Ao criar ou versionar prompt/schema de um agente, registrar o arquivo no catálogo administrativo
+vigente (`backend/ads-service/src/main/resources/agent-harness/agent-harness-v3.json`), com agente,
+versão, responsabilidade e caminho exatos. Validar localmente `AgentHarnessCatalogTest` junto dos
+testes comportamentais do executor antes do PR: estes últimos não verificam o inventário exposto
+pela API de agentes. Reutilizar a cópia de recursos do backend e o teste de cobertura existentes;
+não duplicar conteúdo nem afrouxar a conferência. A ausência dos quatro artefatos de Turmalina foi
+reproduzida, corrigida e validada em 17 casos, preservando arquivos anteriores e seus hashes.
+Evidência: [evolução Turmalina](../homologacao/turmalina-value-delivery-v1.md).

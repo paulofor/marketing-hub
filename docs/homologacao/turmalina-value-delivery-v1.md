@@ -111,3 +111,19 @@ independentes dessa pendência. Não foi retomada a execução 102 nem consumido
 As provas recuperáveis estão declaradas em `.codex/delivery-artifacts.json`, sem incluir dumps de
 produção, anexo privado, credenciais ou perfis. Fontes, testes, contratos e relatório são versionáveis.
 Os testes comprovam comportamento e preservação; impacto sobre vendas/contribuição segue desconhecido.
+
+## Complemento detectado pelo CI completo
+
+O run `44852289158` executou 6.051 testes do backend e apontou uma falha no inventário
+`AgentHarnessCatalogTest`: os três prompts novos e o schema de Dédalo não estavam declarados no
+catálogo administrativo dos agentes. A falha foi reproduzida localmente (17 casos, uma falha).
+A causa foi a omissão do registro, não o comportamento dos prompts. Os quatro artefatos foram
+vinculados aos respectivos agentes em `agent-harness-v3.json`, preservando o mecanismo de
+empacotamento existente. O teste de cobertura já existente permanece íntegro: os 17 casos passaram localmente após o
+ajuste, junto de 12 testes do contrato de empacotamento. O complemento segue no mesmo PR #5854.
+Não foi criada infraestrutura paralela.
+
+O job de processos automáticos do run `44852289269` apresentou a mesma falha de catálogo
+(6.026 casos, uma falha); o artefato `backend-tests.log` confirmou a causa comum, sem hipótese de
+instabilidade. Os 12 testes de empacotamento e a análise `bash -n`/ShellCheck do runner passaram.
+A rotina local de registro e validação de novos prompts foi registrada no cânone de aperfeiçoamento.

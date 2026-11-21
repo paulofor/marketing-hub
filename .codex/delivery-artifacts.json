@@ -10,6 +10,9 @@
     ".codex/turmalina-value-flow/dedalo-final-tests.log",
     ".codex/turmalina-value-flow/psique-tests.log",
     ".codex/turmalina-value-flow/temis-final-tests.log",
-    ".codex/turmalina-value-flow/liquibase-static.log"
+    ".codex/turmalina-value-flow/liquibase-static.log",
+    ".codex/turmalina-value-flow/harness-catalog-before.log",
+    ".codex/turmalina-value-flow/harness-catalog-after.log",
+    ".codex/turmalina-value-flow/package-contract-tests.log"
   ]
 }

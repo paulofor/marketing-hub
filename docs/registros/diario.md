@@ -44,3 +44,7 @@ Não migrada a execução 102/ciclo 22 nem iniciada inferência paga. Registros 
 Validação Turmalina: 176 verificações selecionadas no backend e suítes dos três workers sem falhas,
 com migração MySQL 5.7 e telas desktop/mobile. Bloqueio externo de publicação: comprovação de
 revogação/substituição do incidente de credenciais anterior; preparação local concluída sem gasto.
+
+O CI completo identificou ausência dos prompts Turmalina no inventário administrativo dos agentes.
+A falha foi reproduzida localmente e os quatro artefatos foram registrados no catálogo existente;
+o ajuste permanece no PR #5854, sem alterar o teste que detectou a omissão.

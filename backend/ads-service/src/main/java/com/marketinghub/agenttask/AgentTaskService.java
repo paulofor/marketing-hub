@@ -158,6 +158,12 @@ public class AgentTaskService {
   private final OpenAiPricingService pricingService;
   private final Clock clock;
   private final MarketStrategicContextProvider marketStrategicContextProvider;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   private final AgentTaskTargetContextProvider taskTargetContextProvider;
 
   @Autowired(required = false)
@@ -3105,7 +3111,7 @@ public class AgentTaskService {
   /**
    * Consolida resultados vigentes por responsável e atividade, ficha e fontes comerciais; preserva
    * histórico na auditoria, inclui fontes adotadas pelo ciclo exato e evita repassar bloqueios
-   * superados ou conclusões invalidadas.
+   * superados ou conclusões invalidadas; inclui pendências e provas históricas da continuidade.
    */
   private String processContext(AgentTask task) {
     try {
@@ -3127,6 +3133,22 @@ public class AgentTaskService {
       List<Map<String, Object>> completedHumanActivities = completedHumanActivities(task);
       Map<String, Object> context = new java.util.LinkedHashMap<>();
       context.put("handoffContractVersion", "AGENT_HANDOFF_CONTEXT_V1");
+      if (versionContinuity != null) {
+        var continuity =
+            versionContinuity.revalidationContext(
+                task.getSourceReference(), task.getProcessDefinition().getId());
+        context.put("versionContinuity", continuity);
+        if (!continuity.isNull())
+          context.put(
+              "historicalContinuityArtifacts",
+              repository
+                  .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+                      continuity.path("binding").path("sourceProcessId").asLong(),
+                      task.getSourceReference())
+                  .stream()
+                  .map(this::agentActivityContext)
+                  .toList());
+      }
       if (modelingContext != null)
         context.put(
             "referenceModeling",

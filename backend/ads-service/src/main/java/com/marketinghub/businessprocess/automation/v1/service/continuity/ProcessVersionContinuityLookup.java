@@ -98,6 +98,36 @@ public class ProcessVersionContinuityLookup {
         .orElse(java.util.Set.of());
   }
 
+  /** Entrega o recibo ao executor do destino exato como contexto histórico, nunca como aceite. */
+  public com.fasterxml.jackson.databind.JsonNode revalidationContext(
+      String reference, Long target) {
+    if (reference == null || !reference.matches("experiment:[1-9][0-9]*")) return json.nullNode();
+    var cycle = cycles.findByExperimentId(Long.valueOf(reference.substring(11)));
+    if (cycle.isEmpty()) return json.nullNode();
+    for (var event :
+        events.continuations(cycle.get().getProductId(), cycle.get().getId(), reference)) {
+      try {
+        var detail = json.readTree(event.getDetailsJson());
+        if (detail.path("binding").path("targetProcessId").asLong() == target) {
+          var context = json.createObjectNode();
+          context.put("policyVersion", "PARTIAL_CONTINUITY_V1");
+          context.put(
+              "instruction",
+              "Preservar código e artefatos válidos; complementar somente critérios pendentes. Aceites da origem são históricos e não comprovam requisitos novos. Submeter nova prova aos gates e responsáveis existentes.");
+          context.set("binding", detail.path("binding"));
+          context.set("outputs", detail.path("outputs"));
+          context.set("revalidation", detail.path("revalidation"));
+          return context;
+        }
+      } catch (Exception ex) {
+        log.error(
+            "Falha ao ler contexto de revalidação eventId={} target={}", event.getId(), target, ex);
+        throw new IllegalStateException("Contexto de revalidação inválido.", ex);
+      }
+    }
+    return json.nullNode();
+  }
+
   /** Projeta a identidade adotada para diagnósticos, sem mudar tarefas nem seus resultados. */
   public java.util.List<com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot>
       project(

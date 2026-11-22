@@ -42,6 +42,52 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /** Entrega artefatos históricos para ajuste sem promovê-los a resultados aceitos do destino. */
+  @Test
+  void handsOffPartialContinuityAsHistoricalContext() throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var lookup =
+        mock(
+            com.marketinghub.businessprocess.automation.v1.service.continuity
+                .ProcessVersionContinuityLookup.class);
+    ReflectionTestUtils.setField(service, "versionContinuity", lookup);
+    var owner = agent(7L, "landing-generator", "Dédalo");
+    var origin = process("RETIRED", "Dédalo");
+    origin.setId(601L);
+    var target = process("PUBLISHED", "Dédalo");
+    target.setId(701L);
+    var original = processTask(9001L, owner, origin, "journey", "COMPLETED");
+    original.setResultJson("{\"artifact\":\"preservar-codigo\"}");
+    var next = processTask(9002L, owner, target, "journey", "PENDING");
+    original.setSourceReference("experiment:801");
+    next.setSourceReference("experiment:801");
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            601L, "experiment:801"))
+        .thenReturn(List.of(original));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            701L, "experiment:801"))
+        .thenReturn(List.of(next));
+    when(lookup.revalidationContext("experiment:801", 701L))
+        .thenReturn(
+            new ObjectMapper()
+                .readTree(
+                    "{\"binding\":{\"sourceProcessId\":601},\"revalidation\":[{\"activityId\":\"journey\"}]}"));
+    String raw = ReflectionTestUtils.invokeMethod(service, "processContext", next);
+    var context = new ObjectMapper().readTree(raw);
+    assertThat(context.path("completedActivities")).isEmpty();
+    assertThat(
+            context
+                .path("historicalContinuityArtifacts")
+                .get(0)
+                .path("result")
+                .path("artifact")
+                .asText())
+        .isEqualTo("preservar-codigo");
+    assertThat(original.getStatus()).isEqualTo("COMPLETED");
+    verify(repository, never()).save(any());
+  }
+
   /** Recompõe duas identidades sem duplicar custos, origem, requisição ou aprovação. */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {767L, 1767L})

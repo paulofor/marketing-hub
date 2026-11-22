@@ -21,6 +21,8 @@
     "artifacts/execution-finance",
     ".codex/waiver-test/run-remaining.py",
     ".codex/waiver-test/run-batches.py",
-    ".codex/waiver-test/mysql-relay.py"
+    ".codex/waiver-test/mysql-relay.py",
+    "artifacts/partial-continuity",
+    "artifacts/process-version-continuity"
   ]
 }

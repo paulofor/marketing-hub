@@ -63,7 +63,7 @@ let browser;
           const body = request.postDataJSON();
           if (
             body.fingerprint !== "synthetic-v1" ||
-            !body.compatibilityEvidence["step-0"]
+            Object.keys(body.compatibilityEvidence).length !== 0
           )
             throw Error("Conferência ausente");
           saved = true;
@@ -95,6 +95,15 @@ let browser;
               sourceContract: "Contrato anterior",
               targetContract: "Contrato publicado",
               evidence: "Prova sintética " + n,
+              owner: "Dédalo",
+              taskIds: [800 + n],
+              destinationStatus: n === 0 ? "REVALIDATION_PENDING" : "ACCEPTED",
+              criteria: [
+                {
+                  description: "Critério novo exige prova executada",
+                  status: "REVALIDATION_PENDING",
+                },
+              ],
             })),
           },
         });
@@ -110,9 +119,6 @@ let browser;
           name: "Preparar continuidade sem executar",
         }),
       ).toBeDisabled();
-      await page
-        .getByLabel("Evidência de compatibilidade de Entrega 1")
-        .fill("Prova sintética 0 confere o requisito novo.");
       await page
         .getByLabel("Responsável pela conferência")
         .fill("Operador sintético");
@@ -132,6 +138,9 @@ let browser;
       await page.reload();
       await expect(
         page.getByRole("link", { name: "Abrir continuidade #901" }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(/Revalidação pendente — responsável: Dédalo/),
       ).toBeVisible();
       if (posts !== 1) throw Error("Comando duplicado");
       if (

@@ -11843,3 +11843,12 @@ Matriz e limites: docs/homologacao/vega-bloqueio-resumo-humano-2026-11-17.md.
   recuperação, isolamento e pausa financeira. Não alteram regras de arquitetura.
 - Limite: testes sintéticos não comprovam vendas nem autorizam retomada paga. Mudança estrutural
   exige revalidação própria; nota do operador não substitui contrato de integração.
+
+### Recorrência do LOOP-BPM-CICLO-RETIRADO-SEM-CONTINUIDADE — reuso parcial
+
+Em 22/11, a consulta do Vega confirmou oito aceites históricos com descrição alterada e nenhuma
+sucessora. A exigência de oito declarações tratava preparação e compatibilidade integral como
+uma só decisão. O novo recibo separa preservação, aceite compatível e revalidação pendente.
+O harness passa a rejeitar nota genérica, verificar sete aceites e uma pendência, oito pendências,
+outra identidade e contexto histórico separado das provas dos gates. Nenhuma prova funcional do
+Vega é fabricada pelos testes de infraestrutura. Validação em `docs/homologacao/partial-process-continuity-2026-11-22.md`.

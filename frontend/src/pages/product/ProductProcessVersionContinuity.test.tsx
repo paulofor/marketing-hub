@@ -28,6 +28,12 @@ const preview = {
     sourceContract: '{"description":"Aceite original"}',
     targetContract: '{"description":"Aceite atual"}',
     evidence: `Prova ${n}`,
+    taskIds: [300 + n],
+    owner: "Dédalo",
+    destinationStatus: n === 0 ? "REVALIDATION_PENDING" : "ACCEPTED",
+    criteria: [
+      { description: "Novo requisito", status: "REVALIDATION_PENDING" },
+    ],
   })),
 };
 function mount(productId = 4, cycleId = 22) {
@@ -67,17 +73,16 @@ it("preserva oito entregas, exige conferir alteração e prepara sem disparar re
     name: "Preparar continuidade sem executar",
   });
   expect(button).toBeDisabled();
-  fireEvent.change(screen.getByLabelText("Responsável pela conferência"), {
+  fireEvent.change(screen.getByLabelText("Responsável pela conferência *"), {
     target: { value: "Operador sintético" },
   });
-  fireEvent.change(screen.getByLabelText("Motivo da continuidade"), {
+  fireEvent.change(screen.getByLabelText("Motivo da continuidade *"), {
     target: { value: "Continuar construção" },
   });
-  expect(button).toBeDisabled();
-  fireEvent.change(
-    screen.getByLabelText("Evidência de compatibilidade de Entrega 0"),
-    { target: { value: "Prova 0 satisfaz o novo aceite" } },
-  );
+  expect(button).toBeEnabled();
+  expect(
+    screen.getByText(/Revalidação pendente — responsável: Dédalo/),
+  ).toBeInTheDocument();
   fireEvent.click(button);
   expect(
     await screen.findByRole("link", { name: "Abrir continuidade #900" }),
@@ -88,7 +93,7 @@ it("preserva oito entregas, exige conferir alteração e prepara sem disparar re
       fingerprint: "snapshot",
       operatorName: "Operador sintético",
       reason: "Continuar construção",
-      compatibilityEvidence: { "step-0": "Prova 0 satisfaz o novo aceite" },
+      compatibilityEvidence: {},
     },
     { params: { learningCycleId: 22 }, timeout: 45000 },
   );
@@ -119,11 +124,11 @@ it("mantém falha da gravação visível sem anunciar sucesso", async () => {
   vi.mocked(axios.get).mockResolvedValue({ data: { ...preview, outputs: [] } });
   vi.mocked(axios.post).mockRejectedValue(new Error("falha"));
   mount();
-  await screen.findByLabelText("Responsável pela conferência");
-  fireEvent.change(screen.getByLabelText("Responsável pela conferência"), {
+  await screen.findByLabelText("Responsável pela conferência *");
+  fireEvent.change(screen.getByLabelText("Responsável pela conferência *"), {
     target: { value: "Operador" },
   });
-  fireEvent.change(screen.getByLabelText("Motivo da continuidade"), {
+  fireEvent.change(screen.getByLabelText("Motivo da continuidade *"), {
     target: { value: "Motivo" },
   });
   fireEvent.click(

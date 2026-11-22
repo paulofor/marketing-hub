@@ -75,3 +75,12 @@ dispensa 140, gastos desconhecidos e limites não foram alterados. A capacidade 
 recomeçar um produto por mudança de versão do BPM; potencial de reduzir retrabalho, sem resultado
 financeiro medido. Homologação e entrega registradas em
 `docs/homologacao/vega-process-continuity-2026-11-22.md`.
+
+## 22/11/2026 — Preparação com reaproveitamento parcial
+
+Continuação da solicitação 4001: separação de aceites compatíveis e revalidação pendente,
+preservando os artefatos do processo histórico. Vega/ciclo22/execução102 segue pausado,
+sem sucessora criada nesta entrega técnica. O contexto dos agentes distingue resultados
+históricos de provas aceitas pelo destino. Registro de causa, matriz, limites e evidências:
+`docs/homologacao/partial-process-continuity-2026-11-22.md`. Sem mudança de limite, dispensa,
+mídia, cobrança ou produção audiovisual; benefício comercial ainda não medido.

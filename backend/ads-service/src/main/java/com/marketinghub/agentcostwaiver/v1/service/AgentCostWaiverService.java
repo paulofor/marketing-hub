@@ -27,7 +27,7 @@ public class AgentCostWaiverService {
   private final LearningCycleJson json;
   private final LearningSalesCycleRepository cycles;
   private final ProductRepository products;
-  private final Clock clock;
+  private final Clock clock = Clock.systemUTC();
   private final AgentCostWaiverEventRepository waiverEvents;
 
   /** Consulta apenas o contexto existente do produto e cadeia solicitados. */

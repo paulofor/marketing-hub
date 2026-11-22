@@ -114,3 +114,21 @@ condicional preexistente. O teste MySQL da dispensa foi executado separadamente
 e passou, sem exclusão.
 A exclusão foi validatesCompletePreservedResponseWhenProvided, que depende de
 exportações integrais opcionais de Atena; não se aplica à dispensa desta solicitação.
+
+A suíte completa do CI identificou a mesma dependência ausente de Clock tanto no
+backend quanto no runner de processos. O serviço passou a manter seu relógio UTC
+local, sem exigir um bean global. Foram consideradas a configuração global,
+a injeção opcional e o relógio local; o último preserva o isolamento e evita ampliar
+o contrato de inicialização de outros módulos. Um teste de contexto Spring protege
+a inicialização sem Clock externo; a data explícita dos testes do ledger continua
+determinística. A validação local foi ampliada para o backend completo antes do push.
+
+Validação completa local consolidada: 784 suítes, 6064 casos,
+zero falhas/erros no resultado final e 40 exclusões condicionais previstas nas próprias suítes.
+A rodada única excedeu a memória de 3,5 GiB da sandbox; os casos já aprovados foram
+preservados e somente os restantes foram concluídos em cinco lotes de JVM nova.
+As seis suítes MySQL que recusaram a porta temporária 13367 passaram pela porta
+local 3306, encaminhada exclusivamente ao MySQL efêmero da mesma topologia.
+Nenhum teste, proteção de destino ou configuração produtiva foi relaxado.
+A regressão de inicialização sem Clock global passou. Resultados por suíte e logs
+estão em artifacts/legacy-cost-waivers/full-backend-summary.json e arquivos associados.

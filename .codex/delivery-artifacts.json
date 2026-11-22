@@ -18,6 +18,9 @@
     "artifacts/vega-financeiro-tipo-20261120",
     "artifacts/legacy-cost-waivers",
     ".codex/waiver-test/compose.yml",
-    "artifacts/execution-finance"
+    "artifacts/execution-finance",
+    ".codex/waiver-test/run-remaining.py",
+    ".codex/waiver-test/run-batches.py",
+    ".codex/waiver-test/mysql-relay.py"
   ]
 }

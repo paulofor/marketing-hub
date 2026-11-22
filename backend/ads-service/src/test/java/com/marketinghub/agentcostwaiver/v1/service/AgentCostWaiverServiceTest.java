@@ -35,8 +35,22 @@ class AgentCostWaiverServiceTest {
           json,
           mock(LearningSalesCycleRepository.class),
           mock(ProductRepository.class),
-          java.time.Clock.systemUTC(),
           waiverEvents);
+
+  /** Inicializa o serviço no Spring sem exigir um bean global de relógio. */
+  @Test
+  void startsWithoutGlobalClockBean() {
+    new org.springframework.boot.test.context.runner.ApplicationContextRunner()
+        .withBean(CyclePreparationCostRepository.class, () -> costs)
+        .withBean(LearningSalesCycleEventRepository.class, () -> events)
+        .withBean(LearningCycleJson.class, () -> json)
+        .withBean(
+            LearningSalesCycleRepository.class, () -> mock(LearningSalesCycleRepository.class))
+        .withBean(ProductRepository.class, () -> mock(ProductRepository.class))
+        .withBean(AgentCostWaiverEventRepository.class, () -> waiverEvents)
+        .withUserConfiguration(AgentCostWaiverService.class)
+        .run(context -> assertThat(context).hasSingleBean(AgentCostWaiverService.class));
+  }
 
   /** Reproduz a seleção parcial para identidades distintas e reabre o recibo sem duplicação. */
   @ParameterizedTest
@@ -77,7 +91,6 @@ class AgentCostWaiverServiceTest {
                 json,
                 mock(LearningSalesCycleRepository.class),
                 mock(ProductRepository.class),
-                java.time.Clock.systemUTC(),
                 waiverEvents)
             .read(productId);
     assertThat(reopened.blockingTasks()).isEqualTo(2);

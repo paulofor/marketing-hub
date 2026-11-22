@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-copilot-clipchamp-video-frontier-2026-11",
+  "title": "Microsoft Copilot no Clipchamp — criação de vídeo a partir de documentos",
+  "finding": "Microsoft abriu em 17/11/2026 um preview Frontier para gerar e revisar vídeos diretamente de Word, PowerPoint, PDF e prompts no Clipchamp, anunciado em 20/11.",
+  "mechanism": "Copilot orquestra arquivos corporativos e renderização de vídeo via chat, permitindo refinamentos e exportação MP4 com selo IA.",
+  "commercialApplication": "Transformar documentos internos em vídeos de onboarding, treinamento, explicação e comunicação institucional.",
+  "evidenceStrength": "Alta para a disponibilidade e condições documentadas; resultados de qualidade não testados independentemente.",
+  "experimentHypothesis": "Vídeos explicativos baseados em apresentações poderão ser produzidos com menos etapas de edição manual.",
+  "risks": "Preview exige admin e uso pago por créditos; falhas, limitação a uma sessão e sem edição individual de cena; termos corporativos.",
+  "limits": "LIMITADO: organizações do Frontier com Anthropic habilitado e política de créditos; GA somente prevista para fevereiro de 2027; API pública não documentada.",
+  "sourceTitle": "Microsoft Copilot no Clipchamp — criação de vídeo a partir de documentos",
+  "collection": "video",
+  "publishedOn": "2026-11-22",
+  "validUntil": "2027-02-22",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-22-copilot-clipchamp-video-frontier.md",
+  "sourceSha256": "8a80afda7098b6909d742a41b8729b61c12ac13ac26ff4dd5ebaeb471c64b0c2"
+}

@@ -137,4 +137,57 @@ class PdeContextBudgetTest {
         .containsKey("catalogPromptReference")
         .doesNotContainKey("catalogPrompt");
   }
+
+  /** Comprova que o executor verifica o leitor empacotado e recusa snapshot corrompido. */
+  @Test
+  void executorChecksReferenceReaderBeforeInference(
+      @org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+    var json = new ObjectMapper();
+    var budget = new PdeContextBudget(json);
+    budget.project(
+        Map.of(
+            "processContextJson",
+            json.writeValueAsString(
+                Map.of(
+                    "historicalContinuityArtifacts",
+                    java.util.List.of(Map.of("result", "prova".repeat(2000)))))));
+    var snapshot = dir.resolve("context.json");
+    budget.save(snapshot, 9903);
+    var props = new LandingGeneratorAgentProperties();
+    props.setMcpScriptPath(
+        java.nio.file.Path.of("src/main/resources/mcp/landing-generator.mjs")
+            .toAbsolutePath()
+            .toString());
+    var consumer =
+        new PdeConstructionBpmTaskConsumer(
+            props,
+            json,
+            org.mockito.Mockito.mock(AutomaticExecutionControl.class),
+            org.mockito.Mockito.mock(CodexTelemetryReporter.class));
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval", "journey", "", "", "v1", "READY");
+    java.util.List<String> command =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            consumer,
+            "contextCommand",
+            dir.resolve("output"),
+            dir.resolve("schema"),
+            contract,
+            snapshot);
+    assertThat(command).contains("features.shell_tool=false");
+    assertThat(command.toString()).contains("mcp_servers.pde_context", snapshot.toString());
+    Files.writeString(snapshot, "{\"references\":{\"bad-hash\":\"corrompido\"}}");
+    assertThatThrownBy(
+            () ->
+                org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                    consumer,
+                    "contextCommand",
+                    dir.resolve("output"),
+                    dir.resolve("schema"),
+                    contract,
+                    snapshot))
+        .hasRootCauseMessage(
+            "Recuperação do contexto indisponível antes da inferência: snapshot ou ferramenta inválida.");
+  }
 }

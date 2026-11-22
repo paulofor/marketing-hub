@@ -504,11 +504,26 @@ public class PdeConstructionBpmTaskConsumer {
 
   /** Disponibiliza recuperação somente leitura sem habilitar shell para especificações. */
   private List<String> contextCommand(
-      Path output, Path schema, BpmContract contract, Path contextFile) throws IOException {
+      Path output, Path schema, BpmContract contract, Path contextFile)
+      throws IOException, InterruptedException {
     var command = new ArrayList<>(command(output, schema, contract));
     Path script = Path.of(properties.getMcpScriptPath()).resolveSibling("pde-context.mjs");
     if (!Files.isRegularFile(script))
       throw new IOException("Ferramenta de recuperação do contexto indisponível.");
+    var checkBuilder =
+        new ProcessBuilder("node", script.toAbsolutePath().toString(), "--check-snapshot")
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .redirectError(ProcessBuilder.Redirect.DISCARD);
+    checkBuilder.environment().put("PDE_CONTEXT_FILE", contextFile.toAbsolutePath().toString());
+    Process check = checkBuilder.start();
+    if (!check.waitFor(15, TimeUnit.SECONDS)) {
+      terminateTree(check);
+      throw new IOException(
+          "Recuperação do contexto indisponível antes da inferência: timeout de verificação.");
+    }
+    if (check.exitValue() != 0)
+      throw new IOException(
+          "Recuperação do contexto indisponível antes da inferência: snapshot ou ferramenta inválida.");
     command.addAll(
         List.of(
             "--config",

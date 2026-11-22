@@ -73,3 +73,10 @@ Não houve execução paga para provar o comportamento do modelo ao decidir quai
 ler: comprovadas a disponibilidade da ferramenta e a recuperação determinística integral.
 A correção não aprova critérios e não atesta a experiência funcional do produto Vega.
 Publicação e revisão devem ser conferidas no PR desta entrega; estes testes são evidência local.
+
+Revisão adicional antes da integração: a projeção mantém o catálogo Opala até sua validação e
+preserva os tipos originais fora do contexto, usando precisão decimal no contexto JSON. Regressão
+específica protege o caminho antes válido. O próprio consumidor executa uma verificação Node sem
+modelo para carregar a ferramenta e conferir todos os hashes antes de registrar início de inferência;
+snapshot corrompido é recusado. Oito testes específicos do orçamento/leitor passaram, além das
+regressões do consumidor e catálogo. O CI instala as dependências fixadas do MCP antes desses testes.

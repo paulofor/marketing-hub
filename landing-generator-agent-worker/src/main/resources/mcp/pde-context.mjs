@@ -5,6 +5,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 
 const snapshot = JSON.parse(readFileSync(process.env.PDE_CONTEXT_FILE, 'utf8'));
+if (process.argv.includes('--check-snapshot')) {
+  for (const [hash, text] of Object.entries(snapshot.references)) {
+    if (typeof text !== 'string' || createHash('sha256').update(text).digest('hex') !== hash)
+      throw new Error('Integridade do snapshot inválida.');
+  }
+  process.exit(0);
+}
 const server = new McpServer({ name: 'pde-context', version: '1.0.0' });
 server.registerTool('read_task_context', {
   description: 'Recupera integralmente uma referência do contexto desta tarefa, em páginas de texto JSON. Leia todas as páginas necessárias antes de concluir; histórico não constitui aceite atual.',

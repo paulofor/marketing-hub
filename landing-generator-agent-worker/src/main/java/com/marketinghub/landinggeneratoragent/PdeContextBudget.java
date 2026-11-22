@@ -118,7 +118,10 @@ final class PdeContextBudget {
   /** Mede envelope escapado, schema e reserva de transporte antes de iniciar qualquer processo. */
   void preflight(String prompt, String schema) throws IOException {
     String envelope =
-        json.writeValueAsString(Map.of("input", prompt, "outputSchema", json.readTree(schema)));
+        json.writeValueAsString(
+            json.createObjectNode()
+                .put("input", prompt)
+                .set("outputSchema", json.readTree(schema)));
     int bytes = envelope.getBytes(StandardCharsets.UTF_8).length;
     org.slf4j.LoggerFactory.getLogger(PdeContextBudget.class)
         .info(

@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - "backend/ads-service/src/main/java/com/marketinghub/agentcostwaiver/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/agentcostwaiver/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleActivityProjection.java"
+      - "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycle*Test.java"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/learningcycle/CyclePreparationCostRepository.java"
       - "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunPauseGuidance.java"
       - "backend/ads-service/src/test/java/com/marketinghub/agentcostwaiver/**"
@@ -45,4 +48,4 @@ jobs:
         env:
           WAIVER_TEST_MYSQL_URL: "jdbc:mysql://127.0.0.1:3306/waiver_test?useSSL=false&allowPublicKeyRetrieval=true"
           WAIVER_TEST_MYSQL_PASSWORD: root
-        run: mvn -B -Dtest=AgentCostWaiverServiceTest,CostWaiverMysqlTest,ProcessRunPauseGuidanceTest,LearningCycleFinancialReviewTest,ProcessRunCorrectionBudgetTest test
+        run: mvn -B -Dtest=AgentCostWaiverServiceTest,CostWaiverMysqlTest,ProcessRunPauseGuidanceTest,LearningCycleFinancialReviewTest,ProcessRunCorrectionBudgetTest,LearningCycleActivityProjectionTest,LearningCycleFinancialEventIsolationTest test

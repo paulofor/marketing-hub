@@ -6,6 +6,7 @@ import com.marketinghub.agentcostwaiver.v1.service.decisions.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleJson;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
+import com.marketinghub.repository.jpa.agentcostwaiver.AgentCostWaiverEventRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -27,6 +28,7 @@ public class AgentCostWaiverService {
   private final LearningSalesCycleRepository cycles;
   private final ProductRepository products;
   private final Clock clock;
+  private final AgentCostWaiverEventRepository waiverEvents;
 
   /** Consulta apenas o contexto existente do produto e cadeia solicitados. */
   @Transactional(readOnly = true)
@@ -71,7 +73,7 @@ public class AgentCostWaiverService {
   public CostWaiver.View read(Long productId) {
     var tasks = costs.waiverTasks(productId);
     var receipts =
-        events.findCostWaivers(productId).stream()
+        waiverEvents.findByProductId(productId).stream()
             .map(
                 e -> {
                   var proof = json.read(e.getEvidenceJson());

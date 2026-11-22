@@ -102,3 +102,15 @@ A regressão MySQL cobre também essa mudança de classificação.
 
 A regressão adicional de classificação passou no MySQL 5.7, junto com os 4 testes
 de pausa. O build da rota isolada passou em 1m23s, após os fluxos visuais e HTTP.
+
+A leitura JPA de dispensas também ficou no repositório do novo domínio, preservando
+o contrato genérico de eventos usado por contextos de persistência reduzidos.
+A projeção e o teste de isolamento financeiro incluem explicitamente o novo evento
+administrativo, sem remover nenhum bloqueio funcional. A rodada local foi ampliada
+para todas as suítes LearningCycle e ProcessRun antes de atualizar novamente o PR.
+
+Rodada ampliada concluída: 73 suítes, 1.072 casos, nenhuma falha e uma exclusão
+condicional preexistente. O teste MySQL da dispensa foi executado separadamente
+e passou, sem exclusão.
+A exclusão foi validatesCompletePreservedResponseWhenProvided, que depende de
+exportações integrais opcionais de Atena; não se aplica à dispensa desta solicitação.

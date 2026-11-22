@@ -8,6 +8,7 @@ import com.marketinghub.agentcostwaiver.v1.service.decisions.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleJson;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
+import com.marketinghub.repository.jpa.agentcostwaiver.AgentCostWaiverEventRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -20,6 +21,8 @@ import org.mockito.ArgumentCaptor;
 
 /** Protege escopo fixo, idempotência e auditoria da dispensa sem executar agentes. */
 class AgentCostWaiverServiceTest {
+  private final AgentCostWaiverEventRepository waiverEvents =
+      mock(AgentCostWaiverEventRepository.class);
   private final CyclePreparationCostRepository costs = mock(CyclePreparationCostRepository.class);
   private final LearningSalesCycleEventRepository events =
       mock(LearningSalesCycleEventRepository.class);
@@ -32,7 +35,8 @@ class AgentCostWaiverServiceTest {
           json,
           mock(LearningSalesCycleRepository.class),
           mock(ProductRepository.class),
-          java.time.Clock.systemUTC());
+          java.time.Clock.systemUTC(),
+          waiverEvents);
 
   /** Reproduz a seleção parcial para identidades distintas e reabre o recibo sem duplicação. */
   @ParameterizedTest
@@ -59,7 +63,7 @@ class AgentCostWaiverServiceTest {
         .thenReturn(Optional.of(event));
     service.record(cycle, request, Instant.now());
     verify(events, times(1)).saveAndFlush(any());
-    when(events.findCostWaivers(productId)).thenReturn(List.of(event));
+    when(waiverEvents.findByProductId(productId)).thenReturn(List.of(event));
     when(costs.waiverTasks(productId))
         .thenReturn(
             List.of(
@@ -73,7 +77,8 @@ class AgentCostWaiverServiceTest {
                 json,
                 mock(LearningSalesCycleRepository.class),
                 mock(ProductRepository.class),
-                java.time.Clock.systemUTC())
+                java.time.Clock.systemUTC(),
+                waiverEvents)
             .read(productId);
     assertThat(reopened.blockingTasks()).isEqualTo(2);
     assertThat(reopened.history().getFirst().taskIds()).containsExactly(246L);

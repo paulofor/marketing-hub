@@ -29,10 +29,4 @@ public interface LearningSalesCycleEventRepository
 
   /** Localiza o recibo de um comando para impedir efeitos duplicados. */
   Optional<LearningSalesCycleEvent> findByCycleIdAndRequestKey(Long cycleId, String requestKey);
-
-  /** Consulta dispensas do produto inteiro, preservando a identidade das tarefas entre ciclos. */
-  @org.springframework.data.jpa.repository.Query(
-      "select e from LearningSalesCycleEvent e where e.action = 'WAIVE_LEGACY_AGENT_COST' and e.cycleId in (select c.id from LearningSalesCycle c where c.productId = :productId) order by e.id desc")
-  List<LearningSalesCycleEvent> findCostWaivers(
-      @org.springframework.data.repository.query.Param("productId") Long productId);
 }

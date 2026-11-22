@@ -356,7 +356,12 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
     var summary =
         repository.findHumanSummaryInput(current.getId(), process.getId(), "experiment:92");
     assertThat(summary)
-        .hasValueSatisfying(value -> assertThat(value.resultJson()).contains("APPROVE"));
+        .hasValueSatisfying(
+            value -> {
+              assertThat(value.resultJson()).contains("APPROVE");
+              assertThat(value.status()).isEqualTo(current.getStatus());
+              assertThat(value.executionError()).isEqualTo(current.getExecutionError());
+            });
     assertThat(statistics.getEntityLoadCount()).isZero();
     assertThat(repository.findHumanSummaryInput(current.getId(), process.getId(), "experiment:91"))
         .isEmpty();

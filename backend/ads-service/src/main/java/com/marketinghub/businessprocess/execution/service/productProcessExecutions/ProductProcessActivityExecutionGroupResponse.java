@@ -1,5 +1,6 @@
 package com.marketinghub.businessprocess.execution.service.productProcessExecutions;
 
+import com.marketinghub.agenttask.AgentTaskResultView;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import java.util.List;
 
@@ -26,6 +27,13 @@ public record ProductProcessActivityExecutionGroupResponse(
     String executionRequestReason,
     ProductProcessActivityExecutionControlResponse executionControl,
     ProductProcessActivityRecoveryResponse recoveryAction) {
+  /**
+   * Converte motivos técnicos legados somente na projeção pública, sem alterar o estado persistido.
+   */
+  public ProductProcessActivityExecutionGroupResponse {
+    stateReason = AgentTaskResultView.businessReason(stateReason);
+    executionRequestReason = AgentTaskResultView.businessReason(executionRequestReason);
+  }
 
   /** Preserva projeções existentes que não possuem uma atividade de recuperação associada. */
   public ProductProcessActivityExecutionGroupResponse(

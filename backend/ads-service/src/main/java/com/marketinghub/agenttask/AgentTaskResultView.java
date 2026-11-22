@@ -13,6 +13,17 @@ public final class AgentTaskResultView {
   /** Impede instanciação do conversor sem estado. */
   private AgentTaskResultView() {}
 
+  /** Projeta falhas de limite em linguagem de negócio, preservando o erro na auditoria. */
+  public static String businessReason(String reason) {
+    if (reason != null
+        && (reason.contains("input_too_large") || reason.contains("PDE_CONTEXT_BUDGET_V1"))) {
+      return "A execução foi interrompida porque o contexto excedeu o limite permitido. "
+          + "A preparação do contexto precisa ser corrigida antes da retomada. "
+          + "O diagnóstico técnico permanece disponível na tarefa; o consumo ainda precisa ser conferido.";
+    }
+    return reason;
+  }
+
   /** Apresenta a síntese do agente e identifica recortes legados sem reescrever o resultado. */
   public static AgentTaskHumanSummary humanSummary(AgentTask task) {
     if (task != null

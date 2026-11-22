@@ -19,4 +19,17 @@ class AgentTaskResultViewTest {
     task.setResultJson("{\"humanSummary\":\"Entrega preservada para recuperação do callback.\"}");
     assertThat(AgentTaskResultView.humanSummary(task).text()).contains("Entrega preservada");
   }
+
+  /** Mantém bloqueios funcionais e normaliza somente as duas falhas de limite conhecidas. */
+  @Test
+  void preservesFunctionalReasonsAndProjectsBothContextFailures() {
+    assertThat(AgentTaskResultView.businessReason(null)).isNull();
+    assertThat(AgentTaskResultView.businessReason("Checkout ausente na evidência."))
+        .isEqualTo("Checkout ausente na evidência.");
+    for (String error : java.util.List.of("input_too_large", "PDE_CONTEXT_BUDGET_V1")) {
+      assertThat(AgentTaskResultView.businessReason("ClasseInterna: " + error + " {raw: true}"))
+          .contains("interrompida", "diagnóstico", "consumo")
+          .doesNotContain(error, "ClasseInterna", "raw");
+    }
+  }
 }

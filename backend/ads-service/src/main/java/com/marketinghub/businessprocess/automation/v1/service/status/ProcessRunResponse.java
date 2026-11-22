@@ -1,5 +1,6 @@
 package com.marketinghub.businessprocess.automation.v1.service.status;
 
+import com.marketinghub.agenttask.AgentTaskResultView;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -41,4 +42,11 @@ public record ProcessRunResponse(
     List<ProcessRunRelationResponse> subprocesses,
     ProcessRunUserAction userAction,
     ProcessRunQueueBlocker queueBlocker,
-    String financialReviewUrl) {}
+    String financialReviewUrl) {
+  /**
+   * Converte motivos técnicos legados somente na projeção pública, sem alterar o estado persistido.
+   */
+  public ProcessRunResponse {
+    reason = AgentTaskResultView.businessReason(reason);
+  }
+}

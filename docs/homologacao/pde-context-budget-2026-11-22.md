@@ -85,3 +85,31 @@ O CI completo detectou uma omissão no cadastro do novo prompt: 6.088 testes, um
 `AgentHarnessCatalogTest`. A origem foi corrigida no manifesto v3 do harness, sem alterar o
 teste nem flexibilizar cobertura. A suíte do catálogo passou localmente após registrar o artefato;
 a versão corrigida deve passar novamente pelo CI completo antes do merge.
+
+## Complemento identificado na conferência publicada
+
+O PR #5868 foi integrado em `acd17621920304a9f5a8639dd4938860ea57b6ce`, com CI,
+publicação da aplicação e do executor concluídos. A revisão somente leitura da página real
+identificou uma lacuna na cobertura visual: o cartão escondia o erro, mas as projeções do
+cabeçalho e da situação da atividade ainda reproduziam o erro persistido. A consulta leve de
+síntese também omitia estado/erro, retornando resumo nulo para uma interrupção sem resultado.
+
+Alternativas: filtrar só no frontend deixa outros consumidores expostos; regravar motivos
+históricos modifica auditoria desnecessariamente; projetar linguagem de negócio no contrato de
+leitura preserva os registros e cobre os consumidores. Adotada a terceira opção, com diagnóstico
+integral mantido em `executionError` e sem alterar estados, gates, contadores ou autorização.
+A consulta exata da síntese inclui estado/erro sem carregar prompts/provas. O frontend mantém a
+síntese já recebida enquanto a leitura complementar ainda não trouxer outra.
+
+Prevenção: regressão das projeções completas (cabeçalho, fila, atividade e tarefa), dois IDs
+sintéticos distintos, custo desconhecido, zero aceites/11 pendências e erro bruto preservado na
+auditoria; consulta da síntese segregada por produto/processo/referência; teste da página inteira
+com diagnóstico fechado e ausência de POST. Esta ampliação corrige a lacuna do harness visual,
+sem alteração de testes de arquitetura. Nenhuma retomada de Vega faz parte do complemento.
+
+Validação local do complemento: 168 testes backend passaram (incluindo 92 ArchUnit sem
+modificação, 39 do serviço, 13 da consulta JPA e 21 do catálogo operacional), 22 testes da
+página e typecheck passaram. A primeira rodada conjunta terminou em código 137; as verificações
+restantes passaram em execução sequencial, sem flexibilizar testes. Chromium desktop,
+iPhone 15 Pro e Pixel 7 confirmaram página sem erro bruto visível e diagnóstico recuperável
+por abertura explícita, com dados sintéticos e sem acesso ao backend real. Não houve inferência.

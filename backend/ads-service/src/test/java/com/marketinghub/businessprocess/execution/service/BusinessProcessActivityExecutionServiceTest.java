@@ -78,9 +78,20 @@ class BusinessProcessActivityExecutionServiceTest {
             Optional.of(
                 new com.marketinghub.agenttask.AgentTaskHumanSummaryInputSnapshot(
                     921L,
-                    "{\"decision\":\"BLOCKED\",\"humanSummary\":\"Faltam provas de segurança. Têmis deve revisar o complemento.\"}")));
+                    "{\"decision\":\"BLOCKED\",\"humanSummary\":\"Faltam provas de segurança. Têmis deve revisar o complemento.\"}",
+                    "BLOCKED",
+                    null)));
     var response = service.taskHumanSummary(117L, productId, 921L, "experiment:115");
     assertThat(response.humanSummary().text()).contains("Faltam provas de segurança");
+    when(tasks.findHumanSummaryInput(921L, 117L, "experiment:115"))
+        .thenReturn(
+            Optional.of(
+                new com.marketinghub.agenttask.AgentTaskHumanSummaryInputSnapshot(
+                    921L, null, "BLOCKED", "com.internal.Exception: input_too_large {raw:true}")));
+    assertThat(
+            service.taskHumanSummary(117L, productId, 921L, "experiment:115").humanSummary().text())
+        .contains("Nenhuma entrega", "consumo")
+        .doesNotContain("Exception", "raw");
     verify(tasks, never()).findById(anyLong());
     when(experiments.existsByIdAndProductId(115L, productId)).thenReturn(false);
     clearInvocations(tasks);

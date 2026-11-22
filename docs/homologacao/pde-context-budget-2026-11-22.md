@@ -80,3 +80,8 @@ específica protege o caminho antes válido. O próprio consumidor executa uma v
 modelo para carregar a ferramenta e conferir todos os hashes antes de registrar início de inferência;
 snapshot corrompido é recusado. Oito testes específicos do orçamento/leitor passaram, além das
 regressões do consumidor e catálogo. O CI instala as dependências fixadas do MCP antes desses testes.
+
+O CI completo detectou uma omissão no cadastro do novo prompt: 6.088 testes, uma falha em
+`AgentHarnessCatalogTest`. A origem foi corrigida no manifesto v3 do harness, sem alterar o
+teste nem flexibilizar cobertura. A suíte do catálogo passou localmente após registrar o artefato;
+a versão corrigida deve passar novamente pelo CI completo antes do merge.

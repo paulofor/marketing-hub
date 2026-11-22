@@ -54,7 +54,70 @@ public class ProcessVersionContinuityService {
       com.fasterxml.jackson.databind.JsonNode sourceContract,
       com.fasterxml.jackson.databind.JsonNode targetContract,
       com.fasterxml.jackson.databind.JsonNode evidence,
-      List<Long> taskIds) {}
+      List<Long> taskIds,
+      Long destinationInstanceId,
+      boolean destinationAccepted) {
+    /** Expõe critérios históricos separados dos requisitos que ainda exigem revalidação. */
+    @com.fasterxml.jackson.annotation.JsonProperty
+    public List<Criterion> criteria() {
+      var previous = sourceContract.path("description").asText("");
+      var current = targetContract == null ? "" : targetContract.path("description").asText("");
+      var result = new ArrayList<Criterion>();
+      // Blocos prefixados preservam o contrato legado; frases novas nunca herdam seu aceite.
+      var historical = new java.util.HashSet<>(Arrays.asList(previous.split("(?<=\\.)\\s+|\\n+")));
+      for (String sentence : current.split("(?<=\\.)\\s+|\\n+")) {
+        if (sentence.isBlank()) continue;
+        boolean unchanged = historical.contains(sentence) && accepted;
+        if (!unchanged && !previous.isBlank() && sentence.startsWith(previous) && accepted) {
+          result.add(new Criterion(previous, "HISTORICAL_ACCEPTANCE"));
+          sentence = sentence.substring(previous.length()).trim();
+        }
+        if (!sentence.isBlank())
+          result.add(
+              new Criterion(
+                  sentence, unchanged ? "HISTORICAL_ACCEPTANCE" : "REVALIDATION_PENDING"));
+      }
+      if (result.isEmpty())
+        result.add(
+            new Criterion(
+                "Contrato sem critérios textuais; conferir prova estruturada.",
+                "REVALIDATION_PENDING"));
+      if (destinationAccepted)
+        return result.stream()
+            .map(c -> new Criterion(c.description(), "ACCEPTED_AT_DESTINATION"))
+            .toList();
+      return List.copyOf(result);
+    }
+
+    /** Só reaproveita aceite integral quando o contrato e a prova histórica estão preservados. */
+    @com.fasterxml.jackson.annotation.JsonProperty
+    public boolean reusable() {
+      return accepted
+          && changedFields.isEmpty()
+          && evidence != null
+          && !evidence.isNull()
+          && !evidence.isEmpty();
+    }
+
+    /** Identifica o responsável canônico pela revalidação, sem selecionar outro agente. */
+    @com.fasterxml.jackson.annotation.JsonProperty
+    public String owner() {
+      return targetContract == null
+          ? "Responsável da atividade"
+          : targetContract.path("owner").asText("Responsável da atividade");
+    }
+
+    /** Expõe ao operador a decisão de destino sem depender de inferência no frontend. */
+    @com.fasterxml.jackson.annotation.JsonProperty
+    public String destinationStatus() {
+      return (destinationInstanceId != null ? destinationAccepted : reusable())
+          ? "ACCEPTED"
+          : "REVALIDATION_PENDING";
+    }
+  }
+
+  /** Responsabilidade: separar o aceite histórico da comprovação ainda pendente no destino. */
+  public record Criterion(String description, String status) {}
 
   /** Responsabilidade: apresentar uma proposta sem iniciar execução nem modificar autorizações. */
   public record Preview(
@@ -164,6 +227,13 @@ public class ProcessVersionContinuityService {
               .filter(d -> d.getActivityId().equals(a.activityId()))
               .findFirst()
               .orElse(null);
+      var destinationInstance =
+          binding.isEmpty() || after == null
+              ? null
+              : instances
+                  .findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+                      after.getId(), reference)
+                  .orElse(null);
       outputs.add(
           new Output(
               a.activityId(),
@@ -189,7 +259,9 @@ public class ProcessVersionContinuityService {
                                   || inheritedTasks.contains(t.taskId()))
                               && "COMPLETED".equals(t.status()))
                   .map(t -> t.taskId())
-                  .toList()));
+                  .toList(),
+              destinationInstance == null ? null : destinationInstance.getId(),
+              destinationInstance != null && destinationInstance.isObjectiveAchieved()));
     }
     boolean active =
         history.activities().stream()
@@ -266,7 +338,7 @@ public class ProcessVersionContinuityService {
   }
 
   /**
-   * Registra adoção idempotente e cópias referenciais das provas em transação, sem trabalho pago.
+   * Registra adoção idempotente, aceites compatíveis e pendências de revalidação sem trabalho pago.
    */
   @Transactional
   public Preview prepare(Long productId, Long cycleId, Long processId, Request request) {
@@ -279,14 +351,9 @@ public class ProcessVersionContinuityService {
     if (!p.canPrepare()) throw conflict(p.reason());
     requireText(request.operatorName(), 160, "Informe o responsável pela conferência.");
     requireText(request.reason(), 1000, "Informe o motivo da continuidade.");
-    for (var o : p.outputs())
-      if (o.accepted() && !o.changedFields().isEmpty())
-        requireText(
-            request.compatibilityEvidence() == null
-                ? null
-                : request.compatibilityEvidence().get(o.activityId()),
-            4000,
-            "Registre a evidência que comprova os novos requisitos de " + o.name() + ".");
+    if (request.compatibilityEvidence() != null && !request.compatibilityEvidence().isEmpty())
+      throw conflict(
+          "Declaração textual não comprova compatibilidade. Prepare com revalidação pendente.");
     var sourceRun = runs.findById(p.sourceRunId()).orElseThrow();
     var next = new ProcessRun();
     next.setProductId(productId);
@@ -328,6 +395,7 @@ public class ProcessVersionContinuityService {
               events.saveAndFlush(inherited);
             });
     var reused = new ArrayList<Map<String, Object>>();
+    var revalidation = new ArrayList<Map<String, Object>>();
     for (var o : p.outputs())
       if (o.accepted()) {
         var original = instances.findById(o.instanceId()).orElseThrow();
@@ -349,8 +417,15 @@ public class ProcessVersionContinuityService {
         copy.setActivityDefinition(definition);
         copy.setSourceReference(p.reference());
         copy.setOccurrenceNumber(1);
-        copy.setStatus(original.getStatus());
-        copy.setObjectiveAchieved(true);
+        copy.setStatus(o.reusable() ? original.getStatus() : "BLOCKED");
+        copy.setObjectiveAchieved(o.reusable());
+        if (!o.reusable())
+          copy.setBlockedReason(
+              "Revalidar os critérios pendentes com "
+                  + o.owner()
+                  + "; preservar os artefatos da ocorrência #"
+                  + original.getId()
+                  + ".");
         copy.setEnteredAt(next.getCreatedAt());
         copy.setExitedAt(next.getCreatedAt());
         copy.setCreatedAt(next.getCreatedAt());
@@ -361,16 +436,17 @@ public class ProcessVersionContinuityService {
         // financeiro.
         copy.setObjectiveEvidenceJson(original.getObjectiveEvidenceJson());
         instances.saveAndFlush(copy);
-        reused.add(
-            Map.of(
-                "activityId",
-                o.activityId(),
-                "sourceInstanceId",
-                original.getId(),
-                "targetInstanceId",
-                copy.getId(),
-                "taskIds",
-                o.taskIds()));
+        (o.reusable() ? reused : revalidation)
+            .add(
+                Map.of(
+                    "activityId",
+                    o.activityId(),
+                    "sourceInstanceId",
+                    original.getId(),
+                    "targetInstanceId",
+                    copy.getId(),
+                    "taskIds",
+                    o.taskIds()));
       }
     next.setTotalActivities(p.outputs().size());
     next.setCompletedActivities(reused.size());
@@ -399,6 +475,8 @@ public class ProcessVersionContinuityService {
                 p.outputs(),
                 "reused",
                 reused,
+                "revalidation",
+                revalidation,
                 "compatibilityEvidence",
                 request.compatibilityEvidence() == null
                     ? Map.of()

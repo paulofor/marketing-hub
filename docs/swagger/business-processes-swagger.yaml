@@ -4,6 +4,38 @@ info:
   version: 1.12.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades, documentos e execuções independentes no Marketing Hub.
 paths:
+  /api/business-processes/{processId}/products/{productId}/automation/v1/continuity:
+    parameters:
+      - {name: processId, in: path, required: true, schema: {type: integer, format: int64}}
+      - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+      - {name: learningCycleId, in: query, required: true, schema: {type: integer, format: int64}}
+    get:
+      summary: Compara contratos e separa aceite histórico de revalidação pendente
+      description: Cada output expõe owner, destinationStatus (ACCEPTED ou REVALIDATION_PENDING), criteria (description/status), destinationInstanceId, destinationAccepted e taskIds e provas originais. HISTORICAL_ACCEPTANCE é aceite da origem, não comprovação de requisitos novos. ACCEPTED_AT_DESTINATION indica aceite vigente da ocorrência do destino, sem reescrever o recibo.
+      responses:
+        "200": {description: Proposta ou recibo de continuidade com origem e destino no mesmo contexto}
+        "409": {description: Contexto inexistente ou incompatível}
+    post:
+      summary: Prepara sucessora pausada com reaproveitamento parcial, sem executar agentes
+      description: Contratos idênticos com prova preservam aceite; demais entregas preservam artefatos e ficam pendentes. Conserva custos e pausa financeira. Snapshot desatualizado e mudança estrutural são rejeitados. Repetição devolve sucessora existente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fingerprint, operatorName, reason]
+              properties:
+                fingerprint: {type: string}
+                operatorName: {type: string, maxLength: 160}
+                reason: {type: string, maxLength: 1000}
+                compatibilityEvidence:
+                  type: object
+                  maxProperties: 0
+                  description: Compatibilidade não pode ser declarada por texto livre; enviar vazio ou omitir.
+      responses:
+        "200": {description: Sucessora PAUSED e recibo persistido; nenhuma tarefa criada}
+        "409": {description: Snapshot desatualizado, justificativa de compatibilidade ou contexto incompatível}
   /api/business-processes:
     get:
       summary: Lista as versões dos processos

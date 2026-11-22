@@ -70,6 +70,33 @@ class ProcessVersionContinuityLookupTest {
     assertThat(proof.processDefinitionId()).isEqualTo(501L);
   }
 
+  /** Entrega histórico somente ao destino correto, sem inseri-lo entre as provas aceitas. */
+  @Test
+  void exposesRevalidationOnlyForBoundTarget() {
+    var events = mock(ProcessRunEventRepository.class);
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(99L);
+    cycle.setProductId(71L);
+    when(cycles.findByExperimentId(801L)).thenReturn(java.util.Optional.of(cycle));
+    var lookup = new ProcessVersionContinuityLookup(events, new ObjectMapper());
+    org.springframework.test.util.ReflectionTestUtils.setField(lookup, "cycles", cycles);
+    var receipt = event(601, 701);
+    receipt.setDetailsJson(
+        receipt
+            .getDetailsJson()
+            .replace(
+                "}}",
+                "},\"outputs\":[{\"activityId\":\"journey\",\"accepted\":true}],\"revalidation\":[{\"taskIds\":[9001]}]}"));
+    when(events.continuations(71L, 99L, "experiment:801")).thenReturn(List.of(receipt));
+    assertThat(lookup.revalidationContext("experiment:801", 701L).path("outputs").size())
+        .isEqualTo(1);
+    assertThat(lookup.revalidationContext("experiment:801", 601L).isNull()).isTrue();
+    assertThat(lookup.revalidationContext("experiment:802", 701L).isNull()).isTrue();
+    assertThat(lookup.reusedTasks(71L, 99L, "experiment:801", 701L)).isEmpty();
+  }
+
   /** Monta somente o vínculo sintético de versões, sem tarefas ou custos. */
   private ProcessRunEvent event(long source, long target) {
     var event = new ProcessRunEvent();

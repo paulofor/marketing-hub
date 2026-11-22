@@ -882,8 +882,8 @@ permanecem fixos. O comando administrativo não retoma execução nem autoriza c
 
 O backend compara os contratos e as provas atuais antes de registrar `VERSION_CONTINUATION`
 no diário da execução original. Contratos idênticos permitem reuso das ocorrências aceitas;
-alteração de descrição/critério exige conferência explícita do operador com referência da prova,
-responsável e motivo. Alterações estruturais, remoção de atividade aceita, ausência de ocorrência,
+alteração de descrição/critério conserva o artefato e o aceite histórico, mas cria pendência
+de revalidação no destino. Declaração textual do operador não transforma pendência em aceite. Alterações estruturais, remoção de atividade aceita, ausência de ocorrência,
 ficha incompatível, tarefa em andamento ou ciclo encerrado bloqueiam a preparação. A impressão
 do snapshot protege contra gravação baseada em uma consulta desatualizada.
 
@@ -896,3 +896,20 @@ verificadores de versão, integridade e homologação; a conferência não fabri
 Consulta e preparação: `GET/POST /api/business-processes/{processId}/products/{productId}/automation/v1/continuity?learningCycleId={cycleId}`.
 O recibo fixa origem/destino, execução sucessora, contratos comparados, provas, conferência e data.
 Uma repetição do comando devolve o recibo existente. Falha transacional não deixa adoção parcial.
+
+#### Reaproveitamento parcial — decisão de 22/11/2026
+
+Preparar não exige comprovar todos os novos critérios. O recibo separa `reused` de
+`revalidation`, conservando contratos, provas, tarefas e ocorrências de origem. Critérios
+acrescentados permanecem pendentes; o trecho histórico mantido é apresentado como aceite
+**da origem**, nunca como comprovação dos requisitos novos. Sem mapeamento estruturado mais
+preciso, cada frase textual alterada é revalidada integralmente, sem inferir equivalência semântica.
+O destino só herda aceite integral de contrato idêntico com prova histórica presente; demais
+entregas conservam ocorrência BLOCKED com `objectiveAchieved=false`. Nenhum gate recebe como
+prova aceita as tarefas apenas preservadas. O contexto do executor inclui o recibo e os resultados
+históricos em seção própria, para complementar os requisitos pendentes sem reconstruir artefatos
+válidos. A preparação mantém PAUSED e não cria tarefas. Retomada permanece um comando separado.
+
+Após a preparação, a consulta exibe separadamente o aceite vigente da última ocorrência do
+destino. Uma revalidação concluída não permanece apresentada como pendente por causa do recibo
+histórico; uma ocorrência reprovada também não herda novamente o aceite original.

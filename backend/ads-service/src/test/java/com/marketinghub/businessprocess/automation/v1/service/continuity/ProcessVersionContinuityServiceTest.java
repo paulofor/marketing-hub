@@ -304,24 +304,88 @@ class ProcessVersionContinuityServiceTest {
     assertThat(next.canPrepare()).isFalse(); // Sem provas carregadas, a passagem fica protegida.
   }
 
-  /** Rejeita aceite alterado sem prova e permite recuperar pela conferência explícita. */
-  @Test
-  void requiresEvidenceForChangedContractAndRecovers() {
-    setup(8);
+  /** Conserva artefato alterado como pendência e impede texto genérico de fabricar aceite. */
+  @ParameterizedTest
+  @ValueSource(longs = {4, 71})
+  void preparesPartialReuseWithoutFabricatingAcceptance(long id) {
+    setup(id);
     targetDefinitions
         .getFirst()
-        .setDefinitionJson("{\"id\":\"step-0\",\"description\":\"Novo requisito\"}");
+        .setDefinitionJson(
+            "{\"id\":\"step-0\",\"description\":\"Aceite original Novo requisito\"}");
     var p = service.preview(productId, cycle.getId(), target.getId());
+    assertThat(p.outputs().getFirst().criteria())
+        .extracting(ProcessVersionContinuityService.Criterion::status)
+        .containsExactly("HISTORICAL_ACCEPTANCE", "REVALIDATION_PENDING");
     assertThatThrownBy(
-            () -> service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of())))
+            () ->
+                service.prepare(
+                    productId,
+                    cycle.getId(),
+                    target.getId(),
+                    request(p, Map.of("step-0", "Tudo compatível"))))
         .isInstanceOf(ResponseStatusException.class);
     verify(runs, never()).saveAndFlush(any());
-    service.prepare(
-        productId,
-        cycle.getId(),
-        target.getId(),
-        request(p, Map.of("step-0", "proof-0, cenário sintético comprova o novo requisito")));
+    service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of()));
     assertThat(copies).hasSize(8);
+    assertThat(copies.getFirst().isObjectiveAchieved()).isFalse();
+    assertThat(copies.getFirst().getStatus()).isEqualTo("BLOCKED");
+    var savedRun = org.mockito.ArgumentCaptor.forClass(ProcessRun.class);
+    verify(runs).saveAndFlush(savedRun.capture());
+    assertThat(savedRun.getValue().getStatus()).isEqualTo("PAUSED");
+    assertThat(savedRun.getValue().getCompletedActivities()).isEqualTo(7);
+    assertThat(savedRun.getValue().getRemainingActivities()).isEqualTo(4);
+
+    assertThat(copies.getFirst().getObjectiveEvidenceJson()).contains("proof-0");
+    assertThat(copies.stream().filter(BusinessProcessActivityInstance::isObjectiveAchieved))
+        .hasSize(7);
+    assertThat(lookup.reusedTasks(id, cycle.getId(), source.getSourceReference(), target.getId()))
+        .doesNotContain(3000L);
+    assertThat(journal.getLast().getDetailsJson()).contains("revalidation", "REVALIDATION_PENDING");
+    service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of()));
+    assertThat(copies).hasSize(8);
+    verify(products, never()).save(any());
+    verify(cycles, never()).save(any());
+  }
+
+  /** Recarga reflete o aceite real da revalidação, sem reescrever o recibo de preparação. */
+  @Test
+  void reloadsActualDestinationAcceptance() {
+    setup(73);
+    targetDefinitions
+        .getFirst()
+        .setDefinitionJson("{\"id\":\"step-0\",\"description\":\"Critério novo\"}");
+    var p = service.preview(productId, cycle.getId(), target.getId());
+    service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of()));
+    var receipt = journal.getLast().getDetailsJson();
+    var revalidated = copies.getFirst();
+    revalidated.setObjectiveAchieved(true);
+    revalidated.setStatus("COMPLETED");
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            targetDefinitions.getFirst().getId(), source.getSourceReference()))
+        .thenReturn(Optional.of(revalidated));
+    var current = service.preview(productId, cycle.getId(), target.getId()).outputs().getFirst();
+    assertThat(current.destinationAccepted()).isTrue();
+    assertThat(current.destinationInstanceId()).isEqualTo(revalidated.getId());
+    assertThat(current.destinationStatus()).isEqualTo("ACCEPTED");
+    assertThat(current.criteria())
+        .extracting(ProcessVersionContinuityService.Criterion::status)
+        .containsOnly("ACCEPTED_AT_DESTINATION");
+    assertThat(journal.getLast().getDetailsJson()).isEqualTo(receipt);
+  }
+
+  /** Ausência de prova não ganha aceite mesmo quando o texto do contrato não mudou. */
+  @Test
+  void missingEvidenceRemainsPending() {
+    setup(72);
+    instances.findById(2000L).orElseThrow().setObjectiveEvidenceJson(null);
+    var p = service.preview(productId, cycle.getId(), target.getId());
+    service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of()));
+    assertThat(copies.getFirst().isObjectiveAchieved()).isFalse();
+    assertThat(
+            lookup.reusedTasks(
+                productId, cycle.getId(), source.getSourceReference(), target.getId()))
+        .doesNotContain(3000L);
   }
 
   /** Protege mudança concorrente, ciclo encerrado e identidade de outro produto. */
@@ -411,9 +475,13 @@ class ProcessVersionContinuityServiceTest {
     var p = service.preview(productId, cycle.getId(), target.getId());
     assertThat(p.outputs().stream().filter(ProcessVersionContinuityService.Output::accepted))
         .hasSize(8);
-    service.prepare(productId, cycle.getId(), target.getId(), request(p, evidence));
+    service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of()));
     assertThat(copies).hasSize(8);
     assertThat(source.getCompletedActivities()).isEqualTo(8);
-    assertThat(journal.getLast().getDetailsJson()).contains("Prova sintética 7 conferida");
+    assertThat(copies).noneMatch(BusinessProcessActivityInstance::isObjectiveAchieved);
+    assertThat(
+            lookup.reusedTasks(
+                productId, cycle.getId(), source.getSourceReference(), target.getId()))
+        .isEmpty();
   }
 }

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-tiktok-proveniencia-semelhanca-2026-11",
+  "title": "TikTok — verificação pública de vídeos de IA e proteção de identidade",
+  "finding": "TikTok lançou verificador público de origem de IA por C2PA/VeraDura e iniciou rollout global restrito do Likeness Detection.",
+  "mechanism": "Detecção de sinais de proveniência digital (Content Credentials/VeraDura) e identificação opcional de semelhança para contas elegíveis.",
+  "commercialApplication": "Checklist de transparência e documentação de direitos de imagem em vídeos distribuídos nas redes.",
+  "evidenceStrength": "Alta para a disponibilidade e condições documentadas; resultados de qualidade não testados independentemente.",
+  "experimentHypothesis": "Preservar credenciais e rastros de criação reduzirá problemas na validação e na entrega de vídeos gerados.",
+  "risks": "Resultado negativo não certifica autenticidade; metadados podem ser removidos e rollout de semelhança não é universal.",
+  "limits": "Verificador ATIVO sem conta; Likeness Detection LIMITADO a elegíveis; não gera vídeo, sem API pública confirmada.",
+  "sourceTitle": "TikTok — verificação pública de vídeos de IA e proteção de identidade",
+  "collection": "video",
+  "publishedOn": "2026-11-22",
+  "validUntil": "2027-02-22",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-22-tiktok-proveniencia-semelhanca.md",
+  "sourceSha256": "9208f12ec556aa352aa72f2079842bda7320973fda959ce7337acf1cc9fa685f"
+}

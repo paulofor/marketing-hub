@@ -25,6 +25,11 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class ProcessRunContext {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   private final BusinessProcessActivityExecutionService activities;
   private final BusinessProcessDefinitionRepository processes;
   private final BusinessProcessChainDefinitionRepository chains;
@@ -91,14 +96,21 @@ public class ProcessRunContext {
     Set<Long> memberIds = new HashSet<>();
     chain.getItems().forEach(item -> memberIds.add(item.getProcessDefinition().getId()));
     boolean explicitlyAdopted =
-        catalogAdoptions != null
-            && command.learningCycleId() != null
-            && catalogAdoptions.permits(
-                command.learningCycleId(),
-                productId,
-                command.chainId(),
-                processId,
-                command.sourceReference());
+        versionContinuity != null
+                && versionContinuity.permits(
+                    productId,
+                    command.learningCycleId(),
+                    command.sourceReference(),
+                    command.chainId(),
+                    processId)
+            || catalogAdoptions != null
+                && command.learningCycleId() != null
+                && catalogAdoptions.permits(
+                    command.learningCycleId(),
+                    productId,
+                    command.chainId(),
+                    processId,
+                    command.sourceReference());
     if (!explicitlyAdopted && !belongs(process, memberIds, productTypeCode(productId)))
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "A versão do processo não pertence à cadeia informada.");
@@ -181,6 +193,16 @@ public class ProcessRunContext {
    * existentes e versões retiradas que foram fixadas pela ficha da mesma referência.
    */
   public String dispatchBlockReason(ProcessRun run) {
+    if (versionContinuity != null
+        && !run.getProcessDefinitionId()
+            .equals(
+                versionContinuity.effective(
+                    run.getProductId(),
+                    run.getLearningCycleId(),
+                    run.getSourceReference(),
+                    run.getProcessDefinitionId())))
+      return "Uma continuidade foi preparada para esta execução. Abra o destino pelo recibo; o histórico permanece preservado.";
+
     if (run.getLearningCycleId() != null) {
       var cycle =
           cycles

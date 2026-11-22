@@ -44,6 +44,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class PdeAgentValidationGateActivityExecutor
     implements BackendProductProcessActivityExecutor {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   static final String PROCESS_CODE = "pde-construction-approval";
   static final String ACTIVITY_ID = "agentValidationGate";
   static final String SOURCE_SUFFIX = "@agent-validation-v1";
@@ -313,6 +318,16 @@ public class PdeAgentValidationGateActivityExecutor
             ? List.of()
             : tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
                 process.getId(), sourceReference);
+    if (versionContinuity != null && process != null && process.getId() != null) {
+      var combined = new java.util.ArrayList<>(processTasks);
+      combined.addAll(
+          tasks.findAllById(versionContinuity.reusedTasks(sourceReference, process.getId())));
+      processTasks =
+          combined.stream()
+              .distinct()
+              .sorted(java.util.Comparator.comparing(AgentTask::getId))
+              .toList();
+    }
     AgentTask technical = completedTask(processTasks, "technicalHomologation").orElse(null);
     boolean technicalApproved = validateTechnical(technical, contract, issues);
     Map<String, AgentTask> psique = new LinkedHashMap<>();

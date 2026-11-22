@@ -11828,3 +11828,18 @@ Matriz e limites: docs/homologacao/vega-bloqueio-resumo-humano-2026-11-17.md.
 - Preservação: histórico, STOP, limites e callbacks existentes; sem migração automática nem exceção
   por nome/ID. Testar caso Vega, outra identidade e tipo legado. Hash não valida significado.
 - [Homologação e estado de adoção](../homologacao/turmalina-value-delivery-v1.md).
+
+## LOOP-BPM-CICLO-RETIRADO-SEM-CONTINUIDADE — 22/11/2026
+
+- Evidência: ciclo aberto fixado na cadeia histórica; processo retirado sem ficha. Navegar para a
+  cadeia publicada produz conflito de contexto, enquanto a retomada histórica mantém o gate de versão.
+- Causa: inexistência de adoção explícita por contexto e seleção do catálogo pela cadeia da navegação
+  em vez da cadeia do ciclo escolhido. Dispensa financeira não é autorização de versão.
+- Correção: sucessora pausada e recibo `VERSION_CONTINUATION` no diário existente; comparação de
+  contrato por atividade, provas originais preservadas e conferência obrigatória de critérios alterados.
+- Prevenção: `ProcessVersionContinuityServiceTest`, `ProcessVersionContinuityPersistenceTest`,
+  `ProcessContractCompatibilityTest`, `ProductProcessVersionContinuity.test.tsx` e cenário Playwright
+  `process-version-continuity-responsive.cjs`. Cobrem outro produto, oito entregas, concorrência,
+  recuperação, isolamento e pausa financeira. Não alteram regras de arquitetura.
+- Limite: testes sintéticos não comprovam vendas nem autorizam retomada paga. Mudança estrutural
+  exige revalidação própria; nota do operador não substitui contrato de integração.

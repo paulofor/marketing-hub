@@ -25,4 +25,14 @@ public interface ProcessRunEventRepository extends JpaRepository<ProcessRunEvent
       "select e from ProcessRunEvent e where e.runId = :runId and (:beforeId is null or e.id < :beforeId) order by e.id desc")
   List<ProcessRunEvent> history(
       @Param("runId") Long runId, @Param("beforeId") Long beforeId, Pageable pageable);
+
+  /** Consulta recibos de continuidade exclusivamente dentro do produto, ciclo e referência. */
+  @Query(
+      "select e from ProcessRunEvent e, ProcessRun r where e.runId = r.id "
+          + "and e.eventType = 'VERSION_CONTINUATION' and r.productId = :productId "
+          + "and r.learningCycleId = :cycleId and r.sourceReference = :reference order by e.id desc")
+  List<ProcessRunEvent> continuations(
+      @Param("productId") Long productId,
+      @Param("cycleId") Long cycleId,
+      @Param("reference") String reference);
 }

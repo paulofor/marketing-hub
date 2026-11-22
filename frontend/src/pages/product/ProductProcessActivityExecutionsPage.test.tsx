@@ -518,16 +518,25 @@ describe("ProductProcessActivityExecutionsPage", () => {
   });
 
   it("blocks task controls when the cycle context cannot be read", async () => {
+    const refetch = vi.fn();
     vi.mocked(useCycleProcessContext).mockReturnValue({
       data: null,
       isLoading: false,
       isError: true,
-    } as ReturnType<typeof useCycleProcessContext>);
+      refetch,
+    } as unknown as ReturnType<typeof useCycleProcessContext>);
     vi.mocked(axios.get).mockResolvedValue({ data: history });
     renderPage();
     expect(
       await screen.findByText(/Não foi possível identificar o ciclo/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Carregando o histórico auditável do processo..."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Consultar contexto novamente" }),
+    );
+    expect(refetch).toHaveBeenCalledOnce();
     expect(
       screen.queryByRole("button", { name: "Executar atividade" }),
     ).not.toBeInTheDocument();

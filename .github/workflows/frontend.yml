@@ -34,7 +34,7 @@ jobs:
       - name: Testar criação, pesquisa com Atena e evolução da Big Idea
         run: cd frontend && npm test -- --run src/pages/product/ProductBigIdeaPage.test.tsx src/pages/product/ProductBigIdeaResearch.test.tsx
       - name: Testar continuidade do ciclo entre versões da cadeia
-        run: cd frontend && npm test -- --run src/components/ProductNextProcessSummary.test.tsx src/components/ProductValueChainPositionNavigation.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/learningCycle/LearningCyclesPage.test.tsx
+        run: cd frontend && npm test -- --run src/components/ProductNextProcessSummary.test.tsx src/components/ProductValueChainPositionNavigation.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/product/ProductProcessVersionContinuity.test.tsx src/pages/learningCycle/LearningCyclesPage.test.tsx
       - name: Testar preparação do sucessor com mudança de público
         run: cd frontend && npm test -- --run src/pages/learningCycle/CycleAdjustmentPreparationForm.test.tsx src/pages/learningCycle/LearningCycleCommandForm.test.tsx src/pages/learningCycle/CycleKitImplementationBinding.test.tsx src/pages/learningCycle/CyclePrototypeRegistrationForm.test.tsx
       - name: Testar acompanhamento dos produtos em PLAY

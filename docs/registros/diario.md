@@ -66,3 +66,12 @@ revogação/substituição do incidente de credenciais anterior; preparação lo
 O CI completo identificou ausência dos prompts Turmalina no inventário administrativo dos agentes.
 A falha foi reproduzida localmente e os quatro artefatos foram registrados no catálogo existente;
 o ajuste permanece no PR #5854, sem alterar o teste que detectou a omissão.
+
+## 22/11/2026 — Continuidade de construção em versão publicada
+
+Preparada correção para manter o ciclo atual quando seu processo histórico foi retirado, com
+conferência de compatibilidade e reaproveitamento auditável das entregas. Vega não foi retomado;
+dispensa 140, gastos desconhecidos e limites não foram alterados. A capacidade reutilizável evita
+recomeçar um produto por mudança de versão do BPM; potencial de reduzir retrabalho, sem resultado
+financeiro medido. Homologação e entrega registradas em
+`docs/homologacao/vega-process-continuity-2026-11-22.md`.

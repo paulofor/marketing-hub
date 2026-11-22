@@ -13,6 +13,11 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: exigir a homologação atual da construção antes de liberar comunicação. */
 @Component
 public class LearningCycleConstructionPrerequisite {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   private final BusinessProcessChainDefinitionRepository chains;
   private final BusinessProcessActivityInstanceRepository instances;
   private final IrisLearningCycleContext proof;
@@ -46,8 +51,15 @@ public class LearningCycleConstructionPrerequisite {
                 () ->
                     new IllegalStateException(
                         "Processo de construção ausente da cadeia do ciclo."));
-    Long processId = construction.getProcessDefinition().getId();
     String reference = "experiment:" + cycle.getExperimentId();
+    Long processId =
+        versionContinuity == null
+            ? construction.getProcessDefinition().getId()
+            : versionContinuity.effective(
+                cycle.getProductId(),
+                cycle.getId(),
+                reference,
+                construction.getProcessDefinition().getId());
     String url =
         "/products/"
             + cycle.getProductId()

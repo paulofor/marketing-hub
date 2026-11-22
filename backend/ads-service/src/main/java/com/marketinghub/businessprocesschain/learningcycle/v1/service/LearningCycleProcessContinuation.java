@@ -15,6 +15,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LearningCycleProcessContinuation {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   private static final Set<String> PREPARATORY =
       Set.of(
           "pde-commercial-plan-offer",
@@ -61,7 +66,15 @@ public class LearningCycleProcessContinuation {
             .map(item -> item.getProcessDefinition())
             .filter(
                 definition ->
-                    Objects.equals(definition.getId(), run.getProcessDefinitionId())
+                    Objects.equals(
+                            versionContinuity == null
+                                ? definition.getId()
+                                : versionContinuity.effective(
+                                    run.getProductId(),
+                                    run.getLearningCycleId(),
+                                    run.getSourceReference(),
+                                    definition.getId()),
+                            run.getProcessDefinitionId())
                         && PREPARATORY.contains(definition.getProcessCode()))
             .findFirst()
             .orElse(null);
@@ -86,7 +99,15 @@ public class LearningCycleProcessContinuation {
             .map(item -> item.getProcessDefinition())
             .filter(
                 definition ->
-                    Objects.equals(definition.getId(), next.processDefinitionId())
+                    Objects.equals(
+                            versionContinuity == null
+                                ? definition.getId()
+                                : versionContinuity.effective(
+                                    run.getProductId(),
+                                    run.getLearningCycleId(),
+                                    run.getSourceReference(),
+                                    definition.getId()),
+                            next.processDefinitionId())
                         && PREPARATORY.contains(definition.getProcessCode()))
             .findFirst()
             .orElseThrow(

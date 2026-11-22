@@ -18,6 +18,11 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 @RequiredArgsConstructor
 public class LearningCycleExecutionContext {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   private final LearningSalesCycleRepository cycles;
   private final BusinessProcessChainDefinitionRepository chains;
   private final BusinessProcessDefinitionRepository processes;
@@ -56,6 +61,14 @@ public class LearningCycleExecutionContext {
     var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
     Set<Long> members = new HashSet<>();
     chain.getItems().forEach(item -> members.add(item.getProcessDefinition().getId()));
+    String reference =
+        "pde-construction-approval".equals(process.getProcessCode())
+            ? constructionSource(product, cycle)
+            : "experiment:" + cycle.getExperimentId();
+    if (versionContinuity != null
+        && versionContinuity.permits(
+            product.getId(), cycleId, reference, cycle.getChainDefinitionId(), process.getId()))
+      members.add(process.getId());
     var current = process;
     Set<String> visited = new HashSet<>();
     while (!members.contains(current.getId())) {

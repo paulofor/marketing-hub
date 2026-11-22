@@ -11852,3 +11852,5 @@ uma só decisão. O novo recibo separa preservação, aceite compatível e reval
 O harness passa a rejeitar nota genérica, verificar sete aceites e uma pendência, oito pendências,
 outra identidade e contexto histórico separado das provas dos gates. Nenhuma prova funcional do
 Vega é fabricada pelos testes de infraestrutura. Validação em `docs/homologacao/partial-process-continuity-2026-11-22.md`.
+
+Complemento após PR #5865: o seletor especial de `prototypeCorrection` reunia conclusões de várias versões sem aplicar o recibo. Duas regressões reproduziram o falso aceite na correção e a ausência do aceite compatível na atividade comum. O contexto agora usa o recibo para separar aceites, preservando artefatos e reprovações históricos. A regra vale para qualquer produto com continuidade preparada, sem exceção por ID.

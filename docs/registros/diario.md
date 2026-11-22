@@ -84,3 +84,5 @@ sem sucessora criada nesta entrega técnica. O contexto dos agentes distingue re
 históricos de provas aceitas pelo destino. Registro de causa, matriz, limites e evidências:
 `docs/homologacao/partial-process-continuity-2026-11-22.md`. Sem mudança de limite, dispensa,
 mídia, cobrança ou produção audiovisual; benefício comercial ainda não medido.
+
+Complemento da mesma entrega: revisão do contexto consumido pelo Dédalo identificou uma exceção antiga na correção entre versões. Testes locais primeiro reproduziram os dois desvios; a filtragem pelo recibo mantém apenas aceites compatíveis nas conclusões, conserva a reprovação e entrega os artefatos preservados separadamente. O primeiro PR #5865 já integrado permanece preservado; complemento por PR próprio, sem execução paga do Vega.

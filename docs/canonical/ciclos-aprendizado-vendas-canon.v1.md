@@ -913,3 +913,5 @@ válidos. A preparação mantém PAUSED e não cria tarefas. Retomada permanece 
 Após a preparação, a consulta exibe separadamente o aceite vigente da última ocorrência do
 destino. Uma revalidação concluída não permanece apresentada como pendente por causa do recibo
 histórico; uma ocorrência reprovada também não herda novamente o aceite original.
+
+O contexto de correção entre versões também respeita essa separação: `completedActivities` só contém resultados do destino ou tarefas explicitamente aceitas pelo recibo. Resultados sem revalidação ficam em `historicalContinuityArtifacts`; reprovações históricas continuam disponíveis para orientar a correção. Atividades comuns recebem os aceites compatíveis pela mesma política.

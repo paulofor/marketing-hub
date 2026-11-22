@@ -69,3 +69,22 @@ A recarga após revalidação consulta o aceite vigente da ocorrência de destin
 recibo histórico. Testes Java e React confirmaram que a pendência antiga deixa de ser anunciada
 quando existe aceite real. Typecheck e build foram repetidos para essa alteração. Consulta MCP
 adicional confirmou 917 COMPLETED e 921 BLOCKED no experiment:115; nenhum desses estados foi alterado.
+
+## Complemento do contexto de correção
+
+Após a integração do PR #5865, a inspeção do consumidor Dédalo confirmou que o contexto completo
+é injetado na execução. A exceção antiga de `prototypeCorrection` consultava todas as versões e
+poderia anunciar artefatos pendentes como conclusões. A atividade comum, por sua vez, não recebia
+os aceites compatíveis da origem. Duas regressões falharam antes da correção.
+
+Foram consideradas três opções: limitar a consulta à versão de destino (simples, mas perderia
+reprovações úteis); fornecer apenas uma orientação no prompt (barato, mas manteria dados
+contraditórios); aplicar o recibo ao contexto estruturado (pequeno ajuste, auditável e reutilizável).
+Foi escolhida a terceira. O contexto conserva reprovações e artefatos históricos; conclusões
+incluem somente resultados do destino e tarefas aceitas pelo recibo. O seletor vigente elimina
+duplicidade e preserva resultados posteriores. Fluxos sem recibo mantêm seu comportamento.
+
+O complemento passou em 209 testes Java de tarefas, seleção de contexto, continuidade, entrada
+de correção, orçamento e autorização de versão. O pacote comercial manteve 857 arquivos e 224
+manifestos válidos, sem mudança da candidata. Evidências antes/depois ficam no diretório recuperável
+já declarado. Nenhum dado ou agente do Vega foi alterado.

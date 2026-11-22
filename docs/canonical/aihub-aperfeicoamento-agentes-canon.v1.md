@@ -672,3 +672,12 @@ pela API de agentes. Reutilizar a cópia de recursos do backend e o teste de cob
 não duplicar conteúdo nem afrouxar a conferência. A ausência dos quatro artefatos de Turmalina foi
 reproduzida, corrigida e validada em 17 casos, preservando arquivos anteriores e seus hashes.
 Evidência: [evolução Turmalina](../homologacao/turmalina-value-delivery-v1.md).
+
+## Contexto volumoso na continuidade PDE — 22/11/2026
+
+Dédalo deve validar o orçamento da entrada serializada antes de iniciar inferência. Projeções
+não podem transformar histórico em aceite nem eliminar requisitos silenciosamente. Conteúdo
+externalizado exige referência verificável e ferramenta executável somente leitura no alcance
+da tarefa, preservando entrada original e auditoria. Mínimo irredutível deve bloquear para
+correção, sem retentativa idêntica automática. O diagnóstico deve separar interrupção sem saída,
+consumo desconhecido e recuperação de callback já produzido. Ver LOOP-PDE-CONTINUIDADE-EXCEDE-ENTRADA.

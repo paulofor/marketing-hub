@@ -181,3 +181,25 @@ describe("BusinessProcessExecutionCard", () => {
     expect(screen.queryByText("Avanço bloqueado")).not.toBeInTheDocument();
   });
 });
+
+it("mantém erro bruto apenas no diagnóstico fechado", () => {
+  const client = new QueryClient();
+  render(
+    <QueryClientProvider client={client}>
+      <BusinessProcessExecutionCard
+        execution={{
+          ...execution,
+          executionError: "ClasseInterna: input_too_large",
+          humanSummary: {
+            text: "Execução interrompida sem entrega.",
+            source: "DETERMINISTIC",
+            decision: "BLOCKED",
+          },
+        }}
+      />
+    </QueryClientProvider>,
+  );
+  expect(screen.getByText("Execução interrompida sem entrega.")).toBeVisible();
+  expect(screen.getByText("ClasseInterna: input_too_large")).not.toBeVisible();
+  client.clear();
+});

@@ -2,6 +2,8 @@ ARG OPALA_RUNTIME_IMAGE
 FROM ${OPALA_RUNTIME_IMAGE}
 USER root
 COPY scripts/test-opala-ui-proof.mjs /app/proof-tests/test-opala-ui-proof.mjs
+COPY scripts/test-pde-context.mjs /app/proof-tests/test-pde-context.mjs
 USER landingagent
 ENV OPALA_PROOF_MODULE_PATH=/app/proofs/opala/v1/capture-ui-proof.mjs
-ENTRYPOINT ["node", "--test", "/app/proof-tests/test-opala-ui-proof.mjs"]
+ENV PDE_CONTEXT_MCP_SCRIPT=/app/mcp/pde-context.mjs
+ENTRYPOINT ["node", "--test", "/app/proof-tests/test-opala-ui-proof.mjs", "/app/proof-tests/test-pde-context.mjs"]

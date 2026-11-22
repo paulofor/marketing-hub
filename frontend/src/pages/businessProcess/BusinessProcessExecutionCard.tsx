@@ -128,9 +128,12 @@ export default function BusinessProcessExecutionCard({
               >
                 <strong>{blockerTitle}</strong>
                 {execution.executionError ? (
-                  <StructuredExecutionContent
-                    value={execution.executionError}
-                  />
+                  <details>
+                    <summary>Diagnóstico técnico da interrupção</summary>
+                    <StructuredExecutionContent
+                      value={execution.executionError}
+                    />
+                  </details>
                 ) : null}
                 {guidance ? (
                   <div className="mt-2">

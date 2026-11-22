@@ -62,6 +62,9 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - name: Instalar dependências do leitor MCP para regressão sem modelo
+        working-directory: landing-generator-agent-worker
+        run: npm ci --ignore-scripts
       - name: Testar worker
         working-directory: landing-generator-agent-worker
         run: bash ../scripts/maven-verify-with-transient-retry.sh

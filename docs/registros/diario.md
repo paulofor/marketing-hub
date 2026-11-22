@@ -86,3 +86,11 @@ históricos de provas aceitas pelo destino. Registro de causa, matriz, limites e
 mídia, cobrança ou produção audiovisual; benefício comercial ainda não medido.
 
 Complemento da mesma entrega: revisão do contexto consumido pelo Dédalo identificou uma exceção antiga na correção entre versões. Testes locais primeiro reproduziram os dois desvios; a filtragem pelo recibo mantém apenas aceites compatíveis nas conclusões, conserva a reprovação e entrega os artefatos preservados separadamente. O primeiro PR #5865 já integrado permanece preservado; complemento por PR próprio, sem execução paga do Vega.
+
+### 22/11/2026 — proteção da continuidade Vega
+
+Investigação somente leitura confirmou excesso de contexto na tarefa 922, sem entrega e sem
+consumo informado. Correção local adiciona orçamento prévio e recuperação de provas históricas
+sem falsa aprovação. Limites financeiros e continuidade permanecem preservados. Ganho esperado:
+reduzir interrupções e repetição paga; impacto comercial não medido. Publicação deve ser
+conferida no PR específico desta correção; Lab retoma separadamente após a entrega técnica.

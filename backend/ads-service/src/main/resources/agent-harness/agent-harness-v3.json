@@ -2684,6 +2684,13 @@
         },
         {
           "artifactType": "PROMPT",
+          "name": "Recuperação verificável do contexto PDE",
+          "version": "v1",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v2/context-references.md",
+          "description": "Orienta leitura integral por hash no alcance da tarefa, sem confundir histórico e aceite atual."
+        },
+        {
+          "artifactType": "PROMPT",
           "name": "Limite das especificações de Dédalo",
           "version": "v1",
           "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v2/specification-boundary.md",

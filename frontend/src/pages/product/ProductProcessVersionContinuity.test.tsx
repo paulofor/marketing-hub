@@ -140,3 +140,32 @@ it("mantém falha da gravação visível sem anunciar sucesso", async () => {
   ).not.toBeInTheDocument();
   await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
 });
+
+it("mostra o aceite atual do destino após recarga sem apresentar a pendência histórica como vigente", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...preview,
+      successorRunId: 900,
+      canPrepare: false,
+      outputs: [
+        {
+          ...preview.outputs[0],
+          destinationInstanceId: 1200,
+          destinationAccepted: true,
+          destinationStatus: "ACCEPTED",
+          criteria: [
+            {
+              description: "Novo requisito",
+              status: "ACCEPTED_AT_DESTINATION",
+            },
+          ],
+        },
+      ],
+    },
+  });
+  mount();
+  await screen.findByText("Aceite confirmado no destino — ocorrência #1200.");
+  expect(screen.queryByText(/Revalidação pendente/)).not.toBeInTheDocument();
+  expect(screen.getByText("Aceito no destino:")).toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});

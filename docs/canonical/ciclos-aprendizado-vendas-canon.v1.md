@@ -909,3 +909,7 @@ entregas conservam ocorrência BLOCKED com `objectiveAchieved=false`. Nenhum gat
 prova aceita as tarefas apenas preservadas. O contexto do executor inclui o recibo e os resultados
 históricos em seção própria, para complementar os requisitos pendentes sem reconstruir artefatos
 válidos. A preparação mantém PAUSED e não cria tarefas. Retomada permanece um comando separado.
+
+Após a preparação, a consulta exibe separadamente o aceite vigente da última ocorrência do
+destino. Uma revalidação concluída não permanece apresentada como pendente por causa do recibo
+histórico; uma ocorrência reprovada também não herda novamente o aceite original.

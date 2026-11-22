@@ -45,9 +45,9 @@ reversão preserva os recibos e mantém a pausa.
 
 ## Resultados locais
 
-589 testes Java em 25 suítes passaram, incluindo 92 regras de arquitetura sem alteração,
+590 testes Java em 25 suítes passaram, incluindo 92 regras de arquitetura sem alteração,
 quatro cenários de contenção/persistência e as regressões de tarefas, gates e continuidade.
-Três testes React, typecheck e build completo passaram; 43 testes dos contratos de evidências
+Quatro testes React, typecheck e build completo passaram; 43 testes dos contratos de evidências
 passaram. Chromium desktop, iPhone 15 Pro e Pixel 7 confirmaram um POST, recarga e ausência de
 overflow. O navegador usa API sintética; persistência e política foram verificadas em Java.
 
@@ -56,10 +56,16 @@ zero aceites de destino fabricados. Os requisitos Turmalina acrescentados perman
 Isso não é homologação funcional do produto nem prova da tarefa 917. Não houve POST no Vega.
 
 A primeira rodada ampliada encontrou compilação desatualizada na verificação do contexto de
-tarefas e esgotamento de memória em contextos JPA acumulados. A recompilação e os lotes isolados
+tarefas e esgotamento do limite efetivo de 3,5 GiB da sandbox. A recompilação, o limite de heap Maven
+e os lotes sequenciais isolados
 passaram, sem enfraquecer testes. A atestação Mira v89 conserva v88 e revalida somente as duas
 fontes compartilhadas alteradas; não renova homologação ou autorização comercial.
 
 Evidências locais recuperáveis: `artifacts/partial-continuity` e
 `artifacts/process-version-continuity`, declaradas no manifesto de entrega. Fontes de teste,
 matriz e contrato estão versionados. Publicação ainda depende do PR, checks e deploys.
+
+A recarga após revalidação consulta o aceite vigente da ocorrência de destino, sem alterar o
+recibo histórico. Testes Java e React confirmaram que a pendência antiga deixa de ser anunciada
+quando existe aceite real. Typecheck e build foram repetidos para essa alteração. Consulta MCP
+adicional confirmou 917 COMPLETED e 921 BLOCKED no experiment:115; nenhum desses estados foi alterado.

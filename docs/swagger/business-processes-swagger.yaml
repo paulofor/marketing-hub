@@ -11,7 +11,7 @@ paths:
       - {name: learningCycleId, in: query, required: true, schema: {type: integer, format: int64}}
     get:
       summary: Compara contratos e separa aceite histórico de revalidação pendente
-      description: Cada output expõe owner, destinationStatus (ACCEPTED ou REVALIDATION_PENDING), criteria (description/status), taskIds e provas originais. HISTORICAL_ACCEPTANCE é aceite da origem, não comprovação de requisitos novos.
+      description: Cada output expõe owner, destinationStatus (ACCEPTED ou REVALIDATION_PENDING), criteria (description/status), destinationInstanceId, destinationAccepted e taskIds e provas originais. HISTORICAL_ACCEPTANCE é aceite da origem, não comprovação de requisitos novos. ACCEPTED_AT_DESTINATION indica aceite vigente da ocorrência do destino, sem reescrever o recibo.
       responses:
         "200": {description: Proposta ou recibo de continuidade com origem e destino no mesmo contexto}
         "409": {description: Contexto inexistente ou incompatível}

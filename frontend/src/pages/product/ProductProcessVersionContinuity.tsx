@@ -24,6 +24,8 @@ type Preview = {
     owner: string;
     destinationStatus: string;
     taskIds: number[];
+    destinationInstanceId: number | null;
+    destinationAccepted: boolean;
   }[];
 };
 
@@ -138,7 +140,9 @@ export default function ProductProcessVersionContinuity({
                 </strong>
                 <p>
                   {o.destinationStatus === "ACCEPTED"
-                    ? "Aceite compatível preservado no destino."
+                    ? o.destinationAccepted
+                      ? `Aceite confirmado no destino — ocorrência #${o.destinationInstanceId}.`
+                      : "Aceite compatível preservado no destino."
                     : `Revalidação pendente — responsável: ${o.owner}. Artefatos históricos preservados; o destino ainda não tem aceite.`}
                 </p>
                 <p>
@@ -153,9 +157,11 @@ export default function ProductProcessVersionContinuity({
                     {(o.criteria ?? []).map((criterion, i) => (
                       <li key={i}>
                         <strong>
-                          {criterion.status === "HISTORICAL_ACCEPTANCE"
-                            ? "Aceito na origem — preservar: "
-                            : "Revalidar no destino: "}
+                          {criterion.status === "ACCEPTED_AT_DESTINATION"
+                            ? "Aceito no destino: "
+                            : criterion.status === "HISTORICAL_ACCEPTANCE"
+                              ? "Aceito na origem — preservar: "
+                              : "Revalidar no destino: "}
                         </strong>
                         {criterion.description}
                       </li>

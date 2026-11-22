@@ -54,7 +54,9 @@ public class ProcessVersionContinuityService {
       com.fasterxml.jackson.databind.JsonNode sourceContract,
       com.fasterxml.jackson.databind.JsonNode targetContract,
       com.fasterxml.jackson.databind.JsonNode evidence,
-      List<Long> taskIds) {
+      List<Long> taskIds,
+      Long destinationInstanceId,
+      boolean destinationAccepted) {
     /** Expõe critérios históricos separados dos requisitos que ainda exigem revalidação. */
     @com.fasterxml.jackson.annotation.JsonProperty
     public List<Criterion> criteria() {
@@ -80,6 +82,10 @@ public class ProcessVersionContinuityService {
             new Criterion(
                 "Contrato sem critérios textuais; conferir prova estruturada.",
                 "REVALIDATION_PENDING"));
+      if (destinationAccepted)
+        return result.stream()
+            .map(c -> new Criterion(c.description(), "ACCEPTED_AT_DESTINATION"))
+            .toList();
       return List.copyOf(result);
     }
 
@@ -104,7 +110,9 @@ public class ProcessVersionContinuityService {
     /** Expõe ao operador a decisão de destino sem depender de inferência no frontend. */
     @com.fasterxml.jackson.annotation.JsonProperty
     public String destinationStatus() {
-      return reusable() ? "ACCEPTED" : "REVALIDATION_PENDING";
+      return (destinationInstanceId != null ? destinationAccepted : reusable())
+          ? "ACCEPTED"
+          : "REVALIDATION_PENDING";
     }
   }
 
@@ -219,6 +227,13 @@ public class ProcessVersionContinuityService {
               .filter(d -> d.getActivityId().equals(a.activityId()))
               .findFirst()
               .orElse(null);
+      var destinationInstance =
+          binding.isEmpty() || after == null
+              ? null
+              : instances
+                  .findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+                      after.getId(), reference)
+                  .orElse(null);
       outputs.add(
           new Output(
               a.activityId(),
@@ -244,7 +259,9 @@ public class ProcessVersionContinuityService {
                                   || inheritedTasks.contains(t.taskId()))
                               && "COMPLETED".equals(t.status()))
                   .map(t -> t.taskId())
-                  .toList()));
+                  .toList(),
+              destinationInstance == null ? null : destinationInstance.getId(),
+              destinationInstance != null && destinationInstance.isObjectiveAchieved()));
     }
     boolean active =
         history.activities().stream()

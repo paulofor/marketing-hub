@@ -348,6 +348,32 @@ class ProcessVersionContinuityServiceTest {
     verify(cycles, never()).save(any());
   }
 
+  /** Recarga reflete o aceite real da revalidação, sem reescrever o recibo de preparação. */
+  @Test
+  void reloadsActualDestinationAcceptance() {
+    setup(73);
+    targetDefinitions
+        .getFirst()
+        .setDefinitionJson("{\"id\":\"step-0\",\"description\":\"Critério novo\"}");
+    var p = service.preview(productId, cycle.getId(), target.getId());
+    service.prepare(productId, cycle.getId(), target.getId(), request(p, Map.of()));
+    var receipt = journal.getLast().getDetailsJson();
+    var revalidated = copies.getFirst();
+    revalidated.setObjectiveAchieved(true);
+    revalidated.setStatus("COMPLETED");
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            targetDefinitions.getFirst().getId(), source.getSourceReference()))
+        .thenReturn(Optional.of(revalidated));
+    var current = service.preview(productId, cycle.getId(), target.getId()).outputs().getFirst();
+    assertThat(current.destinationAccepted()).isTrue();
+    assertThat(current.destinationInstanceId()).isEqualTo(revalidated.getId());
+    assertThat(current.destinationStatus()).isEqualTo("ACCEPTED");
+    assertThat(current.criteria())
+        .extracting(ProcessVersionContinuityService.Criterion::status)
+        .containsOnly("ACCEPTED_AT_DESTINATION");
+    assertThat(journal.getLast().getDetailsJson()).isEqualTo(receipt);
+  }
+
   /** Ausência de prova não ganha aceite mesmo quando o texto do contrato não mudou. */
   @Test
   void missingEvidenceRemainsPending() {

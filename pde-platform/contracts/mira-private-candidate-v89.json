@@ -675,7 +675,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/continuity/ProcessVersionContinuityService.java",
-      "sha256": "4e6f5fb0db985759c8f02290b47ba867af9619d98a628d1933929e8df589ad9c",
+      "sha256": "393d5496570ad63ba441b24e38fd5806f03c3c8cc3ab10e836a0582ff33020b9",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "Continuidade administrativa pausada e scoped por produto/ciclo/referência; preserva provas, critérios de compatibilidade e controles financeiros, sem nova inferência ou aprovação comercial."
     }
@@ -1133,7 +1133,7 @@
     "baseManifestSha256": "68ef050ef68abf28e35de21ea902039ca89ca7cb422d30d1f31aaa4b275d6841",
     "implementationChanged": false,
     "executorChanged": true,
-    "validatedAt": "2026-11-22T17:51:06.545237+00:00",
+    "validatedAt": "2026-11-22T18:09:16.964126+00:00",
     "changedEvidence": [
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/continuity/ProcessVersionContinuityLookup.java",
@@ -1143,7 +1143,7 @@
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/continuity/ProcessVersionContinuityService.java",
         "previousSha256": "fa0847a7b4506d5f31a91a49ec6876d74cb05cf6c792287a97d432690aa42c0a",
-        "sha256": "4e6f5fb0db985759c8f02290b47ba867af9619d98a628d1933929e8df589ad9c"
+        "sha256": "393d5496570ad63ba441b24e38fd5806f03c3c8cc3ab10e836a0582ff33020b9"
       }
     ],
     "validationReport": "docs/homologacao/partial-process-continuity-2026-11-22.md"

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-kling40-4k-hdr-api-2026-11",
+  "title": "Kling 4.0 — 4K nativo e HDR 10 bits em API ativa",
+  "finding": "Kling 4.0 adicionou saída 4K nativa e 10-bit HDR, e a Runware documenta API ativa e tarifas por segundo.",
+  "mechanism": "API com resoluções até 4K, HDR HEVC 10-bit BT.2020 HLG, controle por prompt e múltiplas referências; modelo fechado.",
+  "commercialApplication": "Anúncios e cenas com correção de cor HDR, crop e referência de personagens; comparar custo por take aprovado.",
+  "evidenceStrength": "Alta para a disponibilidade e condições documentadas; resultados de qualidade não testados independentemente.",
+  "experimentHypothesis": "O HDR 4K melhora a gradação e reduz retrabalho em peças audiovisuais que requerem masters de alta resolução.",
+  "risks": "HDR pode não ter diferença perceptível em exibição SDR; preços por provedor e vídeo de entrada variam; riscos de direitos de terceiros.",
+  "limits": "ATIVO via Runware; Kling Flash separadamente ATIVO mas limitado a 720p; pesos fechados. 4K nativo é alegação do fornecedor.",
+  "sourceTitle": "Kling 4.0 — 4K nativo e HDR 10 bits em API ativa",
+  "collection": "video",
+  "publishedOn": "2026-11-22",
+  "validUntil": "2027-02-22",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-22-kling40-4k-hdr-api.md",
+  "sourceSha256": "6ab6a7652d7d93d7c247034a4f2fde50c271d4a8b3bd3c5975f36c59d255f906"
+}

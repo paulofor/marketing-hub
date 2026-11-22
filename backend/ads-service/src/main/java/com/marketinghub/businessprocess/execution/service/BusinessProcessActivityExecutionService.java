@@ -664,7 +664,10 @@ public class BusinessProcessActivityExecutionService {
     return response(task, product.getInternalName(), true);
   }
 
-  /** Entrega a síntese da tarefa corrente sem carregar prompts, provas ou resultados dos demais. */
+  /**
+   * Entrega a síntese ou interrupção da tarefa corrente sem carregar prompts, provas ou outras
+   * tarefas.
+   */
   @Transactional(readOnly = true)
   public BusinessProcessTaskHumanSummaryResponse taskHumanSummary(
       Long processDefinitionId, Long productId, Long taskId, String sourceReference) {
@@ -682,6 +685,8 @@ public class BusinessProcessActivityExecutionService {
     var task = new AgentTask();
     task.setId(input.taskId());
     task.setResultJson(input.resultJson());
+    task.setStatus(input.status());
+    task.setExecutionError(input.executionError());
     return new BusinessProcessTaskHumanSummaryResponse(AgentTaskResultView.humanSummary(task));
   }
 

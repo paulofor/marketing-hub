@@ -394,6 +394,65 @@ describe("ProductProcessActivityExecutionsPage", () => {
     } as ReturnType<typeof useCycleProcessContext>);
   });
 
+  it("preserva síntese da tarefa e diagnóstico fechado na página inteira sem nova execução", async () => {
+    const message =
+      "A execução foi interrompida porque o contexto excedeu o limite permitido.";
+    const summary =
+      "Nenhuma entrega foi produzida. O consumo permanece sujeito à conferência.";
+    const raw = "com.internal.Exception: input_too_large {raw:true}";
+    const task = {
+      ...dedaloTask,
+      status: "BLOCKED",
+      comments: null,
+      evidenceJson: null,
+      estimatedCostUsd: null,
+      costEstimationStatus: "NOT_REPORTED",
+      executionError: raw,
+      humanSummary: {
+        text: summary,
+        source: "DETERMINISTIC",
+        decision: "BLOCKED",
+      },
+    };
+    const page = {
+      ...history,
+      currentActivityId: "journey",
+      currentActivityName: "Construir experiência",
+      currentActivityStateReason: message,
+      completedActivityCount: 0,
+      remainingActivityCount: 11,
+      activities: [
+        {
+          ...history.activities[0],
+          activityId: "journey",
+          activityName: "Construir experiência",
+          operationalState: "BLOCKED",
+          stateReason: message,
+          objectiveAchieved: false,
+          tasks: [task],
+        },
+      ],
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => ({
+      data: String(url).includes("human-summary")
+        ? { humanSummary: null }
+        : String(url).includes("execution-progress")
+          ? []
+          : page,
+    }));
+    renderPage();
+    await waitFor(() => {
+      for (const element of screen.getAllByText(summary))
+        expect(element).toBeVisible();
+    });
+    expect(screen.getAllByText(message).length).toBeGreaterThan(0);
+    const diagnostics = screen.getAllByText(raw);
+    for (const diagnostic of diagnostics) {
+      expect(diagnostic.closest("details")).not.toHaveAttribute("open");
+    }
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("identifica tarefa histórica sem atribuir seu bloqueio à versão atual", async () => {
     const selectedHistory = structuredClone(history);
     selectedHistory.selectedProcessDefinitionId = 701;

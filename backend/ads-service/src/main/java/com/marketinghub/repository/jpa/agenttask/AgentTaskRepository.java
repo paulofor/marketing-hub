@@ -21,9 +21,11 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
-  /** Lê apenas o resultado no contexto exato, sem hidratar prompts, auditoria ou outras tarefas. */
+  /**
+   * Lê resultado e interrupção no contexto exato, sem hidratar prompts, provas ou outras tarefas.
+   */
   @Query(
-      "select new com.marketinghub.agenttask.AgentTaskHumanSummaryInputSnapshot(t.id, t.resultJson) from AgentTask t where t.id = :taskId and t.processDefinition.id = :processId and t.sourceReference = :reference")
+      "select new com.marketinghub.agenttask.AgentTaskHumanSummaryInputSnapshot(t.id, t.resultJson, t.status, t.executionError) from AgentTask t where t.id = :taskId and t.processDefinition.id = :processId and t.sourceReference = :reference")
   java.util.Optional<com.marketinghub.agenttask.AgentTaskHumanSummaryInputSnapshot>
       findHumanSummaryInput(
           @Param("taskId") Long taskId,

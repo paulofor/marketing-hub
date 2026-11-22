@@ -11869,3 +11869,9 @@ Complemento após PR #5865: o seletor especial de `prototypeCorrection` reunia c
 - Limite: testes sintéticos não atestam prontidão do Vega nem ganho comercial. Nenhuma retomada
   paga, aprovação ou alteração de limite integra esta correção. Evidências e matriz em
   `docs/homologacao/pde-context-budget-2026-11-22.md`.
+
+Complemento deste loop: registros antigos também guardam o erro em motivos do processo/atividade;
+a consulta leve da síntese não carregava estado/erro. Projeções de leitura normalizam as duas
+falhas conhecidas (`input_too_large`/`PDE_CONTEXT_BUDGET_V1`), preservando diagnóstico e estados.
+Regressões `ContextFailureBusinessProjectionTest`, consulta JPA segregada e página inteira
+impedem que validar apenas o cartão deixe o cabeçalho exposto novamente.

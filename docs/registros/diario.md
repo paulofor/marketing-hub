@@ -94,3 +94,9 @@ consumo informado. Correção local adiciona orçamento prévio e recuperação 
 sem falsa aprovação. Limites financeiros e continuidade permanecem preservados. Ganho esperado:
 reduzir interrupções e repetição paga; impacto comercial não medido. Publicação deve ser
 conferida no PR específico desta correção; Lab retoma separadamente após a entrega técnica.
+
+Complemento após publicação do PR #5868 (main `acd17621920304a9f5a8639dd4938860ea57b6ce`):
+a conferência visual detectou erro bruto em projeções legadas do processo/atividade e síntese
+vazia por falta de estado/erro na consulta leve. Correção somente na leitura, com testes da
+página inteira e segregação; diagnóstico, histórico, custos e aceites preservados. O executor
+já publicado não é repetido nem o Vega retomado. Entrega complementar segue PR próprio.

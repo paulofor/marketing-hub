@@ -795,7 +795,8 @@ export default function ProductProcessActivityExecutionsPage() {
                           finishedAt: task.finishedAt,
                           executionError: task.executionError,
                           humanSummary: (task.taskId === summaryTask?.taskId
-                            ? humanSummary.data?.humanSummary
+                            ? (humanSummary.data?.humanSummary ??
+                              task.humanSummary)
                             : task.humanSummary
                           )?.text,
                           recommendedAction:
@@ -838,7 +839,9 @@ export default function ProductProcessActivityExecutionsPage() {
                           humanSummary.data
                             ? {
                                 ...execution,
-                                humanSummary: humanSummary.data.humanSummary,
+                                humanSummary:
+                                  humanSummary.data.humanSummary ??
+                                  execution.humanSummary,
                               }
                             : execution
                         }

@@ -1,5 +1,6 @@
 package com.marketinghub.businessprocess.execution.service.productProcessExecutions;
 
+import com.marketinghub.agenttask.AgentTaskResultView;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getSalesFlow.SalesFlowResponse;
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +39,13 @@ public record ProductProcessActivityExecutionHistoryResponse(
     List<ProductProcessActivityExecutionGroupResponse> activities,
     ProductProcessChainPositionResponse chainPosition,
     SalesFlowResponse salesFlow) {
+  /**
+   * Converte motivos técnicos legados somente na projeção pública, sem alterar o estado persistido.
+   */
+  public ProductProcessActivityExecutionHistoryResponse {
+    currentActivityStateReason = AgentTaskResultView.businessReason(currentActivityStateReason);
+  }
+
   /** Mantém compatibilidade com processos sem contrato de fluxo comercial. */
   public ProductProcessActivityExecutionHistoryResponse(
       Long productId,

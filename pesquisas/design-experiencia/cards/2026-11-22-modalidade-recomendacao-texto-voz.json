@@ -1,0 +1,18 @@
+{
+  "cardKey": "modalidade-recomendacao-ia-produto-contexto",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Recomendação por texto ou voz depende do produto e do contexto",
+  "finding": "Artigo revisado por pares de 27/10/2026 reuniu cinco estudos, incluindo campo preliminar e experimentos: recomendações de IA em texto tiveram maior adoção geral; texto favoreceu produtos de busca, voz favoreceu produtos de experiência e ganhou vantagem relativa sob multitarefa ou alta carga cognitiva.",
+  "mechanism": "Fluência de processamento e adequação entre modalidade, tipo de informação do produto e atenção disponível podem influenciar adoção da recomendação. O estudo investiga essas relações; não estabelece um efeito universal.",
+  "commercialApplication": "Em jornada B2C, permitir comparar atributos, preço e compatibilidade em texto e oferecer áudio opcional para orientação contextual. O consumidor pode trocar de modalidade e consultar justificativas verificáveis.",
+  "evidenceStrength": "European Journal of Marketing, artigo revisado por pares publicado em 27/10/2026, cinco estudos incluindo preliminar de campo. O resumo acessível não informa tamanhos de efeito ou pagamentos; evidência contextual de respostas, não prova de ROI.",
+  "publishedOn": "2026-11-22",
+  "validUntil": "2027-01-06",
+  "experimentHypothesis": "Modalidade escolhida conforme preferência, produto e multitarefa reduzirá fricção e escolhas incompatíveis versus interface de modalidade única; medir compreensão, conclusão, checkout e pagamento reconciliado separadamente.",
+  "risks": "Confundir conforto de uso com persuasão legítima; prejudicar acessibilidade, privacidade de áudio e verificação de especificações; não inferir preferências individuais apenas por categoria de produto.",
+  "limits": "Estudos em contextos e amostras específicos; resultados de produto de busca versus experiência podem depender de idioma, interface e cultura. Não há comprovação de conversão no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-22-modalidade-recomendacao-texto-voz.md",
+  "sourceTitle": "Fonte revisada — Nguyen, Barari e Zhang: modalidade de recomendação GenAI, produto e multitarefa",
+  "sourceSha256": "66ec4f86c7c13671236f37a7e06da56100d995367f26237d03268f6b6cbf5485"
+}

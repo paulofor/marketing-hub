@@ -1,0 +1,18 @@
+{
+  "cardKey": "congruencia-visual-estilo-assistentes-voz",
+  "collection": "neuromarketing",
+  "title": "Combinar aparência e tom do assistente pode elevar satisfação",
+  "finding": "Cinco experimentos (N=1.432), publicados em 2026, relataram maior satisfação com imagem abstrata de assistente + comunicação orientada à tarefa, ou imagem antropomórfica + estilo social. Agência e experiência percebidas foram mecanismos estatísticos propostos.",
+  "mechanism": "Congruência entre pistas visuais e verbais pode alinhar expectativas sobre capacidade instrumental ou social de um agente. Mediações perceptuais não são medições de atividade neural nem prova de causalidade comercial.",
+  "commercialApplication": "Testar em assistentes multimodais de atendimento pares coerentes entre avatar e estilo verbal, com identificação transparente de IA, opção de tom mais objetivo e verificação da eficácia operacional.",
+  "evidenceStrength": "Journal of Retailing and Consumer Services, volume 92, 2026, artigo revisado por pares, cinco experimentos e 1.432 participantes; demonstra satisfação em cenários, não aumento de vendas.",
+  "publishedOn": "2026-11-22",
+  "validUntil": "2027-01-06",
+  "experimentHypothesis": "Em atendimento multimodal, pares congruentes de visual e linguagem elevarão clareza e satisfação em comparação a pares incongruentes, sem piorar precisão e autonomia; medir desempenho e conversão separadamente.",
+  "risks": "Antropomorfismo excessivo, intimidade não solicitada, estereótipos de usuário, promessas de capacidade não existente e confusão sobre ser IA.",
+  "limits": "Experimentos com assistentes que combinam tela e voz; não foi demonstrado o mesmo efeito em voz sem tela, brasileiros, vendas, CTA, checkout ou pagamentos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-22-congruencia-avatar-tom-voz.md",
+  "sourceTitle": "Fonte revisada — Kang, Yang e Shao: imagem, comunicação verbal e satisfação com assistentes",
+  "sourceSha256": "729cac412f1c313af8430b1ec9be8d6cdcd611566b99446efc91b9fe780e9b97"
+}

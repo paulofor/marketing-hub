@@ -11854,3 +11854,18 @@ outra identidade e contexto histórico separado das provas dos gates. Nenhuma pr
 Vega é fabricada pelos testes de infraestrutura. Validação em `docs/homologacao/partial-process-continuity-2026-11-22.md`.
 
 Complemento após PR #5865: o seletor especial de `prototypeCorrection` reunia conclusões de várias versões sem aplicar o recibo. Duas regressões reproduziram o falso aceite na correção e a ausência do aceite compatível na atividade comum. O contexto agora usa o recibo para separar aceites, preservando artefatos e reprovações históricos. A regra vale para qualquer produto com continuidade preparada, sem exceção por ID.
+
+## LOOP-PDE-CONTINUIDADE-EXCEDE-ENTRADA — 22/11/2026
+
+- Evidência: tarefa 922 bloqueada sem saída; prompt persistido de 1.115.310 caracteres,
+  limite de transporte 1.048.576. Histórico e recibo de continuidade predominavam no contexto.
+- Causa: serialização integral da tarefa sem orçamento anterior ao processo; jornada não tem
+  shell habilitado, portanto simples links para arquivos não resolvem recuperação.
+- Correção: projeção sem truncamento com referências SHA-256, snapshot por tarefa/entrada,
+  leitura MCP paginada e restrita, preflight conservador incluindo escape/schema/UTF-8.
+  Preserva backend como autoridade de aceites, orçamento e avanço; mínimo irredutível bloqueia.
+- Prevenção: PdeContextBudgetTest, teste MCP real e suíte existente de outbox/replay.
+  Explicação de negócio separada do erro bruto; ausência de consumo não significa zero.
+- Limite: testes sintéticos não atestam prontidão do Vega nem ganho comercial. Nenhuma retomada
+  paga, aprovação ou alteração de limite integra esta correção. Evidências e matriz em
+  `docs/homologacao/pde-context-budget-2026-11-22.md`.

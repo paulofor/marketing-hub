@@ -361,10 +361,27 @@ public class PdeConstructionBpmTaskConsumer {
   /** Preserva entrada, saída e eventos até o backend confirmar a entrega da mesma execução. */
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
     BpmContract contract = contractFor(task);
-    PromptComposition prompt = promptComposition(task);
+    PdeContextBudget budget = new PdeContextBudget(json);
+    Map<String, Object> projected = budget.project(task);
+    PromptComposition prompt = promptComposition(projected);
+    budget.preflight(prompt.fullPrompt(), read(specificationSchema(task, contract)));
+    Path contextFile =
+        outbox
+            .output()
+            .resolveSibling(
+                "task-context-"
+                    + taskId(task)
+                    + "-"
+                    + CatalogPromptInput.sha256(json.writeValueAsString(task))
+                    + ".json");
+    budget.save(contextFile, taskId(task));
     Path output = outbox.output();
     Path processLog = outbox.events();
     Path schema = materialize(specificationSchema(task, contract), ".json");
+    var preparedCommand =
+        budget.hasReferences()
+            ? contextCommand(output, schema, contract, contextFile)
+            : command(output, schema, contract);
     var audit =
         executionAudit(
             task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
@@ -375,7 +392,7 @@ public class PdeConstructionBpmTaskConsumer {
           task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
       outbox.save(new PdeConstructionOutbox.Pending(task, audit, true, null, null));
       process =
-          new ProcessBuilder(command(output, schema, contract))
+          new ProcessBuilder(preparedCommand)
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
@@ -485,6 +502,26 @@ public class PdeConstructionBpmTaskConsumer {
     return command;
   }
 
+  /** Disponibiliza recuperação somente leitura sem habilitar shell para especificações. */
+  private List<String> contextCommand(
+      Path output, Path schema, BpmContract contract, Path contextFile) throws IOException {
+    var command = new ArrayList<>(command(output, schema, contract));
+    Path script = Path.of(properties.getMcpScriptPath()).resolveSibling("pde-context.mjs");
+    if (!Files.isRegularFile(script))
+      throw new IOException("Ferramenta de recuperação do contexto indisponível.");
+    command.addAll(
+        List.of(
+            "--config",
+            "mcp_servers.pde_context.command=\"node\"",
+            "--config",
+            "mcp_servers.pde_context.args="
+                + json.writeValueAsString(List.of(script.toAbsolutePath().toString())),
+            "--config",
+            "mcp_servers.pde_context.env.PDE_CONTEXT_FILE="
+                + json.writeValueAsString(contextFile.toAbsolutePath().toString())));
+    return command;
+  }
+
   /** Resolve o prompt da atividade com o snapshot imutável recebido do backend. */
   private String prompt(Map<String, Object> task) throws IOException {
     return promptComposition(task).fullPrompt();
@@ -493,7 +530,10 @@ public class PdeConstructionBpmTaskConsumer {
   /** Compõe núcleo, limite da atividade e contexto, preservando catálogo Opala e base Turmalina. */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     BpmContract contract = contractFor(task);
-    String agentPromptPart = read("prompts/pde-construction/v1/agent-core.md");
+    String agentPromptPart =
+        read("prompts/pde-construction/v1/agent-core.md")
+            + "\n\n"
+            + read("prompts/pde-construction/v2/context-references.md");
     if (specificationActivity(contract)) {
       agentPromptPart += "\n\n" + read("prompts/pde-construction/v2/specification-boundary.md");
     }

@@ -748,9 +748,10 @@ export function IndependentBusinessProcessExecutionDetail({
                         headingLevel="h4"
                       />
                       {task.executionError ? (
-                        <p className="text-danger">
-                          <strong>Erro:</strong> {task.executionError}
-                        </p>
+                        <details>
+                          <summary>Diagnóstico técnico da interrupção</summary>
+                          <p className="text-danger">{task.executionError}</p>
+                        </details>
                       ) : null}
                       {task.result !== undefined ? (
                         <JsonPayload label="Resultado" value={task.result} />

@@ -23,6 +23,7 @@
     ".codex/waiver-test/run-batches.py",
     ".codex/waiver-test/mysql-relay.py",
     "artifacts/partial-continuity",
-    "artifacts/process-version-continuity"
+    "artifacts/process-version-continuity",
+    "artifacts/pde-context-budget"
   ]
 }

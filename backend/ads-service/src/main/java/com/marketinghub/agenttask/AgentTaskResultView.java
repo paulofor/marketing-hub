@@ -15,6 +15,14 @@ public final class AgentTaskResultView {
 
   /** Apresenta a síntese do agente e identifica recortes legados sem reescrever o resultado. */
   public static AgentTaskHumanSummary humanSummary(AgentTask task) {
+    if (task != null && "BLOCKED".equals(task.getStatus())
+        && (task.getResultJson() == null || task.getResultJson().isBlank())
+        && task.getExecutionError() != null
+        && (task.getExecutionError().contains("input_too_large")
+            || task.getExecutionError().contains("PDE_CONTEXT_BUDGET_V1")))
+      return new AgentTaskHumanSummary(
+          "A execução foi interrompida porque o contexto excedeu o limite permitido. Nenhuma entrega foi produzida. É necessário corrigir a preparação do contexto antes de retomar; o consumo permanece sujeito à conferência.",
+          "DETERMINISTIC", "BLOCKED");
     if (task == null || task.getResultJson() == null || task.getResultJson().isBlank()) return null;
     try {
       JsonNode result = JSON.readTree(task.getResultJson());

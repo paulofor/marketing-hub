@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-adaptativa-feedback-explicito",
+  "collection": "prazer-audio-visual",
+  "title": "Testar adaptação de trilha por feedback explícito, não presumir eficácia emocional",
+  "finding": "Um sistema de recomendação musical com fusão multimodal e feedback histórico reportou 90,1% de acurácia de classificação emocional, F1 de 89,6% e redução de distância ao alvo afetivo de 0,214, frente a 0,186 de um comparador. São métricas internas, não provas de melhora do prazer ou da saúde.",
+  "mechanism": "O modelo combina atributos afetivos da música, estado-alvo e feedback para reordenar sugestões; adaptação pode corrigir escolhas anteriores, mas o benefício causal não foi isolado.",
+  "commercialApplication": "Em produto audiovisual não clínico, oferecer escolha/ajuste voluntário da trilha e testar recomendações por feedback explícito contra trilha fixa e escolha manual, sem inferir emoções por câmera ou microfone.",
+  "evidenceStrength": "Moderada-baixa para desempenho computacional nas avaliações reportadas; baixa para benefícios subjetivos e muito baixa para efeitos clínicos ou comerciais.",
+  "publishedOn": "2026-11-22",
+  "validUntil": "2027-01-06",
+  "experimentHypothesis": "Uma variante que adapta trilhas segundo avaliações voluntárias repetidas apresentará mais agrado e menos interrupções que trilha fixa, sem superar necessariamente a seleção manual; comparar grupos randomizados e usuários novos.",
+  "risks": "Não inferir diagnósticos ou emoções verdadeiras; evitar monitoramento biométrico não consentido, manipulação afetiva, desconforto acústico e promessas terapêuticas.",
+  "limits": "A pesquisa não prova eficácia clínica nem testou a versão sem biometria sugerida; desempenho de classificação não equivale a prazer, causalidade, retenção ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-22-musica-adaptativa-feedback-explicito-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Música adaptativa e feedback explícito",
+  "sourceSha256": "43fccee9f6f2b0bcd9abac4720205c13c266d3a8f0a69beb2a3813aa810ca9fd"
+}

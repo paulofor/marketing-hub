@@ -23,10 +23,14 @@ final class PdeContextBudget {
 
   /** Preserva contratos atuais e referencia folhas extensas do histórico com hash verificável. */
   Map<String, Object> project(Map<String, Object> task) throws IOException {
-    ObjectNode root = json.valueToTree(CatalogPromptInput.context(task));
-    JsonNode context = root.get("processContextJson");
-    if (context != null && context.isTextual()) {
-      JsonNode parsed = json.readTree(context.asText());
+    Map<String, Object> root = new LinkedHashMap<>(task);
+    Object context = root.get("processContextJson");
+    if (context instanceof String text) {
+      JsonNode parsed =
+          json.reader()
+              .with(
+                  com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+              .readTree(text);
       for (String field :
           new String[] {
             "historicalContinuityArtifacts", "versionContinuity", "correctionAttempts"
@@ -43,13 +47,13 @@ final class PdeContextBudget {
             "operatorGuidance",
             "description",
             "researchIntelligence"))
-      if (root.has(field)) sizes.put(field, json.writeValueAsBytes(root.get(field)).length);
+      if (root.containsKey(field)) sizes.put(field, json.writeValueAsBytes(root.get(field)).length);
     org.slf4j.LoggerFactory.getLogger(PdeContextBudget.class)
         .info(
             "PDE_CONTEXT_BUDGET_V1 serializedSectionBytes={} uniqueReferences={}",
             sizes,
             references.size());
-    return json.convertValue(root, Map.class);
+    return root;
   }
 
   /**

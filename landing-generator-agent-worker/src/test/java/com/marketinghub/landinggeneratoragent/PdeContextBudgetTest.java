@@ -123,4 +123,18 @@ class PdeContextBudgetTest {
     budget.preflight(json.writeValueAsString(projection), "{}");
     assertThat(projection.toString()).contains("contextReference", "pending", "accepted");
   }
+
+  /** Mantém o catálogo disponível para validação antes da projeção própria do Opala. */
+  @Test
+  void retainsCatalogUntilPromptValidation() throws Exception {
+    var catalog = Map.of("text", "instrução imutável", "versionId", 17, "sha256", "test-hash");
+    var task =
+        Map.<String, Object>of(
+            "processCode", "opala-commercial-preparation-v1", "catalogPrompt", catalog);
+    var projected = new PdeContextBudget(new ObjectMapper()).project(task);
+    assertThat(projected.get("catalogPrompt")).isEqualTo(catalog);
+    assertThat(CatalogPromptInput.context(projected))
+        .containsKey("catalogPromptReference")
+        .doesNotContainKey("catalogPrompt");
+  }
 }

@@ -36,6 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class IrisLearningCycleContext {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   public static final String MODE = "LEARNING_CYCLE_PRIVATE";
   private static final String CONSTRUCTION = "pde-construction-approval";
   private static final Set<String> REVIEWS =
@@ -151,10 +156,15 @@ public class IrisLearningCycleContext {
             .filter(value -> CONSTRUCTION.equals(value.getProcessCode()))
             .findFirst()
             .orElseThrow();
+    Long effectiveProcessId =
+        versionContinuity == null
+            ? process.getId()
+            : versionContinuity.effective(
+                cycle.getProductId(), cycle.getId(), reference, process.getId());
     var gate =
         instances
             .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
-                process.getId(), reference)
+                effectiveProcessId, reference)
             .stream()
             .filter(
                 value ->
@@ -181,9 +191,11 @@ public class IrisLearningCycleContext {
             && proof.path("mediaSpendAuthorizedBrl").asDouble(-1) == 0,
         "Prova do gate incompatível com a versão e os limites privados.");
     Map<String, PdeValidationTaskSnapshot> latest = new LinkedHashMap<>();
-    var history = tasks.findPdeValidationTaskSnapshots(reference, CONSTRUCTION);
+    var rawHistory = tasks.findPdeValidationTaskSnapshots(reference, CONSTRUCTION);
+    var history =
+        versionContinuity == null ? rawHistory : versionContinuity.project(reference, rawHistory);
     history.stream()
-        .filter(value -> process.getId().equals(value.processDefinitionId()))
+        .filter(value -> effectiveProcessId.equals(value.processDefinitionId()))
         .forEach(
             value ->
                 latest.merge(

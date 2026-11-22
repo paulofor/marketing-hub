@@ -1,3 +1,4 @@
+import ProductProcessVersionContinuity from "./ProductProcessVersionContinuity";
 import {
   AlertTriangle,
   Bot,
@@ -113,9 +114,7 @@ export default function ProductProcessActivityExecutionsPage() {
   const effectiveCycleId = requestedReference
     ? learningCycleId
     : (cycleContext.data?.cycleId ?? learningCycleId);
-  const effectiveChainId = requestedReference
-    ? chainId
-    : (cycleContext.data?.chainDefinitionId ?? chainId);
+  const effectiveChainId = cycleData?.chainDefinitionId ?? chainId;
   const cycleContextUnavailable =
     !explicitWithoutCycle &&
     (cycleContext.isLoading ||
@@ -292,7 +291,9 @@ export default function ProductProcessActivityExecutionsPage() {
           <p className="text-body-secondary mb-0">
             {data
               ? `Produto ${data.productName || productLabel} · processo v${data.selectedProcessVersionNumber} · ${data.selectedProcessStatus}`
-              : "Carregando o histórico auditável do processo..."}
+              : cycleContext.isError
+                ? "Contexto indisponível; nenhuma execução foi iniciada."
+                : "Carregando o histórico auditável do processo..."}
           </p>
         </div>
         <div className="product-process-automation-row">
@@ -372,10 +373,26 @@ export default function ProductProcessActivityExecutionsPage() {
         </div>
       </header>
 
+      {learningCycleId &&
+      (cycleContext.isError || data?.selectedProcessStatus === "RETIRED") ? (
+        <ProductProcessVersionContinuity
+          productId={productId}
+          processId={processDefinitionId}
+          cycleId={learningCycleId}
+        />
+      ) : null}
       {cycleContext.isError ? (
         <div className="alert alert-danger" role="alert">
-          Não foi possível identificar o ciclo desta atividade. Atualize a
-          página antes de executar; o histórico não substitui o contexto atual.
+          Não foi possível identificar o ciclo desta atividade. O histórico e os
+          limites permanecem preservados.
+          <button
+            type="button"
+            className="btn btn-outline-primary ms-2"
+            onClick={() => void cycleContext.refetch()}
+            disabled={cycleContext.isFetching}
+          >
+            Consultar contexto novamente
+          </button>
         </div>
       ) : null}
       {cycleContext.isLoading ? (

@@ -1,0 +1,25 @@
+{
+  "backendAcceptance": {
+    "tests": 130,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "tests": 51,
+    "typecheck": "PASS",
+    "build": "PASS",
+    "buildNodeHeapMb": 2560
+  },
+  "browser": {
+    "devices": [
+      "desktop",
+      "iPhone 15 Pro",
+      "Pixel 7"
+    ],
+    "api": "synthetic",
+    "paidCalls": 0
+  },
+  "persistence": "H2 local, repositórios reais para diário, rollback e isolamento",
+  "productionMutations": 0
+}

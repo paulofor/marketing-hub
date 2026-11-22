@@ -13,6 +13,15 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: localizar o trabalho restante do ciclo nas atividades oficiais da cadeia. */
 @Component
 public class LearningCycleWorkResolver {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+      processDefinitions;
+
   private final BusinessProcessChainDefinitionRepository chains;
   private final BusinessProcessActivityExecutionService executions;
   private final LearningCycleConstructionPrerequisite constructionPrerequisite;
@@ -95,6 +104,14 @@ public class LearningCycleWorkResolver {
     if (delegated.isEmpty()) return new Resolution(null, false);
     for (var item : delegated) {
       var process = item.getProcessDefinition();
+      if (versionContinuity != null) {
+        var reference = "experiment:" + cycle.getExperimentId();
+        var effective =
+            versionContinuity.effective(
+                cycle.getProductId(), cycle.getId(), reference, process.getId());
+        if (!effective.equals(process.getId()))
+          process = processDefinitions.findById(effective).orElseThrow();
+      }
       var state =
           executions.productProcessExecutions(
               process.getId(),

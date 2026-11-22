@@ -22,6 +22,50 @@ public class ProcessRunController {
   private static final String ROOT =
       "/api/business-processes/{processId}/products/{productId}/automation/v1";
   private final ProcessRunService service;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityService
+      continuity;
+
+  /** Consulta diferenças e recibo de adoção, sem executar agentes. */
+  @Operation(summary = "Confere continuidade da versão histórica para a publicada no mesmo ciclo")
+  @GetMapping(ROOT + "/continuity")
+  public com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityService.Preview
+      continuity(
+          @PathVariable Long productId,
+          @PathVariable Long processId,
+          @RequestParam Long learningCycleId) {
+    requireContinuity();
+    return continuity.preview(productId, learningCycleId, processId);
+  }
+
+  /** Persiste a conferência e prepara destino pausado, preservando limites e histórico. */
+  @Operation(summary = "Prepara continuidade auditável sem retomar execução nem autorizar gastos")
+  @PostMapping(ROOT + "/continuity")
+  public com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityService.Preview
+      prepareContinuity(
+          @PathVariable Long productId,
+          @PathVariable Long processId,
+          @RequestParam Long learningCycleId,
+          @RequestBody
+              com.marketinghub.businessprocess.automation.v1.service.continuity
+                      .ProcessVersionContinuityService.Request
+                  request) {
+    requireContinuity();
+    return continuity.prepare(productId, learningCycleId, processId, request);
+  }
+
+  /** Expõe indisponibilidade recuperável em instalações sem o serviço de continuidade. */
+  private void requireContinuity() {
+    if (continuity == null)
+      throw new ResponseStatusException(
+          HttpStatus.SERVICE_UNAVAILABLE,
+          "Continuidade indisponível nesta instalação; consulte novamente após atualizar o backend.");
+  }
+
   private final String workerToken;
 
   /** Configura o serviço único e a credencial exclusiva do conciliador externo. */

@@ -25,6 +25,11 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class PdeAgentValidationReworkReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
+
   static final String CORRECTION_ACTIVITY = "prototypeCorrection";
   private static final String TECHNICAL_HOMOLOGATION_ACTIVITY = "technicalHomologation";
   private static final Set<String> REVIEW_ACTIVITIES =
@@ -500,8 +505,12 @@ public class PdeAgentValidationReworkReadinessProvider
    */
   private List<PdeValidationTaskSnapshot> processHistory(String sourceReference) {
     if (sourceReference == null || sourceReference.isBlank()) return List.of();
-    return tasks.findPdeValidationTaskSnapshots(
-        sourceReference, PdeAgentValidationGateActivityExecutor.PROCESS_CODE);
+    var history =
+        tasks.findPdeValidationTaskSnapshots(
+            sourceReference, PdeAgentValidationGateActivityExecutor.PROCESS_CODE);
+    return versionContinuity == null
+        ? history
+        : versionContinuity.project(sourceReference, history);
   }
 
   /** Lê a versão do ciclo explícito ou a aceitação privada original sem misturar passagens. */

@@ -125,7 +125,7 @@ export default function LearningCyclesPage() {
     requestedChainId ||
     (explicitCycle ? cycle?.chainDefinitionId : queryChainId);
   const catalog = useCycleCatalog(
-    explicitCycle && !cycle ? undefined : chainId,
+    explicitCycle && !cycle ? undefined : (cycle?.chainDefinitionId ?? chainId),
     productId,
     cycle?.id,
   );

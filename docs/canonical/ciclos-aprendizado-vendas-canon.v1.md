@@ -873,3 +873,26 @@ Atena como mudança real de entrada. Uma tentativa criada depois dessa correçã
 não pode reutilizar o recibo para liberar outra inferência. A chave operacional
 inclui a definição reconciliada; revisão de teto ou comentário não conta como
 mudança funcional. Assim, corrigir a origem destrava o caso sem abrir um loop.
+
+### Continuidade auditável entre versões de processo — 22/11/2026
+
+Uma execução pausada em versão retirada pode preparar uma sucessora na definição publicada
+pela mesma família da cadeia. A cadeia original, produto, ciclo, experimento e candidata
+permanecem fixos. O comando administrativo não retoma execução nem autoriza consumo.
+
+O backend compara os contratos e as provas atuais antes de registrar `VERSION_CONTINUATION`
+no diário da execução original. Contratos idênticos permitem reuso das ocorrências aceitas;
+alteração de descrição/critério exige conferência explícita do operador com referência da prova,
+responsável e motivo. Alterações estruturais, remoção de atividade aceita, ausência de ocorrência,
+ficha incompatível, tarefa em andamento ou ciclo encerrado bloqueiam a preparação. A impressão
+do snapshot protege contra gravação baseada em uma consulta desatualizada.
+
+As ocorrências originais e tarefas não são alteradas; as referências de reuso são auditadas e
+não duplicam seus custos. A pausa financeira original acompanha a sucessora; dispensas anteriores,
+valores desconhecidos, teto, reservas e demais gates continuam vigentes. O destino nasce PAUSED.
+Retomar exige ação separada e as validações usuais. Provas herdadas continuam sujeitas aos
+verificadores de versão, integridade e homologação; a conferência não fabrica parecer de agente.
+
+Consulta e preparação: `GET/POST /api/business-processes/{processId}/products/{productId}/automation/v1/continuity?learningCycleId={cycleId}`.
+O recibo fixa origem/destino, execução sucessora, contratos comparados, provas, conferência e data.
+Uma repetição do comando devolve o recibo existente. Falha transacional não deixa adoção parcial.

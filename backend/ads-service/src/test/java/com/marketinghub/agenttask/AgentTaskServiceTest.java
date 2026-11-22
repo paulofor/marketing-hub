@@ -43,8 +43,9 @@ import org.springframework.web.server.ResponseStatusException;
 class AgentTaskServiceTest {
 
   /** Entrega artefatos históricos para ajuste sem promovê-los a resultados aceitos do destino. */
-  @Test
-  void handsOffPartialContinuityAsHistoricalContext() throws Exception {
+  @ParameterizedTest
+  @ValueSource(strings = {"deliverables", "prototypeCorrection"})
+  void handsOffPartialContinuityAsHistoricalContext(String activity) throws Exception {
     var repository = mock(AgentTaskRepository.class);
     var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
     var lookup =
@@ -57,14 +58,24 @@ class AgentTaskServiceTest {
     origin.setId(601L);
     var target = process("PUBLISHED", "Dédalo");
     target.setId(701L);
+    origin.setProcessCode("pde-construction-approval");
+    target.setProcessCode("pde-construction-approval");
     var original = processTask(9001L, owner, origin, "journey", "COMPLETED");
     original.setResultJson("{\"artifact\":\"preservar-codigo\"}");
-    var next = processTask(9002L, owner, target, "journey", "PENDING");
+    var compatible = processTask(9100L, owner, origin, "access", "COMPLETED");
+    compatible.setSourceReference("experiment:801");
+    var rejected = processTask(9150L, owner, origin, "integrity", "BLOCKED");
+    rejected.setSourceReference("experiment:801");
+    var next = processTask(9200L, owner, target, activity, "PENDING");
     original.setSourceReference("experiment:801");
     next.setSourceReference("experiment:801");
     when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
             601L, "experiment:801"))
-        .thenReturn(List.of(original));
+        .thenReturn(List.of(original, compatible));
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:801"))
+        .thenReturn(List.of(original, compatible, rejected, next));
+    when(repository.findAllById(any())).thenReturn(List.of(compatible));
+    when(lookup.reusedTasks("experiment:801", 701L)).thenReturn(java.util.Set.of(9100L));
     when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
             701L, "experiment:801"))
         .thenReturn(List.of(next));
@@ -75,7 +86,8 @@ class AgentTaskServiceTest {
                     "{\"binding\":{\"sourceProcessId\":601},\"revalidation\":[{\"activityId\":\"journey\"}]}"));
     String raw = ReflectionTestUtils.invokeMethod(service, "processContext", next);
     var context = new ObjectMapper().readTree(raw);
-    assertThat(context.path("completedActivities")).isEmpty();
+    assertThat(context.path("completedActivities")).hasSize(1);
+    assertThat(context.path("completedActivities").get(0).path("taskId").asLong()).isEqualTo(9100L);
     assertThat(
             context
                 .path("historicalContinuityArtifacts")
@@ -85,6 +97,10 @@ class AgentTaskServiceTest {
                 .asText())
         .isEqualTo("preservar-codigo");
     assertThat(original.getStatus()).isEqualTo("COMPLETED");
+    if ("prototypeCorrection".equals(activity)) {
+      assertThat(context.path("blockedActivities")).hasSize(1);
+      assertThat(context.path("blockedActivities").get(0).path("taskId").asLong()).isEqualTo(9150L);
+    }
     verify(repository, never()).save(any());
   }
 

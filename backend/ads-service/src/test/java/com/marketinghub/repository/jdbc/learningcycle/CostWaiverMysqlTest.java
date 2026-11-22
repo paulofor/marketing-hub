@@ -39,17 +39,24 @@ class CostWaiverMysqlTest {
         "INSERT INTO learning_sales_cycle_event_v1 VALUES (1,22,'WAIVE_LEGACY_AGENT_COST','{\"taskIds\":[246]}')");
     assertThat(new CyclePreparationCostRepository(jdbc).blockingTasks(4L)).isEqualTo(1);
     assertThat(repo.blockingTasks(9004L)).isEqualTo(1);
+    assertThat(repo.waivedUnknownTasks(4L)).isEqualTo(1);
+    assertThat(repo.waivedUnknownTasks(9004L)).isZero();
     assertThat(repo.summarize(4L).getFirst().knownUsd()).isEqualByComparingTo("113.33");
     assertThat(repo.summarize(4L).getFirst().unreportedTasks()).isEqualTo(2);
     assertThat(repo.waiverTasks(4L).getFirst().costUsd()).isNull();
     jdbc.update(
         "INSERT INTO learning_sales_cycle_event_v1 VALUES (2,22,'WAIVE_LEGACY_AGENT_COST','{\"taskIds\":[246]}')");
     assertThat(repo.waiverTasks(4L)).hasSize(2);
+    jdbc.update("UPDATE agent_task SET execution_mode='DETERMINISTIC' WHERE id=246");
+    assertThat(repo.waivedUnknownTasks(4L)).isZero();
+    assertThat(repo.summarize(4L).getFirst().unreportedTasks()).isEqualTo(1);
+    jdbc.update("UPDATE agent_task SET execution_mode='MODEL' WHERE id=246");
     jdbc.update("INSERT INTO agent_task VALUES (251,'experiment:90','CANCELLED',NULL,NULL)");
     assertThat(repo.blockingTasks(4L)).isEqualTo(2);
     jdbc.update("UPDATE agent_task SET estimated_cost_usd=12.50 WHERE id=246");
     assertThat(repo.summarize(4L).getFirst().knownUsd()).isEqualByComparingTo("125.83");
     assertThat(repo.summarize(4L).getFirst().unreportedTasks()).isEqualTo(2);
     assertThat(repo.waiverTasks(4L).getFirst().costUsd()).isEqualByComparingTo("12.50");
+    assertThat(repo.waivedUnknownTasks(4L)).isZero();
   }
 }

@@ -1,23 +1,71 @@
-package com.marketinghub.businessprocesschain.learningcycle.v1.service;
+package com.marketinghub.agentcostwaiver.v1.service;
 
 import static com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules.require;
 
+import com.marketinghub.agentcostwaiver.v1.service.decisions.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
-import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CostWaiver;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleJson;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Responsabilidade: registrar dispensa explícita por tarefa no ledger, sem retomar processos. */
-@Component
+@Service
 @RequiredArgsConstructor
-public class LearningCycleCostWaivers {
+public class AgentCostWaiverService {
   private final CyclePreparationCostRepository costs;
   private final LearningSalesCycleEventRepository events;
   private final LearningCycleJson json;
+  private final LearningSalesCycleRepository cycles;
+  private final ProductRepository products;
+  private final Clock clock;
+
+  /** Consulta apenas o contexto existente do produto e cadeia solicitados. */
+  @Transactional(readOnly = true)
+  public CostWaiver.View view(Long productId, Long cycleId, Long chainId) {
+    var cycle =
+        cycles
+            .findById(cycleId)
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
+    require(
+        Objects.equals(cycle.getProductId(), productId)
+            && Objects.equals(cycle.getChainDefinitionId(), chainId),
+        "O ciclo não pertence ao produto e cadeia informados.");
+    return read(productId);
+  }
+
+  /** Serializa decisões por produto e ciclo sem iniciar trabalho nem alterar tetos. */
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public CostWaiver.View decide(Long productId, Long cycleId, CostWaiver.Request request) {
+    products
+        .findLockedById(productId)
+        .orElseThrow(
+            () ->
+                new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Ciclo não encontrado neste produto."));
+    record(cycle, request, Instant.now(clock));
+    cycles.saveAndFlush(cycle);
+    return read(productId);
+  }
 
   /** Expõe pendências e recibos persistidos, inclusive custos recuperados posteriormente. */
   public CostWaiver.View read(Long productId) {

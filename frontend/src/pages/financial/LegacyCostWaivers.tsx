@@ -29,7 +29,7 @@ export default function LegacyCostWaivers({
   data: ExecutionFinance;
 }) {
   const client = useQueryClient();
-  const root = `/api/business-process-chains/learning-cycles/v1/products/${data.productId}/${data.cycleId}/cost-waivers`;
+  const root = `/api/agent-cost-waivers/v1/products/${data.productId}/cycles/${data.cycleId}`;
   const key = ["cost-waivers", data.productId, data.cycleId];
   const query = useQuery({
     queryKey: key,

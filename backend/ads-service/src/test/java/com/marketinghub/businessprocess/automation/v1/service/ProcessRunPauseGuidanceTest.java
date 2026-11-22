@@ -6,8 +6,11 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocess.automation.v1.ProcessRunEvent;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
 import com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository;
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,13 +37,21 @@ class ProcessRunPauseGuidanceTest {
         "{\"reasonCode\":\"COST_RECONCILIATION\",\"reason\":\"Conferir antes de gastar.\"}");
     when(events.findFirstByRunIdAndEventTypeOrderByIdDesc(run.getId(), "PAUSE_CONTEXT"))
         .thenReturn(Optional.of(event));
-    when(costs.blockingTasks(productId)).thenReturn(10L);
+    when(costs.summarize(productId))
+        .thenReturn(
+            List.of(new CycleFinancialReview.CostSlice(115L, new BigDecimal("113.33"), 10)));
     var action = guidance.resolve(run);
     assertThat(action.reason())
         .contains("10 tarefas antigas", "saldo disponível ainda não é conhecido");
     assertThat(action.actionUrl()).contains("productId=" + productId, "chainId=27", "cycleId=22");
-    verify(costs).blockingTasks(productId);
-    when(costs.blockingTasks(productId)).thenReturn(0L);
+    verify(costs).summarize(productId);
+    when(costs.waivedUnknownTasks(productId)).thenReturn(9L);
+    assertThat(guidance.resolve(run).reason()).contains("1 tarefas antigas");
+    when(costs.waivedUnknownTasks(productId)).thenReturn(10L);
+    assertThat(guidance.resolve(run)).isNull();
+    when(costs.waivedUnknownTasks(productId)).thenReturn(0L);
+    when(costs.summarize(productId))
+        .thenReturn(List.of(new CycleFinancialReview.CostSlice(115L, new BigDecimal("114.33"), 0)));
     assertThat(guidance.resolve(run)).isNull();
     run.setStatus("WAITING_ACTIVITY");
     assertThat(guidance.resolve(run)).isNull();

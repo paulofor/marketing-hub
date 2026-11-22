@@ -70,7 +70,7 @@ try {
           json: { detail: "Teste consultivo: mutação inesperada" },
         });
       }
-      if (url.pathname.endsWith("/cost-waivers"))
+      if (url.pathname.startsWith("/api/agent-cost-waivers/"))
         return route.fulfill({
           json: { tasks: [], history: [], blockingTasks: 0 },
         });

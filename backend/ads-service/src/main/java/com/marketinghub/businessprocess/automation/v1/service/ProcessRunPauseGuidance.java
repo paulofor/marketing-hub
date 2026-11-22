@@ -41,8 +41,12 @@ public class ProcessRunPauseGuidance {
     try {
       var detail = json.readTree(event.get().getDetailsJson());
       if (!"COST_RECONCILIATION".equals(detail.path("reasonCode").asText())) return null;
-      long missing = costs.blockingTasks(run.getProductId());
-      if (missing == 0) return null;
+      long missing =
+          costs.summarize(run.getProductId()).stream()
+                  .mapToLong(slice -> slice.unreportedTasks())
+                  .sum()
+              - costs.waivedUnknownTasks(run.getProductId());
+      if (missing <= 0) return null;
       return new ProcessRunUserAction(
           "RECONCILE_COSTS_BEFORE_RESUME",
           "Confira os custos antes de retomar",

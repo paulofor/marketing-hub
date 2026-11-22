@@ -77,11 +77,9 @@ jobs:
       - name: Preparar banco isolado para controles privados
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
-        run: docker exec "$MYSQL_CONTAINER_ID" mysql --user=root --password=root --execute 'CREATE DATABASE IF NOT EXISTS mira_controls_local; CREATE DATABASE IF NOT EXISTS vega_queue_local; CREATE DATABASE IF NOT EXISTS vega_local; CREATE DATABASE IF NOT EXISTS waiver_test;'
+        run: docker exec "$MYSQL_CONTAINER_ID" mysql --user=root --password=root --execute 'CREATE DATABASE IF NOT EXISTS mira_controls_local; CREATE DATABASE IF NOT EXISTS vega_queue_local; CREATE DATABASE IF NOT EXISTS vega_local;'
       - name: Executar todos os testes do backend
         env:
-          WAIVER_TEST_MYSQL_URL: "jdbc:mysql://127.0.0.1:3306/waiver_test?useSSL=false&allowPublicKeyRetrieval=true"
-          WAIVER_TEST_MYSQL_PASSWORD: root
           MIRA_CONTROLS_DB_HOST: 127.0.0.1
           MIRA_CONTROLS_DB_PORT: "3306"
           MIRA_CONTROLS_DB_SCHEMA: mira_controls_local

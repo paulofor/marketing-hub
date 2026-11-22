@@ -1,13 +1,16 @@
-package com.marketinghub.businessprocesschain.learningcycle.v1.service;
+package com.marketinghub.agentcostwaiver.v1.service;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agentcostwaiver.v1.service.decisions.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
-import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CostWaiver;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleJson;
 import com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -16,14 +19,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 /** Protege escopo fixo, idempotência e auditoria da dispensa sem executar agentes. */
-class LearningCycleCostWaiversTest {
+class AgentCostWaiverServiceTest {
   private final CyclePreparationCostRepository costs = mock(CyclePreparationCostRepository.class);
   private final LearningSalesCycleEventRepository events =
       mock(LearningSalesCycleEventRepository.class);
   private final LearningCycleJson json =
       new LearningCycleJson(new ObjectMapper().findAndRegisterModules());
-  private final LearningCycleCostWaivers service =
-      new LearningCycleCostWaivers(costs, events, json);
+  private final AgentCostWaiverService service =
+      new AgentCostWaiverService(
+          costs,
+          events,
+          json,
+          mock(LearningSalesCycleRepository.class),
+          mock(ProductRepository.class),
+          java.time.Clock.systemUTC());
 
   /** Reproduz a seleção parcial para identidades distintas e reabre o recibo sem duplicação. */
   @ParameterizedTest
@@ -57,7 +66,15 @@ class LearningCycleCostWaiversTest {
                 new CostWaiver.Task(246L, 90L, "CANCELLED", null, true, false),
                 task(247L, true),
                 task(999L, true)));
-    var reopened = new LearningCycleCostWaivers(costs, events, json).read(productId);
+    var reopened =
+        new AgentCostWaiverService(
+                costs,
+                events,
+                json,
+                mock(LearningSalesCycleRepository.class),
+                mock(ProductRepository.class),
+                java.time.Clock.systemUTC())
+            .read(productId);
     assertThat(reopened.blockingTasks()).isEqualTo(2);
     assertThat(reopened.history().getFirst().taskIds()).containsExactly(246L);
     assertThat(reopened.tasks().getFirst().costUsd()).isNull();
@@ -88,6 +105,37 @@ class LearningCycleCostWaiversTest {
                     246L, 90L, "CANCELLED", new java.math.BigDecimal("12.50"), true, false)));
     assertThat(service.read(4L).blockingTasks()).isZero();
     assertThat(service.read(4L).tasks().getFirst().costUsd()).isEqualByComparingTo("12.50");
+  }
+
+  /** Exige confirmação na fronteira HTTP e preserva o contexto do operador. */
+  @Test
+  void validatesHttpContract() throws Exception {
+    var api = mock(AgentCostWaiverService.class);
+    var mvc =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new com.marketinghub.agentcostwaiver.v1.controller.AgentCostWaiverController(api))
+            .build();
+    String route = "/api/agent-cost-waivers/v1/products/4/cycles/22";
+    var request = request(List.of(246L));
+    when(api.decide(eq(4L), eq(22L), any()))
+        .thenReturn(new CostWaiver.View(List.of(), List.of(), 0));
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(route)
+                .contentType("application/json")
+                .content(json.write(request)))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    var invalid =
+        new CostWaiver.Request(
+            request.requestKey(), 27L, 4L, List.of(246L), "Teste", "Motivo", false);
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(route)
+                .contentType("application/json")
+                .content(json.write(invalid)))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                .isBadRequest());
+    verify(api, times(1)).decide(eq(4L), eq(22L), any());
   }
 
   /** Cria uma identidade sintética com revisão conhecida. */

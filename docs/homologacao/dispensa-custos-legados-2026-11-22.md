@@ -26,8 +26,8 @@ O evento administrativo não substitui a última transição funcional do ciclo.
 
 | Critério | Prova local |
 | --- | --- |
-| Seleção parcial, confirmação, responsável e motivo | LearningCycleCostWaiversTest e LegacyCostWaivers.test.tsx |
-| Outra identidade, IDs estrangeiros, duplicação e revisão obsoleta | LearningCycleCostWaiversTest |
+| Seleção parcial, confirmação, responsável e motivo | AgentCostWaiverServiceTest e LegacyCostWaivers.test.tsx |
+| Outra identidade, IDs estrangeiros, duplicação e revisão obsoleta | AgentCostWaiverServiceTest |
 | Persistência, novas ausências, custo recuperado uma única vez | CostWaiverMysqlTest em MySQL 5.7.44 isolado |
 | Pausa preservada e demais critérios de retomada | ProcessRunPauseGuidanceTest, ProcessRunProjectedActivityPersistenceTest, ProcessRunVersionAuthorizationTest |
 | Teto cumulativo, reservas e saldo existente | LearningCycleFinancialReviewTest e ProcessRunCorrectionBudgetTest |
@@ -79,3 +79,26 @@ A conferência adicional do snapshot do recibo passou (4 testes).
 A regressão visual da demonstração existente passou em desktop, iPhone e Pixel;
 a nova seleção/dispensa passou em desktop e Pixel. Nenhum processo auxiliar dos
 harnesses permaneceu ativo após a conclusão.
+
+## Ajuste após o CI
+
+O CI detectou que LearningCycleService integra uma atestação vigente de Mira.
+Em vez de alterar hashes históricos ou revalidar outro produto, a operação foi
+isolada em agentcostwaiver.v1, com controller/service próprios e os mesmos locks
+de produto/ciclo. LearningCycleService, seu controller, o teste de persistência
+atestado e backend-ci.yml foram restaurados integralmente. O teste MySQL usa
+um workflow focado; a validação de atestações foi executada localmente e passou
+(852 arquivos, 222 manifestos), sem modificar nenhuma atestação.
+
+A falha do job de ciclos MySQL foi confirmada pelo api.log: a aplicação reduzida
+não registrava o bean acrescentado ao serviço compartilhado. Remover a dependência
+resolve a causa sem modificar essa aplicação homologada. Após o isolamento,
+passaram 5 testes do serviço/HTTP, 4 da pausa e os 53 de persistência originais.
+
+A contagem deduz apenas tarefas dispensadas ainda classificadas como custo ausente
+pela mesma regra do demonstrativo. Se uma tarefa for posteriormente identificada
+como determinística/não iniciada, a dispensa não pode compensar uma pendência nova.
+A regressão MySQL cobre também essa mudança de classificação.
+
+A regressão adicional de classificação passou no MySQL 5.7, junto com os 4 testes
+de pausa. O build da rota isolada passou em 1m23s, após os fluxos visuais e HTTP.

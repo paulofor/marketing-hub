@@ -12,7 +12,6 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.Le
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.costWorksheet.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
-import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.PreparationBudgetRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
@@ -92,7 +91,6 @@ public class LearningCycleService {
   @Autowired private LearningCycleVideoBudget videoBudget;
   @Autowired private LearningCycleSingleVideoBudget singleVideoBudget;
   @Autowired private LearningCycleFinancialReview financialReview;
-  @Autowired private LearningCycleCostWaivers costWaivers;
   @Autowired private LearningCyclePreparationBudget preparationBudget;
   @Autowired private LearningCycleCostWorksheet costWorksheet;
   @Autowired private LearningCycleCostCeilings costCeilings;
@@ -321,27 +319,6 @@ public class LearningCycleService {
     requiredExperiment(productId, cycle.getExperimentId());
     return financialReview.read(
         cycle, products.findById(productId).orElseThrow(), Instant.now(clock));
-  }
-
-  /** Consulta a dispensa no contexto validado sem alterar execução ou orçamento. */
-  @Transactional(readOnly = true)
-  public CostWaiver.View costWaivers(Long productId, Long cycleId, Long chainId) {
-    var cycle = requiredCycle(productId, cycleId);
-    require(Objects.equals(chainId, cycle.getChainDefinitionId()), "Cadeia divergente.");
-    return costWaivers.read(productId);
-  }
-
-  /** Persiste decisão sob os mesmos locks financeiros e mantém a retomada como comando separado. */
-  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
-  public CostWaiver.View waiveCosts(Long productId, Long cycleId, CostWaiver.Request request) {
-    requireProduct(productId, true);
-    var cycle =
-        cycles
-            .findLocked(productId, cycleId)
-            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
-    costWaivers.record(cycle, request, Instant.now(clock));
-    cycles.saveAndFlush(cycle);
-    return costWaivers.read(productId);
   }
 
   /** Consulta a planilha do contexto exato com fontes e cálculos do backend. */

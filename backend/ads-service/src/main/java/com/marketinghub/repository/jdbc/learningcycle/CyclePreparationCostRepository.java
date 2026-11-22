@@ -1,6 +1,6 @@
 package com.marketinghub.repository.jdbc.learningcycle;
 
-import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CostWaiver;
+import com.marketinghub.agentcostwaiver.v1.service.decisions.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview.CostSlice;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -75,5 +75,25 @@ public class CyclePreparationCostRepository {
    */
   public long blockingTasks(Long productId) {
     return waiverTasks(productId).stream().filter(t -> t.costUsd() == null && !t.waived()).count();
+  }
+
+  /**
+   * Conta somente custos ainda desconhecidos com decisão explícita; valores recuperados saem desta
+   * contagem.
+   */
+  public long waivedUnknownTasks(Long productId) {
+    return jdbc.queryForObject(
+        """
+      SELECT COUNT(*) FROM experiment e
+      JOIN agent_task t ON t.source_reference=CONCAT('experiment:',e.id)
+      WHERE e.product_id=? AND t.estimated_cost_usd IS NULL
+        AND (t.execution_mode IS NULL OR t.execution_mode NOT IN ('DETERMINISTIC','NOT_STARTED'))
+        AND EXISTS (SELECT 1 FROM learning_sales_cycle_event_v1 ev
+          JOIN learning_sales_cycle_v1 c ON c.id=ev.cycle_id
+          WHERE c.product_id=e.product_id AND ev.action='WAIVE_LEGACY_AGENT_COST'
+          AND JSON_CONTAINS(ev.evidence_json, CAST(t.id AS JSON), '$.taskIds'))
+      """,
+        Long.class,
+        productId);
   }
 }

@@ -82,7 +82,7 @@ it("registra somente seleção explícita e reabre o histórico sem retomar", as
   await screen.findByText(/Dispensa registrada/);
   expect(axios.post).toHaveBeenCalledTimes(1);
   expect(axios.post).toHaveBeenCalledWith(
-    expect.stringContaining("/products/4/22/cost-waivers"),
+    expect.stringContaining("/agent-cost-waivers/v1/products/4/cycles/22"),
     expect.objectContaining({
       taskIds: [246],
       confirmed: true,

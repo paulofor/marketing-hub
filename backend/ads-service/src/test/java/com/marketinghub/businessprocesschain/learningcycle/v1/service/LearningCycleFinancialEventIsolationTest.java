@@ -15,7 +15,10 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
 /** Responsabilidade: provar que gravações financeiras não apagam bloqueios funcionais do ciclo. */
 class LearningCycleFinancialEventIsolationTest {
-  /** Exercita o filtro JPA real com bloqueio anterior e três eventos financeiros posteriores. */
+  /**
+   * Exercita o filtro JPA real com bloqueio anterior e decisões financeiras posteriores, inclusive
+   * dispensa.
+   */
   @Test
   void keepsLastFunctionalEventAfterWorksheetAndBudgetChanges() {
     var database =
@@ -38,6 +41,7 @@ class LearningCycleFinancialEventIsolationTest {
               "SAVE_COST_WORKSHEET",
               "APPROVE_COST_CEILING",
               "AUTHORIZE_PREPARATION_BUDGET",
+              "WAIVE_LEGACY_AGENT_COST",
               "AUTHORIZE_VIDEO_BUDGET");
       for (int i = 0; i < actions.size(); i++) {
         var event = new LearningSalesCycleEvent();

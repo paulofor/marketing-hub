@@ -9,6 +9,7 @@ import ExecutionCostWorksheet from "./ExecutionCostWorksheet";
 import ExecutionFinancialAdvice from "./ExecutionFinancialAdvice";
 import ExecutionBudgetOverview from "./ExecutionBudgetOverview";
 import "./ExecutionFinancePage.css";
+import LegacyCostWaivers from "./LegacyCostWaivers";
 
 const money = (n: number | null | undefined, currency = "USD") =>
   n == null
@@ -150,6 +151,10 @@ export default function ExecutionFinancePage() {
             key={`overview:${data.productId}:${data.cycleId}`}
             data={data}
             disabled={query.isError || query.isFetching}
+          />
+          <LegacyCostWaivers
+            key={`waivers:${data.productId}:${data.cycleId}`}
+            data={data}
           />
           <ExecutionFinancialAdvice data={data} />
           <section className="card p-3 mb-3" aria-label="Preparação e revisão">

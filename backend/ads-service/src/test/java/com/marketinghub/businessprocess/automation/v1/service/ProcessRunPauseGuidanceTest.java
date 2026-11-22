@@ -45,6 +45,11 @@ class ProcessRunPauseGuidanceTest {
         .contains("10 tarefas antigas", "saldo disponível ainda não é conhecido");
     assertThat(action.actionUrl()).contains("productId=" + productId, "chainId=27", "cycleId=22");
     verify(costs).summarize(productId);
+    when(costs.waivedUnknownTasks(productId)).thenReturn(9L);
+    assertThat(guidance.resolve(run).reason()).contains("1 tarefas antigas");
+    when(costs.waivedUnknownTasks(productId)).thenReturn(10L);
+    assertThat(guidance.resolve(run)).isNull();
+    when(costs.waivedUnknownTasks(productId)).thenReturn(0L);
     when(costs.summarize(productId))
         .thenReturn(List.of(new CycleFinancialReview.CostSlice(115L, new BigDecimal("114.33"), 0)));
     assertThat(guidance.resolve(run)).isNull();

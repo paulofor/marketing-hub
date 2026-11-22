@@ -22,7 +22,7 @@ await writeFile(
 const server = spawn(
   process.execPath,
   ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", "15278"],
-  { cwd: root, stdio: "ignore" },
+  { cwd: root, stdio: "ignore", detached: true },
 );
 let browser;
 try {
@@ -70,6 +70,10 @@ try {
           json: { detail: "Teste consultivo: mutação inesperada" },
         });
       }
+      if (url.pathname.startsWith("/api/agent-cost-waivers/"))
+        return route.fulfill({
+          json: { tasks: [], history: [], blockingTasks: 0 },
+        });
       if (url.pathname.endsWith("/automation/v1"))
         return route.fulfill({
           json: {
@@ -363,7 +367,12 @@ try {
   }
 } finally {
   await browser?.close();
-  server.kill();
+  // Encerra também o verificador TypeScript filho do Vite, sem deixar consumo órfão.
+  try {
+    process.kill(-server.pid, "SIGTERM");
+  } catch (error) {
+    if (error.code !== "ESRCH") throw error;
+  }
   await rm(html, { force: true });
   await rm(tsx, { force: true });
 }

@@ -1,0 +1,51 @@
+name: Legacy Agent Cost Waivers
+on:
+  pull_request:
+    paths:
+      - "backend/ads-service/src/main/java/com/marketinghub/agentcostwaiver/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/agentcostwaiver/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleActivityProjection.java"
+      - "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycle*Test.java"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/learningcycle/CyclePreparationCostRepository.java"
+      - "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunPauseGuidance.java"
+      - "backend/ads-service/src/test/java/com/marketinghub/agentcostwaiver/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/repository/jdbc/learningcycle/CostWaiverMysqlTest.java"
+      - ".github/workflows/agent-cost-waivers.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: agent-cost-waivers-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mysql:
+    name: Dispensa legada com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: waiver_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Testar seleção, persistência, saldo e isolamento
+        working-directory: backend/ads-service
+        env:
+          WAIVER_TEST_MYSQL_URL: "jdbc:mysql://127.0.0.1:3306/waiver_test?useSSL=false&allowPublicKeyRetrieval=true"
+          WAIVER_TEST_MYSQL_PASSWORD: root
+        run: mvn -B -Dtest=AgentCostWaiverServiceTest,CostWaiverMysqlTest,ProcessRunPauseGuidanceTest,LearningCycleFinancialReviewTest,ProcessRunCorrectionBudgetTest,LearningCycleActivityProjectionTest,LearningCycleFinancialEventIsolationTest test

@@ -97,6 +97,7 @@ public class LearningCycleActivityProjection {
                         "SAVE_COST_WORKSHEET",
                         "APPROVE_COST_CEILING",
                         "AUTHORIZE_PREPARATION_BUDGET",
+                        "WAIVE_LEGACY_AGENT_COST",
                         "AUTHORIZE_VIDEO_BUDGET",
                         "AUTHORIZE_SINGLE_VIDEO"))
                 .orElse(null);

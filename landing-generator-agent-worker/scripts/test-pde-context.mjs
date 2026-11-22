@@ -12,7 +12,7 @@ const sha256=createHash('sha256').update(original).digest('hex');
 writeFileSync(file,JSON.stringify({taskId:9001,references:{[sha256]:original}}));
 const client=new Client({name:'synthetic',version:'1'});
 try {
- await client.connect(new StdioClientTransport({command:'node',args:['src/main/resources/mcp/pde-context.mjs'],env:{...process.env,PDE_CONTEXT_FILE:file}}));
+ await client.connect(new StdioClientTransport({command:'node',args:[process.env.PDE_CONTEXT_MCP_SCRIPT ?? new URL('../src/main/resources/mcp/pde-context.mjs', import.meta.url).pathname],env:{...process.env,PDE_CONTEXT_FILE:file}}));
  assert.equal((await client.listTools()).tools[0].name,'read_task_context');
  let offset=0, restored='';
  do {

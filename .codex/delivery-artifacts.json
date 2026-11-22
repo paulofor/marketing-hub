@@ -15,6 +15,9 @@
     ".codex/turmalina-value-flow/package-contract-tests.log",
     "artifacts/vega-human-summary-20261117",
     "artifacts/jaspe-v1",
-    "artifacts/vega-financeiro-tipo-20261120"
+    "artifacts/vega-financeiro-tipo-20261120",
+    "artifacts/legacy-cost-waivers",
+    ".codex/waiver-test/compose.yml",
+    "artifacts/execution-finance"
   ]
 }

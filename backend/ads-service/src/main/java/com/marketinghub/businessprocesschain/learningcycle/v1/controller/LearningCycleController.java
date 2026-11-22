@@ -5,6 +5,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.Le
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.costWorksheet.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CostWaiver;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.CycleFinancialReview;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.financialReview.PreparationBudgetRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
@@ -227,6 +228,25 @@ public class LearningCycleController {
   public CycleFinancialReview financialReview(
       @PathVariable Long productId, @PathVariable Long cycleId, @RequestParam Long chainId) {
     return service.financialReview(productId, cycleId, chainId);
+  }
+
+  /** Consulta tarefas elegíveis e recibos de dispensa deste produto. */
+  @io.swagger.v3.oas.annotations.Operation(summary = "Consultar dispensas de conciliação legada")
+  @GetMapping("/products/{productId}/{cycleId}/cost-waivers")
+  public CostWaiver.View costWaivers(
+      @PathVariable Long productId, @PathVariable Long cycleId, @RequestParam Long chainId) {
+    return service.costWaivers(productId, cycleId, chainId);
+  }
+
+  /** Registra decisão humana sem iniciar agentes nem alterar limites financeiros. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Dispensar conciliação de tarefas legadas selecionadas")
+  @PostMapping("/products/{productId}/{cycleId}/cost-waivers")
+  public CostWaiver.View waiveCosts(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody CostWaiver.Request request) {
+    return service.waiveCosts(productId, cycleId, request);
   }
 
   /** Registra confirmação explícita do teto de preparação com recibo e controle de concorrência. */

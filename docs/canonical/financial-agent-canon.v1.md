@@ -324,3 +324,29 @@ duração física pelo contrato existente do Estúdio, segundo a política versi
 [produção audiovisual](apollo-plutus-video-production-canon.v1.md#estimativa-operacional-sem-extrato--decisão-de-20102026).
 Não atribuir locuções antigas ao Codex nem apagar custos. A estimativa pode alimentar o
 controle operacional; não comprova faturamento, margem realizada ou ampliação do teto.
+
+## Dispensa explícita de conciliação legada — 22/11/2026
+
+O operador pode dispensar exclusivamente a conciliação de tarefas antigas identificadas,
+para continuidade do produto. A decisão exige seleção explícita de IDs, produto validado,
+responsável declarado, motivo, confirmação e horário do servidor. O recibo imutável fica no
+ledger de ciclos como `WAIVE_LEGACY_AGENT_COST`, contrato `LEGACY_AGENT_COST_WAIVER_V1`.
+A dispensa acompanha apenas essas tarefas do produto entre ciclos; não cobre tarefas futuras,
+outros produtos, custos de execução em andamento, mídia, audiovisual ou outros gates.
+
+Custos ausentes permanecem NULL/desconhecidos e no demonstrativo. Dispensa não significa zero,
+conciliação, novo teto ou renovação de saldo. O subtotal conhecido, teto cumulativo e reserva
+não são alterados. Custo recuperado depois continua na fonte da tarefa e entra uma única vez
+na soma existente; o saldo é recalculado e sujeito aos controles financeiros vigentes.
+Registrar dispensa não retoma nem dispara agentes. A retomada exige ação explícita e todos os
+demais critérios, inclusive orçamento e versão autorizada do processo.
+
+A tela financeira apresenta seleção, situação atual e histórico persistido. Reenvio da mesma
+chave e conteúdo reutiliza o recibo; outra entrada com essa chave é rejeitada. O backend trava
+produto e ciclo, valida revisão e elegibilidade antes de registrar. Somente tarefas finalizadas
+ou bloqueadas (`CANCELLED`, `BLOCKED`, `FAILED`, `COMPLETED`) podem ser selecionadas.
+
+Para agentes de apoio, pendência dispensada não deve ser descrita como custo conciliado nem
+como saldo confirmado. O contrato de pausa conta apenas ausências sem dispensa, preservando a
+contagem financeira integral. A regressão executável cobre seleção parcial, outra identidade,
+novas ausências, persistência e recuperação; não comprova aumento de vendas.

@@ -33,7 +33,7 @@ public class ProcessRunPauseGuidance {
         .orElse(null);
   }
 
-  /** Lê o motivo da última pausa da própria execução, sem deduzir decisões de custos parciais. */
+  /** Protege a pausa enquanto houver custos ausentes sem dispensa explícita por tarefa. */
   public ProcessRunUserAction resolve(ProcessRun run) {
     if (run.getId() == null || !Set.of("PAUSED", "PAUSING").contains(run.getStatus())) return null;
     var event = events.findFirstByRunIdAndEventTypeOrderByIdDesc(run.getId(), "PAUSE_CONTEXT");
@@ -41,10 +41,7 @@ public class ProcessRunPauseGuidance {
     try {
       var detail = json.readTree(event.get().getDetailsJson());
       if (!"COST_RECONCILIATION".equals(detail.path("reasonCode").asText())) return null;
-      int missing =
-          costs.summarize(run.getProductId()).stream()
-              .mapToInt(slice -> slice.unreportedTasks())
-              .sum();
+      long missing = costs.blockingTasks(run.getProductId());
       if (missing == 0) return null;
       return new ProcessRunUserAction(
           "RECONCILE_COSTS_BEFORE_RESUME",
@@ -63,7 +60,7 @@ public class ProcessRunPauseGuidance {
                   + run.getChainDefinitionId()
                   + "&cycleId="
                   + run.getLearningCycleId(),
-          "Após conferir os custos, retome o processo. O responsável pela atividade fará a revisão pendente, preservando as aprovações anteriores. Alterar o teto não resolve custos ausentes.",
+          "Após conciliar ou dispensar explicitamente as tarefas selecionadas, retome o processo em ação separada. O responsável pela atividade fará a revisão pendente, preservando as aprovações anteriores. Alterar o teto não resolve custos ausentes.",
           "internal://process-runs/" + run.getId() + "/events/" + event.get().getId());
     } catch (Exception ex) {
       log.error(

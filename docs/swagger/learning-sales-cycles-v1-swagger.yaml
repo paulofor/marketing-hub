@@ -35,6 +35,38 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/cost-waivers:
+    parameters:
+      - {in: path, name: productId, required: true, schema: {type: integer, format: int64}}
+      - {in: path, name: cycleId, required: true, schema: {type: integer, format: int64}}
+    get:
+      summary: Consultar tarefas e histórico de dispensas do produto
+      parameters:
+        - {in: query, name: chainId, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200': {description: 'tasks (taskId, experimentId, status, costUsd nullable, waived, selectable), history (eventId, cycleId, operatorName, decidedAt, reason, taskIds), blockingTasks. Custos permanecem desconhecidos após dispensa.'}
+    post:
+      summary: Dispensar conciliação somente das tarefas selecionadas sem retomar agentes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, chainId, expectedRevision, taskIds, operatorName, reason, confirmed]
+              properties:
+                requestKey: {type: string, format: uuid}
+                chainId: {type: integer, format: int64}
+                expectedRevision: {type: integer, format: int64}
+                taskIds: {type: array, minItems: 1, maxItems: 500, uniqueItems: true, items: {type: integer, format: int64}}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                reason: {type: string, minLength: 1, maxLength: 2000}
+                confirmed: {type: boolean, enum: [true]}
+      responses:
+        '200': {description: 'Fotografia atual e recibo persistido; replay idempotente. Não altera custos, teto, reserva ou estado do processo.'}
+        '400': {description: Contrato inválido}
+        '409': {description: Revisão obsoleta, tarefa inelegível ou chave usada por outra decisão}
+
   /products/{productId}/{cycleId}/planning-alignment:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}

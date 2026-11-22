@@ -731,17 +731,7 @@ class ProcessRunProjectedActivityPersistenceTest {
         mock(com.marketinghub.repository.jdbc.learningcycle.CyclePreparationCostRepository.class);
     var pause = new ProcessRunPauseGuidance(events, costs, json);
     org.springframework.test.util.ReflectionTestUtils.setField(service, "pauseGuidance", pause);
-    when(costs.summarize(parent.getProductId()))
-        .thenReturn(
-            List.of(
-                new com.marketinghub
-                    .businessprocesschain
-                    .learningcycle
-                    .v1
-                    .service
-                    .financialReview
-                    .CycleFinancialReview
-                    .CostSlice(96021L, new BigDecimal("113.33"), 10)));
+    when(costs.blockingTasks(parent.getProductId())).thenReturn(10L);
     var mvc =
         org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
                 new com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController(

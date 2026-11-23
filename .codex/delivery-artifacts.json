@@ -58,6 +58,10 @@
     ".local/dedalo925/evidence-bundle.log",
     ".local/dedalo925/backend-integrated-self-build.log",
     "landing-generator-agent-worker/target/dedalo-callback-compile.log",
-    ".local/dedalo925/backend-integrated-clean-worker.log"
+    ".local/dedalo925/backend-integrated-clean-worker.log",
+    ".local/dedalo925/global-handler-before.log",
+    ".local/dedalo925/global-handler-after.log",
+    ".local/dedalo925/architecture-final.log",
+    ".local/dedalo925/evidence-bundle-final.log"
   ]
 }

@@ -1,11 +1,14 @@
 package com.marketinghub.agenttask;
 
 import java.util.Map;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/** Responsabilidade: comunicar rejeição já persistida sem expor exceção bruta na interface. */
+/** Responsabilidade: priorizar rejeição já persistida sem expor exceção bruta na interface. */
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(
     assignableTypes = {InternalAgentTaskExecutionController.class, AgentTaskController.class})
 public class AgentTaskResultRejectionAdvice {

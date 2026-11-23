@@ -141,3 +141,12 @@ A preparação corrigida passou nos 15 cenários integrados, sem skip. Outra exe
 sem `target/classes` do worker e recompilou pelo POM antes dos mesmos 15 cenários: todos passaram.
 Nenhuma inferência foi feita. A fonte original do workflow permanece idêntica à main e o pacote
 comercial foi revalidado após os registros, antes de atualizar o mesmo PR.
+
+## Prioridade do tratamento semântico
+
+A revisão incluiu o `ApiExceptionHandler` global real antes do advice específico na fixture.
+O teste reproduziu HTTP 500 nas rotas de resultado e revalidação, apesar da exceção tipada:
+sem prioridade explícita, o tratador genérico podia consumir a recusa antes do contrato 422.
+O advice específico passou a declarar maior prioridade, mantendo a exceção bruta na auditoria.
+A rodada corrigida aprovou 23 testes (15 integrados, sete resumos e a nova regressão das duas
+rotas), sem skip, com o tratador global presente. Não houve inferência nem mudança de gates.

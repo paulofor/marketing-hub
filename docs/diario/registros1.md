@@ -80,3 +80,7 @@ zero falhas/erros. Evidências preservadas em artifacts/dedalo-claim.
   histórica. Pacote comercial real revalidado localmente (859 arquivos, 225 manifestos).
   Revisão técnica registrada por comentário, sem autoaprovação; CI/deploy e recuperação
   produtiva permanecem sujeitos à conferência no mesmo PR.
+- Revisão adicional reproduziu HTTP 500 com o tratador global real descoberto primeiro.
+  O advice semântico agora tem prioridade explícita; 23 testes passaram com ambos os
+  tratadores, incluindo as duas rotas e os 15 cenários de worker/HTTP/persistência. A melhoria
+  de harness usa o componente existente, sem nova infraestrutura ou alteração de arquitetura.

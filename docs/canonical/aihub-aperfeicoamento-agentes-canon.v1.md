@@ -744,3 +744,8 @@ uma prova histórica da Mira que também fixava o workflow por hash. O workflow 
 o teste integrado compila o executor pelo POM existente. O construtor real do pacote comercial
 deve ser executado também quando a mudança atingir workflow ou outra fonte de prova, além dos
 testes do construtor. Não reescrever hash histórico para acomodar preparação de teste.
+
+O harness HTTP deve incluir os tratadores globais reais, além do contrato específico do agente.
+Na regressão de Dédalo, o tratador genérico consumia a recusa semântica como HTTP 500 quando
+descoberto primeiro. A prioridade explícita do advice específico e a fixture com o genérico
+primeiro comprovaram 422 nas duas rotas e nos 15 cenários integrados, prevenindo novo loop.

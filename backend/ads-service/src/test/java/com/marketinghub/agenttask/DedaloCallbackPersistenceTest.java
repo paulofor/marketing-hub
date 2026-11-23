@@ -162,7 +162,9 @@ class DedaloCallbackPersistenceTest {
         MockMvcBuilders.standaloneSetup(
                 new InternalAgentTaskExecutionController(service, null),
                 new AgentTaskController(service, null))
-            .setControllerAdvice(new AgentTaskResultRejectionAdvice())
+            .setControllerAdvice(
+                new com.marketinghub.web.ApiExceptionHandler(),
+                new AgentTaskResultRejectionAdvice())
             .build();
     http = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     http.createContext(

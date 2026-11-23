@@ -1,0 +1,18 @@
+{
+  "cardKey": "consentimento-sensoriamento-passivo-personalizacao-ia",
+  "collection": "neuromarketing",
+  "title": "Sensoriamento passivo exige consentimento claro na personalização por IA",
+  "finding": "Dois experimentos apontaram que captar sinais comportamentais passivamente aumenta sensação de vigilância e desconforto e reduz confiança e aceitação, sobretudo sem transparência e controle. Interfaces com maior controle atenuaram esses efeitos.",
+  "mechanism": "A coleta implícita pode ameaçar autonomia percebida. Atenção ocular e atividade eletrodérmica diferiram no estudo, mas não identificam emoções específicas nem explicaram adicionalmente a confiança autorrelatada.",
+  "commercialApplication": "Antes de personalizar jornadas ou recomendações com rastreamento passivo, explicar sinais e finalidade, colher consentimento granular e revogável e manter alternativa útil sem monitoramento.",
+  "evidenceStrength": "Pesquisa em periódico (14/11/2026): dois experimentos, primeiro N=855, replicação laboratorial; evidência para consentimento e experiência, não para receita.",
+  "publishedOn": "2026-11-23",
+  "validUntil": "2027-01-07",
+  "experimentHypothesis": "Consentimento contextual revogável aumentará compreensão correta e diminuirá desconforto em comparação com telas genéricas. Medir tarefa concluída, recusa informada e abandono; vendas reais separadamente.",
+  "risks": "Consentimento coagido ou confuso, coleta não autorizada, discriminação por perfis e inferência indevida de emoções a partir de sinais físicos.",
+  "limits": "Pesquisa não testou vendas ou ROI no Marketing Hub; generalização ao Brasil incerta; texto completo da editora inacessível nesta revisão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-23-consentimento-sensoriamento-passivo-ia.md",
+  "sourceTitle": "Fonte revisada — consentimento para sensoriamento passivo em interfaces personalizadas por IA",
+  "sourceSha256": "5c0afe1fef710d1d93d9902746bc568aac1c7e6bd0b6dccf9d073d476470155c"
+}

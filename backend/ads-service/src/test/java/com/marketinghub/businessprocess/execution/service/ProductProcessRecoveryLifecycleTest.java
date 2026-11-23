@@ -61,8 +61,8 @@ class ProductProcessRecoveryLifecycleTest {
           .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
   /**
-   * Um clique cria trabalho, a fila o reserva, falhas preservam histórico e a retentativa pode
-   * concluir.
+   * Um clique cria trabalho, o recibo conserva identidade e o início único admite callback
+   * sintético; falhas preservam histórico e outra tentativa explícita pode concluir.
    */
   @Test
   void followsRealTaskLifecycleWithPersistenceAndPreservedFailure() throws Exception {
@@ -139,26 +139,31 @@ class ProductProcessRecoveryLifecycleTest {
     assertThat(tasks.findById(firstId).orElseThrow().getStatus()).isEqualTo("PENDING");
     assertThat(tasks.findById(firstId).orElseThrow().getActivityInstance()).isNotNull();
     mvc.perform(post(command).param("learningCycleId", "900002")).andExpect(status().isConflict());
-    var pending =
-        mvc.perform(
-                get(worker + "/pending")
-                    .param("processCode", process.getProcessCode())
-                    .param("activityId", "prototypeCorrection"))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-    assertThat(json.readTree(pending.getContentAsString()).get(0).path("taskId").asLong())
-        .isEqualTo(firstId);
+    String firstClaim = java.util.UUID.randomUUID().toString();
+    claim(mvc, worker, process.getProcessCode(), firstClaim, firstId);
+    // Reenvio do transporte devolve a mesma identidade, sem reservar outra tarefa.
+    claim(mvc, worker, process.getProcessCode(), firstClaim, firstId);
     assertThat(tasks.findById(firstId).orElseThrow().getStatus()).isEqualTo("IN_PROGRESS");
-    mvc.perform(
-            get(worker + "/pending")
-                .param("processCode", process.getProcessCode())
-                .param("activityId", "prototypeCorrection"))
-        .andExpect(status().isOk());
-    String audit =
-        "\"executionAudit\":{\"modelCode\":\"local-double-v1\",\"executionMode\":\"DETERMINISTIC\",\"reasoningEffort\":\"NOT_APPLICABLE\",\"promptSent\":\"Contrato local de correção\",\"agentPromptPart\":\"Executor simulado\",\"activityPromptPart\":\"Corrigir causa registrada\"}";
+    String auditPayload =
+        json.writeValueAsString(
+            java.util.Map.of(
+                "modelCode",
+                "local-double-v1",
+                "executionMode",
+                "MODEL",
+                "reasoningEffort",
+                "high",
+                "promptSent",
+                "Executor simulado\n\nCorrigir causa registrada",
+                "agentPromptPart",
+                "Executor simulado",
+                "activityPromptPart",
+                "Corrigir causa registrada"));
+    String audit = "\"executionAudit\":" + auditPayload;
+    startOnce(mvc, worker, firstId, firstClaim, auditPayload);
     mvc.perform(
             post(worker + "/" + firstId + "/failure")
+                .header("X-Dedalo-Claim", firstClaim)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "{\"error\":\"Protótipo local ainda indisponível\",\"resultJson\":\"{\\\"decision\\\":\\\"BLOCKED\\\"}\",\"evidenceJson\":\"{\\\"synthetic\\\":true}\","
@@ -168,13 +173,12 @@ class ProductProcessRecoveryLifecycleTest {
     assertThat(tasks.findById(firstId).orElseThrow().getStatus()).isEqualTo("BLOCKED");
     long secondId = create(mvc, command);
     assertThat(secondId).isNotEqualTo(firstId);
-    mvc.perform(
-            get(worker + "/pending")
-                .param("processCode", process.getProcessCode())
-                .param("activityId", "prototypeCorrection"))
-        .andExpect(status().isOk());
+    String secondClaim = java.util.UUID.randomUUID().toString();
+    claim(mvc, worker, process.getProcessCode(), secondClaim, secondId);
+    startOnce(mvc, worker, secondId, secondClaim, auditPayload);
     mvc.perform(
             post(worker + "/" + secondId + "/result")
+                .header("X-Dedalo-Claim", secondClaim)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "{\"resultJson\":\"{\\\"decision\\\":\\\"READY\\\",\\\"synthetic\\\":true}\",\"evidenceJson\":\"{\\\"synthetic\\\":true}\","
@@ -199,6 +203,58 @@ class ProductProcessRecoveryLifecycleTest {
     assertThat(progress)
         .contains("COMPLETED", "BLOCKED")
         .doesNotContain("prompt", "evidence", "resultJson");
+  }
+
+  /** Confere recibo e contexto reais, mantendo a reserva legada fechada. */
+  private void claim(MockMvc mvc, String worker, String process, String claimId, long taskId)
+      throws Exception {
+    var legacy =
+        mvc.perform(
+                get(worker + "/pending")
+                    .param("processCode", process)
+                    .param("activityId", "prototypeCorrection"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(json.readTree(legacy).size()).isZero();
+    var receipt =
+        mvc.perform(
+                get(worker + "/pending/receipt")
+                    .param("processCode", process)
+                    .param("activityId", "prototypeCorrection")
+                    .param("claimId", claimId))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    var entry = json.readTree(receipt).get(0);
+    assertThat(entry.path("taskId").asLong()).isEqualTo(taskId);
+    assertThat(entry.path("claimId").asText()).isEqualTo(claimId);
+    var context =
+        mvc.perform(get(worker + "/" + taskId + "/claim-context").header("X-Dedalo-Claim", claimId))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(json.readTree(context).path("taskId").asLong()).isEqualTo(taskId);
+  }
+
+  /** Autoriza somente um início sintético, sem executar modelo ou integração externa. */
+  private void startOnce(MockMvc mvc, String worker, long taskId, String claimId, String audit)
+      throws Exception {
+    mvc.perform(
+            put(worker + "/" + taskId + "/claim-start")
+                .header("X-Dedalo-Claim", claimId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(audit))
+        .andExpect(status().isNoContent());
+    mvc.perform(
+            put(worker + "/" + taskId + "/claim-start")
+                .header("X-Dedalo-Claim", claimId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(audit))
+        .andExpect(status().isConflict());
   }
 
   /** Executa o POST oficial e devolve o identificador efetivamente persistido. */

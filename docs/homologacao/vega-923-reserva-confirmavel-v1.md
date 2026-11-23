@@ -59,3 +59,12 @@ O recibo não é transferido por timeout. O pending legado de Dédalo deixa de r
 deve integrar backend e executor compatíveis. Retorno legado preservado recebe fase REPLAY,
 que não permite início de modelo. Rollback não pode apagar recibos nem reabrir tarefas.
 A homologação não chamou modelo externo nem escreveu em produto/ciclo/experimento real.
+
+## Conferência da integração completa
+
+O primeiro CI executou 6.094 testes e encontrou uma única fixture de ciclo de vida
+ainda consumindo o pending legado fechado. A mesma falha apareceu na rodada MySQL.
+Reprodução local confirmou a causa. A fixture passou a percorrer recibo repetido,
+contexto, início único (segundo início HTTP 409), callback com identidade e preservação
+da falha anterior; teste de persistência e testes do recibo/controller aprovados localmente.
+Nenhuma regra de arquitetura, proteção ou implementação produtiva foi enfraquecida.

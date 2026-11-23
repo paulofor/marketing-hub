@@ -16,3 +16,11 @@
   fencing de callback, preservação de processo original e telemetria da tarefa exata.
 - Homologação e publicação devem seguir a matriz `docs/homologacao/vega-923-reserva-confirmavel-v1.md`.
   Nenhum avanço comercial, aceite, retentativa de 923 ou retomada de 103 é atribuído à correção.
+
+### 23/11/2026 — complemento da homologação de Dédalo (PR #5870)
+
+O CI integral identificou a fixture ProductProcessRecoveryLifecycleTest ainda no contrato
+legado. Falha reproduzida localmente e teste migrado para recibo/contexto/início único,
+com replay da mesma identidade, recusa do segundo início e callbacks com fencing.
+As verificações de histórico, aceite e relatório continuam presentes. Validação local
+com H2, recibo e controller aprovada; nenhuma inferência ou escrita no Vega real.

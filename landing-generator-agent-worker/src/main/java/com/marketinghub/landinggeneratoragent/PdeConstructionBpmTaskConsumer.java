@@ -157,7 +157,7 @@ public class PdeConstructionBpmTaskConsumer {
           recoverInterrupted(pending);
           return;
         }
-        if (!automaticExecution.allowsAutomaticExecution()) return;
+        if (outbox.publicationPaused() || !automaticExecution.allowsAutomaticExecution()) return;
         Map<String, Object> task = pending == null ? claimNext() : pending.task();
         if (task == null) return;
         if (pending == null) {
@@ -274,9 +274,10 @@ public class PdeConstructionBpmTaskConsumer {
     deliver(pending);
   }
 
-  /** Reenvia transporte transitório; duas recusas de contrato preservam o retorno para correção. */
+  /** Reenvia falhas transitórias e consulta recibo sem repetir callback semântico recusado. */
   private void deliver(PdeConstructionOutbox.Pending pending) throws IOException {
     if (pending.deliveryRefusals() >= 2) {
+      if (acknowledgeRecovered(pending)) return;
       log.warn(
           "Callback de Dédalo preservado após duas recusas de contrato. taskId={} operation={}",
           taskId(pending.task()),
@@ -308,11 +309,63 @@ public class PdeConstructionBpmTaskConsumer {
           ex.getStatusCode(),
           ex);
       if (ex.getStatusCode().is4xxClientError() && ex.getStatusCode().value() != 429) {
-        outbox.save(pending.refused());
+        boolean semantic = semanticRejection(ex);
+        outbox.save(semantic ? pending.refused().refused() : pending.refused());
       }
       throw ex;
     }
     outbox.acknowledge();
+  }
+
+  /** Identifica apenas o código semântico governado; corpo inválido mantém o limite genérico. */
+  private boolean semanticRejection(RestClientResponseException ex) {
+    if (ex.getStatusCode().value() != 422) return false;
+    try {
+      JsonNode body = json.readTree(ex.getResponseBodyAsString());
+      return body != null && "AGENT_RESULT_CONTRACT_REJECTED".equals(body.path("code").asText());
+    } catch (IOException invalid) {
+      log.warn(
+          "Recusa sem corpo JSON válido; preservar limite de reenvio. status={}",
+          ex.getStatusCode(),
+          invalid);
+      return false;
+    }
+  }
+
+  /** Libera a outbox recusada somente quando o backend confirma os mesmos bytes aceitos. */
+  private boolean acknowledgeRecovered(PdeConstructionOutbox.Pending pending) {
+    if (!"result".equals(pending.operation())) return false;
+    try {
+      JsonNode receipt =
+          backend
+              .get()
+              .uri(
+                  "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result-receipt",
+                  AGENT_KEY,
+                  taskId(pending.task()))
+              .header(
+                  "X-Dedalo-Claim",
+                  String.valueOf(pending.task().getOrDefault("executionClaimId", "")))
+              .retrieve()
+              .body(JsonNode.class);
+      if (receipt != null
+          && receipt.path("taskId").asLong() == taskId(pending.task())
+          && "COMPLETED".equals(receipt.path("status").asText())
+          && CatalogPromptInput.sha256((String) pending.callback().get("resultJson"))
+              .equals(receipt.path("resultSha256").asText())
+          && CatalogPromptInput.sha256((String) pending.callback().get("evidenceJson"))
+              .equals(receipt.path("evidenceSha256").asText())) {
+        outbox.acknowledge();
+        log.info("Retorno original recuperado e confirmado. taskId={}", taskId(pending.task()));
+        return true;
+      }
+    } catch (Exception ex) {
+      log.warn(
+          "Recibo de recuperação ainda não confirmado; outbox preservada. taskId={}",
+          taskId(pending.task()),
+          ex);
+    }
+    return false;
   }
 
   /** Prioriza entrega paga e percorre somente os contratos de produto pertencentes a Dédalo. */
@@ -628,6 +681,8 @@ public class PdeConstructionBpmTaskConsumer {
     }
     if (turmalina(task)) {
       agentPromptPart += "\n\n" + read("prompts/pde-construction/v4/turmalina-value-delivery.md");
+      if ("deliverables".equals(contract.activityId()))
+        agentPromptPart += "\n\n" + read("prompts/pde-construction/v5/deliverables-reference.md");
     }
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
@@ -638,8 +693,10 @@ public class PdeConstructionBpmTaskConsumer {
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
-  /** Seleciona o schema tipado somente para a nova especificação Turmalina. */
+  /** Seleciona schemas tipados de Turmalina preservando os contratos dos demais produtos. */
   String specificationSchema(Map<String, Object> task, BpmContract contract) {
+    if (turmalina(task) && "deliverables".equals(contract.activityId()))
+      return "prompts/pde-construction/v5/deliverables-schema.json";
     return turmalina(task) && "journey".equals(contract.activityId())
         ? "prompts/pde-construction/v4/turmalina-journey-schema.json"
         : contract.schemaResource();
@@ -807,8 +864,12 @@ public class PdeConstructionBpmTaskConsumer {
     return result.toString();
   }
 
-  /** Preserva a auditoria comum de Dédalo e a versão do prompt executado. */
+  /** Preserva a auditoria comum e identifica o contrato efetivamente usado na nova resposta. */
   private String baseEvidence(Map<String, Object> task) throws IOException {
+    String promptVersion =
+        turmalina(task) && "deliverables".equals(activityId(task))
+            ? "pde-construction-v5"
+            : contractFor(task).promptVersion();
     return json.writeValueAsString(
         Map.of(
             "agent",
@@ -816,7 +877,7 @@ public class PdeConstructionBpmTaskConsumer {
             "model",
             modelCode(task),
             "promptVersion",
-            contractFor(task).promptVersion(),
+            promptVersion,
             "sourceReference",
             String.valueOf(task.get("sourceReference")),
             "processCode",

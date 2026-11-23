@@ -86,6 +86,21 @@ class AgentTaskHumanSummaryTest {
     assertThat(AgentTaskResultView.humanSummary(null)).isNull();
   }
 
+  /** Uma resposta READY recusada não aparece como entrega aceita ou erro bruto ao usuário. */
+  @Test
+  void rejectedReadyResultIsPresentedAsRecoverableBlock() {
+    var task =
+        task("{\"decision\":\"READY\",\"humanSummary\":\"Componentes preparados com sucesso.\"}");
+    task.setStatus("BLOCKED");
+    task.setExecutionError(
+        AgentTaskResultRejectedException.CODE + "|java.lang.IllegalArgumentException: detalhe");
+    var summary = AgentTaskResultView.humanSummary(task);
+    assertThat(summary.decision()).isEqualTo("BLOCKED");
+    assertThat(summary.text())
+        .contains("preservada", "sem nova chamada", "não comprova implementação")
+        .doesNotContain("IllegalArgumentException", AgentTaskResultRejectedException.CODE);
+  }
+
   /** Cria somente uma tarefa local, sem banco, custo, callback ou agente externo. */
   private AgentTask task(String result) {
     var task = new AgentTask();

@@ -15,6 +15,10 @@ public final class AgentTaskResultView {
 
   /** Projeta interrupções conhecidas em linguagem de negócio, preservando o erro na auditoria. */
   public static String businessReason(String reason) {
+    if (reason != null && reason.contains(AgentTaskResultRejectedException.CODE + "|"))
+      return "A resposta foi preservada, mas seu vínculo com a especificação não foi aceito. "
+          + "O contrato precisa ser corrigido e o retorno original revalidado, sem nova chamada ao modelo. "
+          + "Isso ainda não comprova implementação ou homologação do produto.";
     if (reason != null && reason.contains("DEDALO_LEASE_RECOVERY_EXHAUSTED|"))
       return "O acompanhamento da execução foi interrompido. Uma nova chamada foi bloqueada para evitar cobrança duplicada. É necessário conferir o recebimento e o retorno original antes de retomar; o consumo ainda não foi confirmado.";
     if (reason != null
@@ -28,6 +32,12 @@ public final class AgentTaskResultView {
 
   /** Apresenta a síntese do agente e identifica recortes legados sem reescrever o resultado. */
   public static AgentTaskHumanSummary humanSummary(AgentTask task) {
+    if (task != null
+        && "BLOCKED".equals(task.getStatus())
+        && task.getExecutionError() != null
+        && task.getExecutionError().startsWith(AgentTaskResultRejectedException.CODE + "|"))
+      return new AgentTaskHumanSummary(
+          businessReason(task.getExecutionError()), "DETERMINISTIC", "BLOCKED");
     if (task != null
         && "BLOCKED".equals(task.getStatus())
         && (task.getResultJson() == null || task.getResultJson().isBlank())

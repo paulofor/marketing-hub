@@ -714,3 +714,27 @@ Ausência de auditoria é comunicada como ausência de registro, não como prova
 zero. Hipótese de benefício: reduzir retomadas indevidas e interpretações incorretas de
 consumo; impacto comercial ainda não medido. Manter diagnóstico bruto acessível é limite
 de adoção, conforme homologação Vega 923.
+
+## Referência explícita e recuperação sem nova inferência — 23/11/2026
+
+A 925 de Dédalo produziu especificação READY, mas o contrato anterior não possuía campo
+para a referência exigida pelo backend. O hash certo em um escalar com nome de campo foi
+recusado como HTTP 500. A versão v5 dos componentes Turmalina exige
+`specificationReference` explícita; o leitor legado aceita apenas valores inteiros delimitados
+nos critérios, sem busca em prosa nem reconstrução de hash. Baseline, processo e fonte atuais
+continuam obrigatórios. O retorno preservado não é reescrito.
+
+Recusa semântica do hook fica BLOCKED com resultado, auditoria e consumo confirmados uma vez.
+HTTP 422 governado interrompe o POST automático; o executor conserva a outbox e consulta recibo.
+A revalidação oficial usa somente o original, sob lock e sem tentativa sucessora, sem modelo ou
+nova contabilização. Só o aceite e os hashes exatos permitem arquivar/liberar a fila. Arquivos
+brutos, envelope e eventos permanecem no arquivo confirmado do executor, separados do resultado
+funcional. READY destas atividades continua especificação; não prova implementação/homologação.
+
+Hipótese operacional: diminuir tempo bloqueado e repetições por incompatibilidade de contrato.
+Regressões integram worker real, HTTP, MVC, transação e atividade em contextos sintéticos;
+medem ausência de nova inferência e contabilização única, não aumento de vendas. Adoção exige
+matriz aprovada; reversão não pode apagar originais, reenfileirar inferência ou relaxar gates.
+A projeção de Produtos em play prioriza o trabalho do run confirmado por tarefa da mesma
+versão/fonte; bloqueios históricos continuam no histórico. Evidências e limites:
+`docs/homologacao/dedalo-callback-reference-v1.md`.

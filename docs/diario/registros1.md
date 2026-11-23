@@ -50,3 +50,27 @@ mesma identidade e sem modelo. A melhoria torna a prova da desconexão explícit
 o mecanismo publicado ou repetir a tarefa real.
 Suíte completa do worker após esse refinamento: 125 aprovados, 1 opcional ignorado,
 zero falhas/erros. Evidências preservadas em artifacts/dedalo-claim.
+
+## 2026-11-23 — referência e retorno preservado de Dédalo 925
+
+- Causa confirmada no código, MCP, executor e reprodução local: o hash correto veio em
+  escalar com nome de campo, mas o schema não oferecia campo explícito; a recusa virou
+  HTTP 500 transitório e manteve 925 IN_PROGRESS sem contabilizar a resposta pronta.
+- A entrega local alinha o contrato de componentes Turmalina v5 e a leitura legada estrita,
+  registra recusa semântica recuperável e conserva callback, auditoria, tokens e bytes brutos.
+  Revalidação oficial e recibo impedem nova inferência/dupla contabilização.
+- Produtos em play apontava Apolo por selecionar um bloqueio histórico. A tarefa confirmada
+  do run passa a governar o cartão, sem alterar aceites ou os bloqueios preservados.
+- O publicador de Dédalo reutiliza o lock durável existente para aguardar trabalho ativo antes
+  da troca de imagem. Matriz com HTTP/worker/JPA, concorrência, transporte e dispositivos em
+  `docs/homologacao/dedalo-callback-reference-v1.md`; originais privados preservados fora do Git.
+- Teto US$200, reserva e recibos 140/141 preservados. Antes da recuperação, MCP/API confirmaram
+  US$113,945218 conhecidos estimados, US$86,054782 disponíveis e 12 tarefas sem custo informado.
+  READY continua especificação PROTOTYPE_SLICE; esta correção não comprova produto construído,
+  homologação, demanda ou aumento de vendas. Publicação e recuperação exigem conferência final.
+
+- Validação local final desta correção: 293 casos relacionados de backend (incluindo 15
+  integrados obrigatórios), 92 regras de arquitetura existentes, 127 testes de Dédalo e nove
+  do frontend aprovados. TypeScript e bundle aprovados em processos separados para respeitar
+  memória local; o CI mantém build normal. Gate premium, 42 contratos de publicação, cinco
+  testes do lock e três dispositivos conferidos. Nenhuma regra de arquitetura foi modificada.

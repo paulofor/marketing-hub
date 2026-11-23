@@ -7,6 +7,7 @@ on:
       - .github/workflows/landing-generator-agent-worker-ci.yml
       - config/agents/codex-agent-health-compliance.json
       - scripts/test-codex-agent-health-standard.mjs
+      - scripts/test-dedalo-publication-command.mjs
   workflow_run:
     workflows: ["Build & Deploy containers"]
     types: [completed]
@@ -23,6 +24,7 @@ on:
       - "landing-generator-agent-worker/**"
       - "backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/**"
       - "scripts/test-isolated-agent-codex-auth.sh"
+      - "scripts/test-dedalo-publication-command.mjs"
       - "scripts/codex-app-server-device-login.mjs"
 
 permissions:
@@ -70,6 +72,10 @@ jobs:
         run: bash ../scripts/maven-verify-with-transient-retry.sh
       - name: Validar retry transitório do Maven
         run: bash scripts/test-maven-verify-with-transient-retry.sh
+      - name: Validar publicação protegida sem interromper trabalho
+        run: |
+          node --test scripts/test-dedalo-publication-command.mjs
+          python3 scripts/test-agent-consumer-publication-lock.py
       - name: Validar arquitetura premium
         run: bash scripts/validate-premium-agents.sh
       - name: Construir imagem versionada
@@ -196,12 +202,15 @@ jobs:
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/landing-generator-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete landing-generator-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/landing-generator-agent-worker/"
-          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs scripts/with-agent-consumer-lock.py "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Subir executor com sessão individual
         run: |
           set -euo pipefail
+          # O helper versionado fornece os parâmetros SSH separados, conforme contrato dos agentes.
+          # shellcheck disable=SC2086
           ssh ${SSH_COMMON_ARGS} -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "${VPS_USER}@${VPS_IP}" "
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/landing-generator/codex-home \
+            && install -d -o 10001 -g 10001 -m 700 /opt/growth-operator/agents/landing-generator/codex-home/dedalo-bpm \
             && export LANDING_GENERATOR_CODEX_HOME=/opt/growth-operator/agents/landing-generator/codex-home \
                       BACKEND_URL=http://191.252.181.168 \
                       MARKETING_HUB_URL=http://191.252.181.168 \
@@ -211,15 +220,17 @@ jobs:
                       AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}' \
                       LANDING_GENERATOR_AGENT_IMAGE=marketing-hub/landing-generator-agent-worker:${DEPLOY_SOURCE_SHA} \
             && cd '${REPOSITORY_DIR}/landing-generator-agent-worker' \
-            && docker compose up -d --no-build --pull never --remove-orphans \
-            && for attempt in \$(seq 1 24); do \
-                 echo \"Aguardando saúde do executor (tentativa \${attempt}/24)\"; \
-                 curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
-                   && docker compose exec -T landing-generator-agent-worker node /app/agent-health-report.mjs \
-                   && exit 0; \
-                 sleep 5; \
-               done; \
-            docker compose logs --tail=150 landing-generator-agent-worker; exit 1"
+            && python3 '../scripts/with-agent-consumer-lock.py' \
+                 --state-directory '/opt/growth-operator/agents/landing-generator/codex-home/dedalo-bpm' \
+                 --revision '${DEPLOY_SOURCE_SHA}' -- bash -c 'docker compose up -d --no-build --pull never --remove-orphans \\
+            && for attempt in \$(seq 1 24); do \\
+                 echo \"Aguardando saúde do executor (tentativa \${attempt}/24)\"; \\
+                 curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"'\"'\"status\"[[:space:]]*:[[:space:]]*\"UP\"'\"'\"' \\
+                   && docker compose exec -T landing-generator-agent-worker node /app/agent-health-report.mjs \\
+                   && exit 0; \\
+                 sleep 5; \\
+               done; \\
+            docker compose logs --tail=150 landing-generator-agent-worker; exit 1'"
       - name: Restore free disk space on agent VPS
         if: always()
         timeout-minutes: 5

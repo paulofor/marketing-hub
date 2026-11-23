@@ -116,6 +116,7 @@ export interface AgentTask {
   resultJson?: string;
   evidenceJson?: string;
   executionError?: string;
+  preservedResultRecoveryAvailable?: boolean;
   failureAudit?: AgentTaskFailureAudit;
   inputTokens?: number;
   cachedInputTokens?: number;

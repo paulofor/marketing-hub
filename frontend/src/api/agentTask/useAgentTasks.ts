@@ -97,3 +97,13 @@ export function useRecomposeCreative(agentKey?: string) {
       queryClient.invalidateQueries({ queryKey: ["agent-tasks", agentKey] }),
   });
 }
+
+/** Revalida o retorno preservado sem iniciar agente ou criar outra tarefa. */
+export function useReplayAgentTaskResult() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) =>
+      axios.post(`/api/agent-tasks/${id}/replay-result`),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["agent-tasks"] }),
+  });
+}

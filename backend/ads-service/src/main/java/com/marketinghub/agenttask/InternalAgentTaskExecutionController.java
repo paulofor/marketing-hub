@@ -153,6 +153,16 @@ public class InternalAgentTaskExecutionController {
     return ResponseEntity.noContent().build();
   }
 
+  /** Confirma o aceite dos bytes preservados sem conceder nova reserva ou inferência. */
+  @GetMapping("/{taskId}/result-receipt")
+  public com.marketinghub.agenttask.service.receipt.AgentTaskResultReceipt resultReceipt(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @RequestHeader(value = "X-Dedalo-Claim", required = false) String claimId) {
+    service.requireCallbackClaim(agentKey, taskId, claimId);
+    return service.resultReceipt(agentKey, taskId);
+  }
+
   /** Recebe uma captura Playwright privada antes de permitir o parecer visual do agente. */
   @PostMapping(value = "/{taskId}/visual-evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public AgentTaskVisualEvidenceResponse uploadVisualEvidence(

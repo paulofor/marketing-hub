@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
-import { useActiveAgentTasks } from "../../api/agentTask/useAgentTasks";
+import {
+  useActiveAgentTasks,
+  useReplayAgentTaskResult,
+} from "../../api/agentTask/useAgentTasks";
 import { AgentTaskStatus } from "../../api/agentTask/types";
 import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
 import AgentTaskFailureAudit from "../../components/AgentTaskFailureAudit";
@@ -25,6 +28,7 @@ const statusClass: Record<AgentTaskStatus, string> = {
 export default function ActiveAgentTasksPage() {
   const tasks = useActiveAgentTasks();
   const items = tasks.data ?? [];
+  const replay = useReplayAgentTaskResult();
 
   return (
     <div>
@@ -49,6 +53,12 @@ export default function ActiveAgentTasksPage() {
         <div className="alert alert-success">Nenhuma tarefa ativa.</div>
       ) : null}
 
+      {replay.isError ? (
+        <div className="alert alert-warning" role="alert">
+          O retorno permanece preservado. A revalidação ainda não foi aceita;
+          consulte o diagnóstico da tarefa.
+        </div>
+      ) : null}
       {items.length > 0 ? (
         <div className="table-responsive">
           <table className="table align-middle">
@@ -94,6 +104,29 @@ export default function ActiveAgentTasksPage() {
                   </td>
                   <td>{task.priority}</td>
                   <td>
+                    {task.preservedResultRecoveryAvailable ? (
+                      <div className="mb-2">
+                        <p>
+                          A resposta foi preservada e aguarda revalidação do
+                          contrato. Isso não comprova implementação do produto.
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={replay.isPending}
+                          onClick={() => replay.mutate(task.id)}
+                        >
+                          {replay.isPending ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" />
+                              Revalidando...
+                            </>
+                          ) : (
+                            "Revalidar retorno original"
+                          )}
+                        </button>
+                      </div>
+                    ) : null}
                     {task.status === "BLOCKED" && task.gateDecisionReason
                       ? task.gateDecisionReason
                       : task.description}

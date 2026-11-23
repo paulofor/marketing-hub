@@ -2697,6 +2697,20 @@
           "description": "Distingue contratos de jornada, componentes e acesso da prova obrigatória do protótipo antes da homologação; preserva identidade e tipo do catálogo."
         },
         {
+          "artifactType": "OUTPUT_SCHEMA",
+          "name": "Contrato de componentes Turmalina com referência",
+          "version": "v5",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v5/deliverables-schema.json",
+          "description": "Define referência explícita à especificação exata sem reinterpretar retornos históricos."
+        },
+        {
+          "artifactType": "PROMPT",
+          "name": "Referência explícita dos componentes Turmalina",
+          "version": "v5",
+          "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v5/deliverables-reference.md",
+          "description": "Exige referência canônica e conserva a distinção entre especificação e implementação."
+        },
+        {
           "artifactType": "PROMPT",
           "name": "Jornada do produto PDE",
           "version": "v1",

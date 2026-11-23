@@ -1,9 +1,15 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ActiveAgentTasksPage from "./ActiveAgentTasksPage";
 
+const recovery = vi.hoisted(() => ({
+  mutate: vi.fn(),
+  isPending: false,
+  isError: false,
+}));
 vi.mock("../../api/agentTask/useAgentTasks", () => ({
+  useReplayAgentTaskResult: () => recovery,
   useActiveAgentTasks: () => ({
     isLoading: false,
     isError: false,
@@ -19,6 +25,7 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
         description: "Demonstrar o produto digital na página.",
         priority: "URGENT",
         status: "BLOCKED",
+        preservedResultRecoveryAvailable: true,
         sourceReference: "experiment:88",
         taskKind: "WORK",
         inputTokens: 1234,
@@ -35,6 +42,7 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
 }));
 
 describe("ActiveAgentTasksPage", () => {
+  afterEach(cleanup);
   it("mostra a tarefa ativa, o executor e o motivo operacional", () => {
     render(
       <MemoryRouter>
@@ -62,5 +70,27 @@ describe("ActiveAgentTasksPage", () => {
     expect(
       screen.getByText(/Custo estimado: US\$ 0,01234567/),
     ).toBeInTheDocument();
+  });
+  it("revalida apenas o retorno preservado e bloqueia clique concorrente", () => {
+    const view = render(
+      <MemoryRouter>
+        <ActiveAgentTasksPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Revalidar retorno original" }),
+    );
+    expect(recovery.mutate).toHaveBeenCalledWith(18);
+    expect(
+      screen.getByText(/Isso não comprova implementação/),
+    ).toBeInTheDocument();
+    recovery.isPending = true;
+    view.rerender(
+      <MemoryRouter>
+        <ActiveAgentTasksPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: /Revalidando/ })).toBeDisabled();
+    recovery.isPending = false;
   });
 });

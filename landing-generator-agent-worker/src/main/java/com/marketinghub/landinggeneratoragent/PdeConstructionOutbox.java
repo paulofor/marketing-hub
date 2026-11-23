@@ -46,6 +46,11 @@ final class PdeConstructionOutbox {
     return new Lock(channel, lock);
   }
 
+  /** Impede nova reserva durante publicação protegida sem interromper retorno já produzido. */
+  boolean publicationPaused() {
+    return Files.exists(directory.resolve("publisher-pause.json"));
+  }
+
   /** Carrega a execução ainda não confirmada, inclusive após reinício do container. */
   Pending read() throws IOException {
     Path file = directory.resolve("pending.json");
@@ -157,13 +162,45 @@ final class PdeConstructionOutbox {
     return directory.resolve("model-events.jsonl");
   }
 
-  /** Remove somente os arquivos desta entrega depois da confirmação canônica. */
+  /** Arquiva bytes originais antes de liberar a fila após confirmação canônica do backend. */
   void acknowledge() throws IOException {
+    archiveConfirmed();
     clearClaim();
     Files.deleteIfExists(directory.resolve("process.json"));
     Files.deleteIfExists(output());
     Files.deleteIfExists(events());
     Files.deleteIfExists(directory.resolve("pending.json"));
+  }
+
+  /** Conserva envelope, resposta bruta e eventos sem normalizar conteúdo nem sobrescrever prova. */
+  private void archiveConfirmed() throws IOException {
+    Pending pending = read();
+    if (pending == null || pending.callback() == null) return;
+    Path archive =
+        directory
+            .resolve("confirmed")
+            .resolve(String.valueOf(pending.task().get("taskId")))
+            .resolve(CatalogPromptInput.sha256(json.writeValueAsString(pending.callback())));
+    Files.createDirectories(archive);
+    for (String name :
+        java.util.List.of(
+            "pending.json", "model-result.json", "model-events.jsonl", "process.json")) {
+      Path source = directory.resolve(name);
+      if (!Files.exists(source)) continue;
+      byte[] bytes = Files.readAllBytes(source);
+      Path target = archive.resolve(name);
+      if (Files.exists(target)) {
+        if (!java.util.Arrays.equals(bytes, Files.readAllBytes(target)))
+          throw new IOException("Arquivo confirmado divergente; outbox preservada: " + name);
+        continue;
+      }
+      try (FileChannel channel =
+          FileChannel.open(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        while (buffer.hasRemaining()) channel.write(buffer);
+        channel.force(true);
+      }
+    }
   }
 
   /** Preserva snapshot, auditoria e envelope de envio sem recalcular uma resposta já produzida. */

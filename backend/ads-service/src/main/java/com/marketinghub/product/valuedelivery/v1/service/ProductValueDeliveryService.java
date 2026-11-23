@@ -138,19 +138,24 @@ public class ProductValueDeliveryService implements AgentTaskCompletionHook {
           JsonNode report = report(history, baseline, spec);
           reference = reviewReference(spec, report);
         }
-        if (!contains(result, reference))
+        if ("deliverables".equals(task.getProcessActivityId())) {
+          completeBaseline(baseline);
+          ProductValueContract.specification(baseline, spec);
+          ProductValueReference.require(result, reference);
+        } else if (!contains(result, reference)) {
           throw new IllegalArgumentException(
               "O resultado não identifica a especificação/prova revisada; preserve a saída e corrija a referência.");
+        }
       }
       return CompletionDisposition.COMPLETE;
-    } catch (RuntimeException ex) {
+    } catch (IllegalArgumentException ex) {
       log.warn(
           "Continuidade de valor recusada taskId={} source={} activity={}",
           task.getId(),
           task.getSourceReference(),
           task.getProcessActivityId(),
           ex);
-      throw ex;
+      throw new AgentTaskResultRejectedException(ex);
     }
   }
 

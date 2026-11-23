@@ -58,6 +58,17 @@ public record AgentTaskResponse(
     Instant createdAt,
     Instant updatedAt) {
 
+  /** Expõe a capacidade governada sem exigir que o frontend interprete o erro técnico. */
+  @com.fasterxml.jackson.annotation.JsonProperty
+  public boolean preservedResultRecoveryAvailable() {
+    return "landing-generator".equals(assignedAgentKey)
+        && "BLOCKED".equals(status)
+        && executionError != null
+        && executionError.startsWith(AgentTaskResultRejectedException.CODE + "|")
+        && resultJson != null
+        && evidenceJson != null;
+  }
+
   /** Mantém compatibilidade de testes e integrações internas anteriores ao vínculo BPM. */
   public AgentTaskResponse(
       Long id,

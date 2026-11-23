@@ -56,6 +56,15 @@ public class AgentTaskController {
     return service.recomposeCreative(taskId, request);
   }
 
+  /** Revalida o callback original recusado após correção, sem criar tarefa nem consumo. */
+  @PostMapping("/{taskId}/replay-result")
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Revalidar retorno original preservado de Dédalo")
+  public ResponseEntity<Void> replayResult(@PathVariable Long taskId) {
+    service.replayRejectedResult(taskId);
+    return ResponseEntity.noContent().build();
+  }
+
   /** Permite evoluir o estado operacional da tarefa. */
   @PatchMapping("/{taskId}/status")
   public AgentTaskResponse updateStatus(

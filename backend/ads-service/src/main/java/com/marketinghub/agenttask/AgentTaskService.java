@@ -3544,9 +3544,10 @@ public class AgentTaskService {
 
   /**
    * Conclui trabalho ou recupera retorno original após lease perdida, sem duplicar efeitos e
-   * consumo. A retomada de Atena exige os bytes originais e mantém sua auditoria anterior.
+   * consumo. Recusa semântica preserva o envelope e bloqueia a atividade em transação confirmada. A
+   * retomada de Atena exige os bytes originais e mantém sua auditoria anterior.
    */
-  @Transactional
+  @Transactional(noRollbackFor = AgentTaskResultRejectedException.class)
   public void completeClaimedProcessTask(
       String agentKey, Long taskId, CompleteAgentTaskRequest request) {
     AgentTask task = lockedForCallback(agentKey, taskId);
@@ -3558,18 +3559,48 @@ public class AgentTaskService {
         request.evidenceJson(),
         null,
         request.executionAudit())) return;
-    requireClaimedOrOriginalDedaloCallback(task, request.executionAudit(), true);
+    boolean recovery = rejectedOriginalCallback(task, request);
+    if (recovery) {
+      requireNoNewerCallbackAttempt(task);
+    } else {
+      requireClaimedOrOriginalDedaloCallback(task, request.executionAudit(), true);
+    }
     AtenaPreservedStrategyRecovery.requireOriginal(task, request, objectMapper);
     if (audioReviews != null) audioReviews.validateCompletion(task, request.resultJson());
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
-    applyExecutionAudit(task, request.executionAudit());
-    applyModelUsage(task, request.modelUsages());
+    if (!recovery) {
+      applyExecutionAudit(task, request.executionAudit());
+      applyModelUsage(task, request.modelUsages());
+    }
     requireTerminalExecutionAudit(task, true);
     task.setExecutionError(null);
     clearBlockerGuidance(task);
-    AgentTaskCompletionHook.CompletionDisposition disposition = applyCompletionHooks(task, request);
+    AgentTaskCompletionHook.CompletionDisposition disposition;
+    try {
+      disposition = applyCompletionHooks(task, request);
+    } catch (AgentTaskResultRejectedException ex) {
+      log.warn(
+          "Resultado recusado e preservado para recuperação. taskId={} sourceReference={}",
+          taskId,
+          task.getSourceReference(),
+          ex);
+      task.setExecutionError(ex.getMessage());
+      applyBlockerGuidance(
+          task,
+          new AgentTaskBlockerGuidanceRequest(
+              "TECHNICAL_FAILURE",
+              AgentTaskResultView.businessReason(ex.getMessage()),
+              defaultHelpLinks(task)),
+          ex.getMessage(),
+          request.resultJson());
+      task.setStatus("BLOCKED");
+      task.setUpdatedAt(now);
+      repository.save(task);
+      synchronizeActivityInstance(task, now);
+      throw ex;
+    }
     if (AgentTaskCompletionHook.CompletionDisposition.DEFERRED.equals(disposition)) {
       task.setUpdatedAt(now);
       AgentTask saved = repository.save(task);
@@ -3581,6 +3612,97 @@ public class AgentTaskService {
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
     synchronizeActivityInstance(saved, now);
+  }
+
+  /** Reconhece exclusivamente o envelope recusado já persistido, conservando seu consumo. */
+  private boolean rejectedOriginalCallback(AgentTask task, CompleteAgentTaskRequest request) {
+    return task.getExecutionError() != null
+        && task.getExecutionError().startsWith(AgentTaskResultRejectedException.CODE + "|")
+        && terminalCallbackRecorded(
+            task,
+            "BLOCKED",
+            request.resultJson(),
+            request.evidenceJson(),
+            task.getExecutionError(),
+            request.executionAudit());
+  }
+
+  /** Impede que recuperar retorno antigo substitua uma tentativa posterior da mesma atividade. */
+  private void requireNoNewerCallbackAttempt(AgentTask task) {
+    if (repository.existsNewerAttemptForCallback(
+        task.getSourceReference(),
+        task.getProcessDefinition().getProcessCode(),
+        task.getProcessActivityId(),
+        task.getId()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Uma tentativa posterior governa a atividade; preservar o retorno histórico.");
+  }
+
+  /**
+   * Revalida somente o retorno original recusado, sem inferência, edição ou nova contabilização.
+   */
+  @Transactional(noRollbackFor = AgentTaskResultRejectedException.class)
+  public void replayRejectedResult(Long taskId) {
+    AgentTask task =
+        repository
+            .findLockedById(taskId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
+    if ("landing-generator".equals(task.getAssignedAgent().getAgentKey())
+        && "COMPLETED".equals(task.getStatus())
+        && trimToNull(task.getResultJson()) != null
+        && trimToNull(task.getEvidenceJson()) != null) return;
+    if (!"landing-generator".equals(task.getAssignedAgent().getAgentKey())
+        || !"BLOCKED".equals(task.getStatus())
+        || task.getExecutionError() == null
+        || !task.getExecutionError().startsWith(AgentTaskResultRejectedException.CODE + "|"))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Não há retorno recusado disponível para recuperação.");
+    var audit =
+        new AgentTaskExecutionAuditRequest(
+            task.getExecutionMode(),
+            task.getExecutionModelCode(),
+            task.getExecutionReasoningEffort(),
+            task.getExecutionPrompt(),
+            task.getExecutionAgentPrompt(),
+            task.getExecutionActivityPrompt(),
+            AgentTaskAuditView.accessedUrls(task).stream()
+                .map(
+                    link ->
+                        new AgentTaskAccessedUrlRequest(
+                            link.url(), link.label(), link.accessMethod(), link.accessedAt()))
+                .toList());
+    completeClaimedProcessTask(
+        task.getAssignedAgent().getAgentKey(),
+        taskId,
+        new CompleteAgentTaskRequest(task.getResultJson(), task.getEvidenceJson(), null, audit));
+  }
+
+  /** Consulta recibo de aceite sem reservar trabalho nem modificar a execução. */
+  @Transactional(readOnly = true)
+  public com.marketinghub.agenttask.service.receipt.AgentTaskResultReceipt resultReceipt(
+      String agentKey, Long taskId) {
+    AgentTask task = ownedBy(agentKey, taskId);
+    return new com.marketinghub.agenttask.service.receipt.AgentTaskResultReceipt(
+        taskId,
+        task.getStatus(),
+        callbackHash(task.getResultJson()),
+        callbackHash(task.getEvidenceJson()));
+  }
+
+  /** Identifica bytes UTF-8 originais sem normalizar ou reserializar o parecer. */
+  private String callbackHash(String value) {
+    if (value == null) return null;
+    try {
+      return java.util.HexFormat.of()
+          .formatHex(
+              java.security.MessageDigest.getInstance("SHA-256")
+                  .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    } catch (java.security.NoSuchAlgorithmException ex) {
+      log.error("Falha ao identificar callback preservado", ex);
+      throw new IllegalStateException("SHA-256 indisponível", ex);
+    }
   }
 
   /** Reconhece o reenvio exato e remove uma orientação de bloqueio superada sem repetir efeitos. */

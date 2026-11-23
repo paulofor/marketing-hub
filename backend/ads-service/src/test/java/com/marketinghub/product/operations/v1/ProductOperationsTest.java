@@ -79,6 +79,73 @@ class ProductOperationsTest {
     verify(products, never()).save(any());
   }
 
+  /** A tarefa do run atual prevalece na operação sem apagar o bloqueio histórico de Apolo. */
+  @ParameterizedTest
+  @CsvSource({"4,22,115", "92004,92022,92115"})
+  void showsConfirmedRunWorkInsteadOfHistoricalBlock(
+      long productId, long cycleId, long experimentId) throws Exception {
+    var product =
+        configure(productId, cycleId, experimentId, "WAITING_ACTIVITY", "BLOCKED", "QA atual");
+    var run =
+        runs.findOpenRootsForOperations(productId, cycleId, "experiment:" + experimentId)
+            .getFirst();
+    run.setCurrentActivityId("deliverables");
+    var history =
+        executions.productProcessExecutions(
+            77L, productId, cycleId, 26L, false, "experiment:" + experimentId);
+    var original = history.activities().getFirst();
+    var task =
+        mock(
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .recentExecutions
+                .BusinessProcessActivityExecutionResponse
+                .class);
+    when(task.processDefinitionId()).thenReturn(77L);
+    when(task.sourceReference()).thenReturn("experiment:" + experimentId);
+    when(task.status()).thenReturn("IN_PROGRESS");
+    var current =
+        new ProductProcessActivityExecutionGroupResponse(
+            2L,
+            "deliverables",
+            "Especificar componentes",
+            "Especificação",
+            "Dédalo",
+            2,
+            true,
+            "IN_PROGRESS",
+            "Resposta em entrega",
+            false,
+            null,
+            null,
+            null,
+            1,
+            List.of(task));
+    when(history.activities()).thenReturn(List.of(original, current));
+    when(products.findAllInPlayState()).thenReturn(List.of(product));
+    var result = service.inPlay().products().getFirst();
+    assertThat(result.responsible()).isEqualTo("Dédalo");
+    assertThat(result.activityId()).isEqualTo("deliverables");
+    assertThat(result.status()).isEqualTo("EXECUTING");
+    assertThat(result.activityUrl()).contains("#activity-deliverables");
+    assertThat(original.operationalState()).isEqualTo("BLOCKED");
+    Path out = Path.of("target/dedalo-callback");
+    Files.createDirectories(out);
+    Files.writeString(
+        out.resolve("in-play-" + productId + ".json"),
+        new com.fasterxml.jackson.databind.ObjectMapper()
+            .findAndRegisterModules()
+            .writeValueAsString(service.inPlay()));
+    // Outra versão ou fonte nunca deve substituir a projeção histórica válida.
+    when(task.processDefinitionId()).thenReturn(78L);
+    assertThat(service.inPlay().products().getFirst().activityId()).isEqualTo("economics");
+    when(task.processDefinitionId()).thenReturn(77L);
+    when(task.sourceReference()).thenReturn("experiment:foreign");
+    assertThat(service.inPlay().products().getFirst().activityId()).isEqualTo("economics");
+  }
+
   /** Diferencia estados de tarefa e de processo, inclusive quando PLAY não produz trabalho. */
   @ParameterizedTest
   @CsvSource({

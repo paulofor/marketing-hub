@@ -80,6 +80,56 @@ class PdeConstructionBpmTaskConsumerTest {
         .doesNotContain("Turmalina — preservar a proposta até a entrega");
   }
 
+  /** Os componentes tipados exigem campo explícito sem mudar o schema legado dos demais tipos. */
+  @Test
+  void selectsExplicitSpecificationReferenceOnlyForTypedDeliverables() throws Exception {
+    var task = new java.util.HashMap<String, Object>();
+    task.put("taskId", 9003L);
+    task.put("processCode", "pde-construction-approval");
+    task.put("activityId", "deliverables");
+    task.put(
+        "taskTarget",
+        Map.of(
+            "pdeContext",
+            Map.of(
+                "productValueDelivery",
+                Map.of(
+                    "baseline",
+                    Map.of("applicable", true),
+                    "specificationReference",
+                    "VALUE_SPECIFICATION:" + "a".repeat(64)))));
+    var properties = new LandingGeneratorAgentProperties();
+    properties.setBackendUrl("http://localhost:1");
+    var consumer = new PdeConstructionBpmTaskConsumer(properties, new ObjectMapper(), null, null);
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval", "deliverables", "", "legacy-schema", "v2", "READY");
+    String path = consumer.specificationSchema(task, contract);
+    var schema = new ObjectMapper().readTree(new ClassPathResource(path).getInputStream());
+    org.assertj.core.api.Assertions.assertThat(schema.path("required").toString())
+        .contains("specificationReference");
+    org.assertj.core.api.Assertions.assertThat(
+            schema.path("properties").path("specificationReference").path("pattern").asText())
+        .isEqualTo("^VALUE_SPECIFICATION:[a-f0-9]{64}$");
+    org.assertj.core.api.Assertions.assertThat(
+            (String)
+                org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                    consumer, "prompt", task))
+        .contains(
+            "campo raiz `specificationReference`",
+            "referência não comprova",
+            "VALUE_SPECIFICATION:" + "a".repeat(64));
+    String evidence =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            consumer, "baseEvidence", task);
+    org.assertj.core.api.Assertions.assertThat(
+            new ObjectMapper().readTree(evidence).path("promptVersion").asText())
+        .isEqualTo("pde-construction-v5");
+    task.remove("taskTarget");
+    org.assertj.core.api.Assertions.assertThat(consumer.specificationSchema(task, contract))
+        .isEqualTo("legacy-schema");
+  }
+
   private final ObjectMapper json = new ObjectMapper();
 
   /** Persiste a auditoria integral antes de iniciar a chamada faturável do modelo. */

@@ -55,6 +55,15 @@ class ProductValueDeliveryServiceTest {
             json.createObjectNode()
                 .putArray("acceptanceCriteria")
                 .add("VALUE_SPECIFICATION:" + ProductValueContract.hash(spec))));
+    // Reproduz o retorno original delimitado, sem reescrever sua referência.
+    service.apply(
+        second,
+        request(
+            json.createObjectNode()
+                .putArray("acceptanceCriteria")
+                .add(
+                    "specificationReference=VALUE_SPECIFICATION:"
+                        + ProductValueContract.hash(spec))));
     var technical = task(journey.getProcessDefinition(), id, "technicalHomologation");
     technical.setStatus("COMPLETED");
     technical.setResultJson(
@@ -282,6 +291,45 @@ class ProductValueDeliveryServiceTest {
         .hasMessageContaining("execução comprovada");
   }
 
+  /** Confere o callback privado original somente em memória, sem inferência ou escrita externa. */
+  @Test
+  @org.junit.jupiter.api.condition.EnabledIfSystemProperty(
+      named = "dedalo.callback.snapshot",
+      matches = ".+")
+  void validatesPreservedOriginalWithoutRewritingBytes() throws Exception {
+    var snapshot =
+        json.readTree(
+            java.nio.file.Path.of(System.getProperty("dedalo.callback.snapshot")).toFile());
+    var input = snapshot.path("task");
+    var value = input.path("taskTarget").path("pdeContext").path("productValueDelivery");
+    var process = new BusinessProcessDefinition();
+    process.setId(900127L);
+    process.setProcessCode(ProductValueDeliveryService.PROCESS);
+    process.setDiagramJson("{\"productValueDeliveryContract\":\"TURMALINA_VALUE_DELIVERY_V1\"}");
+    var current = new AgentTask();
+    current.setId(900925L);
+    current.setProcessDefinition(process);
+    current.setSourceReference(input.path("sourceReference").asText());
+    current.setProcessActivityId("deliverables");
+    current.setProductBigIdeaJson(
+        json.createObjectNode().set("valueDeliveryBaseline", value.path("baseline")).toString());
+    var previous = new AgentTask();
+    previous.setProcessActivityId("journey");
+    previous.setStatus("COMPLETED");
+    previous.setResultJson(
+        json.createObjectNode().set("valueSpecification", value.path("specification")).toString());
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            process.getId(), current.getSourceReference()))
+        .thenReturn(List.of(previous));
+    String original = snapshot.path("callback").path("resultJson").asText();
+    var request = json.treeToValue(snapshot.path("callback"), CompleteAgentTaskRequest.class);
+    assertThat(service.apply(current, request))
+        .isEqualTo(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
+    assertThat(request.resultJson()).isEqualTo(original);
+    assertThat(value.path("specification").path("scope").asText()).isEqualTo("PROTOTYPE_SLICE");
+    verifyNoInteractions(products, evidence);
+  }
+
   /** Prepara fontes sintéticas sem ler produção nem chamar agentes. */
   private AgentTask setup(long id) {
     var process = new BusinessProcessDefinition();
@@ -421,6 +469,7 @@ class ProductValueDeliveryServiceTest {
 
   /** Monta o mesmo DTO do callback preservando resultado estruturado. */
   private CompleteAgentTaskRequest request(JsonNode result) {
+    if (result.isArray()) result = json.createObjectNode().set("acceptanceCriteria", result);
     return json.convertValue(
         Map.of("resultJson", result.toString()), CompleteAgentTaskRequest.class);
   }

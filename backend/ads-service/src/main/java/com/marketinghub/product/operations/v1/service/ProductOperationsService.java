@@ -142,14 +142,7 @@ public class ProductOperationsService {
     if (reference != null && !Objects.equals(reference, history.currentExecutionReference()))
       throw new IllegalStateException("Referência da atividade diverge da execução selecionada");
     reference = history.currentExecutionReference();
-    var activity =
-        history.activities().stream()
-            .filter(
-                a ->
-                    a.selectedVersionActivity()
-                        && Objects.equals(a.activityId(), history.currentActivityId()))
-            .findFirst()
-            .orElse(null);
+    var activity = currentActivity(history, run);
     String state = status(activity, run, history.objectiveAchieved());
     String reason =
         activity == null ? "Consulte o histórico e a próxima passagem." : activity.stateReason();
@@ -159,7 +152,8 @@ public class ProductOperationsService {
         && ("PAUSED".equals(state)
             || "QUEUED".equals(state) && "QUEUED".equals(run.getStatus())
             || !"QUEUED".equals(state)
-                && Objects.equals(run.getCurrentActivityId(), history.currentActivityId())))
+                && Objects.equals(
+                    run.getCurrentActivityId(), activity == null ? null : activity.activityId())))
       reason = run.getReason();
     if (cycle != null
         && Objects.equals(processId, cycle.getProcessDefinitionId())
@@ -207,6 +201,42 @@ public class ProductOperationsService {
         reason,
         url.build().encode().toUriString(),
         run == null ? null : run.getLastReconciledAt());
+  }
+
+  /**
+   * Mostra o trabalho vivo do run quando a própria tarefa confirma processo e contexto. Bloqueios
+   * históricos permanecem no histórico e não substituem a execução atual.
+   */
+  private ProductProcessActivityExecutionGroupResponse currentActivity(
+      ProductProcessActivityExecutionHistoryResponse history, ProcessRun run) {
+    if (run != null && run.getCurrentActivityId() != null) {
+      var running =
+          history.activities().stream()
+              .filter(
+                  a ->
+                      a.selectedVersionActivity()
+                          && Objects.equals(a.activityId(), run.getCurrentActivityId()))
+              .filter(
+                  a ->
+                      a.tasks().stream()
+                          .anyMatch(
+                              t ->
+                                  Objects.equals(
+                                          t.processDefinitionId(), run.getProcessDefinitionId())
+                                      && Objects.equals(
+                                          t.sourceReference(), run.getSourceReference())
+                                      && Set.of("IN_PROGRESS", "PENDING", "BLOCKED")
+                                          .contains(t.status())))
+              .findFirst();
+      if (running.isPresent()) return running.get();
+    }
+    return history.activities().stream()
+        .filter(
+            a ->
+                a.selectedVersionActivity()
+                    && Objects.equals(a.activityId(), history.currentActivityId()))
+        .findFirst()
+        .orElse(null);
   }
 
   /** Segue somente a delegação real do mesmo contexto e impede ciclos ou vínculos cruzados. */

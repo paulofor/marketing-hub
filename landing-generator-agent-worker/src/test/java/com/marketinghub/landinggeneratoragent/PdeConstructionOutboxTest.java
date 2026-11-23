@@ -58,6 +58,7 @@ class PdeConstructionOutboxTest {
       try (var lock = outbox.lock()) {
         outbox.save(new PdeConstructionOutbox.Pending(task, audit(), true, "result", body));
         Files.writeString(outbox.output(), "resposta original");
+        Files.writeString(dir.resolve("publisher-pause.json"), "{}");
       }
       for (int attempt = 0; attempt < 3; attempt++) {
         new PdeConstructionBpmTaskConsumer(props, json, control, telemetry).processOne();
@@ -70,10 +71,36 @@ class PdeConstructionOutboxTest {
       assertThat(payloads).allMatch(payloads.getFirst()::equals);
       assertThat(outbox.read()).isNull();
       assertThat(Files.exists(outbox.output())).isFalse();
+      try (var archived = Files.walk(dir.resolve("confirmed"))) {
+        var originals =
+            archived
+                .filter(path -> path.getFileName().toString().equals("model-result.json"))
+                .toList();
+        assertThat(originals).hasSize(1);
+        assertThat(Files.readString(originals.getFirst())).isEqualTo("resposta original");
+      }
       verifyNoInteractions(control, telemetry);
     } finally {
       server.stop(0);
     }
+  }
+
+  /** A pausa de publicação impede novas reservas sem alterar autorizações operacionais. */
+  @Test
+  void publicationPauseStopsOnlyNewWork(@TempDir Path dir) throws Exception {
+    var outbox = new PdeConstructionOutbox(dir, json);
+    Files.writeString(dir.resolve("publisher-pause.json"), "{}");
+    var properties = new LandingGeneratorAgentProperties();
+    properties.setBackendUrl("http://127.0.0.1:1");
+    properties.setBpmStateDirectory(dir.toString());
+    var control = mock(AutomaticExecutionControl.class);
+    var consumer = new PdeConstructionBpmTaskConsumer(properties, json, control, null);
+    consumer.processOne();
+    verifyNoInteractions(control);
+    Files.delete(dir.resolve("publisher-pause.json"));
+    consumer.processOne();
+    verify(control).allowsAutomaticExecution();
+    assertThat(outbox.read()).isNull();
   }
 
   /** Interrompe replay automático após duas recusas, conservando o parecer original. */
@@ -84,7 +111,7 @@ class PdeConstructionOutboxTest {
     server.createContext(
         "/",
         exchange -> {
-          calls.incrementAndGet();
+          if ("POST".equals(exchange.getRequestMethod())) calls.incrementAndGet();
           exchange.getRequestBody().readAllBytes();
           exchange.sendResponseHeaders(409, -1);
           exchange.close();

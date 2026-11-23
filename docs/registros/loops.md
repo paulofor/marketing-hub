@@ -11887,3 +11887,19 @@ heartbeat na preparação e concede início único com fencing. Início incerto 
 execução; retorno preservado é reenviado, nunca recalculado. Mensagem de negócio deixa
 custo desconhecido explícito e monitor consulta DEDALO_BPM da tarefa exata. A correção não
 reabre 923/103. Testes e limites constam na matriz `vega-923-reserva-confirmavel-v1.md`.
+
+## LOOP-DEDALO-REFERENCIA-SEM-CAMPO-VIRA-500 — 23/11/2026
+
+- **Caso:** Vega/MUSA 925, componentes, execução 103/processo 127 v12. Modelo encerrado,
+  callback preservado; hash certo em `specificationReference=VALUE_SPECIFICATION:<hash>`.
+- **Causa:** schema sem campo explícito, validador escalar recursivo e exceção semântica tratada
+  como HTTP 500 transitório. Worker repetia o mesmo POST, sem persistir resultado/consumo.
+- **Correção reutilizável:** campo v5 tipado, compatibilidade legada delimitada, recusa durável
+  com HTTP 422, recibo/revalidação oficial sem inferência nem soma duplicada de custo.
+  Arquivo confirmado conserva bytes brutos após aceite. Tela operacional usa tarefa atual
+  do run confirmado; não muda aceites históricos de Apolo nem promove especificação a produto.
+- **Prevenção:** referências válidas/inválidas/ambíguas/embutidas, segregação, worker+HTTP+JPA,
+  concorrência, retorno tardio, falha transitória, bloqueio e replay original. Orçamento,
+  claim/fencing, histórico 4003/4004 e revisões independentes preservados.
+- **Limites:** testes sintéticos não são prova comercial nem homologação do aplicativo.
+  [Matriz e evidências](../homologacao/dedalo-callback-reference-v1.md).

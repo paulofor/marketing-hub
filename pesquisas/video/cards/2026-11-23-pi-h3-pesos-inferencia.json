@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-pi-h3-1-0-pesos-aceleracao-2026-11",
+  "title": "pi-H3 1.0 — pesos abertos, vídeo com áudio em 2–4 passos",
+  "finding": "LakonLab publicou em 21/11/2026 os adaptadores pi-H3 1.0, código de inferência e extensão ComfyUI; antes havia apenas a demo 0.9. A técnica dispensa o decoder VAE para vídeos em 2 ou 4 etapas.",
+  "mechanism": "Destilação pi-Flow v2 + DWD (Decoding Without a Decoder) sobre MiniMax H3; gera vídeo 768p com áudio estéreo a partir de texto e quadros. Usa pesos H3-base e adaptadores.",
+  "commercialApplication": "Prototipar publicidade, animações e takes curtos com áudio em infraestrutura própria; comparar custo por vídeo aprovado contra APIs comerciais.",
+  "evidenceStrength": "Alta para liberação oficial; medições de velocidade (5 s de vídeo em 3,81 s numa B200) referem-se à versão 0.9 em benchmark dos autores e não validam a 1.0.",
+  "experimentHypothesis": "O 2-step DWD terá menor custo e latência, enquanto 4-step DWD poderá preservar mais detalhe e consistência em prompts difíceis.",
+  "risks": "Exige GPU e pesos-base H3; restrições de território (EUA, UE, Reino Unido, Coreia do Sul), salvaguardas e regras comerciais na licença MiniMax H3; sem benchmark PT-BR independente.",
+  "limits": "ATIVO para pesos/código/ComfyUI e demo; não existe API comercial oficial confirmada. Treinamento ainda prometido. Não confundir benchmark do 0.9 com resultados medidos da 1.0.",
+  "sourceTitle": "pi-H3 1.0: pesos e inferência audiovisual aberta",
+  "collection": "video",
+  "publishedOn": "2026-11-23",
+  "validUntil": "2027-02-23",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-23-pi-h3-pesos-inferencia.md",
+  "sourceSha256": "9448d6107ecdd3927f414da0dfd4af1fade276f68edffb2af7606f02343e4955"
+}

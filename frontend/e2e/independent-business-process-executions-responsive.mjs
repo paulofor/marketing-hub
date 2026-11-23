@@ -292,6 +292,7 @@ try {
     await page.route("**/api/**", async (route) => {
       const request = route.request();
       const pathname = new URL(request.url()).pathname;
+      if (!pathname.startsWith("/api/")) return route.continue();
       if (pathname === "/api/independent-business-process-executions/catalog") {
         await route.fulfill({ json: catalog });
         return;
@@ -429,7 +430,7 @@ try {
       page.getByRole("heading", { name: "Parte da atividade" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Modelo não iniciado" }),
+      page.getByRole("heading", { name: "Sem início de modelo registrado" }),
     ).toBeVisible();
 
     assert.equal(posts.length, 1, `${profileName}: duplo envio da execução`);

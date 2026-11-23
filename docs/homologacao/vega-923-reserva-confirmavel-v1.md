@@ -73,3 +73,48 @@ A revisão do reenvio legado identificou que a fase REPLAY ainda aceitava audito
 divergente. Regressões em dois contextos falharam antes do ajuste e passaram depois: o
 retorno original continua aceito; auditoria divergente/ausente e novo início são recusados.
 A rodada local relacionada terminou com 176 testes aprovados, sem alteração de arquitetura.
+
+## Complemento após publicação do PR #5870
+
+A revisão integrada `adbdc343a65d91e934770e5f67aabf3b4f570f8b` foi publicada pela
+aplicação (run 45098983897) e pelo executor Dédalo (run 45100258899). A conferência
+somente leitura da tela real identificou o código interno ainda em `blockerGuidance`,
+embora o resumo já estivesse correto. A fixture anterior não incluía essa orientação.
+
+Alternativas: esconder a orientação no frontend removeria informação útil; reescrever o
+bloqueio histórico alteraria a auditoria; traduzir a projeção compartilhada de resposta
+preserva ambos. Adotada a terceira opção, com regressão das respostas completa e compacta,
+dois identificadores sintéticos e uma orientação funcional antes válida. A falha foi
+reproduzida antes da correção. `NOT_STARTED` legado agora é descrito como ausência de
+registro, sem concluir que o modelo não executou ou que o custo foi zero.
+
+A fixture de navegador passa a incluir resumo, orientação, diagnóstico bruto e marcador
+legado de auditoria. A asserção usa o rótulo acessível do resumo e verifica também a
+orientação, evitando depender da seleção de um texto duplicado. Os registros brutos e
+a tarefa real não são alterados. Validações locais do complemento: 199 testes relacionados
+de backend, 92 regras de arquitetura, 35 testes de frontend, TypeScript sem erros e
+navegação em desktop/iPhone/Pixel. As provas locais ficam em `artifacts/dedalo-claim`,
+declarado no manifesto de entrega. Não foi repetida a matriz de transporte/MySQL sem
+alteração desse contrato. O CI integral permanece obrigatório para o novo HEAD.
+
+A conferência do processo pai identificou o mesmo código embutido em seu motivo. O
+conversor compartilhado já corrigido cobre `ProcessRunResponse`; a regressão agora
+comprova também essa projeção. A revisão do contador de reconciliação automática mudou,
+mas status, atividade, aceites, pendências e horário da última alteração funcional de
+103 permaneceram iguais. O monitor publicado deixou de associar a telemetria de agosto
+à tarefa 923; `executionActivity` é nulo para essa tarefa sem telemetria própria.
+
+As regressões existentes de processos independentes e histórico de produto também
+passaram em desktop/iPhone/Pixel. Foram alinhadas ao carregamento adiado da auditoria,
+à consulta de contexto sem ciclo e à distinção entre imports do Vite e endpoints de API.
+Esses ajustes são exclusivamente fixtures e verificações; não alteram os fluxos produtivos.
+
+A revisão final da matriz tornou explícita a desconexão do transporte: a fixture HTTP
+recebe a identidade da reserva, anuncia um recibo e fecha a conexão antes do corpo.
+Após reinício do consumidor, a mesma identidade é recuperada; o teste também conserva
+falha de contexto, exclusão de consumidores concorrentes, processo vivo e início incerto.
+O teste direcionado passou sem modelo externo; a suíte completa do worker é conferida
+novamente antes de atualizar o PR. Não houve mudança produtiva de retries ou timeouts.
+A rodada completa terminou com 126 testes: 125 aprovados e 1 fixture privada opcional
+ignorada, sem erros ou falhas. As provas incluem a conexão truncada real e o recibo
+recuperado pela mesma identidade. Evidências locais declaradas no manifesto.

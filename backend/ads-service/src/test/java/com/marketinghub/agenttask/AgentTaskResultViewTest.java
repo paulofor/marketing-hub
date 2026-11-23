@@ -18,6 +18,42 @@ class AgentTaskResultViewTest {
     assertThat(task.getExecutionError()).contains("internal diagnostic");
   }
 
+  /** Projeta tarefa e processo pai de contextos distintos sem alterar erro ou ação persistidos. */
+  @Test
+  void projectsLegacyGuidanceWithoutRestartAdviceOrInternalCode() {
+    for (long id : java.util.List.of(8001L, 9001L)) {
+      var task = new AgentTask();
+      task.setId(id);
+      task.setBlockerCategory("TECHNICAL_FAILURE");
+      String raw =
+          "Corrija a causa registrada e reinicie a tarefa: DEDALO_LEASE_RECOVERY_EXHAUSTED|diagnóstico";
+      task.setBlockerAction(raw);
+      task.setExecutionError("DEDALO_LEASE_RECOVERY_EXHAUSTED|diagnóstico");
+      var full = AgentTaskAuditView.blockerGuidance(task);
+      var compact =
+          new AgentTaskBlockerGuidanceResponse("TECHNICAL_FAILURE", raw, java.util.List.of());
+      assertThat(full.recommendedAction())
+          .isEqualTo(compact.recommendedAction())
+          .contains("conferir", "retorno original", "consumo")
+          .doesNotContain("DEDALO_", "reinicie", "diagnóstico");
+      var parent =
+          new com.fasterxml.jackson.databind.ObjectMapper()
+              .convertValue(
+                  java.util.Map.of("id", id, "reason", "Tarefa anterior: " + raw),
+                  com.marketinghub.businessprocess.automation.v1.service.status.ProcessRunResponse
+                      .class);
+      assertThat(parent.reason()).isEqualTo(full.recommendedAction());
+      assertThat(parent.id()).isEqualTo(id);
+      assertThat(task.getBlockerAction()).isEqualTo(raw);
+      assertThat(task.getExecutionError()).contains("DEDALO_");
+    }
+    assertThat(
+            new AgentTaskBlockerGuidanceResponse(
+                    "FUNCTIONAL_ADJUSTMENT", "Corrigir checkout", java.util.List.of())
+                .recommendedAction())
+        .isEqualTo("Corrigir checkout");
+  }
+
   /** Explica interrupção legada sem inventar resultado ou consumo zero. */
   @Test
   void summarizesInterruptedContextWithoutRawError() {

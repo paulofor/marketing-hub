@@ -29,3 +29,24 @@ A revisão final do PR #5870 também fechou a substituição de auditoria em REP
 Dois contextos sintéticos reproduziram a aceitação indevida antes da correção; após ela,
 retorno original aceito e divergência/ausência recusadas. 176 testes relacionados aprovados
 localmente, sem nova inferência, sem alterar arquitetura e sem escrita no Vega real.
+
+### 23/11/2026 — complemento da orientação pública após PR #5870
+
+A aplicação e o executor publicaram `adbdc343a65d91e934770e5f67aabf3b4f570f8b`.
+A leitura da tela real revelou código interno na orientação legada, não coberta pela
+fixture do resumo. Corrigida a projeção compartilhada sem mutar histórico, com regressão
+antes/depois e fixture completa desktop/mobile. A auditoria distingue falta de registro
+de prova de não execução. Homologação: 199 testes backend, 92 arquitetura, 35 frontend,
+TypeScript e três perfis de navegador. Nenhuma retentativa, aceite, dispensa ou inferência
+no Vega; a conferência continua somente leitura. Detalhes na homologação Vega 923.
+
+Complemento #5871: a projeção do processo pai também é coberta pela regressão; as duas
+suítes existentes de navegador passaram nos três perfis após atualização das fixtures
+para contexto e auditoria adiada. Sem alterações produtivas adicionais ou no Vega real.
+
+A fixture de transporte passou a interromper a conexão HTTP depois de receber a identidade,
+antes de entregar o corpo do recibo. Recuperação após reinício aprovada localmente com a
+mesma identidade e sem modelo. A melhoria torna a prova da desconexão explícita, sem mudar
+o mecanismo publicado ou repetir a tarefa real.
+Suíte completa do worker após esse refinamento: 125 aprovados, 1 opcional ignorado,
+zero falhas/erros. Evidências preservadas em artifacts/dedalo-claim.

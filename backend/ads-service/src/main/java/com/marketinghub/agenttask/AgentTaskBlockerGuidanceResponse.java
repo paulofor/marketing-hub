@@ -4,4 +4,9 @@ import java.util.List;
 
 /** Responsabilidade: apresentar a categoria, a ação e os links de uma tarefa bloqueada. */
 public record AgentTaskBlockerGuidanceResponse(
-    String category, String recommendedAction, List<AgentTaskAuditLinkResponse> helpLinks) {}
+    String category, String recommendedAction, List<AgentTaskAuditLinkResponse> helpLinks) {
+  /** Traduz a orientação pública sem reescrever a ação ou o diagnóstico persistidos. */
+  public AgentTaskBlockerGuidanceResponse {
+    recommendedAction = AgentTaskResultView.businessReason(recommendedAction);
+  }
+}

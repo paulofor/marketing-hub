@@ -203,3 +203,30 @@ it("mantém erro bruto apenas no diagnóstico fechado", () => {
   expect(screen.getByText("ClasseInterna: input_too_large")).not.toBeVisible();
   client.clear();
 });
+
+/** Ausência de auditoria não comprova ausência de inferência ou custo. */
+it("descreve início não registrado sem afirmar ausência de envio", () => {
+  const client = new QueryClient();
+  render(
+    <QueryClientProvider client={client}>
+      <BusinessProcessExecutionCard
+        defaultOpen
+        execution={{
+          ...execution,
+          executionMode: "NOT_STARTED",
+          promptSent: undefined,
+          agentPromptPart: undefined,
+          activityPromptPart: undefined,
+        }}
+      />
+    </QueryClientProvider>,
+  );
+  expect(screen.getByText("Sem início de modelo registrado")).toBeVisible();
+  expect(screen.queryByText("Modelo não iniciado")).not.toBeInTheDocument();
+  expect(
+    screen.getAllByText(
+      "A auditoria disponível não registra envio de prompt ao modelo.",
+    ).length,
+  ).toBeGreaterThan(0);
+  client.clear();
+});

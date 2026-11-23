@@ -79,6 +79,36 @@ class DedaloCallbackPersistenceTest {
     return checkout.resolve("landing-generator-agent-worker/target/classes");
   }
 
+  /** Compila o executor uma vez pelo próprio POM, sem alterar o workflow de backend atestado. */
+  @BeforeAll
+  static void prepareRealWorker() throws Exception {
+    Path module = workerClasses().getParent().getParent();
+    Path output = module.resolve("target/dedalo-callback-compile.log");
+    Files.createDirectories(output.getParent());
+    var command =
+        new ProcessBuilder(
+                "mvn",
+                "-B",
+                "-q",
+                "-f",
+                module.resolve("pom.xml").toString(),
+                "-DskipTests",
+                "compile")
+            .directory(module.toFile())
+            .redirectErrorStream(true)
+            .redirectOutput(output.toFile());
+    command.environment().put("MAVEN_OPTS", "-Xmx384m");
+    Process build = command.start();
+    try {
+      assertThat(build.waitFor(3, TimeUnit.MINUTES))
+          .as("Compilação local do executor deve terminar antes de testar o callback")
+          .isTrue();
+      assertThat(build.exitValue()).withFailMessage(Files.readString(output)).isZero();
+    } finally {
+      if (build.isAlive()) build.destroyForcibly();
+    }
+  }
+
   /** Conecta o consumidor real ao MVC por HTTP e usa o interceptor transacional produtivo. */
   @BeforeEach
   void setup() throws Exception {

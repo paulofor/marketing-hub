@@ -74,3 +74,9 @@ zero falhas/erros. Evidências preservadas em artifacts/dedalo-claim.
   do frontend aprovados. TypeScript e bundle aprovados em processos separados para respeitar
   memória local; o CI mantém build normal. Gate premium, 42 contratos de publicação, cinco
   testes do lock e três dispositivos conferidos. Nenhuma regra de arquitetura foi modificada.
+- PR técnico desta tarefa: [5876](https://github.com/paulofor/marketing-hub/pull/5876).
+  O primeiro CI identificou workflow fixado por hash numa prova da Mira. O workflow foi
+  restaurado; preparação do executor foi mantida no próprio teste, sem reescrever a prova
+  histórica. Pacote comercial real revalidado localmente (859 arquivos, 225 manifestos).
+  Revisão técnica registrada por comentário, sem autoaprovação; CI/deploy e recuperação
+  produtiva permanecem sujeitos à conferência no mesmo PR.

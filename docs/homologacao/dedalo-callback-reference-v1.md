@@ -122,3 +122,22 @@ sem regenerar a evidenceJson v2 do callback original. A suíte completa do worke
 com 127 aprovações e um skip opcional. Os 42 contratos de publicação e o gate premium passaram,
 conservando o contrato SSH existente e sem modificar testes de arquitetura. O manifesto local
 foi conferido contra os arquivos existentes/ignorados; originais privados não são incluídos.
+
+## Compatibilidade da preparação de CI
+
+O primeiro Backend CI do PR [5876](https://github.com/paulofor/marketing-hub/pull/5876),
+[run 45236850583](https://github.com/paulofor/marketing-hub/actions/runs/45236850583),
+recusou a alteração de duas linhas em `.github/workflows/backend-ci.yml`: esse arquivo está
+fixado por hash na prova histórica `mira-private-candidate-v90`. A falha foi reproduzida pelo
+construtor real do pacote comercial. O workflow foi restaurado aos bytes anteriores, sem
+alterar atestação, hash ou aprovação da Mira. O pacote voltou a validar 859 arquivos e 225 manifestos.
+
+A matriz integrada prepara o worker pelo próprio POM em `BeforeAll`, antes de carregar o
+consumidor real. Compilação é limitada, auditada em arquivo e não executa modelo. Assim o
+backend executa a matriz obrigatória sem mudar o workflow atestado e sem aceitar classes
+obsoletas ou skip silencioso. A rodada corrigida é validada localmente antes de atualizar o PR.
+
+A preparação corrigida passou nos 15 cenários integrados, sem skip. Outra execução começou
+sem `target/classes` do worker e recompilou pelo POM antes dos mesmos 15 cenários: todos passaram.
+Nenhuma inferência foi feita. A fonte original do workflow permanece idêntica à main e o pacote
+comercial foi revalidado após os registros, antes de atualizar o mesmo PR.

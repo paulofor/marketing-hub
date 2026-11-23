@@ -738,3 +738,9 @@ matriz aprovada; reversão não pode apagar originais, reenfileirar inferência 
 A projeção de Produtos em play prioriza o trabalho do run confirmado por tarefa da mesma
 versão/fonte; bloqueios históricos continuam no histórico. Evidências e limites:
 `docs/homologacao/dedalo-callback-reference-v1.md`.
+
+Na preparação desta regressão, uma inclusão de build no workflow do backend invalidou
+uma prova histórica da Mira que também fixava o workflow por hash. O workflow foi restaurado;
+o teste integrado compila o executor pelo POM existente. O construtor real do pacote comercial
+deve ser executado também quando a mudança atingir workflow ou outra fonte de prova, além dos
+testes do construtor. Não reescrever hash histórico para acomodar preparação de teste.

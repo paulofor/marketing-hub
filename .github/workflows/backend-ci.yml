@@ -78,8 +78,6 @@ jobs:
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
         run: docker exec "$MYSQL_CONTAINER_ID" mysql --user=root --password=root --execute 'CREATE DATABASE IF NOT EXISTS mira_controls_local; CREATE DATABASE IF NOT EXISTS vega_queue_local; CREATE DATABASE IF NOT EXISTS vega_local;'
-      - name: Compilar consumidor real para homologação HTTP de callback sem modelo
-        run: mvn -B -f landing-generator-agent-worker/pom.xml -DskipTests compile
       - name: Executar todos os testes do backend
         env:
           MIRA_CONTROLS_DB_HOST: 127.0.0.1

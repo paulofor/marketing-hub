@@ -52,6 +52,12 @@
     ".local/dedalo925/worker-metadata-final.log",
     ".local/dedalo925/premium-contract-verified.log",
     ".local/dedalo925/deploy-contracts-verified.log",
-    ".local/dedalo925/backend-ci-contract.log"
+    ".local/dedalo925/backend-ci-contract.log",
+    ".local/dedalo925/backend-ci-failure.log",
+    ".local/dedalo925/evidence-contracts.log",
+    ".local/dedalo925/evidence-bundle.log",
+    ".local/dedalo925/backend-integrated-self-build.log",
+    "landing-generator-agent-worker/target/dedalo-callback-compile.log",
+    ".local/dedalo925/backend-integrated-clean-worker.log"
   ]
 }

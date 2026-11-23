@@ -43,3 +43,10 @@ no Vega; a conferência continua somente leitura. Detalhes na homologação Vega
 Complemento #5871: a projeção do processo pai também é coberta pela regressão; as duas
 suítes existentes de navegador passaram nos três perfis após atualização das fixtures
 para contexto e auditoria adiada. Sem alterações produtivas adicionais ou no Vega real.
+
+A fixture de transporte passou a interromper a conexão HTTP depois de receber a identidade,
+antes de entregar o corpo do recibo. Recuperação após reinício aprovada localmente com a
+mesma identidade e sem modelo. A melhoria torna a prova da desconexão explícita, sem mudar
+o mecanismo publicado ou repetir a tarefa real.
+Suíte completa do worker após esse refinamento: 125 aprovados, 1 opcional ignorado,
+zero falhas/erros. Evidências preservadas em artifacts/dedalo-claim.

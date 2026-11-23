@@ -108,3 +108,13 @@ As regressões existentes de processos independentes e histórico de produto tam
 passaram em desktop/iPhone/Pixel. Foram alinhadas ao carregamento adiado da auditoria,
 à consulta de contexto sem ciclo e à distinção entre imports do Vite e endpoints de API.
 Esses ajustes são exclusivamente fixtures e verificações; não alteram os fluxos produtivos.
+
+A revisão final da matriz tornou explícita a desconexão do transporte: a fixture HTTP
+recebe a identidade da reserva, anuncia um recibo e fecha a conexão antes do corpo.
+Após reinício do consumidor, a mesma identidade é recuperada; o teste também conserva
+falha de contexto, exclusão de consumidores concorrentes, processo vivo e início incerto.
+O teste direcionado passou sem modelo externo; a suíte completa do worker é conferida
+novamente antes de atualizar o PR. Não houve mudança produtiva de retries ou timeouts.
+A rodada completa terminou com 126 testes: 125 aprovados e 1 fixture privada opcional
+ignorada, sem erros ou falhas. As provas incluem a conexão truncada real e o recibo
+recuperado pela mesma identidade. Evidências locais declaradas no manifesto.

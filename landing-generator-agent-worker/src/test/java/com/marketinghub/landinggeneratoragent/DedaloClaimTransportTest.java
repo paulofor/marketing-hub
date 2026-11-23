@@ -15,9 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: provar replay do transporte real sem perder identidade ou iniciar modelo. */
 class DedaloClaimTransportTest {
-  /**
-   * Perde resposta de reserva e contexto, reinicia consumidor e recupera somente a mesma tarefa.
-   */
+  /** Corta a conexão após reservar, perde o contexto e recupera a mesma tarefa após reinício. */
   @Test
   void recoversLostReceiptAndContextAcrossRestart(@TempDir Path directory) throws Exception {
     var json = new ObjectMapper();
@@ -38,7 +36,12 @@ class DedaloClaimTransportTest {
                     .orElseThrow()
                     .substring(8);
             identities.add(id);
-            if (receipts.incrementAndGet() > 1) {
+            if (receipts.incrementAndGet() == 1) {
+              // O servidor recebeu a identidade, mas a conexão termina antes do corpo do recibo.
+              exchange.sendResponseHeaders(200, 100);
+              exchange.close();
+              return;
+            } else {
               status = 200;
               body =
                   json.writeValueAsBytes(

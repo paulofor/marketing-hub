@@ -681,3 +681,22 @@ externalizado exige referência verificável e ferramenta executável somente le
 da tarefa, preservando entrada original e auditoria. Mínimo irredutível deve bloquear para
 correção, sem retentativa idêntica automática. O diagnóstico deve separar interrupção sem saída,
 consumo desconhecido e recuperação de callback já produzido. Ver LOOP-PDE-CONTINUIDADE-EXCEDE-ENTRADA.
+
+## Reserva confirmável de Dédalo — 23/11/2026
+
+A tarefa 923 demonstrou perda HTTP entre reserva e recebimento: sem outbox, auditoria
+MODEL ou telemetria própria, enquanto logs diziam genericamente entrega preservada.
+A hipótese de melhoria operacional é reduzir bloqueios de transporte sem duplicar
+inferência. O contrato `pending/receipt` usa UUID persistido pelo executor antes da rede,
+recibo pequeno, contexto separado e confirmação periódica durante preparação. O backend
+concede `claim-start` uma única vez sob lock; uma resposta perdida mantém custo/início
+incertos e proíbe nova inferência. Identidade não é transferida por timeout. Callbacks
+conservam o titular, auditoria original e idempotência; processo vivo não vira falha fabricada.
+
+Critério de adoção: testes locais de transporte, concorrência, preparação longa, processo
+vivo, replay e segregação aprovados; rollout backend antes do executor, fechando o consumo
+legado de Dédalo. Reversão não pode apagar recibos nem reenfileirar tarefas com início
+incerto. Métrica futura: reservas efetivamente recebidas, tempo sem acompanhamento e
+incidência de bloqueios, sem atribuir aumento de vendas a testes sintéticos. A tarefa 923
+permanece histórica e bloqueada; nenhuma retentativa ou dispensa de custo é autorizada.
+Matriz e resultados: `docs/homologacao/vega-923-reserva-confirmavel-v1.md`.

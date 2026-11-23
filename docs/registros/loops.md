@@ -11875,3 +11875,15 @@ a consulta leve da síntese não carregava estado/erro. Projeções de leitura n
 falhas conhecidas (`input_too_large`/`PDE_CONTEXT_BUDGET_V1`), preservando diagnóstico e estados.
 Regressões `ContextFailureBusinessProjectionTest`, consulta JPA segregada e página inteira
 impedem que validar apenas o cartão deixe o cabeçalho exposto novamente.
+
+### Complemento LOOP-DEDALO-LEASE-ORFA-NA-TROCA-DE-CONTAINER — 23/11/2026
+
+A tarefa 923 não demonstrou troca de container: imagem acd1762, RestartCount=0,
+OOMKilled=false, somente JVM e outbox vazia. Logs históricos de 23:52:37 e 23:55:32 UTC
+confirmaram timeout em claimNext. Reserva persistida não prova recebimento, inferência
+ou entrega. O guard permaneceu protegido; a falha compartilhada foi ausência de recibo
+recuperável antes do contexto volumoso. O contrato novo separa recibo/contexto, mantém
+heartbeat na preparação e concede início único com fencing. Início incerto fecha a
+execução; retorno preservado é reenviado, nunca recalculado. Mensagem de negócio deixa
+custo desconhecido explícito e monitor consulta DEDALO_BPM da tarefa exata. A correção não
+reabre 923/103. Testes e limites constam na matriz `vega-923-reserva-confirmavel-v1.md`.

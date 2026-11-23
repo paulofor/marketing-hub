@@ -2259,3 +2259,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-11-21-turmalina-value-delivery-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-11-23-dedalo-claim-receipt-v1.yaml
+      relativeToChangelogFile: true

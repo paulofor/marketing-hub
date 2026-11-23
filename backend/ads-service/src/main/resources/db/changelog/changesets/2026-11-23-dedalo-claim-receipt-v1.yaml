@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-23-dedalo-claim-receipt-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN execution_claim_id VARCHAR(36) NULL,
+                ADD COLUMN execution_claim_phase VARCHAR(24) NULL,
+                ADD COLUMN execution_claim_heartbeat_at DATETIME NULL,
+                ADD UNIQUE KEY uk_agent_task_execution_claim (execution_claim_id);

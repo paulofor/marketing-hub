@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.6.3
+  version: 1.7.0
   description: >-
     TURMALINA_VALUE_DELIVERY_V1 acrescenta productValueDelivery ao pdeContext das
     novas execuções do Processo 3: baseline imutável (Big Idea e blueprint), baselineSha256,
@@ -19,6 +19,50 @@ info:
     auditado e correspondente ao gate e aos contratos vigentes. Preparação privada
     não autoriza campanha, publicação comercial, pagamento ou gasto.
 paths:
+  /api/internal/agent-tasks/landing-generator/stage-executions/pending/receipt:
+    get:
+      summary: Reserva confirmável de Dédalo sem contexto volumoso nem autorização de modelo
+      description: >-
+        Persistir claimId UUID no executor antes da rede. Repetir o mesmo pedido recupera
+        a mesma tarefa, sem consumir recuperação de lease. O pending legado de Dédalo
+        retorna fila vazia durante o rollout. A reserva não pode ser transferida.
+      parameters:
+        - {name: processCode, in: query, required: true, schema: {type: string}}
+        - {name: activityId, in: query, required: true, schema: {type: string}}
+        - {name: claimId, in: query, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: 'Array vazio ou recibo taskId, claimId, phase, status. Não contém prompt.'}
+  /api/internal/agent-tasks/landing-generator/stage-executions/{taskId}/claim-context:
+    get:
+      summary: Carrega contexto somente para o titular do recibo
+      parameters:
+        - {name: taskId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: X-Dedalo-Claim, in: header, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Mesmo contrato completo da tarefa, sem nova reserva}
+        '409': {description: Identidade divergente ou tarefa não ativa}
+  /api/internal/agent-tasks/landing-generator/stage-executions/{taskId}/claim-heartbeat:
+    put:
+      summary: Confirma preparação ou execução sem registrar inferência ou custo
+      parameters:
+        - {name: taskId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: X-Dedalo-Claim, in: header, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '204': {description: Heartbeat persistido; não autoriza modelo}
+        '409': {description: Identidade divergente ou tarefa não ativa}
+  /api/internal/agent-tasks/landing-generator/stage-executions/{taskId}/claim-start:
+    put:
+      summary: Persiste auditoria MODEL e concede início uma única vez sob lock transacional
+      description: >-
+        Body segue execution-audit. Resposta perdida não permite repetir inferência;
+        preservar estado local incerto. Callbacks de reservas novas exigem X-Dedalo-Claim,
+        mantendo regras de auditoria idêntica, repetição idempotente e retorno tardio.
+      parameters:
+        - {name: taskId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: X-Dedalo-Claim, in: header, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '204': {description: Única autorização de início concedida}
+        '409': {description: Início previamente autorizado, identidade divergente ou tarefa encerrada}
   /api/agent-tasks/process-instances:
     get:
       summary: Lista atividades, instâncias e tentativas de uma referência operacional

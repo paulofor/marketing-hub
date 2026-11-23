@@ -17,6 +17,16 @@ import org.hibernate.annotations.BatchSize;
 @Getter
 @Setter
 public class AgentTask {
+  /** Identidade imutável da reserva confirmável, sem confundir transporte com inferência. */
+  @Column(name = "execution_claim_id", length = 36, unique = true)
+  private String executionClaimId;
+
+  @Column(name = "execution_claim_phase", length = 24)
+  private String executionClaimPhase;
+
+  @Column(name = "execution_claim_heartbeat_at")
+  private Instant executionClaimHeartbeatAt;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

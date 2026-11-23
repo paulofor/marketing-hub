@@ -329,6 +329,10 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.workStatus()).isEqualTo("WORKING");
     assertThat(result.currentWork()).isEqualTo("Materializar a experiência de degustação");
     assertThat(result.taskId()).isEqualTo(271L);
+    assertThat(result.executionActivity()).isNull();
+    org.mockito.Mockito.verify(telemetry).findByAgentTypeAndExecutionId("DEDALO_BPM", 271L);
+    org.mockito.Mockito.verify(telemetry, org.mockito.Mockito.never())
+        .findTopByAgentTypeOrderByUpdatedAtDescIdDesc("LANDING_GENERATOR");
     assertThat(result.sourceReference()).isEqualTo("product:88");
   }
 

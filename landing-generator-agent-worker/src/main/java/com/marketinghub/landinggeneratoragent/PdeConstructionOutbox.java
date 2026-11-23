@@ -30,7 +30,15 @@ final class PdeConstructionOutbox {
             directory.resolve("consumer.lock"),
             StandardOpenOption.CREATE,
             StandardOpenOption.WRITE);
-    FileLock lock = channel.tryLock();
+    FileLock lock;
+    try {
+      lock = channel.tryLock();
+    } catch (java.nio.channels.OverlappingFileLockException ex) {
+      org.slf4j.LoggerFactory.getLogger(PdeConstructionOutbox.class)
+          .debug("Outro consumidor local mantém a reserva; sem nova execução.", ex);
+      channel.close();
+      return null;
+    }
     if (lock == null) {
       channel.close();
       return null;
@@ -65,6 +73,80 @@ final class PdeConstructionOutbox {
         StandardCopyOption.REPLACE_EXISTING);
   }
 
+  /** Persiste o pedido antes da rede, para recuperar a mesma reserva após timeout ou reinício. */
+  void saveClaim(Map<String, Object> claim) throws IOException {
+    Path temporary = directory.resolve("claim.tmp");
+    Files.write(temporary, json.writeValueAsBytes(claim));
+    try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
+      channel.force(true);
+    }
+    Files.move(
+        temporary,
+        directory.resolve("claim.json"),
+        StandardCopyOption.ATOMIC_MOVE,
+        StandardCopyOption.REPLACE_EXISTING);
+  }
+
+  /** Lê exclusivamente a identidade local do pedido, sem reconstruir uma tentativa. */
+  Map<String, Object> readClaim() throws IOException {
+    Path file = directory.resolve("claim.json");
+    return Files.exists(file)
+        ? json.readValue(
+            Files.readAllBytes(file),
+            new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {})
+        : null;
+  }
+
+  /** Libera apenas pedido cuja fila respondeu vazia ou callback já foi confirmado. */
+  void clearClaim() throws IOException {
+    Files.deleteIfExists(directory.resolve("claim.json"));
+  }
+
+  /** Preserva PID e início real para não confundir processo original com PID reutilizado. */
+  void recordProcess(Process process) throws IOException {
+    Files.writeString(
+        directory.resolve("process.json"),
+        json.writeValueAsString(
+            Map.of(
+                "pid",
+                process.pid(),
+                "startedAt",
+                process
+                    .info()
+                    .startInstant()
+                    .map(java.time.Instant::toString)
+                    .orElseGet(
+                        () -> {
+                          if (process.isAlive())
+                            throw new IllegalStateException(
+                                "Processo ativo sem início verificável");
+                          return "EXITED";
+                        }))));
+  }
+
+  /**
+   * Confirma que o processo iniciado deixou identidade persistida antes de qualquer recuperação.
+   */
+  boolean hasProcessIdentity() {
+    return Files.exists(directory.resolve("process.json"));
+  }
+
+  /** Impede recuperação terminal enquanto o processo original ainda estiver vivo. */
+  boolean originalProcessAlive() throws IOException {
+    Path file = directory.resolve("process.json");
+    if (!Files.exists(file)) return false;
+    var identity = json.readTree(Files.readString(file));
+    var process = ProcessHandle.of(identity.path("pid").asLong());
+    if (process.isEmpty() || !process.get().isAlive()) return false;
+    return process
+        .get()
+        .info()
+        .startInstant()
+        .map(java.time.Instant::toString)
+        .map(identity.path("startedAt").asText()::equals)
+        .orElse(true);
+  }
+
   /** Expõe o destino persistente da resposta bruta do modelo. */
   Path output() {
     return directory.resolve("model-result.json");
@@ -77,6 +159,8 @@ final class PdeConstructionOutbox {
 
   /** Remove somente os arquivos desta entrega depois da confirmação canônica. */
   void acknowledge() throws IOException {
+    clearClaim();
+    Files.deleteIfExists(directory.resolve("process.json"));
     Files.deleteIfExists(output());
     Files.deleteIfExists(events());
     Files.deleteIfExists(directory.resolve("pending.json"));

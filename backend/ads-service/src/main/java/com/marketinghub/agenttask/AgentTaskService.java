@@ -2208,6 +2208,136 @@ public class AgentTaskService {
     synchronizeActivityInstance(saved, now);
   }
 
+  /** Reserva uma identidade pequena; reenvio do mesmo pedido nunca cria nova tentativa. */
+  @Transactional
+  public Optional<com.marketinghub.agenttask.service.receipt.DedaloClaimReceipt> claimDedaloReceipt(
+      String processCode, String activityId, String claimId) {
+    java.util.UUID.fromString(claimId);
+    var existing = repository.findByExecutionClaimId(claimId);
+    if (existing.isPresent()) {
+      AgentTask task = existing.get();
+      if (!matchesExecutionContract(task, processCode, activityId, null))
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "Reserva pertence a outro contrato.");
+      return Optional.of(dedaloReceipt(task));
+    }
+    // Recupera somente retorno já preservado; REPLAY nunca permite claim-start.
+    for (AgentTask candidate :
+        repository.findReplayableClaimedCallbackCandidates(LANDING_GENERATOR_AGENT_KEY)) {
+      AgentTask task = repository.findLockedById(candidate.getId()).orElseThrow();
+      if (task.getExecutionClaimId() == null
+          && task.getProcessDefinition() != null
+          && callbackCanReplayWithoutInference(task, false, false)
+          && matchesExecutionContract(task, processCode, activityId, null)) {
+        task.setExecutionClaimId(claimId);
+        task.setExecutionClaimPhase("REPLAY");
+        task.setExecutionClaimHeartbeatAt(Instant.now(clock));
+        repository.save(task);
+        return Optional.of(dedaloReceipt(task));
+      }
+    }
+    for (AgentTask task :
+        repository.findPendingForClaim(LANDING_GENERATOR_AGENT_KEY, processCode, activityId)) {
+      if (Boolean.FALSE.equals(task.getAssignedAgent().getAutomaticExecutionEnabled())
+          || task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId, null)
+          || !predecessorsCompleted(task)
+          || !preparedForClaim(task)) continue;
+      Instant now = Instant.now(clock);
+      task.setExecutionClaimId(claimId);
+      task.setExecutionClaimPhase("CLAIMED");
+      task.setExecutionClaimHeartbeatAt(now);
+      task.setStatus("IN_PROGRESS");
+      task.setReceivedAt(now);
+      task.setUpdatedAt(now);
+      repository.save(task);
+      synchronizeActivityInstance(task, now);
+      return Optional.of(dedaloReceipt(task));
+    }
+    return Optional.empty();
+  }
+
+  /** Expõe somente identidade e estado persistidos do transporte. */
+  private com.marketinghub.agenttask.service.receipt.DedaloClaimReceipt dedaloReceipt(
+      AgentTask task) {
+    return new com.marketinghub.agenttask.service.receipt.DedaloClaimReceipt(
+        task.getId(), task.getExecutionClaimId(), task.getExecutionClaimPhase(), task.getStatus());
+  }
+
+  /** Confere fencing sem autorizar uma chamada ao modelo nem alterar o estado de negócio. */
+  @Transactional(readOnly = true)
+  public void requireDedaloClaim(Long taskId, String claimId) {
+    AgentTask task = ownedBy(LANDING_GENERATOR_AGENT_KEY, taskId);
+    if (task.getExecutionClaimId() == null || !Objects.equals(task.getExecutionClaimId(), claimId))
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Identidade da reserva divergente.");
+  }
+
+  /** Exige fencing quando a tarefa pertence ao protocolo novo e preserva callbacks legados. */
+  @Transactional(readOnly = true)
+  public void requireCallbackClaim(String agentKey, Long taskId, String claimId) {
+    AgentTask task = ownedBy(agentKey, taskId);
+    if (task.getExecutionClaimId() != null && !Objects.equals(task.getExecutionClaimId(), claimId))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Callback não pertence à reserva original.");
+  }
+
+  /** Recusa resultado MODEL sem início autorizado e mantém auditoria original imutável. */
+  @Transactional(readOnly = true)
+  public void requireCallbackClaim(
+      String agentKey, Long taskId, String claimId, AgentTaskExecutionAuditRequest audit) {
+    requireCallbackClaim(agentKey, taskId, claimId);
+    AgentTask task = ownedBy(agentKey, taskId);
+    if (task.getExecutionClaimId() == null) return;
+    if ("START_AUTHORIZED".equals(task.getExecutionClaimPhase())) {
+      if (audit == null
+          || !Objects.equals(task.getExecutionMode(), audit.executionMode())
+          || !Objects.equals(task.getExecutionModelCode(), audit.modelCode())
+          || !Objects.equals(task.getExecutionReasoningEffort(), audit.reasoningEffort())
+          || !Objects.equals(task.getExecutionPrompt(), audit.promptSent())
+          || !Objects.equals(task.getExecutionAgentPrompt(), audit.agentPromptPart())
+          || !Objects.equals(task.getExecutionActivityPrompt(), audit.activityPromptPart()))
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "Retorno não preserva a auditoria original.");
+    } else if (audit != null
+        && "MODEL".equals(audit.executionMode())
+        && !"REPLAY".equals(task.getExecutionClaimPhase())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Resultado de modelo sem início autorizado.");
+    }
+  }
+
+  /** Mantém preparação e execução observáveis sem transformar heartbeat em consumo. */
+  @Transactional
+  public void heartbeatDedaloClaim(Long taskId, String claimId) {
+    AgentTask task = repository.findLockedById(taskId).orElseThrow();
+    requireDedaloClaim(taskId, claimId);
+    requireClaimed(task);
+    task.setExecutionClaimHeartbeatAt(Instant.now(clock));
+    if ("CLAIMED".equals(task.getExecutionClaimPhase())) task.setExecutionClaimPhase("PREPARING");
+    repository.save(task);
+  }
+
+  /** Autoriza o início uma única vez; resposta HTTP perdida não permite repetir a inferência. */
+  @Transactional
+  public void startDedaloClaim(Long taskId, String claimId, AgentTaskExecutionAuditRequest audit) {
+    AgentTask task = repository.findLockedById(taskId).orElseThrow();
+    requireDedaloClaim(taskId, claimId);
+    requireClaimed(task);
+    if (Boolean.FALSE.equals(task.getAssignedAgent().getAutomaticExecutionEnabled())
+        || !predecessorsCompleted(task))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Execução pausada ou entrada não liberada; início recusado.");
+    if (!Set.of("CLAIMED", "PREPARING").contains(task.getExecutionClaimPhase())
+        || !"MODEL".equals(audit.executionMode()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Início já autorizado ou contrato inválido; não repetir modelo.");
+    applyExecutionAudit(task, audit);
+    requireExecutionAuditShape(task, false);
+    task.setExecutionClaimPhase("START_AUTHORIZED");
+    task.setExecutionClaimHeartbeatAt(Instant.now(clock));
+    repository.save(task);
+  }
+
   /**
    * Reentrega uma única lease de Dédalo interrompida antes de produzir saída ou consumo auditável.
    */
@@ -2222,6 +2352,10 @@ public class AgentTaskService {
     for (AgentTask task : inProgress) {
       if (task.getProcessDefinition() == null
           || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)) {
+        continue;
+      }
+      if (task.getExecutionClaimId() != null) {
+        // Uma reserva identificada nunca é transferida nem autoriza outra inferência.
         continue;
       }
       if (isRecoveredDedaloLease(task)) {
@@ -2659,6 +2793,12 @@ public class AgentTaskService {
   public void recordClaimedProcessTaskExecutionAudit(
       String agentKey, Long taskId, AgentTaskExecutionAuditRequest audit) {
     AgentTask task = claimedBy(agentKey, taskId);
+    if (task.getExecutionClaimId() != null
+        && (!"DETERMINISTIC".equals(audit.executionMode())
+            || Set.of("START_AUTHORIZED", "REPLAY").contains(task.getExecutionClaimPhase())))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Reserva identificada exige autorização única de início.");
+    if (task.getExecutionClaimId() != null) task.setExecutionClaimPhase("DETERMINISTIC");
     applyExecutionAudit(task, audit);
     requireExecutionAuditShape(task, false);
     Instant now = Instant.now(clock);

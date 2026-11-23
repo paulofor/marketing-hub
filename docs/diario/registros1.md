@@ -7,3 +7,12 @@
 - Ajuste aplicado em `product-discovery-worker/src/research.js`: `buildSearchQueries` agora combina frases reais por dominio (roupa online/caimento, looks/rotina e estilo/imagem pessoal) com templates genericos em primeira pessoa para PDEs futuros.
 - A melhoria preserva a normalizacao de termos como `30+` para `30 anos ou mais` e remove duplicidades antes de consultar o provedor.
 - Testes adicionados em `product-discovery-worker/test/research.test.js` validam consultas de arrependimento de compra online, estilo acessivel e looks para rotina real.
+
+## 2026-11-23 — investigação e recuperação de transporte de Dédalo
+
+- Vega 923: banco, logs históricos e container indicam perda de recebimento da reserva,
+  sem prova de inferência, consumo ou entrega. PRs 5868/5869 e versões publicadas preservados.
+- Preparação local: recibo persistente, início único, confirmação durante preparação,
+  fencing de callback, preservação de processo original e telemetria da tarefa exata.
+- Homologação e publicação devem seguir a matriz `docs/homologacao/vega-923-reserva-confirmavel-v1.md`.
+  Nenhum avanço comercial, aceite, retentativa de 923 ou retomada de 103 é atribuído à correção.

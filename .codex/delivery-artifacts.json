@@ -24,6 +24,7 @@
     ".codex/waiver-test/mysql-relay.py",
     "artifacts/partial-continuity",
     "artifacts/process-version-continuity",
-    "artifacts/pde-context-budget"
+    "artifacts/pde-context-budget",
+    "artifacts/dedalo-claim"
   ]
 }

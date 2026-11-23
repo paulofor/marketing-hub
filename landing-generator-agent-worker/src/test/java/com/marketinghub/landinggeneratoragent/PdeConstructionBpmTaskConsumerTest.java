@@ -194,17 +194,41 @@ class PdeConstructionBpmTaskConsumerTest {
           if (path.endsWith("/automatic-execution")) {
             response = json.writeValueAsBytes(Map.of("automaticExecutionEnabled", true));
             status = 200;
-          } else if (path.endsWith("/pending")) {
+          } else if (path.endsWith("/pending/receipt")) {
             boolean selected =
                 exchange.getRequestURI().getQuery().contains("activityId=productArchitecture");
-            response = json.writeValueAsBytes(selected ? List.of(task) : List.of());
+            String claimId =
+                java.util.Arrays.stream(exchange.getRequestURI().getQuery().split("&"))
+                    .filter(v -> v.startsWith("claimId="))
+                    .findFirst()
+                    .orElseThrow()
+                    .substring(8);
+            response =
+                json.writeValueAsBytes(
+                    selected
+                        ? List.of(
+                            Map.of(
+                                "taskId",
+                                taskId,
+                                "claimId",
+                                claimId,
+                                "phase",
+                                "CLAIMED",
+                                "status",
+                                "IN_PROGRESS"))
+                        : List.of());
             status = 200;
+          } else if (path.endsWith("/claim-context")) {
+            response = json.writeValueAsBytes(task);
+            status = 200;
+          } else if (path.endsWith("/claim-heartbeat")) {
+            status = 204;
           } else {
             assertThat(path).contains("landing-generator/stage-executions/" + taskId + "/");
             String operation = java.nio.file.Path.of(path).getFileName().toString();
             operations.add(operation);
             var payload = json.readTree(exchange.getRequestBody().readAllBytes());
-            if (!"execution-audit".equals(operation)) {
+            if (!"claim-start".equals(operation)) {
               callback.set(payload);
               deliveredBodies.add(payload);
               if (deliveryCount.incrementAndGet() <= failedDeliveries) status = 503;
@@ -243,7 +267,7 @@ class PdeConstructionBpmTaskConsumerTest {
             .processOne();
       }
       assertThat(operations).hasSize(failedDeliveries + 2);
-      assertThat(operations.getFirst()).isEqualTo("execution-audit");
+      assertThat(operations.getFirst()).isEqualTo("claim-start");
       assertThat(operations.subList(1, operations.size())).containsOnly("result");
       assertThat(deliveredBodies).allMatch(deliveredBodies.getFirst()::equals);
       verify(telemetry).monitorBpmTask(eq(taskId), any(), any());

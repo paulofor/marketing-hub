@@ -13,8 +13,10 @@ public final class AgentTaskResultView {
   /** Impede instanciação do conversor sem estado. */
   private AgentTaskResultView() {}
 
-  /** Projeta falhas de limite em linguagem de negócio, preservando o erro na auditoria. */
+  /** Projeta interrupções conhecidas em linguagem de negócio, preservando o erro na auditoria. */
   public static String businessReason(String reason) {
+    if (reason != null && reason.startsWith("DEDALO_LEASE_RECOVERY_EXHAUSTED|"))
+      return "O acompanhamento da execução foi interrompido. Uma nova chamada foi bloqueada para evitar cobrança duplicada. É necessário conferir o recebimento e o retorno original antes de retomar; o consumo ainda não foi confirmado.";
     if (reason != null
         && (reason.contains("input_too_large") || reason.contains("PDE_CONTEXT_BUDGET_V1"))) {
       return "A execução foi interrompida porque o contexto excedeu o limite permitido. "
@@ -26,6 +28,13 @@ public final class AgentTaskResultView {
 
   /** Apresenta a síntese do agente e identifica recortes legados sem reescrever o resultado. */
   public static AgentTaskHumanSummary humanSummary(AgentTask task) {
+    if (task != null
+        && "BLOCKED".equals(task.getStatus())
+        && (task.getResultJson() == null || task.getResultJson().isBlank())
+        && task.getExecutionError() != null
+        && task.getExecutionError().startsWith("DEDALO_LEASE_RECOVERY_EXHAUSTED|"))
+      return new AgentTaskHumanSummary(
+          businessReason(task.getExecutionError()), "DETERMINISTIC", "BLOCKED");
     if (task != null
         && "BLOCKED".equals(task.getStatus())
         && (task.getResultJson() == null || task.getResultJson().isBlank())

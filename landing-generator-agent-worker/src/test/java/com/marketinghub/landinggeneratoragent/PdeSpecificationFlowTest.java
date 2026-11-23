@@ -64,18 +64,38 @@ class PdeSpecificationFlowTest {
           if (path.endsWith("/automatic-execution")) {
             response = json.writeValueAsBytes(Map.of("automaticExecutionEnabled", true));
             status = 200;
-          } else if (path.endsWith("/pending")) {
+          } else if (path.endsWith("/pending/receipt")) {
+            String claimId =
+                java.util.Arrays.stream(exchange.getRequestURI().getQuery().split("&"))
+                    .filter(v -> v.startsWith("claimId="))
+                    .findFirst()
+                    .orElseThrow()
+                    .substring(8);
             response =
                 json.writeValueAsBytes(
                     exchange.getRequestURI().getQuery().contains("activityId=" + activity)
-                        ? List.of(task)
+                        ? List.of(
+                            Map.of(
+                                "taskId",
+                                task.path("taskId").asLong(),
+                                "claimId",
+                                claimId,
+                                "phase",
+                                "CLAIMED",
+                                "status",
+                                "IN_PROGRESS"))
                         : List.of());
             status = 200;
+          } else if (path.endsWith("/claim-context")) {
+            response = json.writeValueAsBytes(task);
+            status = 200;
+          } else if (path.endsWith("/claim-heartbeat")) {
+            status = 204;
           } else {
             String operation = Path.of(path).getFileName().toString();
             operations.add(operation);
             JsonNode body = json.readTree(exchange.getRequestBody().readAllBytes());
-            if (!"execution-audit".equals(operation)) callback.set(body);
+            if (!"claim-start".equals(operation)) callback.set(body);
           }
           exchange.getResponseHeaders().set("Content-Type", "application/json");
           exchange.sendResponseHeaders(status, response.length == 0 ? -1 : response.length);
@@ -110,7 +130,7 @@ class PdeSpecificationFlowTest {
         return;
       }
       assertThat(operations)
-          .containsExactly("execution-audit", decision.equals("READY") ? "result" : "failure");
+          .containsExactly("claim-start", decision.equals("READY") ? "result" : "failure");
       assertThat(json.readTree(callback.get().path("resultJson").asText()))
           .isEqualTo(result(activity, decision));
       assertThat(callback.get().path("modelUsages").get(0).path("inputTokens").asInt())

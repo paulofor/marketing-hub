@@ -140,54 +140,70 @@ public class PdeConstructionBpmTaskConsumer {
   public synchronized void processOne() {
     try (var lock = outbox.lock()) {
       if (lock == null) return;
-      var pending = outbox.read();
-      if (pending != null && pending.callback() != null) {
-        deliver(pending);
-        return;
-      }
-      if (pending != null && pending.modelStarted()) {
-        recoverInterrupted(pending);
-        return;
-      }
-      if (!automaticExecution.allowsAutomaticExecution()) return;
-      Map<String, Object> task = pending == null ? claimNext() : pending.task();
-      if (task == null) return;
-      if (pending == null) {
-        // Remove somente sobras de uma entrega confirmada antes de registrar a próxima identidade.
-        outbox.acknowledge();
-        outbox.save(new PdeConstructionOutbox.Pending(task, null, false, null, null));
-      }
-      BpmExecution execution = null;
-      try {
-        BpmContract contract = contractFor(task);
-        PreservedCallback callback = preservedCallback(json, task, contract);
-        if (callback != null) {
-          replay(task, contract, callback);
+      try (var heartbeat = new DedaloClaimHeartbeat(backend, outbox)) {
+        var pending = outbox.read();
+        if (pending != null && pending.callback() != null) {
+          deliver(pending);
           return;
         }
-        validateTaskContext(task, contract, json);
-        var capture = new OpalaCommercialUiProofCapture(backend, json);
-        JsonNode proofInput = capture.input(task);
-        if (proofInput != null) {
-          capture.complete(task, proofInput);
-          outbox.acknowledge();
+        if (pending != null && pending.modelStarted()) {
+          if (outbox.originalProcessAlive()
+              || (pending.task().get("executionClaimId") != null && !outbox.hasProcessIdentity())) {
+            log.warn(
+                "Dédalo preservou execução ativa ou início incerto; sem reinferência ou callback fabricado. taskId={}",
+                taskId(pending.task()));
+            return;
+          }
+          recoverInterrupted(pending);
           return;
         }
-        execution = execute(task);
-        finish(task, execution);
-      } catch (Exception ex) {
-        log.error(
-            "Falha na construção BPM do PDE. taskId={} activityId={}",
-            taskId(task),
-            activityId(task),
-            ex);
-        // Uma falha de transporte nunca substitui o parecer já preservado por outra resposta.
-        var saved = outbox.read();
-        if (saved == null || saved.callback() == null) fail(task, ex, execution);
+        if (!automaticExecution.allowsAutomaticExecution()) return;
+        Map<String, Object> task = pending == null ? claimNext() : pending.task();
+        if (task == null) return;
+        if (pending == null) {
+          // Conserva o recibo confirmado ao persistir a entrada integral desta tarefa.
+          outbox.save(new PdeConstructionOutbox.Pending(task, null, false, null, null));
+        }
+        BpmExecution execution = null;
+        try {
+          BpmContract contract = contractFor(task);
+          PreservedCallback callback = preservedCallback(json, task, contract);
+          if (callback != null) {
+            replay(task, contract, callback);
+            return;
+          }
+          validateTaskContext(task, contract, json);
+          var capture = new OpalaCommercialUiProofCapture(backend, json);
+          JsonNode proofInput = capture.input(task);
+          if (proofInput != null) {
+            capture.complete(task, proofInput);
+            outbox.acknowledge();
+            return;
+          }
+          execution = execute(task);
+          finish(task, execution);
+        } catch (Exception ex) {
+          log.error(
+              "Falha na construção BPM do PDE. taskId={} activityId={}",
+              taskId(task),
+              activityId(task),
+              ex);
+          // Uma falha de transporte nunca substitui o parecer já preservado por outra resposta.
+          var saved = outbox.read();
+          if (saved != null
+              && saved.modelStarted()
+              && task.get("executionClaimId") != null
+              && !outbox.hasProcessIdentity()) {
+            log.warn(
+                "Dédalo manteve início incerto sem callback substituto. taskId={}", taskId(task));
+            return;
+          }
+          if (saved == null || saved.callback() == null) fail(task, ex, execution);
+        }
       }
     } catch (Exception ex) {
       log.error(
-          "Dédalo preservou a entrega para recuperação sem nova inferência. backend={}",
+          "Dédalo interrompeu transporte ou preparação; conferir recibo e outbox antes de afirmar entrega preservada. backend={}",
           properties.getBackendUrl(),
           ex);
     }
@@ -279,6 +295,8 @@ public class PdeConstructionBpmTaskConsumer {
               AGENT_KEY,
               taskId(pending.task()),
               pending.operation())
+          .header(
+              "X-Dedalo-Claim", String.valueOf(pending.task().getOrDefault("executionClaimId", "")))
           .body(pending.callback())
           .retrieve()
           .toBodilessEntity();
@@ -298,19 +316,69 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Prioriza entrega paga e percorre somente os contratos de produto pertencentes a Dédalo. */
-  private Map<String, Object> claimNext() {
+  private Map<String, Object> claimNext() throws IOException {
+    var saved = outbox.readClaim();
     for (BpmContract contract : CONTRACTS) {
-      List<Map<String, Object>> pending =
+      if (saved != null
+          && (!contract.processCode().equals(saved.get("processCode"))
+              || !contract.activityId().equals(saved.get("activityId")))) continue;
+      Map<String, Object> claim =
+          saved == null
+              ? new HashMap<>(
+                  Map.of(
+                      "claimId",
+                      java.util.UUID.randomUUID().toString(),
+                      "processCode",
+                      contract.processCode(),
+                      "activityId",
+                      contract.activityId()))
+              : new HashMap<>(saved);
+      outbox.saveClaim(claim);
+      if (claim.get("taskId") == null) {
+        List<Map<String, Object>> receipts =
+            backend
+                .get()
+                .uri(
+                    "/api/internal/agent-tasks/{agent}/stage-executions/pending/receipt?processCode={process}&activityId={activity}&claimId={claim}",
+                    AGENT_KEY,
+                    contract.processCode(),
+                    contract.activityId(),
+                    claim.get("claimId"))
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+        if (receipts == null)
+          throw new IOException("Resposta de reserva ausente; preservar identidade.");
+        if (receipts.isEmpty()) {
+          outbox.clearClaim();
+          saved = null;
+          continue;
+        }
+        var receipt = receipts.getFirst();
+        if (!claim.get("claimId").equals(receipt.get("claimId")) || receipt.get("taskId") == null)
+          throw new IOException("Recibo divergente; inferência recusada.");
+        claim.put("taskId", receipt.get("taskId"));
+        outbox.saveClaim(claim);
+        if (!"IN_PROGRESS".equals(receipt.get("status"))
+            || "START_AUTHORIZED".equals(receipt.get("phase")))
+          throw new IOException("Reserva encerrada ou início incerto; não repetir inferência.");
+      }
+      Map<String, Object> task =
           backend
               .get()
               .uri(
-                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
+                  "/api/internal/agent-tasks/{agent}/stage-executions/{id}/claim-context",
                   AGENT_KEY,
-                  contract.processCode(),
-                  contract.activityId())
+                  claim.get("taskId"))
+              .header("X-Dedalo-Claim", String.valueOf(claim.get("claimId")))
               .retrieve()
               .body(new ParameterizedTypeReference<>() {});
-      if (pending != null && !pending.isEmpty()) return pending.get(0);
+      if (task == null
+          || !String.valueOf(task.get("taskId")).equals(String.valueOf(claim.get("taskId"))))
+        throw new IOException("Contexto não corresponde ao recibo preservado.");
+      task = new HashMap<>(task);
+      task.put("executionClaimId", claim.get("claimId"));
+      log.info("Dédalo confirmou recebimento efetivo. taskId={}", taskId(task));
+      return task;
     }
     return null;
   }
@@ -388,6 +456,8 @@ public class PdeConstructionBpmTaskConsumer {
     outbox.save(new PdeConstructionOutbox.Pending(task, audit, false, null, null));
     Process process = null;
     try {
+      // Marca incerteza antes da autorização remota; reinício não repete início.
+      outbox.save(new PdeConstructionOutbox.Pending(task, audit, true, null, null));
       recordExecutionStart(
           task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
       outbox.save(new PdeConstructionOutbox.Pending(task, audit, true, null, null));
@@ -396,6 +466,7 @@ public class PdeConstructionBpmTaskConsumer {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
+      outbox.recordProcess(process);
       try (CodexTelemetryReporter.Session session =
           telemetry.monitorBpmTask(taskId(task), process, processLog)) {
         process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
@@ -456,12 +527,15 @@ public class PdeConstructionBpmTaskConsumer {
       String fullPrompt,
       String agentPromptPart,
       String activityPromptPart) {
+    String claimId = normalizedText(task.get("executionClaimId"));
     backend
         .put()
         .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/"
+                + (claimId == null ? "execution-audit" : "claim-start"),
             AGENT_KEY,
             taskId(task))
+        .header("X-Dedalo-Claim", claimId == null ? "" : claimId)
         .body(executionAudit(task, fullPrompt, agentPromptPart, activityPromptPart))
         .retrieve()
         .toBodilessEntity();

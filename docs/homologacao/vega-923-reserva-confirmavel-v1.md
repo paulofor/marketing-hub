@@ -68,3 +68,8 @@ Reprodução local confirmou a causa. A fixture passou a percorrer recibo repeti
 contexto, início único (segundo início HTTP 409), callback com identidade e preservação
 da falha anterior; teste de persistência e testes do recibo/controller aprovados localmente.
 Nenhuma regra de arquitetura, proteção ou implementação produtiva foi enfraquecida.
+
+A revisão do reenvio legado identificou que a fase REPLAY ainda aceitava auditoria
+divergente. Regressões em dois contextos falharam antes do ajuste e passaram depois: o
+retorno original continua aceito; auditoria divergente/ausente e novo início são recusados.
+A rodada local relacionada terminou com 176 testes aprovados, sem alteração de arquitetura.

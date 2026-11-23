@@ -700,3 +700,8 @@ incerto. Métrica futura: reservas efetivamente recebidas, tempo sem acompanhame
 incidência de bloqueios, sem atribuir aumento de vendas a testes sintéticos. A tarefa 923
 permanece histórica e bloqueada; nenhuma retentativa ou dispensa de custo é autorizada.
 Matriz e resultados: `docs/homologacao/vega-923-reserva-confirmavel-v1.md`.
+
+Na reserva confirmável de Dédalo, a fase REPLAY preserva exatamente a auditoria do
+retorno legado (modo, modelo, raciocínio e partes do prompt), tal como START_AUTHORIZED.
+A adoção do recibo nunca autoriza substituir a auditoria nem iniciar outra inferência.
+Regressão em dois contextos e ciclo persistido: homologação Vega 923, PR #5870.

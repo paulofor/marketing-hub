@@ -24,3 +24,8 @@ legado. Falha reproduzida localmente e teste migrado para recibo/contexto/iníci
 com replay da mesma identidade, recusa do segundo início e callbacks com fencing.
 As verificações de histórico, aceite e relatório continuam presentes. Validação local
 com H2, recibo e controller aprovada; nenhuma inferência ou escrita no Vega real.
+
+A revisão final do PR #5870 também fechou a substituição de auditoria em REPLAY.
+Dois contextos sintéticos reproduziram a aceitação indevida antes da correção; após ela,
+retorno original aceito e divergência/ausência recusadas. 176 testes relacionados aprovados
+localmente, sem nova inferência, sem alterar arquitetura e sem escrita no Vega real.

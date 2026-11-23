@@ -100,6 +100,25 @@ class DedaloClaimReceiptTest {
                     new AgentTaskExecutionAuditRequest(
                         "MODEL", "changed", "high", "different", "a", "b", List.of())))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    // A adoção de retorno legado conserva a mesma auditoria e nunca libera outro início.
+    task.setExecutionClaimPhase("REPLAY");
+    service.requireCallbackClaim("landing-generator", id, task.getExecutionClaimId(), audit());
+    assertThatThrownBy(() -> service.startDedaloClaim(id, task.getExecutionClaimId(), audit()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    assertThatThrownBy(
+            () ->
+                service.requireCallbackClaim(
+                    "landing-generator",
+                    id,
+                    task.getExecutionClaimId(),
+                    new AgentTaskExecutionAuditRequest(
+                        "MODEL", "changed", "high", "different", "a", "b", List.of())))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    assertThatThrownBy(
+            () ->
+                service.requireCallbackClaim(
+                    "landing-generator", id, task.getExecutionClaimId(), null))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     assertThat(task.getExecutionMode()).isEqualTo("MODEL");
     assertThat(task.getEstimatedCostUsd()).isNull();
   }

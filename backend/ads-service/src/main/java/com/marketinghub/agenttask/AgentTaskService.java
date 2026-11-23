@@ -2281,14 +2281,15 @@ public class AgentTaskService {
           HttpStatus.CONFLICT, "Callback não pertence à reserva original.");
   }
 
-  /** Recusa resultado MODEL sem início autorizado e mantém auditoria original imutável. */
+  /** Recusa MODEL sem início e preserva a auditoria original também em reenvios legados. */
   @Transactional(readOnly = true)
   public void requireCallbackClaim(
       String agentKey, Long taskId, String claimId, AgentTaskExecutionAuditRequest audit) {
     requireCallbackClaim(agentKey, taskId, claimId);
     AgentTask task = ownedBy(agentKey, taskId);
     if (task.getExecutionClaimId() == null) return;
-    if ("START_AUTHORIZED".equals(task.getExecutionClaimPhase())) {
+    if ("START_AUTHORIZED".equals(task.getExecutionClaimPhase())
+        || "REPLAY".equals(task.getExecutionClaimPhase())) {
       if (audit == null
           || !Objects.equals(task.getExecutionMode(), audit.executionMode())
           || !Objects.equals(task.getExecutionModelCode(), audit.modelCode())
@@ -2298,9 +2299,7 @@ public class AgentTaskService {
           || !Objects.equals(task.getExecutionActivityPrompt(), audit.activityPromptPart()))
         throw new ResponseStatusException(
             HttpStatus.CONFLICT, "Retorno não preserva a auditoria original.");
-    } else if (audit != null
-        && "MODEL".equals(audit.executionMode())
-        && !"REPLAY".equals(task.getExecutionClaimPhase())) {
+    } else if (audit != null && "MODEL".equals(audit.executionMode())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Resultado de modelo sem início autorizado.");
     }

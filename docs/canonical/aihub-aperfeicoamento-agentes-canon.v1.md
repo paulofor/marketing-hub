@@ -705,3 +705,12 @@ Na reserva confirmável de Dédalo, a fase REPLAY preserva exatamente a auditori
 retorno legado (modo, modelo, raciocínio e partes do prompt), tal como START_AUTHORIZED.
 A adoção do recibo nunca autoriza substituir a auditoria nem iniciar outra inferência.
 Regressão em dois contextos e ciclo persistido: homologação Vega 923, PR #5870.
+
+A conferência publicada do PR #5870 revelou orientação legada contendo diagnóstico
+interno apesar do resumo traduzido. A projeção compartilhada agora traduz ambas as
+superfícies sem reescrever auditoria; fixtures incluem orientação e marcador de execução.
+Regressão com dois identificadores e orientação antes válida comprova o comportamento.
+Ausência de auditoria é comunicada como ausência de registro, não como prova de custo
+zero. Hipótese de benefício: reduzir retomadas indevidas e interpretações incorretas de
+consumo; impacto comercial ainda não medido. Manter diagnóstico bruto acessível é limite
+de adoção, conforme homologação Vega 923.

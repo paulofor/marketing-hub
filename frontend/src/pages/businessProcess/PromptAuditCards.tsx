@@ -22,13 +22,13 @@ export default function PromptAuditCards({
   const notStarted = executionMode === "NOT_STARTED";
   const deterministic = executionMode === "DETERMINISTIC";
   const legacyPartText = notStarted
-    ? "A execução foi interrompida antes de enviar um prompt ao modelo."
+    ? "A auditoria disponível não registra envio de prompt ao modelo."
     : "Parte não registrada nesta execução legada.";
   const completeTitle = deterministic
     ? "Entrada integral da execução determinística"
     : notStarted
-      ? "Modelo não iniciado"
-      : `Prompt completo enviado ao modelo${agentNickname ? ` por ${agentNickname}` : ""}`;
+      ? "Sem início de modelo registrado"
+      : `Prompt completo registrado para o modelo${agentNickname ? ` por ${agentNickname}` : ""}`;
 
   return (
     <section
@@ -70,7 +70,7 @@ export default function PromptAuditCards({
                 value={promptSent}
                 emptyText={
                   notStarted
-                    ? "A execução foi interrompida antes de enviar um prompt ao modelo."
+                    ? "A auditoria disponível não registra envio de prompt ao modelo."
                     : "Prompt não registrado nesta execução legada."
                 }
               />

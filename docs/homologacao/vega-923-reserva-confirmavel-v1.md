@@ -73,3 +73,26 @@ A revisão do reenvio legado identificou que a fase REPLAY ainda aceitava audito
 divergente. Regressões em dois contextos falharam antes do ajuste e passaram depois: o
 retorno original continua aceito; auditoria divergente/ausente e novo início são recusados.
 A rodada local relacionada terminou com 176 testes aprovados, sem alteração de arquitetura.
+
+## Complemento após publicação do PR #5870
+
+A revisão integrada `adbdc343a65d91e934770e5f67aabf3b4f570f8b` foi publicada pela
+aplicação (run 45098983897) e pelo executor Dédalo (run 45100258899). A conferência
+somente leitura da tela real identificou o código interno ainda em `blockerGuidance`,
+embora o resumo já estivesse correto. A fixture anterior não incluía essa orientação.
+
+Alternativas: esconder a orientação no frontend removeria informação útil; reescrever o
+bloqueio histórico alteraria a auditoria; traduzir a projeção compartilhada de resposta
+preserva ambos. Adotada a terceira opção, com regressão das respostas completa e compacta,
+dois identificadores sintéticos e uma orientação funcional antes válida. A falha foi
+reproduzida antes da correção. `NOT_STARTED` legado agora é descrito como ausência de
+registro, sem concluir que o modelo não executou ou que o custo foi zero.
+
+A fixture de navegador passa a incluir resumo, orientação, diagnóstico bruto e marcador
+legado de auditoria. A asserção usa o rótulo acessível do resumo e verifica também a
+orientação, evitando depender da seleção de um texto duplicado. Os registros brutos e
+a tarefa real não são alterados. Validações locais do complemento: 199 testes relacionados
+de backend, 92 regras de arquitetura, 35 testes de frontend, TypeScript sem erros e
+navegação em desktop/iPhone/Pixel. As provas locais ficam em `artifacts/dedalo-claim`,
+declarado no manifesto de entrega. Não foi repetida a matriz de transporte/MySQL sem
+alteração desse contrato. O CI integral permanece obrigatório para o novo HEAD.

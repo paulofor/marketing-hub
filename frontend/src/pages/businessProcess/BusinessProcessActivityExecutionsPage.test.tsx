@@ -91,7 +91,7 @@ describe("BusinessProcessActivityExecutionsPage", () => {
     expect(screen.getAllByText("Parte do agente")).toHaveLength(10);
     expect(screen.getAllByText("Parte da atividade")).toHaveLength(10);
     expect(
-      screen.getAllByText("Prompt completo enviado ao modelo por Argos"),
+      screen.getAllByText("Prompt completo registrado para o modelo por Argos"),
     ).toHaveLength(10);
     expect(
       screen.getAllByText("Você é Argos, investigador comercial."),

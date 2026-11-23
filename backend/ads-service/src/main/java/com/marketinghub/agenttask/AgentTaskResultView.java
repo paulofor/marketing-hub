@@ -15,7 +15,7 @@ public final class AgentTaskResultView {
 
   /** Projeta interrupções conhecidas em linguagem de negócio, preservando o erro na auditoria. */
   public static String businessReason(String reason) {
-    if (reason != null && reason.startsWith("DEDALO_LEASE_RECOVERY_EXHAUSTED|"))
+    if (reason != null && reason.contains("DEDALO_LEASE_RECOVERY_EXHAUSTED|"))
       return "O acompanhamento da execução foi interrompido. Uma nova chamada foi bloqueada para evitar cobrança duplicada. É necessário conferir o recebimento e o retorno original antes de retomar; o consumo ainda não foi confirmado.";
     if (reason != null
         && (reason.contains("input_too_large") || reason.contains("PDE_CONTEXT_BUDGET_V1"))) {

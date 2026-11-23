@@ -29,3 +29,13 @@ A revisão final do PR #5870 também fechou a substituição de auditoria em REP
 Dois contextos sintéticos reproduziram a aceitação indevida antes da correção; após ela,
 retorno original aceito e divergência/ausência recusadas. 176 testes relacionados aprovados
 localmente, sem nova inferência, sem alterar arquitetura e sem escrita no Vega real.
+
+### 23/11/2026 — complemento da orientação pública após PR #5870
+
+A aplicação e o executor publicaram `adbdc343a65d91e934770e5f67aabf3b4f570f8b`.
+A leitura da tela real revelou código interno na orientação legada, não coberta pela
+fixture do resumo. Corrigida a projeção compartilhada sem mutar histórico, com regressão
+antes/depois e fixture completa desktop/mobile. A auditoria distingue falta de registro
+de prova de não execução. Homologação: 199 testes backend, 92 arquitetura, 35 frontend,
+TypeScript e três perfis de navegador. Nenhuma retentativa, aceite, dispensa ou inferência
+no Vega; a conferência continua somente leitura. Detalhes na homologação Vega 923.

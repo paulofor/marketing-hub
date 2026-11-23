@@ -913,7 +913,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(
       taskCard.getByRole("heading", {
-        name: "Prompt completo enviado ao modelo por Argos",
+        name: "Prompt completo registrado para o modelo por Argos",
       }),
     ).toBeInTheDocument();
     expect(taskCard.getByText("Você é o Argos auditável.")).toBeInTheDocument();

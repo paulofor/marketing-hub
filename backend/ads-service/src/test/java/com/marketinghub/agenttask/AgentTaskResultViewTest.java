@@ -18,7 +18,7 @@ class AgentTaskResultViewTest {
     assertThat(task.getExecutionError()).contains("internal diagnostic");
   }
 
-  /** Projeta orientações legadas de contextos distintos sem alterar erro ou ação persistidos. */
+  /** Projeta tarefa e processo pai de contextos distintos sem alterar erro ou ação persistidos. */
   @Test
   void projectsLegacyGuidanceWithoutRestartAdviceOrInternalCode() {
     for (long id : java.util.List.of(8001L, 9001L)) {
@@ -36,6 +36,14 @@ class AgentTaskResultViewTest {
           .isEqualTo(compact.recommendedAction())
           .contains("conferir", "retorno original", "consumo")
           .doesNotContain("DEDALO_", "reinicie", "diagnóstico");
+      var parent =
+          new com.fasterxml.jackson.databind.ObjectMapper()
+              .convertValue(
+                  java.util.Map.of("id", id, "reason", "Tarefa anterior: " + raw),
+                  com.marketinghub.businessprocess.automation.v1.service.status.ProcessRunResponse
+                      .class);
+      assertThat(parent.reason()).isEqualTo(full.recommendedAction());
+      assertThat(parent.id()).isEqualTo(id);
       assertThat(task.getBlockerAction()).isEqualTo(raw);
       assertThat(task.getExecutionError()).contains("DEDALO_");
     }

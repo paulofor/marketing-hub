@@ -333,6 +333,14 @@ try {
         } else if (pathname === "/api/products/9") {
           await route.fulfill({ json: product });
         } else if (
+          pathname === "/api/business-processes/18/products/9/tasks/243/audit"
+        ) {
+          await route.fulfill({ json: dedaloTask });
+        } else if (
+          pathname === "/api/business-processes/18/products/9/tasks/244/audit"
+        ) {
+          await route.fulfill({ json: psiqueTask });
+        } else if (
           pathname === "/api/products/value-chain-positions/9/summary"
         ) {
           await route.fulfill({
@@ -346,6 +354,11 @@ try {
           await route.fulfill({ json: position });
         } else if (pathname === "/api/products/9/process-commits") {
           await route.fulfill({ json: [] });
+        } else if (
+          pathname ===
+          "/api/business-process-chains/learning-cycles/v1/products/9/process-context"
+        ) {
+          await route.fulfill({ json: null });
         } else if (
           pathname ===
           "/api/business-processes/18/products/9/activity-executions"
@@ -395,11 +408,17 @@ try {
     await expect(page.getByText("6 com tarefas reais")).toBeVisible();
     await expect(page.getByText("Cobertura parcial")).toBeVisible();
     await expect(page.getByText(/Tarefa #243/).first()).toBeVisible();
+    const dedaloCard = page
+      .locator("details.business-process-document")
+      .filter({ hasText: "Tarefa #243" })
+      .first();
+    await dedaloCard.locator(":scope > summary").click();
     await expect(page.getByText("gpt-5.6-sol").first()).toBeVisible();
     await expect(
       page.getByText("Nenhuma tarefa registrada para esta atividade.").first(),
     ).toBeVisible();
-    await page.getByText("Visualizar JSON em árvore").first().click();
+    await dedaloCard.getByText("Parecer completo de Dédalo").click();
+    await dedaloCard.getByText("Visualizar JSON em árvore").first().click();
     await expect(page.getByText("summary:").first()).toBeVisible();
     const psiqueCard = page
       .locator("details.business-process-document")
@@ -423,7 +442,7 @@ try {
     ).toBeVisible();
     await expect(
       psiqueCard.getByRole("heading", {
-        name: "Prompt completo enviado ao modelo por Psique",
+        name: "Prompt completo registrado para o modelo por Psique",
       }),
     ).toBeVisible();
     await expect(

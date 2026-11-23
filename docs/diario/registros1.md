@@ -39,3 +39,7 @@ antes/depois e fixture completa desktop/mobile. A auditoria distingue falta de r
 de prova de não execução. Homologação: 199 testes backend, 92 arquitetura, 35 frontend,
 TypeScript e três perfis de navegador. Nenhuma retentativa, aceite, dispensa ou inferência
 no Vega; a conferência continua somente leitura. Detalhes na homologação Vega 923.
+
+Complemento #5871: a projeção do processo pai também é coberta pela regressão; as duas
+suítes existentes de navegador passaram nos três perfis após atualização das fixtures
+para contexto e auditoria adiada. Sem alterações produtivas adicionais ou no Vega real.

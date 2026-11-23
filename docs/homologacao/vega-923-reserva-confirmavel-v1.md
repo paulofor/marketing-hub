@@ -96,3 +96,15 @@ de backend, 92 regras de arquitetura, 35 testes de frontend, TypeScript sem erro
 navegação em desktop/iPhone/Pixel. As provas locais ficam em `artifacts/dedalo-claim`,
 declarado no manifesto de entrega. Não foi repetida a matriz de transporte/MySQL sem
 alteração desse contrato. O CI integral permanece obrigatório para o novo HEAD.
+
+A conferência do processo pai identificou o mesmo código embutido em seu motivo. O
+conversor compartilhado já corrigido cobre `ProcessRunResponse`; a regressão agora
+comprova também essa projeção. A revisão do contador de reconciliação automática mudou,
+mas status, atividade, aceites, pendências e horário da última alteração funcional de
+103 permaneceram iguais. O monitor publicado deixou de associar a telemetria de agosto
+à tarefa 923; `executionActivity` é nulo para essa tarefa sem telemetria própria.
+
+As regressões existentes de processos independentes e histórico de produto também
+passaram em desktop/iPhone/Pixel. Foram alinhadas ao carregamento adiado da auditoria,
+à consulta de contexto sem ciclo e à distinção entre imports do Vite e endpoints de API.
+Esses ajustes são exclusivamente fixtures e verificações; não alteram os fluxos produtivos.

@@ -479,7 +479,13 @@ public class AgentWorkMonitorService {
                 && source.startsWith("opportunity-dossier:")
             ? "READY — parecer bloqueado"
             : executorHealth.status();
-    AgentWorkMonitorResponse.ExecutionActivity executionActivity = executionActivity(agent);
+    AgentWorkMonitorResponse.ExecutionActivity executionActivity =
+        DEDALO.equals(agent.getAgentKey()) && taskId != null
+            ? telemetryRepository
+                .findByAgentTypeAndExecutionId("DEDALO_BPM", taskId)
+                .map(this::executionActivity)
+                .orElse(null)
+            : executionActivity(agent);
     return new AgentWorkMonitorResponse(
         agent.getId(),
         agent.getAgentKey(),

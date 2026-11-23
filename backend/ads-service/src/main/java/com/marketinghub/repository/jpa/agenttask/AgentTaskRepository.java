@@ -21,6 +21,18 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Recupera a mesma reserva após perda HTTP, sem consumir outra tentativa. */
+  Optional<AgentTask> findByExecutionClaimId(String claimId);
+
+  /** Serializa reservas concorrentes antes de escolher a tarefa elegível. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      "select t from AgentTask t where t.assignedAgent.agentKey = :agent and t.status = 'PENDING' and t.taskKind = 'WORK' and t.processDefinition.processCode = :processCode and t.processActivityId = :activityId order by t.createdAt, t.id")
+  List<AgentTask> findPendingForClaim(
+      @Param("agent") String agent,
+      @Param("processCode") String processCode,
+      @Param("activityId") String activityId);
+
   /**
    * Lê resultado e interrupção no contexto exato, sem hidratar prompts, provas ou outras tarefas.
    */

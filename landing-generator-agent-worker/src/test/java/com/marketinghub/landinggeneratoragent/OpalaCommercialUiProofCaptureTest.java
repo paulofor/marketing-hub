@@ -33,6 +33,8 @@ class OpalaCommercialUiProofCaptureTest {
           "/",
           exchange -> {
             try {
+              assertThat(exchange.getRequestHeaders().getFirst("X-Dedalo-Claim"))
+                  .isEqualTo("fixture-claim");
               String operation = exchange.getRequestURI().getPath().replaceAll(".*/", "");
               operations.add(operation);
               byte[] body = exchange.getRequestBody().readAllBytes();
@@ -104,6 +106,8 @@ class OpalaCommercialUiProofCaptureTest {
         context.putObject("opalaCommercial").set("staticProofPreparation", input);
         Map<String, Object> task =
             Map.of(
+                "executionClaimId",
+                "fixture-claim",
                 "taskId",
                 801L,
                 "processCode",

@@ -55,12 +55,71 @@ public class InternalAgentTaskExecutionController {
                       + " tarefas.")
           @RequestParam(required = false)
           String workerContract) {
+    // O rollout fecha o consumo antigo de Dédalo antes de disponibilizar o novo executor.
+    if ("landing-generator".equals(agentKey)) return List.of();
     return service
         .claimEligibleProcessTask(
             agentKey, processCode, activityId, executionResourceCode, workerContract)
         .map(this::withOperatorGuidance)
         .map(List::of)
         .orElseGet(List::of);
+  }
+
+  /** Reserva apenas o recibo persistente; contexto é carregado depois pelo mesmo titular. */
+  @GetMapping("/pending/receipt")
+  public List<com.marketinghub.agenttask.service.receipt.DedaloClaimReceipt> pendingReceipt(
+      @PathVariable String agentKey,
+      @RequestParam String processCode,
+      @RequestParam String activityId,
+      @RequestParam String claimId) {
+    requireDedalo(agentKey);
+    return service
+        .claimDedaloReceipt(processCode, activityId, claimId)
+        .map(List::of)
+        .orElseGet(List::of);
+  }
+
+  /** Carrega o contexto após o recibo, preservando identidade mesmo se o HTTP falhar. */
+  @GetMapping("/{taskId}/claim-context")
+  public AgentTaskPendingWithOperatorGuidance claimContext(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @RequestHeader("X-Dedalo-Claim") String claimId) {
+    requireDedalo(agentKey);
+    service.requireDedaloClaim(taskId, claimId);
+    return withOperatorGuidance(service.claimedProcessTask(agentKey, taskId));
+  }
+
+  /** Confirma atividade do titular durante preparação ou execução sem registrar custo. */
+  @PutMapping("/{taskId}/claim-heartbeat")
+  public ResponseEntity<Void> claimHeartbeat(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @RequestHeader("X-Dedalo-Claim") String claimId) {
+    requireDedalo(agentKey);
+    service.heartbeatDedaloClaim(taskId, claimId);
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Concede início único após preparação; uma resposta perdida exige conferência, não repetição.
+   */
+  @PutMapping("/{taskId}/claim-start")
+  public ResponseEntity<Void> claimStart(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @RequestHeader("X-Dedalo-Claim") String claimId,
+      @Valid @RequestBody AgentTaskExecutionAuditRequest audit) {
+    requireDedalo(agentKey);
+    service.startDedaloClaim(taskId, claimId, audit);
+    return ResponseEntity.noContent().build();
+  }
+
+  /** Impede uso do contrato dedicado por outro executor. */
+  private void requireDedalo(String agentKey) {
+    if (!"landing-generator".equals(agentKey))
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.NOT_FOUND);
   }
 
   /** Reexpõe a lease ativa com as notas atuais, sem reservar tarefa nem repetir inferência. */
@@ -76,12 +135,20 @@ public class InternalAgentTaskExecutionController {
         task, operatorGuidance == null ? null : operatorGuidance.read(task));
   }
 
+  /** Mantém chamada direta legada, exigindo identidade quando houver recibo novo. */
+  public ResponseEntity<Void> recordExecutionAudit(
+      String agentKey, Long taskId, AgentTaskExecutionAuditRequest request) {
+    return recordExecutionAudit(agentKey, taskId, request, null);
+  }
+
   /** Preserva o prompt resolvido e a configuração antes de qualquer término da tarefa. */
   @PutMapping("/{taskId}/execution-audit")
   public ResponseEntity<Void> recordExecutionAudit(
       @PathVariable String agentKey,
       @PathVariable Long taskId,
-      @Valid @RequestBody AgentTaskExecutionAuditRequest request) {
+      @Valid @RequestBody AgentTaskExecutionAuditRequest request,
+      @RequestHeader(value = "X-Dedalo-Claim", required = false) String claimId) {
+    service.requireCallbackClaim(agentKey, taskId, claimId);
     service.recordClaimedProcessTaskExecutionAudit(agentKey, taskId, request);
     return ResponseEntity.noContent().build();
   }
@@ -126,12 +193,25 @@ public class InternalAgentTaskExecutionController {
         file);
   }
 
+  /** Preserva chamada direta de consumidores legados, sem contornar fencing de novas reservas. */
+  public ResponseEntity<Void> complete(
+      String agentKey, Long taskId, CompleteAgentTaskRequest request) {
+    return complete(agentKey, taskId, request, null);
+  }
+
+  /** Preserva chamada direta de consumidores legados, sem contornar fencing de novas reservas. */
+  public ResponseEntity<Void> fail(String agentKey, Long taskId, FailAgentTaskRequest request) {
+    return fail(agentKey, taskId, request, null);
+  }
+
   /** Recebe resultado e evidências antes de liberar a atividade seguinte. */
   @PostMapping("/{taskId}/result")
   public ResponseEntity<Void> complete(
       @PathVariable String agentKey,
       @PathVariable Long taskId,
-      @Valid @RequestBody CompleteAgentTaskRequest request) {
+      @Valid @RequestBody CompleteAgentTaskRequest request,
+      @RequestHeader(value = "X-Dedalo-Claim", required = false) String claimId) {
+    service.requireCallbackClaim(agentKey, taskId, claimId, request.executionAudit());
     service.completeClaimedProcessTask(agentKey, taskId, request);
     return ResponseEntity.noContent().build();
   }
@@ -141,7 +221,9 @@ public class InternalAgentTaskExecutionController {
   public ResponseEntity<Void> fail(
       @PathVariable String agentKey,
       @PathVariable Long taskId,
-      @Valid @RequestBody FailAgentTaskRequest request) {
+      @Valid @RequestBody FailAgentTaskRequest request,
+      @RequestHeader(value = "X-Dedalo-Claim", required = false) String claimId) {
+    service.requireCallbackClaim(agentKey, taskId, claimId, request.executionAudit());
     service.failClaimedProcessTask(agentKey, taskId, request);
     return ResponseEntity.noContent().build();
   }

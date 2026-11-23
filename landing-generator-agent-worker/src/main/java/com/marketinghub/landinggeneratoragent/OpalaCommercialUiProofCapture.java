@@ -49,10 +49,14 @@ final class OpalaCommercialUiProofCapture {
     return CONTRACT.equals(proof.path("contractVersion").asText()) ? proof : null;
   }
 
-  /**
-   * Captura, persiste o PNG e conclui apenas a preparação; o backend decide a próxima atividade.
-   */
+  /** Captura e persiste o PNG sob a mesma reserva; o backend decide a próxima atividade. */
   void complete(Map<String, Object> task, JsonNode input) throws Exception {
+    var backend =
+        this.backend
+            .mutate()
+            .defaultHeader(
+                "X-Dedalo-Claim", String.valueOf(task.getOrDefault("executionClaimId", "")))
+            .build();
     long taskId = ((Number) task.get("taskId")).longValue();
     var fullInput = input.deepCopy();
     ((com.fasterxml.jackson.databind.node.ObjectNode) fullInput).put("taskId", taskId);

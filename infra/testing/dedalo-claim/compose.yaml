@@ -1,0 +1,11 @@
+services:
+  mysql:
+    image: mysql:5.7.44
+    environment:
+      MYSQL_ROOT_PASSWORD: synthetic-dedalo-fixture
+      MYSQL_DATABASE: fixture
+    healthcheck:
+      test: [CMD, mysql, -h, 127.0.0.1, -uroot, -psynthetic-dedalo-fixture, fixture, -e, "SELECT 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 40

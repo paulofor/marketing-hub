@@ -1791,8 +1791,8 @@ class AgentTaskServiceTest {
     var valid = processTask(1795L, dedalo, process, "entry", "PENDING");
     valid.setSourceReference("experiment:710");
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
-    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
-            "landing-generator", "WORK", "PENDING"))
+    when(repository.findPendingForClaim(
+            "landing-generator", "opala-commercial-preparation-v1", "entry"))
         .thenReturn(List.of(waiting, valid));
     when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
     var context = mock(com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.class);
@@ -1844,9 +1844,10 @@ class AgentTaskServiceTest {
 
     mvc.perform(
             org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
-                    "/api/internal/agent-tasks/landing-generator/stage-executions/pending")
+                    "/api/internal/agent-tasks/landing-generator/stage-executions/pending/receipt")
                 .param("processCode", "opala-commercial-preparation-v1")
-                .param("activityId", "entry"))
+                .param("activityId", "entry")
+                .param("claimId", "00000000-0000-0000-0000-000000007100"))
         .andExpect(
             org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
         .andExpect(

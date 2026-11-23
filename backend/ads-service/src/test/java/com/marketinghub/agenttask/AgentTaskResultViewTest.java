@@ -6,6 +6,18 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: impedir exposição de falhas técnicas como explicação de negócio. */
 class AgentTaskResultViewTest {
+  /** Não transforma ausência de acompanhamento em entrega inexistente ou custo zero. */
+  @Test
+  void projectsLostLeaseWithoutClaimingModelFailureOrZeroCost() {
+    var task = new AgentTask();
+    task.setStatus("BLOCKED");
+    task.setExecutionError("DEDALO_LEASE_RECOVERY_EXHAUSTED|internal diagnostic");
+    assertThat(AgentTaskResultView.humanSummary(task).text())
+        .contains("acompanhamento", "cobrança duplicada", "consumo")
+        .doesNotContain("DEDALO_", "internal", "zero");
+    assertThat(task.getExecutionError()).contains("internal diagnostic");
+  }
+
   /** Explica interrupção legada sem inventar resultado ou consumo zero. */
   @Test
   void summarizesInterruptedContextWithoutRawError() {

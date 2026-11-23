@@ -1,0 +1,18 @@
+{
+  "cardKey": "xr-pistas-multissensoriais-relevantes",
+  "collection": "prazer-audio-visual",
+  "title": "Priorizar pistas sensoriais relevantes à tarefa em experiências XR",
+  "finding": "Revisão de escopo de 46 estudos empíricos sobre XR educacional relata benefícios frequentes de presença e engajamento com estímulos multissensoriais, mas resultados variáveis de aprendizagem, carga de trabalho mista e evidência fraca sobre retenção tardia.",
+  "mechanism": "Pistas visuais, auditivas e hápticas podem reforçar informação relevante da tarefa, mas também elevar demanda de atenção e interação; o efeito líquido varia conforme o desenho.",
+  "commercialApplication": "Em tutoriais imersivos ou demonstrações interativas de produto, acrescentar sons ou vibrações apenas quando sinalizam ações ou estados importantes, e testar contra uma versão sem essa pista adicional.",
+  "evidenceStrength": "Baixa a moderada para tendências descritivas de presença/engajamento na literatura; baixa para aprendizado sustentável, e muito baixa para efeitos de vendas ou vídeo não imersivo.",
+  "publishedOn": "2026-11-23",
+  "validUntil": "2027-01-07",
+  "experimentHypothesis": "Uma pista sensorial diretamente associada à tarefa reduzirá erros na execução em XR frente a uma condição sem pista; uma pista decorativa extra poderá aumentar carga cognitiva sem elevar lembrança após 48 horas.",
+  "risks": "Sobrecarga sensorial, exclusão de pessoas com necessidades de acessibilidade, desconforto háptico/sonoro e custo de implementação sem benefício demonstrado.",
+  "limits": "Revisão de escopo, não meta-análise causal; 46 estudos heterogêneos publicados até 09/04/2025, majoritariamente VR e com amostras pequenas ou moderadas. Não estabelece regra universal para vídeos comuns.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-23-xr-pistas-multissensoriais-relevantes-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Pistas multissensoriais relevantes à tarefa em XR",
+  "sourceSha256": "4764a13fba6a0573fa9fd0e52762b1902078d12b1eb85438c9a2075d8967a833"
+}

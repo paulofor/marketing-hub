@@ -1,0 +1,18 @@
+{
+  "cardKey": "congruencia-emocional-sincronia-fala",
+  "collection": "prazer-audio-visual",
+  "title": "Testar coerência emocional e sincronização da fala audiovisual",
+  "finding": "Em experimento com 125 participantes, pares dinâmicos de rosto e voz com emoção congruente e conteúdo emocional saliente apresentaram maior tolerância perceptiva à assincronia do que condições comparadoras, segundo a janela temporal de ligação. O desfecho foi julgamento de sincronização, não prazer.",
+  "mechanism": "A congruência afetiva pode fornecer evidência de origem comum para ligar voz e rosto, interagindo com pistas temporais físicas; os resultados não identificam um mecanismo neural causal.",
+  "commercialApplication": "Em vídeos com apresentadores sintéticos ou dublagem, testar separadamente sincronização labial e coerência de tom emocional entre voz e expressão, mantendo roteiro, volume e duração constantes.",
+  "evidenceStrength": "Moderada para os efeitos comportamentais em julgamento de sincronização com estímulos de fala; baixa para satisfação, retenção ou vendas.",
+  "publishedOn": "2026-11-23",
+  "validUntil": "2027-01-07",
+  "experimentHypothesis": "Versões com prosódia e expressão facial emocionalmente coerentes serão avaliadas como mais integradas e menos estranhas sob pequenos desvios temporais que versões incoerentes; medir julgamentos de sincronia, estranheza, compreensão e conforto, sem aceitar atraso perceptível como meta.",
+  "risks": "Não usar a maior tolerância experimental como permissão para dublagem ruim; não exagerar emoções, manipular afetos ou ignorar diferenças culturais e de acessibilidade.",
+  "limits": "Publicado originalmente em 28/07/2026, recuperado nesta rodada por ausência de registro; 125 julgadores de rostos/vozes, sem avaliação de anúncios, recompensa dopaminérgica ou compras.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-23-congruencia-emocional-sincronia-fala-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Congruência emocional e janela temporal da fala audiovisual",
+  "sourceSha256": "de0add7f5d1ee9a91e4f1b2de8648bc4c8a6a3dac0c8c8aaaac73ad1381a00de"
+}

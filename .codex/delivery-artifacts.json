@@ -106,6 +106,13 @@
     ".local/vega-930/final-harness-captures/SAFETY-DESKTOP_1440.png",
     ".local/vega-930/projection-evidence-final.log",
     ".local/vega-930/evidence-compatibility-tests.log",
-    ".local/vega-930/evidence-build.log"
+    ".local/vega-930/evidence-build.log",
+    ".local/vega-930/tls-profiles-tests.log",
+    ".local/vega-930/tls-portable-tests.log",
+    ".local/vega-930/tls-negative-duration-reproduction.log",
+    ".local/vega-930/tls-workflow-contract.log",
+    ".local/vega-930/tls-workflow-yaml.log",
+    ".local/vega-930/payments-unit-local.log",
+    ".local/vega-930/tls-operation-contract-final.log"
   ]
 }

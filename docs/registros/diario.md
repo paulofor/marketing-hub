@@ -115,3 +115,11 @@ contabilização925, campanha, cobrança ou audiovisual. Retomada103 depende da
 publicação verificada e dos gates reais; recorte não comprova produto completo.
 Aprendizado reutilizável: recuperação idempotente e pendência aplicável reduzem
 retrabalho; aumento de vendas ainda não medido. Evidências finais ficam no PR.
+
+
+###24/11/2026 — continuidade de Vega após publicação
+
+A recuperação do acesso está integrada em48d6942d. O gate compartilhado apontou
+certificado vencido do Kit e manutenção interrompida por fixture. A correção é no
+fluxo existente de renovação, sem liberar cobrança ou mídia. Vega103 permanece
+parada até a publicação ser comprovada; não houve nova inferência da925.

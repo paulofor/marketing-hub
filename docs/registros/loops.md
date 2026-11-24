@@ -11919,3 +11919,18 @@ reabre 923/103. Testes e limites constam na matriz `vega-923-reserva-confirmavel
   Projeção pública sanitiza stack trace e mantém o diagnóstico técnico separado.
 - Limites: teste não é parecer independente nem prova comercial; PROTOTYPE_SLICE não vira
   PRODUCT. Matriz e estado de adoção em `docs/homologacao/vega-harness-access-930-v1.md`.
+
+
+### Complemento de24/11/2026 — Kit fora da rotina e fixture não portátil
+
+O deploy Vega48d6942d aplicou v10, mas o gate falhou no TLS do Kit, vencido em20/11.
+Fonte e certificado servido coincidem. A rotina só cobria Clube MUSA. Seis
+agendamentos recentes falharam; no último conferido, a fixture `openssl x509 -days -1`
+interrompeu o trabalho antes do host.
+A manutenção existente passa a percorrer dois perfis fechados e usa datas explícitas
+na CA de testes, como já feito para MCP.25 casos passam por perfil/erros e confiança;
+a fronteira que recusa duração negativa reproduz o problema anterior e aceita a
+correção. A fixture de CA permanece no CI, fora do caminho operacional noturno,
+que conserva validação estática e preflight real. Nenhum gate TLS é dispensado nem
+aplicação é recriada por `renew_tls`.
+Registro: `docs/homologacao/vega-tls-shared-gate-20261124.md`.

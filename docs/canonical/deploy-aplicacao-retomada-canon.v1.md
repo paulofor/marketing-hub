@@ -61,6 +61,21 @@ manual opcional durante deploy não substitui manutenção periódica. Logs Cert
 permanecem no volume existente, sem expor chaves.
 Matriz e causa: [TLS observado na entrega #3783](../homologacao/chatgpt-ads-3783-tls-vega.md).
 
+### TLS compartilhado de Vega e Kit WhatsApp — prevenção de 24/11/2026
+
+O gate de preservação da publicação PDE também exige HTTPS confiável do Kit
+WhatsApp. A manutenção `renew_tls` do pipeline existente renova sequencialmente as
+linhagens já cadastradas `clubemusa` e `kit_whatsapp`, na mesma fila do VPS. Cada
+perfil mantém seus nomes, prazo mínimo, volumes, histórico Certbot e cópia restrita;
+não emite domínios novos nem recria aplicações. A verificação externa cobre ambos.
+
+As fixtures da CA local usam datas explícitas, seguindo o padrão já validado do
+MCP. Elas são obrigatórias no CI; a manutenção da main conserva validação estática
+e preflight operacional real, sem depender de gerar certificados de teste. Duração negativa passada a `openssl x509 -days` não pode impedir a manutenção
+antes de ela chegar ao host. Falha da CA, desafio, instalação ou reload continua
+bloqueando o resultado; nenhum erro permite ignorar a confiança TLS.
+Evidência: [recuperação do gate compartilhado](../homologacao/vega-tls-shared-gate-20261124.md).
+
 ### Intervenções autorizadas e versão em homologação
 
 Antes de uma intervenção autorizada em um serviço publicado, usar o coordenador

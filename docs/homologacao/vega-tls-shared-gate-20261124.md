@@ -32,7 +32,9 @@ comprova a falha dessa fixture. O padrão portátil já existe no teste TLS do M
 
 O mesmo script aceita dois perfis fechados. O padrão anterior continua Clube MUSA;
 Kit usa somente sua linhagem existente. O agendamento e `renew_tls` percorrem ambos
-sob a fila já existente, sem novo workflow ou mudança de aplicação. Renovação,
+sob a fila já existente, sem novo workflow ou mudança de aplicação. Os testes de
+CA permanecem obrigatórios no CI; a manutenção executa validação estática e os
+preflights reais, evitando que uma fixture interrompa outra vez a renovação. Renovação,
 instalação e reload permanecem restritos ao perfil selecionado. A confiança externa
 continua obrigatória, com validade mínima de14dias. O registro anterior #5881,
 a930, a925 e os aceites da103 permanecem preservados.

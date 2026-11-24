@@ -288,11 +288,13 @@ class Workflow(unittest.TestCase):
         job = source.split("  renew-tls:\n")[1].split("  deploy:\n")[0]
         for fragment in ("github.ref == 'refs/heads/main'", "inputs.operation == 'renew_tls'",
                          "group: deploy-vps-163-245-200-7", "cancel-in-progress: false",
-                         "python3 scripts/test-clubemusa-tls.py", "python3 scripts/check-clubemusa-tls.py --profile all",
+                         "python3 scripts/check-clubemusa-tls.py --profile all",
                          "for profile in clubemusa kit_whatsapp", 'bash -s -- "$profile"'):
             self.assertIn(fragment, job)
         for forbidden in ("docker compose", "rsync", "Publish service", "StrictHostKeyChecking=no"):
             self.assertNotIn(forbidden, job)
+        self.assertIn("python3 ../scripts/test-clubemusa-tls.py", source)
+        self.assertNotIn("python3 scripts/test-clubemusa-tls.py", job)
         self.assertIn("github.event_name != 'schedule' && inputs.operation != 'renew_tls'", source)
         self.assertIn("github.event_name == 'workflow_dispatch' && inputs.operation != 'renew_tls'", source)
 

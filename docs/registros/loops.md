@@ -11930,5 +11930,7 @@ interrompeu o trabalho antes do host.
 A manutenção existente passa a percorrer dois perfis fechados e usa datas explícitas
 na CA de testes, como já feito para MCP.25 casos passam por perfil/erros e confiança;
 a fronteira que recusa duração negativa reproduz o problema anterior e aceita a
-correção. Nenhum gate TLS é dispensado nem aplicação é recriada por `renew_tls`.
+correção. A fixture de CA permanece no CI, fora do caminho operacional noturno,
+que conserva validação estática e preflight real. Nenhum gate TLS é dispensado nem
+aplicação é recriada por `renew_tls`.
 Registro: `docs/homologacao/vega-tls-shared-gate-20261124.md`.

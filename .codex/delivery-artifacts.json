@@ -112,6 +112,7 @@
     ".local/vega-930/tls-negative-duration-reproduction.log",
     ".local/vega-930/tls-workflow-contract.log",
     ".local/vega-930/tls-workflow-yaml.log",
-    ".local/vega-930/payments-unit-local.log"
+    ".local/vega-930/payments-unit-local.log",
+    ".local/vega-930/tls-operation-contract-final.log"
   ]
 }

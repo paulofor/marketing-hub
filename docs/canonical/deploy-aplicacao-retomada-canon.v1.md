@@ -70,7 +70,8 @@ perfil mantém seus nomes, prazo mínimo, volumes, histórico Certbot e cópia r
 não emite domínios novos nem recria aplicações. A verificação externa cobre ambos.
 
 As fixtures da CA local usam datas explícitas, seguindo o padrão já validado do
-MCP. Duração negativa passada a `openssl x509 -days` não pode impedir a manutenção
+MCP. Elas são obrigatórias no CI; a manutenção da main conserva validação estática
+e preflight operacional real, sem depender de gerar certificados de teste. Duração negativa passada a `openssl x509 -days` não pode impedir a manutenção
 antes de ela chegar ao host. Falha da CA, desafio, instalação ou reload continua
 bloqueando o resultado; nenhum erro permite ignorar a confiança TLS.
 Evidência: [recuperação do gate compartilhado](../homologacao/vega-tls-shared-gate-20261124.md).

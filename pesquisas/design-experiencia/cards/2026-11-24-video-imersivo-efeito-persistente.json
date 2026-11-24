@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-imersivo-proximidade-engajamento-persistente",
+  "collection": "video",
+  "title": "Vídeo imersivo: avaliar efeitos além da exposição",
+  "finding": "Em estudo com 84 participantes, vídeo 180° imersivo esteve associado a maior proximidade psicológica até sete dias; 17/37 versus 5/38 participantes com seguimento completo relataram engajamento voluntário precoce. Não houve transações.",
+  "mechanism": "Presença social e interesse situacional podem sustentar o interesse após a exposição; presença não foi medida diretamente.",
+  "commercialApplication": "Comparar demonstrações imersivas opcionais e 2D equivalentes, avaliando retorno voluntário, conforto, lembrança e custo.",
+  "evidenceStrength": "Moderada para diferenças entre experiências no estudo; limitada para causalidade do formato isolado e transferência comercial. Preprint, amostra pequena e comportamento autorrelatado.",
+  "publishedOn": "2026-11-24",
+  "validUntil": "2027-01-08",
+  "experimentHypothesis": "Com ambiente e conteúdo equivalentes, a experiência imersiva aumentará retorno voluntário em 7 dias sem piorar conforto ou compreensão; medir pagamentos separadamente.",
+  "risks": "Desconforto, custo de hardware, exclusão de usuários e extrapolação de vínculo com artistas para intenção de compra.",
+  "limits": "Headset em laboratório versus 2D online, estímulo único, diferenças prévias e seguimento parcial. Sem compras, prazer ou mecanismo neural demonstrado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-24-video-imersivo-efeito-persistente.md",
+  "sourceTitle": "Vídeo imersivo e persistência da proximidade percebida",
+  "sourceSha256": "88de0df7ba680a3bc027db1bfb5080985aefb32ea9f584de6db40b32887c0b81"
+}

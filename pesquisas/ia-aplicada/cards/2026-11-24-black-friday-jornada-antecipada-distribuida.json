@@ -1,0 +1,18 @@
+{
+  "cardKey": "black-friday-jornada-antecipada-distribuida",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Black Friday: janela antecipada e abertura a fornecedores novos",
+  "finding": "Em pesquisa Criteo de setembro de 2026 com 10.500 consumidores, 31% começam a pensar nas ofertas uma a duas semanas antes e 21% duas a quatro semanas antes. Três em quatro dos 7.820 respondentes sobre Black Friday relatam comprar às vezes ou mais em lojas que não usam habitualmente; 80% no recorte britânico divulgado em 19/11.",
+  "mechanism": "A antecipação da pesquisa pode criar uma janela para fornecedores novos entrarem na consideração do consumidor; ofertas de valor verificável podem reduzir a incerteza. Mecanismo hipotético, não testado causalmente.",
+  "commercialApplication": "Comparar comunicação faseada antes da promoção com comunicação concentrada na semana do evento, mantendo público, orçamento e oferta comparáveis e acompanhando novos compradores, pagamentos líquidos, CAC e margem.",
+  "evidenceStrength": "Pesquisa internacional observacional de autorrelato, útil para planejar timing; recorte britânico sem tamanho publicado. Não comprova efeito incremental.",
+  "publishedOn": "2026-11-24",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Uma campanha faseada elevará pagamentos líquidos de novos compradores por real investido frente à campanha concentrada, sem reduzir margem nem aumentar devoluções.",
+  "risks": "Fadiga, custo de antecipação, descontos que canibalizam vendas e transferência indevida de resultados de varejo físico para produtos digitais.",
+  "limits": "Sem transações observadas, série histórica comparável ou experimento causal; pesquisa patrocinada por empresa de publicidade. Não há resultado validado no Marketing Hub nem estimativa específica do Brasil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-24-criteo-black-friday-antecipacao.md",
+  "sourceTitle": "Black Friday: antecipação e abertura a novas lojas",
+  "sourceSha256": "170d038611ca3509b6b7321cb7cf83a1696055447272f370602dd3d97953222f"
+}

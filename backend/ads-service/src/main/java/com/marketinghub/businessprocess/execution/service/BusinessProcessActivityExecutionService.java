@@ -2272,11 +2272,20 @@ public class BusinessProcessActivityExecutionService {
       Optional<ProductProcessActivityExecutionGroupResponse> matching =
           activities.stream()
               .filter(activity -> state.equals(activity.operationalState()))
+              .filter(
+                  activity ->
+                      !"prototypeCorrection".equals(activity.activityId())
+                          || activity.executionRequestAvailable()
+                          || Set.of("PENDING", "IN_PROGRESS").contains(activity.operationalState()))
               .findFirst();
       if (matching.isPresent()) return matching.get();
     }
     return activities.stream()
         .filter(activity -> !activity.objectiveAchieved())
+        .filter(
+            activity ->
+                !"prototypeCorrection".equals(activity.activityId())
+                    || activity.executionRequestAvailable())
         .findFirst()
         .orElse(null);
   }
@@ -2415,7 +2424,9 @@ public class BusinessProcessActivityExecutionService {
                 .orElse(task.getResultJson())
             : null,
         includePromptAudit ? task.getEvidenceJson() : null,
-        task.getExecutionError(),
+        includePromptAudit
+            ? task.getExecutionError()
+            : AgentTaskResultView.businessReason(task.getExecutionError()),
         task.getInputTokens(),
         task.getCachedInputTokens(),
         task.getOutputTokens(),

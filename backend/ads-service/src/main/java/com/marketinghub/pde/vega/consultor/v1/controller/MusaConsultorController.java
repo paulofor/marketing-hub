@@ -52,6 +52,27 @@ public class MusaConsultorController {
     return service.issue(cycleId);
   }
 
+  /**
+   * Recupera acesso sintético idempotente com identidade e tentativa explicitamente delimitadas.
+   */
+  @PostMapping("/internal/cycles/{cycleId}/harness-access")
+  @Operation(summary = "Reservar ou recuperar compartimento de teste sem ampliar o teto")
+  public JsonNode harnessAccess(
+      HttpServletRequest request,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody
+          com.marketinghub.pde.vega.consultor.v1.service.harnessAccess.HarnessAccess input) {
+    operator(request);
+    return service.harnessAccess(cycleId, input);
+  }
+
+  /** Confirma o término da tentativa mantendo provas e consumo cumulativo. */
+  @PostMapping("/internal/harness-access/finish")
+  public JsonNode finishHarness(HttpServletRequest request) {
+    operator(request);
+    return service.finishHarness(token(request));
+  }
+
   /** Renova a mesma identidade enquanto a homologação permanece aberta. */
   @PostMapping("/internal/access/{id}/renew")
   @Operation(summary = "Renovar acesso privado sem alterar dados ou limites")

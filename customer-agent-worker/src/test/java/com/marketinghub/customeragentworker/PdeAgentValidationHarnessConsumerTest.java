@@ -16,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /** Responsabilidade: comprovar a entrega dos encerramentos com capturas persistidas no callback. */
 class PdeAgentValidationHarnessConsumerTest {
+  @org.junit.jupiter.api.io.TempDir Path state;
   private final ObjectMapper json = new ObjectMapper();
 
   /**
@@ -90,6 +91,8 @@ class PdeAgentValidationHarnessConsumerTest {
       var consumer =
           new PdeAgentValidationHarnessConsumer(
               "http://127.0.0.1:" + server.getAddress().getPort(), json, runner, uploads);
+      org.springframework.test.util.ReflectionTestUtils.setField(
+          consumer, "stateDirectory", state.toString());
       consumer.processOne();
       assertThat(destination.get()).endsWith("/" + taskId + "/result");
       var result = json.readTree(callback.get().path("resultJson").asText());
@@ -101,6 +104,61 @@ class PdeAgentValidationHarnessConsumerTest {
       when(uploads.uploadArtifacts(eq(taskId), anyList())).thenReturn(List.of());
       consumer.processOne();
       assertThat(destination.get()).endsWith("/" + taskId + "/failure");
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  /** Callback perdido é reenviado pelo consumidor reiniciado sem repetir o navegador ou upload. */
+  @org.junit.jupiter.api.Test
+  void preservesCallbackAcrossRestartAndSanitizesFailure() throws Exception {
+    var delivered = new java.util.ArrayList<JsonNode>();
+    var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          byte[] response;
+          int status = 200;
+          if (exchange.getRequestURI().getPath().endsWith("/pending"))
+            response = "[{\"taskId\":95111,\"sourceReference\":\"experiment:95115\"}]".getBytes();
+          else {
+            delivered.add(json.readTree(exchange.getRequestBody()));
+            response = "{}".getBytes();
+            if (delivered.size() == 1) status = 503;
+          }
+          exchange.getResponseHeaders().set("Content-Type", "application/json");
+          exchange.sendResponseHeaders(status, response.length);
+          exchange.getResponseBody().write(response);
+          exchange.close();
+        });
+    server.start();
+    try {
+      var runner = mock(PdeAgentValidationHarnessRunner.class);
+      when(runner.run(anyMap(), eq("TECHNICAL"), isNull(), any(Path.class)))
+          .thenThrow(
+              PdeAgentValidationHarnessRunner.HarnessException.executor(
+                  "HTTP409\nrecoveryKey=" + "a".repeat(64) + "\nCookie=private-cookie"));
+      for (int i = 0; i < 2; i++) {
+        var consumer =
+            new PdeAgentValidationHarnessConsumer(
+                "http://127.0.0.1:" + server.getAddress().getPort(),
+                json,
+                runner,
+                mock(BpmVisualEvidenceBackendClient.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(
+            consumer, "stateDirectory", state.toString());
+        consumer.processOne();
+      }
+      verify(runner, times(1)).run(anyMap(), eq("TECHNICAL"), isNull(), any(Path.class));
+      assertThat(delivered).hasSize(2);
+      assertThat(delivered.get(0)).isEqualTo(delivered.get(1));
+      assertThat(delivered.getFirst().path("error").asText())
+          .doesNotContain("HTTP409", "Exception", "private-cookie");
+      assertThat(delivered.getFirst().path("evidenceJson").asText())
+          .contains("HTTP409", "redigido")
+          .doesNotContain("a".repeat(64), "private-cookie");
+      assertThat(java.nio.file.Files.exists(state.resolve("technical-harness/pending.json")))
+          .isFalse();
     } finally {
       server.stop(0);
     }

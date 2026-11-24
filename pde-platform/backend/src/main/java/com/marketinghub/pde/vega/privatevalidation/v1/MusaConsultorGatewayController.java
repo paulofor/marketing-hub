@@ -35,6 +35,8 @@ public class MusaConsultorGatewayController {
     "/commands",
     "/internal/events",
     "/internal/cycles/{id}/access",
+    "/internal/cycles/{id}/harness-access",
+    "/internal/harness-access/finish",
     "/internal/cycles/{id}/close",
     "/internal/access/{id}/renew"
   })

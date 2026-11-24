@@ -80,4 +80,58 @@ class AgentTaskResultViewTest {
           .doesNotContain(error, "ClasseInterna", "raw");
     }
   }
+
+  /**
+   * A falha legada do harness permanece auditada, mas nunca vaza stack trace no contrato público.
+   */
+  @org.junit.jupiter.api.Test
+  void projectsLegacyHarnessFailureAsRecoverableBusinessMessage() {
+    var task = new AgentTask();
+    task.setId(99130L);
+    task.setStatus("BLOCKED");
+    task.setBlockerCategory("EXECUTOR_FAILURE");
+    String raw =
+        "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: Falha no harness multiagente: node:internal\nAssertionError HTTP 409 at file:///app/browser/musa-continuous-harness.mjs:29";
+    task.setExecutionError(raw);
+    assertThat(AgentTaskResultView.businessReason(raw))
+        .contains("recuperar o acesso", "Não há parecer funcional")
+        .doesNotContain("Exception", "file:", "node:", "409");
+    assertThat(AgentTaskResultView.humanSummary(task).text()).doesNotContain("Exception", "file:");
+    assertThat(task.getExecutionError()).isEqualTo(raw);
+  }
+
+  /**
+   * A lista compacta protege o histórico inteiro; a auditoria não é confundida com mensagem
+   * pública.
+   */
+  @org.junit.jupiter.api.Test
+  void compactActivityHistoryDoesNotExposeHarnessStack() {
+    var task = new AgentTask();
+    task.setId(99130L);
+    task.setStatus("BLOCKED");
+    task.setProcessDefinition(new com.marketinghub.businessprocess.BusinessProcessDefinition());
+    task.setAssignedAgent(new com.marketinghub.agent.Agent());
+    task.setExecutionError(
+        "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: Falha no harness multiagente: node:internal stack file:///app/browser/harness.mjs");
+    var service =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocess.execution.service
+                .BusinessProcessActivityExecutionService.class,
+            org.mockito.Mockito.CALLS_REAL_METHODS);
+    com.marketinghub
+            .businessprocess
+            .execution
+            .service
+            .recentExecutions
+            .BusinessProcessActivityExecutionResponse
+        view =
+            org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                service, "response", task, "Fixture", false);
+    assertThat(view.executionError())
+        .contains("recuperar o acesso")
+        .doesNotContain("Exception", "file:", "node:");
+    assertThat(view.promptSent()).isNull();
+    assertThat(view.comments()).isNull();
+    assertThat(task.getExecutionError()).contains("HarnessException");
+  }
 }

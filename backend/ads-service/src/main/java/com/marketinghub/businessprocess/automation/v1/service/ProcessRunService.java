@@ -1396,7 +1396,7 @@ public class ProcessRunService {
                         : userAction != null
                             ? userAction.reason()
                             : redirected
-                                ? "Correção pendente na origem: "
+                                ? "Etapa pendente nesta execução: "
                                     + readiness.currentActivityName()
                                     + ". "
                                     + Objects.toString(readiness.currentActivityStateReason(), "")

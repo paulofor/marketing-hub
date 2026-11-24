@@ -11903,3 +11903,19 @@ reabre 923/103. Testes e limites constam na matriz `vega-923-reserva-confirmavel
   claim/fencing, histórico 4003/4004 e revisões independentes preservados.
 - **Limites:** testes sintéticos não são prova comercial nem homologação do aplicativo.
   [Matriz e evidências](../homologacao/dedalo-callback-reference-v1.md).
+
+## LOOP-PDE-HARNESS-EMISSAO-CUMULATIVA-SEM-RECUPERACAO — 24/11/2026
+
+- Caso observado: Vega930/execução103 com quatro aceites preservados; HTTP409 na emissão,
+  18 acessos anteriores válidos e homologação aberta. O limite atuou corretamente.
+- Causa compartilhada: harness emite por cenário/dispositivo/identidade auxiliar sem
+  contrato idempotente de recuperação; diretório temporário perde checkpoint. A seleção
+  de pendência prioriza correção condicional bloqueada sem gatilho aplicável.
+- Correção: contrato oficial interno com workspace por tentativa e compartimento, lock,
+  credencial de recuperação com hash, teto18 e24 operações cumulativos incluindo legado.
+  Checkpoint persistente e outbox existente preservam resultado para reenvio; não repetem IA.
+- Prevenção: HTTP/controller/JPA/MySQL5.7 reais, duas identidades, concorrência, limites,
+  prazo, encerramento, erro de identidade e morte do processo no meio dos cenários.
+  Projeção pública sanitiza stack trace e mantém o diagnóstico técnico separado.
+- Limites: teste não é parecer independente nem prova comercial; PROTOTYPE_SLICE não vira
+  PRODUCT. Matriz e estado de adoção em `docs/homologacao/vega-harness-access-930-v1.md`.

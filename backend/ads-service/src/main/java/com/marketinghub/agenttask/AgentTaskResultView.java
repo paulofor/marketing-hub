@@ -27,7 +27,21 @@ public final class AgentTaskResultView {
           + "A preparação do contexto precisa ser corrigida antes da retomada. "
           + "O diagnóstico técnico permanece disponível na tarefa; o consumo ainda precisa ser conferido.";
     }
+    if (harnessFailure(reason))
+      return "A homologação foi interrompida antes de concluir os testes. "
+          + "É necessário recuperar o acesso e o estado da tentativa no executor e retomar a mesma homologação. "
+          + "Não há parecer funcional que justifique reconstruir o protótipo; o diagnóstico está separado na auditoria.";
     return reason;
+  }
+
+  /** Reconhece somente diagnósticos de transporte do harness, inclusive registros legados. */
+  private static boolean harnessFailure(String reason) {
+    return reason != null
+        && (reason.contains("PDE_HARNESS_EXECUTOR_FAILURE_V1|")
+            || reason.contains(
+                "PdeAgentValidationHarnessRunner$HarnessException: Falha no harness multiagente:")
+            || reason.contains(
+                "PdeAgentValidationHarnessRunner$HarnessException: Timeout ao homologar"));
   }
 
   /** Apresenta a síntese do agente e identifica recortes legados sem reescrever o resultado. */
@@ -55,6 +69,11 @@ public final class AgentTaskResultView {
           "A execução foi interrompida porque o contexto excedeu o limite permitido. Nenhuma entrega foi produzida. É necessário corrigir a preparação do contexto antes de retomar; o consumo permanece sujeito à conferência.",
           "DETERMINISTIC",
           "BLOCKED");
+    if (task != null
+        && "BLOCKED".equals(task.getStatus())
+        && harnessFailure(task.getExecutionError()))
+      return new AgentTaskHumanSummary(
+          businessReason(task.getExecutionError()), "DETERMINISTIC", "BLOCKED");
     if (task == null || task.getResultJson() == null || task.getResultJson().isBlank()) return null;
     try {
       JsonNode result = JSON.readTree(task.getResultJson());

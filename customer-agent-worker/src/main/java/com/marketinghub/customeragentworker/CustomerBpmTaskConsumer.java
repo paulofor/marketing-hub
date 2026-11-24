@@ -477,7 +477,8 @@ public class CustomerBpmTaskConsumer {
   }
 
   /**
-   * Executa o cenário e confere a interface do kit antes da interpretação independente de Psique.
+   * Recupera a captura da mesma tarefa e confere a interface antes do parecer independente de
+   * Psique.
    */
   private PreparedVisualEvidence prepareAgentScenarioEvidence(Map<String, Object> task)
       throws Exception {
@@ -485,7 +486,7 @@ public class CustomerBpmTaskConsumer {
       throw new PdeAgentValidationHarnessRunner.HarnessException(
           "O harness de cenário multiagente não está configurado para Psique.");
     }
-    Path workDirectory = Files.createTempDirectory("psique-agent-scenario-" + taskId(task) + "-");
+    Path workDirectory = outbox.scenarioDirectory(taskId(task));
     try {
       String scenarioCode = scenarioCode(activityId(task));
       PdeAgentValidationHarnessRunner.HarnessExecution execution =
@@ -506,7 +507,7 @@ public class CustomerBpmTaskConsumer {
           taskId(task),
           activityId(task),
           ex);
-      deleteDirectory(workDirectory, taskId(task));
+      // Preserva checkpoint e acesso da mesma tentativa para diagnóstico e recuperação.
       throw ex;
     }
   }

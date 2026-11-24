@@ -34,6 +34,10 @@ public class PdeAgentValidationHarnessConsumer {
   private final BpmVisualEvidenceBackendClient visualEvidenceBackendClient;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
+  @org.springframework.beans.factory.annotation.Value(
+      "${CUSTOMER_AGENT_BPM_STATE_DIRECTORY:${java.io.tmpdir}/psique-bpm}")
+  private String stateDirectory = System.getProperty("java.io.tmpdir") + "/psique-bpm";
+
   /** Configura fila, harness e persistência visual pelo backend principal. */
   public PdeAgentValidationHarnessConsumer(
       @org.springframework.beans.factory.annotation.Value("${BACKEND_URL:http://localhost:8080}")
@@ -47,34 +51,69 @@ public class PdeAgentValidationHarnessConsumer {
     this.visualEvidenceBackendClient = visualEvidenceBackendClient;
   }
 
-  /** Reserva somente a etapa técnica e a conclui sem invocar modelo de IA. */
+  /** Recupera captura e callback da etapa técnica, sem invocar modelo nem repetir a entrega. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
+    var directory = Path.of(stateDirectory).resolve("technical-harness");
+    var outbox = new CustomerBpmTaskOutbox(directory, json);
     Map<String, Object> task = null;
-    Path workDirectory = null;
-    String serializedInput = "{}";
-    try {
-      task = claimNext();
-      if (task == null) return;
-      workDirectory = Files.createTempDirectory("pde-agent-validation-task-" + taskId(task) + "-");
-      PdeAgentValidationHarnessRunner.HarnessExecution execution =
-          runner.run(task, "TECHNICAL", null, workDirectory);
-      serializedInput = execution.serializedInput();
-      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
-          visualEvidenceBackendClient.uploadArtifacts(
-              taskId(task), execution.visualEvidence().capture().artifacts());
-      ObjectNode result = enrichResult(execution.result(), uploaded);
-      if ("APPROVED".equals(result.path("decision").asText())) {
-        report(task, result, serializedInput, execution.sourceUrl(), uploaded);
-      } else {
-        block(task, result, serializedInput, execution.sourceUrl(), uploaded);
+    try (var lock = outbox.lock()) {
+      if (lock == null) return;
+      var pending = outbox.read();
+      if (pending == null) {
+        task = claimNext();
+        if (task == null) return;
+        pending = new CustomerBpmTaskOutbox.Pending(task, Map.of(), List.of(), false, null, null);
+        outbox.save(pending);
+      } else task = pending.task();
+      if (pending.callback() == null) {
+        Map<String, Object> callback;
+        String operation;
+        try {
+          var workDirectory = directory.resolve("task-" + taskId(task));
+          var execution = runner.run(task, "TECHNICAL", null, workDirectory);
+          var uploaded =
+              visualEvidenceBackendClient.uploadArtifacts(
+                  taskId(task), execution.visualEvidence().capture().artifacts());
+          var result = enrichResult(execution.result(), uploaded);
+          callback =
+              commonBody(
+                  task, result, execution.serializedInput(), execution.sourceUrl(), uploaded);
+          operation = "APPROVED".equals(result.path("decision").asText()) ? "result" : "failure";
+          if ("failure".equals(operation)) {
+            callback.put("error", "O harness reprovou um ou mais critérios técnicos do PDE.");
+            callback.put("blockerGuidance", blockerGuidance());
+          }
+        } catch (Exception ex) {
+          log.error("Falha na homologação técnica multiagente. taskId={}", taskId(task), ex);
+          operation = "failure";
+          Path input =
+              directory.resolve("task-" + taskId(task)).resolve("agent-validation-input.json");
+          callback =
+              failureBody(task, ex, Files.isRegularFile(input) ? Files.readString(input) : "{}");
+        }
+        pending =
+            new CustomerBpmTaskOutbox.Pending(
+                task, Map.of(), List.of(), false, operation, callback);
+        outbox.save(pending);
       }
+      backend
+          .post()
+          .uri(
+              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/{operation}",
+              AGENT_KEY,
+              taskId(task),
+              pending.operation())
+          .body(pending.callback())
+          .retrieve()
+          .toBodilessEntity();
+      outbox.acknowledge();
     } catch (Exception ex) {
-      log.error("Falha na homologação técnica multiagente. taskId={}", taskId(task), ex);
-      fail(task, ex, serializedInput);
-    } finally {
-      deleteDirectory(workDirectory, taskId(task));
+      log.error(
+          "Entrega do harness preservada para reenvio sem nova execução. taskId={}",
+          taskId(task),
+          ex);
     }
   }
 
@@ -166,48 +205,6 @@ public class PdeAgentValidationHarnessConsumer {
     owner.remove(keyField);
   }
 
-  /** Persiste resultado, custo zero, entrada integral e URLs efetivamente acessadas. */
-  private void report(
-      Map<String, Object> task,
-      ObjectNode result,
-      String input,
-      String sourceUrl,
-      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded)
-      throws Exception {
-    Map<String, Object> body = commonBody(task, result, input, sourceUrl, uploaded);
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
-  }
-
-  /** Mantém o processo bloqueado quando algum gate determinístico é reprovado. */
-  private void block(
-      Map<String, Object> task,
-      ObjectNode result,
-      String input,
-      String sourceUrl,
-      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded)
-      throws Exception {
-    Map<String, Object> body = commonBody(task, result, input, sourceUrl, uploaded);
-    body.put("error", "O harness reprovou um ou mais critérios técnicos do PDE.");
-    body.put("blockerGuidance", blockerGuidance());
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
-  }
-
   /** Monta o envelope terminal sem modelo, pessoa, campanha ou efeito externo. */
   private Map<String, Object> commonBody(
       Map<String, Object> task,
@@ -263,41 +260,41 @@ public class PdeAgentValidationHarnessConsumer {
     return audit;
   }
 
-  /** Registra uma falha técnica com causa e orientação sem ocultar a stack trace local. */
-  private void fail(Map<String, Object> task, Exception error, String input) {
-    if (task == null) return;
-    try {
-      backend
-          .post()
-          .uri(
-              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-              AGENT_KEY,
-              taskId(task))
-          .body(
-              Map.of(
-                  "error",
-                  error.toString(),
-                  "evidenceJson",
-                  json.writeValueAsString(
-                      Map.of(
-                          "evidenceType",
-                          "PDE_AGENT_TECHNICAL_HOMOLOGATION_FAILURE_V1",
-                          "sourceReference",
-                          String.valueOf(task.get("sourceReference")),
-                          "externalSideEffects",
-                          false)),
-                  "executionAudit",
-                  executionAudit(input, null),
-                  "blockerGuidance",
-                  failureGuidance(error)))
-          .retrieve()
-          .toBodilessEntity();
-    } catch (Exception callbackEx) {
-      log.error(
-          "Falha ao registrar bloqueio do harness multiagente. taskId={}",
-          taskId(task),
-          callbackEx);
-    }
+  /** Separa mensagem de negócio e diagnóstico sanitizado antes de persistir o callback original. */
+  private Map<String, Object> failureBody(Map<String, Object> task, Exception error, String input)
+      throws Exception {
+    return Map.of(
+        "error",
+        "EXECUTOR_FAILURE".equals(failureGuidance(error).get("category"))
+            ? "PDE_HARNESS_EXECUTOR_FAILURE_V1|A homologação foi interrompida; recupere a tentativa no executor antes de retomar."
+            : "Não foi possível homologar esta versão. A causa observada e as provas precisam de correção antes de repetir os testes.",
+        "evidenceJson",
+        json.writeValueAsString(
+            Map.of(
+                "evidenceType",
+                "PDE_AGENT_TECHNICAL_HOMOLOGATION_FAILURE_V1",
+                "sourceReference",
+                String.valueOf(task.get("sourceReference")),
+                "diagnostic",
+                sanitizedDiagnostic(error),
+                "externalSideEffects",
+                false)),
+        "executionAudit",
+        executionAudit(input, null),
+        "blockerGuidance",
+        failureGuidance(error));
+  }
+
+  /** Conserva diagnóstico limitado sem credenciais de acesso, cookies ou cabeçalhos privados. */
+  private static String sanitizedDiagnostic(Exception error) {
+    String diagnostic =
+        error
+            .toString()
+            .replaceAll("[a-fA-F0-9]{64}", "[redigido]")
+            .replaceAll(
+                "(?i)(accessKey|recoveryKey|sessionToken|Cookie|X-PDE-Internal-Token)[^\\r\\n]*",
+                "$1=[redigido]");
+    return diagnostic.substring(0, Math.min(8000, diagnostic.length()));
   }
 
   /** Orienta retorno à autoridade do protótipo em vez de forçar aprovação. */
@@ -327,30 +324,6 @@ public class PdeAgentValidationHarnessConsumer {
         "Corrija o executor ou o catálogo do harness e repita a mesma homologação, sem criar nova versão do protótipo.",
         "helpLinks",
         List.of(Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks")));
-  }
-
-  /** Remove evidências efêmeras somente depois de concluir o callback. */
-  private void deleteDirectory(Path directory, long taskId) {
-    if (directory == null || !Files.exists(directory)) return;
-    try (var paths = Files.walk(directory)) {
-      paths
-          .sorted(java.util.Comparator.reverseOrder())
-          .forEach(
-              path -> {
-                try {
-                  Files.deleteIfExists(path);
-                } catch (Exception ex) {
-                  log.warn(
-                      "Falha ao remover evidência temporária do harness. taskId={} path={}",
-                      taskId,
-                      path,
-                      ex);
-                }
-              });
-    } catch (Exception ex) {
-      log.warn(
-          "Falha ao limpar diretório do harness. taskId={} directory={}", taskId, directory, ex);
-    }
   }
 
   /** Extrai o id da tarefa sem falhar durante o tratamento de uma reserva ausente. */

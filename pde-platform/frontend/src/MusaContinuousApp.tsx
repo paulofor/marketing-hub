@@ -28,6 +28,7 @@ type Workspace = {
   choices: Record<string, Orientation>;
   preference: string;
   consented: boolean;
+  latestOperation?: Orientation;
 };
 const blank: Answers = {
   occasion: "",
@@ -79,7 +80,18 @@ export default function MusaContinuousApp() {
   async function load(restore = false) {
     const value = (await api("/workspace")) as Workspace;
     setWorkspace(value);
-    if (restore) setAnswers({ ...blank, ...value.draft });
+    if (restore) {
+      setAnswers({ ...blank, ...value.draft });
+      const latest = value.latestOperation;
+      if (latest) {
+        setResult(latest);
+        setParent(latest.parentChoiceId || "");
+        setStep(2);
+      } else
+        setStep(
+          value.draft.existingSelection ? 2 : value.draft.occasion ? 1 : 0,
+        );
+    }
     return value;
   }
   async function command(action: string, payload: unknown) {
@@ -94,7 +106,9 @@ export default function MusaContinuousApp() {
     } catch (error) {
       setMessage(
         error instanceof Error
-          ? error.message
+          ? error instanceof TypeError
+            ? "Conexão interrompida. Seus dados confirmados foram preservados. Consulte novamente antes de repetir."
+            : error.message
           : "Conexão interrompida. Consulte novamente antes de repetir.",
       );
     } finally {

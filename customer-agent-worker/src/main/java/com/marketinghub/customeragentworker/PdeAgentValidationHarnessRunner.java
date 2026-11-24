@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -231,6 +232,21 @@ public class PdeAgentValidationHarnessRunner {
     Path outputPath = workDirectory.resolve("agent-validation-output.json");
     Path evidenceDirectory = workDirectory.resolve("agent-validation-evidence");
     String captureSessionId = UUID.randomUUID().toString();
+    if (Files.isRegularFile(inputPath)) {
+      var previous = json.readTree(inputPath.toFile());
+      if (!sourceUrl.equals(previous.path("sourceUrl").asText())
+          || !sourceReference.equals(previous.path("sourceReference").asText())
+          || productId != previous.path("productId").asLong()
+          || lineage.path("learningCycleId").asLong() != previous.path("cycleId").asLong()
+          || !prototypeVersion.equals(previous.path("prototypeVersion").asText())
+          || !mode.equals(previous.path("mode").asText())
+          || !Objects.equals(
+              scenarioCode == null ? "" : scenarioCode, previous.path("scenarioCode").asText()))
+        throw HarnessException.executor("Checkpoint de outra identidade ou cenário recusado.");
+      captureSessionId = previous.path("captureSessionId").asText();
+      if (!captureSessionId.matches("[a-f0-9-]{36}"))
+        throw HarnessException.executor("Checkpoint sem identidade de tentativa válida.");
+    }
     Map<String, Object> input =
         new java.util.LinkedHashMap<>(
             Map.of(

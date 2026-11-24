@@ -67,6 +67,13 @@ final class CustomerBpmTaskOutbox {
         StandardCopyOption.REPLACE_EXISTING);
   }
 
+  /** Preserva o checkpoint de captura da mesma tarefa entre reinícios anteriores à inferência. */
+  Path scenarioDirectory(long taskId) throws IOException {
+    Path path = directory.resolve("scenario-" + taskId);
+    Files.createDirectories(path);
+    return path;
+  }
+
   /** Expõe o resultado bruto persistente da inferência atual. */
   Path output() {
     return directory.resolve("model-result.json");

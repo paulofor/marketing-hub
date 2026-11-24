@@ -1,0 +1,18 @@
+{
+  "cardKey": "consenso-modalidades-nao-equivalente-evidencia-compra",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Consenso multimodal não garante recomendação correta",
+  "finding": "Experimento pré-registrado (N=240) de preços de carros usados: quando modalidades concordavam, revelar saídas aumentou adesão correta de 70,8% para 80,0%, mas reduziu correções de erros de 37,5% para 25,0%; a acurácia da IA era 75% em ambos os estratos.",
+  "mechanism": "Concordância aparente de saídas do mesmo modelo pode ser confundida com confirmação independente.",
+  "commercialApplication": "Mostrar atributos, origem, preço total e incerteza verificáveis; não apresentar concordância interna como selo de qualidade.",
+  "evidenceStrength": "Moderada para a manipulação experimental; limitada a tarefa controlada, preprint e ausência de compras reais.",
+  "publishedOn": "2026-11-24",
+  "validUntil": "2027-01-08",
+  "experimentHypothesis": "Evidência verificável e distinção de dependência entre fontes reduzirão aceitação de recomendações incorretas sem reduzir compreensão; medir checkout e pagamento separadamente.",
+  "risks": "Excesso de confiança, explicações persuasivas sem comprovação e concordância de fontes dependentes.",
+  "limits": "Tarefa de preços de carros usados; acurácia manipulada, sem transações nem validação no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-24-consenso-modalidades-confianca-compra.md",
+  "sourceTitle": "Consenso multimodal não garante recomendação correta",
+  "sourceSha256": "5c3bd5d4caff27571b989a4783d614b10a2ff9ad29e251dad92415ac2170eec2"
+}

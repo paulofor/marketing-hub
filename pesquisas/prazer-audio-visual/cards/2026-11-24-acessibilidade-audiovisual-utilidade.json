@@ -1,0 +1,18 @@
+{
+  "cardKey": "acessibilidade-audiovisual-utilidade",
+  "collection": "prazer-audio-visual",
+  "title": "Testar utilidade e facilidade dos controles de acessibilidade audiovisual",
+  "finding": "Em questionário com 561 respostas na China, satisfação, utilidade percebida e facilidade de uso associaram-se à intenção declarada de continuar usando aplicativos audiovisuais acessíveis.",
+  "mechanism": "Reduzir barreiras de operação pode facilitar a percepção da utilidade do conteúdo; mecanismo hipotético, não demonstrado causalmente.",
+  "commercialApplication": "Testar localização e clareza de controles de legendas e audiodescrição e feedback de estado, preservando acessibilidade em todas as versões.",
+  "evidenceStrength": "Moderada-baixa para associações autorrelatadas; baixa para causalidade e continuidade real.",
+  "publishedOn": "2026-11-24",
+  "validUntil": "2027-01-08",
+  "experimentHypothesis": "Em painel consentido, uma interface igualmente acessível com controles mais fáceis de localizar e feedback claro poderá melhorar sucesso da tarefa, esforço e satisfação; medir também retorno voluntário e falhas de acesso.",
+  "risks": "Não remover recursos essenciais, inferir deficiência individual ou confundir intenção com comportamento ou vendas.",
+  "limits": "Estudo transversal na China, questionário e modelo estrutural; não mede prazer neural, dopamina ou vendas. Artigo publicado em 23/11/2026.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-24-acessibilidade-audiovisual-utilidade-v1.md",
+  "sourceTitle": "Fonte revisada v1 — Acessibilidade audiovisual e utilidade percebida",
+  "sourceSha256": "3764af00d21c1deab51e5ccd885efbcb7b82b56527bdafd015b410ddbb1793e0"
+}

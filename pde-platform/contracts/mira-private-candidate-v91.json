@@ -1140,12 +1140,17 @@
     },
     {
       "path": "docs/homologacao/vega-harness-access-930-v1.md",
-      "sha256": "7261c4e39160dd0222ab8fa5157de234a62f4927c5cf62f069ee50e9e07a9d75",
+      "sha256": "f1b2e7b715c1d1b3e11bdc7399ecd45e2feafb0ba24f6c8603ddd842717221b2",
       "promptMode": "FULL"
     },
     {
       "path": "docs/homologacao/evidencias/vega-harness-access-930-v1/local-result.json",
-      "sha256": "047d6ce9e28f41c5ef892fceeddb0095c659a22d16969c37d19ad31b9e4e1fab",
+      "sha256": "5d88b15cd0d940ac37fe46e89d373f471716181e824319637740c8d75876c72a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14/compatibility/musa-access-recovery-v1.json",
+      "sha256": "10d8967fd612c4e156e1b0ac22ae0064d21466188188133374f645ae93c000a0",
       "promptMode": "FULL"
     }
   ],

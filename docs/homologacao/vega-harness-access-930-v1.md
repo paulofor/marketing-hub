@@ -8,7 +8,8 @@ OPEN/ADJUSTMENT, versão correta; existem exatamente18 acessos AGENT_VALIDATION
 válidos, sem homologationClosed. Todos anteriores à 930. O harness faz emissão
 nova para cada cenário/dispositivo e mais uma identidade no SAFETY, sem recuperar
 credenciais. Logs antigos já não estão na janela MCP; o erro persistido e os dados
-foram conferidos. A reprodução local HTTP/MySQL deve confirmar o motivo do409.
+foram conferidos. A reprodução local HTTP/MySQL confirmou o409 ao tentar a19ª identidade;
+a recuperação manteve18 identidades e preservou os dados anteriores.
 
 ## Alternativas de recuperação
 
@@ -101,3 +102,18 @@ validador nem testes de arquitetura. O CLI `validate-release` foi reproduzido
 localmente com o manifesto real e passou após a correção, assim como30 testes de
 release e os contratos existentes de seleção/empacotamento. A integração anterior
 #5876 permanece preservada; nenhum deploy foi usado como teste.
+
+
+O CI completo apontou ainda o índice de compatibilidade histórico da v14 ligado
+aos hashes anteriores do runner/consumer compartilhados. A atestação v10 permanece
+imutável. A nova v11 mantém critérios, horários e recibos funcionais originais,
+registra somente a compatibilidade com os fontes atuais e preserva os hashes de
+origem. Não declara uma nova execução dos25 critérios antigos. O catálogo passa
+a resolver v11 e conserva v10 no histórico; os testes existentes verificam essas
+restrições. O empacotador de evidências passou com864 arquivos e227 manifestos.
+
+A outra falha do CI era a expectativa textual de uma regressão de custos: a
+projeção agora diz qual etapa está pendente, sem classificar toda mudança de origem
+como correção. O teste cobre tanto Atena/estratégia quanto Psique/homologação e
+comprova preservação do bloqueio persistido, do responsável e ausência de nova
+tarefa por leitura. Não houve alteração nos testes de arquitetura.

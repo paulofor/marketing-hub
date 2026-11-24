@@ -103,6 +103,9 @@
     ".local/vega-930/final-harness-captures/ADHERENT-IPHONE_15_PRO.png",
     ".local/vega-930/final-harness-captures/ADHERENT-PIXEL_7.png",
     ".local/vega-930/final-harness-captures/RECOVERY-PIXEL_7.png",
-    ".local/vega-930/final-harness-captures/SAFETY-DESKTOP_1440.png"
+    ".local/vega-930/final-harness-captures/SAFETY-DESKTOP_1440.png",
+    ".local/vega-930/projection-evidence-final.log",
+    ".local/vega-930/evidence-compatibility-tests.log",
+    ".local/vega-930/evidence-build.log"
   ]
 }

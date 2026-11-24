@@ -1,6 +1,6 @@
 {
   "contractVersion": "MUSA_HARNESS_ACCESS_RECOVERY_LOCAL_V1",
-  "observedAt": "2026-11-24T13:26:36.966145+00:00",
+  "observedAt": "2026-11-24T13:52:04.933900+00:00",
   "environment": "LOCAL_SYNTHETIC_MYSQL57",
   "status": "PASS",
   "providerCalls": 0,
@@ -103,6 +103,30 @@
       "errors": 0,
       "skipped": 0,
       "receiptSha256": "19abf2457512986baeb1f55b324e14dd4632fd5516b8bbb54c316d698db89a86"
+    },
+    {
+      "suite": "PdeOperationalControlEvidenceTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "385f388c1f5f31ca5768fd7077869ec424a958c7f0f1d8659581a897fcd7dae5"
+    },
+    {
+      "suite": "MusaContinuousScenarioMatrixV1Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "e656fa8b19947f7d2e11ce9dbc4af741b379b140d9d9f8d62cd54267cae22df2"
+    },
+    {
+      "suite": "ProcessRunRecoveredCostTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "3f26d794ff4b85939acacb74206f4bfb5394aedf2c9d16ae21f7af45ca3e642e"
     }
   ],
   "browser": {
@@ -147,5 +171,11 @@
     "expectedSourceSha256": "3fd96bb05b578118a9f6a7a14d9cef565720cffe86a9fce09fc01b66d213c8c5",
     "realManifestCliExitCode": 0,
     "strictContractPreserved": true
+  },
+  "historicalCompatibility": {
+    "catalogVersion": "vega-operational-controls-v11",
+    "previousEvidencePreserved": true,
+    "criteriaAndReceiptsUnchanged": true,
+    "newCommercialReviewClaimed": false
   }
 }

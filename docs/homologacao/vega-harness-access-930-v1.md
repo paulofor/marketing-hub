@@ -88,3 +88,16 @@ início gravado antes da captura, evitando reiniciar a medição em uma recupera
 A suíte JS genérica foi interrompida por custo/tempo de capturas não relacionadas;
 a validação essencial do script alterado é a matriz real e o runner com queda,
 HTTP, controller e persistência. Não é declarada aprovação dessa suíte genérica.
+
+## Ajuste de publicação encontrado pelo CI antes do merge
+
+O precheck real recusou a nova atestação automática: a preparação v15, somente de
+compatibilidade, guardava dois campos de diagnóstico do harness dentro de
+`privateExperience`. A versão automática v13 já publicada tinha somente os sete
+campos funcionais esperados. Copiar a v15 para o novo manifesto automático herdou
+metadados incompatíveis com esse contrato estrito. A correção manteve a whitelist
+funcional e moveu os dois campos para `sharedHarnessCompatibility`, sem alterar o
+validador nem testes de arquitetura. O CLI `validate-release` foi reproduzido
+localmente com o manifesto real e passou após a correção, assim como30 testes de
+release e os contratos existentes de seleção/empacotamento. A integração anterior
+#5876 permanece preservada; nenhum deploy foi usado como teste.

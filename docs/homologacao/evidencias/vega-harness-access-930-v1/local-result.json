@@ -140,5 +140,12 @@
     "Sem inferência de provedor nem demanda/venda",
     "PROTOTYPE_SLICE preservado; gate de produto integral e revisões independentes não dispensados",
     "Suíte JS genérica não integra o aceite; matriz e runner reais cobrem o script alterado"
-  ]
+  ],
+  "releasePrecheck": {
+    "target": "v10",
+    "contractPath": "pde-platform/contracts/vega-style-v15-preparation-v16.json",
+    "expectedSourceSha256": "3fd96bb05b578118a9f6a7a14d9cef565720cffe86a9fce09fc01b66d213c8c5",
+    "realManifestCliExitCode": 0,
+    "strictContractPreserved": true
+  }
 }

@@ -48,9 +48,7 @@
     "backendContractUrl": "http://191.252.181.168/api/pde/vega/consultor/v1/contract",
     "generationMode": "DETERMINISTIC_CONTEXTUAL_RULES",
     "providerCalls": 0,
-    "commercialLaunchClaimed": false,
-    "harnessRuntimeContract": "MUSA_CONTINUOUS_STYLE_EXECUTION_V1",
-    "harnessScriptPath": "customer-agent-worker/src/main/resources/browser/musa-continuous-harness.mjs"
+    "commercialLaunchClaimed": false
   },
   "validationReport": "docs/homologacao/vega-harness-access-930-v1.md",
   "homologationEvidence": [
@@ -66,12 +64,12 @@
     },
     {
       "path": "docs/homologacao/vega-harness-access-930-v1.md",
-      "sha256": "b930513102f1d5814da6e1cb4ee9b02e78b25cf390753899e8b34419b661215b",
+      "sha256": "7261c4e39160dd0222ab8fa5157de234a62f4927c5cf62f069ee50e9e07a9d75",
       "promptMode": "FULL"
     },
     {
       "path": "docs/homologacao/evidencias/vega-harness-access-930-v1/local-result.json",
-      "sha256": "8160afa5041292a937cecc7302b6d51cdf7c657a326c2aa06e1dbc50c382140b",
+      "sha256": "047d6ce9e28f41c5ef892fceeddb0095c659a22d16969c37d19ad31b9e4e1fab",
       "promptMode": "FULL"
     }
   ],
@@ -237,6 +235,8 @@
     "scope": "Checkpoint e reenvio técnico preservam os demais produtos e as revisões independentes.",
     "modelCalls": 0,
     "commercialApprovalRenewed": false,
-    "validation": "docs/homologacao/vega-harness-access-930-v1.md"
+    "validation": "docs/homologacao/vega-harness-access-930-v1.md",
+    "harnessRuntimeContract": "MUSA_CONTINUOUS_STYLE_EXECUTION_V1",
+    "harnessScriptPath": "customer-agent-worker/src/main/resources/browser/musa-continuous-harness.mjs"
   }
 }

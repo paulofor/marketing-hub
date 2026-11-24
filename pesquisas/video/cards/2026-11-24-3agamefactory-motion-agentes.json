@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-3agamefactory-motion-2026-11",
+  "title": "3AGameFactory-Motion — agentes para animação 3D editável",
+  "finding": "Artigo de 23/11 apresenta programas paramétricos de rigging e movimento com execução determinística; benchmark com 850 tarefas e 50 assets em seis morfologias.",
+  "mechanism": "Agente multimodal escreve parâmetros; executor resolve cinemática, curvas e correções e exporta GLB animado.",
+  "commercialApplication": "Animação de produtos e personagens, previsualização, CG e efeitos visuais com controle de movimentos e reaproveitamento do asset.",
+  "evidenceStrength": "Preprint e repositório oficiais; escore 50,07 contra 48,19 e custo US$ 0,047 contra 0,065 no teste dos autores, sem replicação independente.",
+  "experimentHypothesis": "Separar geometria, movimento e renderização permite refazer câmera e iluminação com menor custo e mais consistência que regenerar clipes.",
+  "risks": "Qualidade absoluta moderada; testes principais usam rigs de referência; dependências externas e licenças de assets/modelos.",
+  "limits": "Framework público Apache-2.0; pesquisa, sem API comercial oficial ou pesos novos confirmados. Não gera pixels diretamente neste componente.",
+  "validUntil": "2027-02-24",
+  "sourceTitle": "3AGameFactory-Motion: animação 3D programável por agentes",
+  "collection": "video",
+  "publishedOn": "2026-11-24",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-24-3agamefactory-motion-agentes.md",
+  "sourceSha256": "8d5de0a5900591721c272a7a075983f242464cbbb9f3b9729a97009bfca2ad65"
+}

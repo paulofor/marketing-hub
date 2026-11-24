@@ -1,18 +1,31 @@
 #!/usr/bin/env bash
-# Renova a linhagem existente de Vega e recarrega somente seu certificado no proxy compartilhado.
+# Renova uma linhagem PDE existente e recarrega somente seu certificado no proxy compartilhado.
 set -euo pipefail
 
 DEPLOY_DIR="${DEPLOY_DIR:-/root/lead-portal-payments-service}"
 CERT_ROOT="${CERT_ROOT:-/etc/letsencrypt}"
 CERT_LOG_DIR="${CERT_LOG_DIR:-/var/log/letsencrypt}"
 TLS_LOCK="${TLS_LOCK:-/tmp/clubemusa-certbot-renew.lock}"
-DOMAIN=clubemusa.com.br
+[[ "$#" -le 1 ]] || { echo 'Uso: renew-clubemusa-tls.sh [clubemusa|kit_whatsapp]' >&2; exit 2; }
+PROFILE="${1:-clubemusa}"
+case "${PROFILE}" in
+  clubemusa)
+    DOMAIN=clubemusa.com.br
+    DOMAIN_PATTERN='^(www\.|v[0-9]+\.)?clubemusa\.com\.br$'
+    MIN_DOMAINS=2
+    ;;
+  kit_whatsapp)
+    DOMAIN=kit-whatsapp-pronto.digicomdigital.com.br
+    DOMAIN_PATTERN='^(www\.)?kit-whatsapp-pronto\.digicomdigital\.com\.br$'
+    MIN_DOMAINS=1
+    ;;
+  *) echo 'Perfil TLS fora do escopo autorizado.' >&2; exit 2 ;;
+esac
 PROXY=lead-portal-payments-service-proxy-1
 CERTBOT_IMAGE=certbot/certbot:v5.8.0
 WWW_DIR="${DEPLOY_DIR}/docker/proxy/html"
 CERT_FILE="${CERT_ROOT}/live/${DOMAIN}/fullchain.pem"
 
-[[ "$#" == 0 ]] || { echo 'Uso: renew-clubemusa-tls.sh' >&2; exit 2; }
 umask 077
 exec 9>"${TLS_LOCK}"
 flock -w 30 9
@@ -28,12 +41,14 @@ grep -Fxq "${WWW_DIR} -> /usr/share/nginx/html" <<<"${mounts}"
 docker exec "${PROXY}" nginx -t
 mapfile -t domains < <(openssl x509 -in "${CERT_FILE}" -noout -ext subjectAltName \
   | grep -oE 'DNS:[^,[:space:]]+' | cut -d: -f2)
-[[ "${#domains[@]}" -ge 2 ]]
+[[ "${#domains[@]}" -ge "${MIN_DOMAINS}" ]]
 printf '%s\n' "${domains[@]}" | grep -Fxq "${DOMAIN}"
-printf '%s\n' "${domains[@]}" | grep -Fxq "www.${DOMAIN}"
+if [[ "${PROFILE}" == clubemusa ]]; then
+  printf '%s\n' "${domains[@]}" | grep -Fxq "www.${DOMAIN}"
+fi
 for domain in "${domains[@]}"; do
-  [[ "${domain}" =~ ^(www\.|v[0-9]+\.)?clubemusa\.com\.br$ ]] \
-    || { echo 'Linhagem contém domínio fora do escopo Clube MUSA.' >&2; exit 1; }
+  [[ "${domain}" =~ ${DOMAIN_PATTERN} ]] \
+    || { echo 'Linhagem contém domínio fora do perfil TLS selecionado.' >&2; exit 1; }
 done
 
 # Confere cada nome da linhagem antes de consumir uma tentativa na autoridade certificadora.
@@ -69,4 +84,4 @@ done
 docker exec -e "SSL_DOMAINS=${DOMAIN}" "${PROXY}" sh /docker-entrypoint.d/40-ensure-certs.sh
 docker exec "${PROXY}" nginx -t
 docker exec "${PROXY}" nginx -s reload
-echo '[Clube MUSA TLS] Certificado válido instalado; conferir HTTPS externo antes de concluir.'
+echo "[PDE TLS] Perfil ${PROFILE}: certificado válido instalado; conferir HTTPS externo antes de concluir."

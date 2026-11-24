@@ -1,0 +1,28 @@
+{
+  "contractVersion": "PDE_SHARED_TLS_LOCAL_RECOVERY_V1",
+  "observedAt": "2026-11-24T14:38:27.217499+00:00",
+  "status": "PASS",
+  "preservedDelivery": "48d6942d89a676d7330067c8f16ea677d40b912c",
+  "profiles": [
+    "clubemusa",
+    "kit_whatsapp"
+  ],
+  "localCaTests": 25,
+  "negativeDurationBoundaryTests": 25,
+  "negativeDurationOldFailureReproduced": true,
+  "paymentsUnitTests": 90,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "publicCaCalls": 0,
+  "productionMutationsDuringLocalValidation": false,
+  "bashSyntaxAndShellcheck": true,
+  "yamlParsed": true,
+  "workflowContract": true,
+  "evidenceSha256": {
+    ".local/vega-930/tls-profiles-tests.log": "52be3891cb7d7adaacb0f8a6a5dac36e6abcf904476d7b5452f24fc8d4f8c71c",
+    ".local/vega-930/tls-portable-tests.log": "b334a14c5deeb05d8a2f0133836d09bf8f7602510f91c57b2d8b11ba2a1a09b3",
+    ".local/vega-930/tls-negative-duration-reproduction.log": "46b4a9e56c664bc145c5313cdf0d014007e5d165a45d87f550af34764d04ac77",
+    ".local/vega-930/tls-workflow-contract.log": "1715bc69f3f2adcb54ea7b68e4c550afc9d5d97f6d92116e6b2e733e546f5ccc"
+  }
+}

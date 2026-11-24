@@ -31,7 +31,7 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: "Publicar serviço ou somente renovar/verificar TLS de Vega"
+        description: "Publicar serviço ou renovar/verificar TLS existente de Vega e Kit WhatsApp"
         type: choice
         default: deploy
         options: [deploy, renew_tls]
@@ -183,7 +183,7 @@ jobs:
         run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   renew-tls:
-    name: Renew and verify Clube MUSA TLS
+    name: Renew and verify shared PDE TLS
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'schedule' ||
@@ -222,13 +222,15 @@ jobs:
         run: bash scripts/configure-vps-ssh-fallback.sh "$DEPLOY_HOST" "$DEPLOY_USER" "$GITHUB_ENV"
       - name: Renew existing certificate and reload only TLS
         run: |
-          # shellcheck disable=SC2086
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s \
-            < lead-portal-payments-service/scripts/renew-clubemusa-tls.sh
+          for profile in clubemusa kit_whatsapp; do
+            # shellcheck disable=SC2086
+            ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s -- "$profile" \
+              < lead-portal-payments-service/scripts/renew-clubemusa-tls.sh
+          done
       - name: Verify trusted TLS from outside the host
         run: |
           for attempt in 1 2 3; do
-            if python3 scripts/check-clubemusa-tls.py; then exit 0; fi
+            if python3 scripts/check-clubemusa-tls.py --profile all; then exit 0; fi
             echo "Verificação HTTPS pendente; tentativa ${attempt}/3."
             sleep 2
           done

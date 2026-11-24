@@ -74,7 +74,7 @@ public class VegaPrivateGatewayService {
   public ResponseEntity<String> forwardConsultor(
       String method, String path, String body, String session, String internal) {
     if (!path.matches(
-        "/(contract|login|logout|workspace|commands|operations/[A-Za-z0-9-]{16,80}|internal/(report|events|cycles/[1-9][0-9]*/(access|close)|access/[a-f0-9-]{36}/renew))"))
+        "/(contract|login|logout|workspace|commands|operations/[A-Za-z0-9-]{16,80}|internal/(report|events|cycles/[1-9][0-9]*/(access|harness-access|close)|harness-access/finish|access/[a-f0-9-]{36}/renew))"))
       throw new IllegalArgumentException("Operação fora do contrato MUSA contínuo.");
     return transport(
         method, "/api/pde/vega/consultor/v1" + path, body, "X-Musa-Session", session, internal);

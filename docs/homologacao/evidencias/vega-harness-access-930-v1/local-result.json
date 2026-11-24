@@ -1,0 +1,181 @@
+{
+  "contractVersion": "MUSA_HARNESS_ACCESS_RECOVERY_LOCAL_V1",
+  "observedAt": "2026-11-24T13:52:04.933900+00:00",
+  "environment": "LOCAL_SYNTHETIC_MYSQL57",
+  "status": "PASS",
+  "providerCalls": 0,
+  "commercialEvidenceClaimed": false,
+  "agentApprovalClaimed": false,
+  "productionMutationsDuringValidation": false,
+  "suites": [
+    {
+      "suite": "MusaHarnessAccessMysql57Test",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "0c28eb8171756d4371e791672bf0b919261132cd8a2d4a680417b11a827c3f92"
+    },
+    {
+      "suite": "MusaConsultorServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "aba863e9ae6855c5239ad774b4c6972aee332ef1109bfcc8360c2ac3c8e5f6b3"
+    },
+    {
+      "suite": "MusaConsultorMysql57Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "ceed64f4c135459c4635befa75d94066f3d7c90e1e6f63f40dd0cf55cdcf4870"
+    },
+    {
+      "suite": "MusaConsultorOperationalControlsMysql57Test",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "bbec869e80ea927955e6ca0c459243253108a140c0f0bbbb3d6085f9ffe6de5a"
+    },
+    {
+      "suite": "AgentTaskResultViewTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "dfec60a67484edfadb602373a38d4f359d7c36d9876c8f349de993718111ca68"
+    },
+    {
+      "suite": "ProductProcessActivityRecoveryResolverTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "2f0ec9bd797d059b34c0f1534800e0aba74e3b5790022583cd0da5303863b495"
+    },
+    {
+      "suite": "PdeTechnicalHomologationActivityExecutionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "c2b4941f85230894590f8e08ef8441a7c47c313ca0bfb38d0f7d46ba0f82740b"
+    },
+    {
+      "suite": "PdeAgentValidationReworkReadinessProviderTest",
+      "tests": 68,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "8f64df516b5a53a66545cbbfbe7d99fcbe6c7231a329d58b3b5e8947dd090253"
+    },
+    {
+      "suite": "ArquiteturaTest",
+      "tests": 92,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "7d28cedb718ea80591d933b025ad9927993780594fc377f0e9a24ab6fb4aee46"
+    },
+    {
+      "suite": "MusaConsultorGatewayTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "156b8acb3333ad45a17852b18f8f4944f2624566708387a4e6707c8fe867b5a1"
+    },
+    {
+      "suite": "VegaPrivateGatewayTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "bed989cdff86061205ebf4d8752bd35e030cfbd28d3ecad890f4b84b14d9c67c"
+    },
+    {
+      "suite": "MusaHarnessRestartLocalTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "19abf2457512986baeb1f55b324e14dd4632fd5516b8bbb54c316d698db89a86"
+    },
+    {
+      "suite": "PdeOperationalControlEvidenceTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "385f388c1f5f31ca5768fd7077869ec424a958c7f0f1d8659581a897fcd7dae5"
+    },
+    {
+      "suite": "MusaContinuousScenarioMatrixV1Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "e656fa8b19947f7d2e11ce9dbc4af741b379b140d9d9f8d62cd54267cae22df2"
+    },
+    {
+      "suite": "ProcessRunRecoveredCostTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receiptSha256": "3f26d794ff4b85939acacb74206f4bfb5394aedf2c9d16ae21f7af45ca3e642e"
+    }
+  ],
+  "browser": {
+    "combinations": 9,
+    "profiles": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "checks": {
+      "sameVersion": true,
+      "desktopAndMobile": true,
+      "happyResultWithinTenMinutes": true,
+      "recoveryPreserved": true,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "responsiveLayout": true,
+      "privacyPreserved": true,
+      "internalTrafficSegregated": true,
+      "paymentDisabled": true,
+      "publicationDisabled": true,
+      "campaignDisabled": true,
+      "zeroMediaSpend": true,
+      "continuousJourney": true
+    },
+    "sha256": "a172a682f6a7066be9f1e9c9386d8630b322097cc6b376f63da6920dcb680ac8"
+  },
+  "checkpointIsolation": {
+    "syntheticCases": 8,
+    "status": "PASS",
+    "receiptSha256": "8a0ddbb9d33a622bc1e028f72fb692d5c861df8912702526226f6aa0aaf99643"
+  },
+  "limits": [
+    "Chromium mobile emulado; não Safari/aparelho físico",
+    "Sem inferência de provedor nem demanda/venda",
+    "PROTOTYPE_SLICE preservado; gate de produto integral e revisões independentes não dispensados",
+    "Suíte JS genérica não integra o aceite; matriz e runner reais cobrem o script alterado"
+  ],
+  "releasePrecheck": {
+    "target": "v10",
+    "contractPath": "pde-platform/contracts/vega-style-v15-preparation-v16.json",
+    "expectedSourceSha256": "3fd96bb05b578118a9f6a7a14d9cef565720cffe86a9fce09fc01b66d213c8c5",
+    "realManifestCliExitCode": 0,
+    "strictContractPreserved": true
+  },
+  "historicalCompatibility": {
+    "catalogVersion": "vega-operational-controls-v11",
+    "previousEvidencePreserved": true,
+    "criteriaAndReceiptsUnchanged": true,
+    "newCommercialReviewClaimed": false
+  }
+}

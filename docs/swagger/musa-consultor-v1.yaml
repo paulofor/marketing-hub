@@ -71,6 +71,47 @@ paths:
         '200': {description: Emissão sintética com chave entregue uma vez, hash persistido e expiração em 90 dias; máximo 18 acessos por ciclo/versão}
         '401': {description: Operador não autenticado}
         '409': {description: Ciclo fechado, versão incompatível, encerramento privado ou limite atingido}
+  /internal/cycles/{cycleId}/harness-access:
+    post:
+      security: [{operator: []}]
+      description: >-
+        Reserva sob lock uma identidade cumulativa (máximo18) por cenário/dispositivo/papel.
+        Pode adotar identidade AGENT_VALIDATION legada do mesmo contexto sem ler seus dados
+        no workspace novo. Mantém raiz histórica, expiração, revogação e limite cumulativo24
+        operações. Cada attemptId possui workspace próprio; tentativa ativa não pode ser
+        substituída. Retry exige a mesma recoveryKey, armazenada somente como hash.
+        Uma tentativa histórica não pode ser reaberta; fechamento do ciclo/homologação prevalece.
+      parameters:
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, experimentId, prototypeVersion, sourceReference, attemptId, scenarioCode, deviceProfile, role, recoveryKey]
+              properties:
+                productId: {type: integer, format: int64}
+                experimentId: {type: integer, format: int64}
+                prototypeVersion: {type: string, enum: [musa-consultor-pwa-v1]}
+                sourceReference: {type: string, pattern: '^experiment:[1-9][0-9]*$'}
+                attemptId: {type: string, pattern: '^[A-Za-z0-9-]{16,80}$'}
+                scenarioCode: {type: string, enum: [ADHERENT, RECOVERY, SAFETY]}
+                deviceProfile: {type: string, enum: [DESKTOP_1440, IPHONE_15_PRO, PIXEL_7]}
+                role: {type: string, enum: [PRIMARY, ISOLATION]}
+                recoveryKey: {type: string, pattern: '^[a-f0-9]{64}$', writeOnly: true}
+      responses:
+        '200': {description: Mesma identidade e prazo; tentativa e compartimento explícitos, sem credenciais na resposta}
+        '401': {description: Operador inválido ou identidade expirada/revogada}
+        '409': {description: Contexto incompatível, encerramento, tentativa ativa/conflitante ou limite cumulativo}
+  /internal/harness-access/finish:
+    post:
+      security: [{operator: [], privateSession: []}]
+      description: Término idempotente da tentativa corrente; conserva dados e consumo, não aprova a homologação.
+      responses:
+        '200': {description: Estado e histórico preservados; permite próxima tentativa isolada}
+        '401': {description: Sessão inválida}
+        '409': {description: Acesso alheio ao harness ou contexto encerrado}
   /internal/access/{id}/renew:
     post:
       security: [{operator: []}]

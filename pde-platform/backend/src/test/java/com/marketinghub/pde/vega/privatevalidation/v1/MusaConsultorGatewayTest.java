@@ -27,7 +27,9 @@ class MusaConsultorGatewayTest {
         "/api/pde/vega/consultor/v1",
         exchange -> {
           session.set(exchange.getRequestHeaders().getFirst("X-Musa-Session"));
-          assertThat(exchange.getRequestHeaders().getFirst("X-PDE-Internal-Token")).isNull();
+          if (exchange.getRequestURI().getPath().contains("/internal/"))
+            assertThat(exchange.getRequestHeaders().getFirst("X-PDE-Internal-Token")).isEqualTo("local-only");
+          else assertThat(exchange.getRequestHeaders().getFirst("X-PDE-Internal-Token")).isNull();
           exchange.getResponseHeaders().add("Content-Type", "application/json");
           exchange
               .getResponseHeaders()
@@ -66,6 +68,19 @@ class MusaConsultorGatewayTest {
         .andExpect(header().string("Cache-Control", "private, no-store"))
         .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")));
     assertThat(session.get()).isEqualTo("test-session");
+  }
+
+  /** As rotas novas atravessam controller e allowlist reais somente com autorização explícita. */
+  @Test void transportsGovernedHarnessRecoveryAndFinish() throws Exception {
+    for (String path : java.util.List.of("/internal/cycles/96022/harness-access", "/internal/harness-access/finish")) {
+      mvc.perform(post("/api/pde/vega/consultor/v1" + path)
+          .header("X-PDE-Internal-Token", "local-only")
+          .contentType("application/json").content("{}"))
+          .andExpect(status().isOk());
+      mvc.perform(post("/api/pde/vega/consultor/v1" + path)
+          .contentType("application/json").content("{}"))
+          .andExpect(status().isUnauthorized());
+    }
   }
 
   /** Falha antes do transporte em tentativa administrativa sem token ou mutação estrangeira. */

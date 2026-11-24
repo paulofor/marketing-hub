@@ -1,0 +1,44 @@
+{
+  "contractVersion": "PDE_SHARED_HARNESS_COMPATIBILITY_V1",
+  "status": "PASS",
+  "previousCompatibilityResource": "contracts/operational-evidence/vega-operational-controls-v10.json",
+  "previousCompatibilitySha256": "542343265b5c2d4d7e02634274ff91d4d72a8e8d33a79ef966d05d55f7a007c9",
+  "changedSources": [
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "previousSha256": "e583a549043a3330ad70642dc4ac9fc43aaeadae30406620246550e8bdfc80e2",
+      "sha256": "4bd8b93c2d56391303d61c35e50b47862a04ab0ede83fa5e1f7d832f8a18df0b"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+      "previousSha256": "4ecccabe6ccd9120574463fe6d26eaaeac46f8df014a2e5d17affbd6d35f0bbe",
+      "sha256": "de2edcb1f41975eed82e93f53f28d8f99bedb181a28f48a9f613f7d56e180a12"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessConsumer.java",
+      "previousSha256": "043b98bf7506c15565357e510e789fd3344dce9106a9ad4623e18d5c819ef899",
+      "sha256": "55dbd1364b8dad4b35cdd53e1ba60cf86bf388b8087c098c7355b014c29aa934"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessConsumerTest.java",
+      "previousSha256": "731491b27661ce57bc41541cf0cfafdf5a9bf22c7577179e9ae075e7afa102bd",
+      "sha256": "efd660193d37ce3254fd4ae7fc142dc9a398ddab46488f77b33f539e4558715d"
+    }
+  ],
+  "checks": {
+    "historicalBranchAndScriptPreserved": true,
+    "historicalTerminalValidatorPreserved": true,
+    "contextualV16V17StillRequireSevenDays": true,
+    "continuousVersionUsesOwnScript": true,
+    "checkpointBoundToContext": true,
+    "providerCalls": 0,
+    "commercialApprovalRenewed": false
+  },
+  "validation": [
+    "PdeAgentValidationHarnessRunnerTest e suíte completa Psique:264 definições, zero falhas/erros;14 fixtures opt-in não aplicáveis.",
+    "MusaHarnessRestartLocalTest: Node/navegador mortos após gravação; retomada idempotente nos três cenários.",
+    "Matriz MUSA com nove combinações pelo gateway/HTTP/controller/JPA/MySQL5.7 reais e oito recusas de checkpoint cruzado.",
+    "Provas, critérios, horários e recibos funcionais históricos da v14 preservados sem nova homologação comercial."
+  ],
+  "limits": "Somente compatibilidade do runner compartilhado; não declara nova execução dos25 critérios históricos nem renovação comercial."
+}

@@ -100,3 +100,18 @@ a conferência visual detectou erro bruto em projeções legadas do processo/ati
 vazia por falta de estado/erro na consulta leve. Correção somente na leitura, com testes da
 página inteira e segregação; diagnóstico, histórico, custos e aceites preservados. O executor
 já publicado não é repetido nem o Vega retomado. Entrega complementar segue PR próprio.
+
+## 24/11/2026 — Recuperação governada da homologação de Vega
+
+Revalidada #4013/#5876 na main e a925 concluída uma vez. A103 continua em4/11;
+a930 falhou na emissão depois de18 acessos acumulados válidos. Reprodução HTTP/MySQL
+local confirmou o409 por limite. A correção preserva teto, prazo e raiz histórica,
+isola workspaces por tentativa e recupera checkpoint/callback sem nova inferência.
+Nove combinações Chromium reais passaram; testes de queda e isolamento estão na
+matriz versionada `docs/homologacao/vega-harness-access-930-v1.md`.
+Financeiro reconsultado: US$200, reserva zero, conhecidosUS$115,0908392,
+saldo estimadoUS$84,9091608 e11 custos não reportados. Não houve dispensa, nova
+contabilização925, campanha, cobrança ou audiovisual. Retomada103 depende da
+publicação verificada e dos gates reais; recorte não comprova produto completo.
+Aprendizado reutilizável: recuperação idempotente e pendência aplicável reduzem
+retrabalho; aumento de vendas ainda não medido. Evidências finais ficam no PR.

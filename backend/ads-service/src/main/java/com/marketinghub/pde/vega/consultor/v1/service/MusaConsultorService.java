@@ -2,6 +2,7 @@ package com.marketinghub.pde.vega.consultor.v1.service;
 
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.pde.vega.consultor.v1.service.harnessAccess.HarnessAccess;
 import com.marketinghub.pde.vega.privateprototype.v1.VegaPrivateSession;
 import com.marketinghub.pde.vega.style.v1.service.VegaContextualStyleRules;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
@@ -138,46 +139,167 @@ public class MusaConsultorService {
     return view;
   }
 
-  /** Troca a chave privada por sessão HttpOnly, conservando proprietário, dados e expiração. */
+  /** Recupera um compartimento sintético sob lock sem ampliar identidades, prazo ou consumo. */
+  public JsonNode harnessAccess(Long cycleId, HarnessAccess request) {
+    var cycle =
+        cycles.findLockedById(cycleId).orElseThrow(() -> fail(404, "Ciclo não encontrado."));
+    require(
+        "OPEN".equals(cycle.getStatus())
+            && !cycle.isBaseline()
+            && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+            && VERSION.equals(cycle.getProductVersion())
+            && VERSION.equals(request.prototypeVersion())
+            && Objects.equals(cycle.getProductId(), request.productId())
+            && Objects.equals(cycle.getExperimentId(), request.experimentId())
+            && ("experiment:" + cycle.getExperimentId()).equals(request.sourceReference()),
+        "A tentativa não corresponde ao contexto aberto da homologação.");
+    require(
+        !"ISOLATION".equals(request.role()) || "SAFETY".equals(request.scenarioCode()),
+        "O acesso de isolamento pertence somente ao cenário de segurança.");
+    var rows = sessions.findLockedByCycleAndVersion(cycleId, VERSION);
+    require(
+        rows.stream().noneMatch(r -> rootData(r).path("homologationClosed").asBoolean()),
+        "Homologação encerrada. Não é permitido recuperar acessos.");
+    String slot = request.scenarioCode() + ":" + request.deviceProfile() + ":" + request.role();
+    var bound =
+        rows.stream()
+            .filter(r -> slot.equals(rootData(r).path("harnessSlot").asText()))
+            .findFirst();
+    var row =
+        bound.orElseGet(
+            () ->
+                rows.stream()
+                    .filter(
+                        r ->
+                            "AGENT_VALIDATION".equals(r.getOrigin())
+                                && !r.isRevoked()
+                                && r.getExpiresAt().isAfter(Instant.now())
+                                && !rootData(r).has("harnessSlot")
+                                && Objects.equals(r.getProductId(), request.productId())
+                                && Objects.equals(r.getExperimentId(), request.experimentId()))
+                    .findFirst()
+                    .orElseGet(
+                        () -> {
+                          var issued = issue(cycleId);
+                          return sessions
+                              .findLockedById(issued.path("sessionId").asText())
+                              .orElseThrow();
+                        }));
+    authorize(row);
+    var root = rootData(row);
+    var attempts = root.withObject("/harnessAttempts");
+    String attempt = request.attemptId();
+    var workspace = attempts.path(attempt);
+    String active = root.path("harnessActiveAttempt").asText();
+    require(
+        active.isBlank()
+            || active.equals(attempt)
+            || attempts.path(active).path("finished").asBoolean(),
+        "Outra tentativa ainda utiliza este compartimento. Recupere a tentativa original.");
+    require(
+        workspace.isMissingNode() || active.equals(attempt),
+        "Tentativa histórica preservada; seu acesso não pode ser reativado.");
+    if (workspace.isMissingNode()) {
+      root.put("harnessSlot", slot);
+      root.put("harnessActiveAttempt", attempt);
+      var fresh = attempts.putObject(attempt);
+      fresh.put("recoveryHash", hash(request.recoveryKey()));
+      fresh.put("revision", 0);
+      fresh.put("consented", false);
+      fresh.put("finished", false);
+      fresh.putObject("draft");
+      fresh.putObject("choices");
+      fresh.putObject("operations");
+      fresh.putObject("signals");
+      root.withArray("accessAudit")
+          .addObject()
+          .put("action", "HARNESS_BOUND")
+          .put("attemptId", attempt)
+          .put("slot", slot)
+          .put("at", Instant.now().toString());
+      row.setGrantHash(hash(request.recoveryKey()));
+      row.setSessionHash(null);
+      row.setInputJson(root.toString());
+      sessions.flush();
+    } else
+      require(
+          hash(request.recoveryKey()).equals(workspace.path("recoveryHash").asText()),
+          "A credencial não corresponde à tentativa preservada.");
+    var out = identity(row);
+    out.put("attemptId", attempt);
+    out.put("slot", slot);
+    out.put("finished", data(row).path("finished").asBoolean());
+    out.put(
+        "reusedSession", rows.stream().anyMatch(existing -> existing.getId().equals(row.getId())));
+    return out;
+  }
+
+  /** Encerra somente a tentativa corrente, mantendo estado e limites disponíveis para auditoria. */
+  public JsonNode finishHarness(String token) {
+    var row = session(token);
+    require(rootData(row).has("harnessActiveAttempt"), "Este acesso não pertence ao harness.");
+    var data = data(row);
+    data.put("finished", true);
+    persistData(row, data);
+    return json.valueToTree(Map.of("preserved", true, "finished", true));
+  }
+
+  /** Autentica com retomada idempotente do harness, preservando proprietário e expiração. */
   public JsonNode login(String key) {
     require(key != null && key.matches("[a-f0-9]{64}"), "Acesso inválido.");
     var row = sessions.findByGrantHash(hash(key)).orElseThrow(() -> fail(401, "Acesso inválido."));
     authorize(row);
-    String token = secret();
+    String token =
+        rootData(row).has("harnessActiveAttempt") ? hash("MUSA-HARNESS-SESSION:" + key) : secret();
     row.setSessionHash(hash(token));
     var authentication = data(row);
     authentication.put("authenticatedAt", Instant.now().toString());
-    row.setInputJson(authentication.toString());
+    persistData(row, authentication);
     var out = identity(row);
     out.put("sessionToken", token);
     return out;
   }
 
-  /** Recupera o rascunho e as escolhas somente da identidade autorizada, sem gerar novamente. */
+  /** Recupera rascunho, escolhas e última orientação compatível da identidade autorizada. */
   public JsonNode workspace(String token) {
     var row = session(token);
     var data = data(row);
     var out = identity(row);
     out.set("draft", data.path("draft"));
+    JsonNode latest = data.path("operations").path(data.path("lastOperationId").asText());
+    if (latest.isMissingNode()) {
+      latest = json.nullNode();
+      for (var operation : data.path("operations"))
+        if (operation.path("finishedAt").asText().compareTo(latest.path("finishedAt").asText()) > 0)
+          latest = operation;
+    }
+    out.set(
+        "latestOperation",
+        data.path("draft").equals(latest.path("answers")) ? latest : json.nullNode());
     out.set("choices", data.path("choices"));
     out.put("revision", data.path("revision").asInt());
     out.put("preference", data.path("preference").asText());
-    out.put("consented", row.getConsentedAt() != null);
+    out.put("consented", consented(row, data));
     out.put("providerCalls", 0);
     return out;
   }
 
-  /** Aplica um comando transacional idempotente sem conceder direitos ou chamar integrações. */
+  /** Aplica comando idempotente somente à tentativa ativa, sem conceder direitos comerciais. */
   public JsonNode command(String token, String action, JsonNode input, boolean internal) {
     var row = session(token);
     var data = data(row);
+    require(
+        !data.path("finished").asBoolean(),
+        "Esta tentativa foi concluída; seus dados foram preservados.");
     JsonNode result;
     switch (action) {
       case "consent" -> {
         require(
             input.path("accepted").asBoolean(),
             "Confirme a ciência para usar dados sintéticos nesta homologação.");
-        row.setConsentedAt(Instant.now());
+        if (!rootData(row).has("harnessActiveAttempt")) row.setConsentedAt(Instant.now());
+        data.put("consented", true);
+        data.put("consentedAt", Instant.now().toString());
         data.put("noticeVersion", "MUSA_PRIVATE_NOTICE_V1");
         result = json.valueToTree(Map.of("recorded", true));
       }
@@ -206,7 +328,7 @@ public class MusaConsultorService {
       }
       default -> throw fail(400, "Comando fora do contrato.");
     }
-    row.setInputJson(data.toString());
+    persistData(row, data);
     return result;
   }
 
@@ -223,7 +345,7 @@ public class MusaConsultorService {
     } else authorize(row);
     Instant issuedAt = Instant.now();
     row.setExpiresAt(issuedAt.plus(90, ChronoUnit.DAYS));
-    var data = data(row);
+    var data = rootData(row);
     data.put("issuedAt", issuedAt.toString());
     data.withArray("accessAudit")
         .addObject()
@@ -240,7 +362,7 @@ public class MusaConsultorService {
     int count = 0;
     for (var row : sessions.findLockedByCycleAndVersion(cycleId, VERSION)) {
       row.setRevoked(true);
-      var data = data(row);
+      var data = rootData(row);
       data.put("homologationClosed", true);
       data.withArray("accessAudit")
           .addObject()
@@ -286,7 +408,7 @@ public class MusaConsultorService {
     }
     revision(data, input);
     require(
-        data.path("operations").size() < 24,
+        operationCount(rootData(row)) < 24,
         "Limite técnico atingido. Consulte as orientações preservadas.");
     String parent = input.path("parentChoiceId").asText();
     var previous = data.path("choices").path(parent);
@@ -334,6 +456,7 @@ public class MusaConsultorService {
     op.put("providerCalls", 0);
     op.put("incrementalInferenceCostUsd", 0);
     ((ObjectNode) data.path("operations")).set(key, op);
+    data.put("lastOperationId", key);
     data.set("draft", json.valueToTree(fields));
     data.put("preference", pref);
     data.put("revision", data.path("revision").asInt() + 1);
@@ -422,8 +545,7 @@ public class MusaConsultorService {
    * Exige ciência explícita do uso privado de dados sintéticos, sem inferir consentimento humano.
    */
   private void consent(VegaPrivateSession row) {
-    require(
-        row.getConsentedAt() != null, "Confirme a ciência do aviso privado antes de continuar.");
+    require(consented(row, data(row)), "Confirme a ciência do aviso privado antes de continuar.");
   }
 
   /** Resolve e bloqueia a sessão antes de ler ou alterar qualquer dado do proprietário. */
@@ -448,7 +570,7 @@ public class MusaConsultorService {
         || !row.getExpiresAt().isAfter(Instant.now()))
       throw fail(401, "Acesso expirado ou revogado. Os dados foram preservados.");
     requireOpen(row);
-    require(!data(row).path("homologationClosed").asBoolean(), "A homologação foi encerrada.");
+    require(!rootData(row).path("homologationClosed").asBoolean(), "A homologação foi encerrada.");
   }
 
   /** Bloqueia acessos quando o ciclo fecha, sem reescrever o histórico nem emitir nova validade. */
@@ -486,13 +608,44 @@ public class MusaConsultorService {
   }
 
   /** Lê o agregado protegido e falha explicitamente em caso de corrupção. */
-  private ObjectNode data(VegaPrivateSession row) {
+  private ObjectNode rootData(VegaPrivateSession row) {
     try {
       return (ObjectNode) json.readTree(row.getInputJson());
     } catch (Exception ex) {
       log.error("MUSA: agregado inválido sessionId={}", row.getId(), ex);
       throw new IllegalStateException("Estado preservado indisponível", ex);
     }
+  }
+
+  /** Seleciona apenas o compartimento da tentativa corrente; dados legados continuam intocados. */
+  private ObjectNode data(VegaPrivateSession row) {
+    var root = rootData(row);
+    return root.has("harnessActiveAttempt")
+        ? (ObjectNode) root.path("harnessAttempts").path(root.path("harnessActiveAttempt").asText())
+        : root;
+  }
+
+  /** Persiste o workspace autorizado sem sobrescrever histórico ou outras tentativas. */
+  private void persistData(VegaPrivateSession row, ObjectNode data) {
+    var root = rootData(row);
+    if (root.has("harnessActiveAttempt")) {
+      root.withObject("/harnessAttempts").set(root.path("harnessActiveAttempt").asText(), data);
+      row.setInputJson(root.toString());
+    } else row.setInputJson(data.toString());
+  }
+
+  /** Mantém o consentimento da tentativa separado do consentimento histórico da identidade. */
+  private boolean consented(VegaPrivateSession row, ObjectNode data) {
+    return rootData(row).has("harnessActiveAttempt")
+        ? data.path("consented").asBoolean()
+        : row.getConsentedAt() != null;
+  }
+
+  /** Conta operações legadas e de todas as tentativas sem reiniciar o limite cumulativo. */
+  private int operationCount(ObjectNode root) {
+    int count = root.path("operations").size();
+    for (var attempt : root.path("harnessAttempts")) count += attempt.path("operations").size();
+    return count;
   }
 
   /** Gera credencial imprevisível para uma emissão ou autenticação explícita. */

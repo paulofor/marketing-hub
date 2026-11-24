@@ -141,6 +141,26 @@ class ProductProcessActivityRecoveryResolverTest {
     assertThat(result.getFirst().recoveryAction()).isNull();
   }
 
+  /** Falha do executor não oferece reconstrução quando o contrato de correção não tem gatilho. */
+  @Test
+  void inertCorrectionDoesNotReplaceTechnicalRecovery() throws Exception {
+    var correction = group("prototypeCorrection", "BLOCKED", false, true);
+    var technical = group("technicalHomologation", "BLOCKED", false, true);
+    var result =
+        ProductProcessActivityRecoveryResolver.resolve(
+            List.of(correction, technical), definitions(), json, 70L, "experiment:92");
+    assertThat(result.getLast().recoveryAction()).isNull();
+    var service =
+        org.mockito.Mockito.mock(
+            com.marketinghub.businessprocess.execution.service
+                .BusinessProcessActivityExecutionService.class,
+            org.mockito.Mockito.CALLS_REAL_METHODS);
+    ProductProcessActivityExecutionGroupResponse current =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "currentActivity", result);
+    assertThat(current.activityId()).isEqualTo("technicalHomologation");
+  }
+
   /** Uma definição de recuperação inativa não pode oferecer comando no card de origem. */
   @Test
   void ignoresInactiveRecovery() throws Exception {

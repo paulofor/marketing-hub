@@ -36,7 +36,15 @@ public final class ProductProcessActivityRecoveryResolver {
           || control == null
           || !"AGENT".equals(control.executorType())
           || !"COMMAND".equals(control.interactionType())
-          || control.actionLabel() == null) continue;
+          || control.actionLabel() == null
+          || (!control.actionAvailable()
+              && !java.util.Set.of("PENDING", "IN_PROGRESS").contains(candidate.operationalState())
+              && candidate.tasks().stream()
+                  .noneMatch(
+                      task ->
+                          Objects.equals(processDefinitionId, task.processDefinitionId())
+                              && Objects.equals(sourceReference, task.sourceReference()))))
+        continue;
       try {
         var targets = json.readTree(definition.getDefinitionJson()).path("remediatesActivities");
         if (!targets.isArray()) continue;

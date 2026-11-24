@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-flux3max-fal-precos-2026-11-24",
+  "title": "FLUX 3 Max — alta efetiva de 30%, desconto de 35% até 07/12",
+  "finding": "A nova promoção de 23/11 a 07/12 substitui os 50% de desconto anteriores por 35%. A tarifa 720p passa de US$ 0,085 a 0,1105/s; 1080p de 0,145 a 0,1885/s.",
+  "mechanism": "Cobrança por segundo de saída. Desconto temporário sobre preço cheio, sem mudança de qualidade demonstrada.",
+  "commercialApplication": "Recalcular custo e margem de campanhas e comparar fornecedores para prototipagem em volume.",
+  "evidenceStrength": "Alta para tabela oficial; sem execução autenticada. Documentação de resolução apresenta divergência.",
+  "experimentHypothesis": "Alternativas mais baratas podem reduzir custo aprovado sem perda perceptível para certos anúncios.",
+  "risks": "Preços promocionais expiram; refações; direitos de imagem/voz; não assumir 2K/4K disponíveis apenas pela tabela.",
+  "limits": "Ativo via fal; sem pesos Max confirmados. Clipes 5–20 s, áudio opcional; 720p/1080p documentados.",
+  "validUntil": "2026-12-08",
+  "sourceTitle": "FLUX 3 Max: nova faixa promocional e aumento efetivo",
+  "collection": "video",
+  "publishedOn": "2026-11-24",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-24-flux3max-fal-precos.md",
+  "sourceSha256": "ee870abf186d6864f9c024f773eb2535b99448e997a8d7b5e2be1260f8fc94d8"
+}

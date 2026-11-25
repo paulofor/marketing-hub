@@ -47,6 +47,13 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   /** Impede alterar a entrada de um experimento com trabalho ativo ou resultado já aceito. */
   boolean existsBySourceReferenceAndStatusIn(String sourceReference, List<String> statuses);
 
+  /** Confirma que a tarefa aprovada pertence à ocorrência usada na passagem. */
+  boolean existsByIdAndActivityInstance_IdAndStatus(Long id, Long occurrenceId, String status);
+
+  /** Detecta trabalho de uma versão existente na mesma referência, sem carregar tarefas. */
+  boolean existsBySourceReferenceAndProcessDefinitionProcessCode(
+      String reference, String processCode);
+
   /** Lê a última avaliação de Plutus do experimento, incluindo tentativa ainda não concluída. */
   @Query(
       """

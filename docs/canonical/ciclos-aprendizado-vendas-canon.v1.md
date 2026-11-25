@@ -915,3 +915,24 @@ destino. Uma revalidação concluída não permanece apresentada como pendente p
 histórico; uma ocorrência reprovada também não herda novamente o aceite original.
 
 O contexto de correção entre versões também respeita essa separação: `completedActivities` só contém resultados do destino ou tarefas explicitamente aceitas pelo recibo. Resultados sem revalidação ficam em `historicalContinuityArtifacts`; reprovações históricas continuam disponíveis para orientar a correção. Atividades comuns recebem os aceites compatíveis pela mesma política.
+
+#### Primeira construção em versão publicada
+
+Quando o planejamento está aceito e o BPM da construção foi aposentado antes
+de qualquer execução do experimento, o backend registra a conclusão do
+planejamento e indica a adoção da versão publicada. O comando de continuidade
+confere que a construção é o próximo trabalho do ajuste e que a versão está
+publicada na mesma família. Os responsáveis, os executores e o caminho das
+atividades precisam ser compatíveis. Requisitos descritivos atualizados são
+aplicados integralmente na construção. A extensão conhecida de entrega por
+tipo permanece sujeita aos verificadores do destino.
+
+O recibo `VERSION_CONTINUATION` (`FIRST_CONSTRUCTION_V1`) referencia as
+ocorrências aceitas de estratégia, economia e arquitetura, já validadas pelo
+consumidor da construção, e identifica o experimento e a candidata.
+A cadeia do ciclo segue congelada. A versão de destino é vinculada somente
+àquela referência e nasce pausada. O comando oficial de retomada revalida
+o recibo e registra `CYCLE_PROCESS_CONTINUED` no diário do planejamento.
+O orçamento acumulado, reservas, dispensas, ficha vinculada e aprovações são
+consultados pelos controles vigentes. Todo aceite da construção deve ser
+comprovado no destino.

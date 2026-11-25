@@ -11,13 +11,13 @@ paths:
       - {name: learningCycleId, in: query, required: true, schema: {type: integer, format: int64}}
     get:
       summary: Compara contratos e separa aceite histórico de revalidação pendente
-      description: Cada output expõe owner, destinationStatus (ACCEPTED ou REVALIDATION_PENDING), criteria (description/status), destinationInstanceId, destinationAccepted e taskIds e provas originais. HISTORICAL_ACCEPTANCE é aceite da origem, não comprovação de requisitos novos. ACCEPTED_AT_DESTINATION indica aceite vigente da ocorrência do destino, sem reescrever o recibo.
+      description: Cada output expõe owner, destinationStatus (ACCEPTED ou REVALIDATION_PENDING), criteria (description/status), destinationInstanceId, destinationAccepted e taskIds e provas originais. HISTORICAL_ACCEPTANCE é aceite da origem, não comprovação de requisitos novos. ACCEPTED_AT_DESTINATION indica aceite vigente da ocorrência do destino, sem reescrever o recibo. Quando a construção ainda não começou, firstExecution identifica a versão publicada, a candidata e os IDs das fontes aceitas do planejamento. receiptId identifica o evento durável após preparar.
       responses:
         "200": {description: Proposta ou recibo de continuidade com origem e destino no mesmo contexto}
         "409": {description: Contexto inexistente ou incompatível}
     post:
       summary: Prepara sucessora pausada com reaproveitamento parcial, sem executar agentes
-      description: Contratos idênticos com prova preservam aceite; demais entregas preservam artefatos e ficam pendentes. Conserva custos e pausa financeira. Snapshot desatualizado e mudança estrutural são rejeitados. Repetição devolve sucessora existente.
+      description: Contratos idênticos com prova preservam aceite; demais entregas preservam artefatos e ficam pendentes. Conserva custos e pausa financeira. Snapshot desatualizado e mudança estrutural são rejeitados. Repetição devolve sucessora existente. A primeira construção usa o planejamento aceito no mesmo ciclo em ajuste e fica pausada para o comando oficial de retomada.
       requestBody:
         required: true
         content:

@@ -49,6 +49,70 @@ public class ProcessVersionContinuityLookup {
         .toList();
   }
 
+  /** Responsabilidade: localizar o recibo da primeira construção e sua execução de origem. */
+  public record FirstExecution(
+      Long receiptId,
+      Long predecessorRunId,
+      Long productId,
+      Long cycleId,
+      Binding binding,
+      String fingerprint,
+      FirstProcessVersionContinuity.Compatibility compatibility) {}
+
+  /** Busca somente o recibo inicial da passagem na referência exata. */
+  public java.util.Optional<FirstExecution> firstExecution(
+      Long productId, Long cycleId, String reference, Long source, Long target) {
+    if (productId == null || cycleId == null || reference == null)
+      return java.util.Optional.empty();
+    for (var event : events.continuations(productId, cycleId, reference)) {
+      try {
+        var detail = json.readTree(event.getDetailsJson());
+        if (!detail.path("firstExecution").isObject()) continue;
+        var binding = json.treeToValue(detail.path("binding"), Binding.class);
+        if ((source == null || source.equals(binding.sourceProcessId()))
+            && (target == null || target.equals(binding.targetProcessId())))
+          return java.util.Optional.of(
+              new FirstExecution(
+                  event.getId(),
+                  event.getRunId(),
+                  productId,
+                  cycleId,
+                  binding,
+                  detail.path("fingerprint").asText(),
+                  json.treeToValue(
+                      detail.path("firstExecution"),
+                      FirstProcessVersionContinuity.Compatibility.class)));
+      } catch (Exception ex) {
+        log.error(
+            "Recibo de primeira execução inválido productId={} cycleId={} eventId={}",
+            productId,
+            cycleId,
+            event.getId(),
+            ex);
+        throw new IllegalStateException("Recibo de primeira execução inválido.", ex);
+      }
+    }
+    return java.util.Optional.empty();
+  }
+
+  /** Localiza a primeira construção também em chamadas que informam só a referência. */
+  public java.util.Optional<FirstExecution> firstExecutionForReference(
+      String reference, Long processId) {
+    if (reference == null || !reference.matches("experiment:[1-9][0-9]{0,17}"))
+      return java.util.Optional.empty();
+    return cycles
+        .findByExperimentId(Long.valueOf(reference.substring(11)))
+        .flatMap(
+            cycle ->
+                firstExecution(cycle.getProductId(), cycle.getId(), reference, null, processId));
+  }
+
+  /** Confere a autorização de retomada sem gravar tarefas ou criar uma segunda passagem. */
+  public boolean released(FirstExecution receipt) {
+    return events.existsByRunIdAndActionKey(
+        receipt.predecessorRunId(), "cycle-continuation:" + receipt.binding().successorRunId());
+  }
+
   /** Resolve adoções sucessivas sem transferir autorizações para outro contexto. */
   public Long effective(Long productId, Long cycleId, String reference, Long sourceProcessId) {
     var recorded = bindings(productId, cycleId, reference);
@@ -98,7 +162,7 @@ public class ProcessVersionContinuityLookup {
         .orElse(java.util.Set.of());
   }
 
-  /** Entrega o recibo ao executor do destino exato como contexto histórico, nunca como aceite. */
+  /** Fornece contexto histórico de revalidação somente quando houve entregas na versão anterior. */
   public com.fasterxml.jackson.databind.JsonNode revalidationContext(
       String reference, Long target) {
     if (reference == null || !reference.matches("experiment:[1-9][0-9]*")) return json.nullNode();
@@ -108,7 +172,8 @@ public class ProcessVersionContinuityLookup {
         events.continuations(cycle.get().getProductId(), cycle.get().getId(), reference)) {
       try {
         var detail = json.readTree(event.getDetailsJson());
-        if (detail.path("binding").path("targetProcessId").asLong() == target) {
+        if (detail.path("binding").path("targetProcessId").asLong() == target
+            && !detail.path("firstExecution").isObject()) {
           var context = json.createObjectNode();
           context.put("policyVersion", "PARTIAL_CONTINUITY_V1");
           context.put(

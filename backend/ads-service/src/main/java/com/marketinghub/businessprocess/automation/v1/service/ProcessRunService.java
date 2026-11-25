@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.automation.v1.*;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunPauseRequest;
+import com.marketinghub.businessprocess.automation.v1.service.continuity.FirstProcessVersionContinuity;
+import com.marketinghub.businessprocess.automation.v1.service.continuity.ProcessVersionContinuityLookup;
 import com.marketinghub.businessprocess.automation.v1.service.status.*;
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.*;
@@ -57,6 +59,12 @@ public class ProcessRunService {
   private com.marketinghub.businessprocesschain.learningcycle.v1.service
           .LearningCycleProcessContinuation
       cycleContinuation;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private FirstProcessVersionContinuity firstExecution;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private ProcessVersionContinuityLookup versionContinuity;
 
   /** Configura transações curtas, contratos de execução e identificação visual do responsável. */
   public ProcessRunService(
@@ -238,7 +246,8 @@ public class ProcessRunService {
 
   /**
    * Confere resultados antes de nova tentativa e recusa contextos sem autorização, inclusive na
-   * origem de uma delegação; exige construção homologada antes de retomar comunicação.
+   * origem de uma delegação; confirma o recibo da primeira construção antes de liberar a fila e
+   * exige construção homologada antes de retomar comunicação.
    */
   public ProcessRunResponse resume(Long productId, Long processId, Long runId) {
     return locked(
@@ -268,6 +277,10 @@ public class ProcessRunService {
             requirePlay(productId);
             String blocker = dispatchBlockReason(run);
             if (blocker != null) throw new ResponseStatusException(HttpStatus.CONFLICT, blocker);
+            var predecessor =
+                firstExecution == null
+                    ? Optional.<ProcessRun>empty()
+                    : firstExecution.predecessorToRelease(run);
             updateCounts(run, readiness);
             run.setFinishedAt(null);
             run.setRetryEpoch(run.getRetryEpoch() + 1);
@@ -279,6 +292,14 @@ public class ProcessRunService {
                     ? "Revalidação autorizada. As provas atuais serão conferidas sem apagar as aprovações anteriores."
                     : "Retomada registrada; os contratos e os resultados serão conferidos antes de executar.",
                 revalidation ? "REVALIDATION_REQUESTED" : "RESUMED");
+            predecessor.ifPresent(
+                origin ->
+                    recordCycleContinuation(
+                        origin,
+                        run.getId(),
+                        run.getProcessDefinitionId(),
+                        context.process(run.getProcessDefinitionId()).getName(),
+                        navigation.executionUrl(run)));
           }
           return response(run);
         });
@@ -905,7 +926,7 @@ public class ProcessRunService {
     if (continuePreparation) continueCycle(run);
   }
 
-  /** Enfileira um único processo irmão pelo contrato existente e registra o vínculo no diário. */
+  /** Enfileira o processo irmão ou conserva a conclusão com um caminho de adoção de versão. */
   private void continueCycle(ProcessRun run) {
     if (cycleContinuation == null
         || run.getLearningCycleId() == null
@@ -915,25 +936,58 @@ public class ProcessRunService {
     var continuation = cycleContinuation.next(run);
     if (continuation == null) return;
     var next = continuation.work();
-    var destination =
-        start(
-            run.getProductId(),
-            next.processDefinitionId(),
-            new ProcessRunCommand(
-                run.getChainDefinitionId(),
+    var command =
+        new ProcessRunCommand(
+            run.getChainDefinitionId(), run.getLearningCycleId(), continuation.sourceReference());
+    Long processId = next.processDefinitionId();
+    if (versionContinuity != null
+        && versionContinuity
+            .firstExecution(
+                run.getProductId(),
                 run.getLearningCycleId(),
-                continuation.sourceReference()));
-    String key = "cycle-continuation:" + destination.id();
+                command.sourceReference(),
+                null,
+                processId)
+            .isPresent()) return;
+    var definition = context.process(processId);
+    if (definition != null
+        && FirstProcessVersionContinuity.CONSTRUCTION.equals(definition.getProcessCode())
+        && "RETIRED".equals(definition.getStatus())
+        && !context.executableVersion(
+            run.getProductId(), processId, command, definition.getStatus())
+        && runs.findByScopeKey(scope(run.getProductId(), processId, command)).isEmpty()) {
+      String key = "cycle-version-required:" + processId;
+      String reason =
+          "Planejamento concluído. A versão prevista da construção foi aposentada antes de começar. Abra a construção e prepare a versão publicada para este ciclo.";
+      run.setReason(reason);
+      run.setNavigationUrl(next.url());
+      if (!events.existsByRunIdAndActionKey(run.getId(), key))
+        event(
+            run,
+            "CYCLE_PROCESS_VERSION_REQUIRED",
+            reason,
+            key,
+            Map.of("cycleId", run.getLearningCycleId(), "nextProcessDefinitionId", processId));
+      return;
+    }
+    var destination = start(run.getProductId(), processId, command);
+    recordCycleContinuation(run, destination.id(), processId, next.processName(), next.url());
+  }
+
+  /** Registra o vínculo de passagem no diário em que a execução de origem foi concluída. */
+  private void recordCycleContinuation(
+      ProcessRun run, Long destinationId, Long processId, String name, String url) {
+    String key = "cycle-continuation:" + destinationId;
     if (events.existsByRunIdAndActionKey(run.getId(), key)) return;
-    run.setNavigationUrl(next.url());
+    run.setNavigationUrl(url);
+    if ("COMPLETED".equals(run.getStatus())) {
+      run.setReason("Objetivos comprovados. A preparação seguiu para " + name + ".");
+      run.setUpdatedAt(Instant.now());
+    }
     event(
         run,
         "CYCLE_PROCESS_CONTINUED",
-        "Preparação encaminhada ao processo "
-            + next.processName()
-            + " · execução #"
-            + destination.id()
-            + ".",
+        "Preparação encaminhada ao processo " + name + " · execução #" + destinationId + ".",
         key,
         Map.of(
             "cycleId",
@@ -941,16 +995,16 @@ public class ProcessRunService {
             "sourceReference",
             run.getSourceReference(),
             "nextRunId",
-            destination.id(),
+            destinationId,
             "nextProcessDefinitionId",
-            next.processDefinitionId()));
+            processId));
     log.info(
         "Continuidade do ciclo productId={} cycleId={} originRunId={} nextRunId={} processId={}",
         run.getProductId(),
         run.getLearningCycleId(),
         run.getId(),
-        destination.id(),
-        next.processDefinitionId());
+        destinationId,
+        processId);
   }
 
   /** Consolida contagens e custo oficiais sem tratar omissão como sucesso ou ausência como zero. */

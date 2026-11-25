@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.automation.v1.*;
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
+import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.*;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
@@ -43,6 +46,9 @@ public class ProcessVersionContinuityService {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
       executionProfile;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private FirstProcessVersionContinuity firstExecution;
 
   /** Responsabilidade: apresentar a prova original e os campos que precisam de nova conferência. */
   public record Output(
@@ -133,7 +139,9 @@ public class ProcessVersionContinuityService {
       List<Output> outputs,
       String reason,
       boolean canPrepare,
-      String url) {}
+      String url,
+      FirstProcessVersionContinuity.Compatibility firstExecution,
+      Long receiptId) {}
 
   /**
    * Responsabilidade: registrar a conferência do operador vinculada ao conteúdo que ele consultou.
@@ -185,23 +193,23 @@ public class ProcessVersionContinuityService {
     }
     var source = processes.findById(sourceId).orElseThrow();
     var inheritedTasks = lookup.reusedTasks(productId, cycleId, reference, source.getId());
-    var run =
-        runs.findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
-                productId, source.getId(), cycle.getChainDefinitionId(), cycleId, reference)
-            .orElseThrow(() -> conflict("Não há execução histórica neste contexto."));
+    var historicalRun =
+        runs
+            .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                productId, source.getId(), cycle.getChainDefinitionId(), cycleId, reference);
     var binding =
-        lookup.bindings(productId, cycleId, reference).stream()
-            .filter(b -> source.getId().equals(b.sourceProcessId()))
-            .findFirst();
-    var target =
+        recorded.stream().filter(b -> source.getId().equals(b.sourceProcessId())).findFirst();
+    var publishedChain =
         binding.isPresent()
-            ? processes.findById(binding.get().targetProcessId()).orElseThrow()
+            ? null
             : chains
                 .findFirstByChainCodeAndStatusOrderByVersionNumberDesc(
                     originalChain.getChainCode(), "PUBLISHED")
-                .orElseThrow(() -> conflict("Não há cadeia publicada nesta família."))
-                .getItems()
-                .stream()
+                .orElseThrow(() -> conflict("Não há cadeia publicada nesta família."));
+    var target =
+        binding.isPresent()
+            ? processes.findById(binding.get().targetProcessId()).orElseThrow()
+            : publishedChain.getItems().stream()
                 .map(i -> i.getProcessDefinition())
                 .filter(
                     p ->
@@ -209,6 +217,16 @@ public class ProcessVersionContinuityService {
                             && "PUBLISHED".equals(p.getStatus()))
                 .findFirst()
                 .orElseThrow(() -> conflict("Não há destino publicado para este processo."));
+    if (historicalRun.isEmpty()) {
+      if (firstExecution == null
+          || !FirstProcessVersionContinuity.CONSTRUCTION.equals(source.getProcessCode()))
+        throw conflict("Não há execução histórica neste contexto.");
+      if (!requested.getId().equals(source.getId()) && !requested.getId().equals(target.getId()))
+        throw conflict("Abra a construção da cadeia original ou a versão publicada elegível.");
+      return previewFirstExecution(
+          product, cycle, originalChain, publishedChain, source, target, reference);
+    }
+    var run = historicalRun.orElseThrow();
     var history =
         activities.productProcessExecutions(
             source.getId(), productId, cycleId, cycle.getChainDefinitionId(), false, reference);
@@ -334,7 +352,89 @@ public class ProcessVersionContinuityService {
             ? "Confira os requisitos e as provas das entregas alteradas. Preparar não inicia agentes nem aumenta limites."
             : reason,
         reason == null,
-        url(productId, cycleId, cycle.getChainDefinitionId(), target.getId(), reference));
+        url(productId, cycleId, cycle.getChainDefinitionId(), target.getId(), reference),
+        null,
+        null);
+  }
+
+  /** Projeta o caminho inicial sem fingir que o BPM aposentado teve uma execução. */
+  private Preview previewFirstExecution(
+      Product product,
+      LearningSalesCycle cycle,
+      BusinessProcessChainDefinition originalChain,
+      BusinessProcessChainDefinition publishedChain,
+      com.marketinghub.businessprocess.BusinessProcessDefinition source,
+      com.marketinghub.businessprocess.BusinessProcessDefinition target,
+      String reference) {
+    Long productId = product.getId();
+    Long cycleId = cycle.getId();
+    var nextUrl = url(productId, cycleId, originalChain.getId(), target.getId(), reference);
+    var receipt =
+        lookup.firstExecution(productId, cycleId, reference, source.getId(), target.getId());
+    if (receipt.isPresent()) {
+      var r = receipt.orElseThrow();
+      return new Preview(
+          productId,
+          cycleId,
+          originalChain.getId(),
+          reference,
+          source.getId(),
+          target.getId(),
+          r.predecessorRunId(),
+          r.binding().successorRunId(),
+          r.fingerprint(),
+          List.of(),
+          "A versão publicada foi vinculada à mesma candidata. Abra a construção para acompanhar ou retomar.",
+          false,
+          nextUrl,
+          r.compatibility(),
+          r.receiptId());
+    }
+    String reason = null;
+    if (executionProfile != null
+        && executionProfile.bound(productId, reference).isPresent()
+        && !executionProfile.pins(reference, target.getId()))
+      reason =
+          "A ficha desta referência fixa outra versão da construção. Confira a composição aprovada da ficha.";
+    var assessment =
+        reason == null
+            ? firstExecution.assess(
+                product, cycle, originalChain, publishedChain, source, target, reference)
+            : new FirstProcessVersionContinuity.Assessment(null, null, reason);
+    var compatibility = assessment.compatibility();
+    Long originRunId = assessment.predecessor() == null ? null : assessment.predecessor().getId();
+    String fingerprint =
+        compatibility == null
+            ? null
+            : hash(
+                encode(
+                    List.of(
+                        productId,
+                        cycleId,
+                        originalChain.getId(),
+                        cycle.getRevision(),
+                        source.getId(),
+                        target.getId(),
+                        originRunId,
+                        compatibility)));
+    return new Preview(
+        productId,
+        cycleId,
+        originalChain.getId(),
+        reference,
+        source.getId(),
+        target.getId(),
+        originRunId,
+        null,
+        fingerprint,
+        List.of(),
+        compatibility == null
+            ? assessment.blocker()
+            : "A construção ainda não começou e a versão prevista foi aposentada. Prepare a versão publicada para usar as entregas aceitas do planejamento deste ciclo.",
+        compatibility != null,
+        nextUrl,
+        compatibility,
+        null);
   }
 
   /**
@@ -346,9 +446,9 @@ public class ProcessVersionContinuityService {
     cycles.findLocked(productId, cycleId).orElseThrow(() -> conflict("Ciclo não encontrado."));
     var p = preview(productId, cycleId, processId);
     if (p.successorRunId() != null) return p;
+    if (!p.canPrepare()) throw conflict(p.reason());
     if (request == null || !Objects.equals(p.fingerprint(), request.fingerprint()))
       throw conflict("As provas mudaram. Atualize a conferência.");
-    if (!p.canPrepare()) throw conflict(p.reason());
     requireText(request.operatorName(), 160, "Informe o responsável pela conferência.");
     requireText(request.reason(), 1000, "Informe o motivo da continuidade.");
     if (request.compatibilityEvidence() != null && !request.compatibilityEvidence().isEmpty())
@@ -381,19 +481,7 @@ public class ProcessVersionContinuityService {
     next.setUpdatedAt(next.getCreatedAt());
     next.setLastReconciledAt(next.getCreatedAt());
     runs.saveAndFlush(next);
-    events
-        .findFirstByRunIdAndEventTypeOrderByIdDesc(sourceRun.getId(), "PAUSE_CONTEXT")
-        .ifPresent(
-            original -> {
-              var inherited = new ProcessRunEvent();
-              inherited.setRunId(next.getId());
-              inherited.setEventType("PAUSE_CONTEXT");
-              inherited.setStatus("PAUSED");
-              inherited.setMessage(original.getMessage());
-              inherited.setDetailsJson(original.getDetailsJson());
-              inherited.setCreatedAt(next.getCreatedAt());
-              events.saveAndFlush(inherited);
-            });
+    if (p.firstExecution() == null) inheritPause(sourceRun, next);
     var reused = new ArrayList<Map<String, Object>>();
     var revalidation = new ArrayList<Map<String, Object>>();
     for (var o : p.outputs())
@@ -459,30 +547,41 @@ public class ProcessVersionContinuityService {
         "Continuidade preparada por " + request.operatorName() + ": " + request.reason());
     event.setActionKey("version-target:" + p.targetProcessId());
     event.setCreatedAt(next.getCreatedAt());
-    event.setDetailsJson(
-        encode(
-            Map.of(
-                "binding",
-                new ProcessVersionContinuityLookup.Binding(
-                    p.sourceProcessId(), p.targetProcessId(), next.getId(), p.chainId()),
-                "fingerprint",
-                p.fingerprint(),
-                "operatorName",
-                request.operatorName(),
-                "reason",
-                request.reason(),
-                "outputs",
-                p.outputs(),
-                "reused",
-                reused,
-                "revalidation",
-                revalidation,
-                "compatibilityEvidence",
-                request.compatibilityEvidence() == null
-                    ? Map.of()
-                    : request.compatibilityEvidence())));
+    var details = new LinkedHashMap<String, Object>();
+    details.put(
+        "binding",
+        new ProcessVersionContinuityLookup.Binding(
+            p.sourceProcessId(), p.targetProcessId(), next.getId(), p.chainId()));
+    details.put("fingerprint", p.fingerprint());
+    details.put("operatorName", request.operatorName());
+    details.put("reason", request.reason());
+    details.put("outputs", p.outputs());
+    details.put("reused", reused);
+    details.put("revalidation", revalidation);
+    details.put(
+        "compatibilityEvidence",
+        request.compatibilityEvidence() == null ? Map.of() : request.compatibilityEvidence());
+    if (p.firstExecution() != null) details.put("firstExecution", p.firstExecution());
+    event.setDetailsJson(encode(details));
     events.saveAndFlush(event);
     return preview(productId, cycleId, processId);
+  }
+
+  /** Mantém a pausa original quando a operação sucede uma execução do mesmo processo. */
+  private void inheritPause(ProcessRun sourceRun, ProcessRun next) {
+    events
+        .findFirstByRunIdAndEventTypeOrderByIdDesc(sourceRun.getId(), "PAUSE_CONTEXT")
+        .ifPresent(
+            original -> {
+              var inherited = new ProcessRunEvent();
+              inherited.setRunId(next.getId());
+              inherited.setEventType("PAUSE_CONTEXT");
+              inherited.setStatus("PAUSED");
+              inherited.setMessage(original.getMessage());
+              inherited.setDetailsJson(original.getDetailsJson());
+              inherited.setCreatedAt(next.getCreatedAt());
+              events.saveAndFlush(inherited);
+            });
   }
 
   /** Valida campos auditáveis antes de qualquer gravação. */

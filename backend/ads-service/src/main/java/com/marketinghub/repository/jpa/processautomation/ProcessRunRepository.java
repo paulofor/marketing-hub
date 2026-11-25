@@ -30,6 +30,10 @@ public interface ProcessRunRepository extends JpaRepository<ProcessRun, Long> {
           Long learningCycleId,
           String sourceReference);
 
+  /** Confere versões alternativas da mesma referência antes de preparar a primeira execução. */
+  boolean existsByProductIdAndSourceReferenceAndProcessDefinitionIdIn(
+      Long productId, String reference, java.util.Collection<Long> processIds);
+
   /** Impede trocar a ficha de uma referência que já iniciou processo, inclusive histórico. */
   boolean existsByProductIdAndSourceReference(Long productId, String sourceReference);
 

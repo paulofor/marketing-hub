@@ -1,0 +1,18 @@
+{
+  "cardKey": "trilha-contexto-cognitivo",
+  "title": "Adaptar trilha à demanda cognitiva",
+  "finding": "Dois experimentos encontraram diferenças no efeito do som de fundo conforme a tarefa; silêncio favoreceu reconhecimento verbal e música vocal favoreceu criatividade e memória espacial nas comparações relatadas.",
+  "mechanism": "Possível competição entre estímulo auditivo e recursos cognitivos necessários à tarefa; mecanismo neural não medido.",
+  "commercialApplication": "Testar redução da trilha em trechos informativos de vídeos, preservando narração, controles de áudio e acessibilidade.",
+  "evidenceStrength": "Moderada-baixa para o resultado experimental relatado; baixa para transferência ao vídeo. Texto integral indisponível.",
+  "experimentHypothesis": "Reduzir trilha durante informação verbal crítica melhora recordação imediata e após 48 h sem reduzir agrado, contra trilha constante e ausência de trilha.",
+  "risks": "Confundir agrado com aprendizagem; variar audibilidade da narração; assumir efeito universal; interferência por familiaridade e preferência.",
+  "limits": "Não comprova efeito de ducking, prazer dopaminérgico, retenção comercial ou vendas; amostra e detalhes de controle não verificados.",
+  "sourceTitle": "Trilha sonora conforme a tarefa — fonte revisada v1",
+  "sourceSha256": "3cfdce4feda632546b8315d589c6871d13d0b167e7a6da27bad60cc021b72dd5",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-11-25",
+  "validUntil": "2027-01-09",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-25-trilha-contexto-cognitivo-v1.md"
+}

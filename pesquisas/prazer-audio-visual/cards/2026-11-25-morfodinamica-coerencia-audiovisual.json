@@ -1,0 +1,18 @@
+{
+  "cardKey": "morfodinamica-coerencia-audiovisual",
+  "title": "Coerência das trajetórias de som e imagem",
+  "finding": "Revisão teórica propõe que correspondências audiovisuais envolvem similaridade das trajetórias de mudança e não somente coincidência de eventos.",
+  "mechanism": "Reconhecimento e abstração de padrões temporais, com eventual mediação de conceitos adquiridos pela experiência.",
+  "commercialApplication": "Testar sonoplastia que acompanha a trajetória de expansão, desaceleração e retorno de animações em interfaces e vídeos.",
+  "evidenceStrength": "Baixa para a aplicação: revisão conceitual com quatro casos ilustrativos, sem ensaio confirmatório de prazer.",
+  "experimentHypothesis": "Com início e fim sincronizados e duração e intensidade controladas, trajetórias sonoras e visuais compatíveis aumentam coerência percebida frente a trajetórias incompatíveis; agrado é desfecho distinto.",
+  "risks": "Exagero sensorial, desconforto, falsas pistas de propriedades e generalização cultural; preservar silenciamento e redução de movimento.",
+  "limits": "Não prova causalidade neural, dopamina, aumento de prazer, retenção ou vendas.",
+  "sourceTitle": "Coerência morfodinâmica audiovisual — fonte revisada v1",
+  "sourceSha256": "a02372b934de6b6b602520f4394989552b499aea08707d0549926767eb5ec954",
+  "collection": "prazer-audio-visual",
+  "publishedOn": "2026-11-25",
+  "validUntil": "2027-01-09",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-25-morfodinamica-coerencia-audiovisual-v1.md"
+}

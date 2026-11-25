@@ -169,3 +169,55 @@ it("mostra o aceite atual do destino após recarga sem apresentar a pendência h
   expect(screen.getByText("Aceito no destino:")).toBeInTheDocument();
   expect(axios.post).not.toHaveBeenCalled();
 });
+
+it("mostra a primeira construção, as entradas aceitas e o recibo no mesmo ciclo", async () => {
+  const firstExecution = {
+    sourceVersion: 7,
+    targetVersion: 8,
+    productVersion: "qa-candidate-v3",
+    experimentId: 115,
+    inputs: [
+      { name: "Estratégia de Atena", occurrenceId: 401, taskId: 701 },
+      { name: "Economia de Plutus", occurrenceId: 402, taskId: 702 },
+      { name: "Arquitetura de Dédalo", occurrenceId: 403, taskId: 703 },
+    ],
+    updatedRequirements: ["Construir jornada"],
+  };
+  const first = {
+    ...preview,
+    firstExecution,
+    outputs: [],
+    reason: "A versão prevista foi aposentada antes da primeira construção.",
+  };
+  vi.mocked(axios.get).mockResolvedValue({ data: first });
+  vi.mocked(axios.post).mockResolvedValue({
+    data: { ...first, successorRunId: 901, receiptId: 99, canPrepare: false },
+  });
+  mount();
+  await screen.findByText(/aposentada antes da primeira construção/);
+  expect(screen.getByText(/Construção v7 → v8/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Arquitetura de Dédalo · tarefa #703/),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Atividades com requisitos atualizados/),
+  ).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Responsável pela conferência *"), {
+    target: { value: "Operador QA" },
+  });
+  fireEvent.change(screen.getByLabelText("Motivo da continuidade *"), {
+    target: { value: "Adotar versão elegível" },
+  });
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Preparar construção na versão publicada",
+    }),
+  );
+  expect(
+    await screen.findByText("Recibo da preparação #99"),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "Abrir construção #901" }),
+  ).toHaveAttribute("href", first.url);
+  expect(axios.post).toHaveBeenCalledTimes(1);
+});

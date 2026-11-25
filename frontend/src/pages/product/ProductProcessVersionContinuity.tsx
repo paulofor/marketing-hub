@@ -11,6 +11,15 @@ type Preview = {
   canPrepare: boolean;
   reason: string;
   url: string;
+  receiptId?: number | null;
+  firstExecution?: {
+    sourceVersion: number;
+    targetVersion: number;
+    productVersion: string;
+    experimentId: number;
+    inputs: { name: string; occurrenceId: number; taskId: number }[];
+    updatedRequirements: string[];
+  } | null;
   outputs: {
     activityId: string;
     name: string;
@@ -115,18 +124,59 @@ export default function ProductProcessVersionContinuity({
       )}
       {data && (
         <>
-          <p>
-            Processo #{data.sourceProcessId} → #{data.targetProcessId}.{" "}
-            {data.reason}
-          </p>
-          <p>
-            O ciclo, experimento, tarefas, custos desconhecidos, dispensas e
-            limites são preservados. Preparar cria uma execução pausada; não
-            inicia agentes.
-          </p>
+          {data.firstExecution ? (
+            <>
+              <p>{data.reason}</p>
+              <p>
+                Construção v{data.firstExecution.sourceVersion} → v
+                {data.firstExecution.targetVersion} ·{" "}
+                {data.firstExecution.productVersion}
+                {" · "}Experimento #{data.firstExecution.experimentId}
+              </p>
+              <p className="mb-1">Entregas aceitas que a construção vai usar</p>
+              <ul>
+                {data.firstExecution.inputs.map((input) => (
+                  <li key={input.taskId}>
+                    {input.name} · tarefa #{input.taskId}
+                  </li>
+                ))}
+              </ul>
+              {!!data.firstExecution.updatedRequirements.length && (
+                <details className="mb-2">
+                  <summary>Atividades com requisitos atualizados</summary>
+                  <ul>
+                    {data.firstExecution.updatedRequirements.map(
+                      (name, index) => (
+                        <li key={index}>{name}</li>
+                      ),
+                    )}
+                  </ul>
+                </details>
+              )}
+              <p>
+                A construção e a homologação seguem os critérios da versão
+                publicada. O preparo preserva os limites e reservas do ciclo e
+                deixa a execução pausada.
+              </p>
+              {data.receiptId && <p>Recibo da preparação #{data.receiptId}</p>}
+            </>
+          ) : (
+            <>
+              <p>
+                Processo #{data.sourceProcessId} → #{data.targetProcessId}.{" "}
+                {data.reason}
+              </p>
+              <p>
+                O ciclo, experimento, tarefas, custos desconhecidos, dispensas e
+                limites são preservados. Preparar cria uma execução pausada; não
+                inicia agentes.
+              </p>
+            </>
+          )}
           {data.successorRunId && (
             <Link className="btn btn-primary" to={data.url}>
-              Abrir continuidade #{data.successorRunId}
+              {data.firstExecution ? "Abrir construção" : "Abrir continuidade"}{" "}
+              #{data.successorRunId}
             </Link>
           )}
           <>
@@ -209,7 +259,9 @@ export default function ProductProcessVersionContinuity({
                       aria-label="Preparando"
                     />
                   )}
-                  Preparar continuidade sem executar
+                  {data.firstExecution
+                    ? "Preparar construção na versão publicada"
+                    : "Preparar continuidade sem executar"}
                 </button>
               </form>
             )}

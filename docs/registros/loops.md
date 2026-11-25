@@ -11934,3 +11934,18 @@ correção. A fixture de CA permanece no CI, fora do caminho operacional noturno
 que conserva validação estática e preflight real. Nenhum gate TLS é dispensado nem
 aplicação é recriada por `renew_tls`.
 Registro: `docs/homologacao/vega-tls-shared-gate-20261124.md`.
+
+### Recorrência do LOOP-BPM-CICLO-RETIRADO-SEM-CONTINUIDADE — primeira construção
+
+Em 25/11/2026, o banco confirmou a passagem abortada em Capella (#97, evento
+#3491). As três atividades do planejamento foram aceitas, mas a tentativa de
+iniciar o BPM retirado revertia a conclusão da execução e o avanço do ciclo.
+O comando de adoção ainda exigia ocorrência histórica no próprio BPM retirado.
+
+O backend agora preserva a conclusão e registra a pendência de versão. O
+recibo da primeira construção vincula somente a versão elegível e as entradas
+aceitas pelo contrato de construção do mesmo experimento. A prevenção exercita
+preparação e retomada concorrentes, contrato alterado, duas identidades locais,
+STOP, saldo e os dois caminhos anteriores. Hipótese a medir após adoção:
+reduzir o tempo entre aceite da arquitetura e início da primeira atividade
+sem repetir tarefas de planejamento. Nenhuma evidência de ganho comercial.

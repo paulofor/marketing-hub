@@ -71,7 +71,8 @@ public class ProcessRunContext {
   /**
    * Valida identidade, ficha, BPM e adesão explícita, preservando a referência congelada em toda
    * leitura; navegação sem referência, homologação encerrada e construção pendente impedem
-   * execução.
+   *
+   * <p>execução. A primeira construção adotada exige a mesma cadeia e ciclo do recibo.
    */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
@@ -82,6 +83,21 @@ public class ProcessRunContext {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Informe cadeia e referência operacional do processo.");
     var process = process(processId);
+    if (execution
+        && versionContinuity != null
+        && "pde-construction-approval".equals(process.getProcessCode())) {
+      versionContinuity
+          .firstExecutionForReference(command.sourceReference(), processId)
+          .ifPresent(
+              receipt -> {
+                if (!Objects.equals(productId, receipt.productId())
+                    || !Objects.equals(command.learningCycleId(), receipt.cycleId())
+                    || !Objects.equals(command.chainId(), receipt.binding().chainId()))
+                  throw new ResponseStatusException(
+                      HttpStatus.CONFLICT,
+                      "A construção preparada pertence a outra cadeia ou ciclo.");
+              });
+    }
     if (executionProfileContext != null && command.sourceReference() != null)
       executionProfileContext.requireScope(
           productId, command.sourceReference(), command.chainId(), command.learningCycleId());

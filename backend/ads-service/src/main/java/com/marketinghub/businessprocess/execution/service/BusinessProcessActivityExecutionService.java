@@ -84,6 +84,9 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class BusinessProcessActivityExecutionService {
+  private static final String FIRST_CONSTRUCTION_RESUME_REASON =
+      "Retome a construção preparada pelo comando oficial no mesmo ciclo.";
+
   private static final int RECENT_EXECUTION_LIMIT = 10;
   private static final String UNLINKED_ACTIVITY_ID = "__unlinked__";
   private static final Pattern COMMERCIAL_PLAN_REFERENCE =
@@ -123,6 +126,11 @@ public class BusinessProcessActivityExecutionService {
   @Autowired(required = false)
   private com.marketinghub.catalogovivo.v1.service.OpalaAdoptionChainPositionResolver
       opalaAdoptionChainPositionResolver;
+
+  @Autowired(required = false)
+  private com.marketinghub.businessprocess.automation.v1.service.continuity
+          .ProcessVersionContinuityLookup
+      versionContinuity;
 
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
@@ -762,9 +770,7 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, activityId, request, learningCycleId, null);
   }
 
-  /**
-   * Executa no contexto explicitamente selecionado, revalidando identidade e todas as aprovações.
-   */
+  /** Executa no contexto informado após conferir aprovações e a retomada de um destino adotado. */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId,
@@ -846,6 +852,15 @@ public class BusinessProcessActivityExecutionService {
           HttpStatus.CONFLICT,
           "O produto ainda não possui experimento nem contrato privado para contextualizar a execução.");
     }
+    var firstConstruction = firstConstruction(sourceReference, process);
+    if (firstConstruction
+        .filter(
+            receipt ->
+                !Objects.equals(productId, receipt.productId())
+                    || !Objects.equals(learningCycleId, receipt.cycleId())
+                    || !versionContinuity.released(receipt))
+        .isPresent())
+      throw new ResponseStatusException(HttpStatus.CONFLICT, FIRST_CONSTRUCTION_RESUME_REASON);
     ActivitySituation currentSituation =
         activitySituation(
             normalizedActivityId,
@@ -1197,6 +1212,16 @@ public class BusinessProcessActivityExecutionService {
           ex);
       return null;
     }
+  }
+
+  /** Consulta o recibo de construção somente para a definição e o experimento informados. */
+  private Optional<
+          com.marketinghub.businessprocess.automation.v1.service.continuity
+              .ProcessVersionContinuityLookup.FirstExecution>
+      firstConstruction(String reference, BusinessProcessDefinition process) {
+    if (versionContinuity == null || !"pde-construction-approval".equals(process.getProcessCode()))
+      return Optional.empty();
+    return versionContinuity.firstExecutionForReference(reference, process.getId());
   }
 
   /** Explica prontidão, versão publicada ou fixada e preservação das tentativas na auditoria. */
@@ -1738,7 +1763,8 @@ public class BusinessProcessActivityExecutionService {
 
   /**
    * Projeta o estado e a validade atual das provas pela definição selecionada, preservando versões
-   * e retornos condicionais superados na auditoria histórica.
+   * e retornos condicionais superados na auditoria histórica. O destino preparado expõe comandos de
+   * atividade somente após a retomada oficial.
    */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
@@ -1754,6 +1780,10 @@ public class BusinessProcessActivityExecutionService {
       boolean hasExecutionContext,
       boolean productExecutionEnabled) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new java.util.ArrayList<>();
+    boolean awaitingResume =
+        firstConstruction(currentExecutionReference, selectedProcess)
+            .filter(receipt -> !versionContinuity.released(receipt))
+            .isPresent();
     int sequence = 1;
     for (Map.Entry<String, List<AgentTask>> entry : tasksByActivityId.entrySet()) {
       BusinessProcessActivityDefinition definition = selectedByActivityId.get(entry.getKey());
@@ -1841,6 +1871,7 @@ public class BusinessProcessActivityExecutionService {
               && executionProfilePolicy.pins(currentExecutionReference, selectedProcess);
       boolean executionRequestAvailable =
           definition != null
+              && !awaitingResume
               && ("PUBLISHED".equals(selectedProcess.getStatus()) || pinnedVersion)
               && hasExecutionContext
               && productExecutionEnabled
@@ -1856,20 +1887,22 @@ public class BusinessProcessActivityExecutionService {
                       && humanReadiness != null
                       && humanReadiness.ready()));
       String executionRequestReason =
-          executionRequestReason(
-              definition,
-              selectedProcess,
-              situation.operationalState(),
-              responsibleAgents,
-              backendExecutor.isPresent(),
-              backendReadiness,
-              humanExecutor.isPresent(),
-              humanReadiness,
-              !agentReadinessProviders.isEmpty(),
-              agentReadiness,
-              hasExecutionContext,
-              productExecutionEnabled,
-              pinnedVersion);
+          awaitingResume && definition != null
+              ? FIRST_CONSTRUCTION_RESUME_REASON
+              : executionRequestReason(
+                  definition,
+                  selectedProcess,
+                  situation.operationalState(),
+                  responsibleAgents,
+                  backendExecutor.isPresent(),
+                  backendReadiness,
+                  humanExecutor.isPresent(),
+                  humanReadiness,
+                  !agentReadinessProviders.isEmpty(),
+                  agentReadiness,
+                  hasExecutionContext,
+                  productExecutionEnabled,
+                  pinnedVersion);
       ProductProcessActivityExecutionControlResponse executionControl =
           executionControl(
               definition,

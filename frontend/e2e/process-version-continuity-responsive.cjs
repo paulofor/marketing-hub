@@ -5,7 +5,19 @@ const { spawn } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const html = path.join(root, "continuity-qa.html");
 const tsx = path.join(root, "continuity-qa.tsx");
-const output = path.resolve(root, "../artifacts/process-version-continuity");
+const firstConstruction = process.argv.includes("--first-construction");
+const output = path.resolve(
+  root,
+  firstConstruction
+    ? "../artifacts/first-construction-continuity"
+    : "../artifacts/process-version-continuity",
+);
+const prepareLabel = firstConstruction
+  ? "Preparar construção na versão publicada"
+  : "Preparar continuidade sem executar";
+const openLabel = firstConstruction
+  ? "Abrir construção #901"
+  : "Abrir continuidade #901";
 fs.mkdirSync(output, { recursive: true });
 fs.writeFileSync(
   html,
@@ -86,25 +98,56 @@ let browser;
               ? "Continuidade preparada e pausada"
               : "Confira as provas",
             url: "/products/71/value-chain-history/processes/181/activities?chainId=31&learningCycleId=99&sourceReference=experiment%3A201",
-            outputs: Array.from({ length: 8 }, (_, n) => ({
-              activityId: `step-${n}`,
-              name: `Entrega ${n + 1}`,
-              accepted: true,
-              instanceId: 300 + n,
-              changedFields: n === 0 ? ["/description"] : [],
-              sourceContract: "Contrato anterior",
-              targetContract: "Contrato publicado",
-              evidence: "Prova sintética " + n,
-              owner: "Dédalo",
-              taskIds: [800 + n],
-              destinationStatus: n === 0 ? "REVALIDATION_PENDING" : "ACCEPTED",
-              criteria: [
-                {
-                  description: "Critério novo exige prova executada",
-                  status: "REVALIDATION_PENDING",
-                },
-              ],
-            })),
+            receiptId: firstConstruction && saved ? 902 : null,
+            firstExecution: firstConstruction
+              ? {
+                  sourceVersion: 7,
+                  targetVersion: 8,
+                  productVersion: "candidata-sintetica-v3",
+                  experimentId: 201,
+                  inputs: [
+                    {
+                      name: "Estratégia de Atena",
+                      occurrenceId: 301,
+                      taskId: 801,
+                    },
+                    {
+                      name: "Economia de Plutus",
+                      occurrenceId: 302,
+                      taskId: 802,
+                    },
+                    {
+                      name: "Arquitetura de Dédalo",
+                      occurrenceId: 303,
+                      taskId: 803,
+                    },
+                  ],
+                  updatedRequirements: ["Construir jornada"],
+                }
+              : null,
+            outputs: Array.from(
+              { length: firstConstruction ? 0 : 8 },
+              (_, n) => ({
+                activityId: `step-${n}`,
+                name: `Entrega ${n + 1}`,
+                accepted: true,
+                instanceId: 300 + n,
+                changedFields: n === 0 ? ["/description"] : [],
+                sourceContract: "Contrato anterior",
+                targetContract: "Contrato publicado",
+                evidence: "Prova sintética " + n,
+                owner: "Dédalo",
+                taskIds: [800 + n],
+                destinationStatus:
+                  n === 0 ? "REVALIDATION_PENDING" : "ACCEPTED",
+                criteria: [
+                  {
+                    description: "Critério novo exige prova executada",
+                    status: "REVALIDATION_PENDING",
+                  },
+                ],
+              }),
+            ),
           },
         });
       });
@@ -112,11 +155,15 @@ let browser;
       await expect(page.getByRole("alert")).toBeVisible();
       await page.getByRole("button", { name: "Consultar novamente" }).click();
       await expect(
-        page.getByText("Entrega 8 · entrega original #307"),
+        page.getByText(
+          firstConstruction
+            ? "Arquitetura de Dédalo · tarefa #803"
+            : "Entrega 8 · entrega original #307",
+        ),
       ).toBeVisible();
       await expect(
         page.getByRole("button", {
-          name: "Preparar continuidade sem executar",
+          name: prepareLabel,
         }),
       ).toBeDisabled();
       await page
@@ -129,18 +176,16 @@ let browser;
         path: path.join(output, name + "-before.png"),
         fullPage: true,
       });
-      await page
-        .getByRole("button", { name: "Preparar continuidade sem executar" })
-        .click();
-      await expect(
-        page.getByRole("link", { name: "Abrir continuidade #901" }),
-      ).toBeVisible();
+      await page.getByRole("button", { name: prepareLabel }).click();
+      await expect(page.getByRole("link", { name: openLabel })).toBeVisible();
       await page.reload();
+      await expect(page.getByRole("link", { name: openLabel })).toBeVisible();
       await expect(
-        page.getByRole("link", { name: "Abrir continuidade #901" }),
-      ).toBeVisible();
-      await expect(
-        page.getByText(/Revalidação pendente — responsável: Dédalo/),
+        page.getByText(
+          firstConstruction
+            ? "Recibo da preparação #902"
+            : /Revalidação pendente — responsável: Dédalo/,
+        ),
       ).toBeVisible();
       if (posts !== 1) throw Error("Comando duplicado");
       if (

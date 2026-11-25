@@ -123,3 +123,19 @@ A recuperação do acesso está integrada em48d6942d. O gate compartilhado apont
 certificado vencido do Kit e manutenção interrompida por fixture. A correção é no
 fluxo existente de renovação, sem liberar cobrança ou mídia. Vega103 permanece
 parada até a publicação ser comprovada; não houve nova inferência da925.
+
+### 25/11/2026 — primeira construção após aposentadoria de BPM
+
+Capella, produto 7, cadeia 27, ciclo 20, experimento 113, candidata
+`capella-beleza-v4`. A execução 97 tinha aceites 898/926/927. O diário #3491
+mostrou a falha ao enfileirar a definição retirada 117 no mesmo commit que
+concluiria o planejamento. A definição publicada 127 mantém as atividades
+e fluxos e introduz requisitos para o tipo Turmalina. A rotina antiga só
+previa adoção quando a construção histórica já tivesse uma execução.
+
+A preparação inicial usa o contrato que Dédalo já consome e referencia as três
+ocorrências aceitas da mesma candidata. A versão publicada é vinculada ao
+ciclo original por recibo. A retomada oficial volta a conferir a candidata,
+as entradas e os controles vigentes. Critérios novos da construção continuam
+sujeitos à homologação. Matriz e limites em
+[`primeira-construcao-versao-publicada-v1.md`](../homologacao/primeira-construcao-versao-publicada-v1.md).

@@ -105,3 +105,5 @@ local/
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3-hls/checksums.sha256
 
 __pycache__/
+# Evidências locais reproduzíveis da homologação de expectativas
+.codex/expectation-evidence/

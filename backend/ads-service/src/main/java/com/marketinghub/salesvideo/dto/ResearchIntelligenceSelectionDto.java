@@ -1,5 +1,6 @@
 package com.marketinghub.salesvideo.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -9,7 +10,18 @@ public record ResearchIntelligenceSelectionDto(
     String contextFingerprint,
     int totalAvailableCards,
     List<Route> routes,
-    List<String> limitations) {
+    List<String> limitations,
+    JsonNode expectationIntelligence) {
+
+  /** Preserva a construção legada quando o contexto não contém orientação de expectativas. */
+  public ResearchIntelligenceSelectionDto(
+      String contractVersion,
+      String contextFingerprint,
+      int totalAvailableCards,
+      List<Route> routes,
+      List<String> limitations) {
+    this(contractVersion, contextFingerprint, totalAvailableCards, routes, limitations, null);
+  }
 
   /** Representa a rota consultiva entregue a um único agente do fluxo audiovisual. */
   public record Route(

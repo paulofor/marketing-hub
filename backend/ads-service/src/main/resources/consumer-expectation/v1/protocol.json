@@ -1,0 +1,192 @@
+{
+  "contractVersion": "CONSUMER_EXPECTATION_V1",
+  "reviewedOn": "2026-11-25",
+  "evidenceKind": "SCIENTIFIC_SYNTHESIS_NOT_MARKET_PROOF",
+  "purpose": "Transformar expectativa contextual em hipóteses compreensíveis e entrega útil; só comportamento voluntário e contribuição conciliada sustentam decisões comerciais.",
+  "axes": [
+    "Familiaridade e novidade",
+    "Expectativa e recompensa percebida",
+    "Surpresa e compreensão",
+    "Curiosidade e prazer da descoberta",
+    "Originalidade e relevância",
+    "Desejo e valor percebido"
+  ],
+  "discovery": [
+    "Argos registra fonte pública, data, público, situação e frase/comportamento observável; separa fato, interpretação e contraponto.",
+    "Expectativa inferida permanece hipótese. Popularidade de concorrentes, comentários e buscas são amostras enviesadas, não demanda comprovada.",
+    "Usar sinais consentidos e agregados: origem, exposição, conclusão, compra, entrega, retorno, reembolso; não inferir estados psicológicos individuais.",
+    "Preservar expectativa anterior, desejo, alternativa familiar, entrega real e o que seria novidade naquele canal e nível de familiaridade. Não recrutar nem solicitar opiniões."
+  ],
+  "generation": [
+    "Atena compara controle familiar, descoberta guiada e reenquadramento; nenhuma dose é previamente vencedora.",
+    "Dédalo constrói a utilidade; Íris materializa anúncio/oferta; Apolo usa variação de ritmo/áudio com prova, legendas, controle e alternativa sem movimento.",
+    "Psique avalia compreensão e esforço como revisão sintética; Têmis verifica promessa/prova. Nenhum deles cria evidência humana nem aprova a própria criação."
+  ],
+  "validation": [
+    "Uma variável principal, mesmo público/canal/preço/entrega/janela e critério de sucesso declarados antes do teste; toda mudança segue em ciclo/experimento sucessor.",
+    "Pré-mercado: artefato real, testes determinísticos, acessibilidade, mobile, revisão independente e custo integral. Não exigir opinião solicitada.",
+    "No mercado: unidade de exposição e atribuição estáveis, bots/testes excluídos, janela e amostra planejadas, reembolsos maduros; não parar no primeiro resultado favorável.",
+    "Se houver alocação aleatória autorizada, checar desequilíbrio, incerteza e comparações múltiplas. Comparação histórica entre ciclos é observacional, não causal.",
+    "Reverter por confusão, promessa falsa, falha de entrega, piora econômica ou limites ultrapassados. Sem dados suficientes: inconclusivo; não eleger vencedor por CTR.",
+    "Comparar primeira exposição e repetição por coorte. Ganho inicial que desaparece com habituação não sustenta escala."
+  ],
+  "metrics": [
+    "Primárias: compras líquidas conciliadas e contribuição após entrega, taxas/impostos e aquisição.",
+    "Proteções: entrega útil, tempo/esforço até resultado, reembolso, reclamação, acessibilidade e custo por uso.",
+    "Diagnósticas: exposição, compreensão observável, avanço e retenção audiovisual; não equivalem a vendas.",
+    "Custos ou resultados sem fonte permanecem desconhecidos. Margem de contribuição não é lucro líquido."
+  ],
+  "limits": [
+    "Sem dose ótima universal, score cerebral, leitura de dopamina ou garantia de aumento de vendas.",
+    "Não ocultar preço, condições, recorrência ou limites; não usar urgência falsa, recompensa compulsiva ou frustração deliberada.",
+    "Planejamento e leitura não criam tarefas, campanhas, orçamento, autorizações ou transições.",
+    "Registrar hipótese, variante, evidência, versão e resultado nos artefatos/tarefas e ciclos existentes; não substituir memória por aprovação automática."
+  ],
+  "tools": {
+    "plan": "POST /api/consumer-expectations/v1/plans/preview",
+    "learning": "GET /api/consumer-expectations/v1/products/{productId}/cycles/{cycleId}/learning"
+  },
+  "sources": [
+    {
+      "id": "schultz1997",
+      "title": "Schultz, Dayan e Montague (1997)",
+      "url": "https://doi.org/10.1126/science.275.5306.1593",
+      "design": "Neurofisiologia e modelo de aprendizagem",
+      "finding": "Respostas dopaminérgicas em primatas acompanham desvios da recompensa prevista.",
+      "limits": "Não mede prazer individual nem eficácia publicitária ou compras.",
+      "access": "Texto consultado em repositório do autor: https://www.gatsby.ucl.ac.uk/~dayan/papers/sdm97.pdf"
+    },
+    {
+      "id": "rutledge2014",
+      "title": "Rutledge et al. (2014)",
+      "url": "https://doi.org/10.1073/pnas.1407535111",
+      "design": "Experimentos e replicação em jogo",
+      "finding": "Expectativas e resultados recentes ajudam a explicar bem-estar momentâneo na tarefa.",
+      "limits": "Bem-estar momentâneo em jogo não equivale a satisfação duradoura ou conversão.",
+      "access": "Texto integral PNAS consultado"
+    },
+    {
+      "id": "silvia2005",
+      "title": "Silvia (2005)",
+      "url": "https://doi.org/10.1037/1528-3542.5.1.89",
+      "design": "Experimentos sobre interesse",
+      "finding": "Novidade/complexidade e capacidade de compreender participam da avaliação de interesse.",
+      "limits": "Não define dose universal de novidade nem garante compra.",
+      "access": "Registro do repositório UNCG consultado; PDF bloqueado nesta consulta"
+    },
+    {
+      "id": "halkias2014",
+      "title": "Halkias e Kokkinaki (2014)",
+      "url": "https://doi.org/10.1080/00913367.2014.891087",
+      "design": "Experimentos publicitários",
+      "finding": "Incongruência moderada favoreceu memória e atitudes em condições estudadas.",
+      "limits": "Familiaridade com a marca e oportunidade de processamento limitam a generalização; atitude não é venda.",
+      "access": "Resumo do editor consultado"
+    },
+    {
+      "id": "reber2004",
+      "title": "Reber, Schwarz e Winkielman (2004)",
+      "url": "https://doi.org/10.1207/s15327957pspr0804_3",
+      "design": "Revisão teórica",
+      "finding": "Facilidade de processamento pode contribuir para prazer estético.",
+      "limits": "Fluência não implica verdade, originalidade ou adequação comercial.",
+      "access": "Artigo em repositório UCSD localizado e resumo consultado"
+    },
+    {
+      "id": "rosengren2020",
+      "title": "Rosengren et al. (2020)",
+      "url": "https://doi.org/10.1177/0022242920929288",
+      "design": "Meta-análise de publicidade",
+      "finding": "Originalidade e adequação são dimensões complementares da criatividade eficaz.",
+      "limits": "Desfechos e contextos variam; não fornece previsão de ROI para este produto.",
+      "access": "Texto do editor consultado"
+    },
+    {
+      "id": "oliver1980",
+      "title": "Oliver (1980)",
+      "url": "https://doi.org/10.1177/002224378001700405",
+      "design": "Estudo de campo e modelo de satisfação",
+      "finding": "Expectativa e sua confirmação/desconfirmação participam da satisfação.",
+      "limits": "Contexto de vacinação e intenção declarada não provam compra de produto digital.",
+      "access": "Resumo do editor consultado; texto integral restrito"
+    },
+    {
+      "id": "delight1997",
+      "title": "Oliver, Rust e Varki (1997)",
+      "url": "https://doi.org/10.1016/S0022-4359(97)90021-X",
+      "design": "Modelo e estudos de serviços",
+      "finding": "Customer delight distingue uma resposta intensa de satisfação rotineira.",
+      "limits": "Efeito depende do contexto; não justifica inflar promessas ou adicionar bônus sem utilidade.",
+      "access": "Resumo do editor consultado; texto integral restrito"
+    },
+    {
+      "id": "curiosity2014",
+      "title": "Gruber, Gelman e Ranganath (2014)",
+      "url": "https://doi.org/10.1016/j.neuron.2014.08.060",
+      "design": "Experimentos de memória e neuroimagem",
+      "finding": "Estados de curiosidade favoreceram aprendizagem e memória na tarefa.",
+      "limits": "Memória não é preferência, disposição a pagar ou venda.",
+      "access": "Artigo PMC4252494 consultado"
+    },
+    {
+      "id": "music2019",
+      "title": "Cheung et al. (2019)",
+      "url": "https://doi.org/10.1016/j.cub.2019.09.067",
+      "design": "Música, modelos e neuroimagem",
+      "finding": "Prazer musical depende conjuntamente de incerteza e surpresa.",
+      "limits": "Não extrapolar acordes musicais para uma curva universal de conversão audiovisual.",
+      "access": "Resumo PubMed 31708393 consultado"
+    },
+    {
+      "id": "repetition2015",
+      "title": "Schmidt e Eisend (2015)",
+      "url": "https://doi.org/10.1080/00913367.2015.1018460",
+      "design": "Meta-análise de repetição publicitária",
+      "finding": "Repetição altera efeitos publicitários; frequência e contexto precisam ser considerados.",
+      "limits": "Sem frequência ideal universal; fadiga deve ser medida por coorte e janela.",
+      "access": "Resumo do editor consultado; texto integral bloqueado"
+    }
+  ],
+  "surfaces": {
+    "AD": {
+      "owner": "Íris / Apolo",
+      "action": "Demonstrar a entrega no anúncio",
+      "check": "A peça permite entender o produto e o benefício sem depender de som ou de mistério prolongado?"
+    },
+    "OFFER": {
+      "owner": "Atena / Plutus / Íris",
+      "action": "Apresentar a utilidade da oferta com preço e condições explícitos",
+      "check": "A descoberta preserva preço total, limites, prazo e correspondência com a entrega?"
+    },
+    "PRODUCT": {
+      "owner": "Dédalo",
+      "action": "Entregar um primeiro resultado útil no produto",
+      "check": "A pessoa consegue usar o resultado sem esforço adicional escondido ou bônus sem função?"
+    },
+    "DIGITAL_EXPERIENCE": {
+      "owner": "Dédalo / Psique",
+      "action": "Revelar o resultado ao concluir uma ação simples",
+      "check": "A interação mantém navegação familiar, controle, acessibilidade e recuperação de falha?"
+    }
+  },
+  "variantDefinitions": [
+    {
+      "code": "FAMILIAR_CONTROL",
+      "label": "Controle familiar",
+      "change": "Apresentar diretamente a entrega usando a expectativa conhecida.",
+      "risk": "Pode ser previsível; serve de referência, não de alternativa inferior."
+    },
+    {
+      "code": "GUIDED_DISCOVERY",
+      "label": "Descoberta guiada",
+      "change": "Manter a estrutura familiar e revelar uma utilidade concreta antes subestimada.",
+      "risk": "Curiosidade sem recompensa útil ou que atrasa a compreensão."
+    },
+    {
+      "code": "REFRAMING",
+      "label": "Quebra de expectativa explicada",
+      "change": "Contrapor a expectativa à demonstração da entrega e explicar imediatamente o mecanismo.",
+      "risk": "Estranheza, esforço ou promessa maior que a prova; só testar com compreensão preservada."
+    }
+  ]
+}

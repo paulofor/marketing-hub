@@ -2,6 +2,7 @@ package com.marketinghub.researchintelligence.v1.service;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agent.AgentInput;
+import com.marketinghub.consumerexpectation.v1.service.protocol.ExpectationProtocol;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.researchintelligence.ResearchIntelligenceCardVersionRepository;
 import com.marketinghub.researchintelligence.v1.ResearchIntelligenceCardStatus;
@@ -142,7 +143,11 @@ public class ResearchIntelligenceService {
     }
     for (String agentKey : OTHER_AGENT_ORDER) {
       AgentCuration curation = curation(agentKey);
-      if (!curation.inputs().isEmpty()) policies.add(agentPolicy(agentKey, curation, catalog));
+      if (!curation.inputs().isEmpty()
+          || catalog.stream()
+              .anyMatch(
+                  card -> "expectativas-surpresa".equals(card.collection()) && isCurrent(card)))
+        policies.add(agentPolicy(agentKey, curation, catalog));
     }
     int activeCards = (int) catalog.stream().filter(this::isCurrent).count();
     return new ResearchIntelligenceCatalogResponse(
@@ -171,7 +176,7 @@ public class ResearchIntelligenceService {
 
   /**
    * Entrega a curadoria explícita à tarefa ou preserva o roteamento audiovisual quando não há
-   * vínculo.
+   * vínculo; pedidos de expectativas recebem protocolo próprio sem substituir a curadoria.
    */
   public ResearchIntelligenceSelectionResponse selectForAgentTask(
       String agentKey, String... contextParts) {
@@ -181,6 +186,10 @@ public class ResearchIntelligenceService {
       List<CatalogCard> catalog = currentCatalog();
       return selection(
           context, List.of(route(agentKey, context, catalog, curation, true)), catalog.size());
+    }
+    if (ExpectationProtocol.applies(agentKey, context)) {
+      List<CatalogCard> catalog = currentCatalog();
+      return selection(context, List.of(route(agentKey, context, catalog)), catalog.size());
     }
     if (!COLLECTIONS_BY_AGENT.containsKey(agentKey) || !isAudiovisualContext(context)) return null;
     List<CatalogCard> catalog = currentCatalog();
@@ -229,9 +238,15 @@ public class ResearchIntelligenceService {
         project.getSoundtrackPlan());
   }
 
-  /** Monta uma seleção estável e inclui os hashes das fontes em sua impressão digital. */
+  /**
+   * Monta seleção estável e identifica fontes e protocolo contextual sem alterar hashes legados.
+   */
   private ResearchIntelligenceSelectionResponse selection(
       String context, List<ResearchIntelligenceRouteResponse> routes, int availableCards) {
+    var expectation =
+        routes.stream().anyMatch(route -> ExpectationProtocol.applies(route.agentKey(), context))
+            ? ExpectationProtocol.taskContext()
+            : null;
     String selectedHashes =
         routes.stream()
             .flatMap(route -> route.cards().stream())
@@ -243,6 +258,7 @@ public class ResearchIntelligenceService {
         CONTRACT_VERSION,
         sha256(
             normalize(context)
+                + (expectation == null ? "" : "|" + expectation.toString())
                 + "|"
                 + selectedHashes
                 + "|"
@@ -251,7 +267,8 @@ public class ResearchIntelligenceService {
                     .toList()),
         availableCards,
         routes,
-        LIMITATIONS);
+        LIMITATIONS,
+        expectation);
   }
 
   /** Cria uma rota curta, cobrindo primeiro cada coleção obrigatória do agente. */
@@ -269,7 +286,9 @@ public class ResearchIntelligenceService {
       List<CatalogCard> catalog,
       AgentCuration curation,
       boolean curatedOnly) {
-    List<String> collections = COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of());
+    List<String> collections =
+        new ArrayList<>(COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of()));
+    if (ExpectationProtocol.applies(agentKey, context)) collections.add(0, "expectativas-surpresa");
     Set<String> terms = meaningfulTerms(context);
     List<ScoredCard> scored =
         catalog.stream()
@@ -293,6 +312,7 @@ public class ResearchIntelligenceService {
 
     LinkedHashSet<CatalogCard> selected = new LinkedHashSet<>();
     for (String collection : curatedOnly ? List.<String>of() : collections) {
+      if (selected.size() >= MAX_CARDS_PER_ROUTE) break;
       scored.stream()
           .filter(candidate -> candidate.card().collection().equals(collection))
           .findFirst()
@@ -321,7 +341,7 @@ public class ResearchIntelligenceService {
         agentName(agentKey),
         purpose(agentKey),
         authority(agentKey),
-        COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of()),
+        policyCollections(agentKey, catalog),
         MAX_CARDS_PER_ROUTE,
         curation.agentId(),
         curation.inputs().entrySet().stream()
@@ -334,6 +354,16 @@ public class ResearchIntelligenceService {
                             .anyMatch(
                                 card -> card.cardId().equals(entry.getKey()) && isCurrent(card))))
             .toList());
+  }
+
+  /** Expõe a coleção transversal somente quando há referências atuais para uso contextual. */
+  private List<String> policyCollections(String agentKey, List<CatalogCard> catalog) {
+    List<String> collections =
+        new ArrayList<>(COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of()));
+    if (catalog.stream()
+        .anyMatch(card -> "expectativas-surpresa".equals(card.collection()) && isCurrent(card)))
+      collections.add("expectativas-surpresa");
+    return List.copyOf(collections);
   }
 
   /** Lê apenas entradas tipadas como referências e elimina duplicatas sem copiar o artigo. */
@@ -487,12 +517,18 @@ public class ResearchIntelligenceService {
 
   /** Informa se uma coleção já possui política de consumo por algum agente. */
   boolean supportsCollection(String collection) {
-    return COLLECTIONS_BY_AGENT.values().stream()
-        .anyMatch(collections -> collections.contains(collection));
+    return "expectativas-surpresa".equals(collection)
+        || COLLECTIONS_BY_AGENT.values().stream()
+            .anyMatch(collections -> collections.contains(collection));
   }
 
   /** Lista os agentes já autorizados a receber a coleção informada. */
   List<String> routableAgentsForCollection(String collection) {
+    if ("expectativas-surpresa".equals(collection)) {
+      List<String> agents = new ArrayList<>(VIDEO_AGENT_ORDER);
+      agents.addAll(OTHER_AGENT_ORDER);
+      return List.copyOf(agents);
+    }
     return VIDEO_AGENT_ORDER.stream()
         .filter(agent -> COLLECTIONS_BY_AGENT.getOrDefault(agent, List.of()).contains(collection))
         .toList();

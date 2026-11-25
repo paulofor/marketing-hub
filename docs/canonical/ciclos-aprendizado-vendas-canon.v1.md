@@ -936,3 +936,10 @@ o recibo e registra `CYCLE_PROCESS_CONTINUED` no diário do planejamento.
 O orçamento acumulado, reservas, dispensas, ficha vinculada e aprovações são
 consultados pelos controles vigentes. Todo aceite da construção deve ser
 comprovado no destino.
+
+## Consulta de expectativas e surpresa positiva — 25/11/2026
+
+A capacidade `CONSUMER_EXPECTATION_V1` lê o último recibo automático do próprio ciclo para
+orientar aprendizado, conforme `expectativas-surpresa-canon.v1.md`. Não cria ciclos, reconcilia
+novamente, altera decisões ou declara causalidade. Hipóteses escolhidas e resultados continuam
+no brief e nos eventos deste fluxo; prévias da biblioteca não são planos persistidos.

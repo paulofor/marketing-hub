@@ -139,3 +139,14 @@ ciclo original por recibo. A retomada oficial volta a conferir a candidata,
 as entradas e os controles vigentes. Critérios novos da construção continuam
 sujeitos à homologação. Matriz e limites em
 [`primeira-construcao-versao-publicada-v1.md`](../homologacao/primeira-construcao-versao-publicada-v1.md).
+
+## 2026-11-25 — Expectativas e surpresa positiva
+
+Preparada uma capacidade transversal para comparar familiaridade, descoberta e quebra de
+expectativa em propaganda, oferta, produto e experiência. A pesquisa distingue onze referências
+científicas de seis hipóteses de aplicação. A leitura comercial usa os ciclos existentes e separa
+atenção, compra, contribuição e entrega útil, sem assumir causalidade ou iniciar campanha.
+As regressões cobrem os seis eixos e a preservação da orientação no contrato audiovisual de Apolo,
+incluindo contextos de produtos distintos e o percurso legado sem expectativas.
+Memória reutilizável, critérios de adoção e limites em
+[`expectativas-surpresa-v1.md`](expectativas-surpresa-v1.md). Resultado financeiro não medido.

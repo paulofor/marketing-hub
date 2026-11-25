@@ -30,7 +30,7 @@ public class VideoProjectResearchIntelligenceMapper {
     return map(researchIntelligenceService.selectForVideoAgent(project, agentKey));
   }
 
-  /** Converte a seleção compartilhada no contrato pertencente ao SalesVideo. */
+  /** Preserva cartões e orientação contextual ao converter para o contrato do SalesVideo. */
   private ResearchIntelligenceSelectionDto map(ResearchIntelligenceSelectionResponse selection) {
     if (selection == null) {
       return null;
@@ -40,7 +40,8 @@ public class VideoProjectResearchIntelligenceMapper {
         selection.contextFingerprint(),
         selection.totalAvailableCards(),
         selection.routes().stream().map(this::map).toList(),
-        selection.limitations());
+        selection.limitations(),
+        selection.expectationIntelligence());
   }
 
   /** Converte uma rota compartilhada preservando sua autoridade e motivo de seleção. */

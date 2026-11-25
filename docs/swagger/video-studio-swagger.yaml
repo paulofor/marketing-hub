@@ -745,6 +745,11 @@ components:
         limitations:
           type: array
           items: { type: string }
+        expectationIntelligence:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Protocolo CONSUMER_EXPECTATION_V1 somente em contextos pertinentes; preservado até o job audiovisual, sem ferramentas administrativas ou autorização comercial.
     ResearchIntelligenceCatalog:
       type: object
       required:

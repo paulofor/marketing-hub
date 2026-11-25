@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-one-take-many-cameras-2026-11",
+  "title": "One Take, Many Cameras — novas câmeras a partir de uma única gravação",
+  "finding": "Preprint de 24/11 demonstra síntese de tomadas alternativas guiadas por áudio, com leakage de fala de 17,5% para 0,6% frente ao Wan 3.0.",
+  "mechanism": "LTX-2.3 com LoRA condiciona vídeo, áudio, quadro-alvo e prompt; máscara de atenção reduz influência da fala em rostos silenciosos.",
+  "commercialApplication": "Pós-produção de entrevistas, anúncios, podcasts e cinema com cobertura multicâmera sintética.",
+  "evidenceStrength": "Preprint, demonstrações e benchmark de 296 pares dos autores; sem replicação independente; métrica ArcFace piorou.",
+  "experimentHypothesis": "Comparar tomadas sintéticas com gravação de segunda câmera real, incluindo português brasileiro, custo e aceitação.",
+  "risks": "Detalhes ocultos são inferidos, identidade e gestos podem variar; consentimento e divulgação de síntese.",
+  "limits": "Pesquisa limitada; repositório só README; código, LoRA, API, preço e licença específica não confirmados.",
+  "validUntil": "2027-02-25",
+  "sourceTitle": "One Take, Many Cameras: recinematografia de dialogos",
+  "collection": "video",
+  "publishedOn": "2026-11-25",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-25-one-take-many-cameras.md",
+  "sourceSha256": "9625c6d498e62a7a414ba0814c2490ac1c1f91355a31818996b49d175336446b"
+}

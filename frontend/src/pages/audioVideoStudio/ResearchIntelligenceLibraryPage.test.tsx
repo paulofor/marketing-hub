@@ -75,10 +75,28 @@ function setup() {
   );
 }
 
+function mockCatalog(response: { data: unknown }) {
+  vi.mocked(axios.get).mockImplementation((url: string) =>
+    Promise.resolve(
+      url.endsWith("/protocol")
+        ? {
+            data: {
+              purpose: "Hipóteses, não vendas",
+              axes: [],
+              discovery: [],
+              sources: [],
+              limits: [],
+            },
+          }
+        : response,
+    ),
+  );
+}
+
 describe("ResearchIntelligenceLibraryPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    (axios.get as any).mockResolvedValue({ data: catalog });
+    mockCatalog({ data: catalog });
   });
 
   afterEach(() => cleanup());
@@ -122,7 +140,7 @@ describe("ResearchIntelligenceLibraryPage", () => {
 
   it("mostra o vínculo de um agente fora do audiovisual e filtra pela referência persistida", async () => {
     const user = userEvent.setup();
-    (axios.get as any).mockResolvedValue({
+    mockCatalog({
       data: {
         ...catalog,
         agentPolicies: [
@@ -162,7 +180,7 @@ describe("ResearchIntelligenceLibraryPage", () => {
   });
 
   it("expõe referência indisponível sem apresentar evidência fictícia", async () => {
-    (axios.get as any).mockResolvedValue({
+    mockCatalog({
       data: {
         ...catalog,
         agentPolicies: [

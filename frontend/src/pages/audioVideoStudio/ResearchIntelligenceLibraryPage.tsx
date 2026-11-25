@@ -6,6 +6,7 @@ import type {
   ResearchIntelligenceAgentPolicy,
   ResearchIntelligenceCard,
 } from "../../api/salesVideo/types";
+import ConsumerExpectationPanel from "./ConsumerExpectationPanel";
 import PageTitle from "../../components/PageTitle";
 import "./AudioVideoStudioPage.css";
 
@@ -102,6 +103,8 @@ export default function ResearchIntelligenceLibraryPage() {
         title="Biblioteca de Inteligência do Harness"
         subtitle="Pesquisas para orientar agentes, tarefas da Cadeia de Valor e projetos audiovisuais."
       />
+
+      <ConsumerExpectationPanel />
 
       {catalogQuery.isLoading ? (
         <section className="audio-video-studio-page__section">

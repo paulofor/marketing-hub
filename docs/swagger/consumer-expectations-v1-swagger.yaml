@@ -1,0 +1,148 @@
+openapi: 3.0.3
+info:
+  title: Expectativas e surpresa positiva
+  version: "1.0"
+  description: Ferramenta consultiva sem inferência paga, persistência de prévia, transição ou autorização comercial.
+paths:
+  /api/consumer-expectations/v1/protocol:
+    get:
+      summary: Ciência, limites, seis dimensões, contratos e onze referências
+      responses:
+        "200":
+          description: Protocolo CONSUMER_EXPECTATION_V1
+          content:
+            application/json:
+              schema: { type: object }
+  /api/consumer-expectations/v1/plans/preview:
+    post:
+      summary: Preparar três alternativas consultivas para uma superfície
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanInput" }
+      responses:
+        "200":
+          description: DRAFT_HYPOTHESIS com fingerprint SHA256, entrada, três variantes, gaps, validation, metrics, persistence e commercialAuthorization false
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Plan" }
+        "400": { description: "Entrada vazia, extensa ou enum desconhecido" }
+  /api/consumer-expectations/v1/products/{productId}/cycles/{cycleId}/learning:
+    get:
+      summary: Ler último recibo conciliado ou bloqueado do ciclo, sem atribuir causalidade
+      parameters:
+        - {
+            name: productId,
+            in: path,
+            required: true,
+            schema: { type: integer, format: int64 },
+          }
+        - {
+            name: cycleId,
+            in: path,
+            required: true,
+            schema: { type: integer, format: int64 },
+          }
+      responses:
+        "200":
+          description: Identidade, status consultivo, recibo, métricas, responsável, orientação e link; métricas desconhecidas não viram zero
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Learning" }
+        "404": { description: Ciclo ausente ou pertencente a outro produto }
+components:
+  schemas:
+    PlanInput:
+      type: object
+      required:
+        [
+          audience,
+          context,
+          surface,
+          expectedExperience,
+          desiredOutcome,
+          actualDelivery,
+          evidenceBasis,
+        ]
+      properties:
+        audience: { type: string, minLength: 1, maxLength: 500 }
+        context: { type: string, minLength: 1, maxLength: 500 }
+        surface:
+          { type: string, enum: [AD, OFFER, PRODUCT, DIGITAL_EXPERIENCE] }
+        expectedExperience: { type: string, minLength: 1, maxLength: 1000 }
+        desiredOutcome: { type: string, minLength: 1, maxLength: 1000 }
+        actualDelivery: { type: string, minLength: 1, maxLength: 1000 }
+        evidenceBasis:
+          {
+            type: string,
+            enum: [HYPOTHESIS, PUBLIC_SOURCE, VOLUNTARY_BEHAVIOR],
+          }
+        evidenceReference: { type: string, maxLength: 1200, nullable: true }
+        deliveryProofReference:
+          { type: string, maxLength: 1200, nullable: true }
+    Plan:
+      type: object
+      properties:
+        contractVersion: { type: string, enum: [CONSUMER_EXPECTATION_V1] }
+        fingerprint: { type: string, pattern: "^[a-f0-9]{64}$" }
+        status: { type: string, enum: [DRAFT_HYPOTHESIS] }
+        input: { $ref: "#/components/schemas/PlanInput" }
+        variants:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              code:
+                {
+                  type: string,
+                  enum: [FAMILIAR_CONTROL, GUIDED_DISCOVERY, REFRAMING],
+                }
+              label: { type: string }
+              owner: { type: string }
+              concept: { type: string }
+              familiarAnchor: { type: string }
+              change: { type: string }
+              comprehensionCheck: { type: string }
+              hypothesis: { type: string }
+              risk: { type: string }
+        gaps: { type: array, items: { type: string } }
+        validation: { type: array, items: { type: string } }
+        metrics: { type: array, items: { type: string } }
+        persistence: { type: string }
+        commercialAuthorization: { type: boolean, enum: [false] }
+    Learning:
+      type: object
+      properties:
+        contractVersion: { type: string }
+        productId: { type: integer, format: int64 }
+        cycleId: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64 }
+        productVersion: { type: string }
+        previousCycleId: { type: integer, format: int64, nullable: true }
+        status:
+          {
+            type: string,
+            enum:
+              [
+                MEASUREMENT_REQUIRED,
+                INCONCLUSIVE,
+                REVIEW_ECONOMICS,
+                OBSERVED_NOT_CAUSAL,
+              ],
+          }
+        measurementEventId: { type: integer, format: int64, nullable: true }
+        observedAt: { type: string, format: date-time, nullable: true }
+        metrics:
+          {
+            type: object,
+            description: "Whitelist de campos do recibo automático; vazio se indisponível, nulo se campo desconhecido",
+          }
+        sourceFingerprint: { type: string, nullable: true }
+        nextOwner: { type: string }
+        guidance: { type: string }
+        cycleUrl: { type: string }
+        causalConclusion: { type: boolean, enum: [false] }
+        commercialAuthorization: { type: boolean, enum: [false] }

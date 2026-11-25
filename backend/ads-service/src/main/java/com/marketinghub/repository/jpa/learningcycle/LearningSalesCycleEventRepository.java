@@ -9,6 +9,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Responsabilidade: consultar comandos imutáveis e suas evidências por ciclo. */
 public interface LearningSalesCycleEventRepository
     extends JpaRepository<LearningSalesCycleEvent, Long> {
+  /** Obtém a tentativa de medição mais recente sem ocultar um bloqueio posterior. */
+  Optional<LearningSalesCycleEvent> findFirstByCycleIdAndActionInOrderByRevisionDesc(
+      Long cycleId, Collection<String> actions);
+
   /** Lista somente as transições do ciclo solicitado, na ordem em que ocorreram. */
   List<LearningSalesCycleEvent> findByCycleIdOrderByRevisionAsc(Long cycleId);
 

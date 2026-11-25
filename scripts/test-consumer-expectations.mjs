@@ -106,8 +106,9 @@ test(
       "test",
       "--",
       "--run",
-      "src/pages/audioVideoStudio/ConsumerExpectationPanel.test.tsx",
-      "src/pages/audioVideoStudio/ResearchIntelligenceLibraryPage.test.tsx",
+      // A suíte completa também verifica que o Vitest não absorve checks exclusivos do Node.
+      "--maxWorkers=1",
+      "--minWorkers=1",
     ]);
   },
 );

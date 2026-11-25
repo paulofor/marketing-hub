@@ -41,6 +41,8 @@ na auditoria do worker/tarefa. Esta versão não obriga campos adicionais nos sc
 não modifica prompts de execuções em andamento e não gera novo trabalho no polling.
 Rotas da ferramenta administrativa são omitidas do contexto dos executores: a orientação chega
 pelo contrato existente da tarefa, sem anunciar ferramentas inexistentes nem permitir controllers de outro módulo.
+O adaptador do SalesVideo preserva a orientação opcional no contrato do projeto e no contexto
+entregue a Apolo; vídeos não relacionados continuam sem protocolo de expectativas.
 
 A tela **Biblioteca do Harness → Expectativas e surpresa positiva** consome o backend:
 `/api/consumer-expectations/v1/protocol`, `/plans/preview` e

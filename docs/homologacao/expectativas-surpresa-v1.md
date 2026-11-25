@@ -45,11 +45,19 @@ O runner remove `NODE_TEST_CONTEXT` dos subprocessos para que testes Node intern
 ignorados como recursivos. Exige TAP positivo do navegador e preserva logs enquanto cada processo
 executa. Uma etapa ignorada, interrompida ou sem resultado não conta como prova funcional.
 
+O navegador usa o nome `browser.check.cjs` para pertencer somente ao comando Node explícito.
+O nome anterior era capturado indevidamente pelo Vitest no CI; essa falha foi reproduzida
+localmente. O comando de aceite passou a executar a suíte completa da interface, com um worker
+para respeitar a memória local e conferir a descoberta de testes usada pelo CI.
+
 ## Resultados observados
 
-- Capacidade e biblioteca: 40 testes Java, incluindo encaminhamento das seis dimensões; a prova
-  de navegador é executada em JVM própria. A repetição focal cobre o ajuste lexical posterior à
-  regressão geral, sem repetir módulos não afetados.
+- Capacidade e biblioteca: 41 testes Java, incluindo encaminhamento das seis dimensões e
+  projeção serializada até o contrato audiovisual; a prova
+  de navegador é executada em JVM própria. A repetição focal cobre os ajustes lexical e de
+  projeção posteriores à regressão geral, sem repetir módulos não afetados.
+- Compatibilidade audiovisual: 105 casos dos serviços de projeto, ciclo e jobs aprovados;
+  as 92 verificações centrais de arquitetura foram repetidas e passaram após o ajuste do contrato.
 - Persistência: consulta JPA real em H2 confirma ordenação, bloqueio recente e segregação de ciclos.
 - Interface: sete testes Vitest, TypeScript e build de produção aprovados.
 - Navegador: HTTP real e Chromium desktop/iPhone 15 Pro/Pixel 7 aprovados; imagens inspecionadas,

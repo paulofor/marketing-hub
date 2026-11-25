@@ -146,5 +146,7 @@ Preparada uma capacidade transversal para comparar familiaridade, descoberta e q
 expectativa em propaganda, oferta, produto e experiência. A pesquisa distingue onze referências
 científicas de seis hipóteses de aplicação. A leitura comercial usa os ciclos existentes e separa
 atenção, compra, contribuição e entrega útil, sem assumir causalidade ou iniciar campanha.
+As regressões cobrem os seis eixos e a preservação da orientação no contrato audiovisual de Apolo,
+incluindo contextos de produtos distintos e o percurso legado sem expectativas.
 Memória reutilizável, critérios de adoção e limites em
 [`expectativas-surpresa-v1.md`](expectativas-surpresa-v1.md). Resultado financeiro não medido.

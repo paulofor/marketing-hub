@@ -1,3 +1,4 @@
+// Executado explicitamente pelo Node; o nome não pertence à descoberta automática do Vitest.
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");

@@ -165,8 +165,7 @@ class ConsumerExpectationIntegrationTest {
               case "numericFingerprint" -> "123";
               default -> "\" \"";
             };
-        e.setEvidenceJson(
-            e.getEvidenceJson().replace("\"synthetic-reconciled-source\"", value));
+        e.setEvidenceJson(e.getEvidenceJson().replace("\"synthetic-reconciled-source\"", value));
       }
       if (invalid.equals("malformed")) e.setEvidenceJson("{");
       if (invalid.equals("empty")) e.setEvidenceJson("");
@@ -223,7 +222,7 @@ class ConsumerExpectationIntegrationTest {
     assertThat(result.path("metrics").path("spendBrl").isNull()).isTrue();
   }
 
-  /** Executa navegador contra HTTP real quando a homologação local solicita o percurso visual. */
+  /** Executa o check exclusivo do Node contra HTTP real, separado da descoberta do Vitest. */
   @Test
   void browserUsesRealLocalBackend() throws Exception {
     Assumptions.assumeTrue(Boolean.getBoolean("expectation.browser"));
@@ -233,7 +232,7 @@ class ConsumerExpectationIntegrationTest {
                 "node",
                 "--test",
                 "--test-reporter=tap",
-                "frontend/tests/consumer-expectation/browser.test.cjs")
+                "frontend/tests/consumer-expectation/browser.check.cjs")
             .directory(root.toFile())
             .redirectErrorStream(true);
     process.environment().put("EXPECTATION_BACKEND_URL", "http://127.0.0.1:" + port);

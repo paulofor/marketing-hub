@@ -44,7 +44,7 @@ public final class ExpectationProtocol {
     return context;
   }
 
-  /** Injeta orientação somente quando o contexto pede expectativas, novidade ou surpresa. */
+  /** Reconhece as seis dimensões declaradas, preservando o limite dos agentes cadastrados. */
   public static boolean applies(String agent, String context) {
     String text = context == null ? "" : context.toLowerCase(Locale.ROOT);
     return AGENTS.contains(agent == null ? "" : agent)
@@ -53,6 +53,9 @@ public final class ExpectationProtocol {
                 "expectativa",
                 "familiaridade",
                 "novidade",
+                "curiosidade",
+                "originalidade",
+                "valor percebido",
                 "customer delight",
                 "surprise",
                 "expectation")

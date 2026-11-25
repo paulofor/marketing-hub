@@ -8,6 +8,22 @@ import org.junit.jupiter.api.Test;
 
 /** Verifica que a capacidade chega a tarefas pertinentes sem alterar tarefas não relacionadas. */
 class ExpectationHarnessTest {
+  /** Todas as dimensões declaradas pelo protocolo devem chegar ao contexto dos agentes. */
+  @Test
+  void routesEveryDeclaredExpectationAxis() {
+    var service =
+        new ResearchIntelligenceService(
+            Clock.fixed(Instant.parse("2026-11-25T12:00:00Z"), ZoneOffset.UTC));
+    for (var axis :
+        com.marketinghub.consumerexpectation.v1.service.protocol.ExpectationProtocol.catalog()
+            .path("axes")) {
+      var selection =
+          service.selectForAgentTask("experiment-strategist", axis.asText(), "Produto sintético");
+      assertThat(selection).as(axis.asText()).isNotNull();
+      assertThat(selection.expectationIntelligence()).as(axis.asText()).isNotNull();
+    }
+  }
+
   /** Confere os nove responsáveis, evidência versionada e isolamento entre dois contextos. */
   @Test
   void routesExpectationProtocolToRelevantAgentsOnly() {

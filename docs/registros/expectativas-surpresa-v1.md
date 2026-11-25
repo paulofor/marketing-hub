@@ -21,6 +21,11 @@ sucesso anterior. Produto/experimento/versão errados, dados de teste e desconhe
 Referência de fonte nula, numérica ou vazia é rejeitada; a revisão preveniu a conversão de `null`
 em texto aparentemente preenchido, com regressão determinística desses três casos.
 
+A revisão de encaminhamento reproduziu a ausência de protocolo para a dimensão “Curiosidade e
+prazer da descoberta”. O seletor passou a cobrir também curiosidade, originalidade e valor
+percebido. O teste percorre os seis eixos declarados, preservando os casos de outros produtos,
+agentes não cadastrados e tarefas não relacionadas; a hipótese de ganho comercial permanece aberta.
+
 **Limites:** prévia não persistida; fontes declaradas ainda dependem de revisão; interpretação
 criativa permanece com os agentes. Recibo positivo é observacional e não confirma causalidade.
 Adoção comercial depende da medição real posterior e dos limites vigentes do ciclo.

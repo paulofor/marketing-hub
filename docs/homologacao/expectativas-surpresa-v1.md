@@ -47,7 +47,9 @@ executa. Uma etapa ignorada, interrompida ou sem resultado não conta como prova
 
 ## Resultados observados
 
-- Capacidade e biblioteca: 39 testes Java, sem falhas; a prova de navegador é executada em JVM própria.
+- Capacidade e biblioteca: 40 testes Java, incluindo encaminhamento das seis dimensões; a prova
+  de navegador é executada em JVM própria. A repetição focal cobre o ajuste lexical posterior à
+  regressão geral, sem repetir módulos não afetados.
 - Persistência: consulta JPA real em H2 confirma ordenação, bloqueio recente e segregação de ciclos.
 - Interface: sete testes Vitest, TypeScript e build de produção aprovados.
 - Navegador: HTTP real e Chromium desktop/iPhone 15 Pro/Pixel 7 aprovados; imagens inspecionadas,

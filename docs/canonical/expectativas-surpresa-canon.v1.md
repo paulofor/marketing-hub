@@ -32,7 +32,9 @@ produzir surpresa. Não reduzir artificialmente expectativas nem criar recompens
   existentes. Atena interpreta resultado e explicações concorrentes no próximo ciclo autorizado.
 
 A biblioteca injeta o protocolo somente quando a tarefa pede expectativa, surpresa, novidade,
-familiaridade ou equivalentes suportados. Curadoria explícita é preservada; quatro cartões no máximo.
+familiaridade, curiosidade, originalidade, valor percebido ou equivalentes suportados.
+As seis dimensões declaradas têm regressão de encaminhamento. Curadoria explícita é preservada;
+quatro cartões no máximo.
 O fingerprint incorpora a orientação contextual do protocolo e as fontes selecionadas.
 O contexto não duplica as onze referências do catálogo; conserva até quatro cartões por rota. O contexto bruto continua
 na auditoria do worker/tarefa. Esta versão não obriga campos adicionais nos schemas legados,

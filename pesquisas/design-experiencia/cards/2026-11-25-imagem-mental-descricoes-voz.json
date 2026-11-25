@@ -1,0 +1,18 @@
+{
+  "cardKey": "imagem-mental-descricao-auditiva-compra-voz",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Descrições faladas concretas favorecem imagem mental em compras por voz",
+  "finding": "Em dois experimentos, descrições auditivas vívidas favoreceram a lembrança de marca. No laboratório, nas condições com ambos os tipos de descrição, 59% compraram a opção vívida, 23% a neutra e 18% nenhuma.",
+  "mechanism": "A formação de imagens mentais e a estimulação percebida da marca são mecanismos plausíveis; a mediação estatística não prova isoladamente causalidade nem atividade neural.",
+  "commercialApplication": "Comparar descrições faladas de usos reais com descrições neutras, preservando fatos, preço, duração e voz.",
+  "evidenceStrength": "Dois experimentos publicados, N=391 online e N=121 em laboratório; compra observada sob remuneração experimental. Evidência externa, não conversão em campo.",
+  "publishedOn": "2026-11-25",
+  "validUntil": "2027-01-09",
+  "experimentHypothesis": "Descrições concretas aumentarão lembrança e compreensão sem prejudicar escolha informada; medir pagamentos reconciliados, devoluções e satisfação em teste controlado.",
+  "risks": "Não inventar atributos sensoriais, não prometer resultados, não confundir imagem mental com prazer ou intenção com compra.",
+  "limits": "Produtos cotidianos; marcas fictícias no primeiro estudo; fala pré-gravada de 30 segundos e compra com remuneração no laboratório. Sem validação em produtos digitais ou no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-25-imagem-mental-descricoes-voz.md",
+  "sourceTitle": "Descrições auditivas concretas e imagem mental em compras por voz",
+  "sourceSha256": "58914a038b5a72abc205a86e890954338cc486e6ca358e7b572376b08e8999dc"
+}

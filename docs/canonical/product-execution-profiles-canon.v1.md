@@ -115,3 +115,12 @@ pacotes do Lead Portal. Outros executores que futuramente gerem consumo de uma c
 precisam integrar a mesma reserva antes da chamada, sem declarar cobertura que não executam.
 
 Referência de desenho consultada: [subprocessos reutilizáveis e vínculo de versão](https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/).
+
+## Piloto de fichas de evidência v1.0 (26/11/2026)
+
+As fichas históricas de agente, recurso e execução do piloto não são fichas financeiras
+nem autorização de despacho. Compartilham versão de esquema, ID estável, revisão, produto,
+título, resumo, data e origem; vínculos exigem ID e revisão exatos. Critério confirmado ou
+falho exige fonte. Os demais estados são pendente e sem evidência. O acervo é segregado
+como histórico/teste; não representa evidência comercial nova. Ver
+[escopo e matriz de homologação](../homologacao/fichas-v1.md).

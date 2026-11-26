@@ -115,6 +115,7 @@
     ".local/vega-930/payments-unit-local.log",
     ".local/vega-930/tls-operation-contract-final.log",
     "artifacts/first-construction-continuity",
-    ".codex/expectation-evidence"
+    ".codex/expectation-evidence",
+    ".local/fichas-evidence"
   ]
 }

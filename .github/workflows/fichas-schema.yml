@@ -1,0 +1,25 @@
+name: Fichas v1 contract
+on:
+  pull_request:
+    paths:
+      - 'backend/ads-service/src/main/resources/fichas/**'
+      - 'scripts/tests/test-fichas-schema.py'
+      - '.github/workflows/fichas-schema.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/ads-service/src/main/resources/fichas/**'
+      - 'scripts/tests/test-fichas-schema.py'
+      - '.github/workflows/fichas-schema.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install jsonschema==4.23.0
+      - run: python scripts/tests/test-fichas-schema.py

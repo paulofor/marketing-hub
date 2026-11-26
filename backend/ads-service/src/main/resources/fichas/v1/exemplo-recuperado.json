@@ -1,0 +1,113 @@
+[
+  {
+    "versaoEsquema": "1.0",
+    "id": "capella-c20-e97-passagem",
+    "revisao": 2,
+    "tipo": "execucao",
+    "produtoId": 7,
+    "titulo": "Passagem do planejamento para construção",
+    "resumo": "Passagem recuperada: execução #104, recibo #9248 e passagem #9250; não refazer #927.",
+    "registradoEm": "2026-11-26T19:29:06.010976+00:00",
+    "origem": {
+      "sistema": "Marketing Hub",
+      "referencia": "request:4020:assistant; reconferido MCP em 26/11/2026",
+      "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+    },
+    "vinculos": [
+      {
+        "id": "capella-dedalo",
+        "revisao": 1
+      },
+      {
+        "id": "capella-arquitetura-927",
+        "revisao": 1
+      },
+      {
+        "id": "capella-c20-e97-passagem",
+        "revisao": 1
+      }
+    ],
+    "ambiente": "historico",
+    "execucao": {
+      "tentativa": null,
+      "ciclo": 20,
+      "experimento": 113,
+      "processo": {
+        "id": 126,
+        "versao": 13
+      },
+      "atividade": "productArchitecture",
+      "estado": "COMPLETED",
+      "motivo": "Passagem recuperada: execução #104, recibo #9248 e passagem #9250; não refazer #927.",
+      "criterios": [
+        {
+          "titulo": "Planejamento #97 concluído 3/3",
+          "estado": "confirmado",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "product_process_run_v1:97; MCP 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "titulo": "Destino 127 v12 publicado",
+          "estado": "confirmado",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "business_process_definition:127; MCP 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "titulo": "Implementação executável aceita",
+          "estado": "pendente"
+        }
+      ],
+      "destino": {
+        "id": 127,
+        "versao": 12,
+        "estado": "PUBLISHED",
+        "fonte": {
+          "sistema": "Marketing Hub",
+          "referencia": "request:4020:user; histórico de 23/11/2026",
+          "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+        }
+      },
+      "entradas": [
+        {
+          "tarefaId": 898,
+          "estado": "COMPLETED",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:898; MCP db_query 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "tarefaId": 926,
+          "estado": "COMPLETED",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:926; MCP db_query 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "tarefaId": 927,
+          "estado": "COMPLETED",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:927; MCP db_query 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        }
+      ],
+      "lacunas": [
+        "Conclusão de especificações não comprova software executável.",
+        "Este retrato histórico não autoriza despacho; reconferir versão publicada, entradas e controles no comando oficial.",
+        "Execução #104: WAITING_INPUT, 4/10; falta URL executável aceita, conforme consulta de 26/11/2026. Não representa o processo atual global do produto.",
+        "Número da tentativa no instante histórico não comprovado. O contador atual retry_epoch=2 não foi retroativamente atribuído à revisão."
+      ]
+    }
+  }
+]

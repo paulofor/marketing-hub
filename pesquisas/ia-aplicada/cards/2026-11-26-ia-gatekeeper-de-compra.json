@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "IA abre a descoberta de marcas, mas confiança exige evidência",
+  "finding": "Em pesquisa First Insight com 1.164 consumidores dos EUA, 64% declararam abertura a comprar presentes de marcas desconhecidas recomendadas por IA (74% na geração Z); 51% dos usuários de IA da geração Z declararam confiar na recomendação quando corresponde exatamente à descrição. FTI relata confiança em tarefas de compra por IA coexistindo com desconfiança em autenticidade online.",
+  "mechanism": "A correspondência explícita entre necessidade e oferta pode facilitar a consideração de marcas novas, mas a verificação de autenticidade pode continuar necessária. Hipótese não causal.",
+  "commercialApplication": "Testar oferta legível por agentes com atributos verificáveis, preço, restrições e evidências autênticas, frente à apresentação convencional da mesma oferta.",
+  "evidenceStrength": "Moderada-baixa: dois levantamentos proprietários descritivos de consumidores dos EUA, sem intervenção experimental ou compra observada.",
+  "publishedOn": "2026-11-26",
+  "validUntil": "2027-01-10",
+  "experimentHypothesis": "A apresentação que explica a correspondência com requisitos e oferece prova verificável poderá aumentar consideração, checkout e pagamentos líquidos sem aumentar reembolsos, mantendo público e oferta comparáveis.",
+  "risks": "Não simular recomendação independente, depoimentos ou prova social; não inferir causalidade ou garantir vendas.",
+  "limits": "Intenções autorrelatadas, contexto sazonal dos EUA, amostras e perguntas distintas; efeito no Brasil e no Marketing Hub desconhecido.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-11-26-ia-descoberta-confianca-fim-de-ano.md",
+  "sourceTitle": "IA como filtro de descoberta e confiança — fim de ano 2026",
+  "sourceSha256": "d66f344abea9c912a6876c46a7bb717414f52fa41389b62fccbb7589be68db1b"
+}

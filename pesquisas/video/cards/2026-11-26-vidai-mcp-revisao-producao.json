@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-vidai-mcp-revisao-2026-11",
+  "title": "Vid.AI — produção audiovisual por agentes com aprovação por etapa",
+  "finding": "Em 26/11, revisão de roteiro/cenas, narração e mídia no chat antes do render; em 24/11, edição ampliada de projetos existentes por MCP.",
+  "mechanism": "MCP com ferramentas de edição, estimativa de créditos, teto por ação paga e revisão interativa antes da renderização.",
+  "commercialApplication": "Produção de vídeos explicativos, publicidade e conteúdo social com controle de orçamento e intervenção humana.",
+  "evidenceStrength": "Changelog, referência MCP e tabela comercial oficiais; sem teste autenticado independente.",
+  "experimentHypothesis": "Comparar fluxo agente com checkpoints versus geração final direta, medindo custo por peça aprovada, retrabalho, tempo e fidelidade ao briefing.",
+  "risks": "Dependência do fornecedor e do cliente MCP, créditos variáveis, direitos de mídia e publicação sem revisão.",
+  "limits": "SaaS ativo, planos pagos, UI depende do cliente; não é modelo generativo autônomo nem substitui editor profissional.",
+  "sourceTitle": "Vid.AI MCP — revisão humana e orçamento por etapa",
+  "validUntil": "2027-02-26",
+  "collection": "video",
+  "publishedOn": "2026-11-26",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-26-vidai-mcp-revisao-producao.md",
+  "sourceSha256": "9e439e6019924780147ddbe1d0423701e44dd439567d9515296339034a981790"
+}

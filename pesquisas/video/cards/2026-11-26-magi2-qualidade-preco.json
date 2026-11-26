@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-magi2-qualidade-preco-2026-11",
+  "title": "MAGI-2 — qualidade competitiva de imagem para vídeo a US$ 0,08/s",
+  "finding": "Lançado em 24/11; em 26/11 lidera nominalmente I2V com áudio na Artificial Analysis, empatado estatisticamente com Seedance 2.5, a custo anunciado de US$ 0,08/s em 1080p.",
+  "mechanism": "Transformer audiovisual MoE de 480B totais/~28B ativos, referências multimodais e controle temporal.",
+  "commercialApplication": "Animação de fotos de produtos, publicidade, curtas, cenas com fala e experimentação criativa de baixo custo.",
+  "evidenceStrength": "Documentação oficial, ranking independente de preferência humana e teste isolado de um provedor; não houve validação própria.",
+  "experimentHypothesis": "Comparar 20 prompts I2V em PT-BR com Gemini e Seedance: aprovação cega, identidade, lipsync, latência e custo por clipe aprovado.",
+  "risks": "Qualidade varia por tarefa, direitos das referências, fila, refações e inconsistência entre cenas; preço por segundo não equivale a custo final.",
+  "limits": "Modelo completo hospedado, pesos e licença ainda não publicados; API direta com habilitação e recarga temporariamente indisponível; Preview separado de agosto.",
+  "sourceTitle": "MAGI-2 — revisão de qualidade, preço e disponibilidade",
+  "validUntil": "2027-02-26",
+  "collection": "video",
+  "publishedOn": "2026-11-26",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-26-magi2-qualidade-preco.md",
+  "sourceSha256": "e7b3c8b5941b6ad45982bd80f09f1aed232cafa6d94a9b76d2c0195a597ab193"
+}

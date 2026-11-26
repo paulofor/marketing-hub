@@ -150,3 +150,14 @@ As regressões cobrem os seis eixos e a preservação da orientação no contrat
 incluindo contextos de produtos distintos e o percurso legado sem expectativas.
 Memória reutilizável, critérios de adoção e limites em
 [`expectativas-surpresa-v1.md`](expectativas-surpresa-v1.md). Resultado financeiro não medido.
+
+## 2026-11-26 — Piloto de fichas históricas de Capella
+
+Preparado piloto de consulta com esquema v1.0 e dois exemplos versionados: bloqueio da
+passagem após a arquitetura #927 e recuperação posterior. A consulta ao banco confirmou
+#97 concluída e #104 aguardando prova executável no ciclo 20. Nenhum agente foi disparado,
+nenhum custo autorizado e nenhum resultado comercial foi atribuído ao piloto.
+A memória reutilizável é preservar revisão, fonte e lacunas, sem confundir resumo histórico
+com estado atual. Contrato, alternativas, matriz e limites em
+[`fichas-v1.md`](../homologacao/fichas-v1.md). A homologação usa dependências simuladas;
+ativação produtiva não faz parte deste piloto.

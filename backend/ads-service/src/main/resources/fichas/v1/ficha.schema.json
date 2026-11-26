@@ -1,0 +1,464 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "versaoEsquema": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revisao": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tipo": {
+      "enum": [
+        "agente",
+        "recurso",
+        "execucao"
+      ]
+    },
+    "produtoId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "titulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resumo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "registradoEm": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sistema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "referencia": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https?://"
+        }
+      },
+      "required": [
+        "sistema",
+        "referencia"
+      ]
+    },
+    "vinculos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revisao": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "revisao"
+        ]
+      }
+    },
+    "ambiente": {
+      "enum": [
+        "historico",
+        "teste"
+      ]
+    },
+    "agente": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cadastroId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "entradas": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "saidas": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "cadastroId",
+        "entradas",
+        "saidas"
+      ]
+    },
+    "recurso": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "categoria": {
+          "type": "string",
+          "minLength": 1
+        },
+        "versao": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "categoria",
+        "versao"
+      ]
+    },
+    "execucao": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tentativa": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "ciclo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "experimento": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "processo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "versao": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "id",
+            "versao"
+          ]
+        },
+        "atividade": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estado": {
+          "type": "string",
+          "minLength": 1
+        },
+        "motivo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "criterios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "titulo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "estado": {
+                "enum": [
+                  "confirmado",
+                  "falho",
+                  "pendente",
+                  "sem_evidencia"
+                ]
+              },
+              "fonte": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sistema": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "referencia": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https?://"
+                  }
+                },
+                "required": [
+                  "sistema",
+                  "referencia"
+                ]
+              }
+            },
+            "required": [
+              "titulo",
+              "estado"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "estado": {
+                      "enum": [
+                        "confirmado",
+                        "falho"
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "fonte"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "destino": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "versao": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "estado": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fonte": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sistema": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "referencia": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "url": {
+                  "type": "string",
+                  "pattern": "^https?://"
+                }
+              },
+              "required": [
+                "sistema",
+                "referencia"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "versao",
+            "estado",
+            "fonte"
+          ]
+        },
+        "entradas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tarefaId": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "estado": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fonte": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sistema": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "referencia": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https?://"
+                  }
+                },
+                "required": [
+                  "sistema",
+                  "referencia"
+                ]
+              }
+            },
+            "required": [
+              "tarefaId",
+              "estado",
+              "fonte"
+            ]
+          }
+        },
+        "lacunas": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "tentativa",
+        "ciclo",
+        "experimento",
+        "processo",
+        "atividade",
+        "estado",
+        "motivo",
+        "criterios",
+        "destino",
+        "entradas",
+        "lacunas"
+      ]
+    }
+  },
+  "required": [
+    "versaoEsquema",
+    "id",
+    "revisao",
+    "tipo",
+    "produtoId",
+    "titulo",
+    "resumo",
+    "registradoEm",
+    "origem",
+    "vinculos",
+    "ambiente"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "tipo": {
+            "const": "agente"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "agente"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "recurso"
+              ]
+            },
+            {
+              "required": [
+                "execucao"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "tipo": {
+            "const": "recurso"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "recurso"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "agente"
+              ]
+            },
+            {
+              "required": [
+                "execucao"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "tipo": {
+            "const": "execucao"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "execucao"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "agente"
+              ]
+            },
+            {
+              "required": [
+                "recurso"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

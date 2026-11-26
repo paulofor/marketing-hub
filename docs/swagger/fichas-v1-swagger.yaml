@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Fichas históricas de homologação
+  version: '1.0'
+paths:
+  /api/products/{productId}/fichas/v1:
+    get:
+      summary: Consulta imutável, disponível somente com marketinghub.fichas.homologacao=true
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema: {type: integer, format: int64}
+        - in: query
+          name: ciclo
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: Ambiente HOMOLOGACAO_HISTORICA, despachoPermitido=false e fichas do acervo v1 por produto/ciclo
+        '404':
+          description: Produto inexistente ou piloto desabilitado
+        '500':
+          description: Falha de leitura do acervo, registrada com contexto em log

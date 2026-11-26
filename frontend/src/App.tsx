@@ -1,3 +1,4 @@
+import ProductFichasPage from "./pages/product/ProductFichasPage";
 import ExecutionFinancePage from "./pages/financial/ExecutionFinancePage";
 import ChatgptAdsPage from "./pages/chatgptads/ChatgptAdsPage";
 import ProductModelingPage from "./pages/product/ProductModelingPage";
@@ -282,6 +283,10 @@ export default function App() {
                 element={<ProductModelingPage />}
               />
               <Route path="/products" element={<ProductListPage />} />
+              <Route
+                path="/products/:productId/fichas"
+                element={<ProductFichasPage />}
+              />
               <Route path="/products/all" element={<AllProductsPage />} />
               <Route
                 path="/products/in-play"

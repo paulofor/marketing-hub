@@ -10,7 +10,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { formatCommercialStatus } from "../../api/product/productStatus";
 import {
   useProductAutomaticExecution,
@@ -107,6 +107,7 @@ function costLabel(measurement: ProductStageMeasurement) {
 
 export default function ProductValueChainHistoryPage() {
   const { productId } = useParams();
+  const [fichasSearch] = useSearchParams();
   const [historyRequested, setHistoryRequested] = useState(false);
   const summaryQuery = useProductValueChainSummary(productId);
   const positionQuery = useProductValueChainPosition(
@@ -170,6 +171,14 @@ export default function ProductValueChainHistoryPage() {
 
   return (
     <div className="product-value-chain-history">
+      {import.meta.env.DEV && (
+        <Link
+          className="btn btn-outline-secondary mb-3"
+          to={`/products/${productId}/fichas?${fichasSearch}`}
+        >
+          Piloto de fichas v1.0 (homologação)
+        </Link>
+      )}
       <Link
         className="btn btn-outline-primary mb-3"
         to={`/products/${productId}/execution-profiles?chainId=${summary.chainDefinitionId}`}

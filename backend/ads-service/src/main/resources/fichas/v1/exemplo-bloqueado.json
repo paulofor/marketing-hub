@@ -1,0 +1,157 @@
+[
+  {
+    "versaoEsquema": "1.0",
+    "id": "capella-dedalo",
+    "revisao": 1,
+    "tipo": "agente",
+    "produtoId": 7,
+    "titulo": "Dédalo",
+    "resumo": "Contrato de responsabilidade; não é parecer novo do agente.",
+    "registradoEm": "2026-11-26T19:29:06.017416+00:00",
+    "origem": {
+      "sistema": "Marketing Hub",
+      "referencia": "request:4020:user; histórico de 23/11/2026",
+      "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+    },
+    "vinculos": [],
+    "ambiente": "historico",
+    "agente": {
+      "cadastroId": 7,
+      "entradas": [
+        "Estratégia aceita #898",
+        "Economia aceita #926"
+      ],
+      "saidas": [
+        "Arquitetura #927",
+        "Implementação executável e prova privada (obrigação posterior)"
+      ]
+    }
+  },
+  {
+    "versaoEsquema": "1.0",
+    "id": "capella-arquitetura-927",
+    "revisao": 1,
+    "tipo": "recurso",
+    "produtoId": 7,
+    "titulo": "Arquitetura #927",
+    "resumo": "Especificação concluída, não confundir com aplicação pronta.",
+    "registradoEm": "2026-11-26T19:29:06.017434+00:00",
+    "origem": {
+      "sistema": "Marketing Hub",
+      "referencia": "request:4020:user; histórico de 23/11/2026",
+      "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+    },
+    "vinculos": [],
+    "ambiente": "historico",
+    "recurso": {
+      "categoria": "especificacao",
+      "versao": "tarefa-927"
+    }
+  },
+  {
+    "versaoEsquema": "1.0",
+    "id": "capella-c20-e97-passagem",
+    "revisao": 1,
+    "tipo": "execucao",
+    "produtoId": 7,
+    "titulo": "Passagem do planejamento para construção",
+    "resumo": "Destino 117 v11 aposentado antes da primeira execução; passagem recusada em 23/11/2026.",
+    "registradoEm": "2026-11-26T19:29:06.017438+00:00",
+    "origem": {
+      "sistema": "Marketing Hub",
+      "referencia": "request:4020:user; histórico de 23/11/2026",
+      "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+    },
+    "vinculos": [
+      {
+        "id": "capella-dedalo",
+        "revisao": 1
+      },
+      {
+        "id": "capella-arquitetura-927",
+        "revisao": 1
+      }
+    ],
+    "ambiente": "historico",
+    "execucao": {
+      "tentativa": null,
+      "ciclo": 20,
+      "experimento": 113,
+      "processo": {
+        "id": 126,
+        "versao": 13
+      },
+      "atividade": "productArchitecture",
+      "estado": "BLOCKED",
+      "motivo": "Destino 117 v11 aposentado antes da primeira execução; passagem recusada em 23/11/2026.",
+      "criterios": [
+        {
+          "titulo": "Arquitetura de Dédalo #927 entregue",
+          "estado": "confirmado",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:927; delivered_at=2026-11-23T19:20:51Z",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "titulo": "Destino publicado",
+          "estado": "falho",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "request:4020:user; histórico de 23/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "titulo": "Software executável",
+          "estado": "sem_evidencia"
+        }
+      ],
+      "destino": {
+        "id": 117,
+        "versao": 11,
+        "estado": "RETIRED",
+        "fonte": {
+          "sistema": "Marketing Hub",
+          "referencia": "request:4020:user; histórico de 23/11/2026",
+          "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+        }
+      },
+      "entradas": [
+        {
+          "tarefaId": 898,
+          "estado": "COMPLETED",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:898; MCP db_query 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "tarefaId": 926,
+          "estado": "COMPLETED",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:926; MCP db_query 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        },
+        {
+          "tarefaId": 927,
+          "estado": "COMPLETED",
+          "fonte": {
+            "sistema": "Marketing Hub",
+            "referencia": "agent_task:927; MCP db_query 26/11/2026",
+            "url": "http://191.252.181.168:5173/products/7/value-chain-history/processes/126/activities?learningCycleId=20&chainId=27&sourceReference=experiment%3A113"
+          }
+        }
+      ],
+      "lacunas": [
+        "Conclusão de especificações não comprova software executável.",
+        "Este retrato histórico não autoriza despacho; reconferir versão publicada, entradas e controles no comando oficial.",
+        "Número da tentativa no instante histórico não comprovado. O contador atual retry_epoch=2 não foi retroativamente atribuído à revisão."
+      ]
+    }
+  }
+]

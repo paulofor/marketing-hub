@@ -1,0 +1,18 @@
+{
+  "cardKey": "mixagem-separabilidade-fala-musica",
+  "collection": "prazer-audio-visual",
+  "title": "Separabilidade acústica de fala e música",
+  "finding": "Registros intracranianos e julgamentos independentes indicam que modulações temporais e espectrais contribuem diferentemente à categorização de fala e música.",
+  "mechanism": "O córtex auditivo acompanha propriedades acústicas espectrotemporais em bandas oscilatórias distintas; a separabilidade perceptiva pode depender dessas propriedades, além do nível sonoro.",
+  "commercialApplication": "Apolo pode testar trilhas com menor sobreposição espectrotemporal com a narração, comparadas a mixagens de mesmo nível. Psique avalia inteligibilidade, esforço e agrado.",
+  "evidenceStrength": "Moderada para categorização na tarefa; baixa para mixagem proposta. Resumo revisado; tamanho amostral e magnitudes não confirmados.",
+  "publishedOn": "2026-11-26",
+  "validUntil": "2027-01-10",
+  "experimentHypothesis": "Reduzir sobreposição de modulações acústicas relevantes à fala, com nível sonoro constante, poderá melhorar compreensão e conforto sem reduzir agrado. Comparar também com ausência de trilha.",
+  "risks": "Confundir categorização com inteligibilidade, distorcer a voz ou supor vantagem universal. Controlar volume e preservar acessibilidade.",
+  "limits": "Não testou a edição proposta nem prazer, dopamina, memória comercial ou vendas. Benefício comercial exige validação própria.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-26-mixagem-separabilidade-fala-musica-v1.md",
+  "sourceTitle": "Fonte revisada v1 - Separabilidade acustica de fala e musica",
+  "sourceSha256": "ead22d7471fa9cd303017568d81b9bd5eeb5abe18e12405b01ff1b9092ba9d6d"
+}

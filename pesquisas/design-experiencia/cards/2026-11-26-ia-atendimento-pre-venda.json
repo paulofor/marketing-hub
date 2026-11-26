@@ -1,0 +1,18 @@
+{
+  "cardKey": "atendimento-ia-pre-venda-reducao-friccao",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Atendimento pré-venda por IA para reduzir dúvidas no momento da compra",
+  "finding": "Experimento de campo com 44.614 consumidores: chatbot elevou vendas em 16,3% e conversão relativa em 21,7% ante ausência de atendimento. Ante atendimento humano não houve diferença significativa. IA com escalonamento humano elevou vendas em 25% ante ausência de serviço.",
+  "mechanism": "Hipótese: esclarecimento oportuno reduz incerteza e esforço de busca. O mecanismo psicológico não foi isolado.",
+  "commercialApplication": "Testar assistência pré-venda opcional, fundamentada em informações verificadas e com encaminhamento humano, na página da oferta.",
+  "evidenceStrength": "Experimentos randomizados de campo em varejista internacional, publicados em Management Science; resultados externos de curto prazo e dependentes do comparador.",
+  "publishedOn": "2026-11-26",
+  "validUntil": "2027-01-10",
+  "experimentHypothesis": "Comparada à experiência atual, a assistência opcional elevará pagamentos reconciliados por visitante elegível sem aumentar devoluções; medir também resolução de dúvidas, satisfação e custo.",
+  "risks": "Respostas incorretas, promessas não verificadas, dificuldade de contato humano e extrapolação de percentuais externos.",
+  "limits": "Um varejista, produtos e modelos específicos; maior ganho comparado a ausência de serviço. Sem comprovação em produtos digitais ou no Marketing Hub. Vínculos de autores com parceiro declarados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-26-ia-atendimento-pre-venda.md",
+  "sourceTitle": "Fonte revisada — IA no atendimento pré-venda",
+  "sourceSha256": "38940a207ea7327823cb52b75500f2d5cbc1a15e86fe70a3c528c30da328ba26"
+}

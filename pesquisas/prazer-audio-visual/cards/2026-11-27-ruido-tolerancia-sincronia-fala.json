@@ -1,0 +1,18 @@
+{
+  "cardKey": "ruido-tolerancia-sincronia-fala",
+  "collection": "prazer-audio-visual",
+  "title": "Ruído de fundo e tolerância ao desalinhamento labial",
+  "finding": "Em 25 adultos, o intervalo de sincronismo percebido derivado de ajustes foi mais estreito sob ruído concorrente intenso (-10 dB SNR) que nas condições 0 e +10 dB; o ponto médio não mudou significativamente.",
+  "mechanism": "O mascaramento pode aumentar a exigência de correspondência temporal ou alterar o critério de julgamento; não há confirmação neural.",
+  "commercialApplication": "Apolo pode avaliar vídeos e avatares com diferentes condições de ruído e alinhamento labial; Psique pode comparar conforto e compreensão.",
+  "evidenceStrength": "Moderada para o efeito perceptivo no procedimento estudado; baixa para transferência a vídeos comerciais.",
+  "publishedOn": "2026-11-27",
+  "validUntil": "2027-01-11",
+  "experimentHypothesis": "Em teste fatorial randomizado, o benefício perceptivo do alinhamento labial preciso será maior sob ruído concorrente que em condição mais silenciosa; medir sincronismo, estranheza, compreensão e conforto.",
+  "risks": "Não elevar o volume a níveis desconfortáveis; não converter intervalos experimentais em tolerâncias técnicas nem presumir efeito para música.",
+  "limits": "Amostra pequena, ajuste subjetivo, ausência de calibração externa e de medidas de compreensão, prazer ou dopamina; só eventos reais comprovam efeito comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-11-27-ruido-tolerancia-sincronia-fala-v1.md",
+  "sourceTitle": "Ruído concorrente e tolerância à assincronia da fala — revisão v1",
+  "sourceSha256": "783a03b45b46f399ca6ecc611936a88bd0cc39c826258b3652d59da702da1ef7"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-cosmos3-nano-offload-12gb-2026-11",
+  "title": "Cosmos 3 Nano — inferência de vídeo em GPU de 12 GB",
+  "finding": "Tutorial NVIDIA de 24/11, repercutido em 27/11, documenta pacote de streaming de pesos via RAM. RTX 5070, FP8: 720p sem áudio em 2.235,7 s e 9,16 GiB de VRAM; com áudio em 2.256 s e 10,92 GiB.",
+  "mechanism": "Pesos em RAM, transferência de blocos do transformer via PCIe durante inferência; Diffusers e quantização FP8.",
+  "commercialApplication": "Prototipagem audiovisual local, simulação de objetos, avaliação de independência de APIs, especialmente com dados não sensíveis ou controlados.",
+  "evidenceStrength": "Tutorial e benchmarks do fabricante, documentação oficial de pesos; não reproduzidos independentemente.",
+  "experimentHypothesis": "Medir custo e tempo de geração local de 240p/480p para prévias, comparar qualidade e custo de cenas aprovadas com serviço hospedado.",
+  "risks": "Latência alta, RAM e PCIe, custo de hardware, qualidade publicitária não avaliada; não é tempo real.",
+  "limits": "Pesos ativos desde 31/05, licença OpenMDW 1.1 com uso comercial declarado; hosts testados com ~128 GB de RAM (não mínimo comprovado); 189 quadros a 24 fps; benchmark exclui carga e MP4. Sem preço de API verificado.",
+  "sourceTitle": "Cosmos 3 Nano — inferência de vídeo em GPU de 12 GB",
+  "validUntil": "2027-02-27",
+  "collection": "video",
+  "publishedOn": "2026-11-27",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-11-27-cosmos3-nano-offload-12gb.md",
+  "sourceSha256": "0a29029dc5612c451c77c3ed2a1e5cda5576af66bb0bee8ab8a8673da7c6b44f"
+}

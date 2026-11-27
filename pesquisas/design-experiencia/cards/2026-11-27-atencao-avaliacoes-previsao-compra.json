@@ -1,0 +1,18 @@
+{
+  "cardKey": "atencao-avaliacoes-previsao-compra-limitada",
+  "collection": "neuromarketing",
+  "title": "Atenção visual a avaliações não equivale a intenção de compra",
+  "finding": "Em laboratório (128 participantes), SVM com fixações em avaliações e cenário classificou escolhas declaradas com 59–60% de acurácia média, ante baseline de validação de 53,85%.",
+  "mechanism": "Hipótese: a atenção pode refletir relevância para o objetivo, dúvida ou esforço de interpretação; não identifica isoladamente desejo ou prazer.",
+  "commercialApplication": "Em testes consentidos, avaliar se consumidores encontram e compreendem depoimentos autênticos de benefícios funcionais e de uso, sem usar biometria para direcionar ofertas individuais.",
+  "evidenceStrength": "Experimento controlado de atenção visual e classificação exploratória com validação interna; não mede vendas nem isola o valor incremental das fixações sobre cenário sozinho.",
+  "publishedOn": "2026-11-27",
+  "validUntil": "2027-01-11",
+  "experimentHypothesis": "Comparar páginas com organização neutra ou por necessidades explícitas; medir compreensão, fixações consentidas, pagamentos reconciliados e satisfação; comparar previsão com baseline sem biometria.",
+  "risks": "Confundir atenção com desejo, inferir emoções indevidamente, invasão de privacidade ou utilizar avaliações fictícias em produção.",
+  "limits": "Amostra universitária, chocolate fictício, tela estática de 50 s, escolha declarada e sem validação externa. Não extrapolar para vendas de produtos digitais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-27-atencao-avaliacoes-previsao-compra.md",
+  "sourceTitle": "Atenção a avaliações e previsão limitada de escolha — Sarac et al.",
+  "sourceSha256": "70b6f89a7d44e38fe502fbc7c9ef0fd54007e38cf4bebd0d1829b4ec6b6a926f"
+}

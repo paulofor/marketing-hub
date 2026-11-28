@@ -1,0 +1,18 @@
+{
+  "cardKey": "demonstracao-provador-virtual-intencao-confianca-distintas",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Demonstração de provador virtual: interesse de compra não equivale a confiança",
+  "finding": "Em experimento aleatório com 181 portugueses, um vídeo de provador virtual de tênis elevou intenção declarada de compra (p=0,004; d=0,44) frente a vídeo convencional; não houve diferença significativa em confiança na marca ou UX.",
+  "mechanism": "A contextualização no pé e a visualização de vários ângulos podem facilitar avaliação do produto; hipótese não isolada pelo estudo.",
+  "commercialApplication": "Testar demonstração fiel em situação de uso e separar métricas de interesse, confiança e compra efetiva.",
+  "evidenceStrength": "Experimento randomizado publicado, com desfechos autorrelatados e manipulação composta; evidência moderada para a intenção no cenário estudado, não para vendas.",
+  "publishedOn": "2026-11-28",
+  "validUntil": "2027-01-12",
+  "experimentHypothesis": "Comparar vídeo convencional, demonstração contextual e demonstração AR, com preço, informação e duração controlados; medir compreensão, confiança, pagamentos reconciliados e devoluções.",
+  "risks": "Simulação enganosa, confundir intenção com venda ou confiança; não atribuir o efeito exclusivamente à AR.",
+  "limits": "Uma marca de luxo, um produto, amostra de conveniência portuguesa, vídeos sem interação direta nem compra observada; transferência para produtos digitais ainda não testada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-11-28-demonstracao-contextual-provador.md",
+  "sourceTitle": "Fonte revisada — demonstração contextual de produto e intenção de compra",
+  "sourceSha256": "d67642ee2c2371700115630d4fc25ea41ac7c5362088194ab0bd23c3542a6a7b"
+}
